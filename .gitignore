@@ -1,0 +1,34 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+debug
+
+# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
+.glide/
+
+.idea/
+*.iml
+
+.vscode/
+
+#Various temporary created while building/running jx.
+/build/
+bin/
+release/
+dist/
+scanning/
+
+# vim swap files
+*.swp
+
+#OSX system files.
+**/.DS_Store
