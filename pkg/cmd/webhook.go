@@ -32,6 +32,7 @@ type WebhookOptions struct {
 	BindAddress string
 	Path        string
 	Port        int
+	JSONLog     bool
 
 	scmClient *scm.Client
 }
@@ -49,6 +50,7 @@ func NewCmdWebhook() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVarP(&options.JSONLog, "json", "", true, "Enable JSON logging")
 	cmd.Flags().IntVarP(&options.Port, "port", "", 8080, "The TCP port to listen on.")
 	cmd.Flags().StringVarP(&options.BindAddress, "bind", "", "",
 		"The interface address to bind to (by default, will listen on all interfaces/addresses).")
@@ -60,6 +62,11 @@ func NewCmdWebhook() *cobra.Command {
 
 // Run will implement this command
 func (o *WebhookOptions) Run() error {
+	if o.JSONLog {
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+	}
+
+	// TODO how to pick the SCM client - one per path?
 	o.scmClient = github.NewDefault()
 	mux := http.NewServeMux()
 	mux.Handle(HealthPath, http.HandlerFunc(o.health))
@@ -170,9 +177,10 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		"CloneSSH":  repository.CloneSSH,
 	}
 
-	pushHook := webhook.(*scm.PushHook)
-	prHook := webhook.(*scm.PullRequestHook)
-	if pushHook != nil {
+	w.Write([]byte("OK"))
+
+	pushHook, ok := webhook.(*scm.PushHook)
+	if ok {
 		fields["Ref"] = pushHook.Ref
 		fields["BaseRef"] = pushHook.BaseRef
 		fields["Commit.Sha"] = pushHook.Commit.Sha
@@ -182,7 +190,12 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["Commit.Committer.Name"] = pushHook.Commit.Committer.Name
 
 		logrus.WithFields(logrus.Fields(fields)).Info("invoking push handler")
-	} else if prHook != nil {
+
+		o.startPipelineRun(w, r)
+		return
+	}
+	prHook, ok := webhook.(*scm.PullRequestHook)
+	if ok {
 		action := prHook.Action
 		fields["Action"] = action.String()
 		pr := prHook.PullRequest
@@ -193,12 +206,31 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["PR.Body"] = pr.Body
 
 		logrus.WithFields(logrus.Fields(fields)).Info("invoking PR handler")
+		return
+	}
+	prCommentHook, ok := webhook.(*scm.PullRequestCommentHook)
+	if ok {
+		action := prCommentHook.Action
+		fields["Action"] = action.String()
+		pr := prCommentHook.PullRequest
+		fields["PR.Number"] = pr.Number
+		fields["PR.Ref"] = pr.Ref
+		fields["PR.Sha"] = pr.Sha
+		fields["PR.Title"] = pr.Title
+		fields["PR.Body"] = pr.Body
+		comment := prCommentHook.Comment
+		fields["Comment.Body"] = comment.Body
+		author := comment.Author
+		fields["Author.Name"] = author.Name
+		fields["Author.Login"] = author.Login
+		fields["Author.Avatar"] = author.Avatar
+
+		logrus.WithFields(logrus.Fields(fields)).Info("invoking PR Comment handler")
+		return
 	} else {
 		logrus.WithFields(logrus.Fields(fields)).Info("invoking webhook handler")
+		return
 	}
-	w.Write([]byte("OK"))
-
-	go o.startPipelineRun(w, r)
 }
 
 func (o *WebhookOptions) secretFn(webhook scm.Webhook) (string, error) {

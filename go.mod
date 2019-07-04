@@ -17,3 +17,5 @@ require (
 	k8s.io/client-go v11.0.0+incompatible // indirect
 	k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a // indirect
 )
+
+replace github.com/drone/go-scm => github.com/jstrachan/go-scm v1.5.1-0.20190704052628-616f5b8710cf
