@@ -1,15 +1,21 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/drone/go-scm/scm"
+	"github.com/drone/go-scm/scm/driver/bitbucket"
+	"github.com/drone/go-scm/scm/driver/gitea"
 	"github.com/drone/go-scm/scm/driver/github"
+	"github.com/drone/go-scm/scm/driver/gitlab"
+	"github.com/drone/go-scm/scm/driver/gogs"
+	"github.com/drone/go-scm/scm/driver/stash"
+	"github.com/jenkins-x/jx/pkg/cmd/clients"
+	"github.com/jenkins-x/jx/pkg/cmd/opts"
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/sirupsen/logrus"
 
@@ -25,6 +31,8 @@ const (
 	HealthPath = "/health"
 	// ReadyPath URL path for the HTTP endpoint that returns ready status.
 	ReadyPath = "/ready"
+
+	noGitServerURLMessage = "No Git Server URI defined for $GIT_SERVER"
 )
 
 // WebhookOptions holds the command line arguments
@@ -34,7 +42,9 @@ type WebhookOptions struct {
 	Port        int
 	JSONLog     bool
 
-	scmClient *scm.Client
+	Builder   builder.Builder
+	factory   clients.Factory
+	namespace string
 }
 
 // NewCmdWebhook creates the command
@@ -66,8 +76,16 @@ func (o *WebhookOptions) Run() error {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 	}
 
-	// TODO how to pick the SCM client - one per path?
-	o.scmClient = github.NewDefault()
+	jxClient, ns, err := o.GetFactory().CreateJXClient()
+	if err != nil {
+		return errors.Wrapf(err, "failed to create JX Client")
+	}
+	o.namespace = ns
+	o.Builder, err = builder.NewBuilder(jxClient, ns)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create Builder")
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle(HealthPath, http.HandlerFunc(o.health))
 	mux.Handle(ReadyPath, http.HandlerFunc(o.ready))
@@ -106,45 +124,9 @@ func (o *WebhookOptions) getIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(helloMessage))
 }
 
-// handle request for pipeline runs
-func (o *WebhookOptions) startPipelineRun(w http.ResponseWriter, r *http.Request) {
-
-	logrus.Infof("triggering META pipeline")
-}
-
 func (o *WebhookOptions) isReady() bool {
 	// TODO a better readiness check
 	return true
-}
-
-func (o *WebhookOptions) unmarshalBody(w http.ResponseWriter, r *http.Request, result interface{}) error {
-	// TODO assume JSON for now
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return errors.Wrap(err, "reading the JSON request body")
-	}
-	err = json.Unmarshal(data, result)
-	if err != nil {
-		return errors.Wrap(err, "unmarshalling the JSON request body")
-	}
-	return nil
-}
-
-func (o *WebhookOptions) marshalPayload(w http.ResponseWriter, r *http.Request, payload interface{}) error {
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return errors.Wrapf(err, "marshalling the JSON payload %#v", payload)
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-
-	logrus.Infof("completed request successfully and returned: %s", string(data))
-	return nil
-}
-
-func (o *WebhookOptions) returnError(err error, message string, w http.ResponseWriter, r *http.Request) {
-	logrus.Errorf("returning error: %v %s", err, message)
-	responseHTTPError(w, http.StatusInternalServerError, "500 Internal Error: "+message+" "+err.Error())
 }
 
 // handle request for pipeline runs
@@ -156,7 +138,14 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	}
 	logrus.Infof("about to parse webhook")
 
-	webhook, err := o.scmClient.Webhooks.Parse(r, o.secretFn)
+	client, err := o.createSCMClient(r)
+	if err != nil {
+		logrus.Errorf("failed to create SCM client: %s", err.Error())
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
+		return
+	}
+
+	webhook, err := client.Webhooks.Parse(r, o.secretFn)
 	if err != nil {
 		logrus.Errorf("failed to parse webhook: %s", err.Error())
 
@@ -177,8 +166,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		"CloneSSH":  repository.CloneSSH,
 	}
 
-	w.Write([]byte("OK"))
-
 	pushHook, ok := webhook.(*scm.PushHook)
 	if ok {
 		fields["Ref"] = pushHook.Ref
@@ -191,7 +178,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		logrus.WithFields(logrus.Fields(fields)).Info("invoking push handler")
 
-		o.startPipelineRun(w, r)
+		o.startBuild(pushHook, r, w)
 		return
 	}
 	prHook, ok := webhook.(*scm.PullRequestHook)
@@ -206,6 +193,8 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["PR.Body"] = pr.Body
 
 		logrus.WithFields(logrus.Fields(fields)).Info("invoking PR handler")
+
+		w.Write([]byte("OK"))
 		return
 	}
 	prCommentHook, ok := webhook.(*scm.PullRequestCommentHook)
@@ -226,15 +215,103 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["Author.Avatar"] = author.Avatar
 
 		logrus.WithFields(logrus.Fields(fields)).Info("invoking PR Comment handler")
+		w.Write([]byte("OK"))
 		return
 	} else {
 		logrus.WithFields(logrus.Fields(fields)).Info("invoking webhook handler")
+		w.Write([]byte("OK"))
 		return
 	}
 }
 
+func (o *WebhookOptions) startBuild(hook *scm.PushHook, r *http.Request, w http.ResponseWriter) {
+	message, err := o.Builder.StartBuild(hook, o.createCommonOptions(o.namespace))
+	if err != nil {
+		logrus.Errorf("failed to start build on %s: %s", repositoryToString(hook.Repository()), err.Error())
+
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
+		return
+	}
+	w.Write([]byte(message))
+
+	logrus.Infof("triggering META pipeline")
+
+}
+
+// GetFactory lazily creates a Factory if its not already created
+func (o *WebhookOptions) GetFactory() clients.Factory {
+	if o.factory == nil {
+		o.factory = clients.NewFactory()
+	}
+	return o.factory
+}
+
+func (o *WebhookOptions) createCommonOptions(ns string) *opts.CommonOptions {
+	factory := o.GetFactory()
+	options := opts.NewCommonOptionsWithFactory(factory)
+	options.SetDevNamespace(ns)
+	options.SetCurrentNamespace(ns)
+	options.Verbose = true
+	options.BatchMode = true
+	options.Out = os.Stdout
+	options.Err = os.Stderr
+	return &options
+}
+
+func repositoryToString(repo scm.Repository) string {
+	return fmt.Sprintf("%s/%s branch %s", repo.Namespace, repo.Name, repo.Branch)
+}
+
 func (o *WebhookOptions) secretFn(webhook scm.Webhook) (string, error) {
 	return os.Getenv("HMAC_TOKEN"), nil
+}
+
+func (o *WebhookOptions) createSCMClient(request *http.Request) (*scm.Client, error) {
+	kind := os.Getenv("GIT_KIND")
+	if kind == "" {
+		kind = "github"
+	}
+	server := os.Getenv("GIT_SERVER")
+
+	switch kind {
+	case "bitbucket":
+		if server != "" {
+			return bitbucket.New(server)
+		}
+		return bitbucket.NewDefault(), nil
+	case "gitea":
+		if server == "" {
+			return nil, fmt.Errorf(noGitServerURLMessage)
+		}
+		return gitea.New(server)
+	case "github":
+		if server != "" {
+			github.New(server)
+		}
+		return github.NewDefault(), nil
+	case "gitlab":
+		if server != "" {
+			return gitlab.New(server)
+		}
+		return gitlab.NewDefault(), nil
+	case "gogs":
+		if server == "" {
+			return nil, fmt.Errorf(noGitServerURLMessage)
+		}
+		return gogs.New(server)
+	case "stash":
+		if server == "" {
+			return nil, fmt.Errorf(noGitServerURLMessage)
+		}
+		return stash.New(server)
+	default:
+		return nil, fmt.Errorf("Unsupported $GIT_KIND value: %s", kind)
+	}
+}
+
+func (o *WebhookOptions) returnError(err error, message string, w http.ResponseWriter, r *http.Request) {
+	logrus.Errorf("returning error: %v %s", err, message)
+	responseHTTPError(w, http.StatusInternalServerError, "500 Internal Error: "+message+" "+err.Error())
 }
 
 func responseHTTPError(w http.ResponseWriter, statusCode int, response string) {
