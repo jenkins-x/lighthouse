@@ -169,7 +169,33 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		"Clone":     repository.Clone,
 		"CloneSSH":  repository.CloneSSH,
 	}
-	logrus.WithFields(logrus.Fields(fields)).Info("invoking webhook handler")
+
+	pushHook := webhook.(*scm.PushHook)
+	prHook := webhook.(*scm.PullRequestHook)
+	if pushHook != nil {
+		fields["Ref"] = pushHook.Ref
+		fields["BaseRef"] = pushHook.BaseRef
+		fields["Commit.Sha"] = pushHook.Commit.Sha
+		fields["Commit.Link"] = pushHook.Commit.Link
+		fields["Commit.Author"] = pushHook.Commit.Author
+		fields["Commit.Message"] = pushHook.Commit.Message
+		fields["Commit.Committer.Name"] = pushHook.Commit.Committer.Name
+
+		logrus.WithFields(logrus.Fields(fields)).Info("invoking push handler")
+	} else if prHook != nil {
+		action := prHook.Action
+		fields["Action"] = action.String()
+		pr := prHook.PullRequest
+		fields["PR.Number"] = pr.Number
+		fields["PR.Ref"] = pr.Ref
+		fields["PR.Sha"] = pr.Sha
+		fields["PR.Title"] = pr.Title
+		fields["PR.Body"] = pr.Body
+
+		logrus.WithFields(logrus.Fields(fields)).Info("invoking PR handler")
+	} else {
+		logrus.WithFields(logrus.Fields(fields)).Info("invoking webhook handler")
+	}
 	w.Write([]byte("OK"))
 
 	go o.startPipelineRun(w, r)
