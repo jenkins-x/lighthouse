@@ -51,15 +51,17 @@ func (b *PipelineBuilder) StartBuild(hook *scm.PushHook, commonOptions *opts.Com
 		return fmt.Sprintf("no Pipeline setup for repository %s/%s", owner, name), nil
 	}
 
-	fields := map[string]interface{}{
+	l := logrus.WithFields(logrus.Fields(map[string]interface{}{
+		"Owner":             owner,
+		"Name":              name,
 		"SourceURL":         sourceURL,
 		"Branch":            branch,
 		"PipelineKind":      pipelineKind,
 		"PullRefs":          pullRefs,
 		"PullRequestNumber": prNumber,
 		"Job":               job,
-	}
-	logrus.WithFields(logrus.Fields(fields)).Info("about to start Jenkinx X meta pipeline")
+	}))
+	l.Info("about to start Jenkinx X meta pipeline")
 
 	po := create.StepCreatePipelineOptions{
 		SourceURL:         sourceURL,
@@ -73,7 +75,7 @@ func (b *PipelineBuilder) StartBuild(hook *scm.PushHook, commonOptions *opts.Com
 
 	err := po.Run()
 	if err != nil {
-		logrus.WithFields(logrus.Fields(fields)).Errorf("failed to create Jenkinx X meta pipeline %s", err.Error())
+		l.Errorf("failed to create Jenkinx X meta pipeline %s", err.Error())
 		return "failed to create Jenkins X Pipeline %s", err
 	}
 	return "OK", nil

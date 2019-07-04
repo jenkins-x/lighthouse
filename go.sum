@@ -406,6 +406,10 @@ github.com/jstrachan/go-scm v1.5.1-0.20190704052628-616f5b8710cf h1:mik7jN0C8l5D
 github.com/jstrachan/go-scm v1.5.1-0.20190704052628-616f5b8710cf/go.mod h1:YT4FxQ3U/ltdCrBJR9B0tRpJ1bYA/PM3NyaLE/rYIvw=
 github.com/jstrachan/go-scm v1.5.1-0.20190704072749-a566f7606c45 h1:Qvwr8XIHYPsCXLfg9zxRPTS67J2igndF+xWzWqMvhK4=
 github.com/jstrachan/go-scm v1.5.1-0.20190704072749-a566f7606c45/go.mod h1:YT4FxQ3U/ltdCrBJR9B0tRpJ1bYA/PM3NyaLE/rYIvw=
+github.com/jstrachan/go-scm v1.5.1-0.20190704153033-d5dbc884d494 h1:nFS0NHYmkLBS7d0pJgQwcdbSJaFQqK08Jpl47y9pJ6c=
+github.com/jstrachan/go-scm v1.5.1-0.20190704153033-d5dbc884d494/go.mod h1:YT4FxQ3U/ltdCrBJR9B0tRpJ1bYA/PM3NyaLE/rYIvw=
+github.com/jstrachan/go-scm v1.5.1-0.20190704153258-6d29ae7d5acb h1:XpsazZUHaKfiNZxETeHDX0sZ+kRDAlzD8cVaTUOXuvU=
+github.com/jstrachan/go-scm v1.5.1-0.20190704153258-6d29ae7d5acb/go.mod h1:YT4FxQ3U/ltdCrBJR9B0tRpJ1bYA/PM3NyaLE/rYIvw=
 github.com/jtnord/logrus v1.4.2-0.20190423161236-606ffcaf8f5d h1:95Dc4I4Pw81p6Gc1IUqOtLPPf2qnhrcC3Lsv3tLdb1I=
 github.com/jtnord/logrus v1.4.2-0.20190423161236-606ffcaf8f5d/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/jtolds/gls v4.2.1+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
