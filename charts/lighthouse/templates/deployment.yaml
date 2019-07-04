@@ -24,6 +24,12 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
+          - name: "GIT_KIND"
+            value: "{{ .Values.git.kind }}"
+          - name: "GIT_SERVER"
+            value: "{{ .Values.git.server }}"
+          - name: "HMAC_TOKEN"
+            value: "{{ .Values.git.hmacToken }}"
 {{- range $pkey, $pval := .Values.env }}
         - name: {{ $pkey }}
           value: {{ quote $pval }}
