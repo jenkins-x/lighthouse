@@ -18,12 +18,9 @@ limitations under the License.
 package cat
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -32,24 +29,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
-	errors2 "github.com/pkg/errors"
-
 	"github.com/drone/go-scm/scm"
+	"github.com/sirupsen/logrus"
+
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
-	"github.com/sirupsen/logrus"
+	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
 var (
-	match = regexp.MustCompile(`(?mi)^/meow(vie)?(?: (.+))?\s*$`)
-	meow  = &realClowder{
-		url: "https://api.thecatapi.com/api/images/get?format=json&results_per_page=1",
+	match          = regexp.MustCompile(`(?mi)^/meow(vie)?(?: (.+))?\s*$`)
+	grumpyKeywords = regexp.MustCompile(`(?mi)^(no|grumpy)\s*$`)
+	meow           = &realClowder{
+		url: "https://api.thecatapi.com/v1/images/search?format=json&results_per_page=1",
 	}
 )
 
 const (
 	pluginName = "cat"
+	grumpyURL  = "https://upload.wikimedia.org/wikipedia/commons/e/ee/Grumpy_Cat_by_Gage_Skidmore.jpg"
 )
 
 func init() {
@@ -57,9 +55,11 @@ func init() {
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
 	pluginHelp := &pluginhelp.PluginHelp{
 		Description: "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
+		Config: map[string]string{
+			"": fmt.Sprintf("The cat plugin uses an api key for thecatapi.com stored in %s.", config.Cat.KeyPath),
+		},
 	}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/meow(vie) [CATegory]",
@@ -69,28 +69,6 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Examples:    []string{"/meow", "/meow caturday", "/meowvie clothes"},
 	})
 	return pluginHelp, nil
-}
-
-func ToGitHubClient(client *scm.Client) githubClient {
-	return &githubClientImpl{client}
-}
-
-type githubClientImpl struct {
-	client *scm.Client
-}
-
-func (c *githubClientImpl) CreateComment(owner, repo string, number int, comment string) error {
-	fullName := fmt.Sprintf("%s/%s", owner, repo)
-	commentInput := scm.CommentInput{
-		Body: comment,
-	}
-	_, response, err := c.client.Issues.CreateComment(context.Background(), fullName, number, &commentInput)
-	if err != nil {
-		var b bytes.Buffer
-		io.Copy(&b, response.Body)
-		return errors2.Wrapf(err, "response: %s", b.String())
-	}
-	return nil
 }
 
 type githubClient interface {
@@ -130,27 +108,19 @@ func (c *realClowder) setKey(keyPath string, log *logrus.Entry) {
 }
 
 type catResult struct {
-	Source string `json:"source_url"`
-	Image  string `json:"url"`
+	Image string `json:"url"`
 }
 
 func (cr catResult) Format() (string, error) {
-	if cr.Source == "" {
-		return "", errors.New("empty source_url")
-	}
 	if cr.Image == "" {
 		return "", errors.New("empty image url")
-	}
-	src, err := url.Parse(cr.Source)
-	if err != nil {
-		return "", fmt.Errorf("invalid source_url %s: %v", cr.Source, err)
 	}
 	img, err := url.Parse(cr.Image)
 	if err != nil {
 		return "", fmt.Errorf("invalid image url %s: %v", cr.Image, err)
 	}
 
-	return fmt.Sprintf("[![cat image](%s)](%s)", img, src), nil
+	return fmt.Sprintf("![cat image](%s)", img), nil
 }
 
 func (c *realClowder) URL(category string, movieCat bool) string {
@@ -170,21 +140,25 @@ func (c *realClowder) URL(category string, movieCat bool) string {
 }
 
 func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
-	uri := c.URL(category, movieCat)
-	resp, err := http.Get(uri)
-	if err != nil {
-		return "", fmt.Errorf("could not read cat from %s: %v", uri, err)
-	}
-	defer resp.Body.Close()
-	if sc := resp.StatusCode; sc > 299 || sc < 200 {
-		return "", fmt.Errorf("failing %d response from %s", sc, uri)
-	}
 	cats := make([]catResult, 0)
-	if err = json.NewDecoder(resp.Body).Decode(&cats); err != nil {
-		return "", err
-	}
-	if len(cats) < 1 {
-		return "", fmt.Errorf("no cats in response from %s", uri)
+	uri := c.URL(category, movieCat)
+	if grumpyKeywords.MatchString(category) {
+		cats = append(cats, catResult{grumpyURL})
+	} else {
+		resp, err := http.Get(uri)
+		if err != nil {
+			return "", fmt.Errorf("could not read cat from %s: %v", uri, err)
+		}
+		defer resp.Body.Close()
+		if sc := resp.StatusCode; sc > 299 || sc < 200 {
+			return "", fmt.Errorf("failing %d response from %s", sc, uri)
+		}
+		if err = json.NewDecoder(resp.Body).Decode(&cats); err != nil {
+			return "", err
+		}
+		if len(cats) < 1 {
+			return "", fmt.Errorf("no cats in response from %s", uri)
+		}
 	}
 	a := cats[0]
 	if a.Image == "" {
@@ -202,7 +176,7 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 
 func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
 	return handle(
-		ToGitHubClient(pc.GitHubClient),
+		pc.GitHubClient,
 		pc.Logger,
 		&e,
 		meow,
@@ -239,7 +213,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c
 			log.WithError(err).Error("Failed to get cat img")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.HTMLURL, e.User.Login, resp))
+		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, resp))
 	}
 
 	var msg string
@@ -248,7 +222,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c
 	} else {
 		msg = "https://thecatapi.com appears to be down"
 	}
-	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.HTMLURL, e.User.Login, msg)); err != nil {
+	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

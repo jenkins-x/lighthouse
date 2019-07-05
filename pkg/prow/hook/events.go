@@ -83,7 +83,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		github.RepoLogField: ic.Repo.Name,
 		github.PrLogField:   ic.Issue.Number,
 		"author":            ic.Comment.Author.Login,
-		"url":               ic.Comment.HTMLURL,
+		"url":               ic.Comment.Link,
 	})
 	l.Infof("Issue comment %s.", ic.Action)
 	for p, h := range s.Plugins.IssueCommentHandlers(ic.Repo.Namespace, ic.Repo.Name) {
@@ -109,16 +109,15 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 			IsPR:        ic.Issue.PullRequest,
 			Action:      ic.Action,
 			Body:        ic.Comment.Body,
-			HTMLURL:     ic.Comment.HTMLURL,
+			Link:        ic.Comment.Link,
 			Number:      ic.Issue.Number,
 			Repo:        ic.Repo,
 			User:        ic.Comment.Author,
 			IssueAuthor: ic.Issue.Author,
-			// TODO
-			// Assignees:    ic.Issue.Assignees,
-			IssueState:   ic.Issue.State,
-			IssueBody:    ic.Issue.Body,
-			IssueHTMLURL: ic.Issue.Link,
+			Assignees:   ic.Issue.Assignees,
+			IssueState:  ic.Issue.State,
+			IssueBody:   ic.Issue.Body,
+			IssueLink:   ic.Issue.Link,
 		},
 	)
 }
@@ -150,7 +149,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re github.ReviewEvent) {
 		github.PrLogField:   re.PullRequest.Number,
 		"review":            re.Review.ID,
 		"reviewer":          re.Review.User.Login,
-		"url":               re.Review.HTMLURL,
+		"url":               re.Review.Link,
 	})
 	l.Infof("Review %s.", re.Action)
 	for p, h := range s.Plugins.ReviewEventHandlers(re.PullRequest.Base.Repo.Namespace, re.PullRequest.Base.Repo.Name) {
@@ -180,7 +179,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re github.ReviewEvent) {
 			IsPR:         true,
 			Action:       action,
 			Body:         re.Review.Body,
-			HTMLURL:      re.Review.HTMLURL,
+			Link:      re.Review.Link,
 			Number:       re.PullRequest.Number,
 			Repo:         re.Repo,
 			User:         re.Review.User,
@@ -188,7 +187,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re github.ReviewEvent) {
 			Assignees:    re.PullRequest.Assignees,
 			IssueState:   re.PullRequest.State,
 			IssueBody:    re.PullRequest.Body,
-			IssueHTMLURL: re.PullRequest.HTMLURL,
+			IssueLink: re.PullRequest.Link,
 		},
 	)
 }
@@ -201,7 +200,7 @@ func (s *Server) handleReviewCommentEvent(l *logrus.Entry, rce github.ReviewComm
 		github.PrLogField:   rce.PullRequest.Number,
 		"review":            rce.Comment.ReviewID,
 		"commenter":         rce.Comment.Author.Login,
-		"url":               rce.Comment.HTMLURL,
+		"url":               rce.Comment.Link,
 	})
 	l.Infof("Review comment %s.", rce.Action)
 	for p, h := range s.Plugins.ReviewCommentEventHandlers(rce.PullRequest.Base.Repo.Namespace, rce.PullRequest.Base.Repo.Name) {
@@ -231,7 +230,7 @@ func (s *Server) handleReviewCommentEvent(l *logrus.Entry, rce github.ReviewComm
 			IsPR:         true,
 			Action:       action,
 			Body:         rce.Comment.Body,
-			HTMLURL:      rce.Comment.HTMLURL,
+			Link:      rce.Comment.Link,
 			Number:       rce.PullRequest.Number,
 			Repo:         rce.Repo,
 			User:         rce.Comment.Author,
@@ -239,7 +238,7 @@ func (s *Server) handleReviewCommentEvent(l *logrus.Entry, rce github.ReviewComm
 			Assignees:    rce.PullRequest.Assignees,
 			IssueState:   rce.PullRequest.State,
 			IssueBody:    rce.PullRequest.Body,
-			IssueHTMLURL: rce.PullRequest.HTMLURL,
+			IssueLink: rce.PullRequest.Link,
 		},
 	)
 }
@@ -251,7 +250,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr github.PullRequestEv
 		github.RepoLogField: pr.Repo.Name,
 		github.PrLogField:   pr.Number,
 		"author":            pr.PullRequest.User.Login,
-		"url":               pr.PullRequest.HTMLURL,
+		"url":               pr.PullRequest.Link,
 	})
 	l.Infof("Pull request %s.", pr.Action)
 	for p, h := range s.Plugins.PullRequestHandlers(pr.PullRequest.Base.Repo.Namespace, pr.PullRequest.Base.Repo.Name) {
@@ -283,7 +282,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr github.PullRequestEv
 			IsPR:         true,
 			Action:       action,
 			Body:         pr.PullRequest.Body,
-			HTMLURL:      pr.PullRequest.HTMLURL,
+			Link:      pr.PullRequest.Link,
 			Number:       pr.PullRequest.Number,
 			Repo:         pr.Repo,
 			User:         pr.PullRequest.User,
@@ -291,7 +290,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr github.PullRequestEv
 			Assignees:    pr.PullRequest.Assignees,
 			IssueState:   pr.PullRequest.State,
 			IssueBody:    pr.PullRequest.Body,
-			IssueHTMLURL: pr.PullRequest.HTMLURL,
+			IssueLink: pr.PullRequest.Link,
 		},
 	)
 }
@@ -356,7 +355,7 @@ func (s *Server) handleIssueEvent(l *logrus.Entry, i github.IssueEvent) {
 			IsPR:         i.Issue.IsPullRequest(),
 			Action:       action,
 			Body:         i.Issue.Body,
-			HTMLURL:      i.Issue.Link,
+			Link:      i.Issue.Link,
 			Number:       i.Issue.Number,
 			Repo:         i.Repo,
 			User:         i.Issue.Author,
@@ -364,7 +363,7 @@ func (s *Server) handleIssueEvent(l *logrus.Entry, i github.IssueEvent) {
 			Assignees:    i.Issue.Assignees,
 			IssueState:   i.Issue.State,
 			IssueBody:    i.Issue.Body,
-			IssueHTMLURL: i.Issue.Link,
+			IssueLink: i.Issue.Link,
 		},
 	)
 }

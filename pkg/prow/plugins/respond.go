@@ -61,7 +61,7 @@ func FormatSimpleResponse(to, message string) string {
 
 // FormatICResponse nicely formats a response to an issue comment.
 func FormatICResponse(ic scm.Comment, s string) string {
-	return FormatResponseRaw(ic.Body, ic.HTMLURL, ic.Author.Login, s)
+	return FormatResponseRaw(ic.Body, ic.Link, ic.Author.Login, s)
 }
 
 // FormatResponseRaw nicely formats a response for one does not have an issue comment

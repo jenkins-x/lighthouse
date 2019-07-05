@@ -25,9 +25,9 @@ import (
 
 func TestFormatICResponse(t *testing.T) {
 	ic := scm.Comment{
-		Body:    "Looks neat.\r\nI like it.\r\n",
-		Author:  scm.User{Login: "ca"},
-		HTMLURL: "happygoodsite.com",
+		Body:   "Looks neat.\r\nI like it.\r\n",
+		Author: scm.User{Login: "ca"},
+		Link:   "happygoodsite.com",
 	}
 	s := "you are a nice person."
 	out := FormatICResponse(ic, s)

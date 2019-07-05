@@ -19,11 +19,16 @@ package hook
 // We need to empty import all enabled plugins so that they will be linked into
 // any hook binary.
 import (
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve" // Import all enabled plugins.
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/assign"
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/blockade"
 	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/cat"
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/dog"
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/help"
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/hold"
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/pony"
+	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/yuks"
 	/*
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve" // Import all enabled plugins.
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/assign"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/blockade"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/blunderbuss"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/branchcleaner"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/buildifier"
@@ -31,11 +36,8 @@ import (
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/cla"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/dco"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/docs-no-retest"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/dog"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/golint"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/heart"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/help"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/hold"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/label"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/lgtm"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/lifecycle"
@@ -43,7 +45,6 @@ import (
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/milestonestatus"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/override"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/owners-label"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/pony"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/releasenote"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/require-matching-label"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/requiresig"
@@ -58,5 +59,4 @@ import (
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/verify-owners"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/welcome"
 		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/wip"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/yuks"
 	*/)

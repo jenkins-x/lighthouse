@@ -77,7 +77,7 @@ func RegisterIssueCommentHandler(name string, fn IssueCommentHandler, help HelpP
 }
 
 // PullRequestHandler defines the function contract for a scm.PullRequest handler.
-type PullRequestHandler func(Agent, scm.PullRequest) error
+type PullRequestHandler func(Agent, scm.PullRequestHook) error
 
 // RegisterPullRequestHandler registers a plugin's scm.PullRequest handler.
 func RegisterPullRequestHandler(name string, fn PullRequestHandler, help HelpProvider) {
@@ -132,7 +132,7 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
-	GitHubClient *scm.Client
+	GitHubClient *github.GitHubClient
 	/*
 		ProwJobClient    prowv1.ProwJobInterface
 		SlackClient      *slack.Client
@@ -159,7 +159,7 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
 	return Agent{
-		GitHubClient: clientAgent.GitHubClient,
+		GitHubClient: github.ToGitHubClient(clientAgent.GitHubClient),
 		GitClient:    clientAgent.GitClient,
 		/*
 			ProwJobClient: clientAgent.ProwJobClient,
@@ -180,7 +180,7 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 // pruning comments.
 func (a *Agent) InitializeCommentPruner(org, repo string, pr int) {
 	a.commentPruner = commentpruner.NewEventClient(
-		commentpruner.ToGitHubClient(a.GitHubClient), a.Logger.WithField("client", "commentpruner"),
+		a.GitHubClient, a.Logger.WithField("client", "commentpruner"),
 		org, repo, pr,
 	)
 }
@@ -398,7 +398,7 @@ func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 			name = strings.TrimSpace(name)
 			if name != "" {
 				found := false
-				for _, p := range names {
+				for _, p := range plugins {
 					if p == name {
 						found = true
 						break
@@ -410,6 +410,7 @@ func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 			}
 		}
 	}
+	logrus.Infof("found plugins %s\n", strings.Join(plugins, ", "))
 	return plugins
 }
 

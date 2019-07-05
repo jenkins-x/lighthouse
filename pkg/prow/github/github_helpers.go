@@ -111,16 +111,6 @@ type PullRequestChange struct {
 	PreviousFilename string `json:"previous_filename"`
 }
 
-// IssueComment represents general info about an issue comment.
-type IssueComment struct {
-	ID        int       `json:"id,omitempty"`
-	Body      string    `json:"body"`
-	User      scm.User  `json:"user,omitempty"`
-	HTMLURL   string    `json:"html_url,omitempty"`
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-}
-
 // ReviewComment describes a Pull Request review.
 type ReviewComment struct {
 	ID        int       `json:"id"`
@@ -147,7 +137,7 @@ type CombinedStatus struct {
 type ListedIssueEvent struct {
 	Event     IssueEventAction `json:"event"` // This is the same as IssueEvent.Action.
 	Actor     scm.User         `json:"actor"`
-	Label     Label            `json:"label"`
+	Label     scm.Label        `json:"label"`
 	CreatedAt time.Time        `json:"created_at"`
 }
 
@@ -178,14 +168,6 @@ const (
 	// IssueActionReopened means issue was reopened.
 	IssueActionReopened = "reopened"
 )
-
-// Label describes a GitHub label.
-type Label struct {
-	URL         string `json:"url"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Color       string `json:"color"`
-}
 
 // SingleCommit is the commit part received when requesting a single commit
 // https://developer.github.com/v3/repos/commits/#get-a-single-commit
@@ -224,19 +206,19 @@ type TeamMember struct {
 // Issue and PR "closed" events are not coerced to the "deleted" Action and do not trigger
 // a GenericCommentEvent because these events don't actually remove the comment content from GH.
 type GenericCommentEvent struct {
-	IsPR         bool
-	Action       scm.Action
-	Body         string
-	HTMLURL      string
-	Number       int
-	Repo         scm.Repository
-	User         scm.User
-	IssueAuthor  scm.User
-	Assignees    []scm.User
-	IssueState   string
-	IssueBody    string
-	IssueHTMLURL string
-	GUID         string
+	IsPR        bool
+	Action      scm.Action
+	Body        string
+	Link        string
+	Number      int
+	Repo        scm.Repository
+	User        scm.User
+	IssueAuthor scm.User
+	Assignees   []scm.User
+	IssueState  string
+	IssueBody   string
+	IssueLink   string
+	GUID        string
 }
 
 // RepositoryCommit represents a commit in a repo.
@@ -302,4 +284,14 @@ func (m MissingUsers) Error() string {
 type Milestone struct {
 	Title  string `json:"title"`
 	Number int    `json:"number"`
+}
+
+// HasLabel checks if label is in the label set "issueLabels".
+func HasLabel(label string, issueLabels []scm.Label) bool {
+	for _, l := range issueLabels {
+		if strings.ToLower(l.Name) == strings.ToLower(label) {
+			return true
+		}
+	}
+	return false
 }

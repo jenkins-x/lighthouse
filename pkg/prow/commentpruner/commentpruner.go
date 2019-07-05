@@ -24,12 +24,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ToGitHubClient converts the SCM client to a comment pruner client
-func ToGitHubClient(client *scm.Client) githubClient {
-	// TODO
-	return nil
-}
-
 type githubClient interface {
 	BotName() (string, error)
 	ListIssueComments(org, repo string, number int) ([]scm.Comment, error)
