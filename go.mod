@@ -12,6 +12,7 @@ require (
 	github.com/jenkins-x/jx v0.0.0-20190703233002-36a59458a5c7
 	github.com/knative/build v0.5.0
 	github.com/pkg/errors v0.8.1
+	github.com/prometheus/client_golang v0.9.2
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5

@@ -66,7 +66,7 @@ func RegisterIssueHandler(name string, fn IssueHandler, help HelpProvider) {
 }
 
 // IssueCommentHandler defines the function contract for a scm.Comment handler.
-type IssueCommentHandler func(Agent, scm.Comment) error
+type IssueCommentHandler func(Agent, scm.IssueCommentHook) error
 
 // RegisterIssueCommentHandler registers a plugin's scm.Comment handler.
 func RegisterIssueCommentHandler(name string, fn IssueCommentHandler, help HelpProvider) {
@@ -194,7 +194,8 @@ func (a *Agent) CommentPruner() (*commentpruner.EventClient, error) {
 
 // ClientAgent contains the various clients that are attached to the Agent.
 type ClientAgent struct {
-	GitHubClient     *scm.Client
+	GitHubClient *scm.Client
+
 	KubernetesClient kubernetes.Interface
 	GitClient        git2.Client
 	/*	ProwJobClient    prowv1.ProwJobInterface
@@ -387,6 +388,10 @@ func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 	plugins = append(plugins, pa.configuration.Plugins[owner]...)
 	plugins = append(plugins, pa.configuration.Plugins[fullName]...)
 
+	if len(plugins) == 0 {
+		// TODO hack for now until we've the configuration sorted...
+		plugins = append(plugins, "cat")
+	}
 	return plugins
 }
 

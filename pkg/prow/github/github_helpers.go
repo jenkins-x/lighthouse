@@ -25,6 +25,25 @@ const (
 	StateActive = "active"
 )
 
+const (
+	// EventGUID is sent by Github in a header of every webhook request.
+	// Used as a log field across prow.
+	EventGUID = "event-GUID"
+	// PrLogField is the number of a PR.
+	// Used as a log field across prow.
+	PrLogField = "pr"
+	// OrgLogField is the organization of a PR.
+	// Used as a log field across prow.
+	OrgLogField = "org"
+	// RepoLogField is the repository of a PR.
+	// Used as a log field across prow.
+	RepoLogField = "repo"
+
+	// SearchTimeFormat is a time.Time format string for ISO8601 which is the
+	// format that GitHub requires for times specified as part of a search query.
+	SearchTimeFormat = "2006-01-02T15:04:05Z"
+)
+
 // GenericCommentEventAction coerces multiple actions into its generic equivalent.
 type GenericCommentEventAction string
 
@@ -206,7 +225,7 @@ type TeamMember struct {
 // a GenericCommentEvent because these events don't actually remove the comment content from GH.
 type GenericCommentEvent struct {
 	IsPR         bool
-	Action       GenericCommentEventAction
+	Action       scm.Action
 	Body         string
 	HTMLURL      string
 	Number       int

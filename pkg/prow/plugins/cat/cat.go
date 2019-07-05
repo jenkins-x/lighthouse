@@ -80,12 +80,11 @@ type githubClientImpl struct {
 }
 
 func (c *githubClientImpl) CreateComment(owner, repo string, number int, comment string) error {
-	ctx := context.Background()
 	fullName := fmt.Sprintf("%s/%s", owner, repo)
 	commentInput := scm.CommentInput{
 		Body: comment,
 	}
-	_, response, err := c.client.Issues.CreateComment(ctx, fullName, number, &commentInput)
+	_, response, err := c.client.Issues.CreateComment(context.Background(), fullName, number, &commentInput)
 	if err != nil {
 		var b bytes.Buffer
 		io.Copy(&b, response.Body)
@@ -213,7 +212,7 @@ func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error 
 
 func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c clowder, setKey func()) error {
 	// Only consider new comments.
-	if e.Action != github.GenericCommentActionCreated {
+	if e.Action != scm.ActionCreate {
 		return nil
 	}
 	// Make sure they are requesting a cat

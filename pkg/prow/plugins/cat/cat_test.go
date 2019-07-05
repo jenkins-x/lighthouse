@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/sirupsen/logrus"
@@ -314,7 +315,7 @@ Available variants:
 	comment := "/meowvie space"
 
 	e := &github.GenericCommentEvent{
-		Action:     github.GenericCommentActionCreated,
+		Action:     scm.ActionCreate,
 		Body:       comment,
 		Number:     5,
 		IssueState: "open",
@@ -339,7 +340,7 @@ Available variants:
 func TestCats(t *testing.T) {
 	var testcases = []struct {
 		name          string
-		action        github.GenericCommentEventAction
+		action        scm.Action
 		body          string
 		state         string
 		pr            bool
@@ -349,7 +350,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "ignore edited comment",
 			state:         "open",
-			action:        github.GenericCommentActionEdited,
+			action:        scm.ActionUpdate,
 			body:          "/meow",
 			shouldComment: false,
 			shouldError:   false,
@@ -357,7 +358,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "leave cat on pr",
 			state:         "open",
-			action:        github.GenericCommentActionCreated,
+			action:        scm.ActionCreate,
 			body:          "/meow",
 			pr:            true,
 			shouldComment: true,
@@ -366,7 +367,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "leave cat on issue",
 			state:         "open",
-			action:        github.GenericCommentActionCreated,
+			action:        scm.ActionCreate,
 			body:          "/meow",
 			shouldComment: true,
 			shouldError:   false,
@@ -374,7 +375,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "leave cat on issue, trailing space",
 			state:         "open",
-			action:        github.GenericCommentActionCreated,
+			action:        scm.ActionCreate,
 			body:          "/meow \r",
 			shouldComment: true,
 			shouldError:   false,
@@ -382,7 +383,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "categorical cat",
 			state:         "open",
-			action:        github.GenericCommentActionCreated,
+			action:        scm.ActionCreate,
 			body:          "/meow clothes",
 			shouldComment: true,
 			shouldError:   false,
@@ -390,7 +391,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "bad cat",
 			state:         "open",
-			action:        github.GenericCommentActionCreated,
+			action:        scm.ActionCreate,
 			body:          "/meow error",
 			shouldComment: true,
 			shouldError:   true,
@@ -398,7 +399,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "movie cat",
 			state:         "open",
-			action:        github.GenericCommentActionCreated,
+			action:        scm.ActionCreate,
 			body:          "/meowvie",
 			shouldComment: true,
 			shouldError:   false,
@@ -406,7 +407,7 @@ func TestCats(t *testing.T) {
 		{
 			name:          "categorical movie cat",
 			state:         "open",
-			action:        github.GenericCommentActionCreated,
+			action:        scm.ActionCreate,
 			body:          "/meowvie space",
 			shouldComment: true,
 			shouldError:   false,
