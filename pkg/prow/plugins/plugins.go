@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -388,9 +390,25 @@ func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 	plugins = append(plugins, pa.configuration.Plugins[owner]...)
 	plugins = append(plugins, pa.configuration.Plugins[fullName]...)
 
-	if len(plugins) == 0 {
-		// TODO hack for now until we've the configuration sorted...
-		plugins = append(plugins, "cat")
+	// until we have the configuration stuff setup nicely - lets add a simple way to enable plugins
+	pluginNames := os.Getenv("LIGHTHOUSE_PLUGINS")
+	if pluginNames != "" {
+		names := strings.Split(pluginNames, ",")
+		for _, name := range names {
+			name = strings.TrimSpace(name)
+			if name != "" {
+				found := false
+				for _, p := range names {
+					if p == name {
+						found = true
+						break
+					}
+				}
+				if !found {
+					plugins = append(plugins, name)
+				}
+			}
+		}
 	}
 	return plugins
 }
