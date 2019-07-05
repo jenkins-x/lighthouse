@@ -24,12 +24,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/plugins/fakegithub"
+	"github.com/jenkins-x/lighthouse/pkg/plugins/git/localgit"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	prowConf "github.com/jenkins-x/lighthouse/pkg/config"
-	"k8s.io/test-infra/prow/git/localgit"
-	"k8s.io/test-infra/prow/github/fakegithub"
 )
 
 var (
@@ -517,8 +517,8 @@ func TestLoadRepoOwners(t *testing.T) {
 			t.Errorf("Expected 'baseDir' to be populated.")
 			continue
 		}
-		if (RepoAliases != nil) != test.aliasesFileExists {
-			t.Errorf("Expected 'RepoAliases' to be poplulated: %t, but got %t.", test.aliasesFileExists, RepoAliases != nil)
+		if (ro.RepoAliases != nil) != test.aliasesFileExists {
+			t.Errorf("Expected 'RepoAliases' to be poplulated: %t, but got %t.", test.aliasesFileExists, ro.RepoAliases != nil)
 			continue
 		}
 		if ro.enableMDYAML != test.mdEnabled {

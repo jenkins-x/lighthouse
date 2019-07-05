@@ -28,8 +28,8 @@ import (
 	cfg "github.com/jenkins-x/lighthouse/pkg/config"
 )
 
-var configPath = flag.String("config", "../../config.yaml", "Path to prow config")
-var jobConfigPath = flag.String("job-config", "../../../config/jobs", "Path to prow job config")
+var configPath = flag.String("config", "../test_data/config.yaml", "Path to prow config")
+var jobConfigPath = flag.String("job-config", "../test_data/config/jobs", "Path to prow job config")
 
 // Loaded at TestMain.
 var c *cfg.Config

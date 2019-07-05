@@ -30,8 +30,8 @@ import (
 )
 
 var c *Config
-var configPath = flag.String("config", "../config.yaml", "Path to prow config")
-var jobConfigPath = flag.String("job-config", "../../config/jobs", "Path to prow job config")
+var configPath = flag.String("config", "test_data/config.yaml", "Path to prow config")
+var jobConfigPath = flag.String("job-config", "test_data/config/jobs", "Path to prow job config")
 var podRe = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`)
 
 // Returns if two brancher has overlapping branches
