@@ -50,7 +50,7 @@ vendor: $(GOVENDOR)
 build:
 	go build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
 build-linux:
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE)-linux-amd64 $(PROJECT)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
 container: build-linux
 	docker-compose build $(DOCKER_IMAGE_NAME)
 production-container: build-linux
