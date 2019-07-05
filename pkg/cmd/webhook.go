@@ -197,6 +197,25 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		w.Write([]byte("OK"))
 		return
 	}
+	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
+	if ok {
+		action := issueCommentHook.Action
+		issue := issueCommentHook.Issue
+		comment := issueCommentHook.Comment
+		sender := issueCommentHook.Sender
+		fields["Action"] = action.String()
+		fields["Issue.Number"] = issue.Number
+		fields["Issue.Title"] = issue.Title
+		fields["Issue.Body"] = issue.Body
+		fields["Comment.Body"] = comment.Body
+		fields["Sender.Body"] = sender.Name
+		fields["Sender.Login"] = sender.Login
+
+		logrus.WithFields(logrus.Fields(fields)).Info("invoking Issue Comment handler")
+
+		w.Write([]byte("OK"))
+		return
+	}
 	prCommentHook, ok := webhook.(*scm.PullRequestCommentHook)
 	if ok {
 		action := prCommentHook.Action
