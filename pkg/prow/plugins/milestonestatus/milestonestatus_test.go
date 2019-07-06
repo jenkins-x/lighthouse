@@ -22,6 +22,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -131,7 +132,7 @@ func TestMilestoneStatus(t *testing.T) {
 			Body:   tc.body,
 			Number: 1,
 			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
-			Author: scm.User{Login: tc.commenter},
+			User:   scm.User{Login: tc.commenter},
 		}
 
 		repoMilestone := map[string]plugins.Milestone{"": {MaintainersID: 0}}

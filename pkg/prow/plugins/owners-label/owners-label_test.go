@@ -22,6 +22,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -160,10 +161,8 @@ func TestHandle(t *testing.T) {
 			Number: 1,
 			Base: scm.PullRequestBranch{
 				Repo: scm.Repository{
-					Owner: scm.User{
-						Login: "org",
-					},
-					Name: "repo",
+					Namespace: "org",
+					Name:      "repo",
 				},
 			},
 			Author: scm.User{
@@ -193,7 +192,6 @@ func TestHandle(t *testing.T) {
 		}
 		pre := &scm.PullRequestHook{
 			Action:      scm.ActionOpen,
-			Number:      basicPR.Number,
 			PullRequest: basicPR,
 			Repo:        basicPR.Base.Repo,
 		}

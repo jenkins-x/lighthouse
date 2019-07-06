@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"

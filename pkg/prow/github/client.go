@@ -20,6 +20,18 @@ type GitHubClient struct {
 	client *scm.Client
 }
 
+func (c *GitHubClient) ClearMilestone(org, repo string, num int) error {
+	panic("implement me")
+}
+
+func (c *GitHubClient) SetMilestone(org, repo string, issueNum, milestoneNum int) error {
+	panic("implement me")
+}
+
+func (c *GitHubClient) ListMilestones(org, repo string) ([]Milestone, error) {
+	panic("implement me")
+}
+
 func (c *GitHubClient) GetFile(org, repo, filepath, commit string) ([]byte, error) {
 	panic("implement me")
 }

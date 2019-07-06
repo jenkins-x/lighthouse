@@ -19,6 +19,7 @@ package ownerslabel
 import (
 	"fmt"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -70,7 +71,7 @@ func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
 func handle(ghc githubClient, oc ownersClient, log *logrus.Entry, pre *scm.PullRequestHook) error {
 	org := pre.Repo.Namespace
 	repo := pre.Repo.Name
-	number := pre.Number
+	number := pre.PullRequest.Number
 
 	// First see if there are any labels requested based on the files changed.
 	changes, err := ghc.GetPullRequestChanges(org, repo, number)

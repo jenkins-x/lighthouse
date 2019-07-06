@@ -295,3 +295,14 @@ func HasLabel(label string, issueLabels []scm.Label) bool {
 	}
 	return false
 }
+
+// Possible contents for reactions.
+const (
+	ReactionThumbsUp                  = "+1"
+	ReactionThumbsDown                = "-1"
+	ReactionLaugh                     = "laugh"
+	ReactionConfused                  = "confused"
+	ReactionHeart                     = "heart"
+	ReactionHooray                    = "hooray"
+	stateCannotBeChangedMessagePrefix = "state cannot be changed."
+)
