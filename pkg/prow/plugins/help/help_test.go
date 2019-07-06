@@ -22,6 +22,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
@@ -175,7 +176,7 @@ func TestLabel(t *testing.T) {
 	for _, tc := range testcases {
 		sort.Strings(tc.expectedNewLabels)
 		fakeClient := &fakegithub.FakeClient{
-			Issues:             make(map[int]*scm.Issue),
+			Issues:             make(map[int][]*scm.Issue),
 			IssueComments:      make(map[int][]scm.Comment),
 			RepoLabelsExisting: []string{labels.Help, labels.GoodFirstIssue},
 			IssueLabelsAdded:   []string{},
@@ -189,7 +190,7 @@ func TestLabel(t *testing.T) {
 		if len(tc.issueState) == 0 {
 			tc.issueState = "open"
 		}
-		if len(tc.action) == 0 {
+		if int(tc.action) == 0 {
 			tc.action = scm.ActionCreate
 		}
 

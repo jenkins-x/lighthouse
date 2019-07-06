@@ -76,7 +76,7 @@ type FakeClient struct {
 
 	// list of commits for each PR
 	// org/repo#number:[]commit
-	CommitMap map[string][]github.RepositoryCommit
+	CommitMap map[string][]scm.Commit
 
 	// Fake remote git storage. File name are keys
 	// and values map SHA to content
@@ -422,7 +422,7 @@ func (f *FakeClient) ListMilestones(org, repo string) ([]github.Milestone, error
 }
 
 // ListPRCommits lists commits for a given PR.
-func (f *FakeClient) ListPRCommits(org, repo string, prNumber int) ([]github.RepositoryCommit, error) {
+func (f *FakeClient) ListPRCommits(org, repo string, prNumber int) ([]scm.Commit, error) {
 	k := fmt.Sprintf("%s/%s#%d", org, repo, prNumber)
 	return f.CommitMap[k], nil
 }

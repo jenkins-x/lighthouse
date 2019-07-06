@@ -145,16 +145,13 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionOpen,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},
@@ -208,16 +205,13 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionOpen,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},
@@ -271,16 +265,13 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionOpen,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},
@@ -365,10 +356,8 @@ func TestHandlePR(t *testing.T) {
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},
@@ -460,16 +449,13 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionOpen,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},
@@ -504,16 +490,13 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionReopen,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},
@@ -540,16 +523,13 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionEdited,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},
@@ -583,16 +563,13 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionOpen,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Sha: "abcd",
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 				},

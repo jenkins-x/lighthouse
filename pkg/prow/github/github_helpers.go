@@ -100,7 +100,7 @@ func ImageTooBig(url string) (bool, error) {
 
 // PullRequestChange contains information about what a PR changed.
 type PullRequestChange struct {
-	SHA              string `json:"sha"`
+	Sha              string `json:"sha"`
 	Filename         string `json:"filename"`
 	Status           string `json:"status"`
 	Additions        int    `json:"additions"`
