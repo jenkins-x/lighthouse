@@ -1,9 +1,5 @@
 package bitbucketserver
 
-import (
-	"github.com/jenkins-x/lighthouse/pkg/git"
-)
-
 // BitbucketServer is an implementation of the git.Provider interface
 type BitbucketServer struct {
 	url  string
@@ -20,7 +16,7 @@ func (bbs *BitbucketServer) Name() string {
 	return bbs.name
 }
 
-// ParseWebhook encapsulates provider-specific logic for creating a generic Webhook structure
-func (bbs *BitbucketServer) ParseWebhook(webhook string) git.Webhook {
-	return git.Webhook{}
+// ParseWebhook encapsulates provider-specific logic for creating a Webhook CRD
+func (bbs *BitbucketServer) ParseWebhook(webhook string) {
+
 }
