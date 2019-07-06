@@ -55,7 +55,7 @@ type webhooks struct {
 }
 
 // newWebhooks returns a Webhooks
-func newWebhooks(c *FooV1Client, namespace string) *webhooks {
+func newWebhooks(c *JenkinsV1Client, namespace string) *webhooks {
 	return &webhooks{
 		client: c.RESTClient(),
 		ns:     namespace,

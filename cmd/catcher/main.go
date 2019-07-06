@@ -2,11 +2,15 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 
+	clientv1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	"github.com/jenkins-x/lighthouse/pkg/git/bitbucketserver"
 	"github.com/sirupsen/logrus"
+	rest "k8s.io/client-go/rest"
 )
 
 const (
@@ -91,7 +95,35 @@ func (o *WebhookOptions) isReady() bool {
 
 // handle request for pipeline runs
 func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Request) {
-	logrus.Infof("received and parsed webhook")
+	gitProvider := bitbucketserver.Provider{
+		URL:  "bitbucket.beescloud.com",
+		Name: "bitbucketserver",
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logrus.Fatalf("error reading webhook request body: %s", err)
+	}
+
+	webhook := gitProvider.ParseWebhook(body)
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		logrus.Fatalf("config creation failed: %s", err)
+	}
+
+	client, err := clientv1.NewForConfig(config)
+	if err != nil {
+		logrus.Fatalf("client initialization failed: %s", err)
+	}
+
+	webhookInterface := client.Webhooks("lighthouse")
+
+	result, err := webhookInterface.Create(webhook)
+	if err != nil {
+		logrus.Fatalf("Webhook CRD creation failed: %s", err)
+	}
+	logrus.Infof("Webhook CRD created with type: %s", result.Spec.EventType)
 }
 
 func (o *WebhookOptions) returnError(err error, message string, w http.ResponseWriter, r *http.Request) {

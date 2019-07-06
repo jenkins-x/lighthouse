@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Foo() jenkinsio.Interface
+	Jenkins() jenkinsio.Interface
 }
 
-func (f *sharedInformerFactory) Foo() jenkinsio.Interface {
+func (f *sharedInformerFactory) Jenkins() jenkinsio.Interface {
 	return jenkinsio.New(f, f.namespace, f.tweakListOptions)
 }
