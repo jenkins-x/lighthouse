@@ -8,4 +8,4 @@ FROM scratch
 
 COPY --from=0 /go/src/github.com/jenkins-x/lighthouse/bin/lighthouse /lighthouse
 
-CMD ["/lighthouse", "pudge"]
+CMD ["/lighthouse"]
