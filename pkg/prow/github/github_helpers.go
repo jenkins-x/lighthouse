@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 )
 
 const (
@@ -135,10 +135,10 @@ type CombinedStatus struct {
 // ListedIssueEvent represents an issue event from the events API (not from a webhook payload).
 // https://developer.github.com/v3/issues/events/
 type ListedIssueEvent struct {
-	Event     IssueEventAction `json:"event"` // This is the same as IssueEvent.Action.
-	Actor     scm.User         `json:"actor"`
-	Label     scm.Label        `json:"label"`
-	CreatedAt time.Time        `json:"created_at"`
+	Event   string    `json:"event"` // This is the same as IssueEvent.Action.
+	Actor   scm.User  `json:"actor"`
+	Label   scm.Label `json:"label"`
+	Created time.Time `json:"created_at"`
 }
 
 // IssueEventAction enumerates the triggers for this
@@ -212,7 +212,7 @@ type GenericCommentEvent struct {
 	Link        string
 	Number      int
 	Repo        scm.Repository
-	User        scm.User
+	Author      scm.User
 	IssueAuthor scm.User
 	Assignees   []scm.User
 	IssueState  string

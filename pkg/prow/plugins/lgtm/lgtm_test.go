@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -487,7 +487,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 func TestLGTMFromApproveReview(t *testing.T) {
 	var testcases = []struct {
 		name          string
-		state         scm.ReviewState
+		state         string
 		action        scm.ReviewHookAction
 		body          string
 		reviewer      string

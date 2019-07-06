@@ -25,7 +25,7 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -142,7 +142,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 			log.WithError(err).Println("Failed to get a pony")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, resp))
+		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	var msg string
@@ -151,7 +151,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 	} else {
 		msg = "https://theponyapi.com appears to be down"
 	}
-	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, msg)); err != nil {
+	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/sirupsen/logrus"
 
@@ -112,7 +112,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 			Link:        ic.Comment.Link,
 			Number:      ic.Issue.Number,
 			Repo:        ic.Repo,
-			User:        ic.Comment.Author,
+			Author:      ic.Comment.Author,
 			IssueAuthor: ic.Issue.Author,
 			Assignees:   ic.Issue.Assignees,
 			IssueState:  ic.Issue.State,
@@ -148,7 +148,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re github.ReviewEvent) {
 		github.RepoLogField: re.Repo.Name,
 		github.PrLogField:   re.PullRequest.Number,
 		"review":            re.Review.ID,
-		"reviewer":          re.Review.User.Login,
+		"reviewer":          re.Review.Author.Login,
 		"url":               re.Review.Link,
 	})
 	l.Infof("Review %s.", re.Action)
@@ -182,8 +182,8 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re github.ReviewEvent) {
 			Link:      re.Review.Link,
 			Number:       re.PullRequest.Number,
 			Repo:         re.Repo,
-			User:         re.Review.User,
-			IssueAuthor:  re.PullRequest.User,
+			Author:         re.Review.Author,
+			IssueAuthor:  re.PullRequest.Author,
 			Assignees:    re.PullRequest.Assignees,
 			IssueState:   re.PullRequest.State,
 			IssueBody:    re.PullRequest.Body,
@@ -192,7 +192,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re github.ReviewEvent) {
 	)
 }
 
-func (s *Server) handleReviewCommentEvent(l *logrus.Entry, rce github.ReviewCommentEvent) {
+func (s *Server) handleReviewCommentEvent(l *logrus.Entry, rce scm.ReviewEvent) {
 	defer s.wg.Done()
 	l = l.WithFields(logrus.Fields{
 		github.OrgLogField:  rce.Repo.Namespace,
@@ -233,8 +233,8 @@ func (s *Server) handleReviewCommentEvent(l *logrus.Entry, rce github.ReviewComm
 			Link:      rce.Comment.Link,
 			Number:       rce.PullRequest.Number,
 			Repo:         rce.Repo,
-			User:         rce.Comment.Author,
-			IssueAuthor:  rce.PullRequest.User,
+			Author:         rce.Comment.Author,
+			IssueAuthor:  rce.PullRequest.Author,
 			Assignees:    rce.PullRequest.Assignees,
 			IssueState:   rce.PullRequest.State,
 			IssueBody:    rce.PullRequest.Body,
@@ -249,7 +249,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr github.PullRequestEv
 		github.OrgLogField:  pr.Repo.Namespace,
 		github.RepoLogField: pr.Repo.Name,
 		github.PrLogField:   pr.Number,
-		"author":            pr.PullRequest.User.Login,
+		"author":            pr.PullRequest.Author.Login,
 		"url":               pr.PullRequest.Link,
 	})
 	l.Infof("Pull request %s.", pr.Action)
@@ -285,8 +285,8 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr github.PullRequestEv
 			Link:      pr.PullRequest.Link,
 			Number:       pr.PullRequest.Number,
 			Repo:         pr.Repo,
-			User:         pr.PullRequest.User,
-			IssueAuthor:  pr.PullRequest.User,
+			Author:         pr.PullRequest.Author,
+			IssueAuthor:  pr.PullRequest.Author,
 			Assignees:    pr.PullRequest.Assignees,
 			IssueState:   pr.PullRequest.State,
 			IssueBody:    pr.PullRequest.Body,
@@ -358,7 +358,7 @@ func (s *Server) handleIssueEvent(l *logrus.Entry, i github.IssueEvent) {
 			Link:      i.Issue.Link,
 			Number:       i.Issue.Number,
 			Repo:         i.Repo,
-			User:         i.Issue.Author,
+			Author:         i.Issue.Author,
 			IssueAuthor:  i.Issue.Author,
 			Assignees:    i.Issue.Assignees,
 			IssueState:   i.Issue.State,

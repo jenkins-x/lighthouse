@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -274,7 +274,7 @@ func digestComment(gc githubClient, log *logrus.Entry, gce github.GenericComment
 	// We don't support linking issues to Bugs
 	if !gce.IsPR {
 		log.Debug("Bug refresh requested on an issue, ignoring")
-		return nil, gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(gce.Body, gce.Link, gce.User.Login, `Bugzilla bug referencing is only supported for Pull Requests, not issues.`))
+		return nil, gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(gce.Body, gce.Link, gce.Author.Login, `Bugzilla bug referencing is only supported for Pull Requests, not issues.`))
 	}
 
 	// Make sure the PR title is referencing a bug
@@ -283,7 +283,7 @@ func digestComment(gc githubClient, log *logrus.Entry, gce github.GenericComment
 		return nil, err
 	}
 
-	e := &event{org: org, repo: repo, baseRef: pr.Ref, number: number, body: gce.Body, htmlUrl: gce.Link, login: gce.User.Login}
+	e := &event{org: org, repo: repo, baseRef: pr.Ref, number: number, body: gce.Body, htmlUrl: gce.Link, login: gce.Author.Login}
 	mat := titleMatch.FindStringSubmatch(pr.Title)
 	if mat == nil {
 		e.missing = true

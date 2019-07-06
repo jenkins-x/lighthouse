@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -43,7 +43,7 @@ type FakeClient struct {
 	IssueCommentID      int
 	PullRequests        map[int]*scm.PullRequest
 	PullRequestChanges  map[int][]github.PullRequestChange
-	PullRequestComments map[int][]github.ReviewComment
+	PullRequestComments map[int][]scm.Review
 	ReviewID            int
 	Reviews             map[int][]scm.Review
 	CombinedStatuses    map[string]*github.CombinedStatus
@@ -107,8 +107,8 @@ func (f *FakeClient) ListIssueComments(owner, repo string, number int) ([]scm.Co
 }
 
 // ListPullRequestComments returns review comments.
-func (f *FakeClient) ListPullRequestComments(owner, repo string, number int) ([]github.ReviewComment, error) {
-	return append([]github.ReviewComment{}, f.PullRequestComments[number]...), nil
+func (f *FakeClient) ListPullRequestComments(owner, repo string, number int) ([]scm.Review, error) {
+	return append([]scm.Review{}, f.PullRequestComments[number]...), nil
 }
 
 // ListReviews returns reviews.

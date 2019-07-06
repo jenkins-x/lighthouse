@@ -20,7 +20,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
@@ -103,7 +103,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *github.Gene
 
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
-	commentAuthor := e.User.Login
+	commentAuthor := e.Author.Login
 
 	// Determine if the issue has the help and the good-first-issue label
 	issueLabels, err := gc.GetIssueLabels(org, repo, e.Number)

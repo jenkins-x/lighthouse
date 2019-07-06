@@ -19,7 +19,7 @@ package pjutil
 import (
 	"errors"
 	"fmt"
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"reflect"
@@ -273,7 +273,7 @@ func TestFilterPresubmits(t *testing.T) {
 				JobBase:  config.JobBase{Name: "should-skip"},
 				Reporter: config.Reporter{Context: "third"},
 			}, {
-				JobBase:  config.JobBase{Name: "should-skip"},
+				JobBase:  config.JobBase{Name: "should-skip2"},
 				Reporter: config.Reporter{Context: "fourth"},
 			}},
 			changesError: false,
@@ -288,7 +288,7 @@ func TestFilterPresubmits(t *testing.T) {
 				JobBase:  config.JobBase{Name: "should-skip"},
 				Reporter: config.Reporter{Context: "third"},
 			}, {
-				JobBase:  config.JobBase{Name: "should-skip"},
+				JobBase:  config.JobBase{Name: "should-skip2"},
 				Reporter: config.Reporter{Context: "fourth"},
 			}},
 			expectErr: false,

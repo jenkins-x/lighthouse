@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
@@ -81,7 +81,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 	if err != nil {
 		return err
 	}
-	if e.User.Login == botName {
+	if e.Author.Login == botName {
 		return nil
 	}
 	if e.Action != scm.ActionCreate {
@@ -138,14 +138,14 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 		log.Infof("Nonexistent labels: %v", nonexistent)
 	}
 
-	isMember, err := gc.IsMember(org, e.User.Login)
+	isMember, err := gc.IsMember(org, e.Author.Login)
 	if err != nil {
-		log.WithError(err).Errorf("Error from IsMember(%q of org %q).", e.User.Login, org)
+		log.WithError(err).Errorf("Error from IsMember(%q of org %q).", e.Author.Login, org)
 	}
 	if isMember || len(toRepeat) == 0 {
 		return nil
 	}
 
 	msg := fmt.Sprintf(chatBack, strings.Join(toRepeat, ", "))
-	return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, msg))
+	return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 }

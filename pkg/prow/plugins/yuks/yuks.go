@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -123,7 +123,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, j
 		}
 		if simple.MatchString(resp) {
 			log.Infof("Commenting with \"%s\".", resp)
-			return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, resp))
+			return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 		}
 
 		log.Errorf("joke contains invalid characters: %v", resp)

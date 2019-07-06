@@ -21,7 +21,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -122,7 +122,7 @@ func handle(h *handler) error {
 	for _, re := range matches {
 		add := re[1] != "un" // un<cmd> == !add
 		if re[2] == "" {
-			users[e.User.Login] = add
+			users[e.Author.Login] = add
 		} else {
 			for _, login := range parseLogins(re[2]) {
 				users[login] = add
@@ -152,7 +152,7 @@ func handle(h *handler) error {
 				if len(msg) == 0 {
 					return nil
 				}
-				if err := h.gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, msg)); err != nil {
+				if err := h.gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 					return fmt.Errorf("comment err: %v", err)
 				}
 				return nil

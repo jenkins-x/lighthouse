@@ -6,10 +6,10 @@ require (
 	github.com/GeertJohan/fgt v0.0.0-20160120143236-262f7b11eec0 // indirect
 	github.com/bazelbuild/buildtools v0.0.0-20180226164855-80c7f0d45d7e
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
-	github.com/drone/go-scm v1.5.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
+	github.com/jenkins-x/go-scm v1.5.1-0.20190706081135-679648236f01
 	github.com/jenkins-x/jx v0.0.0-20190703233002-36a59458a5c7
 	github.com/knative/build v0.5.0
 	github.com/mattn/go-zglob v0.0.0-20180607075734-49693fbb3fe3
@@ -36,8 +36,6 @@ require (
 	k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a // indirect
 	sigs.k8s.io/yaml v1.1.0
 )
-
-replace github.com/drone/go-scm => github.com/jstrachan/go-scm v1.5.1-0.20190706051202-a2df495e18df
 
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
 

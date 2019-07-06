@@ -21,7 +21,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 )
 

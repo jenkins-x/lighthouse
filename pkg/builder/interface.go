@@ -1,7 +1,7 @@
 package builder
 
 import (
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
 )
 

@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -190,7 +190,7 @@ func handlePullRequestReviewEvent(pc plugins.Agent, e scm.ReviewHook) error {
 
 func handleGenericComment(gc githubClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e github.GenericCommentEvent) error {
 	rc := reviewCtx{
-		author:      e.User.Login,
+		author:      e.Author.Login,
 		issueAuthor: e.IssueAuthor.Login,
 		body:        e.Body,
 		htmlURL:     e.Link,

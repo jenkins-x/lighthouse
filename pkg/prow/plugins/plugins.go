@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	git2 "github.com/jenkins-x/lighthouse/pkg/prow/git"

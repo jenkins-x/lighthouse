@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -119,7 +119,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 	}
 	found := false
 	for _, person := range milestoneMaintainers {
-		login := github.NormLogin(e.User.Login)
+		login := github.NormLogin(e.Author.Login)
 		if github.NormLogin(person.Login) == login {
 			found = true
 			break
@@ -128,7 +128,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 	if !found {
 		// not in the milestone maintainers team
 		msg := fmt.Sprintf(mustBeAuthorized, org, milestone.MaintainersTeam, org, milestone.MaintainersTeam, milestone.MaintainersFriendlyName)
-		return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, msg))
+		return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
 	milestones, err := gc.ListMilestones(org, repo)
@@ -156,7 +156,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 		sort.Strings(slice)
 
 		msg := fmt.Sprintf(invalidMilestone, strings.Join(slice, ", "), clearKeyword)
-		return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, msg))
+		return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
 	if err := gc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {

@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -112,7 +112,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 	}
 	found := false
 	for _, person := range milestoneMaintainers {
-		login := strings.ToLower(e.User.Login)
+		login := strings.ToLower(e.Author.Login)
 		if strings.ToLower(person.Login) == login {
 			found = true
 			break

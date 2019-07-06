@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -165,7 +165,7 @@ func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, 
 	}
 
 	opts := optionsForRepo(config, ce.Repo.Namespace, ce.Repo.Name)
-	if !isApprovalCommand(botName, opts.LgtmActsAsApprove, &comment{Body: ce.Body, Author: ce.User.Login}) {
+	if !isApprovalCommand(botName, opts.LgtmActsAsApprove, &comment{Body: ce.Body, Author: ce.Author.Login}) {
 		return nil
 	}
 

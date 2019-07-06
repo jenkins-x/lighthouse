@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 )
 
 // AboutThisBotWithoutCommands contains the message that explains how to interact with the bot.

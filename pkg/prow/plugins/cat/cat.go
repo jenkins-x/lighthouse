@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -213,7 +213,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c
 			log.WithError(err).Error("Failed to get cat img")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, resp))
+		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	var msg string
@@ -222,7 +222,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c
 	} else {
 		msg = "https://thecatapi.com appears to be down"
 	}
-	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.User.Login, msg)); err != nil {
+	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drone/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/yaml"
@@ -85,13 +85,13 @@ func newTestCommentTime(t time.Time, user, body string) scm.Comment {
 	return c
 }
 
-func newTestReview(user, body string, state scm.ReviewState) scm.Review {
+func newTestReview(user, body string, state string) scm.Review {
 	return scm.Review{Author: scm.User{Login: user}, Body: body, State: state}
 }
 
-func newTestReviewTime(t time.Time, user, body string, state scm.ReviewState) scm.Review {
+func newTestReviewTime(t time.Time, user, body string, state string) scm.Review {
 	r := newTestReview(user, body, state)
-	r.SubmittedAt = t
+	r.Created = t
 	return r
 }
 
@@ -102,7 +102,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	}
 	events := []github.ListedIssueEvent{
 		{
-			Event: scm.IssueActionLabeled,
+			Event: scm.ActionLabel,
 			Label: scm.Label{Name: "approved"},
 			Actor: scm.User{Login: "k8s-merge-robot"},
 		},
@@ -111,7 +111,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 		events = append(
 			events,
 			github.ListedIssueEvent{
-				Event:   scm.IssueActionLabeled,
+				Event:   scm.ActionLabel,
 				Label:   scm.Label{Name: "approved"},
 				Actor:   scm.User{Login: "human"},
 				Created: time.Now(),
@@ -1303,10 +1303,8 @@ func TestHandleGenericComment(t *testing.T) {
 	}()
 
 	repo := scm.Repository{
-		Owner: scm.User{
-			Login: "org",
-		},
-		Name: "repo",
+		Namespace: "org",
+		Name:      "repo",
 	}
 	pr := scm.PullRequest{
 		Base: scm.PullRequestBranch{
@@ -1360,8 +1358,8 @@ func TestHandleGenericComment(t *testing.T) {
 }
 
 // GitHub webhooks send state as lowercase, so force it to lowercase here.
-func stateToLower(s scm.ReviewState) scm.ReviewState {
-	return scm.ReviewState(strings.ToLower(string(s)))
+func stateToLower(s string) string {
+	return strings.ToLower(string(s))
 }
 
 func TestHandleReview(t *testing.T) {
@@ -1518,10 +1516,8 @@ func TestHandleReview(t *testing.T) {
 	}()
 
 	repo := scm.Repository{
-		Owner: scm.User{
-			Login: "org",
-		},
-		Name: "repo",
+		Namespace: "org",
+		Name:      "repo",
 	}
 	pr := scm.PullRequest{
 		Author: scm.User{
@@ -1593,6 +1589,7 @@ func TestHandlePullRequest(t *testing.T) {
 			prEvent: scm.PullRequestHook{
 				Action: scm.ActionOpen,
 				PullRequest: scm.PullRequest{
+					Number: 1,
 					Author: scm.User{
 						Login: "P.R. Author",
 					},
@@ -1601,7 +1598,6 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 					Body: "Fix everything",
 				},
-				Number: 1,
 			},
 			expectHandle: true,
 			expectState: &state{
@@ -1683,10 +1679,8 @@ func TestHandlePullRequest(t *testing.T) {
 	}()
 
 	repo := scm.Repository{
-		Owner: scm.User{
-			Login: "org",
-		},
-		Name: "repo",
+		Namespace: "org",
+		Name:      "repo",
 	}
 	fghc := &fakegithub.FakeClient{}
 
