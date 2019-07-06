@@ -20,6 +20,54 @@ type GitHubClient struct {
 	client *scm.Client
 }
 
+func (c *GitHubClient) GetFile(org, repo, filepath, commit string) ([]byte, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) CloseIssue(owner, repo string, number int) error {
+	panic("implement me")
+}
+
+func (c *GitHubClient) ClosePR(owner, repo string, number int) error {
+	panic("implement me")
+}
+
+func (c *GitHubClient) ReopenIssue(owner, repo string, number int) error {
+	panic("implement me")
+}
+
+func (c *GitHubClient) ReopenPR(owner, repo string, number int) error {
+	panic("implement me")
+}
+
+func (c *GitHubClient) GetRepoLabels(owner, repo string) ([]scm.Label, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) IsCollaborator(owner, repo, login string) (bool, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) GetSingleCommit(org, repo, SHA string) (SingleCommit, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) IsMember(org, user string) (bool, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) ListTeams(org string) ([]Team, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) ListTeamMembers(id int, role string) ([]TeamMember, error) {
+	panic("implement me")
+}
+
 func (c *GitHubClient) DeleteRef(owner, repo, ref string) error {
 	panic("implement me")
 }
@@ -100,4 +148,13 @@ func (c *GitHubClient) CreateComment(owner, repo string, number int, comment str
 		return errors.Wrapf(err, "response: %s", b.String())
 	}
 	return nil
+}
+
+// FileNotFound happens when github cannot find the file requested by GetFile().
+type FileNotFound struct {
+	org, repo, path, commit string
+}
+
+func (e *FileNotFound) Error() string {
+	return fmt.Sprintf("%s/%s/%s @ %s not found", e.org, e.repo, e.path, e.commit)
 }

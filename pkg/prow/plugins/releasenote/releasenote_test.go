@@ -157,9 +157,9 @@ func TestReleaseNoteComment(t *testing.T) {
 			Comment: scm.Comment{
 				Body: tc.commentBody,
 			},
-			Issue: github.Issue{
+			Issue: scm.Issue{
 				Body:        tc.issueBody,
-				User:        scm.User{Login: "a"},
+				Author:      scm.User{Login: "a"},
 				Number:      5,
 				State:       "open",
 				PullRequest: &struct{}{},
@@ -243,11 +243,11 @@ func newFakeClient(body, branch string, initialLabels, comments []string, parent
 				Base:   scm.PullRequestBranch{Ref: branch},
 				Number: 1,
 				Body:   body,
-				User:   scm.User{Login: "cjwagner"},
+				Author: scm.User{Login: "cjwagner"},
 			},
 			Repo: scm.Repository{
-				Owner: scm.User{Login: "org"},
-				Name:  "repo",
+				Namespace: "org",
+				Name:      "repo",
 			},
 		}
 }

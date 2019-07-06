@@ -168,7 +168,7 @@ func handle(ghc githubClient, gc *git.Client, log *logrus.Entry, e *github.Gener
 	}
 
 	// List modified files.
-	modifiedFiles, err := modifiedBazelFiles(ghc, org, repo, pr.Number, pr.Head.SHA)
+	modifiedFiles, err := modifiedBazelFiles(ghc, org, repo, pr.Number, pr.Sha)
 	if err != nil {
 		return err
 	}

@@ -36,10 +36,10 @@ const (
 
 // FakeClient is like client, but fake.
 type FakeClient struct {
-	Issues              []scm.Issue
+	Issues              map[int][]*scm.Issue
 	OrgMembers          map[string][]string
 	Collaborators       []string
-	IssueComments       map[int][]github.IssueComment
+	IssueComments       map[int][]scm.Comment
 	IssueCommentID      int
 	PullRequests        map[int]*scm.PullRequest
 	PullRequestChanges  map[int][]github.PullRequestChange
@@ -102,8 +102,8 @@ func (f *FakeClient) IsMember(org, user string) (bool, error) {
 }
 
 // ListIssueComments returns comments.
-func (f *FakeClient) ListIssueComments(owner, repo string, number int) ([]github.IssueComment, error) {
-	return append([]github.IssueComment{}, f.IssueComments[number]...), nil
+func (f *FakeClient) ListIssueComments(owner, repo string, number int) ([]scm.Comment, error) {
+	return append([]scm.Comment{}, f.IssueComments[number]...), nil
 }
 
 // ListPullRequestComments returns review comments.
@@ -124,10 +124,10 @@ func (f *FakeClient) ListIssueEvents(owner, repo string, number int) ([]github.L
 // CreateComment adds a comment to a PR
 func (f *FakeClient) CreateComment(owner, repo string, number int, comment string) error {
 	f.IssueCommentsAdded = append(f.IssueCommentsAdded, fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, comment))
-	f.IssueComments[number] = append(f.IssueComments[number], github.IssueComment{
-		ID:   f.IssueCommentID,
-		Body: comment,
-		User: scm.User{Login: botName},
+	f.IssueComments[number] = append(f.IssueComments[number], scm.Comment{
+		ID:     f.IssueCommentID,
+		Body:   comment,
+		Author: scm.User{Login: botName},
 	})
 	f.IssueCommentID++
 	return nil
@@ -171,7 +171,7 @@ func (f *FakeClient) DeleteComment(owner, repo string, ID int) error {
 }
 
 // DeleteStaleComments deletes comments flagged by isStale.
-func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments []github.IssueComment, isStale func(github.IssueComment) bool) error {
+func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments []scm.Comment, isStale func(scm.Comment) bool) error {
 	if comments == nil {
 		comments, _ = f.ListIssueComments(org, repo, number)
 	}
@@ -247,25 +247,25 @@ func (f *FakeClient) GetCombinedStatus(owner, repo, ref string) (*github.Combine
 }
 
 // GetRepoLabels gets labels in a repo.
-func (f *FakeClient) GetRepoLabels(owner, repo string) ([]github.Label, error) {
-	la := []github.Label{}
+func (f *FakeClient) GetRepoLabels(owner, repo string) ([]scm.Label, error) {
+	la := []scm.Label{}
 	for _, l := range f.RepoLabelsExisting {
-		la = append(la, github.Label{Name: l})
+		la = append(la, scm.Label{Name: l})
 	}
 	return la, nil
 }
 
 // GetIssueLabels gets labels on an issue
-func (f *FakeClient) GetIssueLabels(owner, repo string, number int) ([]github.Label, error) {
+func (f *FakeClient) GetIssueLabels(owner, repo string, number int) ([]scm.Label, error) {
 	re := regexp.MustCompile(fmt.Sprintf(`^%s/%s#%d:(.*)$`, owner, repo, number))
-	la := []github.Label{}
+	la := []scm.Label{}
 	allLabels := sets.NewString(f.IssueLabelsExisting...)
 	allLabels.Insert(f.IssueLabelsAdded...)
 	allLabels.Delete(f.IssueLabelsRemoved...)
 	for _, l := range allLabels.List() {
 		groups := re.FindStringSubmatch(l)
 		if groups != nil {
-			la = append(la, github.Label{Name: groups[1]})
+			la = append(la, scm.Label{Name: groups[1]})
 		}
 	}
 	return la, nil
@@ -302,7 +302,11 @@ func (f *FakeClient) RemoveLabel(owner, repo string, number int, label string) e
 
 // FindIssues returns f.Issues
 func (f *FakeClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
-	return f.Issues, nil
+	var issues []scm.Issue
+	for _, issue := range f.Issues {
+		issues = append(issues, *issue)
+	}
+	return issues, nil
 }
 
 // AssignIssue adds assignees.

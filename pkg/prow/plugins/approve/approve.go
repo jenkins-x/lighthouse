@@ -413,7 +413,7 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 	comments := append(commentsFromReviewComments(reviewComments), commentsFromIssueComments...)
 	comments = append(comments, commentsFromReviews(reviews)...)
 	sort.SliceStable(comments, func(i, j int) bool {
-		return comments[i].CreatedAt.Before(comments[j].CreatedAt)
+		return comments[i].Created.Before(comments[j].Created)
 	})
 	approveComments := filterComments(comments, approvalMatcher(botName, opts.LgtmActsAsApprove, opts.ConsiderReviewState()))
 	addApprovers(&approversHandler, approveComments, pr.author, opts.ConsiderReviewState())
@@ -643,7 +643,7 @@ func optionsForRepo(config *plugins.Configuration, org, repo string) *plugins.Ap
 type comment struct {
 	Body        string
 	Author      string
-	CreatedAt   time.Time
+	Created     time.Time
 	Link        string
 	ID          int
 	ReviewState string
@@ -654,11 +654,11 @@ func commentFromIssueComment(ic *scm.Comment) *comment {
 		return nil
 	}
 	return &comment{
-		Body:      ic.Body,
-		Author:    ic.Author.Login,
-		CreatedAt: ic.Created,
-		Link:      ic.Link,
-		ID:        ic.ID,
+		Body:    ic.Body,
+		Author:  ic.Author.Login,
+		Created: ic.Created,
+		Link:    ic.Link,
+		ID:      ic.ID,
 	}
 }
 
@@ -675,11 +675,11 @@ func commentFromReviewComment(rc *scm.Review) *comment {
 		return nil
 	}
 	return &comment{
-		Body:      rc.Body,
-		Author:    rc.Author.Login,
-		CreatedAt: rc.Created,
-		Link:      rc.Link,
-		ID:        rc.ID,
+		Body:    rc.Body,
+		Author:  rc.Author.Login,
+		Created: rc.Created,
+		Link:    rc.Link,
+		ID:      rc.ID,
 	}
 }
 
@@ -698,7 +698,7 @@ func commentFromReview(review *scm.Review) *comment {
 	return &comment{
 		Body:        review.Body,
 		Author:      review.Author.Login,
-		CreatedAt:   review.Created,
+		Created:     review.Created,
 		Link:        review.Link,
 		ID:          review.ID,
 		ReviewState: review.State,

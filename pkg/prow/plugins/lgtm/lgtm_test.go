@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -266,7 +267,7 @@ func TestLGTMComment(t *testing.T) {
 						Ref: "master",
 					},
 					Head: scm.PullRequestBranch{
-						SHA: SHA,
+						Sha: SHA,
 					},
 				},
 			},
@@ -282,11 +283,11 @@ func TestLGTMComment(t *testing.T) {
 			IssueState:  "open",
 			IsPR:        true,
 			Body:        tc.body,
-			User:        scm.User{Login: tc.commenter},
+			Author:      scm.User{Login: tc.commenter},
 			IssueAuthor: scm.User{Login: "author"},
 			Number:      5,
 			Assignees:   []scm.User{{Login: "collab1"}, {Login: "assignee1"}},
-			Repo:        scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+			Repo:        scm.Repository{Namespace: "org", Name: "repo"},
 			Link:        "<url>",
 		}
 		if tc.hasLGTM {
@@ -425,7 +426,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			PullRequests: map[int]*scm.PullRequest{
 				5: {
 					Head: scm.PullRequestBranch{
-						SHA: SHA,
+						Sha: SHA,
 					},
 				},
 			},
@@ -436,11 +437,11 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			IssueState:  "open",
 			IsPR:        true,
 			Body:        tc.body,
-			User:        scm.User{Login: tc.commenter},
+			Author:      scm.User{Login: tc.commenter},
 			IssueAuthor: scm.User{Login: "author"},
 			Number:      5,
 			Assignees:   []scm.User{{Login: "collab1"}, {Login: "assignee1"}},
-			Repo:        scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+			Repo:        scm.Repository{Namespace: "org", Name: "repo"},
 			Link:        "<url>",
 		}
 		botName, err := fc.BotName()
@@ -448,7 +449,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			t.Fatalf("For case %s, could not get Bot nam", tc.name)
 		}
 		ic := scm.Comment{
-			User: scm.User{
+			Author: scm.User{
 				Login: botName,
 			},
 			Body: removeLGTMLabelNoti,
@@ -633,7 +634,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 			PullRequests: map[int]*scm.PullRequest{
 				5: {
 					Head: scm.PullRequestBranch{
-						SHA: SHA,
+						Sha: SHA,
 					},
 				},
 			},
@@ -641,9 +642,9 @@ func TestLGTMFromApproveReview(t *testing.T) {
 		}
 		e := &scm.ReviewHook{
 			Action:      tc.action,
-			Review:      scm.Review{Body: tc.body, State: tc.state, Link: "<url>", User: scm.User{Login: tc.reviewer}},
-			PullRequest: scm.PullRequest{User: scm.User{Login: "author"}, Assignees: []scm.User{{Login: "collab1"}, {Login: "assignee1"}}, Number: 5},
-			Repo:        scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+			Review:      scm.Review{Body: tc.body, State: tc.state, Link: "<url>", Author: scm.User{Login: tc.reviewer}},
+			PullRequest: scm.PullRequest{Author: scm.User{Login: "author"}, Assignees: []scm.User{{Login: "collab1"}, {Login: "assignee1"}}, Number: 5},
+			Repo:        scm.Repository{Namespace: "org", Name: "repo"},
 		}
 		if tc.hasLGTM {
 			fc.IssueLabelsAdded = append(fc.IssueLabelsAdded, "org/repo#5:"+LGTMLabel)
@@ -728,14 +729,12 @@ func TestHandlePullRequest(t *testing.T) {
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 					Head: scm.PullRequestBranch{
-						SHA: SHA,
+						Sha: SHA,
 					},
 				},
 			},
@@ -743,8 +742,8 @@ func TestHandlePullRequest(t *testing.T) {
 			issueComments: map[int][]scm.Comment{
 				101: {
 					{
-						Body: removeLGTMLabelNoti,
-						User: scm.User{Login: fakegithub.Bot},
+						Body:   removeLGTMLabelNoti,
+						Author: scm.User{Login: fakegithub.Bot},
 					},
 				},
 			},
@@ -758,16 +757,14 @@ func TestHandlePullRequest(t *testing.T) {
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
-					User: scm.User{
+					Author: scm.User{
 						Login: "sig-lead",
 					},
-					MergeSHA: &SHA,
+					MergeSha: &SHA,
 				},
 			},
 			trustedTeam:      "Leads",
@@ -787,18 +784,18 @@ func TestHandlePullRequest(t *testing.T) {
 							Name: "kubernetes",
 						},
 					},
-					User: scm.User{
+					Author: scm.User{
 						Login: "sig-lead",
 					},
-					MergeSHA: &SHA,
+					MergeSha: &SHA,
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
 			issueComments: map[int][]scm.Comment{
 				101: {
 					{
-						Body: removeLGTMLabelNoti,
-						User: scm.User{Login: fakegithub.Bot},
+						Body:   removeLGTMLabelNoti,
+						Author: scm.User{Login: fakegithub.Bot},
 					},
 				},
 			},
@@ -818,18 +815,18 @@ func TestHandlePullRequest(t *testing.T) {
 							Name: "kubernetes",
 						},
 					},
-					User: scm.User{
+					Author: scm.User{
 						Login: "sig-lead",
 					},
-					MergeSHA: &SHA,
+					MergeSha: &SHA,
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
 			issueComments: map[int][]scm.Comment{
 				101: {
 					{
-						Body: removeLGTMLabelNoti,
-						User: scm.User{Login: fakegithub.Bot},
+						Body:   removeLGTMLabelNoti,
+						Author: scm.User{Login: fakegithub.Bot},
 					},
 				},
 			},
@@ -858,15 +855,15 @@ func TestHandlePullRequest(t *testing.T) {
 						},
 					},
 					Head: scm.PullRequestBranch{
-						SHA: SHA,
+						Sha: SHA,
 					},
 				},
 			},
 			issueComments: map[int][]scm.Comment{
 				101: {
 					{
-						Body: fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-						User: scm.User{Login: fakegithub.Bot},
+						Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
+						Author: scm.User{Login: fakegithub.Bot},
 					},
 				},
 			},
@@ -887,7 +884,7 @@ func TestHandlePullRequest(t *testing.T) {
 						},
 					},
 					Head: scm.PullRequestBranch{
-						SHA: SHA,
+						Sha: SHA,
 					},
 				},
 			},
@@ -895,10 +892,10 @@ func TestHandlePullRequest(t *testing.T) {
 			issueComments: map[int][]scm.Comment{
 				101: {
 					{
-						Body:      fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-						User:      scm.User{Login: fakegithub.Bot},
-						CreatedAt: time.Date(1981, 2, 21, 12, 30, 0, 0, time.UTC),
-						UpdatedAt: time.Date(1981, 2, 21, 12, 31, 0, 0, time.UTC),
+						Body:    fmt.Sprintf(addLGTMLabelNotification, treeSHA),
+						Author:  scm.User{Login: fakegithub.Bot},
+						Created: time.Date(1981, 2, 21, 12, 30, 0, 0, time.UTC),
+						Updated: time.Date(1981, 2, 21, 12, 31, 0, 0, time.UTC),
 					},
 				},
 			},
@@ -912,26 +909,24 @@ func TestHandlePullRequest(t *testing.T) {
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 					Head: scm.PullRequestBranch{
-						SHA: SHA,
+						Sha: SHA,
 					},
 				},
 			},
 			issueComments: map[int][]scm.Comment{
 				101: {
 					{
-						Body: fmt.Sprintf(addLGTMLabelNotification, "older_treeSHA"),
-						User: scm.User{Login: fakegithub.Bot},
+						Body:   fmt.Sprintf(addLGTMLabelNotification, "older_treeSHA"),
+						Author: scm.User{Login: fakegithub.Bot},
 					},
 					{
-						Body: fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-						User: scm.User{Login: fakegithub.Bot},
+						Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
+						Author: scm.User{Login: fakegithub.Bot},
 					},
 				},
 			},
@@ -948,7 +943,7 @@ func TestHandlePullRequest(t *testing.T) {
 							Ref: "master",
 						},
 						Head: scm.PullRequestBranch{
-							SHA: SHA,
+							Sha: SHA,
 						},
 					},
 				},
@@ -1060,7 +1055,7 @@ func TestAddTreeHashComment(t *testing.T) {
 							Ref: "master",
 						},
 						Head: scm.PullRequestBranch{
-							SHA: SHA,
+							Sha: SHA,
 						},
 					},
 				},
@@ -1114,8 +1109,8 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		IssueComments: map[int][]scm.Comment{
 			101: {
 				{
-					Body: fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-					User: scm.User{Login: fakegithub.Bot},
+					Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
+					Author: scm.User{Login: fakegithub.Bot},
 				},
 			},
 		},

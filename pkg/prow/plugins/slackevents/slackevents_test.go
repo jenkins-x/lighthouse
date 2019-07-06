@@ -297,7 +297,7 @@ func TestComment(t *testing.T) {
 		e := github.GenericCommentEvent{
 			Action: tc.action,
 			Body:   tc.body,
-			User:   scm.User{Login: tc.commenter},
+			Author: scm.User{Login: tc.commenter},
 		}
 
 		if err := echoToSlack(client, e); err != nil {

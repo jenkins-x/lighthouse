@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -243,7 +244,7 @@ func handlePullRequestReview(gc githubClient, config *plugins.Configuration, own
 	// The review webhook returns state as lowercase, while the review API
 	// returns state as uppercase. Uppercase the value here so it always
 	// matches the constant.
-	reviewState := scm.ReviewState(strings.ToUpper(string(e.Review.State)))
+	reviewState := strings.ToUpper(string(e.Review.State))
 
 	// If we review with Approve, add lgtm if necessary.
 	// If we review with Request Changes, remove lgtm if necessary.
@@ -364,9 +365,9 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				if err != nil {
 					log.WithError(err).Error("Failed to get pull request.")
 				}
-				commit, err := gc.GetSingleCommit(org, repoName, pr.Head.SHA)
+				commit, err := gc.GetSingleCommit(org, repoName, pr.Sha)
 				if err != nil {
-					log.WithField("sha", pr.Head.SHA).WithError(err).Error("Failed to get commit.")
+					log.WithField("sha", pr.Sha).WithError(err).Error("Failed to get commit.")
 				}
 				treeHash := commit.Commit.Tree.SHA
 				log.WithField("tree", treeHash).Info("Adding comment to store tree-hash.")
@@ -453,16 +454,16 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 		for i := len(comments) - 1; i >= 0; i-- {
 			comment := comments[i]
 			m := addLGTMLabelNotificationRe.FindStringSubmatch(comment.Body)
-			if comment.User.Login == botname && m != nil && comment.UpdatedAt.Equal(comment.CreatedAt) {
+			if comment.Author.Login == botname && m != nil && comment.Updated.Equal(comment.Created) {
 				lastLgtmTreeHash = m[1]
 				break
 			}
 		}
 		if lastLgtmTreeHash != "" {
 			// Get the current tree-hash
-			commit, err := gc.GetSingleCommit(org, repo, pe.PullRequest.Head.SHA)
+			commit, err := gc.GetSingleCommit(org, repo, pe.PullRequest.Sha)
 			if err != nil {
-				log.WithField("sha", pe.PullRequest.Head.SHA).WithError(err).Error("Failed to get commit.")
+				log.WithField("sha", pe.PullRequest.Sha).WithError(err).Error("Failed to get commit.")
 			}
 			treeHash := commit.Commit.Tree.SHA
 			if treeHash == lastLgtmTreeHash {

@@ -187,7 +187,7 @@ func takeAction(gc gitHubClient, cp commentPruner, l *logrus.Entry, org, repo st
 		}
 		if existingStatus != github.StatusSuccess {
 			l.Debugf("Setting DCO status context to succeeded")
-			if err := gc.CreateStatus(org, repo, pr.Head.SHA, github.Status{
+			if err := gc.CreateStatus(org, repo, pr.Sha, github.Status{
 				Context:     dcoContextName,
 				State:       github.StatusSuccess,
 				TargetURL:   targetURL,
@@ -218,7 +218,7 @@ func takeAction(gc gitHubClient, cp commentPruner, l *logrus.Entry, org, repo st
 	}
 	if existingStatus != github.StatusFailure {
 		l.Debugf("Setting DCO status context to failed")
-		if err := gc.CreateStatus(org, repo, pr.Head.SHA, github.Status{
+		if err := gc.CreateStatus(org, repo, pr.Sha, github.Status{
 			Context:     dcoContextName,
 			State:       github.StatusFailure,
 			TargetURL:   targetURL,
@@ -255,7 +255,7 @@ func handle(gc gitHubClient, cp commentPruner, log *logrus.Entry, org, repo stri
 		return err
 	}
 
-	existingStatus, err := checkExistingStatus(gc, l, org, repo, pr.Head.SHA)
+	existingStatus, err := checkExistingStatus(gc, l, org, repo, pr.Sha)
 	if err != nil {
 		l.WithError(err).Infof("Error checking existing PR status")
 		return err

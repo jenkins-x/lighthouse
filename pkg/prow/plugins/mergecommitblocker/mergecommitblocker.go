@@ -96,7 +96,7 @@ func handle(ghc githubClient, gc *git.Client, cp pruneClient, log *logrus.Entry,
 		return err
 	}
 	// We are guaranteed to have both Base.SHA and Head.SHA
-	target, head := pre.PullRequest.Base.SHA, pre.PullRequest.Head.SHA
+	target, head := pre.PullRequest.Base.SHA, pre.PullRequest.Sha
 	existMergeCommits, err := r.MergeCommitsExistBetween(target, head)
 	if err != nil {
 		return err

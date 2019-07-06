@@ -26,9 +26,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	prowapi "github.com/jenkins-x/lighthouse/pkg/prow/apis/prowjobs/v1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 const (
@@ -70,7 +70,7 @@ func (c *fakeClient) CreateStatus(org, repo, ref string, s github.Status) error 
 		return fmt.Errorf("bad org: %s", org)
 	case repo != fakeRepo:
 		return fmt.Errorf("bad repo: %s", repo)
-	case ref != fakeSHA:
+	case ref != fakeSha:
 		return fmt.Errorf("bad ref: %s", ref)
 	}
 	c.statuses[s.Context] = s
@@ -89,7 +89,7 @@ func (c *fakeClient) GetPullRequest(org, repo string, number int) (*scm.PullRequ
 		return nil, fmt.Errorf("bad number: %d", number)
 	}
 	var pr scm.PullRequest
-	pr.Head.SHA = fakeSHA
+	pr.Sha = fakeSHA
 	return &pr, nil
 }
 
@@ -99,7 +99,7 @@ func (c *fakeClient) ListStatuses(org, repo, ref string) ([]github.Status, error
 		return nil, fmt.Errorf("bad org: %s", org)
 	case repo != fakeRepo:
 		return nil, fmt.Errorf("bad repo: %s", repo)
-	case ref != fakeSHA:
+	case ref != fakeSha:
 		return nil, fmt.Errorf("bad ref: %s", ref)
 	}
 	var out []github.Status

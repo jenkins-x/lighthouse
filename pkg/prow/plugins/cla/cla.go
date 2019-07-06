@@ -87,7 +87,7 @@ type gitHubClient interface {
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetPullRequest(owner, repo string, number int) (*scm.PullRequest, error)
-	FindIssues(query, sort string, asc bool) ([]github.Issue, error)
+	FindIssues(query, sort string, asc bool) ([]scm.Issue, error)
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	GetCombinedStatus(org, repo, ref string) (*github.CombinedStatus, error)
 }
@@ -120,7 +120,7 @@ func handle(gc gitHubClient, log *logrus.Entry, se github.StatusEvent) error {
 	repo := se.Repo.Name
 	log.Info("Searching for PRs matching the commit.")
 
-	var issues []github.Issue
+	var issues []scm.Issue
 	var err error
 	for i := 0; i < maxRetries; i++ {
 		issues, err = gc.FindIssues(fmt.Sprintf("%s repo:%s/%s type:pr state:open", se.SHA, org, repo), "", false)
@@ -158,7 +158,7 @@ func handle(gc gitHubClient, log *logrus.Entry, se github.StatusEvent) error {
 		}
 
 		// Check if this is the latest commit in the PR.
-		if pr.Head.SHA != se.SHA {
+		if pr.Sha != se.SHA {
 			l.Info("Event is not for PR HEAD, skipping.")
 			continue
 		}
@@ -233,7 +233,7 @@ func handleComment(gc gitHubClient, log *logrus.Entry, e *github.GenericCommentE
 	}
 
 	// Check for the cla in past commit statuses, and add/remove corresponding cla label if necessary.
-	ref := pr.Head.SHA
+	ref := pr.Sha
 	combined, err := gc.GetCombinedStatus(org, repo, ref)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get statuses on %s/%s#%d", org, repo, number)

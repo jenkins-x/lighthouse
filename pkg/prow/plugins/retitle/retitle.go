@@ -70,8 +70,8 @@ type githubClient interface {
 	CreateComment(owner, repo string, number int, comment string) error
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	EditPullRequest(org, repo string, number int, pr *scm.PullRequest) (*scm.PullRequest, error)
-	GetIssue(org, repo string, number int) (*github.Issue, error)
-	EditIssue(org, repo string, number int, issue *github.Issue) (*github.Issue, error)
+	GetIssue(org, repo string, number int) (*scm.Issue, error)
+	EditIssue(org, repo string, number int, issue *scm.Issue) (*scm.Issue, error)
 }
 
 func handleGenericComment(gc githubClient, isTrusted func(string) (bool, error), log *logrus.Entry, gce github.GenericCommentEvent) error {

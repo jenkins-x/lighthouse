@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	prowapi "github.com/jenkins-x/lighthouse/pkg/prow/apis/prowjobs/v1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -29,6 +28,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 const (
@@ -254,7 +254,7 @@ func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []config.Presubmit
 			continue
 		}
 		c.Logger.Infof("Skipping %s build.", job.Name)
-		if err := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.SHA, skippedStatusFor(job.Context)); err != nil {
+		if err := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Sha, skippedStatusFor(job.Context)); err != nil {
 			errors = append(errors, err)
 		}
 	}

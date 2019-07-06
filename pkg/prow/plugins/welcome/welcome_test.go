@@ -23,11 +23,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -88,7 +88,7 @@ func (fc *fakeClient) ClearPRs() {
 
 // FindIssues fails if the query does not match the expected query regex and
 // looks up issues based on parsing the expected query format
-func (fc *fakeClient) FindIssues(query, sort string, asc bool) ([]github.Issue, error) {
+func (fc *fakeClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
 	fields := expectedQueryRegex.FindStringSubmatch(query)
 	if fields == nil || len(fields) != 4 {
 		return nil, fmt.Errorf("invalid query: `%s` does not match expected regex `%s`", query, expectedQueryRegex.String())
@@ -97,9 +97,9 @@ func (fc *fakeClient) FindIssues(query, sort string, asc bool) ([]github.Issue, 
 	owner, repo, author := fields[1], fields[2], fields[3]
 	key := fmt.Sprintf("%s,%s,%s", owner, repo, author)
 
-	issues := []github.Issue{}
+	issues := []scm.Issue{}
 	for _, number := range fc.prs[key].List() {
-		issues = append(issues, github.Issue{
+		issues = append(issues, scm.Issue{
 			Number: number,
 		})
 	}
@@ -109,17 +109,15 @@ func (fc *fakeClient) FindIssues(query, sort string, asc bool) ([]github.Issue, 
 func makeFakePullRequestEvent(owner, repo, author string, number int, action scm.Action) scm.PullRequestHook {
 	return scm.PullRequestHook{
 		Action: action,
-		Number: number,
 		PullRequest: scm.PullRequest{
+			Number: number,
 			Base: scm.PullRequestBranch{
 				Repo: scm.Repository{
-					Owner: scm.User{
-						Login: owner,
-					},
-					Name: repo,
+					Namespace: owner,
+					Name:      repo,
 				},
 			},
-			User: scm.User{
+			Author: scm.User{
 				Login: author,
 				Name:  author + "fullname",
 			},

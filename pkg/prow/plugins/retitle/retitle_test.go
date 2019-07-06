@@ -139,7 +139,7 @@ Instructions for interacting with me using PR comments are available [here](http
 					},
 					Name: "repo",
 				},
-				User: scm.User{
+				Author: scm.User{
 					Login: "user",
 				},
 				Number:     1,
@@ -149,7 +149,7 @@ Instructions for interacting with me using PR comments are available [here](http
 				Body:       testCase.body,
 			}
 			gc := fakegithub.FakeClient{
-				Issues:        map[int]*github.Issue{1: {Title: "Old"}},
+				Issues:        map[int]*scm.Issue{1: {Title: "Old"}},
 				PullRequests:  map[int]*scm.PullRequest{1: {Title: "Old"}},
 				IssueComments: map[int][]scm.Comment{},
 			}

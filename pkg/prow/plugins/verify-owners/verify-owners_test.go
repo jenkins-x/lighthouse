@@ -269,14 +269,14 @@ func TestHandle(t *testing.T) {
 		}
 		sha, err := lg.RevParse("org", "repo", "HEAD")
 		if err != nil {
-			t.Fatalf("Getting commit SHA: %v", err)
+			t.Fatalf("Getting commit Sha: %v", err)
 		}
 		pre := &scm.PullRequestHook{
 			Number: pr,
 			PullRequest: scm.PullRequest{
-				User: scm.User{Login: "author"},
+				Author: scm.User{Login: "author"},
 				Head: scm.PullRequestBranch{
-					SHA: sha,
+					Sha: sha,
 				},
 			},
 			Repo: scm.Repository{FullName: "org/repo"},

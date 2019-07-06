@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
@@ -434,7 +435,7 @@ func TestLabel(t *testing.T) {
 		t.Logf("Running scenario %q", tc.name)
 		sort.Strings(tc.expectedNewLabels)
 		fakeClient := &fakegithub.FakeClient{
-			Issues:             make(map[int]*github.Issue),
+			Issues:             make(map[int]*scm.Issue),
 			IssueComments:      make(map[int][]scm.Comment),
 			RepoLabelsExisting: tc.repoLabels,
 			OrgMembers:         map[string][]string{"org": {orgMember}},
@@ -449,8 +450,8 @@ func TestLabel(t *testing.T) {
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,
-			Repo:   scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
-			User:   scm.User{Login: tc.commenter},
+			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
+			Author: scm.User{Login: tc.commenter},
 		}
 		err := handle(fakeClient, logrus.WithField("plugin", pluginName), tc.extraLabels, e)
 		if err != nil {

@@ -80,7 +80,7 @@ var e = &github.GenericCommentEvent{
 	Action:     scm.ActionCreate,
 	IssueState: "open",
 	Body:       "/buildify",
-	User:       scm.User{Login: "mattmoor"},
+	Author:     scm.User{Login: "mattmoor"},
 	Number:     42,
 	IsPR:       true,
 	Repo: scm.Repository{

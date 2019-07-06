@@ -62,17 +62,17 @@ func TestHandlePullRequest(t *testing.T) {
 			name: "should not do anything on pull request edited",
 			pullRequestEvent: scm.PullRequestHook{
 				Action:      scm.ActionEdited,
-				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 		},
 		{
 			name: "should add 'no' label & status context and add a comment if no commits have sign off",
 			pullRequestEvent: scm.PullRequestHook{
 				Action:      scm.ActionOpen,
-				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
 			},
 			issueState: "open",
 			hasDCONo:   false,
@@ -100,10 +100,10 @@ Instructions for interacting with me using PR comments are available [here](http
 			name: "should add 'no' label & status context, remove old labels and add a comment if no commits have sign off",
 			pullRequestEvent: scm.PullRequestHook{
 				Action:      scm.ActionOpen,
-				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
 			},
 			issueState: "open",
 			hasDCONo:   false,
@@ -132,10 +132,10 @@ Instructions for interacting with me using PR comments are available [here](http
 			name: "should update comment if labels and status are up to date and sign off is failing",
 			pullRequestEvent: scm.PullRequestHook{
 				Action:      scm.ActionOpen,
-				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
 			},
 			issueState: "open",
 			hasDCONo:   true,
@@ -163,11 +163,11 @@ Instructions for interacting with me using PR comments are available [here](http
 			name: "should mark the PR as failed if just one commit is missing sign-off",
 			pullRequestEvent: scm.PullRequestHook{
 				Action:      scm.ActionOpen,
-				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha1", Commit: github.GitCommit{Message: "Signed-off-by: someone"}},
-				{SHA: "sha", Commit: github.GitCommit{Message: "not signed off"}},
+				{Sha: "sha1", Commit: github.GitCommit{Message: "Signed-off-by: someone"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "not signed off"}},
 			},
 			issueState: "open",
 			hasDCONo:   false,
@@ -196,10 +196,10 @@ Instructions for interacting with me using PR comments are available [here](http
 			name: "should add label and update status context if all commits are signed-off",
 			pullRequestEvent: scm.PullRequestHook{
 				Action:      scm.ActionOpen,
-				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha", Commit: github.GitCommit{Message: "Signed-off-by: someone"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "Signed-off-by: someone"}},
 			},
 			issueState: "open",
 			hasDCONo:   false,
@@ -212,10 +212,10 @@ Instructions for interacting with me using PR comments are available [here](http
 			name: "should add label and update status context and remove old labels if all commits are signed-off",
 			pullRequestEvent: scm.PullRequestHook{
 				Action:      scm.ActionOpen,
-				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				PullRequest: scm.PullRequest{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha", Commit: github.GitCommit{Message: "Signed-off-by: someone"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "Signed-off-by: someone"}},
 			},
 			issueState: "open",
 			hasDCONo:   true,
@@ -251,7 +251,7 @@ Instructions for interacting with me using PR comments are available [here](http
 					{Context: dcoContextName, State: tc.status},
 				}
 				combinedStatus = &github.CombinedStatus{
-					SHA: "sha",
+					Sha: "sha",
 					Statuses: []github.Status{
 						{Context: dcoContextName, State: tc.status},
 					},
@@ -353,7 +353,7 @@ func TestHandleComment(t *testing.T) {
 				Number:     3,
 			},
 			pullRequests: map[int]*scm.PullRequest{
-				3: {Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				3: {Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 		},
 		{
@@ -366,10 +366,10 @@ func TestHandleComment(t *testing.T) {
 				Number:     3,
 			},
 			pullRequests: map[int]*scm.PullRequest{
-				3: {Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				3: {Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "not a sign off"}},
 			},
 			issueState: "open",
 			hasDCONo:   false,
@@ -419,7 +419,7 @@ Instructions for interacting with me using PR comments are available [here](http
 					{Context: dcoContextName, State: tc.status},
 				}
 				combinedStatus = &github.CombinedStatus{
-					SHA: "sha",
+					Sha: "sha",
 					Statuses: []github.Status{
 						{Context: dcoContextName, State: tc.status},
 					},

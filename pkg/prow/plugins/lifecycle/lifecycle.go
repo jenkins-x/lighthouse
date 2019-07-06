@@ -19,6 +19,7 @@ package lifecycle
 import (
 	"regexp"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/genfiles"
@@ -88,7 +89,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		owner = pe.PullRequest.Base.Repo.Namespace
 		repo  = pe.PullRequest.Base.Repo.Name
 		num   = pe.PullRequest.Number
-		sha   = pe.PullRequest.Base.SHA
+		sha   = pe.PullRequest.Base.Sha
 	)
 
 	gf, err := genfiles.NewGroup(gc, owner, repo, sha)

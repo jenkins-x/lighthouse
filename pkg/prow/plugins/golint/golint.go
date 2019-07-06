@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/lint"
 
@@ -214,7 +215,7 @@ func handle(minimumConfidence float64, ghc githubClient, gc *git.Client, log *lo
 	}
 
 	// List modified files.
-	modifiedFiles, err := modifiedGoFiles(ghc, org, repo, pr.Number, pr.Head.SHA)
+	modifiedFiles, err := modifiedGoFiles(ghc, org, repo, pr.Number, pr.Sha)
 	if err != nil {
 		return err
 	}

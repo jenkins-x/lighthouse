@@ -34,7 +34,7 @@ func TestCLALabels(t *testing.T) {
 		context       string
 		state         string
 		statusSHA     string
-		issues        []github.Issue
+		issues        []scm.Issue
 		pullRequests  []scm.PullRequest
 		labels        []string
 		addedLabels   []string
@@ -59,12 +59,12 @@ func TestCLALabels(t *testing.T) {
 				"when not the head commit in a PR",
 			context:   "cla/linuxfoundation",
 			state:     "success",
-			statusSHA: "a",
-			issues: []github.Issue{
+			statusSha: "a",
+			issues: []scm.Issue{
 				{Number: 3, State: "open", Labels: []scm.Label{}},
 			},
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "b"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "b"}},
 			},
 			addedLabels:   nil,
 			removedLabels: nil,
@@ -74,12 +74,12 @@ func TestCLALabels(t *testing.T) {
 				"when not the head commit in a PR",
 			context:   "cla/linuxfoundation",
 			state:     "failure",
-			statusSHA: "a",
-			issues: []github.Issue{
+			statusSha: "a",
+			issues: []scm.Issue{
 				{Number: 3, State: "open", Labels: []scm.Label{{Name: labels.ClaYes}}},
 			},
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "b"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "b"}},
 			},
 			addedLabels:   nil,
 			removedLabels: nil,
@@ -88,12 +88,12 @@ func TestCLALabels(t *testing.T) {
 			name:      "cla/linuxfoundation status on head commit of PR adds the cla-yes label when its state is \"success\"",
 			context:   "cla/linuxfoundation",
 			state:     "success",
-			statusSHA: "a",
-			issues: []github.Issue{
+			statusSha: "a",
+			issues: []scm.Issue{
 				{Number: 3, State: "open", Labels: []scm.Label{}},
 			},
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "a"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "a"}},
 			},
 			addedLabels:   []string{fmt.Sprintf("/#3:%s", labels.ClaYes)},
 			removedLabels: nil,
@@ -102,12 +102,12 @@ func TestCLALabels(t *testing.T) {
 			name:      "cla/linuxfoundation status on head commit of PR does nothing when pending",
 			context:   "cla/linuxfoundation",
 			state:     "pending",
-			statusSHA: "a",
-			issues: []github.Issue{
+			statusSha: "a",
+			issues: []scm.Issue{
 				{Number: 3, State: "open", Labels: []scm.Label{}},
 			},
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "a"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "a"}},
 			},
 			addedLabels:   nil,
 			removedLabels: nil,
@@ -116,12 +116,12 @@ func TestCLALabels(t *testing.T) {
 			name:      "cla/linuxfoundation status success removes \"cncf-cla: no\" label",
 			context:   "cla/linuxfoundation",
 			state:     "success",
-			statusSHA: "a",
-			issues: []github.Issue{
+			statusSha: "a",
+			issues: []scm.Issue{
 				{Number: 3, State: "open", Labels: []scm.Label{{Name: labels.ClaNo}}},
 			},
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "a"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "a"}},
 			},
 			addedLabels:   []string{fmt.Sprintf("/#3:%s", labels.ClaYes)},
 			removedLabels: []string{fmt.Sprintf("/#3:%s", labels.ClaNo)},
@@ -130,12 +130,12 @@ func TestCLALabels(t *testing.T) {
 			name:      "cla/linuxfoundation status failure removes \"cncf-cla: yes\" label",
 			context:   "cla/linuxfoundation",
 			state:     "failure",
-			statusSHA: "a",
-			issues: []github.Issue{
+			statusSha: "a",
+			issues: []scm.Issue{
 				{Number: 3, State: "open", Labels: []scm.Label{{Name: labels.ClaYes}}},
 			},
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "a"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "a"}},
 			},
 			addedLabels:   []string{fmt.Sprintf("/#3:%s", labels.ClaNo)},
 			removedLabels: []string{fmt.Sprintf("/#3:%s", labels.ClaYes)},
@@ -147,7 +147,7 @@ func TestCLALabels(t *testing.T) {
 			pullRequests[pr.Number] = &pr
 		}
 
-		issues := make(map[int]*github.Issue)
+		issues := make(map[int]*scm.Issue)
 		for _, issue := range tc.issues {
 			issues[issue.Number] = &issue
 		}
@@ -159,7 +159,7 @@ func TestCLALabels(t *testing.T) {
 		}
 		se := github.StatusEvent{
 			Context: tc.context,
-			SHA:     tc.statusSHA,
+			Sha:     tc.statusSHA,
 			State:   tc.state,
 		}
 		if err := handle(fc, logrus.WithField("plugin", pluginName), se); err != nil {
@@ -198,11 +198,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "random/context",
 			state:      "success",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 		},
 		{
@@ -210,11 +210,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "success",
 			issueState: "closed",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 		},
 		{
@@ -222,11 +222,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "success",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/shrug",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 		},
 		{
@@ -234,11 +234,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "pending",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/shrug",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 		},
 		{
@@ -246,11 +246,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "success",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 
 			addedLabel: fmt.Sprintf("/#3:%s", labels.ClaYes),
@@ -260,11 +260,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "success",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			hasCLANo: true,
 
@@ -276,11 +276,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "failure",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 
 			addedLabel: fmt.Sprintf("/#3:%s", labels.ClaNo),
@@ -290,11 +290,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "failure",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			hasCLAYes: true,
 
@@ -306,11 +306,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "success",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			hasCLANo:  true,
 			hasCLAYes: true,
@@ -322,11 +322,11 @@ func TestCheckCLA(t *testing.T) {
 			context:    "cla/linuxfoundation",
 			state:      "failure",
 			issueState: "open",
-			SHA:        "sha",
+			Sha:        "sha",
 			action:     "created",
 			body:       "/check-cla",
 			pullRequests: []scm.PullRequest{
-				{Number: 3, Head: scm.PullRequestBranch{SHA: "sha"}},
+				{Number: 3, Head: scm.PullRequestBranch{Sha: "sha"}},
 			},
 			hasCLANo:  true,
 			hasCLAYes: true,
@@ -351,7 +351,7 @@ func TestCheckCLA(t *testing.T) {
 				IssueState: tc.issueState,
 			}
 			fc.CombinedStatuses = map[string]*github.CombinedStatus{
-				tc.SHA: {
+				tc.Sha: {
 					Statuses: []github.Status{
 						{State: tc.state, Context: tc.context},
 					},

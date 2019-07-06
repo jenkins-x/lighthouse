@@ -139,6 +139,8 @@ type Presubmit struct {
 
 	RegexpChangeMatcher
 
+	Reporter
+
 	// We'll set these when we load it.
 	re *regexp.Regexp // from Trigger.
 }
@@ -202,6 +204,14 @@ type RegexpChangeMatcher struct {
 	// If any file in the changeset matches this regex, the job will be triggered
 	RunIfChanged string         `json:"run_if_changed,omitempty"`
 	reChanges    *regexp.Regexp // from RunIfChanged
+}
+
+type Reporter struct {
+	// Context is the name of the GitHub status context for the job.
+	// Defaults: the same as the name of the job.
+	Context string `json:"context,omitempty"`
+	// SkipReport skips commenting and setting status on GitHub.
+	SkipReport bool `json:"skip_report,omitempty"`
 }
 
 // RunsAgainstAllBranch returns true if there are both branches and skip_branches are unset

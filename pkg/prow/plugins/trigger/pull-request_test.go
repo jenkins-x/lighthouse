@@ -267,12 +267,12 @@ func TestHandlePullRequest(t *testing.T) {
 			PullRequests: map[int]*scm.PullRequest{
 				0: {
 					Number: 0,
-					User:   scm.User{Login: tc.Author},
+					Author: scm.User{Login: tc.Author},
 					Base: scm.PullRequestBranch{
 						Ref: "master",
 						Repo: scm.Repository{
-							Owner: scm.User{Login: "org"},
-							Name:  "repo",
+							Namespace: "org",
+							Name:      "repo",
 						},
 					},
 				},
@@ -308,7 +308,7 @@ func TestHandlePullRequest(t *testing.T) {
 			Label:  scm.Label{Name: tc.prLabel},
 			PullRequest: scm.PullRequest{
 				Number: 0,
-				User:   scm.User{Login: tc.Author},
+				Author: scm.User{Login: tc.Author},
 				Base: scm.PullRequestBranch{
 					Ref: "master",
 					Repo: scm.Repository{

@@ -90,7 +90,7 @@ func helpProvider(config *plugins.Configuration, _ []string) (*pluginhelp.Plugin
 		nil
 }
 
-func handleIssue(pc plugins.Agent, ie github.IssueEvent) error {
+func handleIssue(pc plugins.Agent, ie scm.IssueEvent) error {
 	cp, err := pc.CommentPruner()
 	if err != nil {
 		return err
@@ -116,17 +116,17 @@ func hasSigLabel(labels []scm.Label) bool {
 	return false
 }
 
-func shouldReact(mentionRe *regexp.Regexp, ie *github.IssueEvent) bool {
+func shouldReact(mentionRe *regexp.Regexp, ie *scm.IssueEvent) bool {
 	// Ignore PRs and closed issues.
 	if ie.Issue.IsPullRequest() || ie.Issue.State == "closed" {
 		return false
 	}
 
 	switch ie.Action {
-	case github.IssueActionOpened:
+	case scm.IssueActionOpened:
 		// Don't react if the new issue has a /sig command or sig team mention.
 		return !mentionRe.MatchString(ie.Issue.Body) && !sigCommandRe.MatchString(ie.Issue.Body)
-	case github.IssueActionLabeled, github.IssueActionUnlabeled:
+	case scm.IssueActionLabeled, scm.IssueActionUnlabeled:
 		// Only react to (un)label events for sig labels.
 		return isSigLabel(ie.Label.Name)
 	default:
@@ -143,7 +143,7 @@ func shouldReact(mentionRe *regexp.Regexp, ie *github.IssueEvent) bool {
 // (5) if the issue has none of the labels, add the needs-sig label and comment
 // (6) if the issue has only the sig label, do nothing
 // (7) if the issue has only the needs-sig label, do nothing
-func handle(log *logrus.Entry, ghc githubClient, cp commentPruner, ie *github.IssueEvent, mentionRe *regexp.Regexp) error {
+func handle(log *logrus.Entry, ghc githubClient, cp commentPruner, ie *scm.IssueEvent, mentionRe *regexp.Regexp) error {
 	// Ignore PRs, closed issues, and events that aren't new issues or sig label
 	// changes.
 	if !shouldReact(mentionRe, ie) {
@@ -181,7 +181,7 @@ func handle(log *logrus.Entry, ghc githubClient, cp commentPruner, ie *github.Is
 // shouldPrune finds comments left by this plugin.
 func shouldPrune(log *logrus.Entry, botName string) func(scm.Comment) bool {
 	return func(comment scm.Comment) bool {
-		if comment.User.Login != botName {
+		if comment.Author.Login != botName {
 			return false
 		}
 		return strings.Contains(comment.Body, needsSIGMessage)

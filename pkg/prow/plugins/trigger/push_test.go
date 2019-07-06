@@ -22,12 +22,12 @@ import (
 	"github.com/sirupsen/logrus"
 	clienttesting "k8s.io/client-go/testing"
 
-	prowapi "github.com/jenkins-x/lighthouse/pkg/prow/apis/prowjobs/v1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 )
@@ -49,7 +49,7 @@ func TestCreateRefs(t *testing.T) {
 		Org:      "kubernetes",
 		Repo:     "repo",
 		BaseRef:  "master",
-		BaseSHA:  "abcdef",
+		BaseSha:  "abcdef",
 		BaseLink: "https://example.com/kubernetes/repo/compare/abcdee...abcdef",
 	}
 	if actual := createRefs(pe); !equality.Semantic.DeepEqual(expected, actual) {

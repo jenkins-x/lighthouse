@@ -73,9 +73,9 @@ func (f *fakeGHClient) ListIssueComments(org, repo string, number int) ([]scm.Co
 	var ghComments []scm.Comment
 	for id, c := range f.comments {
 		ghComment := scm.Comment{
-			ID:   id,
-			Body: c,
-			User: scm.User{Login: "foo"},
+			ID:     id,
+			Body:   c,
+			Author: scm.User{Login: "foo"},
 		}
 		ghComments = append(ghComments, ghComment)
 	}
@@ -196,7 +196,7 @@ func TestHandle(t *testing.T) {
 	addCommit("ouch")
 	masterSHA, err := lg.RevParse("foo", "bar", "HEAD")
 	if err != nil {
-		t.Fatalf("Fetching SHA: %v", err)
+		t.Fatalf("Fetching Sha: %v", err)
 	}
 
 	for _, tt := range testcases {
@@ -204,7 +204,7 @@ func TestHandle(t *testing.T) {
 		tt.mergeOrRebase()
 		prSHA, err := lg.RevParse("foo", "bar", "HEAD")
 		if err != nil {
-			t.Fatalf("Fetching SHA: %v", err)
+			t.Fatalf("Fetching Sha: %v", err)
 		}
 		pre := &scm.PullRequestHook{
 			Action: scm.ActionOpen,
@@ -215,14 +215,14 @@ func TestHandle(t *testing.T) {
 						Owner: scm.User{Login: "foo"},
 						Name:  "bar",
 					},
-					SHA: masterSHA,
+					Sha: masterSHA,
 				},
 				Head: scm.PullRequestBranch{
 					Repo: scm.Repository{
 						Owner: scm.User{Login: "foo"},
 						Name:  "bar",
 					},
-					SHA: prSHA,
+					Sha: prSHA,
 				},
 			},
 		}

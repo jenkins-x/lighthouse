@@ -37,7 +37,7 @@ require (
 	sigs.k8s.io/yaml v1.1.0
 )
 
-replace github.com/drone/go-scm => github.com/jstrachan/go-scm v1.5.1-0.20190705152554-76f621fd0f2e
+replace github.com/drone/go-scm => github.com/jstrachan/go-scm v1.5.1-0.20190706051202-a2df495e18df
 
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
 

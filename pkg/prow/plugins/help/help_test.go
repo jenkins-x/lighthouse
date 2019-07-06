@@ -175,7 +175,7 @@ func TestLabel(t *testing.T) {
 	for _, tc := range testcases {
 		sort.Strings(tc.expectedNewLabels)
 		fakeClient := &fakegithub.FakeClient{
-			Issues:             make(map[int]*github.Issue),
+			Issues:             make(map[int]*scm.Issue),
 			IssueComments:      make(map[int][]scm.Comment),
 			RepoLabelsExisting: []string{labels.Help, labels.GoodFirstIssue},
 			IssueLabelsAdded:   []string{},
@@ -199,8 +199,8 @@ func TestLabel(t *testing.T) {
 			Action:     tc.action,
 			Body:       tc.body,
 			Number:     1,
-			Repo:       scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
-			User:       scm.User{Login: "Alice"},
+			Repo:       scm.Repository{Namespace: "org", Name: "repo"},
+			Author:     scm.User{Login: "Alice"},
 		}
 		err := handle(fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
 		if err != nil {

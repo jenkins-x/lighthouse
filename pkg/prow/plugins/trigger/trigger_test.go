@@ -28,12 +28,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	clienttesting "k8s.io/client-go/testing"
 
-	prowapi "github.com/jenkins-x/lighthouse/pkg/prow/apis/prowjobs/v1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 func TestHelpProvider(t *testing.T) {
@@ -296,7 +296,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 			Ref: "branch",
 		},
 		Head: scm.PullRequestBranch{
-			SHA: "foobar1",
+			Sha: "foobar1",
 		},
 	}
 
@@ -330,7 +330,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 			t.Errorf("%s: expected no error but got one: %v", testCase.name, err)
 		}
 
-		if actual, expected := fakeGitHubClient.CreatedStatuses[pr.Head.SHA], testCase.expectedStatuses; !reflect.DeepEqual(actual, expected) {
+		if actual, expected := fakeGitHubClient.CreatedStatuses[pr.Sha], testCase.expectedStatuses; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: created incorrect statuses: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 
@@ -411,7 +411,7 @@ func TestRunRequested(t *testing.T) {
 			Ref: "branch",
 		},
 		Head: scm.PullRequestBranch{
-			SHA: "foobar1",
+			Sha: "foobar1",
 		},
 	}
 

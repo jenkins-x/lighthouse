@@ -42,7 +42,7 @@ func (fp *fakePruner) PruneComments(shouldPrune func(scm.Comment) bool) {}
 func TestHandle(t *testing.T) {
 	tests := []struct {
 		name           string
-		action         github.IssueEventAction
+		action         scm.IssueEventAction
 		isPR           bool
 		body           string
 		initialLabels  []string
@@ -53,69 +53,69 @@ func TestHandle(t *testing.T) {
 	}{
 		{
 			name:          "ignore PRs",
-			action:        github.IssueActionLabeled,
+			action:        scm.IssueActionLabeled,
 			isPR:          true,
 			initialLabels: []string{helpWanted},
 		},
 		{
 			name:          "issue closed action",
-			action:        github.IssueActionClosed,
+			action:        scm.IssueActionClosed,
 			initialLabels: []string{helpWanted},
 		},
 		{
 			name:          "issue has sig/foo label, no needs-sig label",
-			action:        github.IssueActionLabeled,
+			action:        scm.IssueActionLabeled,
 			initialLabels: []string{helpWanted, sigApps},
 		},
 		{
 			name:          "issue has no sig/foo label, no needs-sig label",
-			action:        github.IssueActionUnlabeled,
+			action:        scm.IssueActionUnlabeled,
 			initialLabels: []string{helpWanted},
 			expectComment: true,
 			expectedAdd:   labels.NeedsSig,
 		},
 		{
 			name:          "issue has needs-sig label, no sig/foo label",
-			action:        github.IssueActionLabeled,
+			action:        scm.IssueActionLabeled,
 			initialLabels: []string{helpWanted, labels.NeedsSig},
 		},
 		{
 			name:           "issue has both needs-sig label and sig/foo label",
-			action:         github.IssueActionLabeled,
+			action:         scm.IssueActionLabeled,
 			initialLabels:  []string{helpWanted, labels.NeedsSig, sigApps},
 			expectedRemove: labels.NeedsSig,
 		},
 		{
 			name:          "issue has committee/foo label, no needs-sig label",
-			action:        github.IssueActionLabeled,
+			action:        scm.IssueActionLabeled,
 			initialLabels: []string{helpWanted, committeeSteering},
 		},
 		{
 			name:           "issue has both needs-sig label and committee/foo label",
-			action:         github.IssueActionLabeled,
+			action:         scm.IssueActionLabeled,
 			initialLabels:  []string{helpWanted, labels.NeedsSig, committeeSteering},
 			expectedRemove: labels.NeedsSig,
 		},
 		{
 			name:          "issue has wg/foo label, no needs-sig label",
-			action:        github.IssueActionLabeled,
+			action:        scm.IssueActionLabeled,
 			initialLabels: []string{helpWanted, wgContainerIdentity},
 		},
 		{
 			name:           "issue has both needs-sig label and wg/foo label",
-			action:         github.IssueActionLabeled,
+			action:         scm.IssueActionLabeled,
 			initialLabels:  []string{helpWanted, labels.NeedsSig, wgContainerIdentity},
 			expectedRemove: labels.NeedsSig,
 		},
 		{
 			name:          "issue has no sig/foo label, no needs-sig label, body mentions sig",
-			action:        github.IssueActionOpened,
+			action:        scm.IssueActionOpened,
 			body:          "I am mentioning a sig @kubernetes/sig-testing-misc more stuff.",
 			initialLabels: []string{helpWanted},
 		},
 		{
 			name:          "issue has no sig/foo label, no needs-sig label, body uses /sig command",
-			action:        github.IssueActionOpened,
+			action:        scm.IssueActionOpened,
 			body:          "I am using a sig command.\n/sig testing",
 			initialLabels: []string{helpWanted},
 		},
@@ -127,14 +127,14 @@ func TestHandle(t *testing.T) {
 		// label is added.
 		{
 			name:           "ignore non-sig label added events",
-			action:         github.IssueActionLabeled,
+			action:         scm.IssueActionLabeled,
 			body:           "I am using a sig command.\n/kind bug\n/sig testing",
 			initialLabels:  []string{helpWanted},
 			unrelatedLabel: true,
 		},
 		{
 			name:           "ignore non-sig label removed events",
-			action:         github.IssueActionUnlabeled,
+			action:         scm.IssueActionUnlabeled,
 			body:           "I am using a sig command.\n/kind bug\n/sig testing",
 			initialLabels:  []string{helpWanted},
 			unrelatedLabel: true,
@@ -155,16 +155,16 @@ func TestHandle(t *testing.T) {
 		if test.isPR {
 			pr = &struct{}{}
 		}
-		ie := &github.IssueEvent{
+		ie := &scm.IssueEvent{
 			Action: test.action,
-			Issue: github.Issue{
+			Issue: scm.Issue{
 				Labels:      initLabels,
 				Number:      5,
 				PullRequest: pr,
 				Body:        test.body,
 			},
 		}
-		if test.action == github.IssueActionUnlabeled || test.action == github.IssueActionLabeled {
+		if test.action == scm.IssueActionUnlabeled || test.action == scm.IssueActionLabeled {
 			if test.unrelatedLabel {
 				ie.Label.Name = labels.Bug
 			} else {

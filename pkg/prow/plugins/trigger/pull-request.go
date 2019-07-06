@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -89,7 +90,7 @@ func handlePR(c Client, trigger plugins.Trigger, pr scm.PullRequestHook) error {
 			// we're detecting this best-effort so we can forget about
 			// the event
 			return nil
-		} else if changes.Ref.From != "" || changes.Base.Sha.From != "" {
+		} else if changes.Base.Ref.From != "" || changes.Base.Sha.From != "" {
 			// the base of the PR changed and we need to re-test it
 			return buildAllIfTrusted(c, trigger, pr)
 		}
@@ -115,7 +116,7 @@ type login string
 func orgRepoAuthor(pr scm.PullRequest) (string, string, login) {
 	org := pr.Base.Repo.Namespace
 	repo := pr.Base.Repo.Name
-	author := pr.User.Login
+	author := pr.Author.Login
 	return org, repo, login(author)
 }
 

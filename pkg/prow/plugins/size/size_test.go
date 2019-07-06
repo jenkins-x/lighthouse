@@ -19,6 +19,7 @@ package size
 import (
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -127,14 +128,14 @@ func TestHandlePR(t *testing.T) {
 				getFileErr: &github.FileNotFound{},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "barfoo",
 						Additions: 3,
 						Deletions: 4,
@@ -148,7 +149,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",
@@ -176,28 +177,28 @@ func TestHandlePR(t *testing.T) {
 				},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "barfoo",
 						Additions: 50,
 						Deletions: 0,
 						Changes:   50,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
@@ -211,7 +212,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",
@@ -239,28 +240,28 @@ func TestHandlePR(t *testing.T) {
 				},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "barfoo",
 						Additions: 50,
 						Deletions: 0,
 						Changes:   50,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
@@ -274,7 +275,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",
@@ -314,42 +315,42 @@ func TestHandlePR(t *testing.T) {
 				},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{ // Notice "barfoo" is the only relevant change.
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "barfoo",
 						Additions: 5,
 						Deletions: 0,
 						Changes:   5,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "mypath1",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "mydir/mypath3",
 						Additions: 300,
 						Deletions: 0,
@@ -359,11 +360,10 @@ func TestHandlePR(t *testing.T) {
 			},
 			event: scm.PullRequestHook{
 				Action: scm.ActionOpen,
-				Number: 101,
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",
@@ -415,42 +415,42 @@ func TestHandlePR(t *testing.T) {
 				},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{ // Notice "barfoo" is the only relevant change.
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "barfoo",
 						Additions: 5,
 						Deletions: 0,
 						Changes:   5,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "mypath1",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "mydir/mypath3",
 						Additions: 300,
 						Deletions: 0,
@@ -464,7 +464,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",
@@ -487,14 +487,14 @@ func TestHandlePR(t *testing.T) {
 				getFileErr: &github.FileNotFound{},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "barfoo",
 						Additions: 3,
 						Deletions: 4,
@@ -508,7 +508,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",
@@ -530,7 +530,7 @@ func TestHandlePR(t *testing.T) {
 				getFileErr: &github.FileNotFound{},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 30,
 						Deletions: 40,
@@ -544,7 +544,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",
@@ -566,14 +566,14 @@ func TestHandlePR(t *testing.T) {
 				getFileErr: &github.FileNotFound{},
 				prChanges: []github.PullRequestChange{
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
-						SHA:       "abcd",
+						Sha:       "abcd",
 						Filename:  "barfoo",
 						Additions: 3,
 						Deletions: 4,
@@ -587,7 +587,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",

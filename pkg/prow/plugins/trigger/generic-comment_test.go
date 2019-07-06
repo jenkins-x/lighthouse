@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	clienttesting "k8s.io/client-go/testing"
 
-	prowapi "github.com/jenkins-x/lighthouse/pkg/prow/apis/prowjobs/v1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -34,6 +33,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 func issueLabels(labels ...string) []string {
@@ -781,16 +781,16 @@ func TestHandleGenericComment(t *testing.T) {
 			OrgMembers:      map[string][]string{"org": {"trusted-member"}},
 			PullRequests: map[int]*scm.PullRequest{
 				0: {
-					User:   scm.User{Login: tc.PRAuthor},
+					Author: scm.User{Login: tc.PRAuthor},
 					Number: 0,
 					Head: scm.PullRequestBranch{
-						SHA: "cafe",
+						Sha: "cafe",
 					},
 					Base: scm.PullRequestBranch{
 						Ref: tc.Branch,
 						Repo: scm.Repository{
-							Owner: scm.User{Login: "org"},
-							Name:  "repo",
+							Namespace: "org",
+							Name:      "repo",
 						},
 					},
 				},
@@ -857,7 +857,7 @@ func TestHandleGenericComment(t *testing.T) {
 				FullName: "org/repo",
 			},
 			Body:        tc.Body,
-			User:        scm.User{Login: tc.Author},
+			Author:      scm.User{Login: tc.Author},
 			IssueAuthor: scm.User{Login: tc.PRAuthor},
 			IssueState:  tc.State,
 			IsPR:        tc.IsPR,

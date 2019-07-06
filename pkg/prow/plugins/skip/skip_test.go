@@ -66,7 +66,7 @@ func TestSkipStatus(t *testing.T) {
 				Action:     scm.ActionCreate,
 				Body:       "/skip",
 				Number:     1,
-				Repo:       scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
 			existing: []github.Status{
 				{
@@ -122,7 +122,7 @@ func TestSkipStatus(t *testing.T) {
 				Action:     scm.ActionCreate,
 				Body:       "/skip",
 				Number:     1,
-				Repo:       scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
 			existing: []github.Status{
 				{
@@ -166,7 +166,7 @@ func TestSkipStatus(t *testing.T) {
 				Action:     scm.ActionCreate,
 				Body:       "/skip",
 				Number:     1,
-				Repo:       scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
 			existing: []github.Status{},
 
@@ -190,7 +190,7 @@ func TestSkipStatus(t *testing.T) {
 				Action:     scm.ActionCreate,
 				Body:       "/skip",
 				Number:     1,
-				Repo:       scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
 			existing: []github.Status{
 				{
@@ -227,7 +227,7 @@ func TestSkipStatus(t *testing.T) {
 				Body: `/skip
 /test job`,
 				Number: 1,
-				Repo:   scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 			},
 			existing: []github.Status{
 				{
@@ -267,7 +267,7 @@ func TestSkipStatus(t *testing.T) {
 				Action:     scm.ActionCreate,
 				Body:       "/skip",
 				Number:     1,
-				Repo:       scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
 			existing: []github.Status{
 				{
@@ -301,7 +301,7 @@ func TestSkipStatus(t *testing.T) {
 			PullRequests: map[int]*scm.PullRequest{
 				test.event.Number: {
 					Head: scm.PullRequestBranch{
-						SHA: test.sha,
+						Sha: test.sha,
 					},
 				},
 			},

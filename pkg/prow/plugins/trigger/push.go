@@ -17,10 +17,10 @@ limitations under the License.
 package trigger
 
 import (
-	prowapi "github.com/jenkins-x/lighthouse/pkg/prow/apis/prowjobs/v1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 func listPushEventChanges(pe github.PushEvent) config.ChangedFilesProvider {
@@ -50,7 +50,7 @@ func createRefs(pe github.PushEvent) prowapi.Refs {
 		Org:      pe.Repo.Owner.Name,
 		Repo:     pe.Repo.Name,
 		BaseRef:  pe.Branch(),
-		BaseSHA:  pe.After,
+		BaseSha:  pe.After,
 		BaseLink: pe.Compare,
 	}
 }

@@ -19,6 +19,7 @@ package lifecycle
 import (
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -131,7 +132,7 @@ func TestReopenComment(t *testing.T) {
 			Action:      tc.action,
 			IssueState:  tc.state,
 			Body:        tc.body,
-			User:        scm.User{Login: tc.commenter},
+			Author:      scm.User{Login: tc.commenter},
 			Number:      5,
 			IssueAuthor: scm.User{Login: "author"},
 		}

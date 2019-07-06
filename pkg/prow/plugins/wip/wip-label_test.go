@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 )
 

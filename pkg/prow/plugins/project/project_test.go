@@ -321,7 +321,7 @@ func TestProjectCommand(t *testing.T) {
 			Number:    1,
 			IssueLink: "1",
 			Repo:      scm.Repository{Owner: scm.User{Login: tc.org}, Name: tc.repo},
-			User:      scm.User{Login: tc.commenter},
+			Author:    scm.User{Login: tc.commenter},
 		}
 		if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, projectConfig); err != nil {
 			t.Errorf("(%s): Unexpected error from handle: %v.", tc.name, err)

@@ -378,7 +378,7 @@ func TestHandlePR(t *testing.T) {
 				PullRequest: scm.PullRequest{
 					Number: 101,
 					Base: scm.PullRequestBranch{
-						SHA: "abcd",
+						Sha: "abcd",
 						Repo: scm.Repository{
 							Owner: scm.User{
 								Login: "kubernetes",

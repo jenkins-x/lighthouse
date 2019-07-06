@@ -393,8 +393,8 @@ func TestAssignAndReview(t *testing.T) {
 		fc := newFakeClient([]string{"hello-world", "allow_underscore", "cjwagner", "merlin", "kubernetes/sig-testing-misc"})
 		e := github.GenericCommentEvent{
 			Body:   tc.body,
-			User:   scm.User{Login: tc.commenter},
-			Repo:   scm.Repository{Name: "repo", Owner: scm.User{Login: "org"}},
+			Author: scm.User{Login: tc.commenter},
+			Repo:   scm.Repository{Name: "repo", Namespace: "org"},
 			Number: 5,
 		}
 		if err := handle(newAssignHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {

@@ -19,6 +19,7 @@ package shrug
 import (
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -78,7 +79,7 @@ func TestShrugComment(t *testing.T) {
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 5,
-			Repo:   scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 		}
 		if tc.hasShrug {
 			fc.IssueLabelsAdded = []string{"org/repo#5:" + labels.Shrug}

@@ -76,17 +76,17 @@ func TestPluginConfig(t *testing.T) {
 }
 
 func newTestComment(user, body string) scm.Comment {
-	return scm.Comment{User: scm.User{Login: user}, Body: body}
+	return scm.Comment{Author: scm.User{Login: user}, Body: body}
 }
 
 func newTestCommentTime(t time.Time, user, body string) scm.Comment {
 	c := newTestComment(user, body)
-	c.CreatedAt = t
+	c.Created = t
 	return c
 }
 
 func newTestReview(user, body string, state scm.ReviewState) scm.Review {
-	return scm.Review{User: scm.User{Login: user}, Body: body, State: state}
+	return scm.Review{Author: scm.User{Login: user}, Body: body, State: state}
 }
 
 func newTestReviewTime(t time.Time, user, body string, state scm.ReviewState) scm.Review {
@@ -102,7 +102,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	}
 	events := []github.ListedIssueEvent{
 		{
-			Event: github.IssueActionLabeled,
+			Event: scm.IssueActionLabeled,
 			Label: scm.Label{Name: "approved"},
 			Actor: scm.User{Login: "k8s-merge-robot"},
 		},
@@ -111,10 +111,10 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 		events = append(
 			events,
 			github.ListedIssueEvent{
-				Event:     github.IssueActionLabeled,
-				Label:     scm.Label{Name: "approved"},
-				Actor:     scm.User{Login: "human"},
-				CreatedAt: time.Now(),
+				Event:   scm.IssueActionLabeled,
+				Label:   scm.Label{Name: "approved"},
+				Actor:   scm.User{Login: "human"},
+				Created: time.Now(),
 			},
 		)
 	}
@@ -1189,7 +1189,7 @@ func TestHandleGenericComment(t *testing.T) {
 				IsPR:   true,
 				Body:   "/approve",
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "author",
 				},
 				IssueBody: "Fix everything",
@@ -1216,7 +1216,7 @@ func TestHandleGenericComment(t *testing.T) {
 				IsPR:   true,
 				Body:   "/approve",
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "author",
 				},
 			},
@@ -1229,7 +1229,7 @@ func TestHandleGenericComment(t *testing.T) {
 				IsPR:   false,
 				Body:   "/approve",
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "author",
 				},
 			},
@@ -1242,7 +1242,7 @@ func TestHandleGenericComment(t *testing.T) {
 				IsPR:   true,
 				Body:   "/approve",
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "author",
 				},
 				IssueState: "closed",
@@ -1256,7 +1256,7 @@ func TestHandleGenericComment(t *testing.T) {
 				IsPR:   true,
 				Body:   "stuff",
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "author",
 				},
 			},
@@ -1269,7 +1269,7 @@ func TestHandleGenericComment(t *testing.T) {
 				IsPR:   true,
 				Body:   "/lgtm",
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "author",
 				},
 			},
@@ -1282,7 +1282,7 @@ func TestHandleGenericComment(t *testing.T) {
 				IsPR:   true,
 				Body:   "/lgtm",
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "author",
 				},
 			},
@@ -1379,7 +1379,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionSubmitted,
 				Review: scm.Review{
 					Body: "looks good",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStateApproved),
@@ -1404,7 +1404,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionSubmitted,
 				Review: scm.Review{
 					Body: "looks bad",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStateChangesRequested),
@@ -1419,7 +1419,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionSubmitted,
 				Review: scm.Review{
 					Body: "looks good",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStatePending),
@@ -1434,7 +1434,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionEdited,
 				Review: scm.Review{
 					Body: "looks good",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStateApproved),
@@ -1449,7 +1449,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionDismissed,
 				Review: scm.Review{
 					Body: "looks good",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStateDismissed),
@@ -1464,7 +1464,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionSubmitted,
 				Review: scm.Review{
 					Body: "/approve",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStateApproved),
@@ -1479,7 +1479,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionSubmitted,
 				Review: scm.Review{
 					Body: "/lgtm",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStateApproved),
@@ -1495,7 +1495,7 @@ func TestHandleReview(t *testing.T) {
 				Action: scm.ActionSubmitted,
 				Review: scm.Review{
 					Body: "looks good",
-					User: scm.User{
+					Author: scm.User{
 						Login: "author",
 					},
 					State: stateToLower(scm.ReviewStateApproved),
@@ -1524,7 +1524,7 @@ func TestHandleReview(t *testing.T) {
 		Name: "repo",
 	}
 	pr := scm.PullRequest{
-		User: scm.User{
+		Author: scm.User{
 			Login: "P.R. Author",
 		},
 		Base: scm.PullRequestBranch{
@@ -1593,7 +1593,7 @@ func TestHandlePullRequest(t *testing.T) {
 			prEvent: scm.PullRequestHook{
 				Action: scm.ActionOpen,
 				PullRequest: scm.PullRequest{
-					User: scm.User{
+					Author: scm.User{
 						Login: "P.R. Author",
 					},
 					Base: scm.PullRequestBranch{

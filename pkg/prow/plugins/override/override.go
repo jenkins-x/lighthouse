@@ -22,16 +22,17 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	prowapi "github.com/jenkins-x/lighthouse/pkg/prow/apis/prowjobs/v1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 const pluginName = "override"
@@ -186,7 +187,7 @@ func handle(oc overrideClient, log *logrus.Entry, e *github.GenericCommentEvent)
 		return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 	}
 
-	sha := pr.Head.SHA
+	sha := pr.Sha
 	statuses, err := oc.ListStatuses(org, repo, sha)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get commit statuses for PR #%d in %s/%s", number, org, repo)

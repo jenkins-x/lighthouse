@@ -61,14 +61,14 @@ type Configuration struct {
 	ConfigUpdater              ConfigUpdater          `json:"config_updater,omitempty"`
 	Golint                     *Golint                `json:"golint,omitempty"`
 	Heart                      Heart                  `json:"heart,omitempty"`
-	Label                      *Label                 `json:"label,omitempty"`
+	Label                      Label                  `json:"label,omitempty"`
 	Lgtm                       []Lgtm                 `json:"lgtm,omitempty"`
 	RepoMilestone              map[string]Milestone   `json:"repo_milestone,omitempty"`
 	RequireMatchingLabel       []RequireMatchingLabel `json:"require_matching_label,omitempty"`
 	RequireSIG                 RequireSIG             `json:"requiresig,omitempty"`
 	Slack                      Slack                  `json:"slack,omitempty"`
 	SigMention                 SigMention             `json:"sigmention,omitempty"`
-	Size                       *Size                  `json:"size,omitempty"`
+	Size                       Size                   `json:"size,omitempty"`
 	Triggers                   []Trigger              `json:"triggers,omitempty"`
 	Welcome                    []Welcome              `json:"welcome,omitempty"`
 }
@@ -350,6 +350,9 @@ type Trigger struct {
 	// IgnoreOkToTest makes trigger ignore /ok-to-test comments.
 	// This is a security mitigation to only allow testing from trusted users.
 	IgnoreOkToTest bool `json:"ignore_ok_to_test,omitempty"`
+	// ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs
+	// that could run but do not run.
+	ElideSkippedContexts bool `json:"elide_skipped_contexts,omitempty"`
 }
 
 // Heart contains the configuration for the heart plugin.
@@ -729,11 +732,7 @@ func validatePlugins(plugins map[string][]string) error {
 	return nil
 }
 
-func validateSizes(size *Size) error {
-	if size == nil {
-		return nil
-	}
-
+func validateSizes(size Size) error {
 	if size.S > size.M || size.M > size.L || size.L > size.Xl || size.Xl > size.Xxl {
 		return errors.New("invalid size plugin configuration - one of the smaller sizes is bigger than a larger one")
 	}

@@ -120,8 +120,8 @@ func handle(ghc githubClient, gc *git.Client, log *logrus.Entry, pre *scm.PullRe
 		return err
 	}
 	// If we have a specific SHA, use it.
-	if pre.PullRequest.Head.SHA != "" {
-		if err := r.Checkout(pre.PullRequest.Head.SHA); err != nil {
+	if pre.PullRequest.Sha != "" {
+		if err := r.Checkout(pre.PullRequest.Sha); err != nil {
 			return err
 		}
 	}
@@ -164,8 +164,8 @@ func handle(ghc githubClient, gc *git.Client, log *logrus.Entry, pre *scm.PullRe
 			Action:   github.Comment,
 			Comments: comments,
 		}
-		if pre.PullRequest.Head.SHA != "" {
-			draftReview.CommitSHA = pre.PullRequest.Head.SHA
+		if pre.PullRequest.Sha != "" {
+			draftReview.CommitSHA = pre.PullRequest.Sha
 		}
 		err := ghc.CreateReview(org, repo, pre.Number, draftReview)
 		if err != nil {

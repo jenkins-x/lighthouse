@@ -41,11 +41,11 @@ var (
 		scm.ActionUnlabel: true,
 	}
 
-	handleIssueActions = map[github.IssueEventAction]bool{
-		github.IssueActionOpened:    true,
-		github.IssueActionReopened:  true,
-		github.IssueActionLabeled:   true,
-		github.IssueActionUnlabeled: true,
+	handleIssueActions = map[scm.IssueEventAction]bool{
+		scm.IssueActionOpened:    true,
+		scm.IssueActionReopened:  true,
+		scm.IssueActionLabeled:   true,
+		scm.IssueActionUnlabeled: true,
 	}
 )
 
@@ -98,7 +98,7 @@ type event struct {
 	currentLabels []scm.Label
 }
 
-func handleIssue(pc plugins.Agent, ie github.IssueEvent) error {
+func handleIssue(pc plugins.Agent, ie scm.IssueEvent) error {
 	if !handleIssueActions[ie.Action] {
 		return nil
 	}

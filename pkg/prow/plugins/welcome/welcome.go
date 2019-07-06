@@ -23,9 +23,9 @@ import (
 	"html/template"
 	"strings"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -74,7 +74,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 type githubClient interface {
 	CreateComment(owner, repo string, number int, comment string) error
-	FindIssues(query, sort string, asc bool) ([]github.Issue, error)
+	FindIssues(query, sort string, asc bool) ([]scm.Issue, error)
 }
 
 type client struct {
@@ -110,7 +110,7 @@ func handlePR(c client, pre scm.PullRequestHook, welcomeTemplate string) error {
 	}
 
 	// if there are no results, this is the first! post the welcome comment
-	if len(issues) == 0 || len(issues) == 1 && issues[0].Number == pre.Number {
+	if len(issues) == 0 || len(issues) == 1 && issues[0].Number == pre.PullRequest.Number {
 		// load the template, and run it over the PR info
 		parsedTemplate, err := template.New("welcome").Parse(welcomeTemplate)
 		if err != nil {

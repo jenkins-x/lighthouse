@@ -70,9 +70,9 @@ func TestHandlePullRequest(t *testing.T) {
 			name:   "contains valid message -> no-op",
 			action: scm.ActionOpen,
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha1", Commit: github.GitCommit{Message: "this is a valid message"}},
-				{SHA: "sha2", Commit: github.GitCommit{Message: "fixing k/k#9999"}},
-				{SHA: "sha3", Commit: github.GitCommit{Message: "not a @ mention"}},
+				{Sha: "sha1", Commit: github.GitCommit{Message: "this is a valid message"}},
+				{Sha: "sha2", Commit: github.GitCommit{Message: "fixing k/k#9999"}},
+				{Sha: "sha3", Commit: github.GitCommit{Message: "not a @ mention"}},
 			},
 			hasInvalidCommitMessageLabel: false,
 		},
@@ -80,13 +80,13 @@ func TestHandlePullRequest(t *testing.T) {
 			name:   "msg contains invalid keywords -> add label and comment",
 			action: scm.ActionOpen,
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha1", Commit: github.GitCommit{Message: "this is a @mention"}},
-				{SHA: "sha2", Commit: github.GitCommit{Message: "this @menti-on has a hyphen"}},
-				{SHA: "sha3", Commit: github.GitCommit{Message: "this @Menti-On has mixed case letters"}},
-				{SHA: "sha4", Commit: github.GitCommit{Message: "fixes k/k#9999"}},
-				{SHA: "sha5", Commit: github.GitCommit{Message: "Close k/k#9999"}},
-				{SHA: "sha6", Commit: github.GitCommit{Message: "resolved k/k#9999"}},
-				{SHA: "sha7", Commit: github.GitCommit{Message: "this is an email@address and is valid"}},
+				{Sha: "sha1", Commit: github.GitCommit{Message: "this is a @mention"}},
+				{Sha: "sha2", Commit: github.GitCommit{Message: "this @menti-on has a hyphen"}},
+				{Sha: "sha3", Commit: github.GitCommit{Message: "this @Menti-On has mixed case letters"}},
+				{Sha: "sha4", Commit: github.GitCommit{Message: "fixes k/k#9999"}},
+				{Sha: "sha5", Commit: github.GitCommit{Message: "Close k/k#9999"}},
+				{Sha: "sha6", Commit: github.GitCommit{Message: "resolved k/k#9999"}},
+				{Sha: "sha7", Commit: github.GitCommit{Message: "this is an email@address and is valid"}},
 			},
 			hasInvalidCommitMessageLabel: false,
 
@@ -112,7 +112,7 @@ Instructions for interacting with me using PR comments are available [here](http
 			name:   "msg does not contain invalid keywords but has label -> remove label",
 			action: scm.ActionOpen,
 			commits: []scm.RepositorysitoryCommit{
-				{SHA: "sha", Commit: github.GitCommit{Message: "this is a valid message"}},
+				{Sha: "sha", Commit: github.GitCommit{Message: "this is a valid message"}},
 			},
 			hasInvalidCommitMessageLabel: true,
 

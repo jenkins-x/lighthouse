@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -81,7 +82,7 @@ func TestHandle(t *testing.T) {
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,
-			Repo:   scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 		}
 		hasLabel := func(label string, issueLabels []scm.Label) bool {
 			return tc.hasLabel

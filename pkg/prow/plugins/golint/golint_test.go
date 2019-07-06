@@ -88,7 +88,7 @@ var e = &github.GenericCommentEvent{
 	Action:     scm.ActionCreate,
 	IssueState: "open",
 	Body:       "/lint",
-	User:       scm.User{Login: "cjwagner"},
+	Author:     scm.User{Login: "cjwagner"},
 	Number:     42,
 	IsPR:       true,
 	Repo: scm.Repository{

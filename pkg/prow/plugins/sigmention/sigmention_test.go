@@ -164,8 +164,8 @@ func TestSigMention(t *testing.T) {
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,
-			Repo:   scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
-			User:   scm.User{Login: tc.commenter},
+			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
+			Author: scm.User{Login: tc.commenter},
 		}
 
 		testRe := tc.regexp

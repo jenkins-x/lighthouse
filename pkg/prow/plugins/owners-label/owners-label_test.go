@@ -166,7 +166,7 @@ func TestHandle(t *testing.T) {
 					Name: "repo",
 				},
 			},
-			User: scm.User{
+			Author: scm.User{
 				Login: "user",
 			},
 		}

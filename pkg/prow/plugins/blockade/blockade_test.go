@@ -320,7 +320,7 @@ func TestHandle(t *testing.T) {
 		}
 		pre := &scm.PullRequestHook{
 			Action: tc.action,
-			Repo:   scm.Repository{Owner: scm.User{Login: "org"}, Name: "repo"},
+			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 			Number: 1,
 		}
 		if err := handle(fakeClient, logrus.WithField("plugin", PluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {

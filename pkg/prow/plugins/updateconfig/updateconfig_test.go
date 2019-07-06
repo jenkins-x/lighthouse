@@ -50,7 +50,7 @@ func TestUpdateConfig(t *testing.T) {
 				Name: "kubernetes",
 			},
 		},
-		User: scm.User{
+		Author: scm.User{
 			Login: "foo",
 		},
 	}

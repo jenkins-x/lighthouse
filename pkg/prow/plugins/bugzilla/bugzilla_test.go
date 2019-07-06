@@ -171,7 +171,7 @@ func TestDigestPR(t *testing.T) {
 					Number: 1,
 					Title:  "fixing a typo",
 					Link:   "http.com",
-					User: scm.User{
+					Author: scm.User{
 						Login: "user",
 					},
 				},
@@ -198,7 +198,7 @@ func TestDigestPR(t *testing.T) {
 					Number: 1,
 					Title:  "Bug 123: fixed it!",
 					Link:   "http.com",
-					User: scm.User{
+					Author: scm.User{
 						Login: "user",
 					},
 				},
@@ -224,7 +224,7 @@ func TestDigestPR(t *testing.T) {
 					Number: 1,
 					Title:  "Bug 123: fixed it!",
 					Link:   "http.com",
-					User: scm.User{
+					Author: scm.User{
 						Login: "user",
 					},
 				},
@@ -248,7 +248,7 @@ func TestDigestPR(t *testing.T) {
 					Number: 1,
 					Title:  "Bug 123: fixed it!",
 					Link:   "http.com",
-					User: scm.User{
+					Author: scm.User{
 						Login: "user",
 					},
 				},
@@ -275,7 +275,7 @@ func TestDigestPR(t *testing.T) {
 					Number: 1,
 					Title:  "fixed it!",
 					Link:   "http.com",
-					User: scm.User{
+					Author: scm.User{
 						Login: "user",
 					},
 				},
@@ -302,7 +302,7 @@ func TestDigestPR(t *testing.T) {
 					Number: 1,
 					Title:  "fixed it!",
 					Link:   "http.com",
-					User: scm.User{
+					Author: scm.User{
 						Login: "user",
 					},
 				},
@@ -366,7 +366,7 @@ func TestDigestComment(t *testing.T) {
 					Name: "repo",
 				},
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "user",
 				},
 				Link: "www.com",
@@ -416,7 +416,7 @@ Instructions for interacting with me using PR comments are available [here](http
 					Name: "repo",
 				},
 				Number: 1,
-				User: scm.User{
+				Author: scm.User{
 					Login: "user",
 				},
 				Link: "www.com",
