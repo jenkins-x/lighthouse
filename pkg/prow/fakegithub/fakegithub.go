@@ -223,8 +223,7 @@ func (f *FakeClient) CreateStatus(owner, repo, SHA string, s scm.Status) error {
 	statuses := f.CreatedStatuses[SHA]
 	var updated bool
 	for i := range statuses {
-		// TODO is scm.Status.Target == github.Status.Context?
-		if statuses[i].Target == s.Target {
+		if statuses[i].Label == s.Label {
 			statuses[i] = s
 			updated = true
 		}
@@ -303,8 +302,10 @@ func (f *FakeClient) RemoveLabel(owner, repo string, number int, label string) e
 // FindIssues returns f.Issues
 func (f *FakeClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
 	var issues []scm.Issue
-	for _, issue := range f.Issues {
-		issues = append(issues, *issue)
+	for _, slice := range f.Issues {
+		for _, issue := range slice {
+			issues = append(issues, *issue)
+		}
 	}
 	return issues, nil
 }

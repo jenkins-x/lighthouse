@@ -369,7 +369,7 @@ func (s *Server) handleIssueEvent(l *logrus.Entry, i github.IssueEvent) {
 }
 
 
-func (s *Server) handleStatusEvent(l *logrus.Entry, se github.StatusEvent) {
+func (s *Server) handleStatusEvent(l *logrus.Entry, se scm.StateEvent) {
 	defer s.wg.Done()
 	l = l.WithFields(logrus.Fields{
 		github.OrgLogField:  se.Repo.Namespace,

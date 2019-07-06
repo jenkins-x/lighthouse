@@ -19,6 +19,7 @@ package pjutil
 import (
 	"errors"
 	"fmt"
+	"github.com/drone/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"reflect"
@@ -413,31 +414,31 @@ func (f *fakeContextGetter) getContexts(key orgRepoRef) (sets.String, sets.Strin
 		return failedContexts, allContexts, fmt.Errorf("failed to find status for %s/%s@%s", key.org, key.repo, key.ref)
 	}
 	for _, status := range combinedStatus.Statuses {
-		allContexts.Insert(status.Context)
-		if status.State == github.StatusError || status.State == github.StatusFailure {
-			failedContexts.Insert(status.Context)
+		allContexts.Insert(status.Label)
+		if status.State == scm.StateError || status.State == scm.StateFailure {
+			failedContexts.Insert(status.Label)
 		}
 	}
 	return failedContexts, allContexts, nil
 }
 
 func TestPresubmitFilter(t *testing.T) {
-	statuses := &github.CombinedStatus{Statuses: []github.Status{
+	statuses := &github.CombinedStatus{Statuses: []scm.Status{
 		{
-			Context: "existing-successful",
-			State:   github.StatusSuccess,
+			Label: "existing-successful",
+			State: scm.StateSuccess,
 		},
 		{
-			Context: "existing-pending",
-			State:   github.StatusPending,
+			Label: "existing-pending",
+			State: scm.StatePending,
 		},
 		{
-			Context: "existing-error",
-			State:   github.StatusError,
+			Label: "existing-error",
+			State: scm.StateError,
 		},
 		{
-			Context: "existing-failure",
-			State:   github.StatusFailure,
+			Label: "existing-failure",
+			State: scm.StateFailure,
 		},
 	}}
 	var testCases = []struct {

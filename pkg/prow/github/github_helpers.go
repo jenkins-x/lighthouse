@@ -306,3 +306,19 @@ const (
 	ReactionHooray                    = "hooray"
 	stateCannotBeChangedMessagePrefix = "state cannot be changed."
 )
+
+// These are possible State entries for a Status.
+const (
+	StatusPending = "pending"
+	StatusSuccess = "success"
+	StatusError   = "error"
+	StatusFailure = "failure"
+)
+
+// Status is used to set a commit status line.
+type Status struct {
+	State       string `json:"state"`
+	TargetURL   string `json:"target_url,omitempty"`
+	Description string `json:"description,omitempty"`
+	Context     string `json:"context,omitempty"`
+}
