@@ -1,6 +1,6 @@
 CHART_REPO := http://jenkins-x-chartmuseum:8080
 CURRENT=$(pwd)
-NAME := lighthouse
+NAME := catcher
 OS := $(shell uname)
 VERSION := $(shell cat ../../VERSION)
 
