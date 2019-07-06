@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 )
 
 type fakePruner struct{}
@@ -70,24 +69,24 @@ func TestHandlePullRequest(t *testing.T) {
 		{
 			name:   "contains valid message -> no-op",
 			action: scm.ActionOpen,
-			commits: []scm.RepositorysitoryCommit{
-				{Sha: "sha1", Commit: github.GitCommit{Message: "this is a valid message"}},
-				{Sha: "sha2", Commit: github.GitCommit{Message: "fixing k/k#9999"}},
-				{Sha: "sha3", Commit: github.GitCommit{Message: "not a @ mention"}},
+			commits: []scm.Commit{
+				{Sha: "sha1", Message: "this is a valid message"},
+				{Sha: "sha2", Message: "fixing k/k#9999"},
+				{Sha: "sha3", Message: "not a @ mention"},
 			},
 			hasInvalidCommitMessageLabel: false,
 		},
 		{
 			name:   "msg contains invalid keywords -> add label and comment",
 			action: scm.ActionOpen,
-			commits: []scm.RepositorysitoryCommit{
-				{Sha: "sha1", Commit: github.GitCommit{Message: "this is a @mention"}},
-				{Sha: "sha2", Commit: github.GitCommit{Message: "this @menti-on has a hyphen"}},
-				{Sha: "sha3", Commit: github.GitCommit{Message: "this @Menti-On has mixed case letters"}},
-				{Sha: "sha4", Commit: github.GitCommit{Message: "fixes k/k#9999"}},
-				{Sha: "sha5", Commit: github.GitCommit{Message: "Close k/k#9999"}},
-				{Sha: "sha6", Commit: github.GitCommit{Message: "resolved k/k#9999"}},
-				{Sha: "sha7", Commit: github.GitCommit{Message: "this is an email@address and is valid"}},
+			commits: []scm.Commit{
+				{Sha: "sha1", Message: "this is a @mention"},
+				{Sha: "sha2", Message: "this @menti-on has a hyphen"},
+				{Sha: "sha3", Message: "this @Menti-On has mixed case letters"},
+				{Sha: "sha4", Message: "fixes k/k#9999"},
+				{Sha: "sha5", Message: "Close k/k#9999"},
+				{Sha: "sha6", Message: "resolved k/k#9999"},
+				{Sha: "sha7", Message: "this is an email@address and is valid"},
 			},
 			hasInvalidCommitMessageLabel: false,
 
@@ -112,8 +111,8 @@ Instructions for interacting with me using PR comments are available [here](http
 		{
 			name:   "msg does not contain invalid keywords but has label -> remove label",
 			action: scm.ActionOpen,
-			commits: []scm.RepositorysitoryCommit{
-				{Sha: "sha", Commit: github.GitCommit{Message: "this is a valid message"}},
+			commits: []scm.Commit{
+				{Sha: "sha", Message: "this is a valid message"},
 			},
 			hasInvalidCommitMessageLabel: true,
 
@@ -125,9 +124,9 @@ Instructions for interacting with me using PR comments are available [here](http
 		t.Run(tc.name, func(t *testing.T) {
 			event := makeFakePullRequestEvent(tc.action)
 			fc := &fakegithub.FakeClient{
-				PullRequests:  map[int]*scm.PullRequest{event.Number: &event.PullRequest},
+				PullRequests:  map[int]*scm.PullRequest{event.PullRequest.Number: &event.PullRequest},
 				IssueComments: make(map[int][]scm.Comment),
-				CommitMap: map[string][]scm.RepositorysitoryCommit{
+				CommitMap: map[string][]scm.Commit{
 					"k/k#3": tc.commits,
 				},
 			}

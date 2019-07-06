@@ -71,7 +71,7 @@ type githubClient interface {
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	CreateComment(owner, repo string, number int, comment string) error
-	ListPRCommits(org, repo string, number int) ([]scm.RepositorysitoryCommit, error)
+	ListPRCommits(org, repo string, number int) ([]scm.Commit, error)
 }
 
 type commentPruner interface {
