@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -38,12 +39,12 @@ func strP(str string) *string {
 func makeFakePullRequestEvent(action scm.Action) scm.PullRequestHook {
 	return scm.PullRequestHook{
 		Action: action,
-		Number: 3,
+		PullRequest: scm.PullRequest{
+			Number: 3,
+		},
 		Repo: scm.Repository{
-			Owner: scm.User{
-				Login: "k",
-			},
-			Name: "k",
+			Namespace: "k",
+			Name:      "k",
 		},
 	}
 }
@@ -54,7 +55,7 @@ func TestHandlePullRequest(t *testing.T) {
 
 		// PR settings
 		action                       scm.Action
-		commits                      []scm.RepositorysitoryCommit
+		commits                      []scm.Commit
 		hasInvalidCommitMessageLabel bool
 
 		// expectations

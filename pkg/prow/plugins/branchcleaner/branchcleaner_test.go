@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 )
 
 func TestBranchCleaner(t *testing.T) {
@@ -75,15 +75,15 @@ func TestBranchCleaner(t *testing.T) {
 			log := logrus.WithField("plugin", pluginName)
 			event := scm.PullRequestHook{
 				Action: tc.prAction,
-				Number: prNumber,
 				PullRequest: scm.PullRequest{
+					Number: prNumber,
 					Base: scm.PullRequestBranch{
 						Ref: "master",
 						Repo: scm.Repository{
-							DefaultBranch: "master",
-							FullName:      baseRepoFullName,
-							Name:          baseRepoRepo,
-							Owner:         scm.User{Login: baseRepoOrg},
+							Branch:    "master",
+							FullName:  baseRepoFullName,
+							Name:      baseRepoRepo,
+							Namespace: baseRepoOrg,
 						},
 					},
 					Head: scm.PullRequestBranch{
@@ -95,7 +95,7 @@ func TestBranchCleaner(t *testing.T) {
 					Merged: tc.merged},
 			}
 			if tc.merged {
-				event.PullRequest.MergeSHA = &mergeSHA
+				event.PullRequest.MergeSha = mergeSHA
 			}
 
 			fgc := &fakegithub.FakeClient{

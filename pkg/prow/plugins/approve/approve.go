@@ -188,7 +188,7 @@ func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, 
 		&state{
 			org:       ce.Repo.Namespace,
 			repo:      ce.Repo.Name,
-			branch:    pr.Ref,
+			branch:    pr.Base.Ref,
 			number:    ce.Number,
 			body:      ce.IssueBody,
 			author:    ce.IssueAuthor.Login,
@@ -250,7 +250,7 @@ func handleReview(log *logrus.Entry, ghc githubClient, oc ownersClient, githubCo
 		&state{
 			org:       re.Repo.Namespace,
 			repo:      re.Repo.Name,
-			branch:    re.PullRequest.Ref,
+			branch:    re.PullRequest.Base.Ref,
 			number:    re.PullRequest.Number,
 			body:      re.PullRequest.Body,
 			author:    re.PullRequest.Author.Login,
@@ -302,7 +302,7 @@ func handlePullRequest(log *logrus.Entry, ghc githubClient, oc ownersClient, git
 		&state{
 			org:       pre.Repo.Namespace,
 			repo:      pre.Repo.Name,
-			branch:    pre.PullRequest.Ref,
+			branch:    pre.PullRequest.Base.Ref,
 			number:    pre.PullRequest.Number,
 			body:      pre.PullRequest.Body,
 			author:    pre.PullRequest.Author.Login,

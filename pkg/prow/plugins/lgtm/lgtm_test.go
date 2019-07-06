@@ -488,7 +488,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 	var testcases = []struct {
 		name          string
 		state         string
-		action        scm.ReviewHookAction
+		action        scm.Action
 		body          string
 		reviewer      string
 		hasLGTM       bool
@@ -764,7 +764,7 @@ func TestHandlePullRequest(t *testing.T) {
 					Author: scm.User{
 						Login: "sig-lead",
 					},
-					MergeSha: &SHA,
+					MergeSha: SHA,
 				},
 			},
 			trustedTeam:      "Leads",
@@ -778,16 +778,14 @@ func TestHandlePullRequest(t *testing.T) {
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 					Author: scm.User{
 						Login: "sig-lead",
 					},
-					MergeSha: &SHA,
+					MergeSha: SHA,
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
@@ -809,16 +807,14 @@ func TestHandlePullRequest(t *testing.T) {
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 					Author: scm.User{
 						Login: "sig-lead",
 					},
-					MergeSha: &SHA,
+					MergeSha: SHA,
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
@@ -836,7 +832,7 @@ func TestHandlePullRequest(t *testing.T) {
 		{
 			name: "pr_assigned",
 			event: scm.PullRequestHook{
-				Action: "assigned",
+				Action: scm.ActionAssigned,
 			},
 			expectNoComments: true,
 		},
@@ -848,10 +844,8 @@ func TestHandlePullRequest(t *testing.T) {
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 					Head: scm.PullRequestBranch{
@@ -877,10 +871,8 @@ func TestHandlePullRequest(t *testing.T) {
 					Number: 101,
 					Base: scm.PullRequestBranch{
 						Repo: scm.Repository{
-							Owner: scm.User{
-								Login: "kubernetes",
-							},
-							Name: "kubernetes",
+							Namespace: "kubernetes",
+							Name:      "kubernetes",
 						},
 					},
 					Head: scm.PullRequestBranch{
@@ -1038,10 +1030,8 @@ func TestAddTreeHashComment(t *testing.T) {
 				author:      "collab1",
 				issueAuthor: c.author,
 				repo: scm.Repository{
-					Owner: scm.User{
-						Login: "kubernetes",
-					},
-					Name: "kubernetes",
+					Namespace: "kubernetes",
+					Name:      "kubernetes",
 				},
 				number: 101,
 				body:   "/lgtm",
@@ -1096,10 +1086,8 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		author:      "collab1",
 		issueAuthor: "bob",
 		repo: scm.Repository{
-			Owner: scm.User{
-				Login: "kubernetes",
-			},
-			Name: "kubernetes",
+			Namespace: "kubernetes",
+			Name:      "kubernetes",
 		},
 		assignees: []scm.User{{Login: "alice"}},
 		number:    101,

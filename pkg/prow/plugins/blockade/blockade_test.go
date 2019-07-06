@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -321,7 +322,9 @@ func TestHandle(t *testing.T) {
 		pre := &scm.PullRequestHook{
 			Action: tc.action,
 			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
-			Number: 1,
+			PullRequest: scm.PullRequest{
+				Number: 1,
+			},
 		}
 		if err := handle(fakeClient, logrus.WithField("plugin", PluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {
 			t.Errorf("[%s] Unexpected error from handle: %v.", tc.name, err)
