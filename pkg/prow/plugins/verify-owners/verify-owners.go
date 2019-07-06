@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/drone/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
@@ -90,7 +91,8 @@ func handle(ghc githubClient, gc *git.Client, log *logrus.Entry, pre *scm.PullRe
 	wrongOwnersFiles := map[string]messageWithLine{}
 
 	// Get changes.
-	changes, err := ghc.GetPullRequestChanges(org, repo, pre.Number)
+	prNumber := pre.PullRequest.Number
+	changes, err := ghc.GetPullRequestChanges(org, repo, prNumber)
 	if err != nil {
 		return fmt.Errorf("error getting PR changes: %v", err)
 	}
@@ -116,7 +118,7 @@ func handle(ghc githubClient, gc *git.Client, log *logrus.Entry, pre *scm.PullRe
 			log.WithError(err).Error("Error cleaning up repo.")
 		}
 	}()
-	if err := r.CheckoutPullRequest(pre.Number); err != nil {
+	if err := r.CheckoutPullRequest(prNumber); err != nil {
 		return err
 	}
 	// If we have a specific SHA, use it.
@@ -145,7 +147,7 @@ func handle(ghc githubClient, gc *git.Client, log *logrus.Entry, pre *scm.PullRe
 		if len(wrongOwnersFiles) == 1 {
 			s = ""
 		}
-		if err := ghc.AddLabel(org, repo, pre.Number, labels.InvalidOwners); err != nil {
+		if err := ghc.AddLabel(org, repo, prNumber, labels.InvalidOwners); err != nil {
 			return err
 		}
 		log.Debugf("Creating a review for %d %s file%s.", len(wrongOwnersFiles), ownersFileName, s)
@@ -167,14 +169,14 @@ func handle(ghc githubClient, gc *git.Client, log *logrus.Entry, pre *scm.PullRe
 		if pre.PullRequest.Sha != "" {
 			draftReview.CommitSHA = pre.PullRequest.Sha
 		}
-		err := ghc.CreateReview(org, repo, pre.Number, draftReview)
+		err := ghc.CreateReview(org, repo, prNumber, draftReview)
 		if err != nil {
 			return fmt.Errorf("error creating a review for invalid %s file%s: %v", ownersFileName, s, err)
 		}
 	} else {
 		// Don't bother checking if it has the label...it's a race, and we'll have
 		// to handle failure due to not being labeled anyway.
-		if err := ghc.RemoveLabel(org, repo, pre.Number, labels.InvalidOwners); err != nil {
+		if err := ghc.RemoveLabel(org, repo, prNumber, labels.InvalidOwners); err != nil {
 			return fmt.Errorf("failed removing %s label: %v", labels.InvalidOwners, err)
 		}
 	}
