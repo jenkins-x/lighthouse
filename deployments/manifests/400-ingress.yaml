@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    app: catcher
+  name: catcher
+  namespace: lighthouse
+spec:
+  rules:
+  - host: catcher.gke.willrefvem.com
+    http:
+      paths:
+      - backend:
+          serviceName: catcher
+          servicePort: 80
+        path: /
