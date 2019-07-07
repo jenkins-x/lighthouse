@@ -50,15 +50,9 @@ func main() {
 	mux.Handle(HealthPath, http.HandlerFunc(o.health))
 	mux.Handle(ReadyPath, http.HandlerFunc(o.ready))
 
-	indexPaths := []string{"/", "/index.html"}
-	for _, p := range indexPaths {
-		if o.Path != p {
-			mux.Handle(p, http.HandlerFunc(o.getIndex))
-		}
-	}
 	mux.Handle(o.Path, http.HandlerFunc(o.handleWebHookRequests))
 
-	logrus.Infof("Catcher is now listening on path %s for WebHooks", o.Path)
+	logrus.Infof("Catcher is now listening on path %s for Webhooks", o.Path)
 	if err := http.ListenAndServe(":"+strconv.Itoa(o.Port), mux); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		os.Exit(1)
