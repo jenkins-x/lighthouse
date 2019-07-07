@@ -19,7 +19,7 @@ env:
 knativeDeploy: false
 
 service:
-  name: catcher
+  name: webhook
   type: ClusterIP
   externalPort: 80
   internalPort: 8080
