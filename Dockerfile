@@ -2,10 +2,10 @@ FROM golang:1.12.6
 
 COPY . /go/src/github.com/jenkins-x/lighthouse
 WORKDIR /go/src/github.com/jenkins-x/lighthouse
-RUN make build-linux
+RUN make webhook
 
 FROM scratch
 
-COPY --from=0 /go/src/github.com/jenkins-x/lighthouse/bin/lighthouse /lighthouse
+COPY --from=0 /go/src/github.com/jenkins-x/lighthouse/bin/webhook /webhook
 
-CMD ["/lighthouse", "hook"]
+CMD ["/webhook"]
