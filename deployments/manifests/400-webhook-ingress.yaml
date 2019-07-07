@@ -8,7 +8,7 @@ metadata:
   namespace: lighthouse
 spec:
   rules:
-  - host: webhook.gke.willrefvem.com
+  - host: webhook.example.com
     http:
       paths:
       - backend:
