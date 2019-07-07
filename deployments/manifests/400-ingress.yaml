@@ -3,15 +3,15 @@ kind: Ingress
 metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    app: webhook
-  name: webhook
+    app: catcher
+  name: catcher
   namespace: lighthouse
 spec:
   rules:
-  - host: webhook.gke.willrefvem.com
+  - host: catcher.gke.willrefvem.com
     http:
       paths:
       - backend:
-          serviceName: webhook
+          serviceName: catcher
           servicePort: 80
         path: /
