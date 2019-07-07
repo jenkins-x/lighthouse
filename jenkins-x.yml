@@ -53,7 +53,7 @@ pipelineConfig:
             - --cache-dir=/workspace
 
           - name: helm-lint
-            image: gcr.io/jenkinsxio/builder-go:0.1.332
+            image: gcr.io/jenkinsxio/builder-go:0.1.551
             command: make
             args:
             - build
