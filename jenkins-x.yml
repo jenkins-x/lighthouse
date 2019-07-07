@@ -61,12 +61,12 @@ pipelineConfig:
 
           - command: make preview
             dir: /workspace/source/deployments/charts/preview
-            image: go
+            image: gcr.io/jenkinsxio/builder-go:0.1.551
             name: promote-make-preview
 
           - command: jx preview --app $APP_NAME --dir ../../..
             dir: /workspace/source/deployments/charts/preview
-            image: go
+            image: gcr.io/jenkinsxio/builder-go:0.1.551
             name: promote-jx-preview
 
     release:
