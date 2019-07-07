@@ -24,22 +24,22 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-type JenkinsV1Interface interface {
+type FooV1Interface interface {
 	RESTClient() rest.Interface
 	WebhooksGetter
 }
 
-// JenkinsV1Client is used to interact with features provided by the jenkins.io group.
-type JenkinsV1Client struct {
+// FooV1Client is used to interact with features provided by the foo.com group.
+type FooV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *JenkinsV1Client) Webhooks(namespace string) WebhookInterface {
+func (c *FooV1Client) Webhooks(namespace string) WebhookInterface {
 	return newWebhooks(c, namespace)
 }
 
-// NewForConfig creates a new JenkinsV1Client for the given config.
-func NewForConfig(c *rest.Config) (*JenkinsV1Client, error) {
+// NewForConfig creates a new FooV1Client for the given config.
+func NewForConfig(c *rest.Config) (*FooV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -48,12 +48,12 @@ func NewForConfig(c *rest.Config) (*JenkinsV1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &JenkinsV1Client{client}, nil
+	return &FooV1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new JenkinsV1Client for the given config and
+// NewForConfigOrDie creates a new FooV1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *JenkinsV1Client {
+func NewForConfigOrDie(c *rest.Config) *FooV1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -61,9 +61,9 @@ func NewForConfigOrDie(c *rest.Config) *JenkinsV1Client {
 	return client
 }
 
-// New creates a new JenkinsV1Client for the given RESTClient.
-func New(c rest.Interface) *JenkinsV1Client {
-	return &JenkinsV1Client{c}
+// New creates a new FooV1Client for the given RESTClient.
+func New(c rest.Interface) *FooV1Client {
+	return &FooV1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -81,7 +81,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *JenkinsV1Client) RESTClient() rest.Interface {
+func (c *FooV1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

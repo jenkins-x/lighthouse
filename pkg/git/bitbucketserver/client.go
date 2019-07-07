@@ -1,24 +1,22 @@
 package bitbucketserver
 
-import (
-	apiv1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
-)
-
 // BitbucketServer is an implementation of the git.Provider interface
-type Provider struct {
-	URL  string
-	Name string
+type BitbucketServer struct {
+	url  string
+	name string
+}
+
+// URL returns the provider's URL
+func (bbs *BitbucketServer) URL() string {
+	return bbs.url
+}
+
+// Name returns the provider's name
+func (bbs *BitbucketServer) Name() string {
+	return bbs.name
 }
 
 // ParseWebhook encapsulates provider-specific logic for creating a Webhook CRD
-func (bbs *Provider) ParseWebhook(rawWebhook []byte) *apiv1.Webhook {
-	return &apiv1.Webhook{
-		Spec: apiv1.WebhookSpec{
-			EventType: "pull_request",
-			Ref:       "abc123",
-			Provider:  "Bitbucket Server",
-			URL:       "bitbucket.beescloud.com",
-			Payload:   "{\"foo\": \"bar\"}",
-		},
-	}
+func (bbs *BitbucketServer) ParseWebhook(webhook string) {
+
 }

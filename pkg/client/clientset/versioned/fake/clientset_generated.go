@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	jenkinsv1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1"
-	fakejenkinsv1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1/fake"
+	foov1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	fakefoov1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -76,7 +76,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// JenkinsV1 retrieves the JenkinsV1Client
-func (c *Clientset) JenkinsV1() jenkinsv1.JenkinsV1Interface {
-	return &fakejenkinsv1.FakeJenkinsV1{Fake: &c.Fake}
+// FooV1 retrieves the FooV1Client
+func (c *Clientset) FooV1() foov1.FooV1Interface {
+	return &fakefoov1.FakeFooV1{Fake: &c.Fake}
 }
