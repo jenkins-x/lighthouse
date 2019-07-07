@@ -52,13 +52,6 @@ pipelineConfig:
             - --context=/workspace/source
             - --cache-dir=/workspace
 
-          - name: helm-lint
-            image: gcr.io/jenkinsxio/builder-go:0.1.551
-            command: make
-            args:
-            - build
-            dir: /workspace/source/deployments/charts/webhook
-
           - command: make preview
             dir: /workspace/source/deployments/charts/preview
             image: gcr.io/jenkinsxio/builder-go:0.1.551
