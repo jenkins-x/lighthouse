@@ -8,8 +8,8 @@ git:
 # Declare variables to be passed into your templates.
 replicaCount: 1
 image:
-  repository: draft
-  tag: dev
+  repository: gcr.io/jenkins-x-infra/lighthouse
+  tag: 0.0.17
   pullPolicy: IfNotPresent
 
 # define environment variables here as a map of key: value
