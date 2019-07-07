@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    app: webhook
+  name: webhook
+  namespace: lighthouse
+spec:
+  rules:
+  - host: webhook.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: webhook
+          servicePort: 80
+        path: /

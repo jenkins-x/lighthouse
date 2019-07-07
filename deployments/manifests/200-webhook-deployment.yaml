@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook
+  labels:
+    app: webhook
+  namespace: lighthouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook
+  template:
+    metadata:
+      labels:
+        app: webhook
+    spec:
+      containers:
+      - name: webhook
+        image: github.com/jenkins-x/lighthouse/cmd/webhook
+        ports:
+        - containerPort: 8080
