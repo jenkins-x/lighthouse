@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 PROJECT_ROOT := $(GOPATH)/src/github.com/jenkins-x/lighthouse
-MODULE := catcher
+MODULE := webhook
 PKGS := $(shell go list ./...)
 
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)
@@ -13,9 +13,9 @@ ifeq "$(GOVERSION)" ""
 endif
 export GO111MODULE=on
 
-all: test catcher
+all: test webhook
 
 test: $(PKGS)
 
-catcher:
-	go build -i -ldflags "$(GO_LDFLAGS)" -o $(PROJECT_ROOT)/bin/catcher cmd/catcher/main.go
+webhook:
+	go build -i -ldflags "$(GO_LDFLAGS)" -o $(PROJECT_ROOT)/bin/webhook cmd/webhook/main.go

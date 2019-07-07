@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: catcher
+  name: webhook
   labels:
-    app: catcher
+    app: webhook
   namespace: lighthouse
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: catcher
+      app: webhook
   template:
     metadata:
       labels:
-        app: catcher
+        app: webhook
     spec:
       containers:
-      - name: catcher
-        image: github.com/jenkins-x/lighthouse/cmd/catcher
+      - name: webhook
+        image: github.com/jenkins-x/lighthouse/cmd/webhook
         ports:
         - containerPort: 8080

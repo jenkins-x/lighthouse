@@ -2,19 +2,22 @@
 
 A lightweight webhook handler to trigger Jenkins X Pipelines from webhooks from GitHub, GitHub Enterprise, BitBucket Cloud / Server, GitLab, Gitea etc
 
-Catcher, the webhook handler, is named after legendary Boston Red Sox catcher and Hall of Fame inductee Carlton "Pudge" Fisk, because it catches webhooks. However, unlike its namesake, it's blindingly fast.
-
 ## Building
 
 The fastest way to get started hacking on Lighthouse is with [ko](https://github.com/google/ko).
 
-If you take a look in `deployments/manifests`, everything should look normal except for the following field in `200-catcher.yaml`:
+If you take a look in `deployments/manifests`, everything should look normal except for the following field in `200-webhook.yaml`:
 
 ```yaml
-image: github.com/jenkins-x/lighthouse/cmd/catcher
+image: github.com/jenkins-x/lighthouse/cmd/webhook
 ```
 
-The magic of `ko` is that it will automatically build the go binary whose code is specified in the `image` field, package it into an image, and push it to a configured image registry. 
+The magic of `ko` is that it will: 
+* automatically build the go binary whose code is specified in the `image` field *
+* package it into an image
+* push the image to a configured image registry
+* update the deployment manifest with the newly build image name and tag
+* `kubectl apply` a collection of k8s manifest files
 
 Once you've installed and configured `ko`, simply run the following from the project root:
 
