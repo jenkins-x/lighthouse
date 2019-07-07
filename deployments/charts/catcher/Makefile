@@ -1,8 +1,8 @@
 CHART_REPO := http://jenkins-x-chartmuseum:8080
 CURRENT=$(pwd)
-NAME := webhook
+NAME := catcher
 OS := $(shell uname)
-VERSION := $(shell cat ../../../VERSION)
+VERSION := $(shell cat ../../VERSION)
 
 build: clean
 	rm -rf requirements.lock
