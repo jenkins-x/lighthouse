@@ -24,17 +24,17 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeJenkinsV1 struct {
+type FakeFooV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeJenkinsV1) Webhooks(namespace string) v1.WebhookInterface {
+func (c *FakeFooV1) Webhooks(namespace string) v1.WebhookInterface {
 	return &FakeWebhooks{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeJenkinsV1) RESTClient() rest.Interface {
+func (c *FakeFooV1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }
