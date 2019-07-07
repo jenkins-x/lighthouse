@@ -57,15 +57,15 @@ pipelineConfig:
             command: make
             args:
             - build
-            dir: /workspace/source/charts/lighthouse
+            dir: /workspace/source/deployments/charts/webhook
 
           - command: make preview
-            dir: /workspace/source/charts/preview
+            dir: /workspace/source/deployments/charts/preview
             image: go
             name: promote-make-preview
 
-          - command: jx preview --app $APP_NAME --dir ../..
-            dir: /workspace/source/charts/preview
+          - command: jx preview --app $APP_NAME --dir ../../..
+            dir: /workspace/source/deployments/charts/preview
             image: go
             name: promote-jx-preview
 
