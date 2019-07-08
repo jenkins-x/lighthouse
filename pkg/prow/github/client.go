@@ -125,11 +125,17 @@ func (c *GitHubClient) ListIssueEvents(org, repo string, num int) ([]ListedIssue
 }
 
 func (c *GitHubClient) AddLabel(owner, repo string, number int, label string) error {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.Issues.AddLabel(ctx, fullName, number, label)
+	return err
 }
 
 func (c *GitHubClient) RemoveLabel(owner, repo string, number int, label string) error {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.Issues.DeleteLabel(ctx, fullName, number, label)
+	return err
 }
 
 func (c *GitHubClient) DeleteComment(org, repo string, number, ID int) error {
