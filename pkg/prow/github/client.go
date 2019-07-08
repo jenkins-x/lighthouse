@@ -88,14 +88,6 @@ func (c *GitHubClient) Query(context.Context, interface{}, map[string]interface{
 	panic("implement me")
 }
 
-func (c *GitHubClient) AssignIssue(owner, repo string, number int, logins []string) error {
-	panic("implement me")
-}
-
-func (c *GitHubClient) UnassignIssue(owner, repo string, number int, logins []string) error {
-	panic("implement me")
-}
-
 func (c *GitHubClient) RequestReview(org, repo string, number int, logins []string) error {
 	panic("implement me")
 }
@@ -104,16 +96,22 @@ func (c *GitHubClient) UnrequestReview(org, repo string, number int, logins []st
 	panic("implement me")
 }
 
-func (c *GitHubClient) GetPullRequest(org, repo string, number int) (*scm.PullRequest, error) {
-	panic("implement me")
+func (c *GitHubClient) GetPullRequest(owner, repo string, number int) (*scm.PullRequest, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	pr, _, err := c.client.PullRequests.Find(ctx, fullName, number)
+	return pr, err
 }
 
 func (c *GitHubClient) ListReviews(org, repo string, number int) ([]scm.Review, error) {
 	panic("implement me")
 }
 
-func (c *GitHubClient) ListPullRequestComments(org, repo string, number int) ([]scm.Review, error) {
-	panic("implement me")
+func (c *GitHubClient) ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	pr, _, err := c.client.PullRequests.ListComments(ctx, fullName, number, c.createListOptions())
+	return pr, err
 }
 
 func (c *GitHubClient) BotName() (string, error) {
@@ -121,6 +119,14 @@ func (c *GitHubClient) BotName() (string, error) {
 }
 
 func (c *GitHubClient) ListIssueEvents(org, repo string, num int) ([]ListedIssueEvent, error) {
+	panic("implement me")
+}
+
+func (c *GitHubClient) AssignIssue(owner, repo string, number int, logins []string) error {
+	panic("implement me")
+}
+
+func (c *GitHubClient) UnassignIssue(owner, repo string, number int, logins []string) error {
 	panic("implement me")
 }
 
