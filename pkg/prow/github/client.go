@@ -64,7 +64,7 @@ func (c *GitHubClient) IsCollaborator(owner, repo, login string) (bool, error) {
 	panic("implement me")
 }
 
-func (c *GitHubClient) GetSingleCommit(org, repo, SHA string) (SingleCommit, error) {
+func (c *GitHubClient) GetSingleCommit(org, repo, SHA string) (scm.CommitTree, error) {
 	panic("implement me")
 }
 

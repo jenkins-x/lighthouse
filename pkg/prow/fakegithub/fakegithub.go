@@ -49,7 +49,7 @@ type FakeClient struct {
 	CombinedStatuses    map[string]*github.CombinedStatus
 	CreatedStatuses     map[string][]scm.Status
 	IssueEvents         map[int][]github.ListedIssueEvent
-	Commits             map[string]github.SingleCommit
+	Commits             map[string]scm.CommitTree
 
 	//All Labels That Exist In The Repo
 	RepoLabelsExisting []string
@@ -211,7 +211,7 @@ func (f *FakeClient) DeleteRef(owner, repo, ref string) error {
 }
 
 // GetSingleCommit returns a single commit.
-func (f *FakeClient) GetSingleCommit(org, repo, SHA string) (github.SingleCommit, error) {
+func (f *FakeClient) GetSingleCommit(org, repo, SHA string) (scm.CommitTree, error) {
 	return f.Commits[SHA], nil
 }
 

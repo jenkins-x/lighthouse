@@ -939,13 +939,13 @@ func TestHandlePullRequest(t *testing.T) {
 						},
 					},
 				},
-				Commits:          make(map[string]github.SingleCommit),
+				Commits:          make(map[string]scm.CommitTree),
 				Collaborators:    []string{"collab"},
 				IssueLabelsAdded: c.IssueLabelsAdded,
 			}
 			fakeGitHub.IssueLabelsAdded = append(fakeGitHub.IssueLabelsAdded, "kubernetes/kubernetes#101:lgtm")
-			commit := github.SingleCommit{}
-			commit.Commit.Tree.SHA = treeSHA
+			commit := scm.CommitTree{}
+			commit.Sha = treeSHA
 			fakeGitHub.Commits[SHA] = commit
 			pc := &plugins.Configuration{}
 			pc.Lgtm = append(pc.Lgtm, plugins.Lgtm{
@@ -1037,7 +1037,7 @@ func TestAddTreeHashComment(t *testing.T) {
 				body:   "/lgtm",
 			}
 			fc := &fakegithub.FakeClient{
-				Commits:       make(map[string]github.SingleCommit),
+				Commits:       make(map[string]scm.CommitTree),
 				IssueComments: map[int][]scm.Comment{},
 				PullRequests: map[int]*scm.PullRequest{
 					101: {
@@ -1051,8 +1051,8 @@ func TestAddTreeHashComment(t *testing.T) {
 				},
 				Collaborators: []string{"collab1", "collab2"},
 			}
-			commit := github.SingleCommit{}
-			commit.Commit.Tree.SHA = treeSHA
+			commit := scm.CommitTree{}
+			commit.Sha = treeSHA
 			fc.Commits[SHA] = commit
 			handle(true, pc, &fakeOwnersClient{}, rc, fc, logrus.WithField("plugin", PluginName), &fakePruner{})
 			found := false
