@@ -82,7 +82,7 @@ func TestHandle(t *testing.T) {
 			Number: 1,
 			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 		}
-		hasLabel := func(label string, issueLabels []scm.Label) bool {
+		hasLabel := func(label string, issueLabels []*scm.Label) bool {
 			return tc.hasLabel
 		}
 

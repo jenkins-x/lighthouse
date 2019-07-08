@@ -80,7 +80,7 @@ type githubClient interface {
 	CreateComment(owner, repo string, number int, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
 
 type commentPruner interface {

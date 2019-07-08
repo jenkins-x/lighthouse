@@ -74,7 +74,7 @@ func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
 type githubClient interface {
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 	GetFile(org, repo, filepath, commit string) ([]byte, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }

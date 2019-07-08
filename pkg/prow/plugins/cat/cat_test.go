@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -339,9 +340,8 @@ Available variants:
 	defer ts.Close()
 
 	// github fake client
-	fc := &fakegithub.FakeClient{
-		IssueComments: make(map[int][]*scm.Comment),
-	}
+	fakeScmClient, fc := fake.NewDefault()
+	fakeClient := github.ToGitHubClient(fakeScmClient)
 
 	// run test for each case
 	for _, testcase := range testcases {
@@ -365,7 +365,7 @@ Available variants:
 		Number:     5,
 		IssueState: "open",
 	}
-	if err := handle(fc, logrus.WithField("plugin", pluginName), e, &realClowder{url: ts.URL + "/?format=json"}, func() {}); err != nil {
+	if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, &realClowder{url: ts.URL + "/?format=json"}, func() {}); err != nil {
 		t.Errorf("didn't expect error: %v", err)
 		return
 	}

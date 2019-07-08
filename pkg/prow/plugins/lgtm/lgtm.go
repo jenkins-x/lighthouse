@@ -138,7 +138,7 @@ type githubClient interface {
 	AssignIssue(owner, repo string, number int, assignees []string) error
 	CreateComment(owner, repo string, number int, comment string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)

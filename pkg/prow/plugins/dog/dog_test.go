@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
@@ -219,9 +220,8 @@ func TestHttpResponse(t *testing.T) {
 		}
 
 		// github fake client
-		fc := &fakegithub.FakeClient{
-			IssueComments: make(map[int][]*scm.Comment),
-		}
+		fakeScmClient, fc := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
 
 		// fully test handling a comment
 		e := &github.GenericCommentEvent{
@@ -230,7 +230,7 @@ func TestHttpResponse(t *testing.T) {
 			Number:     5,
 			IssueState: "open",
 		}
-		err = handle(fc, logrus.WithField("plugin", pluginName), e, realPack(ts.URL))
+		err = handle(fakeClient, logrus.WithField("plugin", pluginName), e, realPack(ts.URL))
 		if err != nil {
 			t.Errorf("tc %s: For comment %s, didn't expect error: %v", testcase.name, testcase.comment, err)
 		}

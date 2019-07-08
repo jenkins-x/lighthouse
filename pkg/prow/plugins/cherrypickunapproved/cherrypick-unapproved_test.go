@@ -61,10 +61,10 @@ func (fc *fakeClient) RemoveLabel(owner, repo string, number int, label string) 
 }
 
 // GetIssueLabels gets the current labels on the specified PR or issue
-func (fc *fakeClient) GetIssueLabels(owner, repo string, number int) ([]scm.Label, error) {
-	la := []scm.Label{}
+func (fc *fakeClient) GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error) {
+	la := []*scm.Label{}
 	for _, l := range fc.labels {
-		la = append(la, scm.Label{Name: l})
+		la = append(la, &scm.Label{Name: l})
 	}
 	return la, nil
 }

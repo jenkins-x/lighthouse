@@ -56,8 +56,11 @@ func (c *GitHubClient) ReopenPR(owner, repo string, number int) error {
 	panic("implement me")
 }
 
-func (c *GitHubClient) GetRepoLabels(owner, repo string) ([]scm.Label, error) {
-	panic("implement me")
+func (c *GitHubClient) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	labels, _, err := c.client.Repositories.ListLabels(ctx, fullName, c.createListOptions())
+	return labels, err
 }
 
 func (c *GitHubClient) IsCollaborator(owner, repo, login string) (bool, error) {
@@ -158,28 +161,11 @@ func (c *GitHubClient) ListIssueComments(org, repo string, number int) ([]*scm.C
 	return comments, err
 }
 
-func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]scm.Label, error) {
+func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]*scm.Label, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
-	issue, _, err := c.client.Issues.Find(ctx, fullName, number)
-	if err != nil {
-		return nil, err
-	}
-	if issue == nil {
-		return nil, nil
-	}
-	// TODO we don't currently load all the isue label information...
-	return toScmLabels(issue.Labels), nil
-}
-
-func toScmLabels(labels []string) []scm.Label {
-	answer := []scm.Label{}
-	for _, label := range labels {
-		answer = append(answer, scm.Label{
-			Name: label,
-		})
-	}
-	return answer
+	labels, _, err := c.client.Issues.ListLabels(ctx, fullName, number, c.createListOptions())
+	return labels, err
 }
 
 func (c *GitHubClient) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {

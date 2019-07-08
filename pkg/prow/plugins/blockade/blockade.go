@@ -45,7 +45,7 @@ var blockedPathsBody = fmt.Sprintf("Adding label: `%s` because PR changes a prot
 
 type githubClient interface {
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 	CreateComment(org, repo string, number int, comment string) error
@@ -233,7 +233,7 @@ func calculateBlocks(changes []*scm.Change, blockades []blockade) summary {
 	return sum
 }
 
-func hasBlockedLabel(githubLabels []scm.Label) bool {
+func hasBlockedLabel(githubLabels []*scm.Label) bool {
 	label := strings.ToLower(labels.BlockedPaths)
 	for _, elem := range githubLabels {
 		if strings.ToLower(elem.Name) == label {

@@ -54,11 +54,12 @@ func (c *ghc) RemoveLabel(_, _ string, _ int, label string) error {
 	return c.removeLabelErr
 }
 
-func (c *ghc) GetIssueLabels(_, _ string, _ int) (ls []scm.Label, err error) {
+func (c *ghc) GetIssueLabels(_, _ string, _ int) (ls []*scm.Label, err error) {
 	c.T.Log("GetIssueLabels")
 	for k, ok := range c.labels {
 		if ok {
-			ls = append(ls, k)
+			copy := k
+			ls = append(ls, &copy)
 		}
 	}
 
@@ -119,7 +120,7 @@ func TestHandlePR(t *testing.T) {
 		event       scm.PullRequestHook
 		err         error
 		sizes       plugins.Size
-		finalLabels []scm.Label
+		finalLabels []*scm.Label
 	}{
 		{
 			name: "simple size/S, no .generated_files",
@@ -156,7 +157,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "size/S"},
 			},
 			sizes: defaultSizes,
@@ -216,7 +217,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "size/M"},
 			},
 			sizes: defaultSizes,
@@ -276,7 +277,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "size/M"},
 			},
 			sizes: defaultSizes,
@@ -362,7 +363,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "size/XS"},
 			},
 			sizes: defaultSizes,
@@ -373,7 +374,7 @@ func TestHandlePR(t *testing.T) {
 			event: scm.PullRequestHook{
 				Action: scm.ActionClose,
 			},
-			finalLabels: []scm.Label{},
+			finalLabels: []*scm.Label{},
 			sizes:       defaultSizes,
 		},
 		{
@@ -460,7 +461,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "irrelevant"},
 				{Name: "size/XS"},
 			},
@@ -501,7 +502,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "size/S"},
 			},
 			sizes: defaultSizes,
@@ -534,7 +535,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "size/M"},
 			},
 			sizes: defaultSizes,
@@ -574,7 +575,7 @@ func TestHandlePR(t *testing.T) {
 					},
 				},
 			},
-			finalLabels: []scm.Label{
+			finalLabels: []*scm.Label{
 				{Name: "size/XXL"},
 			},
 			sizes: plugins.Size{
@@ -616,7 +617,7 @@ func TestHandlePR(t *testing.T) {
 			}
 
 			for _, l := range c.finalLabels {
-				if !c.client.labels[l] {
+				if !c.client.labels[*l] {
 					t.Fatalf("github client labels missing %v", l)
 				}
 			}

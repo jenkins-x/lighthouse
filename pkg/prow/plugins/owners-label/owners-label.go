@@ -49,8 +49,8 @@ type ownersClient interface {
 
 type githubClient interface {
 	AddLabel(org, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
-	GetRepoLabels(owner, repo string) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
 

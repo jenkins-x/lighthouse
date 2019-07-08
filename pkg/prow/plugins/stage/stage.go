@@ -59,7 +59,7 @@ func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.Plu
 type stageClient interface {
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
 
 func stageHandleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {

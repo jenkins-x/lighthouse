@@ -80,8 +80,8 @@ type githubClient interface {
 	CreateComment(owner, repo string, number int, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetRepoLabels(owner, repo string) ([]scm.Label, error)
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
 
 // Get Labels from Regexp matches

@@ -246,25 +246,25 @@ func (f *FakeClient) GetCombinedStatus(owner, repo, ref string) (*github.Combine
 }
 
 // GetRepoLabels gets labels in a repo.
-func (f *FakeClient) GetRepoLabels(owner, repo string) ([]scm.Label, error) {
-	la := []scm.Label{}
+func (f *FakeClient) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
+	la := []*scm.Label{}
 	for _, l := range f.RepoLabelsExisting {
-		la = append(la, scm.Label{Name: l})
+		la = append(la, &scm.Label{Name: l})
 	}
 	return la, nil
 }
 
 // GetIssueLabels gets labels on an issue
-func (f *FakeClient) GetIssueLabels(owner, repo string, number int) ([]scm.Label, error) {
+func (f *FakeClient) GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error) {
 	re := regexp.MustCompile(fmt.Sprintf(`^%s/%s#%d:(.*)$`, owner, repo, number))
-	la := []scm.Label{}
+	la := []*scm.Label{}
 	allLabels := sets.NewString(f.IssueLabelsExisting...)
 	allLabels.Insert(f.IssueLabelsAdded...)
 	allLabels.Delete(f.IssueLabelsRemoved...)
 	for _, l := range allLabels.List() {
 		groups := re.FindStringSubmatch(l)
 		if groups != nil {
-			la = append(la, scm.Label{Name: groups[1]})
+			la = append(la, &scm.Label{Name: groups[1]})
 		}
 	}
 	return la, nil

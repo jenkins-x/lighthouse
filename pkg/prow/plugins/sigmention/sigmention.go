@@ -50,9 +50,9 @@ type githubClient interface {
 	IsMember(org, user string) (bool, error)
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetRepoLabels(owner, repo string) ([]scm.Label, error)
+	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
 	BotName() (string, error)
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
 
 func init() {

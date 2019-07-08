@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -434,14 +434,11 @@ func TestLabel(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Running scenario %q", tc.name)
 		sort.Strings(tc.expectedNewLabels)
-		fakeClient := &fakegithub.FakeClient{
-			Issues:             make(map[int][]*scm.Issue),
-			IssueComments:      make(map[int][]*scm.Comment),
-			RepoLabelsExisting: tc.repoLabels,
-			OrgMembers:         map[string][]string{"org": {orgMember}},
-			IssueLabelsAdded:   []string{},
-			IssueLabelsRemoved: []string{},
-		}
+		fakeScmClient, fakeData := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeData.OrgMembers["org"] = []string{orgMember}
+		fakeData.RepoLabelsExisting = tc.repoLabels
+
 		// Add initial labels
 		for _, label := range tc.issueLabels {
 			fakeClient.AddLabel("org", "repo", 1, label)
@@ -465,20 +462,20 @@ func TestLabel(t *testing.T) {
 			expectLabels = []string{}
 		}
 		sort.Strings(expectLabels)
-		sort.Strings(fakeClient.IssueLabelsAdded)
-		if !reflect.DeepEqual(expectLabels, fakeClient.IssueLabelsAdded) {
-			t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fakeClient.IssueLabelsAdded)
+		sort.Strings(fakeData.IssueLabelsAdded)
+		if !reflect.DeepEqual(expectLabels, fakeData.IssueLabelsAdded) {
+			t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fakeData.IssueLabelsAdded)
 		}
 
 		sort.Strings(tc.expectedRemovedLabels)
-		sort.Strings(fakeClient.IssueLabelsRemoved)
-		if !reflect.DeepEqual(tc.expectedRemovedLabels, fakeClient.IssueLabelsRemoved) {
-			t.Errorf("expected the labels %q to be removed, but %q were removed.", tc.expectedRemovedLabels, fakeClient.IssueLabelsRemoved)
+		sort.Strings(fakeData.IssueLabelsRemoved)
+		if !reflect.DeepEqual(tc.expectedRemovedLabels, fakeData.IssueLabelsRemoved) {
+			t.Errorf("expected the labels %q to be removed, but %q were removed.", tc.expectedRemovedLabels, fakeData.IssueLabelsRemoved)
 		}
-		if len(fakeClient.IssueCommentsAdded) > 0 && !tc.expectedBotComment {
-			t.Errorf("unexpected bot comments: %#v", fakeClient.IssueCommentsAdded)
+		if len(fakeData.IssueCommentsAdded) > 0 && !tc.expectedBotComment {
+			t.Errorf("unexpected bot comments: %#v", fakeData.IssueCommentsAdded)
 		}
-		if len(fakeClient.IssueCommentsAdded) == 0 && tc.expectedBotComment {
+		if len(fakeData.IssueCommentsAdded) == 0 && tc.expectedBotComment {
 			t.Error("expected a bot comment but got none")
 		}
 	}

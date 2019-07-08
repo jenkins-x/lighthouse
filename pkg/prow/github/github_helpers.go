@@ -70,7 +70,7 @@ const (
 var NormLogin = strings.ToLower
 
 /*// HasLabel checks if label is in the label set "issueLabels".
-func HasLabel(label string, issueLabels []scm.Label) bool {
+func HasLabel(label string, issueLabels []*scm.Label) bool {
 	for _, l := range issueLabels {
 		if strings.ToLower(l.Name) == strings.ToLower(label) {
 			return true
@@ -259,7 +259,7 @@ type Milestone struct {
 }
 
 // HasLabel checks if label is in the label set "issueLabels".
-func HasLabel(label string, issueLabels []scm.Label) bool {
+func HasLabel(label string, issueLabels []*scm.Label) bool {
 	for _, l := range issueLabels {
 		if strings.ToLower(l.Name) == strings.ToLower(label) {
 			return true

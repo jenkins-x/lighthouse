@@ -43,7 +43,7 @@ var (
 	labelCancelRe = regexp.MustCompile(`(?mi)^/hold cancel\s*$`)
 )
 
-type hasLabelFunc func(label string, issueLabels []scm.Label) bool
+type hasLabelFunc func(label string, issueLabels []*scm.Label) bool
 
 func init() {
 	plugins.RegisterGenericCommentHandler(PluginName, handleGenericComment, helpProvider)
@@ -67,11 +67,11 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 type githubClient interface {
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
 
 func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
-	hasLabel := func(label string, labels []scm.Label) bool {
+	hasLabel := func(label string, labels []*scm.Label) bool {
 		return github.HasLabel(label, labels)
 	}
 	return handle(pc.GitHubClient, pc.Logger, &e, hasLabel)

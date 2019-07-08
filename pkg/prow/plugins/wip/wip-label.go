@@ -65,7 +65,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 // Strict subset of github.Client methods.
 type githubClient interface {
-	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
+	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 }
