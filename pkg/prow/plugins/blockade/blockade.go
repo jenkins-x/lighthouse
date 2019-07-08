@@ -30,7 +30,6 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -45,7 +44,7 @@ const (
 var blockedPathsBody = fmt.Sprintf("Adding label: `%s` because PR changes a protected file.", labels.BlockedPaths)
 
 type githubClient interface {
-	GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error)
+	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
@@ -85,7 +84,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		nil
 }
 
-type blockCalc func([]github.PullRequestChange, []blockade) summary
+type blockCalc func([]scm.Change, []blockade) summary
 
 type client struct {
 	ghc githubClient
@@ -112,7 +111,7 @@ func (bd *blockade) isBlocked(file string) bool {
 	return matchesAny(file, bd.blockRegexps) && !matchesAny(file, bd.exceptionRegexps)
 }
 
-type summary map[string][]github.PullRequestChange
+type summary map[string][]scm.Change
 
 func (s summary) String() string {
 	if len(s) == 0 {
@@ -123,7 +122,7 @@ func (s summary) String() string {
 	for reason, files := range s {
 		fmt.Fprintf(&buf, "[%s]\n", reason)
 		for _, file := range files {
-			fmt.Fprintf(&buf, "- [%s](%s)\n\n", file.Filename, file.BlobURL)
+			fmt.Fprintf(&buf, "- [%s](%s)\n\n", file.Path, file.BlobURL)
 		}
 	}
 	return buf.String()
@@ -222,11 +221,11 @@ func compileApplicableBlockades(org, repo string, log *logrus.Entry, blockades [
 }
 
 // calculateBlocks determines if a PR should be blocked and returns the summary describing the block.
-func calculateBlocks(changes []github.PullRequestChange, blockades []blockade) summary {
+func calculateBlocks(changes []scm.Change, blockades []blockade) summary {
 	sum := make(summary)
 	for _, change := range changes {
 		for _, b := range blockades {
-			if b.isBlocked(change.Filename) {
+			if b.isBlocked(change.Path) {
 				sum[b.explanation] = append(sum[b.explanation], change)
 			}
 		}

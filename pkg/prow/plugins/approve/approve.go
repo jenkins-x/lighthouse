@@ -63,7 +63,7 @@ var (
 
 type githubClient interface {
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
-	GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error)
+	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	ListIssueComments(org, repo string, number int) ([]scm.Comment, error)
 	ListReviews(org, repo string, number int) ([]scm.Review, error)
@@ -356,7 +356,7 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 	}
 	var filenames []string
 	for _, change := range changes {
-		filenames = append(filenames, change.Filename)
+		filenames = append(filenames, change.Path)
 	}
 	issueLabels, err := ghc.GetIssueLabels(pr.org, pr.repo, pr.number)
 	if err != nil {

@@ -22,7 +22,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -52,7 +51,7 @@ type githubClient interface {
 	AddLabel(org, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	GetRepoLabels(owner, repo string) ([]scm.Label, error)
-	GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error)
+	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
 }
 
 func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
@@ -80,7 +79,7 @@ func handle(ghc githubClient, oc ownersClient, log *logrus.Entry, pre *scm.PullR
 	}
 	neededLabels := sets.NewString()
 	for _, change := range changes {
-		neededLabels.Insert(oc.FindLabelsForFile(change.Filename).List()...)
+		neededLabels.Insert(oc.FindLabelsForFile(change.Path).List()...)
 	}
 	if neededLabels.Len() == 0 {
 		// No labels requested for the given files. Return now to save API tokens.

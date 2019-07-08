@@ -27,19 +27,18 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
 var (
 	// Sample changes:
-	docFile    = github.PullRequestChange{Filename: "docs/documentation.md", BlobURL: "<URL1>"}
-	docOwners  = github.PullRequestChange{Filename: "docs/OWNERS", BlobURL: "<URL2>"}
-	docOwners2 = github.PullRequestChange{Filename: "docs/2/OWNERS", BlobURL: "<URL3>"}
-	srcGo      = github.PullRequestChange{Filename: "src/code.go", BlobURL: "<URL4>"}
-	srcSh      = github.PullRequestChange{Filename: "src/shell.sh", BlobURL: "<URL5>"}
-	docSh      = github.PullRequestChange{Filename: "docs/shell.sh", BlobURL: "<URL6>"}
+	docFile    = scm.Change{Path: "docs/documentation.md", BlobURL: "<URL1>"}
+	docOwners  = scm.Change{Path: "docs/OWNERS", BlobURL: "<URL2>"}
+	docOwners2 = scm.Change{Path: "docs/2/OWNERS", BlobURL: "<URL3>"}
+	srcGo      = scm.Change{Path: "src/code.go", BlobURL: "<URL4>"}
+	srcSh      = scm.Change{Path: "src/shell.sh", BlobURL: "<URL5>"}
+	docSh      = scm.Change{Path: "docs/shell.sh", BlobURL: "<URL6>"}
 
 	// Sample blockades:
 	blockDocs = plugins.Blockade{
@@ -74,77 +73,77 @@ var (
 func TestCalculateBlocks(t *testing.T) {
 	tcs := []struct {
 		name            string
-		changes         []github.PullRequestChange
+		changes         []scm.Change
 		config          []plugins.Blockade
 		expectedSummary summary
 	}{
 		{
 			name:    "blocked by 1/1 blockade (no exceptions), extra file",
 			config:  []plugins.Blockade{blockDocs},
-			changes: []github.PullRequestChange{docFile, docOwners, srcGo},
+			changes: []scm.Change{docFile, docOwners, srcGo},
 			expectedSummary: summary{
-				"1": []github.PullRequestChange{docFile, docOwners},
+				"1": []scm.Change{docFile, docOwners},
 			},
 		},
 		{
 			name:    "blocked by 1/1 blockade (1/2 files are exceptions), extra file",
 			config:  []plugins.Blockade{blockDocsExceptOwners},
-			changes: []github.PullRequestChange{docFile, docOwners, srcGo},
+			changes: []scm.Change{docFile, docOwners, srcGo},
 			expectedSummary: summary{
-				"2": []github.PullRequestChange{docFile},
+				"2": []scm.Change{docFile},
 			},
 		},
 		{
 			name:            "blocked by 0/1 blockades (2/2 exceptions), extra file",
 			config:          []plugins.Blockade{blockDocsExceptOwners},
-			changes:         []github.PullRequestChange{docOwners, docOwners2, srcGo},
+			changes:         []scm.Change{docOwners, docOwners2, srcGo},
 			expectedSummary: summary{},
 		},
 		{
 			name:            "blocked by 0/1 blockades (no exceptions), extra file",
 			config:          []plugins.Blockade{blockDocsExceptOwners},
-			changes:         []github.PullRequestChange{srcGo, srcSh},
+			changes:         []scm.Change{srcGo, srcSh},
 			expectedSummary: summary{},
 		},
 		{
 			name:    "blocked by 2/2 blockades (no exceptions), extra file",
 			config:  []plugins.Blockade{blockDocsExceptOwners, blockShell},
-			changes: []github.PullRequestChange{srcGo, srcSh, docFile},
+			changes: []scm.Change{srcGo, srcSh, docFile},
 			expectedSummary: summary{
-				"2": []github.PullRequestChange{docFile},
-				"3": []github.PullRequestChange{srcSh},
+				"2": []scm.Change{docFile},
+				"3": []scm.Change{srcSh},
 			},
 		},
 		{
 			name:    "blocked by 2/2 blockades w/ single file",
 			config:  []plugins.Blockade{blockDocsExceptOwners, blockShell},
-			changes: []github.PullRequestChange{docSh},
+			changes: []scm.Change{docSh},
 			expectedSummary: summary{
-				"2": []github.PullRequestChange{docSh},
-				"3": []github.PullRequestChange{docSh},
+				"2": []scm.Change{docSh},
+				"3": []scm.Change{docSh},
 			},
 		},
 		{
 			name:    "blocked by 2/2 blockades w/ single file (1/2 exceptions)",
 			config:  []plugins.Blockade{blockDocsExceptOwners, blockShell},
-			changes: []github.PullRequestChange{docSh, docOwners},
+			changes: []scm.Change{docSh, docOwners},
 			expectedSummary: summary{
-				"2": []github.PullRequestChange{docSh},
-				"3": []github.PullRequestChange{docSh},
+				"2": []scm.Change{docSh},
+				"3": []scm.Change{docSh},
 			},
 		},
 		{
 			name:    "blocked by 1/2 blockades (1/2 exceptions), extra file",
 			config:  []plugins.Blockade{blockDocsExceptOwners, blockShell},
-			changes: []github.PullRequestChange{srcSh, docOwners, srcGo},
+			changes: []scm.Change{srcSh, docOwners, srcGo},
 			expectedSummary: summary{
-				"3": []github.PullRequestChange{srcSh},
+				"3": []scm.Change{srcSh},
 			},
 		},
 		{
 			name:            "blocked by 0/2 blockades (1/2 exceptions), extra file",
 			config:          []plugins.Blockade{blockDocsExceptOwners, blockShell},
-			changes:         []github.PullRequestChange{docOwners, srcGo},
+			changes:         []scm.Change{docOwners, srcGo},
 			expectedSummary: summary{},
 		},
 	}
@@ -168,8 +167,8 @@ func TestSummaryString(t *testing.T) {
 		{
 			name: "Simple example",
 			sum: summary{
-				"reason A": []github.PullRequestChange{docFile},
-				"reason B": []github.PullRequestChange{srcGo, srcSh},
+				"reason A": []scm.Change{docFile},
+				"reason B": []scm.Change{srcGo, srcSh},
 			},
 			expectedContents: []string{
 				"#### Reasons for blocking this PR:\n",
@@ -299,7 +298,7 @@ func TestHandle(t *testing.T) {
 		fakeClient := &fakegithub.FakeClient{
 			RepoLabelsExisting: []string{labels.BlockedPaths, otherLabel},
 			IssueComments:      make(map[int][]scm.Comment),
-			PullRequestChanges: make(map[int][]github.PullRequestChange),
+			PullRequestChanges: make(map[int][]scm.Change),
 			IssueLabelsAdded:   []string{},
 			IssueLabelsRemoved: []string{},
 		}
@@ -308,14 +307,14 @@ func TestHandle(t *testing.T) {
 			fakeClient.IssueLabelsAdded = append(fakeClient.IssueLabelsAdded, label)
 			expectAdded = append(expectAdded, label)
 		}
-		calcF := func(_ []github.PullRequestChange, blockades []blockade) summary {
+		calcF := func(_ []scm.Change, blockades []blockade) summary {
 			if !tc.filesBlock {
 				return nil
 			}
 			sum := make(summary)
 			for _, b := range blockades {
 				// For this test assume 'docFile' is blocked by every blockade that is applicable to the repo.
-				sum[b.explanation] = []github.PullRequestChange{docFile}
+				sum[b.explanation] = []scm.Change{docFile}
 			}
 			return sum
 		}

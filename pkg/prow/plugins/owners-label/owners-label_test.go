@@ -26,7 +26,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -172,15 +171,15 @@ func TestHandle(t *testing.T) {
 
 		t.Logf("Running scenario %q", tc.name)
 		sort.Strings(tc.expectedNewLabels)
-		changes := make([]github.PullRequestChange, 0, len(tc.filesChanged))
+		changes := make([]scm.Change, 0, len(tc.filesChanged))
 		for _, name := range tc.filesChanged {
-			changes = append(changes, github.PullRequestChange{Filename: name})
+			changes = append(changes, scm.Change{Path: name})
 		}
 		fghc := &fakegithub.FakeClient{
 			PullRequests: map[int]*scm.PullRequest{
 				basicPR.Number: &basicPR,
 			},
-			PullRequestChanges: map[int][]github.PullRequestChange{
+			PullRequestChanges: map[int][]scm.Change{
 				basicPR.Number: changes,
 			},
 			RepoLabelsExisting: tc.repoLabels,

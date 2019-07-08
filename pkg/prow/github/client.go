@@ -144,7 +144,7 @@ func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]scm.Label
 	panic("implement me")
 }
 
-func (c *GitHubClient) GetPullRequestChanges(org, repo string, number int) ([]PullRequestChange, error) {
+func (c *GitHubClient) GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error) {
 	panic("implement me")
 }
 

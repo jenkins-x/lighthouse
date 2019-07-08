@@ -271,9 +271,9 @@ func TestLGTMComment(t *testing.T) {
 					},
 				},
 			},
-			PullRequestChanges: map[int][]github.PullRequestChange{
+			PullRequestChanges: map[int][]scm.Change{
 				5: {
-					{Filename: "doc/README.md"},
+					{Path: "doc/README.md"},
 				},
 			},
 			Collaborators: []string{"collab1", "collab2"},

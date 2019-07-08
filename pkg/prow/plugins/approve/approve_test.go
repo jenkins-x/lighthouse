@@ -121,13 +121,13 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 			},
 		)
 	}
-	var changes []github.PullRequestChange
+	var changes []scm.Change
 	for _, file := range files {
-		changes = append(changes, github.PullRequestChange{Filename: file})
+		changes = append(changes, scm.Change{Path: file})
 	}
 	return &fakegithub.FakeClient{
 		IssueLabelsAdded:   labels,
-		PullRequestChanges: map[int][]github.PullRequestChange{prNumber: changes},
+		PullRequestChanges: map[int][]scm.Change{prNumber: changes},
 		IssueComments:      map[int][]scm.Comment{prNumber: comments},
 		IssueEvents:        map[int][]github.ListedIssueEvent{prNumber: events},
 		Reviews:            map[int][]scm.Review{prNumber: reviews},

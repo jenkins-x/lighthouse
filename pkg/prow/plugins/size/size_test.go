@@ -30,7 +30,7 @@ type ghc struct {
 	*testing.T
 	labels    map[scm.Label]bool
 	files     map[string][]byte
-	prChanges []github.PullRequestChange
+	prChanges []scm.Change
 
 	addLabelErr, removeLabelErr, getIssueLabelsErr,
 	getFileErr, getPullRequestChangesErr error
@@ -71,7 +71,7 @@ func (c *ghc) GetFile(_, _, path, _ string) ([]byte, error) {
 	return c.files[path], c.getFileErr
 }
 
-func (c *ghc) GetPullRequestChanges(_, _ string, _ int) ([]github.PullRequestChange, error) {
+func (c *ghc) GetPullRequestChanges(_, _ string, _ int) ([]scm.Change, error) {
 	c.T.Log("GetPullRequestChanges")
 	return c.prChanges, c.getPullRequestChangesErr
 }
@@ -126,17 +126,17 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "barfoo",
+						Path:      "barfoo",
 						Additions: 3,
 						Deletions: 4,
 						Changes:   7,
@@ -172,31 +172,31 @@ func TestHandlePR(t *testing.T) {
 						path-prefix generated
 					`),
 				},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "barfoo",
+						Path:      "barfoo",
 						Additions: 50,
 						Deletions: 0,
 						Changes:   50,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/what.txt",
+						Path:      "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/my/file.txt",
+						Path:      "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
@@ -232,31 +232,31 @@ func TestHandlePR(t *testing.T) {
 						generated/**/*.txt linguist-generated=true
 					`),
 				},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "barfoo",
+						Path:      "barfoo",
 						Additions: 50,
 						Deletions: 0,
 						Changes:   50,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/what.txt",
+						Path:      "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/my/file.txt",
+						Path:      "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
@@ -304,45 +304,45 @@ func TestHandlePR(t *testing.T) {
 					mydir/mypath3
 					`),
 				},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{ // Notice "barfoo" is the only relevant change.
 						Sha:       "abcd",
-						Filename:  "barfoo",
+						Path:      "barfoo",
 						Additions: 5,
 						Deletions: 0,
 						Changes:   5,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/what.txt",
+						Path:      "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/my/file.txt",
+						Path:      "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "mypath1",
+						Path:      "mypath1",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "mydir/mypath3",
+						Path:      "mydir/mypath3",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
@@ -402,45 +402,45 @@ func TestHandlePR(t *testing.T) {
 					mydir/mypath3
 					`),
 				},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{ // Notice "barfoo" is the only relevant change.
 						Sha:       "abcd",
-						Filename:  "barfoo",
+						Path:      "barfoo",
 						Additions: 5,
 						Deletions: 0,
 						Changes:   5,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/what.txt",
+						Path:      "generated/what.txt",
 						Additions: 30,
 						Deletions: 0,
 						Changes:   30,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "generated/my/file.txt",
+						Path:      "generated/my/file.txt",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "mypath1",
+						Path:      "mypath1",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "mydir/mypath3",
+						Path:      "mydir/mypath3",
 						Additions: 300,
 						Deletions: 0,
 						Changes:   300,
@@ -471,17 +471,17 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "barfoo",
+						Path:      "barfoo",
 						Additions: 3,
 						Deletions: 4,
 						Changes:   7,
@@ -511,10 +511,10 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 30,
 						Deletions: 40,
 						Changes:   70,
@@ -544,17 +544,17 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []github.PullRequestChange{
+				prChanges: []scm.Change{
 					{
 						Sha:       "abcd",
-						Filename:  "foobar",
+						Path:      "foobar",
 						Additions: 10,
 						Deletions: 10,
 						Changes:   20,
 					},
 					{
 						Sha:       "abcd",
-						Filename:  "barfoo",
+						Path:      "barfoo",
 						Additions: 3,
 						Deletions: 4,
 						Changes:   7,

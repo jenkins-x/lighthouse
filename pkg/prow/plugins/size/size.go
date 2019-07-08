@@ -28,7 +28,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/genfiles"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitattributes"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -77,7 +76,7 @@ type githubClient interface {
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	GetFile(org, repo, filepath, commit string) ([]byte, error)
-	GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error)
+	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
 }
 
 func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.PullRequestHook) error {
@@ -116,7 +115,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 	var count int
 	for _, change := range changes {
 		// Skip generated and linguist-generated files.
-		if gf.Match(change.Filename) || ga.IsLinguistGenerated(change.Filename) {
+		if gf.Match(change.Path) || ga.IsLinguistGenerated(change.Path) {
 			continue
 		}
 

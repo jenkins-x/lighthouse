@@ -140,7 +140,7 @@ type githubClient interface {
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
-	GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error)
+	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
 	ListIssueComments(org, repo string, number int) ([]scm.Comment, error)
 	DeleteComment(org, repo string, ID int) error
 	BotName() (string, error)
@@ -510,7 +510,7 @@ func getChangedFiles(gc githubClient, org, repo string, number int) ([]string, e
 	}
 	var filenames []string
 	for _, change := range changes {
-		filenames = append(filenames, change.Filename)
+		filenames = append(filenames, change.Path)
 	}
 	return filenames, nil
 }

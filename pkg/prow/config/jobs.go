@@ -21,7 +21,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/go-scm/scm"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 
 	v1 "k8s.io/api/core/v1"
@@ -357,7 +357,7 @@ func (ps Presubmit) ContextRequired() bool {
 type ChangedFilesProvider func() ([]string, error)
 
 type githubClient interface {
-	GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error)
+	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
 }
 
 // NewGitHubDeferredChangedFilesProvider uses a closure to lazily retrieve the file changes only if they are needed.
@@ -373,7 +373,7 @@ func NewGitHubDeferredChangedFilesProvider(client githubClient, org, repo string
 				return nil, fmt.Errorf("error getting pull request changes: %v", err)
 			}
 			for _, change := range changes {
-				changedFiles = append(changedFiles, change.Filename)
+				changedFiles = append(changedFiles, change.Path)
 			}
 		}
 		return changedFiles, nil
