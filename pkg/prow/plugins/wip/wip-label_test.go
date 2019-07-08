@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 )
 
@@ -91,10 +91,9 @@ func TestWipLabel(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		fc := &fakegithub.FakeClient{
-			PullRequests:  make(map[int]*scm.PullRequest),
-			IssueComments: make(map[int][]*scm.Comment),
-		}
+		fakeScmClient, fc := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
+
 		org, repo, number := "org", "repo", 5
 		e := &event{
 			org:      org,
@@ -105,7 +104,7 @@ func TestWipLabel(t *testing.T) {
 			hasLabel: tc.hasLabel,
 		}
 
-		if err := handle(fc, logrus.WithField("plugin", PluginName), e); err != nil {
+		if err := handle(fakeClient, logrus.WithField("plugin", PluginName), e); err != nil {
 			t.Errorf("For case %s, didn't expect error from wip: %v", tc.name, err)
 			continue
 		}

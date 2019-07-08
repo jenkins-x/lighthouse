@@ -31,7 +31,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 )
 
@@ -323,9 +322,9 @@ func TestDogs(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		fc := &fakegithub.FakeClient{
-			IssueComments: make(map[int][]*scm.Comment),
-		}
+		fakeScmClient, fc := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
+
 		e := &github.GenericCommentEvent{
 			Action:     tc.action,
 			Body:       tc.body,
@@ -333,7 +332,7 @@ func TestDogs(t *testing.T) {
 			IssueState: tc.state,
 			IsPR:       tc.pr,
 		}
-		err := handle(fc, logrus.WithField("plugin", pluginName), e, fakePack("doge"))
+		err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakePack("doge"))
 		if err != nil {
 			t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
 		}
