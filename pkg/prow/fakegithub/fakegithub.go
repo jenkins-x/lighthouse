@@ -157,7 +157,7 @@ func (f *FakeClient) CreateIssueReaction(org, repo string, ID int, reaction stri
 }
 
 // DeleteComment deletes a comment.
-func (f *FakeClient) DeleteComment(owner, repo string, ID int) error {
+func (f *FakeClient) DeleteComment(owner, repo string, number, ID int) error {
 	f.IssueCommentsDeleted = append(f.IssueCommentsDeleted, fmt.Sprintf("%s/%s#%d", owner, repo, ID))
 	for num, ics := range f.IssueComments {
 		for i, ic := range ics {
@@ -177,7 +177,7 @@ func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments 
 	}
 	for _, comment := range comments {
 		if isStale(comment) {
-			if err := f.DeleteComment(org, repo, comment.ID); err != nil {
+			if err := f.DeleteComment(org, repo, number, comment.ID); err != nil {
 				return fmt.Errorf("failed to delete stale comment with ID '%d'", comment.ID)
 			}
 		}

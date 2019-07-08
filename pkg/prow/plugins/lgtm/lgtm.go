@@ -142,7 +142,7 @@ type githubClient interface {
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
-	DeleteComment(org, repo string, ID int) error
+	DeleteComment(org, repo string, number, ID int) error
 	BotName() (string, error)
 	GetSingleCommit(org, repo, SHA string) (scm.CommitTree, error)
 	IsMember(org, user string) (bool, error)

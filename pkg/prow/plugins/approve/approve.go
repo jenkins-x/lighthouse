@@ -68,7 +68,7 @@ type githubClient interface {
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
 	ListReviews(org, repo string, number int) ([]scm.Review, error)
 	ListPullRequestComments(org, repo string, number int) ([]scm.Review, error)
-	DeleteComment(org, repo string, ID int) error
+	DeleteComment(org, repo string, number, ID int) error
 	CreateComment(org, repo string, number int, comment string) error
 	BotName() (string, error)
 	AddLabel(org, repo string, number int, label string) error
@@ -427,7 +427,7 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 	newMessage := updateNotification(githubConfig.LinkURL, pr.org, pr.repo, pr.branch, latestNotification, approversHandler)
 	if newMessage != nil {
 		for _, notif := range notifications {
-			if err := ghc.DeleteComment(pr.org, pr.repo, notif.ID); err != nil {
+			if err := ghc.DeleteComment(pr.org, pr.repo, pr.number, notif.ID); err != nil {
 				log.WithError(err).Errorf("Failed to delete comment from %s/%s#%d, ID: %d.", pr.org, pr.repo, pr.number, notif.ID)
 			}
 		}

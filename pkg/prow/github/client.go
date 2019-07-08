@@ -116,10 +116,6 @@ func (c *GitHubClient) ListPullRequestComments(org, repo string, number int) ([]
 	panic("implement me")
 }
 
-func (c *GitHubClient) DeleteComment(org, repo string, ID int) error {
-	panic("implement me")
-}
-
 func (c *GitHubClient) BotName() (string, error) {
 	panic("implement me")
 }
@@ -134,6 +130,13 @@ func (c *GitHubClient) AddLabel(owner, repo string, number int, label string) er
 
 func (c *GitHubClient) RemoveLabel(owner, repo string, number int, label string) error {
 	panic("implement me")
+}
+
+func (c *GitHubClient) DeleteComment(org, repo string, number, ID int) error {
+	ctx := context.Background()
+	fullName := c.repositoryName(org, repo)
+	_, err := c.client.Issues.DeleteComment(ctx, fullName, number, ID)
+	return err
 }
 
 func (c *GitHubClient) ListIssueComments(org, repo string, number int) ([]*scm.Comment, error) {

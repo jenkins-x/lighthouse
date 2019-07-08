@@ -27,7 +27,7 @@ import (
 type githubClient interface {
 	BotName() (string, error)
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
-	DeleteComment(org, repo string, id int) error
+	DeleteComment(org, repo string, number, id int) error
 }
 
 // EventClient is a struct that provides bot comment deletion for an event related to an issue.
@@ -89,7 +89,7 @@ func (c *EventClient) PruneComments(shouldPrune func(*scm.Comment) bool) {
 	for _, comment := range c.comments {
 		removed := false
 		if shouldPrune(comment) {
-			if err := c.ghc.DeleteComment(c.org, c.repo, comment.ID); err != nil {
+			if err := c.ghc.DeleteComment(c.org, c.repo, c.number, comment.ID); err != nil {
 				c.log.WithError(err).Errorf("failed to delete stale comment with ID '%d'", comment.ID)
 			} else {
 				removed = true

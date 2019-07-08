@@ -40,7 +40,7 @@ func (f *fakeGHClient) ListIssueComments(_, _ string, _ int) ([]*scm.Comment, er
 	return f.comments, nil
 }
 
-func (f *fakeGHClient) DeleteComment(_, _ string, ID int) error {
+func (f *fakeGHClient) DeleteComment(_, _ string, number, ID int) error {
 	f.deletedComments = append(f.deletedComments, ID)
 	return nil
 }
