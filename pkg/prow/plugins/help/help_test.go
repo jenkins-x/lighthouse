@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/sirupsen/logrus"
@@ -175,16 +175,13 @@ func TestLabel(t *testing.T) {
 
 	for _, tc := range testcases {
 		sort.Strings(tc.expectedNewLabels)
-		fakeClient := &fakegithub.FakeClient{
-			Issues:             make(map[int][]*scm.Issue),
-			IssueComments:      make(map[int][]*scm.Comment),
-			RepoLabelsExisting: []string{labels.Help, labels.GoodFirstIssue},
-			IssueLabelsAdded:   []string{},
-			IssueLabelsRemoved: []string{},
-		}
+		fakeScmClient, fakeClient := fake.NewDefault()
+		fakeGHClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient.RepoLabelsExisting = []string{labels.Help, labels.GoodFirstIssue}
+
 		// Add initial labels
 		for _, label := range tc.issueLabels {
-			fakeClient.AddLabel("org", "repo", 1, label)
+			fakeGHClient.AddLabel("org", "repo", 1, label)
 		}
 
 		if len(tc.issueState) == 0 {
@@ -203,7 +200,7 @@ func TestLabel(t *testing.T) {
 			Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			Author:     scm.User{Login: "Alice"},
 		}
-		err := handle(fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
+		err := handle(fakeGHClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
 		if err != nil {
 			t.Errorf("For case %s, didn't expect error from label test: %v", tc.name, err)
 			continue

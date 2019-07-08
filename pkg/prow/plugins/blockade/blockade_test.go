@@ -24,9 +24,10 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -295,13 +296,10 @@ func TestHandle(t *testing.T) {
 
 	for _, tc := range tcs {
 		expectAdded := []string{}
-		fakeClient := &fakegithub.FakeClient{
-			RepoLabelsExisting: []string{labels.BlockedPaths, otherLabel},
-			IssueComments:      make(map[int][]*scm.Comment),
-			PullRequestChanges: make(map[int][]*scm.Change),
-			IssueLabelsAdded:   []string{},
-			IssueLabelsRemoved: []string{},
-		}
+		fakeScmClient, fakeClient := fake.NewDefault()
+		fakeGHClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient.RepoLabelsExisting = []string{labels.BlockedPaths, otherLabel}
+
 		if tc.hasLabel {
 			label := formatLabel(labels.BlockedPaths)
 			fakeClient.IssueLabelsAdded = append(fakeClient.IssueLabelsAdded, label)
@@ -325,7 +323,7 @@ func TestHandle(t *testing.T) {
 				Number: 1,
 			},
 		}
-		if err := handle(fakeClient, logrus.WithField("plugin", PluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {
+		if err := handle(fakeGHClient, logrus.WithField("plugin", PluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {
 			t.Errorf("[%s] Unexpected error from handle: %v.", tc.name, err)
 			continue
 		}

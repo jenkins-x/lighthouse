@@ -23,9 +23,10 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -175,19 +176,16 @@ func TestHandle(t *testing.T) {
 		for _, name := range tc.filesChanged {
 			changes = append(changes, &scm.Change{Path: name})
 		}
-		fghc := &fakegithub.FakeClient{
-			PullRequests: map[int]*scm.PullRequest{
-				basicPR.Number: &basicPR,
-			},
-			PullRequestChanges: map[int][]*scm.Change{
-				basicPR.Number: changes,
-			},
-			RepoLabelsExisting: tc.repoLabels,
-			IssueLabelsAdded:   []string{},
-		}
+		fakeScmClient, fghc := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
+
+		fghc.PullRequests[basicPR.Number] = &basicPR
+		fghc.PullRequestChanges[basicPR.Number] = changes
+		fghc.RepoLabelsExisting = tc.repoLabels
+
 		// Add initial labels
 		for _, label := range tc.issueLabels {
-			fghc.AddLabel(basicPR.Base.Repo.Namespace, basicPR.Base.Repo.Name, basicPR.Number, label)
+			fakeClient.AddLabel(basicPR.Base.Repo.Namespace, basicPR.Base.Repo.Name, basicPR.Number, label)
 		}
 		pre := &scm.PullRequestHook{
 			Action:      scm.ActionOpen,
@@ -195,7 +193,7 @@ func TestHandle(t *testing.T) {
 			Repo:        basicPR.Base.Repo,
 		}
 
-		err := handle(fghc, foc, logrus.WithField("plugin", PluginName), pre)
+		err := handle(fakeClient, foc, logrus.WithField("plugin", PluginName), pre)
 		if err != nil {
 			t.Errorf("[%s] unexpected error from handle: %v", tc.name, err)
 			continue

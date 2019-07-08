@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/pkg/errors"
@@ -118,7 +119,11 @@ func (c *GitHubClient) ListPullRequestComments(owner, repo string, number int) (
 }
 
 func (c *GitHubClient) BotName() (string, error) {
-	panic("implement me")
+	botName := os.Getenv("BOT_NAME")
+	if botName == "" {
+		botName = "jenkins-x-bot"
+	}
+	return botName, nil
 }
 
 func (c *GitHubClient) ListIssueEvents(org, repo string, num int) ([]ListedIssueEvent, error) {
