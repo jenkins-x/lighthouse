@@ -36,13 +36,18 @@ type WebhookList struct {
 // WebhookSpec defines a generic webhook emitted by a git provider
 type WebhookSpec struct {
 	EventType   string       `json:"eventType"`
-	Ref         string       `json:"ref,omitempty"`
 	Provider    string       `json:"provider"`
 	URL         string       `json:"url"`
 	Payload     string       `json:"payload"`
 	Issue       *Issue       `json:"issue,omitempty"`
 	PullRequest *PullRequest `json:"pullRequest,omitempty"`
 	Commit      *Commit      `json:"commit,omitempty"`
+	Org         string       `json:"org"`
+	Repo        string       `json:"repo"`
+}
+
+// Repository models a single a git repository
+type Repository struct {
 }
 
 // Issue represents a single issue on a git provider's issue tracker
@@ -70,7 +75,7 @@ type PullRequest struct {
 	Org    string `json:"org"`
 	Base   string `json:"base"`
 	Head   string `json:"head"`
-	Number string `json:"number"`
+	Number int64  `json:"number"`
 }
 
 // Commit is a single git commit
