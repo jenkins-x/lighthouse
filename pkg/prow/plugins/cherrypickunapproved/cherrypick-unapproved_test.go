@@ -86,7 +86,7 @@ func (fc *fakeClient) NumComments() int {
 
 type fakePruner struct{}
 
-func (fp *fakePruner) PruneComments(shouldPrune func(scm.Comment) bool) {}
+func (fp *fakePruner) PruneComments(shouldPrune func(*scm.Comment) bool) {}
 
 func makeFakePullRequestEvent(action scm.Action, branch string) scm.PullRequestHook {
 	return scm.PullRequestHook{

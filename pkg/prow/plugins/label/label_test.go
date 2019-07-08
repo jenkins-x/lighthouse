@@ -436,7 +436,7 @@ func TestLabel(t *testing.T) {
 		sort.Strings(tc.expectedNewLabels)
 		fakeClient := &fakegithub.FakeClient{
 			Issues:             make(map[int][]*scm.Issue),
-			IssueComments:      make(map[int][]scm.Comment),
+			IssueComments:      make(map[int][]*scm.Comment),
 			RepoLabelsExisting: tc.repoLabels,
 			OrgMembers:         map[string][]string{"org": {orgMember}},
 			IssueLabelsAdded:   []string{},

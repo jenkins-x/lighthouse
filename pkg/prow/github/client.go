@@ -108,10 +108,6 @@ func (c *GitHubClient) GetPullRequest(org, repo string, number int) (*scm.PullRe
 	panic("implement me")
 }
 
-func (c *GitHubClient) ListIssueComments(org, repo string, number int) ([]scm.Comment, error) {
-	panic("implement me")
-}
-
 func (c *GitHubClient) ListReviews(org, repo string, number int) ([]scm.Review, error) {
 	panic("implement me")
 }
@@ -140,8 +136,32 @@ func (c *GitHubClient) RemoveLabel(owner, repo string, number int, label string)
 	panic("implement me")
 }
 
+func (c *GitHubClient) ListIssueComments(org, repo string, number int) ([]*scm.Comment, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(org, repo)
+	comments, _, err := c.client.Issues.ListComments(ctx, fullName, number, c.createListOptions())
+	return comments, err
+}
+
 func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]scm.Label, error) {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(org, repo)
+	issue, _, err := c.client.Issues.Find(ctx, fullName, number)
+	if err != nil {
+		return nil, err
+	}
+	// TODO we don't currently load all the isue label information...
+	return toScmLabels(issue.Labels), nil
+}
+
+func toScmLabels(labels []string) []scm.Label {
+	answer := []scm.Label{}
+	for _, label := range labels {
+		answer = append(answer, scm.Label{
+			Name: label,
+		})
+	}
+	return answer
 }
 
 func (c *GitHubClient) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {

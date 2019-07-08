@@ -52,7 +52,7 @@ type githubClient interface {
 }
 
 type pruneClient interface {
-	PruneComments(func(ic scm.Comment) bool)
+	PruneComments(func(ic *scm.Comment) bool)
 }
 
 func init() {
@@ -172,7 +172,7 @@ func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp p
 		if err := ghc.RemoveLabel(org, repo, prNumber, labels.BlockedPaths); err != nil {
 			return err
 		}
-		cp.PruneComments(func(ic scm.Comment) bool {
+		cp.PruneComments(func(ic *scm.Comment) bool {
 			return strings.Contains(ic.Body, blockedPathsBody)
 		})
 	}

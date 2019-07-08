@@ -31,7 +31,7 @@ import (
 
 type fakePruner struct{}
 
-func (fp *fakePruner) PruneComments(shouldPrune func(scm.Comment) bool) {}
+func (fp *fakePruner) PruneComments(shouldPrune func(*scm.Comment) bool) {}
 
 func formatLabels(labels ...string) []string {
 	r := []string{}
@@ -177,7 +177,7 @@ func TestLabel(t *testing.T) {
 		sort.Strings(tc.expectedNewLabels)
 		fakeClient := &fakegithub.FakeClient{
 			Issues:             make(map[int][]*scm.Issue),
-			IssueComments:      make(map[int][]scm.Comment),
+			IssueComments:      make(map[int][]*scm.Comment),
 			RepoLabelsExisting: []string{labels.Help, labels.GoodFirstIssue},
 			IssueLabelsAdded:   []string{},
 			IssueLabelsRemoved: []string{},

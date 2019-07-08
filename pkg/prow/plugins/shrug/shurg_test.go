@@ -73,7 +73,7 @@ func TestShrugComment(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fc := &fakegithub.FakeClient{
-			IssueComments: make(map[int][]scm.Comment),
+			IssueComments: make(map[int][]*scm.Comment),
 		}
 		e := &github.GenericCommentEvent{
 			Action: scm.ActionCreate,

@@ -78,11 +78,11 @@ func TestPluginConfig(t *testing.T) {
 	}
 }
 
-func newTestComment(user, body string) scm.Comment {
-	return scm.Comment{Author: scm.User{Login: user}, Body: body}
+func newTestComment(user, body string) *scm.Comment {
+	return &scm.Comment{Author: scm.User{Login: user}, Body: body}
 }
 
-func newTestCommentTime(t time.Time, user, body string) scm.Comment {
+func newTestCommentTime(t time.Time, user, body string) *scm.Comment {
 	c := newTestComment(user, body)
 	c.Created = t
 	return c
@@ -98,7 +98,7 @@ func newTestReviewTime(t time.Time, user, body string, state string) scm.Review 
 	return r
 }
 
-func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []scm.Comment, reviews []scm.Review) *fakegithub.FakeClient {
+func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []scm.Review) *fakegithub.FakeClient {
 	labels := []string{"org/repo#1:lgtm"}
 	if hasLabel {
 		labels = append(labels, fmt.Sprintf("org/repo#%v:approved", prNumber))
@@ -128,7 +128,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	return &fakegithub.FakeClient{
 		IssueLabelsAdded:   labels,
 		PullRequestChanges: map[int][]*scm.Change{prNumber: changes},
-		IssueComments:      map[int][]scm.Comment{prNumber: comments},
+		IssueComments:      map[int][]*scm.Comment{prNumber: comments},
 		IssueEvents:        map[int][]github.ListedIssueEvent{prNumber: events},
 		Reviews:            map[int][]scm.Review{prNumber: reviews},
 	}
@@ -164,7 +164,7 @@ func TestHandle(t *testing.T) {
 		hasLabel      bool
 		humanApproved bool
 		files         []string
-		comments      []scm.Comment
+		comments      []*scm.Comment
 		reviews       []scm.Review
 
 		selfApprove         bool
@@ -185,7 +185,7 @@ func TestHandle(t *testing.T) {
 			name:                "initial notification (approved)",
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{},
 			selfApprove:         true,
 			needsIssue:          false,
@@ -218,7 +218,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:                "initial notification (unapproved)",
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{},
 			selfApprove:         false,
 			needsIssue:          false,
@@ -251,7 +251,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:                "no-issue comment",
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
-			comments:            []scm.Comment{newTestComment("Alice", "stuff\n/approve no-issue \nmore stuff")},
+			comments:            []*scm.Comment{newTestComment("Alice", "stuff\n/approve no-issue \nmore stuff")},
 			reviews:             []scm.Review{},
 			selfApprove:         false,
 			needsIssue:          true,
@@ -287,7 +287,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			prBody:              "some changes that fix #42.\n/assign",
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
-			comments:            []scm.Comment{newTestComment("Alice", "stuff\n/approve")},
+			comments:            []*scm.Comment{newTestComment("Alice", "stuff\n/approve")},
 			reviews:             []scm.Review{},
 			selfApprove:         false,
 			needsIssue:          true,
@@ -322,7 +322,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:     "non-implicit self approve no-issue",
 			hasLabel: false,
 			files:    []string{"a/a.go", "c/c.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("ALIcE", "stuff\n/approve"),
 				newTestComment("cjwagner", "stuff\n/approve no-issue"),
 			},
@@ -342,7 +342,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:     "implicit self approve, missing issue",
 			hasLabel: false,
 			files:    []string{"a/a.go", "c/c.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("ALIcE", "stuff\n/approve"),
 				newTestCommentTime(time.Now(), "k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
@@ -380,7 +380,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			name:     "remove approval with /approve cancel",
 			hasLabel: true,
 			files:    []string{"a/a.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("Alice", "/approve no-issue"),
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 				newTestComment("Alice", "stuff\n/approve cancel \nmore stuff"),
@@ -420,7 +420,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			prBody:   "Changes the thing.\n fixes #42",
 			hasLabel: true,
 			files:    []string{"a/a.go", "b/b.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("bOb", "stuff\n/approve \nblah"),
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 			},
@@ -440,7 +440,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			prBody:   "Changes the thing.\n fixes #42",
 			hasLabel: true,
 			files:    []string{"c/c.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 				newTestCommentTime(time.Now(), "CJWagner", "stuff\n/approve cancel \nmore stuff"),
 			},
@@ -460,7 +460,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			prBody:   "Changes the thing.\n fixes #42",
 			hasLabel: true,
 			files:    []string{"c/c.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 				newTestCommentTime(time.Now(), "CJWagner", "/lgtm cancel //PR changed after LGTM, removing LGTM."),
 			},
@@ -480,7 +480,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			prBody:   "Finally fixes kubernetes/kubernetes#1\n",
 			hasLabel: true,
 			files:    []string{"a/a.go", "a/aa.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("alice", "stuff\n/approve\nblah"),
 				newTestCommentTime(time.Now(), "k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **APPROVED**
 
@@ -518,7 +518,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			prBody:   "Finally fixes kubernetes/kubernetes#1\n",
 			hasLabel: false,
 			files:    []string{"a/a.go", "a/aa.go"}, // previous commits may have been ["b/b.go"]
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("alice", "stuff\n/approve\nblah"),
 				newTestCommentTime(time.Now(), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nblah"),
 			},
@@ -538,7 +538,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			hasLabel:      true,
 			humanApproved: true,
 			files:         []string{"a/a.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nblah"),
 			},
 			reviews:             []scm.Review{},
@@ -576,7 +576,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			prBody:   "This is a great PR that will fix\nlots of things!",
 			hasLabel: false,
 			files:    []string{"a/a.go", "a/aa.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nblah"),
 				newTestCommentTime(time.Now(), "alice", "stuff\n/lgtm\nblah"),
 			},
@@ -596,7 +596,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			prBody:   "This is a great PR that will fix\nlots of things!",
 			hasLabel: false,
 			files:    []string{"a/a.go", "a/aa.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestComment("k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
@@ -631,7 +631,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			name:                "approve in review body with empty state",
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{newTestReview("Alice", "stuff\n/approve", "")},
 			selfApprove:         false,
 			needsIssue:          false,
@@ -664,7 +664,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:                "approved review but reviewActsAsApprove disabled",
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{newTestReview("cjwagner", "stuff", scm.ReviewStateApproved)},
 			selfApprove:         false,
 			needsIssue:          false,
@@ -697,7 +697,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:                "approved review with reviewActsAsApprove enabled",
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{newTestReview("Alice", "stuff", scm.ReviewStateApproved)},
 			selfApprove:         false,
 			needsIssue:          false,
@@ -730,7 +730,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:     "reviews in non-approving state (should not approve)",
 			hasLabel: false,
 			files:    []string{"c/c.go"},
-			comments: []scm.Comment{},
+			comments: []*scm.Comment{},
 			reviews: []scm.Review{
 				newTestReview("cjwagner", "stuff", "COMMENTED"),
 				newTestReview("cjwagner", "unsubmitted stuff", "PENDING"),
@@ -767,7 +767,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:     "review in request changes state means cancel",
 			hasLabel: true,
 			files:    []string{"c/c.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestCommentTime(time.Now().Add(time.Hour), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"), // second
 			},
 			reviews: []scm.Review{
@@ -805,7 +805,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:     "dismissed review doesn't cancel prior approval",
 			hasLabel: true,
 			files:    []string{"a/a.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestCommentTime(time.Now().Add(time.Hour), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"), // second
 			},
 			reviews: []scm.Review{
@@ -843,7 +843,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:     "approve cancel command supersedes earlier approved review",
 			hasLabel: true,
 			files:    []string{"c/c.go"},
-			comments: []scm.Comment{
+			comments: []*scm.Comment{
 				newTestCommentTime(time.Now().Add(time.Hour), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"), // second
 				newTestCommentTime(time.Now().Add(time.Hour*2), "cjwagner", "stuff\n/approve cancel \nmore stuff"),                  // third
 			},
@@ -881,7 +881,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:     "approve cancel command supersedes simultaneous approved review",
 			hasLabel: false,
 			files:    []string{"c/c.go"},
-			comments: []scm.Comment{},
+			comments: []*scm.Comment{},
 			reviews: []scm.Review{
 				newTestReview("cjwagner", "/approve cancel", scm.ReviewStateApproved),
 			},
@@ -916,7 +916,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			name:                "approve command supersedes simultaneous changes requested review",
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{newTestReview("Alice", "/approve", scm.ReviewStateChangesRequested)},
 			selfApprove:         false,
 			needsIssue:          false,
@@ -950,7 +950,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			branch:              "dev",
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{},
 			selfApprove:         true,
 			needsIssue:          false,
@@ -984,7 +984,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			branch:              "dev",
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
-			comments:            []scm.Comment{},
+			comments:            []*scm.Comment{},
 			reviews:             []scm.Review{},
 			selfApprove:         true,
 			needsIssue:          false,

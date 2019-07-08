@@ -118,7 +118,7 @@ func TestMilestoneStatus(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fakeClient := &fakegithub.FakeClient{IssueComments: make(map[int][]scm.Comment), MilestoneMap: milestonesMap}
+		fakeClient := &fakegithub.FakeClient{IssueComments: make(map[int][]*scm.Comment), MilestoneMap: milestonesMap}
 		fakeClient.Milestone = tc.previousMilestone
 
 		maintainersID := 42

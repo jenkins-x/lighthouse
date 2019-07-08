@@ -126,7 +126,7 @@ func TestMilestoneStatus(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fakeClient := &fakegithub.FakeClient{IssueComments: make(map[int][]scm.Comment)}
+		fakeClient := &fakegithub.FakeClient{IssueComments: make(map[int][]*scm.Comment)}
 		e := &github.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Body:   tc.body,

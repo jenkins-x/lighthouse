@@ -66,7 +66,7 @@ type githubClient interface {
 }
 
 type commentPruner interface {
-	PruneComments(shouldPrune func(scm.Comment) bool)
+	PruneComments(shouldPrune func(*scm.Comment) bool)
 }
 
 func handlePullRequest(pc plugins.Agent, pr scm.PullRequestHook) error {
@@ -118,7 +118,7 @@ func handlePR(gc githubClient, log *logrus.Entry, pr *scm.PullRequestHook, cp co
 				log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labels.CpUnapproved)
 			}
 		}
-		cp.PruneComments(func(comment scm.Comment) bool {
+		cp.PruneComments(func(comment *scm.Comment) bool {
 			return strings.Contains(comment.Body, commentBody)
 		})
 		return nil

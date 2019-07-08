@@ -93,7 +93,7 @@ func TestWipLabel(t *testing.T) {
 	for _, tc := range testcases {
 		fc := &fakegithub.FakeClient{
 			PullRequests:  make(map[int]*scm.PullRequest),
-			IssueComments: make(map[int][]scm.Comment),
+			IssueComments: make(map[int][]*scm.Comment),
 		}
 		org, repo, number := "org", "repo", 5
 		e := &event{

@@ -55,10 +55,10 @@ type fakeRepoOwners struct {
 
 type fakePruner struct {
 	GitHubClient  *fakegithub.FakeClient
-	IssueComments []scm.Comment
+	IssueComments []*scm.Comment
 }
 
-func (fp *fakePruner) PruneComments(shouldPrune func(scm.Comment) bool) {
+func (fp *fakePruner) PruneComments(shouldPrune func(*scm.Comment) bool) {
 	for _, comment := range fp.IssueComments {
 		if shouldPrune(comment) {
 			fp.GitHubClient.IssueCommentsDeleted = append(fp.GitHubClient.IssueCommentsDeleted, comment.Body)
@@ -260,7 +260,7 @@ func TestLGTMComment(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Running scenario %q", tc.name)
 		fc := &fakegithub.FakeClient{
-			IssueComments: make(map[int][]scm.Comment),
+			IssueComments: make(map[int][]*scm.Comment),
 			PullRequests: map[int]*scm.PullRequest{
 				5: {
 					Base: scm.PullRequestBranch{
@@ -422,7 +422,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		fc := &fakegithub.FakeClient{
-			IssueComments: make(map[int][]scm.Comment),
+			IssueComments: make(map[int][]*scm.Comment),
 			PullRequests: map[int]*scm.PullRequest{
 				5: {
 					Head: scm.PullRequestBranch{
@@ -448,7 +448,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 		if err != nil {
 			t.Fatalf("For case %s, could not get Bot nam", tc.name)
 		}
-		ic := scm.Comment{
+		ic := &scm.Comment{
 			Author: scm.User{
 				Login: botName,
 			},
@@ -629,7 +629,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		fc := &fakegithub.FakeClient{
-			IssueComments:    make(map[int][]scm.Comment),
+			IssueComments:    make(map[int][]*scm.Comment),
 			IssueLabelsAdded: []string{},
 			PullRequests: map[int]*scm.PullRequest{
 				5: {
@@ -716,7 +716,7 @@ func TestHandlePullRequest(t *testing.T) {
 		err                error
 		IssueLabelsAdded   []string
 		IssueLabelsRemoved []string
-		issueComments      map[int][]scm.Comment
+		issueComments      map[int][]*scm.Comment
 		trustedTeam        string
 
 		expectNoComments bool
@@ -739,7 +739,7 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]scm.Comment{
+			issueComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
@@ -789,7 +789,7 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]scm.Comment{
+			issueComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
@@ -818,7 +818,7 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]scm.Comment{
+			issueComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
@@ -853,7 +853,7 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 				},
 			},
-			issueComments: map[int][]scm.Comment{
+			issueComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
@@ -881,7 +881,7 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]scm.Comment{
+			issueComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:    fmt.Sprintf(addLGTMLabelNotification, treeSHA),
@@ -910,7 +910,7 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 				},
 			},
-			issueComments: map[int][]scm.Comment{
+			issueComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   fmt.Sprintf(addLGTMLabelNotification, "older_treeSHA"),
@@ -1038,7 +1038,7 @@ func TestAddTreeHashComment(t *testing.T) {
 			}
 			fc := &fakegithub.FakeClient{
 				Commits:       make(map[string]scm.CommitTree),
-				IssueComments: map[int][]scm.Comment{},
+				IssueComments: map[int][]*scm.Comment{},
 				PullRequests: map[int]*scm.PullRequest{
 					101: {
 						Base: scm.PullRequestBranch{
@@ -1094,7 +1094,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		body:      "/lgtm cancel",
 	}
 	fc := &fakegithub.FakeClient{
-		IssueComments: map[int][]scm.Comment{
+		IssueComments: map[int][]*scm.Comment{
 			101: {
 				{
 					Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),

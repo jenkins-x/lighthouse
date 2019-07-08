@@ -84,7 +84,7 @@ type githubClient interface {
 }
 
 type commentPruner interface {
-	PruneComments(shouldPrune func(scm.Comment) bool)
+	PruneComments(shouldPrune func(*scm.Comment) bool)
 }
 
 func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
@@ -189,8 +189,8 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *github.Gene
 }
 
 // shouldPrune finds comments left by this plugin.
-func shouldPrune(log *logrus.Entry, botName, msgPruneMatch string) func(scm.Comment) bool {
-	return func(comment scm.Comment) bool {
+func shouldPrune(log *logrus.Entry, botName, msgPruneMatch string) func(*scm.Comment) bool {
+	return func(comment *scm.Comment) bool {
 		if comment.Author.Login != botName {
 			return false
 		}

@@ -194,7 +194,7 @@ func formatLabel(label string) string {
 
 type fakePruner struct{}
 
-func (f *fakePruner) PruneComments(_ func(ic scm.Comment) bool) {}
+func (f *fakePruner) PruneComments(_ func(ic *scm.Comment) bool) {}
 
 // TestHandle validates that:
 // - The correct labels are added/removed.
@@ -297,7 +297,7 @@ func TestHandle(t *testing.T) {
 		expectAdded := []string{}
 		fakeClient := &fakegithub.FakeClient{
 			RepoLabelsExisting: []string{labels.BlockedPaths, otherLabel},
-			IssueComments:      make(map[int][]scm.Comment),
+			IssueComments:      make(map[int][]*scm.Comment),
 			PullRequestChanges: make(map[int][]*scm.Change),
 			IssueLabelsAdded:   []string{},
 			IssueLabelsRemoved: []string{},

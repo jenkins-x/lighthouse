@@ -65,7 +65,7 @@ type githubClient interface {
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
-	ListIssueComments(org, repo string, number int) ([]scm.Comment, error)
+	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
 	ListReviews(org, repo string, number int) ([]scm.Review, error)
 	ListPullRequestComments(org, repo string, number int) ([]scm.Review, error)
 	DeleteComment(org, repo string, ID int) error
@@ -662,10 +662,10 @@ func commentFromIssueComment(ic *scm.Comment) *comment {
 	}
 }
 
-func commentsFromIssueComments(ics []scm.Comment) []*comment {
+func commentsFromIssueComments(ics []*scm.Comment) []*comment {
 	comments := make([]*comment, 0, len(ics))
 	for i := range ics {
-		comments = append(comments, commentFromIssueComment(&ics[i]))
+		comments = append(comments, commentFromIssueComment(ics[i]))
 	}
 	return comments
 }

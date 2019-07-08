@@ -39,7 +39,7 @@ type FakeClient struct {
 	Issues              map[int][]*scm.Issue
 	OrgMembers          map[string][]string
 	Collaborators       []string
-	IssueComments       map[int][]scm.Comment
+	IssueComments       map[int][]*scm.Comment
 	IssueCommentID      int
 	PullRequests        map[int]*scm.PullRequest
 	PullRequestChanges  map[int][]*scm.Change
@@ -102,8 +102,8 @@ func (f *FakeClient) IsMember(org, user string) (bool, error) {
 }
 
 // ListIssueComments returns comments.
-func (f *FakeClient) ListIssueComments(owner, repo string, number int) ([]scm.Comment, error) {
-	return append([]scm.Comment{}, f.IssueComments[number]...), nil
+func (f *FakeClient) ListIssueComments(owner, repo string, number int) ([]*scm.Comment, error) {
+	return append([]*scm.Comment{}, f.IssueComments[number]...), nil
 }
 
 // ListPullRequestComments returns review comments.
@@ -124,7 +124,7 @@ func (f *FakeClient) ListIssueEvents(owner, repo string, number int) ([]github.L
 // CreateComment adds a comment to a PR
 func (f *FakeClient) CreateComment(owner, repo string, number int, comment string) error {
 	f.IssueCommentsAdded = append(f.IssueCommentsAdded, fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, comment))
-	f.IssueComments[number] = append(f.IssueComments[number], scm.Comment{
+	f.IssueComments[number] = append(f.IssueComments[number], &scm.Comment{
 		ID:     f.IssueCommentID,
 		Body:   comment,
 		Author: scm.User{Login: botName},
@@ -171,7 +171,7 @@ func (f *FakeClient) DeleteComment(owner, repo string, ID int) error {
 }
 
 // DeleteStaleComments deletes comments flagged by isStale.
-func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments []scm.Comment, isStale func(scm.Comment) bool) error {
+func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, isStale func(*scm.Comment) bool) error {
 	if comments == nil {
 		comments, _ = f.ListIssueComments(org, repo, number)
 	}

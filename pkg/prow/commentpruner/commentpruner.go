@@ -26,7 +26,7 @@ import (
 
 type githubClient interface {
 	BotName() (string, error)
-	ListIssueComments(org, repo string, number int) ([]scm.Comment, error)
+	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
 	DeleteComment(org, repo string, id int) error
 }
 
@@ -46,7 +46,7 @@ type EventClient struct {
 
 	once     sync.Once
 	lock     sync.Mutex
-	comments []scm.Comment
+	comments []*scm.Comment
 }
 
 // NewEventClient creates an EventClient struct. This should be used once per webhook event.
@@ -63,7 +63,7 @@ func NewEventClient(ghc githubClient, log *logrus.Entry, org, repo string, numbe
 
 // PruneComments fetches issue comments if they have not yet been fetched for this webhook event
 // and then deletes any bot comments indicated by the func 'shouldPrune'.
-func (c *EventClient) PruneComments(shouldPrune func(scm.Comment) bool) {
+func (c *EventClient) PruneComments(shouldPrune func(*scm.Comment) bool) {
 	c.once.Do(func() {
 		botName, err := c.ghc.BotName()
 		if err != nil {
@@ -85,7 +85,7 @@ func (c *EventClient) PruneComments(shouldPrune func(scm.Comment) bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	var remaining []scm.Comment
+	var remaining []*scm.Comment
 	for _, comment := range c.comments {
 		removed := false
 		if shouldPrune(comment) {

@@ -55,7 +55,7 @@ func configInfoStickyLgtmTeam(team string) string {
 }
 
 type commentPruner interface {
-	PruneComments(shouldPrune func(scm.Comment) bool)
+	PruneComments(shouldPrune func(*scm.Comment) bool)
 }
 
 func init() {
@@ -141,7 +141,7 @@ type githubClient interface {
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
-	ListIssueComments(org, repo string, number int) ([]scm.Comment, error)
+	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
 	DeleteComment(org, repo string, ID int) error
 	BotName() (string, error)
 	GetSingleCommit(org, repo, SHA string) (scm.CommitTree, error)
@@ -350,7 +350,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 			return err
 		}
 		if opts.StoreTreeHash {
-			cp.PruneComments(func(comment scm.Comment) bool {
+			cp.PruneComments(func(comment *scm.Comment) bool {
 				return addLGTMLabelNotificationRe.MatchString(comment.Body)
 			})
 		}
@@ -376,7 +376,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				}
 			}
 			// Delete the LGTM removed noti after the LGTM label is added.
-			cp.PruneComments(func(comment scm.Comment) bool {
+			cp.PruneComments(func(comment *scm.Comment) bool {
 				return strings.Contains(comment.Body, removeLGTMLabelNoti)
 			})
 		}
