@@ -63,7 +63,7 @@ var (
 
 type githubClient interface {
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
-	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
+	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	ListIssueComments(org, repo string, number int) ([]scm.Comment, error)
 	ListReviews(org, repo string, number int) ([]scm.Review, error)

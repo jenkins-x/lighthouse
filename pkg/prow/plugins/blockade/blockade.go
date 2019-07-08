@@ -44,7 +44,7 @@ const (
 var blockedPathsBody = fmt.Sprintf("Adding label: `%s` because PR changes a protected file.", labels.BlockedPaths)
 
 type githubClient interface {
-	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
+	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
@@ -84,7 +84,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		nil
 }
 
-type blockCalc func([]scm.Change, []blockade) summary
+type blockCalc func([]*scm.Change, []blockade) summary
 
 type client struct {
 	ghc githubClient
@@ -111,7 +111,7 @@ func (bd *blockade) isBlocked(file string) bool {
 	return matchesAny(file, bd.blockRegexps) && !matchesAny(file, bd.exceptionRegexps)
 }
 
-type summary map[string][]scm.Change
+type summary map[string][]*scm.Change
 
 func (s summary) String() string {
 	if len(s) == 0 {
@@ -221,7 +221,7 @@ func compileApplicableBlockades(org, repo string, log *logrus.Entry, blockades [
 }
 
 // calculateBlocks determines if a PR should be blocked and returns the summary describing the block.
-func calculateBlocks(changes []scm.Change, blockades []blockade) summary {
+func calculateBlocks(changes []*scm.Change, blockades []blockade) summary {
 	sum := make(summary)
 	for _, change := range changes {
 		for _, b := range blockades {

@@ -42,7 +42,7 @@ type FakeClient struct {
 	IssueComments       map[int][]scm.Comment
 	IssueCommentID      int
 	PullRequests        map[int]*scm.PullRequest
-	PullRequestChanges  map[int][]scm.Change
+	PullRequestChanges  map[int][]*scm.Change
 	PullRequestComments map[int][]scm.Review
 	ReviewID            int
 	Reviews             map[int][]scm.Review
@@ -195,7 +195,7 @@ func (f *FakeClient) GetPullRequest(owner, repo string, number int) (*scm.PullRe
 }
 
 // GetPullRequestChanges returns the file modifications in a PR.
-func (f *FakeClient) GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error) {
+func (f *FakeClient) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
 	return f.PullRequestChanges[number], nil
 }
 

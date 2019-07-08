@@ -144,22 +144,34 @@ func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]scm.Label
 	panic("implement me")
 }
 
-func (c *GitHubClient) GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error) {
-	panic("implement me")
+func (c *GitHubClient) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(org, repo)
+	changes, _, err := c.client.PullRequests.ListChanges(ctx, fullName, number, c.createListOptions())
+	return changes, err
 }
 
 func (c *GitHubClient) CreateComment(owner, repo string, number int, comment string) error {
-	fullName := fmt.Sprintf("%s/%s", owner, repo)
+	fullName := c.repositoryName(owner, repo)
 	commentInput := scm.CommentInput{
 		Body: comment,
 	}
-	_, response, err := c.client.Issues.CreateComment(context.Background(), fullName, number, &commentInput)
+	ctx := context.Background()
+	_, response, err := c.client.Issues.CreateComment(ctx, fullName, number, &commentInput)
 	if err != nil {
 		var b bytes.Buffer
 		io.Copy(&b, response.Body)
 		return errors.Wrapf(err, "response: %s", b.String())
 	}
 	return nil
+}
+
+func (c *GitHubClient) repositoryName(owner string, repo string) string {
+	return fmt.Sprintf("%s/%s", owner, repo)
+}
+
+func (c *GitHubClient) createListOptions() scm.ListOptions {
+	return scm.ListOptions{}
 }
 
 // FileNotFound happens when github cannot find the file requested by GetFile().

@@ -76,7 +76,7 @@ type githubClient interface {
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]scm.Label, error)
 	GetFile(org, repo, filepath, commit string) ([]byte, error)
-	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
+	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
 
 func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.PullRequestHook) error {

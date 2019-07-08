@@ -30,7 +30,7 @@ type ghc struct {
 	*testing.T
 	labels    map[scm.Label]bool
 	files     map[string][]byte
-	prChanges []scm.Change
+	prChanges []*scm.Change
 
 	addLabelErr, removeLabelErr, getIssueLabelsErr,
 	getFileErr, getPullRequestChangesErr error
@@ -71,7 +71,7 @@ func (c *ghc) GetFile(_, _, path, _ string) ([]byte, error) {
 	return c.files[path], c.getFileErr
 }
 
-func (c *ghc) GetPullRequestChanges(_, _ string, _ int) ([]scm.Change, error) {
+func (c *ghc) GetPullRequestChanges(_, _ string, _ int) ([]*scm.Change, error) {
 	c.T.Log("GetPullRequestChanges")
 	return c.prChanges, c.getPullRequestChangesErr
 }
@@ -126,7 +126,7 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",
@@ -172,7 +172,7 @@ func TestHandlePR(t *testing.T) {
 						path-prefix generated
 					`),
 				},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",
@@ -232,7 +232,7 @@ func TestHandlePR(t *testing.T) {
 						generated/**/*.txt linguist-generated=true
 					`),
 				},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",
@@ -304,7 +304,7 @@ func TestHandlePR(t *testing.T) {
 					mydir/mypath3
 					`),
 				},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",
@@ -402,7 +402,7 @@ func TestHandlePR(t *testing.T) {
 					mydir/mypath3
 					`),
 				},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",
@@ -471,7 +471,7 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",
@@ -511,7 +511,7 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",
@@ -544,7 +544,7 @@ func TestHandlePR(t *testing.T) {
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: &github.FileNotFound{},
-				prChanges: []scm.Change{
+				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
 						Path:      "foobar",

@@ -271,7 +271,7 @@ func TestLGTMComment(t *testing.T) {
 					},
 				},
 			},
-			PullRequestChanges: map[int][]scm.Change{
+			PullRequestChanges: map[int][]*scm.Change{
 				5: {
 					{Path: "doc/README.md"},
 				},
