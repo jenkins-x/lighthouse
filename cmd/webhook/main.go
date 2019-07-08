@@ -52,7 +52,7 @@ func main() {
 
 	mux.Handle(o.Path, http.HandlerFunc(o.handleWebHookRequests))
 
-	logrus.Infof("Catcher is now listening on path %s for Webhooks", o.Path)
+	logrus.Infof("webhook handler is now listening on path %s for webhooks", o.Path)
 	if err := http.ListenAndServe(":"+strconv.Itoa(o.Port), mux); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		os.Exit(1)
@@ -117,7 +117,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		logrus.Fatalf("Webhook CRD creation failed: %s", err)
 	}
-	logrus.Infof("Webhook CRD created with type: %s", result.Spec.EventType)
+	logrus.Infof("Webhook CRD created for repo %s/%s", result.Spec.Org, result.Spec.Repo)
 }
 
 func (o *WebhookOptions) returnError(err error, message string, w http.ResponseWriter, r *http.Request) {
