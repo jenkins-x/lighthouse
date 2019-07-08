@@ -165,6 +165,9 @@ func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]scm.Label
 	if err != nil {
 		return nil, err
 	}
+	if issue == nil {
+		return nil, nil
+	}
 	// TODO we don't currently load all the isue label information...
 	return toScmLabels(issue.Labels), nil
 }
