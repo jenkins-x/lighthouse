@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 )
@@ -102,15 +101,6 @@ func ImageTooBig(url string) (bool, error) {
 type CombinedStatus struct {
 	SHA      string       `json:"sha"`
 	Statuses []scm.Status `json:"statuses"`
-}
-
-// ListedIssueEvent represents an issue event from the events API (not from a webhook payload).
-// https://developer.github.com/v3/issues/events/
-type ListedIssueEvent struct {
-	Event   string    `json:"event"` // This is the same as IssueEvent.Action.
-	Actor   scm.User  `json:"actor"`
-	Label   scm.Label `json:"label"`
-	Created time.Time `json:"created_at"`
 }
 
 // IssueEventAction enumerates the triggers for this

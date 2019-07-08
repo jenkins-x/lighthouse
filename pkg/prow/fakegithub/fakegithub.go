@@ -45,10 +45,10 @@ type FakeClient struct {
 	PullRequestChanges  map[int][]*scm.Change
 	PullRequestComments map[int][]*scm.Comment
 	ReviewID            int
-	Reviews             map[int][]scm.Review
+	Reviews             map[int][]*scm.Review
 	CombinedStatuses    map[string]*github.CombinedStatus
 	CreatedStatuses     map[string][]scm.Status
-	IssueEvents         map[int][]github.ListedIssueEvent
+	IssueEvents         map[int][]*scm.ListedIssueEvent
 	Commits             map[string]scm.CommitTree
 
 	//All Labels That Exist In The Repo
@@ -112,13 +112,13 @@ func (f *FakeClient) ListPullRequestComments(owner, repo string, number int) ([]
 }
 
 // ListReviews returns reviews.
-func (f *FakeClient) ListReviews(owner, repo string, number int) ([]scm.Review, error) {
-	return append([]scm.Review{}, f.Reviews[number]...), nil
+func (f *FakeClient) ListReviews(owner, repo string, number int) ([]*scm.Review, error) {
+	return append([]*scm.Review{}, f.Reviews[number]...), nil
 }
 
 // ListIssueEvents returns issue events
-func (f *FakeClient) ListIssueEvents(owner, repo string, number int) ([]github.ListedIssueEvent, error) {
-	return append([]github.ListedIssueEvent{}, f.IssueEvents[number]...), nil
+func (f *FakeClient) ListIssueEvents(owner, repo string, number int) ([]*scm.ListedIssueEvent, error) {
+	return append([]*scm.ListedIssueEvent{}, f.IssueEvents[number]...), nil
 }
 
 // CreateComment adds a comment to a PR
@@ -135,7 +135,7 @@ func (f *FakeClient) CreateComment(owner, repo string, number int, comment strin
 
 // CreateReview adds a review to a PR
 func (f *FakeClient) CreateReview(org, repo string, number int, r github.DraftReview) error {
-	f.Reviews[number] = append(f.Reviews[number], scm.Review{
+	f.Reviews[number] = append(f.Reviews[number], &scm.Review{
 		ID:     f.ReviewID,
 		Author: scm.User{Login: botName},
 		Body:   r.Body,

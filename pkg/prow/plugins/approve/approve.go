@@ -66,14 +66,14 @@ type githubClient interface {
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
-	ListReviews(org, repo string, number int) ([]scm.Review, error)
+	ListReviews(org, repo string, number int) ([]*scm.Review, error)
 	ListPullRequestComments(org, repo string, number int) ([]*scm.Comment, error)
 	DeleteComment(org, repo string, number, ID int) error
 	CreateComment(org, repo string, number int, comment string) error
 	BotName() (string, error)
 	AddLabel(org, repo string, number int, label string) error
 	RemoveLabel(org, repo string, number int, label string) error
-	ListIssueEvents(org, repo string, num int) ([]github.ListedIssueEvent, error)
+	ListIssueEvents(org, repo string, num int) ([]*scm.ListedIssueEvent, error)
 }
 
 type ownersClient interface {
@@ -460,13 +460,13 @@ func humanAddedApproved(ghc githubClient, log *logrus.Entry, org, repo string, n
 			log.WithError(err).Errorf("Failed to list issue events for %s/%s#%d.", org, repo, number)
 			return false
 		}
-		var lastAdded github.ListedIssueEvent
+		lastAdded := scm.ListedIssueEvent{}
 		for _, event := range events {
 			// Only consider "approved" label added events.
 			if event.Event != github.IssueActionLabeled || event.Label.Name != labels.Approved {
 				continue
 			}
-			lastAdded = event
+			lastAdded = *event
 		}
 
 		if lastAdded.Actor.Login == "" || lastAdded.Actor.Login == botName || isDeprecatedBot(lastAdded.Actor.Login) {
@@ -705,10 +705,10 @@ func commentFromReview(review *scm.Review) *comment {
 	}
 }
 
-func commentsFromReviews(reviews []scm.Review) []*comment {
+func commentsFromReviews(reviews []*scm.Review) []*comment {
 	comments := make([]*comment, 0, len(reviews))
 	for i := range reviews {
-		comments = append(comments, commentFromReview(&reviews[i]))
+		comments = append(comments, commentFromReview(reviews[i]))
 	}
 	return comments
 }

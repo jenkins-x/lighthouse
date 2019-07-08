@@ -88,22 +88,22 @@ func newTestCommentTime(t time.Time, user, body string) *scm.Comment {
 	return c
 }
 
-func newTestReview(user, body string, state string) scm.Review {
-	return scm.Review{Author: scm.User{Login: user}, Body: body, State: state}
+func newTestReview(user, body string, state string) *scm.Review {
+	return &scm.Review{Author: scm.User{Login: user}, Body: body, State: state}
 }
 
-func newTestReviewTime(t time.Time, user, body string, state string) scm.Review {
+func newTestReviewTime(t time.Time, user, body string, state string) *scm.Review {
 	r := newTestReview(user, body, state)
 	r.Created = t
 	return r
 }
 
-func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []scm.Review) *fakegithub.FakeClient {
+func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review) *fakegithub.FakeClient {
 	labels := []string{"org/repo#1:lgtm"}
 	if hasLabel {
 		labels = append(labels, fmt.Sprintf("org/repo#%v:approved", prNumber))
 	}
-	events := []github.ListedIssueEvent{
+	events := []*scm.ListedIssueEvent{
 		{
 			Event: github.IssueActionLabeled,
 			Label: scm.Label{Name: "approved"},
@@ -113,7 +113,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	if humanApproved {
 		events = append(
 			events,
-			github.ListedIssueEvent{
+			&scm.ListedIssueEvent{
 				Event:   github.IssueActionLabeled,
 				Label:   scm.Label{Name: "approved"},
 				Actor:   scm.User{Login: "human"},
@@ -129,8 +129,8 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 		IssueLabelsAdded:   labels,
 		PullRequestChanges: map[int][]*scm.Change{prNumber: changes},
 		IssueComments:      map[int][]*scm.Comment{prNumber: comments},
-		IssueEvents:        map[int][]github.ListedIssueEvent{prNumber: events},
-		Reviews:            map[int][]scm.Review{prNumber: reviews},
+		IssueEvents:        map[int][]*scm.ListedIssueEvent{prNumber: events},
+		Reviews:            map[int][]*scm.Review{prNumber: reviews},
 	}
 }
 
@@ -165,7 +165,7 @@ func TestHandle(t *testing.T) {
 		humanApproved bool
 		files         []string
 		comments      []*scm.Comment
-		reviews       []scm.Review
+		reviews       []*scm.Review
 
 		selfApprove         bool
 		needsIssue          bool
@@ -186,7 +186,7 @@ func TestHandle(t *testing.T) {
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -219,7 +219,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -252,7 +252,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
 			comments:            []*scm.Comment{newTestComment("Alice", "stuff\n/approve no-issue \nmore stuff")},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -288,7 +288,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
 			comments:            []*scm.Comment{newTestComment("Alice", "stuff\n/approve")},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -326,7 +326,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("ALIcE", "stuff\n/approve"),
 				newTestComment("cjwagner", "stuff\n/approve no-issue"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -365,7 +365,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 </details>
 <!-- META={"approvers":[]} -->`),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true,
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -385,7 +385,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 				newTestComment("Alice", "stuff\n/approve cancel \nmore stuff"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true, // no-op test
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -424,7 +424,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("bOb", "stuff\n/approve \nblah"),
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true, // no-op test
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -444,7 +444,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 				newTestCommentTime(time.Now(), "CJWagner", "stuff\n/approve cancel \nmore stuff"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true,
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -464,7 +464,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
 				newTestCommentTime(time.Now(), "CJWagner", "/lgtm cancel //PR changed after LGTM, removing LGTM."),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true,
 			needsIssue:          true,
 			lgtmActsAsApprove:   true,
@@ -502,7 +502,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 </details>
 <!-- META={"approvers":[]} -->`),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -522,7 +522,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 				newTestComment("alice", "stuff\n/approve\nblah"),
 				newTestCommentTime(time.Now(), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nblah"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          true,
 			lgtmActsAsApprove:   false,
@@ -541,7 +541,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			comments: []*scm.Comment{
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nblah"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -580,7 +580,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nblah"),
 				newTestCommentTime(time.Now(), "alice", "stuff\n/lgtm\nblah"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   true,
@@ -616,7 +616,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 <!-- META={"approvers":["alice"]} -->`),
 				newTestCommentTime(time.Now(), "alice", "stuff\n/lgtm\nblah"),
 			},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -632,7 +632,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{newTestReview("Alice", "stuff\n/approve", "")},
+			reviews:             []*scm.Review{newTestReview("Alice", "stuff\n/approve", "")},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -665,7 +665,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{newTestReview("cjwagner", "stuff", scm.ReviewStateApproved)},
+			reviews:             []*scm.Review{newTestReview("cjwagner", "stuff", scm.ReviewStateApproved)},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -698,7 +698,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{newTestReview("Alice", "stuff", scm.ReviewStateApproved)},
+			reviews:             []*scm.Review{newTestReview("Alice", "stuff", scm.ReviewStateApproved)},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -731,7 +731,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel: false,
 			files:    []string{"c/c.go"},
 			comments: []*scm.Comment{},
-			reviews: []scm.Review{
+			reviews: []*scm.Review{
 				newTestReview("cjwagner", "stuff", "COMMENTED"),
 				newTestReview("cjwagner", "unsubmitted stuff", "PENDING"),
 				newTestReview("cjwagner", "dismissed stuff", "DISMISSED"),
@@ -770,7 +770,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			comments: []*scm.Comment{
 				newTestCommentTime(time.Now().Add(time.Hour), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"), // second
 			},
-			reviews: []scm.Review{
+			reviews: []*scm.Review{
 				newTestReviewTime(time.Now(), "cjwagner", "yep", scm.ReviewStateApproved),                           // first
 				newTestReviewTime(time.Now().Add(time.Hour*2), "cjwagner", "nope", scm.ReviewStateChangesRequested), // third
 			},
@@ -808,7 +808,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			comments: []*scm.Comment{
 				newTestCommentTime(time.Now().Add(time.Hour), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"), // second
 			},
-			reviews: []scm.Review{
+			reviews: []*scm.Review{
 				newTestReviewTime(time.Now(), "Alice", "yep", scm.ReviewStateApproved),                         // first
 				newTestReviewTime(time.Now().Add(time.Hour*2), "Alice", "dismissed", scm.ReviewStateDismissed), // third
 			},
@@ -847,7 +847,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestCommentTime(time.Now().Add(time.Hour), "k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"), // second
 				newTestCommentTime(time.Now().Add(time.Hour*2), "cjwagner", "stuff\n/approve cancel \nmore stuff"),                  // third
 			},
-			reviews: []scm.Review{
+			reviews: []*scm.Review{
 				newTestReviewTime(time.Now(), "cjwagner", "yep", scm.ReviewStateApproved), // first
 			},
 			selfApprove:         false,
@@ -882,7 +882,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel: false,
 			files:    []string{"c/c.go"},
 			comments: []*scm.Comment{},
-			reviews: []scm.Review{
+			reviews: []*scm.Review{
 				newTestReview("cjwagner", "/approve cancel", scm.ReviewStateApproved),
 			},
 			selfApprove:         false,
@@ -917,7 +917,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"a/a.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{newTestReview("Alice", "/approve", scm.ReviewStateChangesRequested)},
+			reviews:             []*scm.Review{newTestReview("Alice", "/approve", scm.ReviewStateChangesRequested)},
 			selfApprove:         false,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -951,7 +951,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,
@@ -985,7 +985,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			hasLabel:            false,
 			files:               []string{"c/c.go"},
 			comments:            []*scm.Comment{},
-			reviews:             []scm.Review{},
+			reviews:             []*scm.Review{},
 			selfApprove:         true,
 			needsIssue:          false,
 			lgtmActsAsApprove:   false,

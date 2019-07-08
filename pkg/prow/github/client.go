@@ -13,12 +13,13 @@ import (
 
 // ToGitHubClient converts the scm client to an API that the prow plgins expect
 func ToGitHubClient(client *scm.Client) *GitHubClient {
-	return &GitHubClient{client}
+	return &GitHubClient{client: client}
 }
 
 // GitHubClient represents an interface that prow plugins expect on top of go-scm
 type GitHubClient struct {
-	client *scm.Client
+	client  *scm.Client
+	botName string
 }
 
 func (c *GitHubClient) ClearMilestone(org, repo string, num int) error {
@@ -107,8 +108,11 @@ func (c *GitHubClient) GetPullRequest(owner, repo string, number int) (*scm.Pull
 	return pr, err
 }
 
-func (c *GitHubClient) ListReviews(org, repo string, number int) ([]scm.Review, error) {
-	panic("implement me")
+func (c *GitHubClient) ListReviews(owner, repo string, number int) ([]*scm.Review, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	reviews, _, err := c.client.Reviews.List(ctx, fullName, number, c.createListOptions())
+	return reviews, err
 }
 
 func (c *GitHubClient) ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error) {
@@ -119,15 +123,26 @@ func (c *GitHubClient) ListPullRequestComments(owner, repo string, number int) (
 }
 
 func (c *GitHubClient) BotName() (string, error) {
-	botName := os.Getenv("BOT_NAME")
+	botName := c.botName
 	if botName == "" {
-		botName = "jenkins-x-bot"
+		botName = os.Getenv("BOT_NAME")
+		if botName == "" {
+			botName = "jenkins-x-bot"
+		}
+		c.botName = botName
 	}
 	return botName, nil
 }
 
-func (c *GitHubClient) ListIssueEvents(org, repo string, num int) ([]ListedIssueEvent, error) {
-	panic("implement me")
+func (c *GitHubClient) SetBotName(botName string) {
+	c.botName = botName
+}
+
+func (c *GitHubClient) ListIssueEvents(org, repo string, number int) ([]*scm.ListedIssueEvent, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(org, repo)
+	events, _, err := c.client.Issues.ListEvents(ctx, fullName, number, c.createListOptions())
+	return events, err
 }
 
 func (c *GitHubClient) AssignIssue(owner, repo string, number int, logins []string) error {
