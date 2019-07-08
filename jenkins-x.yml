@@ -35,14 +35,6 @@ pipelineConfig:
               - kaniko-secret
               - -f
               - /builder/home/kaniko-secret.json
-
-          - name: init-helm
-            image: alpine/helm:2.12.3
-            command: helm
-            args:
-            - init
-            - --client-only
-
           - name: build-and-push-image
             image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
             command: /kaniko/executor
