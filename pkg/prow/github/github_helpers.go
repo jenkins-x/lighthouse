@@ -98,34 +98,6 @@ func ImageTooBig(url string) (bool, error) {
 	return false, nil
 }
 
-// PullRequestChange contains information about what a PR changed.
-type PullRequestChange struct {
-	Sha              string `json:"sha"`
-	Filename         string `json:"filename"`
-	Status           string `json:"status"`
-	Additions        int    `json:"additions"`
-	Deletions        int    `json:"deletions"`
-	Changes          int    `json:"changes"`
-	Patch            string `json:"patch"`
-	BlobURL          string `json:"blob_url"`
-	PreviousFilename string `json:"previous_filename"`
-}
-
-// ReviewComment describes a Pull Request review.
-type ReviewComment struct {
-	ID        int       `json:"id"`
-	ReviewID  int       `json:"pull_request_review_id"`
-	User      scm.User  `json:"user"`
-	Body      string    `json:"body"`
-	Path      string    `json:"path"`
-	HTMLURL   string    `json:"html_url"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	// Position will be nil if the code has changed such that the comment is no
-	// longer relevant.
-	Position *int `json:"position"`
-}
-
 // CombinedStatus is the latest statuses for a ref.
 type CombinedStatus struct {
 	SHA      string       `json:"sha"`
