@@ -174,7 +174,7 @@ func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, 
 		return err
 	}
 
-	repo, err := oc.LoadRepoOwners(ce.Repo.Namespace, ce.Repo.Name, pr.Ref)
+	repo, err := oc.LoadRepoOwners(ce.Repo.Namespace, ce.Repo.Name, pr.Base.Ref)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func handleReview(log *logrus.Entry, ghc githubClient, oc ownersClient, githubCo
 		return nil
 	}
 
-	repo, err := oc.LoadRepoOwners(re.Repo.Namespace, re.Repo.Name, re.PullRequest.Ref)
+	repo, err := oc.LoadRepoOwners(re.Repo.Namespace, re.Repo.Name, re.PullRequest.Base.Ref)
 	if err != nil {
 		return err
 	}
@@ -288,7 +288,7 @@ func handlePullRequest(log *logrus.Entry, ghc githubClient, oc ownersClient, git
 		return nil
 	}
 
-	repo, err := oc.LoadRepoOwners(pre.Repo.Namespace, pre.Repo.Name, pre.PullRequest.Ref)
+	repo, err := oc.LoadRepoOwners(pre.Repo.Namespace, pre.Repo.Name, pre.PullRequest.Base.Ref)
 	if err != nil {
 		return err
 	}

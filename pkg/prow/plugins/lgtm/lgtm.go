@@ -365,9 +365,9 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				if err != nil {
 					log.WithError(err).Error("Failed to get pull request.")
 				}
-				commit, err := gc.GetSingleCommit(org, repoName, pr.Sha)
+				commit, err := gc.GetSingleCommit(org, repoName, pr.Head.Sha)
 				if err != nil {
-					log.WithField("sha", pr.Sha).WithError(err).Error("Failed to get commit.")
+					log.WithField("sha", pr.Head.Sha).WithError(err).Error("Failed to get commit.")
 				}
 				treeHash := commit.Commit.Tree.SHA
 				log.WithField("tree", treeHash).Info("Adding comment to store tree-hash.")
@@ -461,9 +461,9 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 		}
 		if lastLgtmTreeHash != "" {
 			// Get the current tree-hash
-			commit, err := gc.GetSingleCommit(org, repo, pe.PullRequest.Sha)
+			commit, err := gc.GetSingleCommit(org, repo, pe.PullRequest.Head.Sha)
 			if err != nil {
-				log.WithField("sha", pe.PullRequest.Sha).WithError(err).Error("Failed to get commit.")
+				log.WithField("sha", pe.PullRequest.Head.Sha).WithError(err).Error("Failed to get commit.")
 			}
 			treeHash := commit.Commit.Tree.SHA
 			if treeHash == lastLgtmTreeHash {
@@ -499,7 +499,7 @@ func loadRepoOwners(gc githubClient, ownersClient repoowners.Interface, org, rep
 	if err != nil {
 		return nil, err
 	}
-	return ownersClient.LoadRepoOwners(org, repo, pr.Ref)
+	return ownersClient.LoadRepoOwners(org, repo, pr.Base.Ref)
 }
 
 // getChangedFiles returns all the changed files for the provided pull request.

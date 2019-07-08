@@ -60,7 +60,7 @@ func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
 		return nil
 	}
 
-	oc, err := pc.OwnersClient.LoadRepoOwners(pre.Repo.Namespace, pre.Repo.Name, pre.PullRequest.Ref)
+	oc, err := pc.OwnersClient.LoadRepoOwners(pre.Repo.Namespace, pre.Repo.Name, pre.PullRequest.Base.Ref)
 	if err != nil {
 		return fmt.Errorf("error loading RepoOwners: %v", err)
 	}
