@@ -487,10 +487,7 @@ func (ap Approvers) GetCCs() []string {
 // the PR are approved.  If this returns true, the PR may still not be fully approved depending
 // on the associated issue requirement
 func (ap Approvers) AreFilesApproved() bool {
-	files := ap.UnapprovedFiles()
-	len := files.Len()
-	fmt.Printf("unapproved files %#v len: %d\n", files, len)
-	return len == 0
+	return ap.UnapprovedFiles().Len() == 0
 }
 
 // RequirementsMet returns a bool indicating whether the PR has met all approval requirements:
@@ -500,10 +497,7 @@ func (ap Approvers) AreFilesApproved() bool {
 // 	- that there is an associated issue with the PR
 // 	- an OWNER has indicated that the PR is trivial enough that an issue need not be associated with the PR
 func (ap Approvers) RequirementsMet() bool {
-	approved := ap.AreFilesApproved()
-	noIssueApprovers := ap.NoIssueApprovers()
-	fmt.Printf("noIssueApprovers %#v len: %d\n", noIssueApprovers, len(noIssueApprovers))
-	return approved && (!ap.RequireIssue || ap.AssociatedIssue != 0 || len(noIssueApprovers) != 0)
+	return ap.AreFilesApproved() && (!ap.RequireIssue || ap.AssociatedIssue != 0 || len(ap.NoIssueApprovers()) != 0)
 }
 
 // IsApproved returns a bool indicating whether the PR is fully approved.
