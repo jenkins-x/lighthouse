@@ -260,7 +260,7 @@ func TestLGTMComment(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Running scenario %q", tc.name)
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		fc.PullRequests[5] = &scm.PullRequest{
 			Number: 5,
@@ -420,7 +420,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		fc.PullRequests[5] = &scm.PullRequest{
 			Number: 5,
@@ -626,7 +626,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		fc.PullRequests[5] = &scm.PullRequest{
 			Number: 5,
@@ -926,8 +926,7 @@ func TestHandlePullRequest(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			fakeScmClient, fakeGitHub := fake.NewDefault()
-			fakeClient := github.ToGitHubClient(fakeScmClient)
-			fakeClient.SetBotName(fakeBotName)
+			fakeClient := github.ToGitHubClient(fakeScmClient, fakeBotName)
 
 			fakeGitHub.IssueComments = c.issueComments
 			fakeGitHub.PullRequests[101] = &scm.PullRequest{
@@ -1036,7 +1035,7 @@ func TestAddTreeHashComment(t *testing.T) {
 				body:   "/lgtm",
 			}
 			fakeScmClient, fc := fake.NewDefault()
-			fakeClient := github.ToGitHubClient(fakeScmClient)
+			fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 			fc.PullRequests[101] = &scm.PullRequest{
 				Number: 101,
@@ -1093,8 +1092,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 	}
 	fakeBotName := "k8s-ci-robot"
 	fakeScmClient, fc := fake.NewDefault()
-	fakeClient := github.ToGitHubClient(fakeScmClient)
-	fakeClient.SetBotName(fakeBotName)
+	fakeClient := github.ToGitHubClient(fakeScmClient, fakeBotName)
 
 	fc.IssueComments[101] = []*scm.Comment{&scm.Comment{
 		Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),

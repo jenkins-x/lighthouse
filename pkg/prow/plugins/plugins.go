@@ -158,15 +158,16 @@ type Agent struct {
 func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
+	gitHubClient := github.ToGitHubClient(clientAgent.GitHubClient, clientAgent.BotName)
 	return Agent{
-		GitHubClient: github.ToGitHubClient(clientAgent.GitHubClient),
+		GitHubClient: gitHubClient,
 		GitClient:    clientAgent.GitClient,
 		/*
 			ProwJobClient: clientAgent.ProwJobClient,
 			SlackClient:   clientAgent.SlackClient,
 		*/
 		OwnersClient: repoowners.NewClient(
-			clientAgent.GitClient, github.ToGitHubClient(clientAgent.GitHubClient),
+			clientAgent.GitClient, gitHubClient,
 			prowConfig, pluginConfig.MDYAMLEnabled,
 			pluginConfig.SkipCollaborators,
 		),
@@ -196,6 +197,7 @@ func (a *Agent) CommentPruner() (*commentpruner.EventClient, error) {
 
 // ClientAgent contains the various clients that are attached to the Agent.
 type ClientAgent struct {
+	BotName      string
 	GitHubClient *scm.Client
 
 	KubernetesClient kubernetes.Interface

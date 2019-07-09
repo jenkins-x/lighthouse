@@ -99,7 +99,7 @@ func TestBranchCleaner(t *testing.T) {
 			}
 
 			fakeScmClient, fgc := fake.NewDefault()
-			fakeClient := github.ToGitHubClient(fakeScmClient)
+			fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 			fgc.PullRequests[prNumber] = &scm.PullRequest{
 				Number: prNumber,

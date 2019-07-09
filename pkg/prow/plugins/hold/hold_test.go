@@ -86,7 +86,7 @@ func TestHandle(t *testing.T) {
 			return tc.hasLabel
 		}
 
-		if err := handle(github.ToGitHubClient(client), logrus.WithField("plugin", PluginName), e, hasLabel); err != nil {
+		if err := handle(github.ToTestGitHubClient(client), logrus.WithField("plugin", PluginName), e, hasLabel); err != nil {
 			t.Errorf("For case %s, didn't expect error from hold: %v", tc.name, err)
 			continue
 		}

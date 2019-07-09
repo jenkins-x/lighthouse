@@ -435,7 +435,7 @@ func TestLabel(t *testing.T) {
 		t.Logf("Running scenario %q", tc.name)
 		sort.Strings(tc.expectedNewLabels)
 		fakeScmClient, fakeData := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 		fakeData.OrgMembers["org"] = []string{orgMember}
 		fakeData.RepoLabelsExisting = tc.repoLabels
 

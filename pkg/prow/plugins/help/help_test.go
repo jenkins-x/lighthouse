@@ -176,7 +176,7 @@ func TestLabel(t *testing.T) {
 	for _, tc := range testcases {
 		sort.Strings(tc.expectedNewLabels)
 		fakeScmClient, fakeClient := fake.NewDefault()
-		fakeGHClient := github.ToGitHubClient(fakeScmClient)
+		fakeGHClient := github.ToTestGitHubClient(fakeScmClient)
 		fakeClient.RepoLabelsExisting = []string{labels.Help, labels.GoodFirstIssue}
 
 		// Add initial labels

@@ -55,6 +55,7 @@ type WebhookOptions struct {
 	configPath    string
 	jobConfigPath string
 	server        *hook.Server
+	botName       string
 }
 
 // NewCmdWebhook creates the command
@@ -78,6 +79,7 @@ func NewCmdWebhook() *cobra.Command {
 		"The path to listen on for requests to trigger a pipeline run.")
 	cmd.Flags().StringVar(&options.configPath, "config-path", "config.yaml", "Path to config.yaml.")
 	cmd.Flags().StringVar(&options.jobConfigPath, "job-config-path", "", "Path to prow job configs.")
+	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $BOT_NAME if not specified.")
 
 	return cmd
 }
@@ -102,7 +104,7 @@ func (o *WebhookOptions) Run() error {
 		return errors.Wrapf(err, "failed to create Hook Server")
 	}
 
-	_, err = o.createSCMClient()
+	_, _, err = o.createSCMClient()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create ScmClient")
 	}
@@ -159,7 +161,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	}
 	logrus.Infof("about to parse webhook")
 
-	scmClient, err := o.createSCMClient()
+	scmClient, token, err := o.createSCMClient()
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
@@ -206,8 +208,14 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
 	gitClient, _ := git.NewClient()
 
+	user := o.GetBotName()
+	gitClient.SetCredentials(user, func() []byte {
+		return []byte(token)
+	})
+
 	server := *o.server
 	server.ClientAgent = &plugins.ClientAgent{
+		BotName:          o.GetBotName(),
 		GitHubClient:     scmClient,
 		KubernetesClient: kubeClient,
 		GitClient:        gitClient,
@@ -321,7 +329,7 @@ func (o *WebhookOptions) secretFn(webhook scm.Webhook) (string, error) {
 	return os.Getenv("HMAC_TOKEN"), nil
 }
 
-func (o *WebhookOptions) createSCMClient() (*scm.Client, error) {
+func (o *WebhookOptions) createSCMClient() (*scm.Client, string, error) {
 	kind := os.Getenv("GIT_KIND")
 	if kind == "" {
 		kind = "github"
@@ -340,7 +348,7 @@ func (o *WebhookOptions) createSCMClient() (*scm.Client, error) {
 		}
 	case "gitea":
 		if serverURL == "" {
-			return nil, fmt.Errorf(noGitServerURLMessage)
+			return nil, "", fmt.Errorf(noGitServerURLMessage)
 		}
 		client, err = gitea.New(serverURL)
 	case "github":
@@ -357,30 +365,38 @@ func (o *WebhookOptions) createSCMClient() (*scm.Client, error) {
 		}
 	case "gogs":
 		if serverURL == "" {
-			return nil, fmt.Errorf(noGitServerURLMessage)
+			return nil, "", fmt.Errorf(noGitServerURLMessage)
 		}
 		client, err = gogs.New(serverURL)
 	case "stash":
 		if serverURL == "" {
-			return nil, fmt.Errorf(noGitServerURLMessage)
+			return nil, "", fmt.Errorf(noGitServerURLMessage)
 		}
 		client, err = stash.New(serverURL)
 	default:
-		return nil, fmt.Errorf("Unsupported $GIT_KIND value: %s", kind)
+		return nil, "", fmt.Errorf("Unsupported $GIT_KIND value: %s", kind)
 	}
 	if err != nil {
-		return client, err
+		return client, "", err
 	}
 	token, err := o.createSCMToken(kind)
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	client.Client = oauth2.NewClient(context.Background(), ts)
-	return client, err
+	return client, token, err
+}
+
+func (o *WebhookOptions) GetBotName() string {
+	o.botName = os.Getenv("BOT_NAME")
+	if o.botName == "" {
+		o.botName = "jenkins-x-bot"
+	}
+	return o.botName
 }
 
 func (o *WebhookOptions) createSCMToken(gitKind string) (string, error) {
-	envName := "JX_" + strings.ToUpper(gitKind) + "_TOKEN"
+	envName := strings.ToUpper(gitKind) + "_TOKEN"
 	value := os.Getenv(envName)
 	if value == "" {
 		return value, fmt.Errorf("No token available for git kind %s at environment variable $%s", gitKind, envName)

@@ -11,9 +11,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ToGitHubClient converts the scm client to an API that the prow plgins expect
-func ToGitHubClient(client *scm.Client) *GitHubClient {
-	return &GitHubClient{client: client}
+// ToGitHubClient converts the scm client to an API that the prow plugins expect
+func ToGitHubClient(client *scm.Client, botName string) *GitHubClient {
+	return &GitHubClient{client: client, botName: botName}
+}
+
+// the default bot name used in tests
+var TestBotName = "jenkins-x-bot"
+
+// ToTestGitHubClient converts the scm client to an API that the prow plugins expect
+func ToTestGitHubClient(client *scm.Client) *GitHubClient {
+	return &GitHubClient{client: client, botName: TestBotName}
 }
 
 // GitHubClient represents an interface that prow plugins expect on top of go-scm
