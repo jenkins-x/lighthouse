@@ -62,8 +62,8 @@ func NewCmdWebhook() *cobra.Command {
 	options := WebhookOptions{}
 
 	cmd := &cobra.Command{
-		Use:   "hook",
-		Short: "Runs the webhook handler",
+		Use:   "lighthouse",
+		Short: "Runs the lighthouse webhook handler",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := options.Run()
 			helper.CheckErr(err)
