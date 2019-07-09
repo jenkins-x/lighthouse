@@ -976,7 +976,7 @@ func validateAgent(v JobBase, podNamespace string) error {
 	k := string(prowjobv1.KubernetesAgent)
 	b := string(prowjobv1.KnativeBuildAgent)
 	j := string(prowjobv1.JenkinsAgent)
-	agents := sets.NewString(k, b, j)
+	agents := sets.NewString(k, b, j, "tekton")
 	agent := v.Agent
 	switch {
 	case !agents.Has(agent):

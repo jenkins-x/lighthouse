@@ -34,5 +34,4 @@ Its got a few differences though:
 
 * rather than be GitHub specific lighthouse uses [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) to be able to support any git provider 
 * lighthouse is mostly like `hook` from Prow; an auto scaling webhook handler - to keep the footprint small
-* lighthouse focuses purely on Tekton pipelines so it does not require a `ProwJob` CRD; instead a push webhook to a release or pull request branch can trigger zero to many `PipelineRun` CRDs instead
-* lighthouse uses the Jenkins X CRDs for configuration: `SourceRepository`, `SourceRepositoryGroup` and `Schedule`       
+* lighthouse focuses purely on Tekton pipelines so it does not require a `ProwJob` CRD; instead a push webhook to a release or pull request branch can trigger zero to many `PipelineRun` CRDs instead   
