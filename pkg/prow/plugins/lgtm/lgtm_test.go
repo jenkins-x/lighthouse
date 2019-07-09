@@ -23,11 +23,11 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/prow/repoowners"
@@ -54,7 +54,7 @@ type fakeRepoOwners struct {
 }
 
 type fakePruner struct {
-	GitHubClient  *fakegithub.FakeClient
+	GitHubClient  *fake.Data
 	IssueComments []*scm.Comment
 }
 
@@ -259,25 +259,23 @@ func TestLGTMComment(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		t.Logf("Running scenario %q", tc.name)
-		fc := &fakegithub.FakeClient{
-			IssueComments: make(map[int][]*scm.Comment),
-			PullRequests: map[int]*scm.PullRequest{
-				5: {
-					Base: scm.PullRequestBranch{
-						Ref: "master",
-					},
-					Head: scm.PullRequestBranch{
-						Sha: SHA,
-					},
-				},
+		fakeScmClient, fc := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
+
+		fc.PullRequests[5] = &scm.PullRequest{
+			Number: 5,
+			Base: scm.PullRequestBranch{
+				Ref: "master",
 			},
-			PullRequestChanges: map[int][]*scm.Change{
-				5: {
-					{Path: "doc/README.md"},
-				},
+			Head: scm.PullRequestBranch{
+				Sha: SHA,
 			},
-			Collaborators: []string{"collab1", "collab2"},
 		}
+		fc.PullRequestChanges[5] = []*scm.Change{
+			{Path: "doc/README.md"},
+		}
+		fc.Collaborators = []string{"collab1", "collab2"}
+
 		e := &github.GenericCommentEvent{
 			Action:      scm.ActionCreate,
 			IssueState:  "open",
@@ -306,7 +304,7 @@ func TestLGTMComment(t *testing.T) {
 			GitHubClient:  fc,
 			IssueComments: fc.IssueComments[5],
 		}
-		if err := handleGenericComment(fc, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
 			t.Errorf("didn't expect error from lgtmComment: %v", err)
 			continue
 		}
@@ -421,17 +419,16 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 	}
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
-		fc := &fakegithub.FakeClient{
-			IssueComments: make(map[int][]*scm.Comment),
-			PullRequests: map[int]*scm.PullRequest{
-				5: {
-					Head: scm.PullRequestBranch{
-						Sha: SHA,
-					},
-				},
+		fakeScmClient, fc := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
+
+		fc.PullRequests[5] = &scm.PullRequest{
+			Number: 5,
+			Head: scm.PullRequestBranch{
+				Sha: SHA,
 			},
-			Collaborators: []string{"collab1", "collab2"},
 		}
+		fc.Collaborators = []string{"collab1", "collab2"}
 		e := &github.GenericCommentEvent{
 			Action:      scm.ActionCreate,
 			IssueState:  "open",
@@ -444,7 +441,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			Repo:        scm.Repository{Namespace: "org", Name: "repo"},
 			Link:        "<url>",
 		}
-		botName, err := fc.BotName()
+		botName, err := fakeClient.BotName()
 		if err != nil {
 			t.Fatalf("For case %s, could not get Bot nam", tc.name)
 		}
@@ -461,7 +458,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			GitHubClient:  fc,
 			IssueComments: fc.IssueComments[5],
 		}
-		if err := handleGenericComment(fc, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
 			t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
 			continue
 		}
@@ -628,18 +625,17 @@ func TestLGTMFromApproveReview(t *testing.T) {
 	}
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
-		fc := &fakegithub.FakeClient{
-			IssueComments:    make(map[int][]*scm.Comment),
-			IssueLabelsAdded: []string{},
-			PullRequests: map[int]*scm.PullRequest{
-				5: {
-					Head: scm.PullRequestBranch{
-						Sha: SHA,
-					},
-				},
+		fakeScmClient, fc := fake.NewDefault()
+		fakeClient := github.ToGitHubClient(fakeScmClient)
+
+		fc.PullRequests[5] = &scm.PullRequest{
+			Number: 5,
+			Head: scm.PullRequestBranch{
+				Sha: SHA,
 			},
-			Collaborators: []string{"collab1", "collab2"},
 		}
+		fc.Collaborators = []string{"collab1", "collab2"}
+
 		e := &scm.ReviewHook{
 			Action:      tc.action,
 			Review:      scm.Review{Body: tc.body, State: tc.state, Link: "<url>", Author: scm.User{Login: tc.reviewer}},
@@ -659,7 +655,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 			GitHubClient:  fc,
 			IssueComments: fc.IssueComments[5],
 		}
-		if err := handlePullRequestReview(fc, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+		if err := handlePullRequestReview(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
 			t.Errorf("For case %s, didn't expect error from pull request review: %v", tc.name, err)
 			continue
 		}
@@ -707,6 +703,8 @@ func TestLGTMFromApproveReview(t *testing.T) {
 func TestHandlePullRequest(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	treeSHA := "6dcb09b5b57875f334f61aebed695e2e4193db5e"
+	fakeBotName := "k8s-ci-robot"
+
 	cases := []struct {
 		name             string
 		event            scm.PullRequestHook
@@ -743,7 +741,7 @@ func TestHandlePullRequest(t *testing.T) {
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
-						Author: scm.User{Login: fakegithub.Bot},
+						Author: scm.User{Login: fakeBotName},
 					},
 				},
 			},
@@ -793,7 +791,7 @@ func TestHandlePullRequest(t *testing.T) {
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
-						Author: scm.User{Login: fakegithub.Bot},
+						Author: scm.User{Login: fakeBotName},
 					},
 				},
 			},
@@ -822,7 +820,7 @@ func TestHandlePullRequest(t *testing.T) {
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
-						Author: scm.User{Login: fakegithub.Bot},
+						Author: scm.User{Login: fakeBotName},
 					},
 				},
 			},
@@ -857,7 +855,7 @@ func TestHandlePullRequest(t *testing.T) {
 				101: {
 					{
 						Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-						Author: scm.User{Login: fakegithub.Bot},
+						Author: scm.User{Login: fakeBotName},
 					},
 				},
 			},
@@ -885,7 +883,7 @@ func TestHandlePullRequest(t *testing.T) {
 				101: {
 					{
 						Body:    fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-						Author:  scm.User{Login: fakegithub.Bot},
+						Author:  scm.User{Login: fakeBotName},
 						Created: time.Date(1981, 2, 21, 12, 30, 0, 0, time.UTC),
 						Updated: time.Date(1981, 2, 21, 12, 31, 0, 0, time.UTC),
 					},
@@ -914,11 +912,11 @@ func TestHandlePullRequest(t *testing.T) {
 				101: {
 					{
 						Body:   fmt.Sprintf(addLGTMLabelNotification, "older_treeSHA"),
-						Author: scm.User{Login: fakegithub.Bot},
+						Author: scm.User{Login: fakeBotName},
 					},
 					{
 						Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-						Author: scm.User{Login: fakegithub.Bot},
+						Author: scm.User{Login: fakeBotName},
 					},
 				},
 			},
@@ -927,25 +925,26 @@ func TestHandlePullRequest(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			fakeGitHub := &fakegithub.FakeClient{
-				IssueComments: c.issueComments,
-				PullRequests: map[int]*scm.PullRequest{
-					101: {
-						Base: scm.PullRequestBranch{
-							Ref: "master",
-						},
-						Head: scm.PullRequestBranch{
-							Sha: SHA,
-						},
-					},
+			fakeScmClient, fakeGitHub := fake.NewDefault()
+			fakeClient := github.ToGitHubClient(fakeScmClient)
+			fakeClient.SetBotName(fakeBotName)
+
+			fakeGitHub.IssueComments = c.issueComments
+			fakeGitHub.PullRequests[101] = &scm.PullRequest{
+				Number: 101,
+				Base: scm.PullRequestBranch{
+					Ref: "master",
 				},
-				Commits:          make(map[string]scm.CommitTree),
-				Collaborators:    []string{"collab"},
-				IssueLabelsAdded: c.IssueLabelsAdded,
+				Head: scm.PullRequestBranch{
+					Sha: SHA,
+				},
 			}
+			fakeGitHub.Collaborators = []string{"collab"}
+			fakeGitHub.IssueLabelsAdded = c.IssueLabelsAdded
 			fakeGitHub.IssueLabelsAdded = append(fakeGitHub.IssueLabelsAdded, "kubernetes/kubernetes#101:lgtm")
-			commit := scm.CommitTree{}
-			commit.Sha = treeSHA
+
+			commit := &scm.Commit{}
+			commit.Tree.Sha = treeSHA
 			fakeGitHub.Commits[SHA] = commit
 			pc := &plugins.Configuration{}
 			pc.Lgtm = append(pc.Lgtm, plugins.Lgtm{
@@ -955,7 +954,7 @@ func TestHandlePullRequest(t *testing.T) {
 			})
 			err := handlePullRequest(
 				logrus.WithField("plugin", "approve"),
-				fakeGitHub,
+				fakeClient,
 				pc,
 				&c.event,
 			)
@@ -1036,25 +1035,24 @@ func TestAddTreeHashComment(t *testing.T) {
 				number: 101,
 				body:   "/lgtm",
 			}
-			fc := &fakegithub.FakeClient{
-				Commits:       make(map[string]scm.CommitTree),
-				IssueComments: map[int][]*scm.Comment{},
-				PullRequests: map[int]*scm.PullRequest{
-					101: {
-						Base: scm.PullRequestBranch{
-							Ref: "master",
-						},
-						Head: scm.PullRequestBranch{
-							Sha: SHA,
-						},
-					},
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := github.ToGitHubClient(fakeScmClient)
+
+			fc.PullRequests[101] = &scm.PullRequest{
+				Number: 101,
+				Base: scm.PullRequestBranch{
+					Ref: "master",
 				},
-				Collaborators: []string{"collab1", "collab2"},
+				Head: scm.PullRequestBranch{
+					Sha: SHA,
+				},
 			}
-			commit := scm.CommitTree{}
-			commit.Sha = treeSHA
+			fc.Collaborators = []string{"collab1", "collab2"}
+
+			commit := &scm.Commit{}
+			commit.Tree.Sha = treeSHA
 			fc.Commits[SHA] = commit
-			handle(true, pc, &fakeOwnersClient{}, rc, fc, logrus.WithField("plugin", PluginName), &fakePruner{})
+			handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), &fakePruner{})
 			found := false
 			for _, body := range fc.IssueCommentsAdded {
 				if addLGTMLabelNotificationRe.MatchString(body) {
@@ -1093,23 +1091,24 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		number:    101,
 		body:      "/lgtm cancel",
 	}
-	fc := &fakegithub.FakeClient{
-		IssueComments: map[int][]*scm.Comment{
-			101: {
-				{
-					Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-					Author: scm.User{Login: fakegithub.Bot},
-				},
-			},
-		},
-		Collaborators: []string{"collab1", "collab2"},
+	fakeBotName := "k8s-ci-robot"
+	fakeScmClient, fc := fake.NewDefault()
+	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fakeClient.SetBotName(fakeBotName)
+
+	fc.IssueComments[101] = []*scm.Comment{&scm.Comment{
+		Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
+		Author: scm.User{Login: fakeBotName},
+	},
 	}
+	fc.Collaborators = []string{"collab1", "collab2"}
+
 	fc.IssueLabelsAdded = []string{"kubernetes/kubernetes#101:" + LGTMLabel}
 	fp := &fakePruner{
 		GitHubClient:  fc,
 		IssueComments: fc.IssueComments[101],
 	}
-	handle(false, pc, &fakeOwnersClient{}, rc, fc, logrus.WithField("plugin", PluginName), fp)
+	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), fp)
 	found := false
 	for _, body := range fc.IssueCommentsDeleted {
 		if addLGTMLabelNotificationRe.MatchString(body) {

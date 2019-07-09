@@ -66,23 +66,33 @@ func (c *GitHubClient) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
 }
 
 func (c *GitHubClient) IsCollaborator(owner, repo, login string) (bool, error) {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	flag, _, err := c.client.Repositories.IsCollaborator(ctx, fullName, login)
+	return flag, err
 }
 
-func (c *GitHubClient) GetSingleCommit(org, repo, SHA string) (scm.CommitTree, error) {
-	panic("implement me")
+func (c *GitHubClient) GetSingleCommit(owner, repo, SHA string) (*scm.Commit, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	commit, _, err := c.client.Git.FindCommit(ctx, fullName, SHA)
+	return commit, err
 }
 
 func (c *GitHubClient) IsMember(org, user string) (bool, error) {
 	panic("implement me")
 }
 
-func (c *GitHubClient) ListTeams(org string) ([]Team, error) {
-	panic("implement me")
+func (c *GitHubClient) ListTeams(org string) ([]*scm.Team, error) {
+	ctx := context.Background()
+	teams, _, err := c.client.Organizations.ListTeams(ctx, org, c.createListOptions())
+	return teams, err
 }
 
-func (c *GitHubClient) ListTeamMembers(id int, role string) ([]TeamMember, error) {
-	panic("implement me")
+func (c *GitHubClient) ListTeamMembers(id int, role string) ([]*scm.TeamMember, error) {
+	ctx := context.Background()
+	members, _, err := c.client.Organizations.ListTeamMembers(ctx, id, role, c.createListOptions())
+	return members, err
 }
 
 func (c *GitHubClient) DeleteRef(owner, repo, ref string) error {
@@ -146,11 +156,17 @@ func (c *GitHubClient) ListIssueEvents(org, repo string, number int) ([]*scm.Lis
 }
 
 func (c *GitHubClient) AssignIssue(owner, repo string, number int, logins []string) error {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.Issues.AssignIssue(ctx, fullName, number, logins)
+	return err
 }
 
 func (c *GitHubClient) UnassignIssue(owner, repo string, number int, logins []string) error {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.Issues.UnassignIssue(ctx, fullName, number, logins)
+	return err
 }
 
 func (c *GitHubClient) AddLabel(owner, repo string, number int, label string) error {

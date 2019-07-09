@@ -46,7 +46,7 @@ type githubClient interface {
 	CreateComment(owner, repo string, number int, comment string) error
 	ClearMilestone(org, repo string, num int) error
 	SetMilestone(org, repo string, issueNum, milestoneNum int) error
-	ListTeamMembers(id int, role string) ([]github.TeamMember, error)
+	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 	ListMilestones(org, repo string) ([]github.Milestone, error)
 }
 

@@ -47,7 +47,7 @@ var (
 type githubClient interface {
 	CreateComment(owner, repo string, number int, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
-	ListTeamMembers(id int, role string) ([]github.TeamMember, error)
+	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 }
 
 func init() {

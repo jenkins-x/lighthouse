@@ -49,7 +49,7 @@ type FakeClient struct {
 	CombinedStatuses    map[string]*github.CombinedStatus
 	CreatedStatuses     map[string][]scm.Status
 	IssueEvents         map[int][]*scm.ListedIssueEvent
-	Commits             map[string]scm.CommitTree
+	Commits             map[string]*scm.Commit
 
 	//All Labels That Exist In The Repo
 	RepoLabelsExisting []string
@@ -211,7 +211,7 @@ func (f *FakeClient) DeleteRef(owner, repo, ref string) error {
 }
 
 // GetSingleCommit returns a single commit.
-func (f *FakeClient) GetSingleCommit(org, repo, SHA string) (scm.CommitTree, error) {
+func (f *FakeClient) GetSingleCommit(org, repo, SHA string) (*scm.Commit, error) {
 	return f.Commits[SHA], nil
 }
 
@@ -348,8 +348,8 @@ func (f *FakeClient) GetFile(org, repo, file, commit string) ([]byte, error) {
 }
 
 // ListTeams return a list of fake teams that correspond to the fake team members returned by ListTeamMembers
-func (f *FakeClient) ListTeams(org string) ([]github.Team, error) {
-	return []github.Team{
+func (f *FakeClient) ListTeams(org string) ([]*scm.Team, error) {
+	return []*scm.Team{
 		{
 			ID:   0,
 			Name: "Admins",
@@ -362,17 +362,17 @@ func (f *FakeClient) ListTeams(org string) ([]github.Team, error) {
 }
 
 // ListTeamMembers return a fake team with a single "sig-lead" Github teammember
-func (f *FakeClient) ListTeamMembers(teamID int, role string) ([]github.TeamMember, error) {
+func (f *FakeClient) ListTeamMembers(teamID int, role string) ([]*scm.TeamMember, error) {
 	if role != github.RoleAll {
 		return nil, fmt.Errorf("unsupported role %v (only all supported)", role)
 	}
-	teams := map[int][]github.TeamMember{
+	teams := map[int][]*scm.TeamMember{
 		0:  {{Login: "default-sig-lead"}},
 		42: {{Login: "sig-lead"}},
 	}
 	members, ok := teams[teamID]
 	if !ok {
-		return []github.TeamMember{}, nil
+		return []*scm.TeamMember{}, nil
 	}
 	return members, nil
 }
