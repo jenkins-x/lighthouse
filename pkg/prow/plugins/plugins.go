@@ -166,7 +166,7 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 			SlackClient:   clientAgent.SlackClient,
 		*/
 		OwnersClient: repoowners.NewClient(
-			clientAgent.GitClient, repoowners.ToGitHubClient(clientAgent.GitHubClient),
+			clientAgent.GitClient, github.ToGitHubClient(clientAgent.GitHubClient),
 			prowConfig, pluginConfig.MDYAMLEnabled,
 			pluginConfig.SkipCollaborators,
 		),
