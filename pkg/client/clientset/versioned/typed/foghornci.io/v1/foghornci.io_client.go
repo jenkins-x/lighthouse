@@ -24,22 +24,22 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-type JenkinsV1Interface interface {
+type FoghornciV1Interface interface {
 	RESTClient() rest.Interface
 	WebhooksGetter
 }
 
-// JenkinsV1Client is used to interact with features provided by the jenkins.io group.
-type JenkinsV1Client struct {
+// FoghornciV1Client is used to interact with features provided by the foghornci.io group.
+type FoghornciV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *JenkinsV1Client) Webhooks(namespace string) WebhookInterface {
+func (c *FoghornciV1Client) Webhooks(namespace string) WebhookInterface {
 	return newWebhooks(c, namespace)
 }
 
-// NewForConfig creates a new JenkinsV1Client for the given config.
-func NewForConfig(c *rest.Config) (*JenkinsV1Client, error) {
+// NewForConfig creates a new FoghornciV1Client for the given config.
+func NewForConfig(c *rest.Config) (*FoghornciV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -48,12 +48,12 @@ func NewForConfig(c *rest.Config) (*JenkinsV1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &JenkinsV1Client{client}, nil
+	return &FoghornciV1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new JenkinsV1Client for the given config and
+// NewForConfigOrDie creates a new FoghornciV1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *JenkinsV1Client {
+func NewForConfigOrDie(c *rest.Config) *FoghornciV1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -61,9 +61,9 @@ func NewForConfigOrDie(c *rest.Config) *JenkinsV1Client {
 	return client
 }
 
-// New creates a new JenkinsV1Client for the given RESTClient.
-func New(c rest.Interface) *JenkinsV1Client {
-	return &JenkinsV1Client{c}
+// New creates a new FoghornciV1Client for the given RESTClient.
+func New(c rest.Interface) *FoghornciV1Client {
+	return &FoghornciV1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -81,7 +81,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *JenkinsV1Client) RESTClient() rest.Interface {
+func (c *FoghornciV1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

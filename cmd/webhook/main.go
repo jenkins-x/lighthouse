@@ -7,7 +7,7 @@ import (
 	"os"
 	"strconv"
 
-	clientv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	clientv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1"
 	"github.com/foghornci/foghorn/pkg/git/bitbucketserver"
 	"github.com/sirupsen/logrus"
 	rest "k8s.io/client-go/rest"

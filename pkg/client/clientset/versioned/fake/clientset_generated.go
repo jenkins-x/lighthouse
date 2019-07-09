@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/foghornci/foghorn/pkg/client/clientset/versioned"
-	jenkinsv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1"
-	fakejenkinsv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1/fake"
+	foghornciv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1"
+	fakefoghornciv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -76,7 +76,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// JenkinsV1 retrieves the JenkinsV1Client
-func (c *Clientset) JenkinsV1() jenkinsv1.JenkinsV1Interface {
-	return &fakejenkinsv1.FakeJenkinsV1{Fake: &c.Fake}
+// FoghornciV1 retrieves the FoghornciV1Client
+func (c *Clientset) FoghornciV1() foghornciv1.FoghornciV1Interface {
+	return &fakefoghornciv1.FakeFoghornciV1{Fake: &c.Fake}
 }

@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Jenkins() foghornciio.Interface
+	Foghornci() foghornciio.Interface
 }
 
-func (f *sharedInformerFactory) Jenkins() foghornciio.Interface {
+func (f *sharedInformerFactory) Foghornci() foghornciio.Interface {
 	return foghornciio.New(f, f.namespace, f.tweakListOptions)
 }

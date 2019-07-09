@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	apiv1 "github.com/foghornci/foghorn/pkg/apis/jenkins.io/v1"
+	apiv1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
 )
 
 // Provider is an implementation of the git.Provider interface for Bitbucket Server

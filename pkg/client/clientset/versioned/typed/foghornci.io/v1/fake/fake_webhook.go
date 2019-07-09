@@ -30,13 +30,13 @@ import (
 
 // FakeWebhooks implements WebhookInterface
 type FakeWebhooks struct {
-	Fake *FakeJenkinsV1
+	Fake *FakeFoghornciV1
 	ns   string
 }
 
-var webhooksResource = schema.GroupVersionResource{Group: "jenkins.io", Version: "v1", Resource: "webhooks"}
+var webhooksResource = schema.GroupVersionResource{Group: "foghornci.io", Version: "v1", Resource: "webhooks"}
 
-var webhooksKind = schema.GroupVersionKind{Group: "jenkins.io", Version: "v1", Kind: "Webhook"}
+var webhooksKind = schema.GroupVersionKind{Group: "foghornci.io", Version: "v1", Kind: "Webhook"}
 
 // Get takes name of the webhook, and returns the corresponding webhook object, and an error if there is any.
 func (c *FakeWebhooks) Get(name string, options v1.GetOptions) (result *foghornciiov1.Webhook, err error) {

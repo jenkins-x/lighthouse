@@ -61,13 +61,13 @@ func NewFilteredWebhookInformer(client versioned.Interface, namespace string, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.JenkinsV1().Webhooks(namespace).List(options)
+				return client.FoghornciV1().Webhooks(namespace).List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.JenkinsV1().Webhooks(namespace).Watch(options)
+				return client.FoghornciV1().Webhooks(namespace).Watch(options)
 			},
 		},
 		&foghornciiov1.Webhook{},
