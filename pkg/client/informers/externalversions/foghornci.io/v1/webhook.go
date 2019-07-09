@@ -21,10 +21,10 @@ package v1
 import (
 	time "time"
 
-	jenkinsiov1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
-	versioned "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/jenkins-x/lighthouse/pkg/client/listers/jenkins.io/v1"
+	foghornciiov1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
+	versioned "github.com/foghornci/foghorn/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/foghornci/foghorn/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/foghornci/foghorn/pkg/client/listers/foghornci.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -61,16 +61,16 @@ func NewFilteredWebhookInformer(client versioned.Interface, namespace string, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.JenkinsV1().Webhooks(namespace).List(options)
+				return client.FoghornciV1().Webhooks(namespace).List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.JenkinsV1().Webhooks(namespace).Watch(options)
+				return client.FoghornciV1().Webhooks(namespace).Watch(options)
 			},
 		},
-		&jenkinsiov1.Webhook{},
+		&foghornciiov1.Webhook{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *webhookInformer) defaultInformer(client versioned.Interface, resyncPeri
 }
 
 func (f *webhookInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&jenkinsiov1.Webhook{}, f.defaultInformer)
+	return f.factory.InformerFor(&foghornciiov1.Webhook{}, f.defaultInformer)
 }
 
 func (f *webhookInformer) Lister() v1.WebhookLister {

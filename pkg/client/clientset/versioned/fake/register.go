@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	jenkinsv1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
+	foghornciv1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,7 +31,7 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	jenkinsv1.AddToScheme,
+	foghornciv1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

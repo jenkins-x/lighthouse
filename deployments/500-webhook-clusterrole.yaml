@@ -6,6 +6,6 @@ metadata:
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
 rules:
-- apiGroups: ["jenkins.io"]
+- apiGroups: ["foghornci.io"]
   resources: ["webhooks"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

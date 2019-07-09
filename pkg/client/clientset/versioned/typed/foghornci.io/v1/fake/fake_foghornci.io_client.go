@@ -19,22 +19,22 @@ limitations under the License.
 package fake
 
 import (
-	v1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	v1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeJenkinsV1 struct {
+type FakeFoghornciV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeJenkinsV1) Webhooks(namespace string) v1.WebhookInterface {
+func (c *FakeFoghornciV1) Webhooks(namespace string) v1.WebhookInterface {
 	return &FakeWebhooks{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeJenkinsV1) RESTClient() rest.Interface {
+func (c *FakeFoghornciV1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

@@ -21,8 +21,8 @@ package v1
 import (
 	"time"
 
-	v1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
-	scheme "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/scheme"
+	v1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
+	scheme "github.com/foghornci/foghorn/pkg/client/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -55,7 +55,7 @@ type webhooks struct {
 }
 
 // newWebhooks returns a Webhooks
-func newWebhooks(c *JenkinsV1Client, namespace string) *webhooks {
+func newWebhooks(c *FoghornciV1Client, namespace string) *webhooks {
 	return &webhooks{
 		client: c.RESTClient(),
 		ns:     namespace,

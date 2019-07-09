@@ -4,7 +4,7 @@ metadata:
   name: controller
   labels:
     app: controller
-  namespace: lighthouse
+  namespace: foghorn
 spec:
   replicas: 1
   selector:
@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: controller
-        image: github.com/jenkins-x/lighthouse/cmd/controller
+        image: github.com/foghornci/foghorn/cmd/controller
         ports:
         - containerPort: 8080

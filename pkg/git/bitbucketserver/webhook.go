@@ -1,13 +1,13 @@
 package bitbucketserver
 
 import (
-	apiv1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
+	apiv1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type webhook struct {
 	EventKey            string      `json:"eventKey"`
-	date                string      `json:"date"`
+	Date                string      `json:"date"`
 	Actor               user        `json:"actor"`
 	PullRequest         pullRequest `json:"pullRequest"`
 	PreviousTitle       string      `json:"previousTitle"`
@@ -71,10 +71,10 @@ type user struct {
 }
 
 type reviewer struct {
-	User     user   `json:"user`
+	User     user   `json:"user"`
 	Role     string `json:"role"`
 	Approved string `json:"approved"`
-	Status   string `json:"status`
+	Status   string `json:"status"`
 }
 
 type participant struct {
