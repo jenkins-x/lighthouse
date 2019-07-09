@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/yaml"
@@ -98,7 +99,7 @@ func newTestReviewTime(t time.Time, user, body string, state string) *scm.Review
 	return r
 }
 
-func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review) *fakegithub.FakeClient {
+func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*github.GitHubClient, *fake.Data) {
 	labels := []string{"org/repo#1:lgtm"}
 	if hasLabel {
 		labels = append(labels, fmt.Sprintf("org/repo#%v:approved", prNumber))
@@ -125,13 +126,18 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	for _, file := range files {
 		changes = append(changes, &scm.Change{Path: file})
 	}
-	return &fakegithub.FakeClient{
-		IssueLabelsAdded:   labels,
-		PullRequestChanges: map[int][]*scm.Change{prNumber: changes},
-		IssueComments:      map[int][]*scm.Comment{prNumber: comments},
-		IssueEvents:        map[int][]*scm.ListedIssueEvent{prNumber: events},
-		Reviews:            map[int][]*scm.Review{prNumber: reviews},
-	}
+	fakeScmClient, fc := fake.NewDefault()
+	fc.RepoLabelsExisting = nil
+
+	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fakeClient.SetBotName(testBotName)
+
+	fc.IssueLabelsAdded = labels
+	fc.PullRequestChanges[prNumber] = changes
+	fc.IssueComments[prNumber] = comments
+	fc.IssueEvents[prNumber] = events
+	fc.Reviews[prNumber] = reviews
+	return fakeClient, fc
 }
 
 type fakeRepo struct {
@@ -154,6 +160,8 @@ func (fr fakeRepo) IsNoParentOwners(path string) bool {
 
 func TestHandle(t *testing.T) {
 	// This function does not need to test IsApproved, that is tested in approvers/approvers_test.go.
+
+	testBotName := "k8s-ci-robot"
 
 	// includes tests with mixed case usernames
 	// includes tests with stale notifications
@@ -1035,7 +1043,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 	}
 
 	for _, test := range tests {
-		fghc := newFakeGitHubClient(test.hasLabel, test.humanApproved, test.files, test.comments, test.reviews)
+		fakeClient, fghc := newFakeGitHubClient(test.hasLabel, test.humanApproved, test.files, test.comments, test.reviews, testBotName)
 		branch := "master"
 		if test.branch != "" {
 			branch = test.branch
@@ -1045,7 +1053,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 		irs := !test.reviewActsAsApprove
 		if err := handle(
 			logrus.WithField("plugin", "approve"),
-			fghc,
+			fakeClient,
 			fr,
 			config.GitHubOptions{
 				LinkURL: test.githubLinkURL,
