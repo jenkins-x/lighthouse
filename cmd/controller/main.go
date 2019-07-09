@@ -1,5 +1,10 @@
 package main
 
-func main() {
+import "github.com/sirupsen/logrus"
 
+func main() {
+	logrus.Infof("firing up webhook CRD controller...")
+	for {
+
+	}
 }

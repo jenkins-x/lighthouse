@@ -14,14 +14,12 @@ import (
 )
 
 const (
-	helloMessage = "hello from the Jenkins X foghorn\n"
+	helloMessage = "hello from Foghorn!\n"
 
 	// HealthPath is the URL path for the HTTP endpoint that returns health status.
 	HealthPath = "/health"
 	// ReadyPath URL path for the HTTP endpoint that returns ready status.
 	ReadyPath = "/ready"
-
-	noGitServerURLMessage = "No Git Server URI defined for $GIT_SERVER"
 )
 
 // WebhookOptions holds the command line arguments

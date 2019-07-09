@@ -1,6 +1,6 @@
 # Foghorn
 
-Kubernetes-native CI, inspired by [prow](https://github.com/kubernetes/test-infra/tree/master/prow).
+Foghorn is a fully Kubernetes-native CI system, inspired by [prow](https://github.com/kubernetes/test-infra/tree/master/prow). It's powered by [Tekton Pipelines](https://github.com/tektoncd/pipeline), which provides a number of handy abstractions for defining CI pipelines in a k8s-native way. Foghorn provides webhook handling and some git-centric ChatOps-y features, and it supports multiple git providers.
 
 ## Building
 
