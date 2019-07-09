@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/jenkins-x/jx/pkg/cmd/clients"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
+	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -29,6 +31,7 @@ import (
 	"k8s.io/test-infra/prow/metrics"
 
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -40,6 +43,12 @@ const (
 	ReadyPath = "/ready"
 
 	noGitServerURLMessage = "No Git Server URI defined for $GIT_SERVER"
+
+	ProwConfigMapName           = "config"
+	ProwPluginsConfigMapName    = "plugins"
+	ProwExternalPluginsFilename = "external-plugins.yaml"
+	ProwConfigFilename          = "config.yaml"
+	ProwPluginsFilename         = "plugins.yaml"
 )
 
 // WebhookOptions holds the command line arguments
@@ -49,13 +58,13 @@ type WebhookOptions struct {
 	Port        int
 	JSONLog     bool
 
-	Builder       builder.Builder
-	factory       clients.Factory
-	namespace     string
-	configPath    string
-	jobConfigPath string
-	server        *hook.Server
-	botName       string
+	Builder        builder.Builder
+	factory        clients.Factory
+	namespace      string
+	pluginFilename string
+	configFilename string
+	server         *hook.Server
+	botName        string
 }
 
 // NewCmdWebhook creates the command
@@ -77,8 +86,8 @@ func NewCmdWebhook() *cobra.Command {
 		"The interface address to bind to (by default, will listen on all interfaces/addresses).")
 	cmd.Flags().StringVarP(&options.Path, "path", "", "/hook",
 		"The path to listen on for requests to trigger a pipeline run.")
-	cmd.Flags().StringVar(&options.configPath, "config-path", "config.yaml", "Path to config.yaml.")
-	cmd.Flags().StringVar(&options.jobConfigPath, "job-config-path", "", "Path to prow job configs.")
+	cmd.Flags().StringVar(&options.pluginFilename, "plugin-file", "", "Path to the plugins.yaml file. If not specified it is loaded from the 'plugins' ConfigMap")
+	cmd.Flags().StringVar(&options.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $BOT_NAME if not specified.")
 
 	return cmd
@@ -240,20 +249,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Issue Comment handler")
 
-		sr := o.Builder.FindSourceRepository(issueCommentHook)
-		if sr == nil {
-			o.misingSourceRepository(issueCommentHook, w)
-			return
-		}
-		c, p, err := o.Builder.CreateChatOpsConfig(issueCommentHook, sr)
-		if err != nil {
-			logrus.Errorf("failed to create ChatOps config on %s: %s", repositoryToString(issueCommentHook.Repository()), err.Error())
-
-			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create ChatOps config: %s", err.Error()))
-			return
-		}
-		server.UpdateConfig(c, p)
-
 		server.HandleIssueCommentEvent(l, *issueCommentHook)
 		w.Write([]byte("OK"))
 		return
@@ -304,12 +299,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 }
 
 func (o *WebhookOptions) startBuild(hook *scm.PushHook, r *http.Request, w http.ResponseWriter) {
-	sr := o.Builder.FindSourceRepository(hook)
-	if sr == nil {
-		o.misingSourceRepository(hook, w)
-		return
-	}
-	message, err := o.Builder.StartBuild(hook, sr, o.createCommonOptions(o.namespace))
+	message, err := o.Builder.StartBuild(hook, o.createCommonOptions(o.namespace))
 	if err != nil {
 		logrus.Errorf("failed to start build on %s: %s", repositoryToString(hook.Repository()), err.Error())
 
@@ -437,8 +427,18 @@ func (o *WebhookOptions) returnError(err error, message string, w http.ResponseW
 }
 
 func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
+	err := o.createConfigFiles()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to lazy create the prow config files from ConfigMaps")
+	}
+
 	configAgent := &config.Agent{}
-	if err := configAgent.Start(o.configPath, o.jobConfigPath); err != nil {
+	configFilename := o.configFilename
+	pluginFilename := o.pluginFilename
+
+	logrus.WithField("file", configFilename).Info("loading ChatOps Config")
+
+	if err := configAgent.Start(configFilename, pluginFilename); err != nil {
 		logrus.WithError(err).Fatal("Error starting config agent.")
 	}
 
@@ -488,9 +488,12 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 	defer gitClient.Clean()
 
 	pluginAgent := &plugins.ConfigAgent{}
-	err = pluginAgent.Load(o.configPath)
+
+	logrus.WithField("file", pluginFilename).Info("loading ChatOps Plugins configuration")
+
+	err = pluginAgent.Load(pluginFilename)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load configuration from %s", o.configPath)
+		return nil, errors.Wrapf(err, "failed to load configuration from %s", pluginFilename)
 	}
 
 	/*
@@ -535,7 +538,71 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 		Metrics:     promMetrics,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
+
 	return server, nil
+}
+
+// createConfigFiles if no configuration files are defined on the CLI we dynamically load them from the ConfigMaps
+// to simplify running things locally
+func (o *WebhookOptions) createConfigFiles() error {
+	if o.configFilename != "" && o.pluginFilename != "" {
+		return nil
+	}
+	kubeClient, _, err := o.GetFactory().CreateKubeClient()
+	if err != nil {
+		return errors.Wrapf(err, "failed to create KubeClient")
+	}
+	ns := o.namespace
+	configMapInterface := kubeClient.CoreV1().ConfigMaps(ns)
+
+	if o.configFilename == "" {
+		ccm, err := configMapInterface.Get(ProwConfigMapName, metav1.GetOptions{})
+		if err != nil {
+			return errors.Wrapf(err, "failed to load ConfigMap %s in namespace %s", ProwConfigMapName, ns)
+		}
+		cyml := ""
+		if ccm.Data != nil {
+			cyml = ccm.Data[ProwConfigFilename]
+		}
+		if cyml == "" {
+			return errors.Wrapf(err, "no entry %s in ConfigMap %s in namespace %s", ProwConfigFilename, ProwConfigMapName, ns)
+		}
+		cf, err := ioutil.TempFile("", ProwConfigMapName+"-")
+		if err != nil {
+			return errors.Wrapf(err, "failed to create a temporary file for %s", ProwConfigFilename)
+		}
+		cfile := cf.Name()
+		err = ioutil.WriteFile(cfile, []byte(cyml), util.DefaultWritePermissions)
+		if err != nil {
+			return errors.Wrapf(err, "failed to save filer %s", cfile)
+		}
+		o.configFilename = cfile
+	}
+
+	if o.pluginFilename == "" {
+		pcm, err := configMapInterface.Get(ProwPluginsConfigMapName, metav1.GetOptions{})
+		if err != nil {
+			return errors.Wrapf(err, "failed to load ConfigMap %s in namespace %s", ProwPluginsConfigMapName, ns)
+		}
+		pyml := ""
+		if pcm.Data != nil {
+			pyml = pcm.Data[ProwPluginsFilename]
+		}
+		if pyml == "" {
+			return errors.Wrapf(err, "no entry %s in ConfigMap %s in namespace %s", ProwPluginsFilename, ProwPluginsConfigMapName, ns)
+		}
+		pf, err := ioutil.TempFile("", ProwPluginsConfigMapName+"-")
+		if err != nil {
+			return errors.Wrapf(err, "failed to create a temporary file for %s", ProwPluginsConfigMapName)
+		}
+		pfile := pf.Name()
+		err = ioutil.WriteFile(pfile, []byte(pyml), util.DefaultWritePermissions)
+		if err != nil {
+			return errors.Wrapf(err, "failed to save filer %s", pfile)
+		}
+		o.pluginFilename = pfile
+	}
+	return nil
 }
 
 func responseHTTPError(w http.ResponseWriter, statusCode int, response string) {

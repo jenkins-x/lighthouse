@@ -33,6 +33,7 @@ import (
 
 const (
 	defaultBlunderbussReviewerCount = 2
+	failOnMissingPlugin             = false
 )
 
 // Configuration is the top-level serialization target for plugin Configuration.
@@ -713,7 +714,11 @@ func validatePlugins(plugins map[string][]string) error {
 	for _, configuration := range plugins {
 		for _, plugin := range configuration {
 			if _, ok := pluginHelp[plugin]; !ok {
-				errors = append(errors, fmt.Sprintf("unknown plugin: %s", plugin))
+				if failOnMissingPlugin {
+					errors = append(errors, fmt.Sprintf("unknown plugin: %s", plugin))
+				} else {
+					logrus.WithField("plugin", plugin).Warn("unknown plugin")
+				}
 			}
 		}
 	}

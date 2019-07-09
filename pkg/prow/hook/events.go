@@ -144,7 +144,11 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *github.GenericComment
 }
 
 func (s *Server) UpdateConfig(pc *prowconfig.Config, pp *prowplugins.Configuration) {
-	// TODO
+	p := &plugins.Configuration{}
+	s.Plugins.Set(p)
+
+	c := &config.Config{}
+	s.ConfigAgent.Set(c)
 }
 
 /*
