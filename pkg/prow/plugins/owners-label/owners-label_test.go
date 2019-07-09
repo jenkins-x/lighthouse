@@ -177,7 +177,7 @@ func TestHandle(t *testing.T) {
 			changes = append(changes, &scm.Change{Path: name})
 		}
 		fakeScmClient, fghc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		fghc.PullRequests[basicPR.Number] = &basicPR
 		fghc.PullRequestChanges[basicPR.Number] = changes

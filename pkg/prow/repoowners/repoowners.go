@@ -109,12 +109,6 @@ type Client struct {
 	cache map[string]cacheEntry
 }
 
-// ToGitHubClient converts the SCM client to a comment pruner client
-func ToGitHubClient(client *scm.Client) githubClient {
-	// TODO
-	return nil
-}
-
 // NewClient is the constructor for Client
 func NewClient(
 	gc git2.Client,

@@ -11,9 +11,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ToGitHubClient converts the scm client to an API that the prow plgins expect
-func ToGitHubClient(client *scm.Client) *GitHubClient {
-	return &GitHubClient{client: client}
+// ToGitHubClient converts the scm client to an API that the prow plugins expect
+func ToGitHubClient(client *scm.Client, botName string) *GitHubClient {
+	return &GitHubClient{client: client, botName: botName}
+}
+
+// the default bot name used in tests
+var TestBotName = "jenkins-x-bot"
+
+// ToTestGitHubClient converts the scm client to an API that the prow plugins expect
+func ToTestGitHubClient(client *scm.Client) *GitHubClient {
+	return &GitHubClient{client: client, botName: TestBotName}
 }
 
 // GitHubClient represents an interface that prow plugins expect on top of go-scm
@@ -72,6 +80,27 @@ func (c *GitHubClient) IsCollaborator(owner, repo, login string) (bool, error) {
 	return flag, err
 }
 
+func (c *GitHubClient) ListCollaborators(owner, repo string) ([]scm.User, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	resources, _, err := c.client.Repositories.ListCollaborators(ctx, fullName)
+	return resources, err
+}
+
+func (c *GitHubClient) GetRef(owner, repo, ref string) (string, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	answer, _, err := c.client.Git.FindRef(ctx, fullName, ref)
+	return answer, err
+}
+
+func (c *GitHubClient) DeleteRef(owner, repo, ref string) error {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.Git.DeleteRef(ctx, fullName, ref)
+	return err
+}
+
 func (c *GitHubClient) GetSingleCommit(owner, repo, SHA string) (*scm.Commit, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
@@ -93,10 +122,6 @@ func (c *GitHubClient) ListTeamMembers(id int, role string) ([]*scm.TeamMember, 
 	ctx := context.Background()
 	members, _, err := c.client.Organizations.ListTeamMembers(ctx, id, role, c.createListOptions())
 	return members, err
-}
-
-func (c *GitHubClient) DeleteRef(owner, repo, ref string) error {
-	panic("implement me")
 }
 
 func (c *GitHubClient) Query(context.Context, interface{}, map[string]interface{}) error {

@@ -220,7 +220,7 @@ func TestHttpResponse(t *testing.T) {
 
 		// github fake client
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		// fully test handling a comment
 		e := &github.GenericCommentEvent{
@@ -323,7 +323,7 @@ func TestDogs(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		e := &github.GenericCommentEvent{
 			Action:     tc.action,

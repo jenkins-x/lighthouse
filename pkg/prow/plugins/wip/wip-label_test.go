@@ -92,7 +92,7 @@ func TestWipLabel(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		org, repo, number := "org", "repo", 5
 		e := &event{

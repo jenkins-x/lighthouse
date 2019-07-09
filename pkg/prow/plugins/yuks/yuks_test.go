@@ -58,7 +58,7 @@ func TestJokesMedium(t *testing.T) {
 	}))
 	defer ts.Close()
 	fakeScmClient, fc := fake.NewDefault()
-	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 	comment := "/joke"
 
@@ -142,7 +142,7 @@ func TestJokes(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		e := &github.GenericCommentEvent{
 			Action:     tc.action,

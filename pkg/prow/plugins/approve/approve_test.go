@@ -128,8 +128,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	fakeScmClient, fc := fake.NewDefault()
 	fc.RepoLabelsExisting = nil
 
-	fakeClient := github.ToGitHubClient(fakeScmClient)
-	fakeClient.SetBotName(testBotName)
+	fakeClient := github.ToGitHubClient(fakeScmClient, testBotName)
 
 	fc.IssueLabelsAdded = labels
 	fc.PullRequestChanges[prNumber] = changes
@@ -1323,7 +1322,7 @@ func TestHandleGenericComment(t *testing.T) {
 		Number: 1,
 	}
 	fakeScmClient, fghc := fake.NewDefault()
-	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fakeClient := github.ToTestGitHubClient(fakeScmClient)
 	fghc.PullRequests[1] = &pr
 
 	for _, test := range tests {
@@ -1540,7 +1539,7 @@ func TestHandleReview(t *testing.T) {
 		Body:   "Fix everything",
 	}
 	fakeScmClient, fghc := fake.NewDefault()
-	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fakeClient := github.ToTestGitHubClient(fakeScmClient)
 	fghc.PullRequests[1] = &pr
 
 	for _, test := range tests {
@@ -1693,7 +1692,7 @@ func TestHandlePullRequest(t *testing.T) {
 		Name:      "repo",
 	}
 	fakeScmClient, _ := fake.NewDefault()
-	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 	for _, test := range tests {
 		test.prEvent.Repo = repo

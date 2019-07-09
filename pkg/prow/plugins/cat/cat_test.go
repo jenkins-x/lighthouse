@@ -340,7 +340,7 @@ Available variants:
 
 	// github fake client
 	fakeScmClient, fc := fake.NewDefault()
-	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 	// run test for each case
 	for _, testcase := range testcases {
@@ -457,7 +457,7 @@ func TestCats(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToGitHubClient(fakeScmClient)
+		fakeClient := github.ToTestGitHubClient(fakeScmClient)
 
 		e := &github.GenericCommentEvent{
 			Action:     tc.action,

@@ -297,7 +297,7 @@ func TestHandle(t *testing.T) {
 	for _, tc := range tcs {
 		expectAdded := []string{}
 		fakeScmClient, fakeClient := fake.NewDefault()
-		fakeGHClient := github.ToGitHubClient(fakeScmClient)
+		fakeGHClient := github.ToTestGitHubClient(fakeScmClient)
 		fakeClient.RepoLabelsExisting = []string{labels.BlockedPaths, otherLabel}
 
 		if tc.hasLabel {
