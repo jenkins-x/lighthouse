@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -1323,9 +1322,9 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		Number: 1,
 	}
-	fghc := &fakegithub.FakeClient{
-		PullRequests: map[int]*scm.PullRequest{1: &pr},
-	}
+	fakeScmClient, fghc := fake.NewDefault()
+	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fghc.PullRequests[1] = &pr
 
 	for _, test := range tests {
 		test.commentEvent.Repo = repo
@@ -1342,7 +1341,7 @@ func TestHandleGenericComment(t *testing.T) {
 		})
 		err := handleGenericComment(
 			logrus.WithField("plugin", "approve"),
-			fghc,
+			fakeClient,
 			fakeOwnersClient{},
 			githubConfig,
 			config,
@@ -1540,9 +1539,9 @@ func TestHandleReview(t *testing.T) {
 		Number: 1,
 		Body:   "Fix everything",
 	}
-	fghc := &fakegithub.FakeClient{
-		PullRequests: map[int]*scm.PullRequest{1: &pr},
-	}
+	fakeScmClient, fghc := fake.NewDefault()
+	fakeClient := github.ToGitHubClient(fakeScmClient)
+	fghc.PullRequests[1] = &pr
 
 	for _, test := range tests {
 		test.reviewEvent.Repo = repo
@@ -1562,7 +1561,7 @@ func TestHandleReview(t *testing.T) {
 		})
 		err := handleReview(
 			logrus.WithField("plugin", "approve"),
-			fghc,
+			fakeClient,
 			fakeOwnersClient{},
 			githubConfig,
 			config,
@@ -1693,13 +1692,14 @@ func TestHandlePullRequest(t *testing.T) {
 		Namespace: "org",
 		Name:      "repo",
 	}
-	fghc := &fakegithub.FakeClient{}
+	fakeScmClient, _ := fake.NewDefault()
+	fakeClient := github.ToGitHubClient(fakeScmClient)
 
 	for _, test := range tests {
 		test.prEvent.Repo = repo
 		err := handlePullRequest(
 			logrus.WithField("plugin", "approve"),
-			fghc,
+			fakeClient,
 			fakeOwnersClient{},
 			config.GitHubOptions{
 				LinkURL: &url.URL{
