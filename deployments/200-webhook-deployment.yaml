@@ -4,7 +4,7 @@ metadata:
   name: webhook
   labels:
     app: webhook
-  namespace: lighthouse
+  namespace: foghorn
 spec:
   replicas: 1
   selector:
@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: webhook
-        image: github.com/jenkins-x/lighthouse/cmd/webhook
+        image: github.com/foghornci/foghorn/cmd/webhook
         ports:
         - containerPort: 8080

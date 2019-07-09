@@ -19,8 +19,8 @@ limitations under the License.
 package jenkins
 
 import (
-	internalinterfaces "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/jenkins.io/v1"
+	v1 "github.com/foghornci/foghorn/pkg/client/informers/externalversions/foghornci.io/v1"
+	internalinterfaces "github.com/foghornci/foghorn/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

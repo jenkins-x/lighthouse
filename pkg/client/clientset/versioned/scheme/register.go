@@ -19,7 +19,7 @@ limitations under the License.
 package scheme
 
 import (
-	jenkinsv1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
+	jenkinsv1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

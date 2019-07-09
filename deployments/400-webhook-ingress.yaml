@@ -5,7 +5,7 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
     app: webhook
   name: webhook
-  namespace: lighthouse
+  namespace: foghorn
 spec:
   rules:
   - host: webhook.example.com

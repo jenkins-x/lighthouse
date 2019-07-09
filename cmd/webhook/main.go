@@ -7,14 +7,14 @@ import (
 	"os"
 	"strconv"
 
-	clientv1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1"
-	"github.com/jenkins-x/lighthouse/pkg/git/bitbucketserver"
+	clientv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	"github.com/foghornci/foghorn/pkg/git/bitbucketserver"
 	"github.com/sirupsen/logrus"
 	rest "k8s.io/client-go/rest"
 )
 
 const (
-	helloMessage = "hello from the Jenkins X Lighthouse\n"
+	helloMessage = "hello from the Jenkins X foghorn\n"
 
 	// HealthPath is the URL path for the HTTP endpoint that returns health status.
 	HealthPath = "/health"
@@ -111,7 +111,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		logrus.Fatalf("client initialization failed: %s", err)
 	}
 
-	webhookInterface := client.Webhooks("lighthouse")
+	webhookInterface := client.Webhooks("foghorn")
 
 	result, err := webhookInterface.Create(webhook)
 	if err != nil {

@@ -1,7 +1,7 @@
 package bitbucketserver
 
 import (
-	apiv1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
+	apiv1 "github.com/foghornci/foghorn/pkg/apis/jenkins.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

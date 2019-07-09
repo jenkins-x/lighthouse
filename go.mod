@@ -1,4 +1,4 @@
-module github.com/jenkins-x/lighthouse
+module github.com/foghornci/foghorn
 
 go 1.12
 

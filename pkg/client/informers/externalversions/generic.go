@@ -21,7 +21,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
+	v1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )

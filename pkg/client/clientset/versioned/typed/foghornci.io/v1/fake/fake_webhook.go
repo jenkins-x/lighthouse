@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	jenkinsiov1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
+	foghornciiov1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,20 +39,20 @@ var webhooksResource = schema.GroupVersionResource{Group: "jenkins.io", Version:
 var webhooksKind = schema.GroupVersionKind{Group: "jenkins.io", Version: "v1", Kind: "Webhook"}
 
 // Get takes name of the webhook, and returns the corresponding webhook object, and an error if there is any.
-func (c *FakeWebhooks) Get(name string, options v1.GetOptions) (result *jenkinsiov1.Webhook, err error) {
+func (c *FakeWebhooks) Get(name string, options v1.GetOptions) (result *foghornciiov1.Webhook, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(webhooksResource, c.ns, name), &jenkinsiov1.Webhook{})
+		Invokes(testing.NewGetAction(webhooksResource, c.ns, name), &foghornciiov1.Webhook{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*jenkinsiov1.Webhook), err
+	return obj.(*foghornciiov1.Webhook), err
 }
 
 // List takes label and field selectors, and returns the list of Webhooks that match those selectors.
-func (c *FakeWebhooks) List(opts v1.ListOptions) (result *jenkinsiov1.WebhookList, err error) {
+func (c *FakeWebhooks) List(opts v1.ListOptions) (result *foghornciiov1.WebhookList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(webhooksResource, webhooksKind, c.ns, opts), &jenkinsiov1.WebhookList{})
+		Invokes(testing.NewListAction(webhooksResource, webhooksKind, c.ns, opts), &foghornciiov1.WebhookList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeWebhooks) List(opts v1.ListOptions) (result *jenkinsiov1.WebhookLis
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &jenkinsiov1.WebhookList{ListMeta: obj.(*jenkinsiov1.WebhookList).ListMeta}
-	for _, item := range obj.(*jenkinsiov1.WebhookList).Items {
+	list := &foghornciiov1.WebhookList{ListMeta: obj.(*foghornciiov1.WebhookList).ListMeta}
+	for _, item := range obj.(*foghornciiov1.WebhookList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -79,31 +79,31 @@ func (c *FakeWebhooks) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a webhook and creates it.  Returns the server's representation of the webhook, and an error, if there is any.
-func (c *FakeWebhooks) Create(webhook *jenkinsiov1.Webhook) (result *jenkinsiov1.Webhook, err error) {
+func (c *FakeWebhooks) Create(webhook *foghornciiov1.Webhook) (result *foghornciiov1.Webhook, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(webhooksResource, c.ns, webhook), &jenkinsiov1.Webhook{})
+		Invokes(testing.NewCreateAction(webhooksResource, c.ns, webhook), &foghornciiov1.Webhook{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*jenkinsiov1.Webhook), err
+	return obj.(*foghornciiov1.Webhook), err
 }
 
 // Update takes the representation of a webhook and updates it. Returns the server's representation of the webhook, and an error, if there is any.
-func (c *FakeWebhooks) Update(webhook *jenkinsiov1.Webhook) (result *jenkinsiov1.Webhook, err error) {
+func (c *FakeWebhooks) Update(webhook *foghornciiov1.Webhook) (result *foghornciiov1.Webhook, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(webhooksResource, c.ns, webhook), &jenkinsiov1.Webhook{})
+		Invokes(testing.NewUpdateAction(webhooksResource, c.ns, webhook), &foghornciiov1.Webhook{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*jenkinsiov1.Webhook), err
+	return obj.(*foghornciiov1.Webhook), err
 }
 
 // Delete takes name of the webhook and deletes it. Returns an error if one occurs.
 func (c *FakeWebhooks) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(webhooksResource, c.ns, name), &jenkinsiov1.Webhook{})
+		Invokes(testing.NewDeleteAction(webhooksResource, c.ns, name), &foghornciiov1.Webhook{})
 
 	return err
 }
@@ -112,17 +112,17 @@ func (c *FakeWebhooks) Delete(name string, options *v1.DeleteOptions) error {
 func (c *FakeWebhooks) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(webhooksResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &jenkinsiov1.WebhookList{})
+	_, err := c.Fake.Invokes(action, &foghornciiov1.WebhookList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched webhook.
-func (c *FakeWebhooks) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *jenkinsiov1.Webhook, err error) {
+func (c *FakeWebhooks) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *foghornciiov1.Webhook, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(webhooksResource, c.ns, name, pt, data, subresources...), &jenkinsiov1.Webhook{})
+		Invokes(testing.NewPatchSubresourceAction(webhooksResource, c.ns, name, pt, data, subresources...), &foghornciiov1.Webhook{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*jenkinsiov1.Webhook), err
+	return obj.(*foghornciiov1.Webhook), err
 }

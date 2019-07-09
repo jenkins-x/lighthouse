@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	jenkinsv1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1"
-	fakejenkinsv1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1/fake"
+	clientset "github.com/foghornci/foghorn/pkg/client/clientset/versioned"
+	jenkinsv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1"
+	fakejenkinsv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

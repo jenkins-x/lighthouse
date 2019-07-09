@@ -19,7 +19,7 @@ limitations under the License.
 package versioned
 
 import (
-	jenkinsv1 "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/jenkins.io/v1"
+	jenkinsv1 "github.com/foghornci/foghorn/pkg/client/clientset/versioned/typed/foghornci.io/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

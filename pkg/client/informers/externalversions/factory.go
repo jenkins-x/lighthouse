@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/internalinterfaces"
-	jenkinsio "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/jenkins.io"
+	versioned "github.com/foghornci/foghorn/pkg/client/clientset/versioned"
+	foghornciio "github.com/foghornci/foghorn/pkg/client/informers/externalversions/foghornci.io"
+	internalinterfaces "github.com/foghornci/foghorn/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Jenkins() jenkinsio.Interface
+	Jenkins() foghornciio.Interface
 }
 
-func (f *sharedInformerFactory) Jenkins() jenkinsio.Interface {
-	return jenkinsio.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Jenkins() foghornciio.Interface {
+	return foghornciio.New(f, f.namespace, f.tweakListOptions)
 }

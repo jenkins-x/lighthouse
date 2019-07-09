@@ -19,8 +19,8 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/jenkins-x/lighthouse/pkg/apis/jenkins.io/v1"
-	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/scheme"
+	v1 "github.com/foghornci/foghorn/pkg/apis/foghornci.io/v1"
+	"github.com/foghornci/foghorn/pkg/client/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
