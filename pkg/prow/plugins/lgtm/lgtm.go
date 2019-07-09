@@ -144,10 +144,10 @@ type githubClient interface {
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
 	DeleteComment(org, repo string, number, ID int) error
 	BotName() (string, error)
-	GetSingleCommit(org, repo, SHA string) (scm.CommitTree, error)
+	GetSingleCommit(org, repo, SHA string) (*scm.Commit, error)
 	IsMember(org, user string) (bool, error)
-	ListTeams(org string) ([]github.Team, error)
-	ListTeamMembers(id int, role string) ([]github.TeamMember, error)
+	ListTeams(org string) ([]*scm.Team, error)
+	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 }
 
 // reviewCtx contains information about each review event
@@ -369,7 +369,10 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				if err != nil {
 					log.WithField("sha", pr.Head.Sha).WithError(err).Error("Failed to get commit.")
 				}
-				treeHash := commit.Sha
+				if commit == nil {
+					commit = &scm.Commit{}
+				}
+				treeHash := commit.Tree.Sha
 				log.WithField("tree", treeHash).Info("Adding comment to store tree-hash.")
 				if err := gc.CreateComment(org, repoName, number, fmt.Sprintf(addLGTMLabelNotification, treeHash)); err != nil {
 					log.WithError(err).Error("Failed to add comment.")
@@ -465,7 +468,7 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 			if err != nil {
 				log.WithField("sha", pe.PullRequest.Head.Sha).WithError(err).Error("Failed to get commit.")
 			}
-			treeHash := commit.Sha
+			treeHash := commit.Tree.Sha
 			if treeHash == lastLgtmTreeHash {
 				// Don't remove the label, PR code hasn't changed
 				log.Infof("Keeping LGTM label as the tree-hash remained the same: %s", treeHash)
