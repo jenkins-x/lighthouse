@@ -223,22 +223,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 	server.OnRequest()
 
-	prHook, ok := webhook.(*scm.PullRequestHook)
-	if ok {
-		action := prHook.Action
-		fields["Action"] = action.String()
-		pr := prHook.PullRequest
-		fields["PR.Number"] = pr.Number
-		fields["PR.Ref"] = pr.Ref
-		fields["PR.Sha"] = pr.Sha
-		fields["PR.Title"] = pr.Title
-		fields["PR.Body"] = pr.Body
-
-		l.Info("invoking PR handler")
-
-		w.Write([]byte("OK"))
-		return
-	}
 	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
 	if ok {
 		action := issueCommentHook.Action
@@ -256,10 +240,42 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Issue Comment handler")
 
+		sr := o.Builder.FindSourceRepository(issueCommentHook)
+		if sr == nil {
+			o.misingSourceRepository(issueCommentHook, w)
+			return
+		}
+		c, p, err := o.Builder.CreateChatOpsConfig(issueCommentHook, sr)
+		if err != nil {
+			logrus.Errorf("failed to create ChatOps config on %s: %s", repositoryToString(issueCommentHook.Repository()), err.Error())
+
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create ChatOps config: %s", err.Error()))
+			return
+		}
+		server.UpdateConfig(c, p)
+
 		server.HandleIssueCommentEvent(l, *issueCommentHook)
 		w.Write([]byte("OK"))
 		return
 	}
+
+	prHook, ok := webhook.(*scm.PullRequestHook)
+	if ok {
+		action := prHook.Action
+		fields["Action"] = action.String()
+		pr := prHook.PullRequest
+		fields["PR.Number"] = pr.Number
+		fields["PR.Ref"] = pr.Ref
+		fields["PR.Sha"] = pr.Sha
+		fields["PR.Title"] = pr.Title
+		fields["PR.Body"] = pr.Body
+
+		l.Info("invoking PR handler")
+
+		w.Write([]byte("OK"))
+		return
+	}
+
 	prCommentHook, ok := webhook.(*scm.PullRequestCommentHook)
 	if ok {
 		action := prCommentHook.Action
@@ -288,7 +304,12 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 }
 
 func (o *WebhookOptions) startBuild(hook *scm.PushHook, r *http.Request, w http.ResponseWriter) {
-	message, err := o.Builder.StartBuild(hook, o.createCommonOptions(o.namespace))
+	sr := o.Builder.FindSourceRepository(hook)
+	if sr == nil {
+		o.misingSourceRepository(hook, w)
+		return
+	}
+	message, err := o.Builder.StartBuild(hook, sr, o.createCommonOptions(o.namespace))
 	if err != nil {
 		logrus.Errorf("failed to start build on %s: %s", repositoryToString(hook.Repository()), err.Error())
 
@@ -299,6 +320,12 @@ func (o *WebhookOptions) startBuild(hook *scm.PushHook, r *http.Request, w http.
 
 	logrus.Infof("triggering META pipeline")
 
+}
+
+func (o *WebhookOptions) misingSourceRepository(hook scm.Webhook, w http.ResponseWriter) {
+	repoText := repositoryToString(hook.Repository())
+	logrus.Errorf("cannot trigger a pipeline on %s as there is no SourceRepository", repoText)
+	responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: No source repository for %s", repoText))
 }
 
 // GetFactory lazily creates a Factory if its not already created

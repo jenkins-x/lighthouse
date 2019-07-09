@@ -27,6 +27,9 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+
+	prowconfig "k8s.io/test-infra/prow/config"
+	prowplugins "k8s.io/test-infra/prow/plugins"
 )
 
 type Server struct {
@@ -138,6 +141,10 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *github.GenericComment
 			}
 		}(p, h)
 	}
+}
+
+func (s *Server) UpdateConfig(pc *prowconfig.Config, pp *prowplugins.Configuration) {
+	// TODO
 }
 
 /*

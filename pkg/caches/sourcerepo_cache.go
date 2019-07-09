@@ -22,6 +22,11 @@ func NewSourceRepositoryCache(jxClient jxclient.Interface, ns string) (*SourceRe
 	}, nil
 }
 
+// IsLoaded returns true if the cache is loaded
+func (c *SourceRepositoryCache) IsLoaded() bool {
+	return c.resources.IsLoaded()
+}
+
 // Stop closes the underlying chanel processing events which stops consuming watch events
 func (c *SourceRepositoryCache) Stop() {
 	c.resources.Stop()

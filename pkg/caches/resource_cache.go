@@ -12,6 +12,14 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+type Cache interface {
+	// IsLoaded returns true when the cache is loaded
+	IsLoaded() bool
+
+	// Stop stops processing any updates to the cache as we are shutting down
+	Stop()
+}
+
 // ResourceCache the cache
 type ResourceCache struct {
 	resources sync.Map
@@ -80,6 +88,13 @@ func (c *ResourceCache) Stop() {
 	close(c.stop)
 }
 
+// IsLoaded returns true if loaded
+func (c *ResourceCache) IsLoaded() bool {
+	// TODO there's no way to detect when all the List items have been procesesd yet
+	// so for now lets just wait until we have at least one resource
+	return c.Size() > 0
+}
+
 // Get looks up the object in the repository
 func (c *ResourceCache) Get(name string) interface{} {
 	answer, exists := c.resources.Load(name)
@@ -87,6 +102,18 @@ func (c *ResourceCache) Get(name string) interface{} {
 		return answer
 	}
 	return nil
+}
+
+// Size returns the number of cached objects
+func (c *ResourceCache) Size() int {
+	size := 0
+	c.resources.Range(func(_, obj interface{}) bool {
+		if obj != nil {
+			size++
+		}
+		return true
+	})
+	return size
 }
 
 // Query objects returning false from the function to stop iterating
