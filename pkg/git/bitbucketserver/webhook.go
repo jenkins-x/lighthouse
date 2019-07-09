@@ -7,7 +7,7 @@ import (
 
 type webhook struct {
 	EventKey            string      `json:"eventKey"`
-	date                string      `json:"date"`
+	Date                string      `json:"date"`
 	Actor               user        `json:"actor"`
 	PullRequest         pullRequest `json:"pullRequest"`
 	PreviousTitle       string      `json:"previousTitle"`
@@ -71,10 +71,10 @@ type user struct {
 }
 
 type reviewer struct {
-	User     user   `json:"user`
+	User     user   `json:"user"`
 	Role     string `json:"role"`
 	Approved string `json:"approved"`
-	Status   string `json:"status`
+	Status   string `json:"status"`
 }
 
 type participant struct {
