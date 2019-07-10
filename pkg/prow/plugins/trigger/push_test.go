@@ -45,7 +45,7 @@ func TestCreateRefs(t *testing.T) {
 		After:   "abcdef",
 		Compare: "https://example.com/kubernetes/repo/compare/abcdee...abcdef",
 	}
-	expected := prowapi.Refs{
+	expected := builder.Refs{
 		Org:      "kubernetes",
 		Repo:     "repo",
 		BaseRef:  "master",

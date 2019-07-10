@@ -19,24 +19,28 @@ package pjutil
 
 import (
 	"bytes"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/test-infra/prow/kube"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
-	"k8s.io/test-infra/prow/pod-utils/decorate"
 )
 
 // NewProwJob initializes a ProwJob out of a ProwJobSpec.
-func NewProwJob(spec prowapi.ProwJobSpec, extraLabels, extraAnnotations map[string]string) prowapi.ProwJob {
-	labels, annotations := decorate.LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
+func NewProwJob(spec builder.ProwJobSpec, extraLabels, extraAnnotations map[string]string) builder.ProwJob {
+	labels, annotations := LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
 	newID, _ := uuid.NewV1()
 
-	return prowapi.ProwJob{
+	return builder.ProwJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "prow.k8s.io/v1",
 			Kind:       "ProwJob",
@@ -47,18 +51,18 @@ func NewProwJob(spec prowapi.ProwJobSpec, extraLabels, extraAnnotations map[stri
 			Annotations: annotations,
 		},
 		Spec: spec,
-		Status: prowapi.ProwJobStatus{
+		Status: builder.ProwJobStatus{
 			StartTime: metav1.Now(),
-			State:     prowapi.TriggeredState,
+			State:     builder.TriggeredState,
 		},
 	}
 }
 
-func createRefs(pr *scm.PullRequest, baseSHA string) prowapi.Refs {
+func createRefs(pr *scm.PullRequest, baseSHA string) builder.Refs {
 	org := pr.Base.Repo.Namespace
 	repo := pr.Base.Repo.Name
 	number := pr.Number
-	return prowapi.Refs{
+	return builder.Refs{
 		Org:  org,
 		Repo: repo,
 		// TODO
@@ -68,7 +72,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string) prowapi.Refs {
 		*/
 		BaseRef: pr.Base.Ref,
 		BaseSHA: baseSHA,
-		Pulls: []prowapi.Pull{
+		Pulls: []builder.Pull{
 			{
 				Number: number,
 				Author: pr.Author.Login,
@@ -84,10 +88,10 @@ func createRefs(pr *scm.PullRequest, baseSHA string) prowapi.Refs {
 	}
 }
 
-// NewPresubmit converts a config.Presubmit into a prowapi.ProwJob.
-// The prowapi.Refs are configured correctly per the pr, baseSHA.
+// NewPresubmit converts a config.Presubmit into a builder.ProwJob.
+// The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a github.EventGUID label.
-func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) prowapi.ProwJob {
+func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) builder.ProwJob {
 	refs := createRefs(pr, baseSHA)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
@@ -102,9 +106,9 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eve
 }
 
 // PresubmitSpec initializes a ProwJobSpec for a given presubmit job.
-func PresubmitSpec(p config.Presubmit, refs prowapi.Refs) prowapi.ProwJobSpec {
+func PresubmitSpec(p config.Presubmit, refs builder.Refs) builder.ProwJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = prowapi.PresubmitJob
+	pjs.Type = builder.PresubmitJob
 	pjs.Context = p.Context
 	pjs.Report = !p.SkipReport
 	pjs.RerunCommand = p.RerunCommand
@@ -114,9 +118,9 @@ func PresubmitSpec(p config.Presubmit, refs prowapi.Refs) prowapi.ProwJobSpec {
 }
 
 // PostsubmitSpec initializes a ProwJobSpec for a given postsubmit job.
-func PostsubmitSpec(p config.Postsubmit, refs prowapi.Refs) prowapi.ProwJobSpec {
+func PostsubmitSpec(p config.Postsubmit, refs builder.Refs) builder.ProwJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = prowapi.PostsubmitJob
+	pjs.Type = builder.PostsubmitJob
 	pjs.Context = p.Context
 	pjs.Report = !p.SkipReport
 	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
@@ -125,45 +129,45 @@ func PostsubmitSpec(p config.Postsubmit, refs prowapi.Refs) prowapi.ProwJobSpec 
 }
 
 // PeriodicSpec initializes a ProwJobSpec for a given periodic job.
-func PeriodicSpec(p config.Periodic) prowapi.ProwJobSpec {
+func PeriodicSpec(p config.Periodic) builder.ProwJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = prowapi.PeriodicJob
+	pjs.Type = builder.PeriodicJob
 
 	return pjs
 }
 
 // BatchSpec initializes a ProwJobSpec for a given batch job and ref spec.
-func BatchSpec(p config.Presubmit, refs prowapi.Refs) prowapi.ProwJobSpec {
+func BatchSpec(p config.Presubmit, refs builder.Refs) builder.ProwJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = prowapi.BatchJob
+	pjs.Type = builder.BatchJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
 
 	return pjs
 }
 
-func specFromJobBase(jb config.JobBase) prowapi.ProwJobSpec {
+func specFromJobBase(jb config.JobBase) builder.ProwJobSpec {
 	var namespace string
 	if jb.Namespace != nil {
 		namespace = *jb.Namespace
 	}
-	return prowapi.ProwJobSpec{
-		Job:             jb.Name,
-		Agent:           prowapi.ProwJobAgent(jb.Agent),
-		Cluster:         jb.Cluster,
-		Namespace:       namespace,
-		MaxConcurrency:  jb.MaxConcurrency,
-		ErrorOnEviction: jb.ErrorOnEviction,
-
-		ExtraRefs:        jb.ExtraRefs,
+	return builder.ProwJobSpec{
+		Job:              jb.Name,
+		Cluster:          jb.Cluster,
+		Namespace:        namespace,
+		MaxConcurrency:   jb.MaxConcurrency,
+		ErrorOnEviction:  jb.ErrorOnEviction,
 		DecorationConfig: jb.DecorationConfig,
 
-		PodSpec:   jb.Spec,
-		BuildSpec: jb.BuildSpec,
+		/*		ExtraRefs:        jb.ExtraRefs,
+
+				PodSpec:   jb.Spec,
+				BuildSpec: jb.BuildSpec,
+		*/
 	}
 }
 
-func completePrimaryRefs(refs prowapi.Refs, jb config.JobBase) *prowapi.Refs {
+func completePrimaryRefs(refs builder.Refs, jb config.JobBase) *builder.Refs {
 	if jb.PathAlias != "" {
 		refs.PathAlias = jb.PathAlias
 	}
@@ -181,26 +185,26 @@ func completePrimaryRefs(refs prowapi.Refs, jb config.JobBase) *prowapi.Refs {
 // by different goroutines. Complete prowjobs are filtered out. Controller
 // loops need to handle pending jobs first so they can conform to maximum
 // concurrency requirements that different jobs may have.
-func PartitionActive(pjs []prowapi.ProwJob) (pending, triggered chan prowapi.ProwJob) {
+func PartitionActive(pjs []builder.ProwJob) (pending, triggered chan builder.ProwJob) {
 	// Size channels correctly.
 	pendingCount, triggeredCount := 0, 0
 	for _, pj := range pjs {
 		switch pj.Status.State {
-		case prowapi.PendingState:
+		case builder.PendingState:
 			pendingCount++
-		case prowapi.TriggeredState:
+		case builder.TriggeredState:
 			triggeredCount++
 		}
 	}
-	pending = make(chan prowapi.ProwJob, pendingCount)
-	triggered = make(chan prowapi.ProwJob, triggeredCount)
+	pending = make(chan builder.ProwJob, pendingCount)
+	triggered = make(chan builder.ProwJob, triggeredCount)
 
 	// Partition the jobs into the two separate channels.
 	for _, pj := range pjs {
 		switch pj.Status.State {
-		case prowapi.PendingState:
+		case builder.PendingState:
 			pending <- pj
-		case prowapi.TriggeredState:
+		case builder.TriggeredState:
 			triggered <- pj
 		}
 	}
@@ -211,8 +215,8 @@ func PartitionActive(pjs []prowapi.ProwJob) (pending, triggered chan prowapi.Pro
 
 // GetLatestProwJobs filters through the provided prowjobs and returns
 // a map of jobType jobs to their latest prowjobs.
-func GetLatestProwJobs(pjs []prowapi.ProwJob, jobType prowapi.ProwJobType) map[string]prowapi.ProwJob {
-	latestJobs := make(map[string]prowapi.ProwJob)
+func GetLatestProwJobs(pjs []builder.ProwJob, jobType builder.ProwJobType) map[string]builder.ProwJob {
+	latestJobs := make(map[string]builder.ProwJob)
 	for _, j := range pjs {
 		if j.Spec.Type != jobType {
 			continue
@@ -226,7 +230,7 @@ func GetLatestProwJobs(pjs []prowapi.ProwJob, jobType prowapi.ProwJobType) map[s
 }
 
 // ProwJobFields extracts logrus fields from a prowjob useful for logging.
-func ProwJobFields(pj *prowapi.ProwJob) logrus.Fields {
+func ProwJobFields(pj *builder.ProwJob) logrus.Fields {
 	fields := make(logrus.Fields)
 	fields["name"] = pj.ObjectMeta.Name
 	fields["job"] = pj.Spec.Job
@@ -245,7 +249,7 @@ func ProwJobFields(pj *prowapi.ProwJob) logrus.Fields {
 // JobURL returns the expected URL for ProwJobStatus.
 //
 // TODO(fejta): consider moving default JobURLTemplate and JobURLPrefix out of plank
-func JobURL(plank config.Plank, pj prowapi.ProwJob, log *logrus.Entry) string {
+func JobURL(plank config.Plank, pj builder.ProwJob, log *logrus.Entry) string {
 	/*	if pj.Spec.DecorationConfig != nil && plank.GetJobURLPrefix(pj.Spec.Refs) != "" {
 			spec := downwardapi.NewJobSpec(pj.Spec, pj.Status.BuildID, pj.Name)
 			gcsConfig := pj.Spec.DecorationConfig.GCSConfiguration
@@ -263,4 +267,74 @@ func JobURL(plank config.Plank, pj prowapi.ProwJob, log *logrus.Entry) string {
 		return b.String()
 	}
 	return ""
+}
+
+// LabelsAndAnnotationsForSpec returns a minimal set of labels to add to prowjobs or its owned resources.
+//
+// User-provided extraLabels and extraAnnotations values will take precedence over auto-provided values.
+func LabelsAndAnnotationsForSpec(spec builder.ProwJobSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
+	jobNameForLabel := spec.Job
+	if len(jobNameForLabel) > validation.LabelValueMaxLength {
+		// TODO(fejta): consider truncating middle rather than end.
+		jobNameForLabel = strings.TrimRight(spec.Job[:validation.LabelValueMaxLength], ".-")
+		logrus.WithFields(logrus.Fields{
+			"job":       spec.Job,
+			"key":       kube.ProwJobAnnotation,
+			"value":     spec.Job,
+			"truncated": jobNameForLabel,
+		}).Info("Cannot use full job name, will truncate.")
+	}
+	labels := map[string]string{
+		kube.CreatedByProw:     "true",
+		kube.ProwJobTypeLabel:  string(spec.Type),
+		kube.ProwJobAnnotation: jobNameForLabel,
+	}
+	if spec.Type != builder.PeriodicJob && spec.Refs != nil {
+		labels[kube.OrgLabel] = spec.Refs.Org
+		labels[kube.RepoLabel] = spec.Refs.Repo
+		if len(spec.Refs.Pulls) > 0 {
+			labels[kube.PullLabel] = strconv.Itoa(spec.Refs.Pulls[0].Number)
+		}
+	}
+
+	for k, v := range extraLabels {
+		labels[k] = v
+	}
+
+	// let's validate labels
+	for key, value := range labels {
+		if errs := validation.IsValidLabelValue(value); len(errs) > 0 {
+			// try to use basename of a path, if path contains invalid //
+			base := filepath.Base(value)
+			if errs := validation.IsValidLabelValue(base); len(errs) == 0 {
+				labels[key] = base
+				continue
+			}
+			logrus.WithFields(logrus.Fields{
+				"key":    key,
+				"value":  value,
+				"errors": errs,
+			}).Warn("Removing invalid label")
+			delete(labels, key)
+		}
+	}
+
+	annotations := map[string]string{
+		kube.ProwJobAnnotation: spec.Job,
+	}
+	for k, v := range extraAnnotations {
+		annotations[k] = v
+	}
+
+	return labels, annotations
+}
+
+// LabelsAndAnnotationsForJob returns a standard set of labels to add to pod/build/etc resources.
+func LabelsAndAnnotationsForJob(pj builder.ProwJob) (map[string]string, map[string]string) {
+	var extraLabels map[string]string
+	if extraLabels = pj.ObjectMeta.Labels; extraLabels == nil {
+		extraLabels = map[string]string{}
+	}
+	extraLabels[kube.ProwJobIDLabel] = pj.ObjectMeta.Name
+	return LabelsAndAnnotationsForSpec(pj.Spec, extraLabels, nil)
 }

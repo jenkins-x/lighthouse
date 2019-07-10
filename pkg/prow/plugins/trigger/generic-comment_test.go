@@ -888,7 +888,7 @@ func validate(name string, actions []clienttesting.Action, g *fakegithub.FakeCli
 	for _, action := range actions {
 		switch action := action.(type) {
 		case clienttesting.CreateActionImpl:
-			if prowJob, ok := action.Object.(*prowapi.ProwJob); ok {
+			if prowJob, ok := action.Object.(*builder.ProwJob); ok {
 				startedContexts.Insert(prowJob.Spec.Context)
 			}
 		}

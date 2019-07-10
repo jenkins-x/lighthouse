@@ -306,7 +306,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 		fakeProwJobClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			switch action := action.(type) {
 			case clienttesting.CreateActionImpl:
-				prowJob, ok := action.Object.(*prowapi.ProwJob)
+				prowJob, ok := action.Object.(*builder.ProwJob)
 				if !ok {
 					return false, nil, nil
 				}
@@ -421,7 +421,7 @@ func TestRunRequested(t *testing.T) {
 		fakeProwJobClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			switch action := action.(type) {
 			case clienttesting.CreateActionImpl:
-				prowJob, ok := action.Object.(*prowapi.ProwJob)
+				prowJob, ok := action.Object.(*builder.ProwJob)
 				if !ok {
 					return false, nil, nil
 				}

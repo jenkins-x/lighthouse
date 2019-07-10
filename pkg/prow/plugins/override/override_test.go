@@ -134,8 +134,8 @@ func (c *fakeClient) GetRef(org, repo, ref string) (string, error) {
 	return fakeBaseSHA, nil
 }
 
-func (c *fakeClient) Create(pj *prowapi.ProwJob) (*prowapi.ProwJob, error) {
-	if s := pj.Status.State; s != prowapi.SuccessState {
+func (c *fakeClient) Create(pj *builder.ProwJob) (*builder.ProwJob, error) {
+	if s := pj.Status.State; s != builder.SuccessState {
 		return pj, fmt.Errorf("bad status state: %s", s)
 	}
 	if pj.Spec.Context == "fail-create" {

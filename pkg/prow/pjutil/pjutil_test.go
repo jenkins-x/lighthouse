@@ -39,8 +39,8 @@ func TestPostsubmitSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		p        config.Postsubmit
-		refs     prowapi.Refs
-		expected prowapi.ProwJobSpec
+		refs     builder.Refs
+		expected builder.ProwJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -52,9 +52,9 @@ func TestPostsubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.PostsubmitJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.PostsubmitJob,
+				Refs: &builder.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -63,13 +63,13 @@ func TestPostsubmitSpec(t *testing.T) {
 		},
 		{
 			name: "controller can default path alias and cloneuri",
-			refs: prowapi.Refs{
+			refs: builder.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.PostsubmitJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.PostsubmitJob,
+				Refs: &builder.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
@@ -86,13 +86,13 @@ func TestPostsubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			refs: prowapi.Refs{
+			refs: builder.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.PostsubmitJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.PostsubmitJob,
+				Refs: &builder.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -113,8 +113,8 @@ func TestPresubmitSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		p        config.Presubmit
-		refs     prowapi.Refs
-		expected prowapi.ProwJobSpec
+		refs     builder.Refs
+		expected builder.ProwJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -126,9 +126,9 @@ func TestPresubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.PresubmitJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.PresubmitJob,
+				Refs: &builder.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -137,13 +137,13 @@ func TestPresubmitSpec(t *testing.T) {
 		},
 		{
 			name: "controller can default path alias and cloneuri",
-			refs: prowapi.Refs{
+			refs: builder.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.PresubmitJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.PresubmitJob,
+				Refs: &builder.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
@@ -160,13 +160,13 @@ func TestPresubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			refs: prowapi.Refs{
+			refs: builder.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.PresubmitJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.PresubmitJob,
+				Refs: &builder.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -187,8 +187,8 @@ func TestBatchSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		p        config.Presubmit
-		refs     prowapi.Refs
-		expected prowapi.ProwJobSpec
+		refs     builder.Refs
+		expected builder.ProwJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -200,9 +200,9 @@ func TestBatchSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.BatchJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.BatchJob,
+				Refs: &builder.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -210,13 +210,13 @@ func TestBatchSpec(t *testing.T) {
 		},
 		{
 			name: "controller can default path alias and cloneuri",
-			refs: prowapi.Refs{
+			refs: builder.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.BatchJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.BatchJob,
+				Refs: &builder.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
@@ -232,13 +232,13 @@ func TestBatchSpec(t *testing.T) {
 					},
 				},
 			},
-			refs: prowapi.Refs{
+			refs: builder.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: prowapi.ProwJobSpec{
-				Type: prowapi.BatchJob,
-				Refs: &prowapi.Refs{
+			expected: builder.ProwJobSpec{
+				Type: builder.BatchJob,
+				Refs: &builder.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -256,51 +256,51 @@ func TestBatchSpec(t *testing.T) {
 
 func TestPartitionActive(t *testing.T) {
 	tests := []struct {
-		pjs []prowapi.ProwJob
+		pjs []builder.ProwJob
 
 		pending   map[string]struct{}
 		triggered map[string]struct{}
 	}{
 		{
-			pjs: []prowapi.ProwJob{
+			pjs: []builder.ProwJob{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "foo",
 					},
-					Status: prowapi.ProwJobStatus{
-						State: prowapi.TriggeredState,
+					Status: builder.ProwJobStatus{
+						State: builder.TriggeredState,
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bar",
 					},
-					Status: prowapi.ProwJobStatus{
-						State: prowapi.PendingState,
+					Status: builder.ProwJobStatus{
+						State: builder.PendingState,
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "baz",
 					},
-					Status: prowapi.ProwJobStatus{
-						State: prowapi.SuccessState,
+					Status: builder.ProwJobStatus{
+						State: builder.SuccessState,
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "error",
 					},
-					Status: prowapi.ProwJobStatus{
-						State: prowapi.ErrorState,
+					Status: builder.ProwJobStatus{
+						State: builder.ErrorState,
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bak",
 					},
-					Status: prowapi.ProwJobStatus{
-						State: prowapi.PendingState,
+					Status: builder.ProwJobStatus{
+						State: builder.PendingState,
 					},
 				},
 			},
@@ -333,27 +333,27 @@ func TestGetLatestProwJobs(t *testing.T) {
 	tests := []struct {
 		name string
 
-		pjs     []prowapi.ProwJob
+		pjs     []builder.ProwJob
 		jobType string
 
 		expected map[string]struct{}
 	}{
 		{
-			pjs: []prowapi.ProwJob{
+			pjs: []builder.ProwJob{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "831c7df0-baa4-11e7-a1a4-0a58ac10134a",
 					},
-					Spec: prowapi.ProwJobSpec{
-						Type:  prowapi.PresubmitJob,
-						Agent: prowapi.JenkinsAgent,
+					Spec: builder.ProwJobSpec{
+						Type:  builder.PresubmitJob,
+						Agent: builder.JenkinsAgent,
 						Job:   "test_pull_request_origin_extended_networking_minimal",
-						Refs: &prowapi.Refs{
+						Refs: &builder.Refs{
 							Org:     "openshift",
 							Repo:    "origin",
 							BaseRef: "master",
 							BaseSHA: "e92d5c525795eafb82cf16e3ab151b567b47e333",
-							Pulls: []prowapi.Pull{
+							Pulls: []builder.Pull{
 								{
 									Number: 17061,
 									Author: "enj",
@@ -365,9 +365,9 @@ func TestGetLatestProwJobs(t *testing.T) {
 						Context:      "ci/openshift-jenkins/extended_networking_minimal",
 						RerunCommand: "/test extended_networking_minimal",
 					},
-					Status: prowapi.ProwJobStatus{
+					Status: builder.ProwJobStatus{
 						StartTime:   metav1.Date(2017, time.October, 26, 23, 22, 19, 0, time.UTC),
-						State:       prowapi.FailureState,
+						State:       builder.FailureState,
 						Description: "Jenkins job failed.",
 						URL:         "https://openshift-gce-devel.appspot.com/build/origin-ci-test/pr-logs/pull/17061/test_pull_request_origin_extended_networking_minimal/9756/",
 						PodName:     "test_pull_request_origin_extended_networking_minimal-9756",
@@ -378,16 +378,16 @@ func TestGetLatestProwJobs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "0079d4d3-ba25-11e7-ae3f-0a58ac10123b",
 					},
-					Spec: prowapi.ProwJobSpec{
-						Type:  prowapi.PresubmitJob,
-						Agent: prowapi.JenkinsAgent,
+					Spec: builder.ProwJobSpec{
+						Type:  builder.PresubmitJob,
+						Agent: builder.JenkinsAgent,
 						Job:   "test_pull_request_origin_extended_networking_minimal",
-						Refs: &prowapi.Refs{
+						Refs: &builder.Refs{
 							Org:     "openshift",
 							Repo:    "origin",
 							BaseRef: "master",
 							BaseSHA: "e92d5c525795eafb82cf16e3ab151b567b47e333",
-							Pulls: []prowapi.Pull{
+							Pulls: []builder.Pull{
 								{
 									Number: 17061,
 									Author: "enj",
@@ -399,9 +399,9 @@ func TestGetLatestProwJobs(t *testing.T) {
 						Context:      "ci/openshift-jenkins/extended_networking_minimal",
 						RerunCommand: "/test extended_networking_minimal",
 					},
-					Status: prowapi.ProwJobStatus{
+					Status: builder.ProwJobStatus{
 						StartTime:   metav1.Date(2017, time.October, 26, 22, 22, 19, 0, time.UTC),
-						State:       prowapi.FailureState,
+						State:       builder.FailureState,
 						Description: "Jenkins job failed.",
 						URL:         "https://openshift-gce-devel.appspot.com/build/origin-ci-test/pr-logs/pull/17061/test_pull_request_origin_extended_networking_minimal/9755/",
 						PodName:     "test_pull_request_origin_extended_networking_minimal-9755",
@@ -415,7 +415,7 @@ func TestGetLatestProwJobs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := GetLatestProwJobs(test.pjs, prowapi.ProwJobType(test.jobType))
+		got := GetLatestProwJobs(test.pjs, builder.ProwJobType(test.jobType))
 		if len(got) != len(test.expected) {
 			t.Errorf("expected jobs:\n%+v\ngot jobs:\n%+v", test.expected, got)
 			continue
@@ -431,7 +431,7 @@ func TestGetLatestProwJobs(t *testing.T) {
 func TestNewProwJob(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                prowapi.ProwJobSpec
+		spec                builder.ProwJobSpec
 		labels              map[string]string
 		expectedLabels      map[string]string
 		annotations         map[string]string
@@ -439,9 +439,9 @@ func TestNewProwJob(t *testing.T) {
 	}{
 		{
 			name: "periodic job, no extra labels",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job",
-				Type: prowapi.PeriodicJob,
+				Type: builder.PeriodicJob,
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
@@ -455,9 +455,9 @@ func TestNewProwJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job",
-				Type: prowapi.PeriodicJob,
+				Type: builder.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
@@ -474,13 +474,13 @@ func TestNewProwJob(t *testing.T) {
 		},
 		{
 			name: "presubmit job",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job",
-				Type: prowapi.PresubmitJob,
-				Refs: &prowapi.Refs{
+				Type: builder.PresubmitJob,
+				Refs: &builder.Refs{
 					Org:  "org",
 					Repo: "repo",
-					Pulls: []prowapi.Pull{
+					Pulls: []builder.Pull{
 						{Number: 1},
 					},
 				},
@@ -500,13 +500,13 @@ func TestNewProwJob(t *testing.T) {
 		},
 		{
 			name: "non-github presubmit job",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job",
-				Type: prowapi.PresubmitJob,
-				Refs: &prowapi.Refs{
+				Type: builder.PresubmitJob,
+				Refs: &builder.Refs{
 					Org:  "https://some-gerrit-instance.foo.com",
 					Repo: "some/invalid/repo",
-					Pulls: []prowapi.Pull{
+					Pulls: []builder.Pull{
 						{Number: 1},
 					},
 				},
@@ -525,13 +525,13 @@ func TestNewProwJob(t *testing.T) {
 			},
 		}, {
 			name: "job with name too long to fit in a label",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
-				Type: prowapi.PresubmitJob,
-				Refs: &prowapi.Refs{
+				Type: builder.PresubmitJob,
+				Refs: &builder.Refs{
 					Org:  "org",
 					Repo: "repo",
-					Pulls: []prowapi.Pull{
+					Pulls: []builder.Pull{
 						{Number: 1},
 					},
 				},
@@ -551,9 +551,9 @@ func TestNewProwJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels, extra annotations",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job",
-				Type: prowapi.PeriodicJob,
+				Type: builder.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
@@ -590,15 +590,15 @@ func TestNewProwJob(t *testing.T) {
 func TestNewProwJobWithAnnotations(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                prowapi.ProwJobSpec
+		spec                builder.ProwJobSpec
 		annotations         map[string]string
 		expectedAnnotations map[string]string
 	}{
 		{
 			name: "job without annotation",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job",
-				Type: prowapi.PeriodicJob,
+				Type: builder.PeriodicJob,
 			},
 			annotations: nil,
 			expectedAnnotations: map[string]string{
@@ -607,9 +607,9 @@ func TestNewProwJobWithAnnotations(t *testing.T) {
 		},
 		{
 			name: "job with annotation",
-			spec: prowapi.ProwJobSpec{
+			spec: builder.ProwJobSpec{
 				Job:  "job",
-				Type: prowapi.PeriodicJob,
+				Type: builder.PeriodicJob,
 			},
 			annotations: map[string]string{
 				"annotation": "foo",
@@ -636,7 +636,7 @@ func TestJobURL(t *testing.T) {
 	var testCases = []struct {
 		name     string
 		plank    config.Plank
-		pj       prowapi.ProwJob
+		pj       builder.ProwJob
 		expected string
 	}{
 		{
@@ -646,7 +646,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       prowapi.ProwJob{Spec: prowapi.ProwJobSpec{Type: prowapi.PeriodicJob}},
+			pj:       builder.ProwJob{Spec: builder.ProwJobSpec{Type: builder.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -656,7 +656,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Garbage}}")),
 				},
 			},
-			pj:       prowapi.ProwJob{},
+			pj:       builder.ProwJob{},
 			expected: "",
 		},
 		{
@@ -666,7 +666,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       prowapi.ProwJob{Spec: prowapi.ProwJobSpec{Type: prowapi.PeriodicJob}},
+			pj:       builder.ProwJob{Spec: builder.ProwJobSpec{Type: builder.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -674,16 +674,16 @@ func TestJobURL(t *testing.T) {
 			plank: config.Plank{
 				JobURLPrefixConfig: map[string]string{"*": "https://gubernator.com/build"},
 			},
-			pj: prowapi.ProwJob{Spec: prowapi.ProwJobSpec{
-				Type: prowapi.PresubmitJob,
-				Refs: &prowapi.Refs{
+			pj: builder.ProwJob{Spec: builder.ProwJobSpec{
+				Type: builder.PresubmitJob,
+				Refs: &builder.Refs{
 					Org:   "org",
 					Repo:  "repo",
-					Pulls: []prowapi.Pull{{Number: 1}},
+					Pulls: []builder.Pull{{Number: 1}},
 				},
-				DecorationConfig: &prowapi.DecorationConfig{GCSConfiguration: &prowapi.GCSConfiguration{
+				DecorationConfig: &builder.DecorationConfig{GCSConfiguration: &builder.GCSConfiguration{
 					Bucket:       "bucket",
-					PathStrategy: prowapi.PathStrategyExplicit,
+					PathStrategy: builder.PathStrategyExplicit,
 				}},
 			}},
 			expected: "https://gubernator.com/build/bucket/pr-logs/pull/org_repo/1",
@@ -722,14 +722,14 @@ func TestCreateRefs(t *testing.T) {
 			HTMLURL: "https://github.example.com/ibzib",
 		},
 	}
-	expected := prowapi.Refs{
+	expected := builder.Refs{
 		Org:      "kubernetes",
 		Repo:     "Hello-World",
 		RepoLink: "https://github.example.com/kubernetes/Hello-World",
 		BaseRef:  "master",
 		BaseSHA:  "abcdef",
 		BaseLink: "https://github.example.com/kubernetes/Hello-World/commit/abcdef",
-		Pulls: []prowapi.Pull{
+		Pulls: []builder.Pull{
 			{
 				Number:     42,
 				Author:     "ibzib",
@@ -749,18 +749,18 @@ func TestSpecFromJobBase(t *testing.T) {
 	testCases := []struct {
 		name    string
 		jobBase config.JobBase
-		verify  func(prowapi.ProwJobSpec) error
+		verify  func(builder.ProwJobSpec) error
 	}{
 		{
 			name: "Verify reporter config gets copied",
 			jobBase: config.JobBase{
-				ReporterConfig: &prowapi.ReporterConfig{
-					Slack: &prowapi.SlackReporterConfig{
+				ReporterConfig: &builder.ReporterConfig{
+					Slack: &builder.SlackReporterConfig{
 						Channel: "my-channel",
 					},
 				},
 			},
-			verify: func(pj prowapi.ProwJobSpec) error {
+			verify: func(pj builder.ProwJobSpec) error {
 				if pj.ReporterConfig == nil {
 					return errors.New("Expected ReporterConfig to be non-nil")
 				}

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -29,7 +30,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 const (
@@ -110,7 +110,7 @@ type githubClient interface {
 }
 
 type prowJobClient interface {
-	Create(*prowapi.ProwJob) (*prowapi.ProwJob, error)
+	Create(*builder.ProwJob) (*builder.ProwJob, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.

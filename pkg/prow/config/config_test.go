@@ -59,7 +59,7 @@ func TestDefaultJobBase(t *testing.T) {
 				j.Agent = ""
 			},
 			expected: func(j *JobBase) {
-				j.Agent = string(prowapi.KubernetesAgent)
+				j.Agent = string(builder.KubernetesAgent)
 			},
 		},
 		{
@@ -276,7 +276,7 @@ func TestDecorationRawYaml(t *testing.T) {
 		name        string
 		expectError bool
 		rawConfig   string
-		expected    *prowapi.DecorationConfig
+		expected    *builder.DecorationConfig
 	}{
 		{
 			name:        "no default",
@@ -322,18 +322,18 @@ periodics:
       args:
       - "test"
       - "./..."`,
-			expected: &prowapi.DecorationConfig{
+			expected: &builder.DecorationConfig{
 				Timeout:     2 * time.Hour,
 				GracePeriod: 15 * time.Second,
-				UtilityImages: &prowapi.UtilityImages{
+				UtilityImages: &builder.UtilityImages{
 					CloneRefs:  "clonerefs:default",
 					InitUpload: "initupload:default",
 					Entrypoint: "entrypoint:default",
 					Sidecar:    "sidecar:default",
 				},
-				GCSConfiguration: &prowapi.GCSConfiguration{
+				GCSConfiguration: &builder.GCSConfiguration{
 					Bucket:       "default-bucket",
-					PathStrategy: prowapi.PathStrategyLegacy,
+					PathStrategy: builder.PathStrategyLegacy,
 					DefaultOrg:   "kubernetes",
 					DefaultRepo:  "kubernetes",
 				},
@@ -381,18 +381,18 @@ periodics:
       args:
       - "test"
       - "./..."`,
-			expected: &prowapi.DecorationConfig{
+			expected: &builder.DecorationConfig{
 				Timeout:     1 * time.Nanosecond,
 				GracePeriod: 1 * time.Nanosecond,
-				UtilityImages: &prowapi.UtilityImages{
+				UtilityImages: &builder.UtilityImages{
 					CloneRefs:  "clonerefs:explicit",
 					InitUpload: "initupload:explicit",
 					Entrypoint: "entrypoint:explicit",
 					Sidecar:    "sidecar:explicit",
 				},
-				GCSConfiguration: &prowapi.GCSConfiguration{
+				GCSConfiguration: &builder.GCSConfiguration{
 					Bucket:       "explicit-bucket",
-					PathStrategy: prowapi.PathStrategyExplicit,
+					PathStrategy: builder.PathStrategyExplicit,
 					DefaultOrg:   "kubernetes",
 					DefaultRepo:  "kubernetes",
 				},
@@ -444,7 +444,7 @@ func TestValidateAgent(t *testing.T) {
 		Namespace: &ns,
 		Spec:      &v1.PodSpec{},
 		UtilityConfig: UtilityConfig{
-			DecorationConfig: &prowapi.DecorationConfig{},
+			DecorationConfig: &builder.DecorationConfig{},
 		},
 	}
 
@@ -581,12 +581,12 @@ func TestValidateAgent(t *testing.T) {
 }
 
 func TestValidatePodSpec(t *testing.T) {
-	periodEnv := sets.NewString(downwardapi.EnvForType(prowapi.PeriodicJob)...)
-	postEnv := sets.NewString(downwardapi.EnvForType(prowapi.PostsubmitJob)...)
-	preEnv := sets.NewString(downwardapi.EnvForType(prowapi.PresubmitJob)...)
+	periodEnv := sets.NewString(downwardapi.EnvForType(builder.PeriodicJob)...)
+	postEnv := sets.NewString(downwardapi.EnvForType(builder.PostsubmitJob)...)
+	preEnv := sets.NewString(downwardapi.EnvForType(builder.PresubmitJob)...)
 	cases := []struct {
 		name    string
-		jobType prowapi.ProwJobType
+		jobType builder.ProwJobType
 		spec    func(s *v1.PodSpec)
 		noSpec  bool
 		pass    bool
@@ -622,7 +622,7 @@ func TestValidatePodSpec(t *testing.T) {
 		},
 		{
 			name:    "reject reserved presubmit env",
-			jobType: prowapi.PresubmitJob,
+			jobType: builder.PresubmitJob,
 			spec: func(s *v1.PodSpec) {
 				// find a presubmit value
 				for n := range preEnv.Difference(postEnv).Difference(periodEnv) {
@@ -636,7 +636,7 @@ func TestValidatePodSpec(t *testing.T) {
 		},
 		{
 			name:    "reject reserved postsubmit env",
-			jobType: prowapi.PostsubmitJob,
+			jobType: builder.PostsubmitJob,
 			spec: func(s *v1.PodSpec) {
 				// find a postsubmit value
 				for n := range postEnv.Difference(periodEnv) {
@@ -650,7 +650,7 @@ func TestValidatePodSpec(t *testing.T) {
 		},
 		{
 			name:    "reject reserved periodic env",
-			jobType: prowapi.PeriodicJob,
+			jobType: builder.PeriodicJob,
 			spec: func(s *v1.PodSpec) {
 				// find a postsubmit value
 				for n := range periodEnv {
@@ -714,7 +714,7 @@ func TestValidatePodSpec(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			jt := prowapi.PresubmitJob
+			jt := builder.PresubmitJob
 			if tc.jobType != "" {
 				jt = tc.jobType
 			}
@@ -735,7 +735,7 @@ func TestValidatePodSpec(t *testing.T) {
 }
 
 func TestValidateDecoration(t *testing.T) {
-	defCfg := prowapi.DecorationConfig{
+	defCfg := builder.DecorationConfig{
 		UtilityImages: &prowjobv1.UtilityImages{
 			CloneRefs:  "clone-me",
 			InitUpload: "upload-me",
@@ -752,7 +752,7 @@ func TestValidateDecoration(t *testing.T) {
 	cases := []struct {
 		name      string
 		container v1.Container
-		config    *prowapi.DecorationConfig
+		config    *builder.DecorationConfig
 		pass      bool
 	}{
 		{
@@ -777,7 +777,7 @@ func TestValidateDecoration(t *testing.T) {
 		},
 		{
 			name:   "reject invalid decoration config",
-			config: &prowapi.DecorationConfig{},
+			config: &builder.DecorationConfig{},
 			container: v1.Container{
 				Command: []string{"hello", "world"},
 			},

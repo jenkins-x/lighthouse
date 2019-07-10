@@ -22,11 +22,11 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 // Preset is intended to match the k8s' PodPreset feature, and may be removed
@@ -404,11 +404,11 @@ type UtilityConfig struct {
 	CloneDepth int `json:"clone_depth,omitempty"`
 	// ExtraRefs are auxiliary repositories that
 	// need to be cloned, determined from config
-	ExtraRefs []prowapi.Refs `json:"extra_refs,omitempty"`
+	ExtraRefs []builder.Refs `json:"extra_refs,omitempty"`
 
 	// DecorationConfig holds configuration options for
 	// decorating PodSpecs that users provide
-	DecorationConfig *prowapi.DecorationConfig `json:"decoration_config,omitempty"`
+	DecorationConfig *builder.DecorationConfig `json:"decoration_config,omitempty"`
 }
 
 // RetestPresubmits returns all presubmits that should be run given a /retest command.

@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -32,7 +33,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 const pluginName = "override"
@@ -51,7 +51,7 @@ type githubClient interface {
 }
 
 type prowJobClient interface {
-	Create(pj *prowapi.ProwJob) (*prowapi.ProwJob, error)
+	Create(pj *builder.ProwJob) (*builder.ProwJob, error)
 }
 
 type overrideClient interface {
@@ -87,7 +87,7 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.gc.HasPermission(org, repo, user, role...)
 }
 
-func (c client) Create(pj *prowapi.ProwJob) (*prowapi.ProwJob, error) {
+func (c client) Create(pj *builder.ProwJob) (*builder.ProwJob, error) {
 	return c.prowJobClient.Create(pj)
 }
 
@@ -240,10 +240,10 @@ Only the following contexts were expected:
 
 			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
 			now := metav1.Now()
-			pj.Status = prowapi.ProwJobStatus{
+			pj.Status = builder.ProwJobStatus{
 				StartTime:      now,
 				CompletionTime: &now,
-				State:          prowapi.SuccessState,
+				State:          builder.SuccessState,
 				Description:    description(user),
 				URL:            e.Link,
 			}

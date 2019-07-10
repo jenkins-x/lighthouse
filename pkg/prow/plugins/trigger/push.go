@@ -18,10 +18,10 @@ package trigger
 
 import (
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 func listPushEventChanges(pe scm.PushHook) config.ChangedFilesProvider {
@@ -46,17 +46,14 @@ func listPushEventChanges(pe scm.PushHook) config.ChangedFilesProvider {
 	}
 }
 
-func createRefs(pe scm.PushHook) prowapi.Refs {
+func createRefs(pe scm.PushHook) builder.Refs {
 	branch := github.PushHookBranch(&pe)
-	return prowapi.Refs{
-		Org:     pe.Repo.Namespace,
-		Repo:    pe.Repo.Name,
-		BaseRef: branch,
-		// TODO
-		/*
-			BaseSha:  pe.After,
-			BaseLink: pe.Compare,
-		*/
+	return builder.Refs{
+		Org:      pe.Repo.Namespace,
+		Repo:     pe.Repo.Name,
+		BaseRef:  branch,
+		BaseSHA:  pe.After,
+		BaseLink: pe.Compare,
 	}
 }
 

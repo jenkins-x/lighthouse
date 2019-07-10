@@ -29,6 +29,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/org"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/sirupsen/logrus"
@@ -39,11 +40,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
-	prowjobv1 "k8s.io/test-infra/prow/apis/prowjobs/v1"
 	"k8s.io/test-infra/prow/kube"
 	"k8s.io/test-infra/prow/pod-utils/decorate"
-	"k8s.io/test-infra/prow/pod-utils/downwardapi"
 )
 
 // Config is a read-only snapshot of the config.
@@ -140,14 +138,14 @@ type Controller struct {
 	// JobURLTemplateString compiles into JobURLTemplate at load time.
 	JobURLTemplateString string `json:"job_url_template,omitempty"`
 	// JobURLTemplate is compiled at load time from JobURLTemplateString. It
-	// will be passed a prowapi.ProwJob and is used to set the URL for the
+	// will be passed a builder.ProwJob and is used to set the URL for the
 	// "Details" link on GitHub as well as the link from deck.
 	JobURLTemplate *template.Template `json:"-"`
 
 	// ReportTemplateString compiles into ReportTemplate at load time.
 	ReportTemplateString string `json:"report_template,omitempty"`
 	// ReportTemplate is compiled at load time from ReportTemplateString. It
-	// will be passed a prowapi.ProwJob and can provide an optional blurb below
+	// will be passed a builder.ProwJob and can provide an optional blurb below
 	// the test failures comment.
 	ReportTemplate *template.Template `json:"-"`
 
@@ -173,9 +171,10 @@ type Plank struct {
 	// PodPendingTimeout is after how long the controller will perform a garbage
 	// collection on pending pods. Defaults to one day.
 	PodPendingTimeout time.Duration `json:"-"`
-	// DefaultDecorationConfig are defaults for shared fields for ProwJobs
-	// that request to have their PodSpecs decorated
-	DefaultDecorationConfig *prowapi.DecorationConfig `json:"default_decoration_config,omitempty"`
+	/*	// DefaultDecorationConfig are defaults for shared fields for ProwJobs
+		// that request to have their PodSpecs decorated
+		DefaultDecorationConfig *builder.DecorationConfig `json:"default_decoration_config,omitempty"`
+	*/
 	// JobURLPrefix is the host and path prefix under
 	// which job details will be viewable
 	JobURLPrefix string `json:"job_url_prefix,omitempty"`
@@ -274,7 +273,7 @@ type ExternalAgentLog struct {
 	// URLTemplateString compiles into URLTemplate at load time.
 	URLTemplateString string `json:"url_template,omitempty"`
 	// URLTemplate is compiled at load time from URLTemplateString. It
-	// will be passed a prowapi.ProwJob and the generated URL should provide
+	// will be passed a builder.ProwJob and the generated URL should provide
 	// logs for the ProwJob.
 	URLTemplate *template.Template `json:"-"`
 }
@@ -511,39 +510,45 @@ func (c *Config) mergeJobConfig(jc JobConfig) error {
 }
 
 func setPresubmitDecorationDefaults(c *Config, ps *Presubmit) {
-	if ps.Decorate {
-		ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
-	}
+	/*	if ps.Decorate {
+			ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
+		}
+	*/
 }
 
 func setPostsubmitDecorationDefaults(c *Config, ps *Postsubmit) {
-	if ps.Decorate {
-		ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
-	}
+	/*
+		if ps.Decorate {
+			ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
+		}
+
+	*/
 }
 
 func setPeriodicDecorationDefaults(c *Config, ps *Periodic) {
-	if ps.Decorate {
-		ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
-	}
+	/*
+		if ps.Decorate {
+			ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
+		}
+	*/
 }
 
 // finalizeJobConfig mutates and fixes entries for jobspecs
 func (c *Config) finalizeJobConfig() error {
 	if c.decorationRequested() {
-		if c.Plank.DefaultDecorationConfig == nil {
-			return errors.New("no default decoration config provided for plank")
-		}
-		if c.Plank.DefaultDecorationConfig.UtilityImages == nil {
-			return errors.New("no default decoration image pull specs provided for plank")
-		}
-		if c.Plank.DefaultDecorationConfig.GCSConfiguration == nil {
-			return errors.New("no default GCS decoration config provided for plank")
-		}
-		if c.Plank.DefaultDecorationConfig.GCSCredentialsSecret == "" {
-			return errors.New("no default GCS credentials secret provided for plank")
-		}
-
+		/*		if c.Plank.DefaultDecorationConfig == nil {
+					return errors.New("no default decoration config provided for plank")
+				}
+				if c.Plank.DefaultDecorationConfig.UtilityImages == nil {
+					return errors.New("no default decoration image pull specs provided for plank")
+				}
+				if c.Plank.DefaultDecorationConfig.GCSConfiguration == nil {
+					return errors.New("no default GCS decoration config provided for plank")
+				}
+				if c.Plank.DefaultDecorationConfig.GCSCredentialsSecret == "" {
+					return errors.New("no default GCS credentials secret provided for plank")
+				}
+		*/
 		for _, vs := range c.Presubmits {
 			for i := range vs {
 				setPresubmitDecorationDefaults(c, &vs[i])
@@ -608,7 +613,7 @@ func (c *Config) validateComponentConfig() error {
 
 var jobNameRegex = regexp.MustCompile(`^[A-Za-z0-9-._]+$`)
 
-func validateJobBase(v JobBase, jobType prowapi.ProwJobType, podNamespace string) error {
+func validateJobBase(v JobBase, jobType builder.ProwJobType, podNamespace string) error {
 	if !jobNameRegex.MatchString(v.Name) {
 		return fmt.Errorf("name: must match regex %q", jobNameRegex.String())
 	}
@@ -654,7 +659,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, v := range c.AllPresubmits(nil) {
-		if err := validateJobBase(v.JobBase, prowjobv1.PresubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(v.JobBase, builder.PresubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid presubmit job %s: %v", v.Name, err)
 		}
 		if err := validateTriggering(v); err != nil {
@@ -678,7 +683,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, j := range c.AllPostsubmits(nil) {
-		if err := validateJobBase(j.JobBase, prowjobv1.PostsubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(j.JobBase, builder.PostsubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid postsubmit job %s: %v", j.Name, err)
 		}
 	}
@@ -691,7 +696,7 @@ func (c *Config) validateJobConfig() error {
 			return fmt.Errorf("duplicated periodic job : %s", p.Name)
 		}
 		validPeriodics.Insert(p.Name)
-		if err := validateJobBase(p.JobBase, prowjobv1.PeriodicJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(p.JobBase, builder.PeriodicJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid periodic job %s: %v", p.Name, err)
 		}
 	}
@@ -973,37 +978,35 @@ func validateLabels(labels map[string]string) error {
 }
 
 func validateAgent(v JobBase, podNamespace string) error {
-	k := string(prowjobv1.KubernetesAgent)
-	b := string(prowjobv1.KnativeBuildAgent)
-	j := string(prowjobv1.JenkinsAgent)
-	agents := sets.NewString(k, b, j, "tekton")
+	agents := sets.NewString("tekton")
 	agent := v.Agent
 	switch {
 	case !agents.Has(agent):
 		return fmt.Errorf("agent must be one of %s (found %q)", strings.Join(agents.List(), ", "), agent)
-	case v.Spec != nil && agent != k:
-		return fmt.Errorf("job specs require agent: %s (found %q)", k, agent)
-	case agent == k && v.Spec == nil:
-		return errors.New("kubernetes jobs require a spec")
-	case v.BuildSpec != nil && agent != b:
-		return fmt.Errorf("job build_specs require agent: %s (found %q)", b, agent)
-	case agent == b && v.BuildSpec == nil:
-		return errors.New("knative-build jobs require a build_spec")
-	case v.DecorationConfig != nil && agent != k && agent != b:
-		// TODO(fejta): only source decoration supported...
-		return fmt.Errorf("decoration requires agent: %s or %s (found %q)", k, b, agent)
-	case v.ErrorOnEviction && agent != k:
-		return fmt.Errorf("error_on_eviction only applies to agent: %s (found %q)", k, agent)
-	case v.Namespace == nil || *v.Namespace == "":
-		return fmt.Errorf("failed to default namespace")
-	case *v.Namespace != podNamespace && agent != b:
-		// TODO(fejta): update plank to allow this (depends on client change)
-		return fmt.Errorf("namespace customization requires agent: %s (found %q)", b, agent)
+		/*	case v.Spec != nil && agent != k:
+				return fmt.Errorf("job specs require agent: %s (found %q)", k, agent)
+			case agent == k && v.Spec == nil:
+				return errors.New("kubernetes jobs require a spec")
+			case v.BuildSpec != nil && agent != b:
+				return fmt.Errorf("job build_specs require agent: %s (found %q)", b, agent)
+			case agent == b && v.BuildSpec == nil:
+				return errors.New("knative-build jobs require a build_spec")
+			case v.DecorationConfig != nil && agent != k && agent != b:
+				// TODO(fejta): only source decoration supported...
+				return fmt.Errorf("decoration requires agent: %s or %s (found %q)", k, b, agent)
+			case v.ErrorOnEviction && agent != k:
+				return fmt.Errorf("error_on_eviction only applies to agent: %s (found %q)", k, agent)
+			case v.Namespace == nil || *v.Namespace == "":
+				return fmt.Errorf("failed to default namespace")
+			case *v.Namespace != podNamespace && agent != b:
+				// TODO(fejta): update plank to allow this (depends on client change)
+				return fmt.Errorf("namespace customization requires agent: %s (found %q)", b, agent)
+		*/
 	}
 	return nil
 }
 
-func validateDecoration(container v1.Container, config *prowapi.DecorationConfig) error {
+func validateDecoration(container v1.Container, config *builder.DecorationConfig) error {
 	if config == nil {
 		return nil
 	}
@@ -1029,7 +1032,7 @@ func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, pre
 	return nil
 }
 
-func validatePodSpec(jobType prowapi.ProwJobType, spec *v1.PodSpec) error {
+func validatePodSpec(jobType builder.ProwJobType, spec *v1.PodSpec) error {
 	if spec == nil {
 		return nil
 	}
@@ -1042,14 +1045,15 @@ func validatePodSpec(jobType prowapi.ProwJobType, spec *v1.PodSpec) error {
 		return fmt.Errorf("pod spec must specify exactly 1 container, found: %d", n)
 	}
 
-	for _, env := range spec.Containers[0].Env {
-		for _, prowEnv := range downwardapi.EnvForType(jobType) {
-			if env.Name == prowEnv {
-				// TODO(fejta): consider allowing this
-				return fmt.Errorf("env %s is reserved", env.Name)
+	/*	for _, env := range spec.Containers[0].Env {
+			for _, prowEnv := range downwardapi.EnvForType(jobType) {
+				if env.Name == prowEnv {
+					// TODO(fejta): consider allowing this
+					return fmt.Errorf("env %s is reserved", env.Name)
+				}
 			}
 		}
-	}
+	*/
 
 	for _, mount := range spec.Containers[0].VolumeMounts {
 		for _, prowMount := range decorate.VolumeMounts() {
@@ -1126,8 +1130,8 @@ func DefaultRerunCommandFor(name string) string {
 
 // defaultJobBase configures common parameters, currently Agent and Namespace.
 func (c *ProwConfig) defaultJobBase(base *JobBase) {
-	if base.Agent == "" { // Use kubernetes by default
-		base.Agent = string(prowapi.KubernetesAgent)
+	if base.Agent == "" { // Use tekton by default
+		base.Agent = "tekton"
 	}
 	if base.Namespace == nil || *base.Namespace == "" {
 		s := c.PodNamespace
