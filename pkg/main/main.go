@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jenkins-x/lighthouse/pkg/cmd"
+	"github.com/jenkins-x/lighthouse/pkg/webhook"
 )
 
 // Entrypoint for the command
 func main() {
-	cmds := cmd.NewCmdWebhook()
+	cmds := webhook.NewCmdWebhook()
 	err := cmds.Execute()
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err.Error())

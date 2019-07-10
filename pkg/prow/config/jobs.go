@@ -22,11 +22,11 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 // Preset is intended to match the k8s' PodPreset feature, and may be removed
@@ -83,8 +83,10 @@ type JobBase struct {
 	// The name of the job. Must match regex [A-Za-z0-9-._]+
 	// e.g. pull-test-infra-bazel-build
 	Name string `json:"name"`
-	// Labels are added to prowjobs and pods created for this job.
+	// Labels are added to plumberJobs and pods created for this job.
 	Labels map[string]string `json:"labels,omitempty"`
+	// Annotations are unused by prow itself, but provide a space to configure other automation.
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// MaximumConcurrency of this job, 0 implies no limit.
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
 	// Agent that will take care of running this job.
@@ -94,9 +96,9 @@ type JobBase struct {
 	Cluster string `json:"cluster,omitempty"`
 	// Namespace is the namespace in which pods schedule.
 	//   nil: results in config.PodNamespace (aka pod default)
-	//   empty: results in config.ProwJobNamespace (aka same as prowjob)
+	//   empty: results in config.PlumberJobNamespace (aka same as plumberJob)
 	Namespace *string `json:"namespace,omitempty"`
-	// ErrorOnEviction indicates that the ProwJob should be completed and given
+	// ErrorOnEviction indicates that the PlumberJob should be completed and given
 	// the ErrorState status if the pod that is executing the job is evicted.
 	// If this field is unspecified or false, a new pod will be created to replace
 	// the evicted one.
@@ -357,7 +359,7 @@ func (ps Presubmit) ContextRequired() bool {
 type ChangedFilesProvider func() ([]string, error)
 
 type githubClient interface {
-	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
+	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
 
 // NewGitHubDeferredChangedFilesProvider uses a closure to lazily retrieve the file changes only if they are needed.
@@ -397,14 +399,16 @@ type UtilityConfig struct {
 	// SkipSubmodules determines if submodules should be
 	// cloned when the job is run. Defaults to true.
 	SkipSubmodules bool `json:"skip_submodules,omitempty"`
-
+	// CloneDepth is the depth of the clone that will be used.
+	// A depth of zero will do a full clone.
+	CloneDepth int `json:"clone_depth,omitempty"`
 	// ExtraRefs are auxiliary repositories that
 	// need to be cloned, determined from config
-	ExtraRefs []prowapi.Refs `json:"extra_refs,omitempty"`
+	ExtraRefs []plumber.Refs `json:"extra_refs,omitempty"`
 
 	// DecorationConfig holds configuration options for
 	// decorating PodSpecs that users provide
-	DecorationConfig *prowapi.DecorationConfig `json:"decoration_config,omitempty"`
+	DecorationConfig *plumber.DecorationConfig `json:"decoration_config,omitempty"`
 }
 
 // RetestPresubmits returns all presubmits that should be run given a /retest command.

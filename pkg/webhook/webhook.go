@@ -1,4 +1,4 @@
-package cmd
+package webhook
 
 import (
 	"context"
@@ -18,8 +18,8 @@ import (
 	"github.com/jenkins-x/jx/pkg/cmd/clients"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/pkg/util"
-	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
@@ -57,7 +57,6 @@ type WebhookOptions struct {
 	Port        int
 	JSONLog     bool
 
-	Builder        builder.Builder
 	factory        clients.Factory
 	namespace      string
 	pluginFilename string
@@ -98,15 +97,11 @@ func (o *WebhookOptions) Run() error {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 	}
 
-	jxClient, ns, err := o.GetFactory().CreateJXClient()
+	_, ns, err := o.GetFactory().CreateJXClient()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create JX Client")
 	}
 	o.namespace = ns
-	o.Builder, err = builder.NewBuilder(jxClient, ns)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create Builder")
-	}
 	o.server, err = o.createHookServer()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create Hook Server")
@@ -195,6 +190,25 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		"CloneSSH":  repository.CloneSSH,
 	}
 
+	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
+	gitClient, _ := git.NewClient()
+
+	user := o.GetBotName()
+	gitClient.SetCredentials(user, func() []byte {
+		return []byte(token)
+	})
+
+	server := *o.server
+
+	server.ClientAgent = &plugins.ClientAgent{
+		BotName:          o.GetBotName(),
+		GitHubClient:     scmClient,
+		KubernetesClient: kubeClient,
+		GitClient:        gitClient,
+	}
+
+	server.OnRequest()
+
 	pushHook, ok := webhook.(*scm.PushHook)
 	l := logrus.WithFields(logrus.Fields(fields))
 	if ok {
@@ -206,30 +220,16 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["Commit.Message"] = pushHook.Commit.Message
 		fields["Commit.Committer.Name"] = pushHook.Commit.Committer.Name
 
-		l.Info("invoking push handler")
+		l.Info("invoking Push handler")
 
-		o.startBuild(pushHook, r, w)
+		err := o.updatePlumberClient(l, server, pushHook.Repository(), w)
+		if err != nil {
+			return
+		}
+
+		server.HandlePushEvent(l, pushHook)
 		return
 	}
-
-	// lets try invoke prow commands...
-	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
-	gitClient, _ := git.NewClient()
-
-	user := o.GetBotName()
-	gitClient.SetCredentials(user, func() []byte {
-		return []byte(token)
-	})
-
-	server := *o.server
-	server.ClientAgent = &plugins.ClientAgent{
-		BotName:          o.GetBotName(),
-		GitHubClient:     scmClient,
-		KubernetesClient: kubeClient,
-		GitClient:        gitClient,
-	}
-
-	server.OnRequest()
 
 	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
 	if ok {
@@ -248,6 +248,10 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Issue Comment handler")
 
+		err := o.updatePlumberClient(l, server, issueCommentHook.Repository(), w)
+		if err != nil {
+			return
+		}
 		server.HandleIssueCommentEvent(l, *issueCommentHook)
 		w.Write([]byte("OK"))
 		return
@@ -295,20 +299,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		w.Write([]byte("OK"))
 		return
 	}
-}
-
-func (o *WebhookOptions) startBuild(hook *scm.PushHook, r *http.Request, w http.ResponseWriter) {
-	message, err := o.Builder.StartBuild(hook, o.createCommonOptions(o.namespace))
-	if err != nil {
-		logrus.Errorf("failed to start build on %s: %s", repositoryToString(hook.Repository()), err.Error())
-
-		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
-		return
-	}
-	w.Write([]byte(message))
-
-	logrus.Infof("triggering META pipeline")
-
 }
 
 func (o *WebhookOptions) misingSourceRepository(hook scm.Webhook, w http.ResponseWriter) {
@@ -455,12 +445,12 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 		} else {
 			githubClient = github.NewClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
 			if o.cluster == "" {
-				kubeClient, err = kube.NewClientInCluster(configAgent.Config().ProwJobNamespace)
+				kubeClient, err = kube.NewClientInCluster(configAgent.Config().PlumberJobNamespace)
 				if err != nil {
 					logrus.WithError(err).Fatal("Error getting kube client.")
 				}
 			} else {
-				kubeClient, err = kube.NewClientFromFile(o.cluster, configAgent.Config().ProwJobNamespace)
+				kubeClient, err = kube.NewClientFromFile(o.cluster, configAgent.Config().PlumberJobNamespace)
 				if err != nil {
 					logrus.WithError(err).Fatal("Error getting kube client.")
 				}
@@ -601,6 +591,18 @@ func (o *WebhookOptions) createConfigFiles() error {
 		}
 		o.pluginFilename = pfile
 	}
+	return nil
+}
+
+func (o *WebhookOptions) updatePlumberClient(l *logrus.Entry, server hook.Server, repository scm.Repository, w http.ResponseWriter) error {
+	plumberClient, err := plumber.NewPlumber(repository, o.createCommonOptions(o.namespace))
+	if err != nil {
+		l.Errorf("failed to create Plumber webhook: %s", err.Error())
+
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create Plumber: %s", err.Error()))
+		return err
+	}
+	server.ClientAgent.PlumberClient = plumberClient
 	return nil
 }
 

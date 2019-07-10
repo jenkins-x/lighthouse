@@ -46,8 +46,8 @@ type FakeClient struct {
 	PullRequestComments map[int][]*scm.Comment
 	ReviewID            int
 	Reviews             map[int][]*scm.Review
-	CombinedStatuses    map[string]*github.CombinedStatus
-	CreatedStatuses     map[string][]scm.Status
+	CombinedStatuses    map[string]*scm.CombinedStatus
+	CreatedStatuses     map[string][]*scm.StatusInput
 	IssueEvents         map[int][]*scm.ListedIssueEvent
 	Commits             map[string]*scm.Commit
 
@@ -216,9 +216,9 @@ func (f *FakeClient) GetSingleCommit(org, repo, SHA string) (*scm.Commit, error)
 }
 
 // CreateStatus adds a status context to a commit.
-func (f *FakeClient) CreateStatus(owner, repo, SHA string, s scm.Status) error {
+func (f *FakeClient) CreateStatus(owner, repo, SHA string, s *scm.StatusInput) (*scm.Status, error) {
 	if f.CreatedStatuses == nil {
-		f.CreatedStatuses = make(map[string][]scm.Status)
+		f.CreatedStatuses = make(map[string][]*scm.StatusInput)
 	}
 	statuses := f.CreatedStatuses[SHA]
 	var updated bool
@@ -232,16 +232,16 @@ func (f *FakeClient) CreateStatus(owner, repo, SHA string, s scm.Status) error {
 		statuses = append(statuses, s)
 	}
 	f.CreatedStatuses[SHA] = statuses
-	return nil
+	return nil, nil
 }
 
 // ListStatuses returns individual status contexts on a commit.
-func (f *FakeClient) ListStatuses(org, repo, ref string) ([]scm.Status, error) {
-	return f.CreatedStatuses[ref], nil
+func (f *FakeClient) ListStatuses(org, repo, ref string) ([]*scm.Status, error) {
+	return scm.ConvertStatusInputsToStatuses(f.CreatedStatuses[ref]), nil
 }
 
 // GetCombinedStatus returns the overall status for a commit.
-func (f *FakeClient) GetCombinedStatus(owner, repo, ref string) (*github.CombinedStatus, error) {
+func (f *FakeClient) GetCombinedStatus(owner, repo, ref string) (*scm.CombinedStatus, error) {
 	return f.CombinedStatuses[ref], nil
 }
 

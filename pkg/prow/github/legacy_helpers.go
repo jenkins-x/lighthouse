@@ -97,12 +97,6 @@ func ImageTooBig(url string) (bool, error) {
 	return false, nil
 }
 
-// CombinedStatus is the latest statuses for a ref.
-type CombinedStatus struct {
-	SHA      string       `json:"sha"`
-	Statuses []scm.Status `json:"statuses"`
-}
-
 // IssueEventAction enumerates the triggers for this
 // webhook payload type. See also:
 // https://developer.github.com/v3/activity/events/types/#issuesevent
@@ -211,4 +205,11 @@ func HasLabel(label string, issueLabels []*scm.Label) bool {
 		}
 	}
 	return false
+}
+
+// PushHookBranch returns the name of the branch to which the user pushed.
+func PushHookBranch(pe *scm.PushHook) string {
+	ref := strings.TrimPrefix(pe.Ref, "refs/heads/") // if Ref is a branch
+	ref = strings.TrimPrefix(ref, "refs/tags/")      // if Ref is a tag
+	return ref
 }

@@ -397,7 +397,7 @@ type ConfigMapSpec struct {
 	// If no explicit key is given, the basename of the file will be used.
 	Key string `json:"key,omitempty"`
 	// Namespace in which the configMap needs to be deployed. If no namespace is specified
-	// it will be deployed to the ProwJobNamespace.
+	// it will be deployed to the PlumberJobNamespace.
 	Namespace string `json:"namespace,omitempty"`
 	// Namespaces in which the configMap needs to be deployed, in addition to the above
 	// namespace provided, or the default if it is not set.

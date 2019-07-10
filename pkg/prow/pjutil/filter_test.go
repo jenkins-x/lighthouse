@@ -399,7 +399,7 @@ type orgRepoRef struct {
 }
 
 type fakeContextGetter struct {
-	status map[orgRepoRef]*github.CombinedStatus
+	status map[orgRepoRef]*scm.CombinedStatus
 	errors map[orgRepoRef]error
 }
 
@@ -423,7 +423,7 @@ func (f *fakeContextGetter) getContexts(key orgRepoRef) (sets.String, sets.Strin
 }
 
 func TestPresubmitFilter(t *testing.T) {
-	statuses := &github.CombinedStatus{Statuses: []scm.Status{
+	statuses := &scm.CombinedStatus{Statuses: []*scm.Status{
 		{
 			Label: "existing-successful",
 			State: scm.StateSuccess,
@@ -821,7 +821,7 @@ func TestPresubmitFilter(t *testing.T) {
 			}
 			fsg := &fakeContextGetter{
 				errors: map[orgRepoRef]error{},
-				status: map[orgRepoRef]*github.CombinedStatus{},
+				status: map[orgRepoRef]*scm.CombinedStatus{},
 			}
 			key := orgRepoRef{org: testCase.org, repo: testCase.repo, ref: testCase.ref}
 			if testCase.statusErr {
