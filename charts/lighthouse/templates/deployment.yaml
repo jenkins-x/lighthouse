@@ -19,10 +19,24 @@ spec:
 {{ toYaml .Values.podAnnotations | indent 8 }}
 {{- end }}
     spec:
+      volumes:
+        - name: config-yaml
+          configMap:
+            name: config
+        - name: plugins-yaml
+          configMap:
+            name: plugins
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+          - /lighthouse
+        args:
+          - --config-file
+          - /config/config.yaml
+          - --plugin-file
+          - /config/plugins.yaml
         env:
           - name: "BOT_NAME"
             value: "{{ .Values.git.botName }}"
@@ -34,10 +48,19 @@ spec:
             value: "{{ .Values.git.token }}"
           - name: "HMAC_TOKEN"
             value: "{{ .Values.git.hmacToken }}"
+          - name: "JX_LOG_FORMAT"
+            value: "json"
 {{- range $pkey, $pval := .Values.env }}
         - name: {{ $pkey }}
           value: {{ quote $pval }}
 {{- end }}
+        volumeMounts:
+          - name: config-yaml
+            mountPath: /config/config.yaml
+            subPath: config.yaml
+          - name: plugins-yaml
+            mountPath: /config/plugins.yaml
+            subPath: plugins.yaml
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         livenessProbe:
