@@ -278,10 +278,10 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 		}
-		fakeProwJobClient := fake.NewSimpleClientset()
+		fakePlumberClient := fake.NewSimpleClientset()
 		c := Client{
 			GitHubClient:  g,
-			ProwJobClient: fakeProwJobClient.ProwV1().ProwJobs("namespace"),
+			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("namespace"),
 			Config:        &config.Config{},
 			Logger:        logrus.WithField("plugin", PluginName),
 		}
@@ -331,7 +331,7 @@ func TestHandlePullRequest(t *testing.T) {
 			t.Fatalf("Didn't expect error: %s", err)
 		}
 		var numStarted int
-		for _, action := range fakeProwJobClient.Actions() {
+		for _, action := range fakePlumberClient.Actions() {
 			switch action.(type) {
 			case clienttesting.CreateActionImpl:
 				numStarted++

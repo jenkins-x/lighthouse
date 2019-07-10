@@ -29,7 +29,7 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
+	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
 )
 
 const (
@@ -134,12 +134,12 @@ func (c *fakeClient) GetRef(org, repo, ref string) (string, error) {
 	return fakeBaseSHA, nil
 }
 
-func (c *fakeClient) Create(pj *builder.ProwJob) (*builder.ProwJob, error) {
+func (c *fakeClient) Create(pj *builder.PlumberJob) (*builder.PlumberJob, error) {
 	if s := pj.Status.State; s != builder.SuccessState {
 		return pj, fmt.Errorf("bad status state: %s", s)
 	}
 	if pj.Spec.Context == "fail-create" {
-		return pj, errors.New("injected CreateProwJob error")
+		return pj, errors.New("injected CreatePlumberJob error")
 	}
 	c.jobs.Insert(pj.Spec.Context)
 	return pj, nil

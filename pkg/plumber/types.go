@@ -1,4 +1,4 @@
-package builder
+package plumber
 
 import (
 	"encoding/json"
@@ -7,57 +7,59 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ProwJobType specifies how the job is triggered.
-type ProwJobType string
+// PlumberJobType specifies how the job is triggered.
+type PlumberJobType string
 
 // Various job types.
 const (
 	// PresubmitJob means it runs on unmerged PRs.
-	PresubmitJob ProwJobType = "presubmit"
+	PresubmitJob PlumberJobType = "presubmit"
 	// PostsubmitJob means it runs on each new commit.
-	PostsubmitJob ProwJobType = "postsubmit"
+	PostsubmitJob PlumberJobType = "postsubmit"
 	// Periodic job means it runs on a time-basis, unrelated to git changes.
-	PeriodicJob ProwJobType = "periodic"
+	PeriodicJob PlumberJobType = "periodic"
 	// BatchJob tests multiple unmerged PRs at the same time.
-	BatchJob ProwJobType = "batch"
+	BatchJob PlumberJobType = "batch"
 )
 
-// ProwJobState specifies whether the job is running
-type ProwJobState string
+// PlumberJobState specifies whether the job is running
+type PlumberJobState string
 
 // Various job states.
 const (
 	// TriggeredState means the job has been created but not yet scheduled.
-	TriggeredState ProwJobState = "triggered"
+	TriggeredState PlumberJobState = "triggered"
 	// PendingState means the job is scheduled but not yet running.
-	PendingState ProwJobState = "pending"
+	PendingState PlumberJobState = "pending"
 	// SuccessState means the job completed without error (exit 0)
-	SuccessState ProwJobState = "success"
+	SuccessState PlumberJobState = "success"
 	// FailureState means the job completed with errors (exit non-zero)
-	FailureState ProwJobState = "failure"
+	FailureState PlumberJobState = "failure"
 	// AbortedState means prow killed the job early (new commit pushed, perhaps).
-	AbortedState ProwJobState = "aborted"
+	AbortedState PlumberJobState = "aborted"
 	// ErrorState means the job could not schedule (bad config, perhaps).
-	ErrorState ProwJobState = "error"
+	ErrorState PlumberJobState = "error"
 )
 
-// ProwJob is used to request a pipeline to be created
+// PlumberJob is used to request a pipeline to be created
 // its the lighthouse equivalent of a ProwJob
 // though its not a CRD directly; but a set of parameters used to actually create the
 // Tekton Pipeline CRDs
-type ProwJob struct {
+//
+// By default we tend to turn Webhoks into tekton Pipeline CRDs
+type PlumberJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ProwJobSpec   `json:"spec,omitempty"`
-	Status ProwJobStatus `json:"status,omitempty"`
+	Spec   PlumberJobSpec   `json:"spec,omitempty"`
+	Status PlumberJobStatus `json:"status,omitempty"`
 }
 
-// ProwJobSpec the spec of a pipeline request
-type ProwJobSpec struct {
+// PlumberJobSpec the spec of a pipeline request
+type PlumberJobSpec struct {
 	// Type is the type of job and informs how
 	// the jobs is triggered
-	Type ProwJobType `json:"type,omitempty"`
+	Type PlumberJobType `json:"type,omitempty"`
 	// Cluster is which Kubernetes cluster is used
 	// to run the job, only applicable for that
 	// specific agent
@@ -84,7 +86,7 @@ type ProwJobSpec struct {
 	// MaxConcurrency restricts the total number of instances
 	// of this job that can run in parallel at once
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
-	// ErrorOnEviction indicates that the ProwJob should be completed and given
+	// ErrorOnEviction indicates that the PlumberJob should be completed and given
 	// the ErrorState status if the pod that is executing the job is evicted.
 	// If this field is unspecified or false, a new pod will be created to replace
 	// the evicted one.
@@ -92,8 +94,8 @@ type ProwJobSpec struct {
 
 	/*
 			// Agent determines which controller fulfills
-		// this specific ProwJobSpec and runs the job
-		Agent ProwJobAgent `json:"agent,omitempty"`
+		// this specific PlumberJobSpec and runs the job
+		Agent PlumberJobAgent `json:"agent,omitempty"`
 
 		// PodSpec provides the basis for running the test under
 		// a Kubernetes agent
@@ -197,17 +199,17 @@ func (d *DecorationConfig) Validate() error {
 	return nil
 }
 
-// ProwJobStatus provides runtime metadata, such as when it finished, whether it is running, etc.
-type ProwJobStatus struct {
-	StartTime      metav1.Time  `json:"startTime,omitempty"`
-	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
-	State          ProwJobState `json:"state,omitempty"`
-	Description    string       `json:"description,omitempty"`
-	URL            string       `json:"url,omitempty"`
+// PlumberJobStatus provides runtime metadata, such as when it finished, whether it is running, etc.
+type PlumberJobStatus struct {
+	StartTime      metav1.Time     `json:"startTime,omitempty"`
+	CompletionTime *metav1.Time    `json:"completionTime,omitempty"`
+	State          PlumberJobState `json:"state,omitempty"`
+	Description    string          `json:"description,omitempty"`
+	URL            string          `json:"url,omitempty"`
 
-	/*	// PodName applies only to ProwJobs fulfilled by
+	/*	// PodName applies only to PlumberJobs fulfilled by
 		// plank. This field should always be the same as
-		// the ProwJob.ObjectMeta.Name field.
+		// the PlumberJob.ObjectMeta.Name field.
 		PodName string `json:"pod_name,omitempty"`
 
 		// BuildID is the build identifier vended either by tot
@@ -218,15 +220,15 @@ type ProwJobStatus struct {
 		// by the snowflake library are not.
 		BuildID string `json:"build_id,omitempty"`
 
-		// JenkinsBuildID applies only to ProwJobs fulfilled
+		// JenkinsBuildID applies only to PlumberJobs fulfilled
 		// by the jenkins-operator. This field is the build
 		// identifier that Jenkins gave to the build for this
-		// ProwJob.
+		// PlumberJob.
 		JenkinsBuildID string `json:"jenkins_build_id,omitempty"`
 
-		// PrevReportStates stores the previous reported prowjob state per reporter
+		// PrevReportStates stores the previous reported plumberJob state per reporter
 		// So crier won't make duplicated report attempt
-		PrevReportStates map[string]ProwJobState `json:"prev_report_states,omitempty"`
+		PrevReportStates map[string]PlumberJobState `json:"prev_report_states,omitempty"`
 	*/
 }
 

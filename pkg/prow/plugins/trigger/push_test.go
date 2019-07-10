@@ -27,7 +27,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
+	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 )
@@ -137,11 +137,11 @@ func TestHandlePE(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		g := &fakegithub.FakeClient{}
-		fakeProwJobClient := fake.NewSimpleClientset()
+		fakePlumberClient := fake.NewSimpleClientset()
 		c := Client{
 			GitHubClient:  g,
-			ProwJobClient: fakeProwJobClient.ProwV1().ProwJobs("prowjobs"),
-			Config:        &config.Config{ProwConfig: config.ProwConfig{ProwJobNamespace: "prowjobs"}},
+			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("plumberJobs"),
+			Config:        &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}},
 			Logger:        logrus.WithField("plugin", PluginName),
 		}
 		postsubmits := map[string][]config.Postsubmit{
@@ -181,7 +181,7 @@ func TestHandlePE(t *testing.T) {
 			t.Errorf("test %q: handlePE returned unexpected error %v", tc.name, err)
 		}
 		var numStarted int
-		for _, action := range fakeProwJobClient.Fake.Actions() {
+		for _, action := range fakePlumberClient.Fake.Actions() {
 			switch action.(type) {
 			case clienttesting.CreateActionImpl:
 				numStarted++

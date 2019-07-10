@@ -29,7 +29,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/builder"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/org"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/sirupsen/logrus"
@@ -75,13 +75,13 @@ type ProwConfig struct {
 	// TODO: Move this out of the main config.
 	JenkinsOperators []JenkinsOperator `json:"jenkins_operators,omitempty"`
 
-	// ProwJobNamespace is the namespace in the cluster that prow
-	// components will use for looking up ProwJobs. The namespace
+	// PlumberJobNamespace is the namespace in the cluster that prow
+	// components will use for looking up PlumberJobs. The namespace
 	// needs to exist and will not be created by prow.
 	// Defaults to "default".
-	ProwJobNamespace string `json:"prowjob_namespace,omitempty"`
+	PlumberJobNamespace string `json:"plumberJob_namespace,omitempty"`
 	// PodNamespace is the namespace in the cluster that prow
-	// components will use for looking up Pods owned by ProwJobs.
+	// components will use for looking up Pods owned by PlumberJobs.
 	// The namespace needs to exist and will not be created by prow.
 	// Defaults to "default".
 	PodNamespace string `json:"pod_namespace,omitempty"`
@@ -138,14 +138,14 @@ type Controller struct {
 	// JobURLTemplateString compiles into JobURLTemplate at load time.
 	JobURLTemplateString string `json:"job_url_template,omitempty"`
 	// JobURLTemplate is compiled at load time from JobURLTemplateString. It
-	// will be passed a builder.ProwJob and is used to set the URL for the
+	// will be passed a builder.PlumberJob and is used to set the URL for the
 	// "Details" link on GitHub as well as the link from deck.
 	JobURLTemplate *template.Template `json:"-"`
 
 	// ReportTemplateString compiles into ReportTemplate at load time.
 	ReportTemplateString string `json:"report_template,omitempty"`
 	// ReportTemplate is compiled at load time from ReportTemplateString. It
-	// will be passed a builder.ProwJob and can provide an optional blurb below
+	// will be passed a builder.PlumberJob and can provide an optional blurb below
 	// the test failures comment.
 	ReportTemplate *template.Template `json:"-"`
 
@@ -171,7 +171,7 @@ type Plank struct {
 	// PodPendingTimeout is after how long the controller will perform a garbage
 	// collection on pending pods. Defaults to one day.
 	PodPendingTimeout time.Duration `json:"-"`
-	/*	// DefaultDecorationConfig are defaults for shared fields for ProwJobs
+	/*	// DefaultDecorationConfig are defaults for shared fields for PlumberJobs
 		// that request to have their PodSpecs decorated
 		DefaultDecorationConfig *builder.DecorationConfig `json:"default_decoration_config,omitempty"`
 	*/
@@ -213,11 +213,11 @@ type Sinker struct {
 	// ResyncPeriod is how often the controller will perform a garbage
 	// collection. Defaults to one hour.
 	ResyncPeriod time.Duration `json:"-"`
-	// MaxProwJobAgeString compiles into MaxProwJobAge at load time.
-	MaxProwJobAgeString string `json:"max_prowjob_age,omitempty"`
-	// MaxProwJobAge is how old a ProwJob can be before it is garbage-collected.
+	// MaxPlumberJobAgeString compiles into MaxPlumberJobAge at load time.
+	MaxPlumberJobAgeString string `json:"max_plumberJob_age,omitempty"`
+	// MaxPlumberJobAge is how old a PlumberJob can be before it is garbage-collected.
 	// Defaults to one week.
-	MaxProwJobAge time.Duration `json:"-"`
+	MaxPlumberJobAge time.Duration `json:"-"`
 	// MaxPodAgeString compiles into MaxPodAge at load time.
 	MaxPodAgeString string `json:"max_pod_age,omitempty"`
 	// MaxPodAge is how old a Pod can be before it is garbage-collected.
@@ -273,8 +273,8 @@ type ExternalAgentLog struct {
 	// URLTemplateString compiles into URLTemplate at load time.
 	URLTemplateString string `json:"url_template,omitempty"`
 	// URLTemplate is compiled at load time from URLTemplateString. It
-	// will be passed a builder.ProwJob and the generated URL should provide
-	// logs for the ProwJob.
+	// will be passed a builder.PlumberJob and the generated URL should provide
+	// logs for the PlumberJob.
 	URLTemplate *template.Template `json:"-"`
 }
 
@@ -613,7 +613,7 @@ func (c *Config) validateComponentConfig() error {
 
 var jobNameRegex = regexp.MustCompile(`^[A-Za-z0-9-._]+$`)
 
-func validateJobBase(v JobBase, jobType builder.ProwJobType, podNamespace string) error {
+func validateJobBase(v JobBase, jobType plumber.PlumberJobType, podNamespace string) error {
 	if !jobNameRegex.MatchString(v.Name) {
 		return fmt.Errorf("name: must match regex %q", jobNameRegex.String())
 	}
@@ -659,7 +659,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, v := range c.AllPresubmits(nil) {
-		if err := validateJobBase(v.JobBase, builder.PresubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(v.JobBase, plumber.PresubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid presubmit job %s: %v", v.Name, err)
 		}
 		if err := validateTriggering(v); err != nil {
@@ -683,7 +683,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, j := range c.AllPostsubmits(nil) {
-		if err := validateJobBase(j.JobBase, builder.PostsubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(j.JobBase, plumber.PostsubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid postsubmit job %s: %v", j.Name, err)
 		}
 	}
@@ -696,7 +696,7 @@ func (c *Config) validateJobConfig() error {
 			return fmt.Errorf("duplicated periodic job : %s", p.Name)
 		}
 		validPeriodics.Insert(p.Name)
-		if err := validateJobBase(p.JobBase, builder.PeriodicJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(p.JobBase, plumber.PeriodicJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid periodic job %s: %v", p.Name, err)
 		}
 	}
@@ -846,14 +846,14 @@ func parseProwConfig(c *Config) error {
 		c.Sinker.ResyncPeriod = resyncPeriod
 	}
 
-	if c.Sinker.MaxProwJobAgeString == "" {
-		c.Sinker.MaxProwJobAge = 7 * 24 * time.Hour
+	if c.Sinker.MaxPlumberJobAgeString == "" {
+		c.Sinker.MaxPlumberJobAge = 7 * 24 * time.Hour
 	} else {
-		maxProwJobAge, err := time.ParseDuration(c.Sinker.MaxProwJobAgeString)
+		maxPlumberJobAge, err := time.ParseDuration(c.Sinker.MaxPlumberJobAgeString)
 		if err != nil {
-			return fmt.Errorf("cannot parse duration for max_prowjob_age: %v", err)
+			return fmt.Errorf("cannot parse duration for max_plumberJob_age: %v", err)
 		}
-		c.Sinker.MaxProwJobAge = maxProwJobAge
+		c.Sinker.MaxPlumberJobAge = maxPlumberJobAge
 	}
 
 	if c.Sinker.MaxPodAgeString == "" {
@@ -906,8 +906,8 @@ func parseProwConfig(c *Config) error {
 		}
 	}
 
-	if c.ProwJobNamespace == "" {
-		c.ProwJobNamespace = "default"
+	if c.PlumberJobNamespace == "" {
+		c.PlumberJobNamespace = "default"
 	}
 	if c.PodNamespace == "" {
 		c.PodNamespace = "default"
@@ -1006,7 +1006,7 @@ func validateAgent(v JobBase, podNamespace string) error {
 	return nil
 }
 
-func validateDecoration(container v1.Container, config *builder.DecorationConfig) error {
+func validateDecoration(container v1.Container, config *plumber.DecorationConfig) error {
 	if config == nil {
 		return nil
 	}
@@ -1032,7 +1032,7 @@ func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, pre
 	return nil
 }
 
-func validatePodSpec(jobType builder.ProwJobType, spec *v1.PodSpec) error {
+func validatePodSpec(jobType plumber.PlumberJobType, spec *v1.PodSpec) error {
 	if spec == nil {
 		return nil
 	}

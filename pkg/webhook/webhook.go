@@ -18,8 +18,8 @@ import (
 	"github.com/jenkins-x/jx/pkg/cmd/clients"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/pkg/util"
-	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
@@ -222,14 +222,14 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Push handler")
 
-		plumber, err := builder.NewBuilder(pushHook.Repository(), o.createCommonOptions(o.namespace))
+		plumberClient, err := plumber.NewPlumber(pushHook.Repository(), o.createCommonOptions(o.namespace))
 		if err != nil {
 			l.Errorf("failed to create Plumber webhook: %s", err.Error())
 
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create Plumber: %s", err.Error()))
 			return
 		}
-		server.ClientAgent.ProwJobClient = plumber
+		server.ClientAgent.PlumberClient = plumberClient
 
 		server.HandlePushEvent(l, pushHook)
 		return
@@ -445,12 +445,12 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 		} else {
 			githubClient = github.NewClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
 			if o.cluster == "" {
-				kubeClient, err = kube.NewClientInCluster(configAgent.Config().ProwJobNamespace)
+				kubeClient, err = kube.NewClientInCluster(configAgent.Config().PlumberJobNamespace)
 				if err != nil {
 					logrus.WithError(err).Fatal("Error getting kube client.")
 				}
 			} else {
-				kubeClient, err = kube.NewClientFromFile(o.cluster, configAgent.Config().ProwJobNamespace)
+				kubeClient, err = kube.NewClientFromFile(o.cluster, configAgent.Config().PlumberJobNamespace)
 				if err != nil {
 					logrus.WithError(err).Fatal("Error getting kube client.")
 				}

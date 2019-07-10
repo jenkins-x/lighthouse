@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
+	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
 	"k8s.io/test-infra/prow/config"
 	"k8s.io/test-infra/prow/github"
 	"k8s.io/test-infra/prow/kube"
@@ -40,7 +40,7 @@ func TestPostsubmitSpec(t *testing.T) {
 		name     string
 		p        config.Postsubmit
 		refs     builder.Refs
-		expected builder.ProwJobSpec
+		expected builder.PlumberJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -52,7 +52,7 @@ func TestPostsubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.PostsubmitJob,
 				Refs: &builder.Refs{
 					PathAlias: "foo",
@@ -67,7 +67,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.PostsubmitJob,
 				Refs: &builder.Refs{
 					PathAlias: "fancy",
@@ -90,7 +90,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.PostsubmitJob,
 				Refs: &builder.Refs{
 					PathAlias: "foo",
@@ -114,7 +114,7 @@ func TestPresubmitSpec(t *testing.T) {
 		name     string
 		p        config.Presubmit
 		refs     builder.Refs
-		expected builder.ProwJobSpec
+		expected builder.PlumberJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -126,7 +126,7 @@ func TestPresubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.PresubmitJob,
 				Refs: &builder.Refs{
 					PathAlias: "foo",
@@ -141,7 +141,7 @@ func TestPresubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.PresubmitJob,
 				Refs: &builder.Refs{
 					PathAlias: "fancy",
@@ -164,7 +164,7 @@ func TestPresubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.PresubmitJob,
 				Refs: &builder.Refs{
 					PathAlias: "foo",
@@ -188,7 +188,7 @@ func TestBatchSpec(t *testing.T) {
 		name     string
 		p        config.Presubmit
 		refs     builder.Refs
-		expected builder.ProwJobSpec
+		expected builder.PlumberJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -200,7 +200,7 @@ func TestBatchSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.BatchJob,
 				Refs: &builder.Refs{
 					PathAlias: "foo",
@@ -214,7 +214,7 @@ func TestBatchSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.BatchJob,
 				Refs: &builder.Refs{
 					PathAlias: "fancy",
@@ -236,7 +236,7 @@ func TestBatchSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: builder.ProwJobSpec{
+			expected: builder.PlumberJobSpec{
 				Type: builder.BatchJob,
 				Refs: &builder.Refs{
 					PathAlias: "foo",
@@ -256,18 +256,18 @@ func TestBatchSpec(t *testing.T) {
 
 func TestPartitionActive(t *testing.T) {
 	tests := []struct {
-		pjs []builder.ProwJob
+		pjs []builder.PlumberJob
 
 		pending   map[string]struct{}
 		triggered map[string]struct{}
 	}{
 		{
-			pjs: []builder.ProwJob{
+			pjs: []builder.PlumberJob{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "foo",
 					},
-					Status: builder.ProwJobStatus{
+					Status: builder.PlumberJobStatus{
 						State: builder.TriggeredState,
 					},
 				},
@@ -275,7 +275,7 @@ func TestPartitionActive(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bar",
 					},
-					Status: builder.ProwJobStatus{
+					Status: builder.PlumberJobStatus{
 						State: builder.PendingState,
 					},
 				},
@@ -283,7 +283,7 @@ func TestPartitionActive(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "baz",
 					},
-					Status: builder.ProwJobStatus{
+					Status: builder.PlumberJobStatus{
 						State: builder.SuccessState,
 					},
 				},
@@ -291,7 +291,7 @@ func TestPartitionActive(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "error",
 					},
-					Status: builder.ProwJobStatus{
+					Status: builder.PlumberJobStatus{
 						State: builder.ErrorState,
 					},
 				},
@@ -299,7 +299,7 @@ func TestPartitionActive(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "bak",
 					},
-					Status: builder.ProwJobStatus{
+					Status: builder.PlumberJobStatus{
 						State: builder.PendingState,
 					},
 				},
@@ -329,22 +329,22 @@ func TestPartitionActive(t *testing.T) {
 	}
 }
 
-func TestGetLatestProwJobs(t *testing.T) {
+func TestGetLatestPlumberJobs(t *testing.T) {
 	tests := []struct {
 		name string
 
-		pjs     []builder.ProwJob
+		pjs     []builder.PlumberJob
 		jobType string
 
 		expected map[string]struct{}
 	}{
 		{
-			pjs: []builder.ProwJob{
+			pjs: []builder.PlumberJob{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "831c7df0-baa4-11e7-a1a4-0a58ac10134a",
 					},
-					Spec: builder.ProwJobSpec{
+					Spec: builder.PlumberJobSpec{
 						Type:  builder.PresubmitJob,
 						Agent: builder.JenkinsAgent,
 						Job:   "test_pull_request_origin_extended_networking_minimal",
@@ -365,7 +365,7 @@ func TestGetLatestProwJobs(t *testing.T) {
 						Context:      "ci/openshift-jenkins/extended_networking_minimal",
 						RerunCommand: "/test extended_networking_minimal",
 					},
-					Status: builder.ProwJobStatus{
+					Status: builder.PlumberJobStatus{
 						StartTime:   metav1.Date(2017, time.October, 26, 23, 22, 19, 0, time.UTC),
 						State:       builder.FailureState,
 						Description: "Jenkins job failed.",
@@ -378,7 +378,7 @@ func TestGetLatestProwJobs(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "0079d4d3-ba25-11e7-ae3f-0a58ac10123b",
 					},
-					Spec: builder.ProwJobSpec{
+					Spec: builder.PlumberJobSpec{
 						Type:  builder.PresubmitJob,
 						Agent: builder.JenkinsAgent,
 						Job:   "test_pull_request_origin_extended_networking_minimal",
@@ -399,7 +399,7 @@ func TestGetLatestProwJobs(t *testing.T) {
 						Context:      "ci/openshift-jenkins/extended_networking_minimal",
 						RerunCommand: "/test extended_networking_minimal",
 					},
-					Status: builder.ProwJobStatus{
+					Status: builder.PlumberJobStatus{
 						StartTime:   metav1.Date(2017, time.October, 26, 22, 22, 19, 0, time.UTC),
 						State:       builder.FailureState,
 						Description: "Jenkins job failed.",
@@ -415,7 +415,7 @@ func TestGetLatestProwJobs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		got := GetLatestProwJobs(test.pjs, builder.ProwJobType(test.jobType))
+		got := GetLatestPlumberJobs(test.pjs, builder.PlumberJobType(test.jobType))
 		if len(got) != len(test.expected) {
 			t.Errorf("expected jobs:\n%+v\ngot jobs:\n%+v", test.expected, got)
 			continue
@@ -428,10 +428,10 @@ func TestGetLatestProwJobs(t *testing.T) {
 	}
 }
 
-func TestNewProwJob(t *testing.T) {
+func TestNewPlumberJob(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                builder.ProwJobSpec
+		spec                builder.PlumberJobSpec
 		labels              map[string]string
 		expectedLabels      map[string]string
 		annotations         map[string]string
@@ -439,23 +439,23 @@ func TestNewProwJob(t *testing.T) {
 	}{
 		{
 			name: "periodic job, no extra labels",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job",
 				Type: builder.PeriodicJob,
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:     "true",
-				kube.ProwJobAnnotation: "job",
-				kube.ProwJobTypeLabel:  "periodic",
+				kube.CreatedByProw:           "true",
+				plumber.PlumberJobAnnotation: "job",
+				plumber.PlumberJobTypeLabel:  "periodic",
 			},
 			expectedAnnotations: map[string]string{
-				kube.ProwJobAnnotation: "job",
+				plumber.PlumberJobAnnotation: "job",
 			},
 		},
 		{
 			name: "periodic job, extra labels",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job",
 				Type: builder.PeriodicJob,
 			},
@@ -463,18 +463,18 @@ func TestNewProwJob(t *testing.T) {
 				"extra": "stuff",
 			},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:     "true",
-				kube.ProwJobAnnotation: "job",
-				kube.ProwJobTypeLabel:  "periodic",
-				"extra":                "stuff",
+				kube.CreatedByProw:           "true",
+				plumber.PlumberJobAnnotation: "job",
+				plumber.PlumberJobTypeLabel:  "periodic",
+				"extra":                      "stuff",
 			},
 			expectedAnnotations: map[string]string{
-				kube.ProwJobAnnotation: "job",
+				plumber.PlumberJobAnnotation: "job",
 			},
 		},
 		{
 			name: "presubmit job",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job",
 				Type: builder.PresubmitJob,
 				Refs: &builder.Refs{
@@ -487,20 +487,20 @@ func TestNewProwJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:     "true",
-				kube.ProwJobAnnotation: "job",
-				kube.ProwJobTypeLabel:  "presubmit",
-				kube.OrgLabel:          "org",
-				kube.RepoLabel:         "repo",
-				kube.PullLabel:         "1",
+				kube.CreatedByProw:           "true",
+				plumber.PlumberJobAnnotation: "job",
+				plumber.PlumberJobTypeLabel:  "presubmit",
+				kube.OrgLabel:                "org",
+				kube.RepoLabel:               "repo",
+				kube.PullLabel:               "1",
 			},
 			expectedAnnotations: map[string]string{
-				kube.ProwJobAnnotation: "job",
+				plumber.PlumberJobAnnotation: "job",
 			},
 		},
 		{
 			name: "non-github presubmit job",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job",
 				Type: builder.PresubmitJob,
 				Refs: &builder.Refs{
@@ -513,19 +513,19 @@ func TestNewProwJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:     "true",
-				kube.ProwJobAnnotation: "job",
-				kube.ProwJobTypeLabel:  "presubmit",
-				kube.OrgLabel:          "some-gerrit-instance.foo.com",
-				kube.RepoLabel:         "repo",
-				kube.PullLabel:         "1",
+				kube.CreatedByProw:           "true",
+				plumber.PlumberJobAnnotation: "job",
+				plumber.PlumberJobTypeLabel:  "presubmit",
+				kube.OrgLabel:                "some-gerrit-instance.foo.com",
+				kube.RepoLabel:               "repo",
+				kube.PullLabel:               "1",
 			},
 			expectedAnnotations: map[string]string{
-				kube.ProwJobAnnotation: "job",
+				plumber.PlumberJobAnnotation: "job",
 			},
 		}, {
 			name: "job with name too long to fit in a label",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
 				Type: builder.PresubmitJob,
 				Refs: &builder.Refs{
@@ -538,20 +538,20 @@ func TestNewProwJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:     "true",
-				kube.ProwJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
-				kube.ProwJobTypeLabel:  "presubmit",
-				kube.OrgLabel:          "org",
-				kube.RepoLabel:         "repo",
-				kube.PullLabel:         "1",
+				kube.CreatedByProw:           "true",
+				plumber.PlumberJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
+				plumber.PlumberJobTypeLabel:  "presubmit",
+				kube.OrgLabel:                "org",
+				kube.RepoLabel:               "repo",
+				kube.PullLabel:               "1",
 			},
 			expectedAnnotations: map[string]string{
-				kube.ProwJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
+				plumber.PlumberJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
 			},
 		},
 		{
 			name: "periodic job, extra labels, extra annotations",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job",
 				Type: builder.PeriodicJob,
 			},
@@ -562,52 +562,52 @@ func TestNewProwJob(t *testing.T) {
 				"extraannotation": "foo",
 			},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:     "true",
-				kube.ProwJobAnnotation: "job",
-				kube.ProwJobTypeLabel:  "periodic",
-				"extra":                "stuff",
+				kube.CreatedByProw:           "true",
+				plumber.PlumberJobAnnotation: "job",
+				plumber.PlumberJobTypeLabel:  "periodic",
+				"extra":                      "stuff",
 			},
 			expectedAnnotations: map[string]string{
-				kube.ProwJobAnnotation: "job",
-				"extraannotation":      "foo",
+				plumber.PlumberJobAnnotation: "job",
+				"extraannotation":            "foo",
 			},
 		},
 	}
 	for _, testCase := range testCases {
-		pj := NewProwJob(testCase.spec, testCase.labels, testCase.annotations)
+		pj := NewPlumberJob(testCase.spec, testCase.labels, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect ProwJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Labels, testCase.expectedLabels; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect ProwJob labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberJob labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect ProwJob annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberJob annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 	}
 }
 
-func TestNewProwJobWithAnnotations(t *testing.T) {
+func TestNewPlumberJobWithAnnotations(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                builder.ProwJobSpec
+		spec                builder.PlumberJobSpec
 		annotations         map[string]string
 		expectedAnnotations map[string]string
 	}{
 		{
 			name: "job without annotation",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job",
 				Type: builder.PeriodicJob,
 			},
 			annotations: nil,
 			expectedAnnotations: map[string]string{
-				kube.ProwJobAnnotation: "job",
+				plumber.PlumberJobAnnotation: "job",
 			},
 		},
 		{
 			name: "job with annotation",
-			spec: builder.ProwJobSpec{
+			spec: builder.PlumberJobSpec{
 				Job:  "job",
 				Type: builder.PeriodicJob,
 			},
@@ -615,19 +615,19 @@ func TestNewProwJobWithAnnotations(t *testing.T) {
 				"annotation": "foo",
 			},
 			expectedAnnotations: map[string]string{
-				"annotation":           "foo",
-				kube.ProwJobAnnotation: "job",
+				"annotation":                 "foo",
+				plumber.PlumberJobAnnotation: "job",
 			},
 		},
 	}
 
 	for _, testCase := range testCases {
-		pj := NewProwJob(testCase.spec, nil, testCase.annotations)
+		pj := NewPlumberJob(testCase.spec, nil, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect ProwJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect ProwJob labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberJob labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 	}
 }
@@ -636,7 +636,7 @@ func TestJobURL(t *testing.T) {
 	var testCases = []struct {
 		name     string
 		plank    config.Plank
-		pj       builder.ProwJob
+		pj       builder.PlumberJob
 		expected string
 	}{
 		{
@@ -646,7 +646,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       builder.ProwJob{Spec: builder.ProwJobSpec{Type: builder.PeriodicJob}},
+			pj:       builder.PlumberJob{Spec: builder.PlumberJobSpec{Type: builder.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -656,7 +656,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Garbage}}")),
 				},
 			},
-			pj:       builder.ProwJob{},
+			pj:       builder.PlumberJob{},
 			expected: "",
 		},
 		{
@@ -666,7 +666,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       builder.ProwJob{Spec: builder.ProwJobSpec{Type: builder.PeriodicJob}},
+			pj:       builder.PlumberJob{Spec: builder.PlumberJobSpec{Type: builder.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -674,7 +674,7 @@ func TestJobURL(t *testing.T) {
 			plank: config.Plank{
 				JobURLPrefixConfig: map[string]string{"*": "https://gubernator.com/build"},
 			},
-			pj: builder.ProwJob{Spec: builder.ProwJobSpec{
+			pj: builder.PlumberJob{Spec: builder.PlumberJobSpec{
 				Type: builder.PresubmitJob,
 				Refs: &builder.Refs{
 					Org:   "org",
@@ -749,7 +749,7 @@ func TestSpecFromJobBase(t *testing.T) {
 	testCases := []struct {
 		name    string
 		jobBase config.JobBase
-		verify  func(builder.ProwJobSpec) error
+		verify  func(builder.PlumberJobSpec) error
 	}{
 		{
 			name: "Verify reporter config gets copied",
@@ -760,7 +760,7 @@ func TestSpecFromJobBase(t *testing.T) {
 					},
 				},
 			},
-			verify: func(pj builder.ProwJobSpec) error {
+			verify: func(pj builder.PlumberJobSpec) error {
 				if pj.ReporterConfig == nil {
 					return errors.New("Expected ReporterConfig to be non-nil")
 				}

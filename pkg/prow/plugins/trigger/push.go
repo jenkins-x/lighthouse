@@ -18,7 +18,7 @@ package trigger
 
 import (
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/builder"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
@@ -46,9 +46,9 @@ func listPushEventChanges(pe scm.PushHook) config.ChangedFilesProvider {
 	}
 }
 
-func createRefs(pe scm.PushHook) builder.Refs {
+func createRefs(pe scm.PushHook) plumber.Refs {
 	branch := github.PushHookBranch(&pe)
-	return builder.Refs{
+	return plumber.Refs{
 		Org:      pe.Repo.Namespace,
 		Repo:     pe.Repo.Name,
 		BaseRef:  branch,
@@ -75,9 +75,9 @@ func handlePE(c Client, pe scm.PushHook) error {
 			labels[k] = v
 		}
 		labels[github.EventGUID] = pe.GUID
-		pj := pjutil.NewProwJob(pjutil.PostsubmitSpec(j, refs), labels, j.Annotations)
-		c.Logger.WithFields(pjutil.ProwJobFields(&pj)).Info("Creating a new prowjob.")
-		if _, err := c.ProwJobClient.Create(&pj); err != nil {
+		pj := pjutil.NewPlumberJob(pjutil.PostsubmitSpec(j, refs), labels, j.Annotations)
+		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
+		if _, err := c.PlumberClient.Create(&pj); err != nil {
 			return err
 		}
 	}

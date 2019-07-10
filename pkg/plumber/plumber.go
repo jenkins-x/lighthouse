@@ -1,4 +1,4 @@
-package builder
+package plumber
 
 import (
 	"fmt"
@@ -18,8 +18,8 @@ type PipelineBuilder struct {
 	commonOptions *opts.CommonOptions
 }
 
-// NewBuilder creates a new builder
-func NewBuilder(repository scm.Repository, commonOptions *opts.CommonOptions) (Builder, error) {
+// NewPlumber creates a new builder
+func NewPlumber(repository scm.Repository, commonOptions *opts.CommonOptions) (Plumber, error) {
 	b := &PipelineBuilder{
 		repository:    repository,
 		commonOptions: commonOptions,
@@ -28,7 +28,7 @@ func NewBuilder(repository scm.Repository, commonOptions *opts.CommonOptions) (B
 }
 
 // Create creates a pipeline
-func (b *PipelineBuilder) Create(request *ProwJob) (*ProwJob, error) {
+func (b *PipelineBuilder) Create(request *PlumberJob) (*PlumberJob, error) {
 	spec := &request.Spec
 
 	pipelineKind := "release"
@@ -93,7 +93,7 @@ func (b *PipelineBuilder) Create(request *ProwJob) (*ProwJob, error) {
 	return request, nil
 }
 
-func (o *PipelineBuilder) getBranch(spec *ProwJobSpec) string {
+func (o *PipelineBuilder) getBranch(spec *PlumberJobSpec) string {
 	branch := spec.Refs.BaseRef
 	if spec.Type == PostsubmitJob {
 		return branch
@@ -107,7 +107,7 @@ func (o *PipelineBuilder) getBranch(spec *ProwJobSpec) string {
 	return branch
 }
 
-func (o *PipelineBuilder) getPullRefs(spec *ProwJobSpec) *prow.PullRefs {
+func (o *PipelineBuilder) getPullRefs(spec *PlumberJobSpec) *prow.PullRefs {
 	toMerge := make(map[string]string)
 	for _, pull := range spec.Refs.Pulls {
 		toMerge[strconv.Itoa(pull.Number)] = pull.SHA

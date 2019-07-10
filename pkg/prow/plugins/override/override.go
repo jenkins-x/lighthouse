@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/builder"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -50,20 +50,20 @@ type githubClient interface {
 	ListStatuses(org, repo, ref string) ([]*scm.Status, error)
 }
 
-type prowJobClient interface {
-	Create(pj *builder.ProwJob) (*builder.ProwJob, error)
+type plumberClient interface {
+	Create(pj *plumber.PlumberJob) (*plumber.PlumberJob, error)
 }
 
 type overrideClient interface {
 	githubClient
-	prowJobClient
+	plumberClient
 	presubmitForContext(org, repo, context string) *config.Presubmit
 }
 
 type client struct {
 	gc            githubClient
 	jc            config.JobConfig
-	prowJobClient prowJobClient
+	plumberClient plumberClient
 }
 
 func (c client) CreateComment(owner, repo string, number int, comment string) error {
@@ -87,8 +87,8 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.gc.HasPermission(org, repo, user, role...)
 }
 
-func (c client) Create(pj *builder.ProwJob) (*builder.ProwJob, error) {
-	return c.prowJobClient.Create(pj)
+func (c client) Create(pj *plumber.PlumberJob) (*plumber.PlumberJob, error) {
+	return c.plumberClient.Create(pj)
 }
 
 func (c client) presubmitForContext(org, repo, context string) *config.Presubmit {
@@ -122,7 +122,7 @@ func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error 
 	c := client{
 		gc:            pc.GitHubClient,
 		jc:            pc.Config.JobConfig,
-		prowJobClient: pc.ProwJobClient,
+		plumberClient: pc.PlumberClient,
 	}
 	return handle(c, pc.Logger, &e)
 }
@@ -239,14 +239,14 @@ Only the following contexts were expected:
 
 			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
 			now := metav1.Now()
-			pj.Status = builder.ProwJobStatus{
+			pj.Status = plumber.PlumberJobStatus{
 				StartTime:      now,
 				CompletionTime: &now,
-				State:          builder.SuccessState,
+				State:          plumber.SuccessState,
 				Description:    description(user),
 				URL:            e.Link,
 			}
-			log.WithFields(pjutil.ProwJobFields(&pj)).Info("Creating a new prowjob.")
+			log.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
 			if _, err := oc.Create(&pj); err != nil {
 				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
 				log.WithError(err).Warn(resp)

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package pjutil contains helpers for working with ProwJobs.
+// Package pjutil contains helpers for working with PlumberJobs.
 package pjutil
 
 import (
@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/builder"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,15 +35,15 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 )
 
-// NewProwJob initializes a ProwJob out of a ProwJobSpec.
-func NewProwJob(spec builder.ProwJobSpec, extraLabels, extraAnnotations map[string]string) builder.ProwJob {
+// NewPlumberJob initializes a PlumberJob out of a PlumberJobSpec.
+func NewPlumberJob(spec plumber.PlumberJobSpec, extraLabels, extraAnnotations map[string]string) plumber.PlumberJob {
 	labels, annotations := LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
 	newID, _ := uuid.NewV1()
 
-	return builder.ProwJob{
+	return plumber.PlumberJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "prow.k8s.io/v1",
-			Kind:       "ProwJob",
+			Kind:       "PlumberJob",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        newID.String(),
@@ -51,18 +51,18 @@ func NewProwJob(spec builder.ProwJobSpec, extraLabels, extraAnnotations map[stri
 			Annotations: annotations,
 		},
 		Spec: spec,
-		Status: builder.ProwJobStatus{
+		Status: plumber.PlumberJobStatus{
 			StartTime: metav1.Now(),
-			State:     builder.TriggeredState,
+			State:     plumber.TriggeredState,
 		},
 	}
 }
 
-func createRefs(pr *scm.PullRequest, baseSHA string) builder.Refs {
+func createRefs(pr *scm.PullRequest, baseSHA string) plumber.Refs {
 	org := pr.Base.Repo.Namespace
 	repo := pr.Base.Repo.Name
 	number := pr.Number
-	return builder.Refs{
+	return plumber.Refs{
 		Org:  org,
 		Repo: repo,
 		// TODO
@@ -72,7 +72,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string) builder.Refs {
 		*/
 		BaseRef: pr.Base.Ref,
 		BaseSHA: baseSHA,
-		Pulls: []builder.Pull{
+		Pulls: []plumber.Pull{
 			{
 				Number: number,
 				Author: pr.Author.Login,
@@ -88,10 +88,10 @@ func createRefs(pr *scm.PullRequest, baseSHA string) builder.Refs {
 	}
 }
 
-// NewPresubmit converts a config.Presubmit into a builder.ProwJob.
+// NewPresubmit converts a config.Presubmit into a builder.PlumberJob.
 // The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a github.EventGUID label.
-func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) builder.ProwJob {
+func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) plumber.PlumberJob {
 	refs := createRefs(pr, baseSHA)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
@@ -102,13 +102,13 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eve
 		annotations[k] = v
 	}
 	labels[github.EventGUID] = eventGUID
-	return NewProwJob(PresubmitSpec(job, refs), labels, annotations)
+	return NewPlumberJob(PresubmitSpec(job, refs), labels, annotations)
 }
 
-// PresubmitSpec initializes a ProwJobSpec for a given presubmit job.
-func PresubmitSpec(p config.Presubmit, refs builder.Refs) builder.ProwJobSpec {
+// PresubmitSpec initializes a PlumberJobSpec for a given presubmit job.
+func PresubmitSpec(p config.Presubmit, refs plumber.Refs) plumber.PlumberJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = builder.PresubmitJob
+	pjs.Type = plumber.PresubmitJob
 	pjs.Context = p.Context
 	pjs.Report = !p.SkipReport
 	pjs.RerunCommand = p.RerunCommand
@@ -117,10 +117,10 @@ func PresubmitSpec(p config.Presubmit, refs builder.Refs) builder.ProwJobSpec {
 	return pjs
 }
 
-// PostsubmitSpec initializes a ProwJobSpec for a given postsubmit job.
-func PostsubmitSpec(p config.Postsubmit, refs builder.Refs) builder.ProwJobSpec {
+// PostsubmitSpec initializes a PlumberJobSpec for a given postsubmit job.
+func PostsubmitSpec(p config.Postsubmit, refs plumber.Refs) plumber.PlumberJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = builder.PostsubmitJob
+	pjs.Type = plumber.PostsubmitJob
 	pjs.Context = p.Context
 	pjs.Report = !p.SkipReport
 	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
@@ -128,30 +128,30 @@ func PostsubmitSpec(p config.Postsubmit, refs builder.Refs) builder.ProwJobSpec 
 	return pjs
 }
 
-// PeriodicSpec initializes a ProwJobSpec for a given periodic job.
-func PeriodicSpec(p config.Periodic) builder.ProwJobSpec {
+// PeriodicSpec initializes a PlumberJobSpec for a given periodic job.
+func PeriodicSpec(p config.Periodic) plumber.PlumberJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = builder.PeriodicJob
+	pjs.Type = plumber.PeriodicJob
 
 	return pjs
 }
 
-// BatchSpec initializes a ProwJobSpec for a given batch job and ref spec.
-func BatchSpec(p config.Presubmit, refs builder.Refs) builder.ProwJobSpec {
+// BatchSpec initializes a PlumberJobSpec for a given batch job and ref spec.
+func BatchSpec(p config.Presubmit, refs plumber.Refs) plumber.PlumberJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = builder.BatchJob
+	pjs.Type = plumber.BatchJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
 
 	return pjs
 }
 
-func specFromJobBase(jb config.JobBase) builder.ProwJobSpec {
+func specFromJobBase(jb config.JobBase) plumber.PlumberJobSpec {
 	var namespace string
 	if jb.Namespace != nil {
 		namespace = *jb.Namespace
 	}
-	return builder.ProwJobSpec{
+	return plumber.PlumberJobSpec{
 		Job:              jb.Name,
 		Cluster:          jb.Cluster,
 		Namespace:        namespace,
@@ -167,7 +167,7 @@ func specFromJobBase(jb config.JobBase) builder.ProwJobSpec {
 	}
 }
 
-func completePrimaryRefs(refs builder.Refs, jb config.JobBase) *builder.Refs {
+func completePrimaryRefs(refs plumber.Refs, jb config.JobBase) *plumber.Refs {
 	if jb.PathAlias != "" {
 		refs.PathAlias = jb.PathAlias
 	}
@@ -180,31 +180,31 @@ func completePrimaryRefs(refs builder.Refs, jb config.JobBase) *builder.Refs {
 	return &refs
 }
 
-// PartitionActive separates the provided prowjobs into pending and triggered
+// PartitionActive separates the provided plumberJobs into pending and triggered
 // and returns them inside channels so that they can be consumed in parallel
-// by different goroutines. Complete prowjobs are filtered out. Controller
+// by different goroutines. Complete plumberJobs are filtered out. Controller
 // loops need to handle pending jobs first so they can conform to maximum
 // concurrency requirements that different jobs may have.
-func PartitionActive(pjs []builder.ProwJob) (pending, triggered chan builder.ProwJob) {
+func PartitionActive(pjs []plumber.PlumberJob) (pending, triggered chan plumber.PlumberJob) {
 	// Size channels correctly.
 	pendingCount, triggeredCount := 0, 0
 	for _, pj := range pjs {
 		switch pj.Status.State {
-		case builder.PendingState:
+		case plumber.PendingState:
 			pendingCount++
-		case builder.TriggeredState:
+		case plumber.TriggeredState:
 			triggeredCount++
 		}
 	}
-	pending = make(chan builder.ProwJob, pendingCount)
-	triggered = make(chan builder.ProwJob, triggeredCount)
+	pending = make(chan plumber.PlumberJob, pendingCount)
+	triggered = make(chan plumber.PlumberJob, triggeredCount)
 
 	// Partition the jobs into the two separate channels.
 	for _, pj := range pjs {
 		switch pj.Status.State {
-		case builder.PendingState:
+		case plumber.PendingState:
 			pending <- pj
-		case builder.TriggeredState:
+		case plumber.TriggeredState:
 			triggered <- pj
 		}
 	}
@@ -213,10 +213,10 @@ func PartitionActive(pjs []builder.ProwJob) (pending, triggered chan builder.Pro
 	return pending, triggered
 }
 
-// GetLatestProwJobs filters through the provided prowjobs and returns
-// a map of jobType jobs to their latest prowjobs.
-func GetLatestProwJobs(pjs []builder.ProwJob, jobType builder.ProwJobType) map[string]builder.ProwJob {
-	latestJobs := make(map[string]builder.ProwJob)
+// GetLatestPlumberJobs filters through the provided plumberJobs and returns
+// a map of jobType jobs to their latest plumberJobs.
+func GetLatestPlumberJobs(pjs []plumber.PlumberJob, jobType plumber.PlumberJobType) map[string]plumber.PlumberJob {
+	latestJobs := make(map[string]plumber.PlumberJob)
 	for _, j := range pjs {
 		if j.Spec.Type != jobType {
 			continue
@@ -229,8 +229,8 @@ func GetLatestProwJobs(pjs []builder.ProwJob, jobType builder.ProwJobType) map[s
 	return latestJobs
 }
 
-// ProwJobFields extracts logrus fields from a prowjob useful for logging.
-func ProwJobFields(pj *builder.ProwJob) logrus.Fields {
+// PlumberJobFields extracts logrus fields from a plumberJob useful for logging.
+func PlumberJobFields(pj *plumber.PlumberJob) logrus.Fields {
 	fields := make(logrus.Fields)
 	fields["name"] = pj.ObjectMeta.Name
 	fields["job"] = pj.Spec.Job
@@ -246,10 +246,10 @@ func ProwJobFields(pj *builder.ProwJob) logrus.Fields {
 	return fields
 }
 
-// JobURL returns the expected URL for ProwJobStatus.
+// JobURL returns the expected URL for PlumberJobStatus.
 //
 // TODO(fejta): consider moving default JobURLTemplate and JobURLPrefix out of plank
-func JobURL(plank config.Plank, pj builder.ProwJob, log *logrus.Entry) string {
+func JobURL(plank config.Plank, pj plumber.PlumberJob, log *logrus.Entry) string {
 	/*	if pj.Spec.DecorationConfig != nil && plank.GetJobURLPrefix(pj.Spec.Refs) != "" {
 			spec := downwardapi.NewJobSpec(pj.Spec, pj.Status.BuildID, pj.Name)
 			gcsConfig := pj.Spec.DecorationConfig.GCSConfiguration
@@ -262,34 +262,34 @@ func JobURL(plank config.Plank, pj builder.ProwJob, log *logrus.Entry) string {
 	*/
 	var b bytes.Buffer
 	if err := plank.JobURLTemplate.Execute(&b, &pj); err != nil {
-		log.WithFields(ProwJobFields(&pj)).Errorf("error executing URL template: %v", err)
+		log.WithFields(PlumberJobFields(&pj)).Errorf("error executing URL template: %v", err)
 	} else {
 		return b.String()
 	}
 	return ""
 }
 
-// LabelsAndAnnotationsForSpec returns a minimal set of labels to add to prowjobs or its owned resources.
+// LabelsAndAnnotationsForSpec returns a minimal set of labels to add to plumberJobs or its owned resources.
 //
 // User-provided extraLabels and extraAnnotations values will take precedence over auto-provided values.
-func LabelsAndAnnotationsForSpec(spec builder.ProwJobSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForSpec(spec plumber.PlumberJobSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
 	jobNameForLabel := spec.Job
 	if len(jobNameForLabel) > validation.LabelValueMaxLength {
 		// TODO(fejta): consider truncating middle rather than end.
 		jobNameForLabel = strings.TrimRight(spec.Job[:validation.LabelValueMaxLength], ".-")
 		logrus.WithFields(logrus.Fields{
 			"job":       spec.Job,
-			"key":       kube.ProwJobAnnotation,
+			"key":       plumber.PlumberJobAnnotation,
 			"value":     spec.Job,
 			"truncated": jobNameForLabel,
 		}).Info("Cannot use full job name, will truncate.")
 	}
 	labels := map[string]string{
-		kube.CreatedByProw:     "true",
-		kube.ProwJobTypeLabel:  string(spec.Type),
-		kube.ProwJobAnnotation: jobNameForLabel,
+		kube.CreatedByProw:           "true",
+		plumber.PlumberJobTypeLabel:  string(spec.Type),
+		plumber.PlumberJobAnnotation: jobNameForLabel,
 	}
-	if spec.Type != builder.PeriodicJob && spec.Refs != nil {
+	if spec.Type != plumber.PeriodicJob && spec.Refs != nil {
 		labels[kube.OrgLabel] = spec.Refs.Org
 		labels[kube.RepoLabel] = spec.Refs.Repo
 		if len(spec.Refs.Pulls) > 0 {
@@ -320,7 +320,7 @@ func LabelsAndAnnotationsForSpec(spec builder.ProwJobSpec, extraLabels, extraAnn
 	}
 
 	annotations := map[string]string{
-		kube.ProwJobAnnotation: spec.Job,
+		plumber.PlumberJobAnnotation: spec.Job,
 	}
 	for k, v := range extraAnnotations {
 		annotations[k] = v
@@ -330,11 +330,11 @@ func LabelsAndAnnotationsForSpec(spec builder.ProwJobSpec, extraLabels, extraAnn
 }
 
 // LabelsAndAnnotationsForJob returns a standard set of labels to add to pod/build/etc resources.
-func LabelsAndAnnotationsForJob(pj builder.ProwJob) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForJob(pj plumber.PlumberJob) (map[string]string, map[string]string) {
 	var extraLabels map[string]string
 	if extraLabels = pj.ObjectMeta.Labels; extraLabels == nil {
 		extraLabels = map[string]string{}
 	}
-	extraLabels[kube.ProwJobIDLabel] = pj.ObjectMeta.Name
+	extraLabels[plumber.PlumberJobIDLabel] = pj.ObjectMeta.Name
 	return LabelsAndAnnotationsForSpec(pj.Spec, extraLabels, nil)
 }

@@ -33,7 +33,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
+	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
 )
 
 func issueLabels(labels ...string) []string {
@@ -807,11 +807,11 @@ func TestHandleGenericComment(t *testing.T) {
 				},
 			},
 		}
-		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{ProwJobNamespace: "prowjobs"}}
-		fakeProwJobClient := fake.NewSimpleClientset()
+		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}}
+		fakePlumberClient := fake.NewSimpleClientset()
 		c := Client{
 			GitHubClient:  g,
-			ProwJobClient: fakeProwJobClient.ProwV1().ProwJobs(fakeConfig.ProwJobNamespace),
+			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs(fakeConfig.PlumberJobNamespace),
 			Config:        fakeConfig,
 			Logger:        logrus.WithField("plugin", PluginName),
 		}
@@ -875,11 +875,11 @@ func TestHandleGenericComment(t *testing.T) {
 		if err := handleGenericComment(c, trigger, event); err != nil {
 			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 		}
-		validate(tc.name, fakeProwJobClient.Fake.Actions(), g, tc, t)
+		validate(tc.name, fakePlumberClient.Fake.Actions(), g, tc, t)
 		if err := handleGenericComment(c, trigger, event); err != nil {
 			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 		}
-		validate(tc.name, fakeProwJobClient.Fake.Actions(), g, tc, t)
+		validate(tc.name, fakePlumberClient.Fake.Actions(), g, tc, t)
 	}
 }
 
@@ -888,8 +888,8 @@ func validate(name string, actions []clienttesting.Action, g *fakegithub.FakeCli
 	for _, action := range actions {
 		switch action := action.(type) {
 		case clienttesting.CreateActionImpl:
-			if prowJob, ok := action.Object.(*builder.ProwJob); ok {
-				startedContexts.Insert(prowJob.Spec.Context)
+			if plumberJob, ok := action.Object.(*builder.PlumberJob); ok {
+				startedContexts.Insert(plumberJob.Spec.Context)
 			}
 		}
 	}

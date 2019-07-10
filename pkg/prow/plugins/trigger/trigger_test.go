@@ -33,7 +33,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
+	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
 )
 
 func TestHelpProvider(t *testing.T) {
@@ -302,15 +302,15 @@ func TestRunAndSkipJobs(t *testing.T) {
 
 	for _, testCase := range testCases {
 		fakeGitHubClient := fakegithub.FakeClient{}
-		fakeProwJobClient := fake.NewSimpleClientset()
-		fakeProwJobClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+		fakePlumberClient := fake.NewSimpleClientset()
+		fakePlumberClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			switch action := action.(type) {
 			case clienttesting.CreateActionImpl:
-				prowJob, ok := action.Object.(*builder.ProwJob)
+				plumberJob, ok := action.Object.(*builder.PlumberJob)
 				if !ok {
 					return false, nil, nil
 				}
-				if testCase.jobCreationErrs.Has(prowJob.Spec.Job) {
+				if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
 					return true, action.Object, errors.New("failed to create job")
 				}
 			}
@@ -318,7 +318,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 		})
 		client := Client{
 			GitHubClient:  &fakeGitHubClient,
-			ProwJobClient: fakeProwJobClient.ProwV1().ProwJobs("prowjobs"),
+			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("plumberJobs"),
 			Logger:        logrus.WithField("testcase", testCase.name),
 		}
 
@@ -334,21 +334,21 @@ func TestRunAndSkipJobs(t *testing.T) {
 			t.Errorf("%s: created incorrect statuses: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 
-		observedCreatedProwJobs := sets.NewString()
-		existingProwJobs, err := fakeProwJobClient.ProwV1().ProwJobs("prowjobs").List(metav1.ListOptions{})
+		observedCreatedPlumberJobs := sets.NewString()
+		existingPlumberJobs, err := fakePlumberClient.ProwV1().PlumberJobs("plumberJobs").List(metav1.ListOptions{})
 		if err != nil {
 			t.Errorf("%s: could not list current state of prow jobs: %v", testCase.name, err)
 			continue
 		}
-		for _, job := range existingProwJobs.Items {
-			observedCreatedProwJobs.Insert(job.Spec.Job)
+		for _, job := range existingPlumberJobs.Items {
+			observedCreatedPlumberJobs.Insert(job.Spec.Job)
 		}
 
-		if missing := testCase.expectedJobs.Difference(observedCreatedProwJobs); missing.Len() > 0 {
-			t.Errorf("%s: didn't create all expected ProwJobs, missing: %s", testCase.name, missing.List())
+		if missing := testCase.expectedJobs.Difference(observedCreatedPlumberJobs); missing.Len() > 0 {
+			t.Errorf("%s: didn't create all expected PlumberJobs, missing: %s", testCase.name, missing.List())
 		}
-		if extra := observedCreatedProwJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
-			t.Errorf("%s: created unexpected ProwJobs: %s", testCase.name, extra.List())
+		if extra := observedCreatedPlumberJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
+			t.Errorf("%s: created unexpected PlumberJobs: %s", testCase.name, extra.List())
 		}
 	}
 }
@@ -417,15 +417,15 @@ func TestRunRequested(t *testing.T) {
 
 	for _, testCase := range testCases {
 		fakeGitHubClient := fakegithub.FakeClient{}
-		fakeProwJobClient := fake.NewSimpleClientset()
-		fakeProwJobClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+		fakePlumberClient := fake.NewSimpleClientset()
+		fakePlumberClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			switch action := action.(type) {
 			case clienttesting.CreateActionImpl:
-				prowJob, ok := action.Object.(*builder.ProwJob)
+				plumberJob, ok := action.Object.(*builder.PlumberJob)
 				if !ok {
 					return false, nil, nil
 				}
-				if testCase.jobCreationErrs.Has(prowJob.Spec.Job) {
+				if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
 					return true, action.Object, errors.New("failed to create job")
 				}
 			}
@@ -433,7 +433,7 @@ func TestRunRequested(t *testing.T) {
 		})
 		client := Client{
 			GitHubClient:  &fakeGitHubClient,
-			ProwJobClient: fakeProwJobClient.ProwV1().ProwJobs("prowjobs"),
+			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("plumberJobs"),
 			Logger:        logrus.WithField("testcase", testCase.name),
 		}
 
@@ -445,21 +445,21 @@ func TestRunRequested(t *testing.T) {
 			t.Errorf("%s: expected no error but got one: %v", testCase.name, err)
 		}
 
-		observedCreatedProwJobs := sets.NewString()
-		existingProwJobs, err := fakeProwJobClient.ProwV1().ProwJobs("prowjobs").List(metav1.ListOptions{})
+		observedCreatedPlumberJobs := sets.NewString()
+		existingPlumberJobs, err := fakePlumberClient.ProwV1().PlumberJobs("plumberJobs").List(metav1.ListOptions{})
 		if err != nil {
 			t.Errorf("%s: could not list current state of prow jobs: %v", testCase.name, err)
 			continue
 		}
-		for _, job := range existingProwJobs.Items {
-			observedCreatedProwJobs.Insert(job.Spec.Job)
+		for _, job := range existingPlumberJobs.Items {
+			observedCreatedPlumberJobs.Insert(job.Spec.Job)
 		}
 
-		if missing := testCase.expectedJobs.Difference(observedCreatedProwJobs); missing.Len() > 0 {
-			t.Errorf("%s: didn't create all expected ProwJobs, missing: %s", testCase.name, missing.List())
+		if missing := testCase.expectedJobs.Difference(observedCreatedPlumberJobs); missing.Len() > 0 {
+			t.Errorf("%s: didn't create all expected PlumberJobs, missing: %s", testCase.name, missing.List())
 		}
-		if extra := observedCreatedProwJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
-			t.Errorf("%s: created unexpected ProwJobs: %s", testCase.name, extra.List())
+		if extra := observedCreatedPlumberJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
+			t.Errorf("%s: created unexpected PlumberJobs: %s", testCase.name, extra.List())
 		}
 	}
 }

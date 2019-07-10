@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/builder"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -109,8 +109,8 @@ type githubClient interface {
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
 
-type prowJobClient interface {
-	Create(*builder.ProwJob) (*builder.ProwJob, error)
+type plumberClient interface {
+	Create(*plumber.PlumberJob) (*plumber.PlumberJob, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.
@@ -118,7 +118,7 @@ type prowJobClient interface {
 // TODO(fejta): consider exporting an interface rather than a struct
 type Client struct {
 	GitHubClient  githubClient
-	ProwJobClient prowJobClient
+	PlumberClient plumberClient
 	Config        *config.Config
 	Logger        *logrus.Entry
 }
@@ -132,7 +132,7 @@ func getClient(pc plugins.Agent) Client {
 	return Client{
 		GitHubClient:  pc.GitHubClient,
 		Config:        pc.Config,
-		ProwJobClient: pc.ProwJobClient,
+		PlumberClient: pc.PlumberClient,
 		Logger:        pc.Logger,
 	}
 }
@@ -238,9 +238,9 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 	for _, job := range requestedJobs {
 		c.Logger.Infof("Starting %s build.", job.Name)
 		pj := pjutil.NewPresubmit(pr, baseSHA, job, eventGUID)
-		c.Logger.WithFields(pjutil.ProwJobFields(&pj)).Info("Creating a new prowjob.")
-		if _, err := c.ProwJobClient.Create(&pj); err != nil {
-			c.Logger.WithError(err).Error("Failed to create prowjob.")
+		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
+		if _, err := c.PlumberClient.Create(&pj); err != nil {
+			c.Logger.WithError(err).Error("Failed to create plumberJob.")
 			errors = append(errors, err)
 		}
 	}
