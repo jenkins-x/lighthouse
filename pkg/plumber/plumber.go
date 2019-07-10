@@ -62,6 +62,10 @@ func (b *PipelineBuilder) Create(request *PlumberJob) (*PlumberJob, error) {
 		branch = "master"
 	}
 
+	if pullRefs == "" {
+		pullRefs = branch + ":"
+	}
+
 	job := spec.Job
 
 	l := logrus.WithFields(logrus.Fields(map[string]interface{}{

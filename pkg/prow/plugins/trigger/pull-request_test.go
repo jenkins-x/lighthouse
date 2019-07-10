@@ -20,10 +20,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/client/clientset/versioned/fake"
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/sirupsen/logrus"
@@ -93,7 +92,7 @@ func TestTrusted(t *testing.T) {
 			}
 			var labels []*scm.Label
 			for _, label := range tc.labels {
-				labels = append(labels, scm.Label{
+				labels = append(labels, &scm.Label{
 					Name: label,
 				})
 			}
