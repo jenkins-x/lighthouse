@@ -211,7 +211,7 @@ func TrustedPullRequest(ghc githubClient, trigger *plugins.Trigger, author, org,
 
 // buildAll ensures that all builds that should run and will be required are built
 func buildAll(c Client, pr *scm.PullRequest, eventGUID string, elideSkippedContexts bool) error {
-	org, repo, number, branch := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Number, pr.Ref
+	org, repo, number, branch := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Number, pr.Base.Ref
 	changes := config.NewGitHubDeferredChangedFilesProvider(c.GitHubClient, org, repo, number)
 	toTest, toSkip, err := pjutil.FilterPresubmits(pjutil.TestAllFilter(), changes, branch, c.Config.Presubmits[pr.Base.Repo.FullName], c.Logger)
 	if err != nil {

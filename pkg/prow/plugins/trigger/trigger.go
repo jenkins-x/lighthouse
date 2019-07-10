@@ -229,7 +229,7 @@ func validateContextOverlap(toRun, toSkip []config.Presubmit) error {
 
 // runRequested executes the config.Presubmits that are requested
 func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmit, eventGUID string) error {
-	baseSHA, err := c.GitHubClient.GetRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, "heads/"+pr.Ref)
+	baseSHA, err := c.GitHubClient.GetRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, "heads/"+pr.Base.Ref)
 	if err != nil {
 		return err
 	}

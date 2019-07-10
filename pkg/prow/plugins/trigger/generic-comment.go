@@ -159,7 +159,7 @@ func FilterPresubmits(honorOkToTest bool, gitHubClient GitHubClient, body string
 		return nil, nil, err
 	}
 
-	number, branch := pr.Number, pr.Ref
+	number, branch := pr.Number, pr.Base.Ref
 	changes := config.NewGitHubDeferredChangedFilesProvider(gitHubClient, org, repo, number)
 	return pjutil.FilterPresubmits(filter, changes, branch, presubmits, logger)
 }

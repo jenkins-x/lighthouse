@@ -222,14 +222,10 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Push handler")
 
-		plumberClient, err := plumber.NewPlumber(pushHook.Repository(), o.createCommonOptions(o.namespace))
+		err := o.updatePlumberClient(l, server, pushHook.Repository(), w)
 		if err != nil {
-			l.Errorf("failed to create Plumber webhook: %s", err.Error())
-
-			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create Plumber: %s", err.Error()))
 			return
 		}
-		server.ClientAgent.PlumberClient = plumberClient
 
 		server.HandlePushEvent(l, pushHook)
 		return
@@ -252,6 +248,10 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Issue Comment handler")
 
+		err := o.updatePlumberClient(l, server, issueCommentHook.Repository(), w)
+		if err != nil {
+			return
+		}
 		server.HandleIssueCommentEvent(l, *issueCommentHook)
 		w.Write([]byte("OK"))
 		return
@@ -591,6 +591,18 @@ func (o *WebhookOptions) createConfigFiles() error {
 		}
 		o.pluginFilename = pfile
 	}
+	return nil
+}
+
+func (o *WebhookOptions) updatePlumberClient(l *logrus.Entry, server hook.Server, repository scm.Repository, w http.ResponseWriter) error {
+	plumberClient, err := plumber.NewPlumber(repository, o.createCommonOptions(o.namespace))
+	if err != nil {
+		l.Errorf("failed to create Plumber webhook: %s", err.Error())
+
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create Plumber: %s", err.Error()))
+		return err
+	}
+	server.ClientAgent.PlumberClient = plumberClient
 	return nil
 }
 
