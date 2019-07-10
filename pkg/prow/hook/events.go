@@ -27,9 +27,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
-
-	prowconfig "k8s.io/test-infra/prow/config"
-	prowplugins "k8s.io/test-infra/prow/plugins"
 )
 
 type Server struct {
@@ -143,12 +140,26 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *github.GenericComment
 	}
 }
 
-func (s *Server) UpdateConfig(pc *prowconfig.Config, pp *prowplugins.Configuration) {
-	p := &plugins.Configuration{}
-	s.Plugins.Set(p)
-
-	c := &config.Config{}
-	s.ConfigAgent.Set(c)
+func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
+	defer s.wg.Done()
+	repo := pe.Repository()
+	l = l.WithFields(logrus.Fields{
+		github.OrgLogField:  repo.Namespace,
+		github.RepoLogField: repo.Name,
+		"ref":               pe.Ref,
+		"head":              pe.After,
+	})
+	l.Info("Push event.")
+	for p, h := range s.Plugins.PushEventHandlers(repo.Namespace, repo.Name) {
+		s.wg.Add(1)
+		go func(p string, h plugins.PushEventHandler) {
+			defer s.wg.Done()
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
+			if err := h(agent, *pe); err != nil {
+				agent.Logger.WithError(err).Error("Error handling PushEvent.")
+			}
+		}(p, h)
+	}
 }
 
 /*
@@ -306,26 +317,6 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr github.PullRequestEv
 	)
 }
 
-func (s *Server) handlePushEvent(l *logrus.Entry, pe github.PushEvent) {
-	defer s.wg.Done()
-	l = l.WithFields(logrus.Fields{
-		github.OrgLogField:  pe.Repo.Owner.Name,
-		github.RepoLogField: pe.Repo.Name,
-		"ref":               pe.Ref,
-		"head":              pe.After,
-	})
-	l.Info("Push event.")
-	for p, h := range s.Plugins.PushEventHandlers(pe.Repo.Owner.Name, pe.Repo.Name) {
-		s.wg.Add(1)
-		go func(p string, h plugins.PushEventHandler) {
-			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
-			if err := h(agent, pe); err != nil {
-				agent.Logger.WithError(err).Error("Error handling PushEvent.")
-			}
-		}(p, h)
-	}
-}
 
 func (s *Server) handleIssueEvent(l *logrus.Entry, i github.IssueEvent) {
 	defer s.wg.Done()

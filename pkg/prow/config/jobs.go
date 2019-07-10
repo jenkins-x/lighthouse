@@ -85,6 +85,8 @@ type JobBase struct {
 	Name string `json:"name"`
 	// Labels are added to prowjobs and pods created for this job.
 	Labels map[string]string `json:"labels,omitempty"`
+	// Annotations are unused by prow itself, but provide a space to configure other automation.
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// MaximumConcurrency of this job, 0 implies no limit.
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
 	// Agent that will take care of running this job.
@@ -357,7 +359,7 @@ func (ps Presubmit) ContextRequired() bool {
 type ChangedFilesProvider func() ([]string, error)
 
 type githubClient interface {
-	GetPullRequestChanges(org, repo string, number int) ([]scm.Change, error)
+	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
 
 // NewGitHubDeferredChangedFilesProvider uses a closure to lazily retrieve the file changes only if they are needed.
@@ -397,7 +399,9 @@ type UtilityConfig struct {
 	// SkipSubmodules determines if submodules should be
 	// cloned when the job is run. Defaults to true.
 	SkipSubmodules bool `json:"skip_submodules,omitempty"`
-
+	// CloneDepth is the depth of the clone that will be used.
+	// A depth of zero will do a full clone.
+	CloneDepth int `json:"clone_depth,omitempty"`
 	// ExtraRefs are auxiliary repositories that
 	// need to be cloned, determined from config
 	ExtraRefs []prowapi.Refs `json:"extra_refs,omitempty"`
