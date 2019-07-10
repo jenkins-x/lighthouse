@@ -130,11 +130,10 @@ type trustedUserClient interface {
 
 func getClient(pc plugins.Agent) Client {
 	return Client{
-		GitHubClient: pc.GitHubClient,
-		Config:       pc.Config,
-		// TODO
-		//ProwJobClient: pc.ProwJobClient,
-		Logger: pc.Logger,
+		GitHubClient:  pc.GitHubClient,
+		Config:        pc.Config,
+		ProwJobClient: pc.ProwJobClient,
+		Logger:        pc.Logger,
 	}
 }
 

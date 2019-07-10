@@ -120,10 +120,9 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
 	c := client{
-		gc: pc.GitHubClient,
-		jc: pc.Config.JobConfig,
-		// TODO
-		//prowJobClient: pc.ProwJobClient,
+		gc:            pc.GitHubClient,
+		jc:            pc.Config.JobConfig,
+		prowJobClient: pc.ProwJobClient,
 	}
 	return handle(c, pc.Logger, &e)
 }

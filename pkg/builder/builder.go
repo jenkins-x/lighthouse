@@ -1,38 +1,68 @@
 package builder
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/jenkins-x/go-scm/scm"
-	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/pkg/cmd/step/create"
+	"github.com/jenkins-x/jx/pkg/prow"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // PipelineBuilder default builder
 type PipelineBuilder struct {
+	repository    scm.Repository
+	commonOptions *opts.CommonOptions
 }
 
 // NewBuilder creates a new builder
-func NewBuilder(jxClient jxclient.Interface, ns string) (Builder, error) {
-	b := &PipelineBuilder{}
+func NewBuilder(repository scm.Repository, commonOptions *opts.CommonOptions) (Builder, error) {
+	b := &PipelineBuilder{
+		repository:    repository,
+		commonOptions: commonOptions,
+	}
 	return b, nil
 }
 
-// StartBuild starts a build if there is a SourceRepository and Scheduler available
-func (b *PipelineBuilder) StartBuild(hook *scm.PushHook, commonOptions *opts.CommonOptions) (string, error) {
-	repository := hook.Repository()
+// Create creates a pipeline
+func (b *PipelineBuilder) Create(request *ProwJob) (*ProwJob, error) {
+	spec := &request.Spec
+
+	pipelineKind := "release"
+	revision := ""
+	prNumber := ""
+	pullRefData := b.getPullRefs(spec)
+	pullRefs := ""
+	if len(spec.Refs.Pulls) > 0 {
+		pullRefs = pullRefData.String()
+	}
+
+	// Only if there is one Pull in Refs, it's a PR build so we are going to pass it
+	if len(spec.Refs.Pulls) == 1 {
+		revision = spec.Refs.Pulls[0].SHA
+		prNumber = strconv.Itoa(spec.Refs.Pulls[0].Number)
+	} else {
+		//Otherwise it's a Master / Batch build, and we handle it later
+		revision = spec.Refs.BaseSHA
+	}
+
+	repository := b.repository
 	name := repository.Name
 	owner := repository.Namespace
 	sourceURL := repository.Clone
-	branch := repository.Branch
 
-	// TODO
-	pipelineKind := "release"
-	pullRefs := ""
-	prNumber := ""
+	branch := b.getBranch(spec)
+	if branch == "" {
+		branch = repository.Branch
+	}
+	if branch == "" {
+		branch = "master"
+	}
 
-	// TODO is this correct?
-	job := hook.Ref
+	job := spec.Job
 
 	l := logrus.WithFields(logrus.Fields(map[string]interface{}{
 		"Owner":             owner,
@@ -42,6 +72,7 @@ func (b *PipelineBuilder) StartBuild(hook *scm.PushHook, commonOptions *opts.Com
 		"PipelineKind":      pipelineKind,
 		"PullRefs":          pullRefs,
 		"PullRequestNumber": prNumber,
+		"Revision":          revision,
 		"Job":               job,
 	}))
 	l.Info("about to start Jenkinx X meta pipeline")
@@ -50,13 +81,42 @@ func (b *PipelineBuilder) StartBuild(hook *scm.PushHook, commonOptions *opts.Com
 		SourceURL: sourceURL,
 		Job:       job,
 		PullRefs:  pullRefs,
+		Context:   spec.Context,
 	}
-	po.CommonOptions = commonOptions
+	po.CommonOptions = b.commonOptions
 
 	err := po.Run()
 	if err != nil {
 		l.Errorf("failed to create Jenkinx X meta pipeline %s", err.Error())
-		return "failed to create Jenkins X Pipeline %s", err
+		return request, errors.Wrap(err, "failed to create Jenkins X Pipeline")
 	}
-	return "OK", nil
+	return request, nil
+}
+
+func (o *PipelineBuilder) getBranch(spec *ProwJobSpec) string {
+	branch := spec.Refs.BaseRef
+	if spec.Type == PostsubmitJob {
+		return branch
+	}
+	if spec.Type == BatchJob {
+		return "batch"
+	}
+	if len(spec.Refs.Pulls) > 0 {
+		branch = fmt.Sprintf("PR-%v", spec.Refs.Pulls[0].Number)
+	}
+	return branch
+}
+
+func (o *PipelineBuilder) getPullRefs(spec *ProwJobSpec) *prow.PullRefs {
+	toMerge := make(map[string]string)
+	for _, pull := range spec.Refs.Pulls {
+		toMerge[strconv.Itoa(pull.Number)] = pull.SHA
+	}
+
+	pullRef := &prow.PullRefs{
+		BaseBranch: spec.Refs.BaseRef,
+		BaseSha:    spec.Refs.BaseSHA,
+		ToMerge:    toMerge,
+	}
+	return pullRef
 }

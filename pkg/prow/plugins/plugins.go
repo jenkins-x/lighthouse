@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/builder"
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	git2 "github.com/jenkins-x/lighthouse/pkg/prow/git"
@@ -132,9 +133,9 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
-	GitHubClient *github.GitHubClient
+	GitHubClient  *github.GitHubClient
+	ProwJobClient builder.Builder
 	/*
-		ProwJobClient    prowv1.ProwJobInterface
 		SlackClient      *slack.Client
 	*/
 	GitClient        git2.Client
@@ -160,10 +161,10 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 	pluginConfig := pluginConfigAgent.Config()
 	gitHubClient := github.ToGitHubClient(clientAgent.GitHubClient, clientAgent.BotName)
 	return Agent{
-		GitHubClient: gitHubClient,
-		GitClient:    clientAgent.GitClient,
+		GitHubClient:  gitHubClient,
+		GitClient:     clientAgent.GitClient,
+		ProwJobClient: clientAgent.ProwJobClient,
 		/*
-			ProwJobClient: clientAgent.ProwJobClient,
 			SlackClient:   clientAgent.SlackClient,
 		*/
 		OwnersClient: repoowners.NewClient(
@@ -202,9 +203,10 @@ type ClientAgent struct {
 
 	KubernetesClient kubernetes.Interface
 	GitClient        git2.Client
-	/*	ProwJobClient    prowv1.ProwJobInterface
-		SlackClient      *slack.Client
-	*/
+	ProwJobClient    builder.Builder
+
+	/*	SlackClient      *slack.Client
+	 */
 }
 
 // ConfigAgent contains the agent mutex and the Agent configuration.

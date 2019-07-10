@@ -57,7 +57,6 @@ type WebhookOptions struct {
 	Port        int
 	JSONLog     bool
 
-	Builder        builder.Builder
 	factory        clients.Factory
 	namespace      string
 	pluginFilename string
@@ -98,15 +97,11 @@ func (o *WebhookOptions) Run() error {
 		logrus.SetFormatter(&logrus.JSONFormatter{})
 	}
 
-	jxClient, ns, err := o.GetFactory().CreateJXClient()
+	_, ns, err := o.GetFactory().CreateJXClient()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create JX Client")
 	}
 	o.namespace = ns
-	o.Builder, err = builder.NewBuilder(jxClient, ns)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create Builder")
-	}
 	o.server, err = o.createHookServer()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create Hook Server")
@@ -204,6 +199,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	})
 
 	server := *o.server
+
 	server.ClientAgent = &plugins.ClientAgent{
 		BotName:          o.GetBotName(),
 		GitHubClient:     scmClient,
@@ -225,6 +221,15 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["Commit.Committer.Name"] = pushHook.Commit.Committer.Name
 
 		l.Info("invoking Push handler")
+
+		plumber, err := builder.NewBuilder(pushHook.Repository(), o.createCommonOptions(o.namespace))
+		if err != nil {
+			l.Errorf("failed to create Plumber webhook: %s", err.Error())
+
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create Plumber: %s", err.Error()))
+			return
+		}
+		server.ClientAgent.ProwJobClient = plumber
 
 		server.HandlePushEvent(l, pushHook)
 		return
@@ -294,20 +299,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		w.Write([]byte("OK"))
 		return
 	}
-}
-
-func (o *WebhookOptions) startBuild(hook *scm.PushHook, r *http.Request, w http.ResponseWriter) {
-	message, err := o.Builder.StartBuild(hook, o.createCommonOptions(o.namespace))
-	if err != nil {
-		logrus.Errorf("failed to start build on %s: %s", repositoryToString(hook.Repository()), err.Error())
-
-		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
-		return
-	}
-	w.Write([]byte(message))
-
-	logrus.Infof("triggering META pipeline")
-
 }
 
 func (o *WebhookOptions) misingSourceRepository(hook scm.Webhook, w http.ResponseWriter) {
