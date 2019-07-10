@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/bitbucket"
@@ -413,7 +412,7 @@ func (o *WebhookOptions) GetBotName() string {
 }
 
 func (o *WebhookOptions) createSCMToken(gitKind string) (string, error) {
-	envName := strings.ToUpper(gitKind) + "_TOKEN"
+	envName := "GIT_TOKEN"
 	value := os.Getenv(envName)
 	if value == "" {
 		return value, fmt.Errorf("No token available for git kind %s at environment variable $%s", gitKind, envName)
