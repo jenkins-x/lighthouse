@@ -24,6 +24,8 @@ The following environment variables are used:
 | `GIT_SERVER` | the URL of the server if not using the public hosted git providers: https://github.com or https://bitbucket.org https://gitlab.com |
 | `GIT_TOKEN` | the git token to perform operations on git (add comments, labels etc) |
 | `HMAC_TOKEN` | the token sent from the git provider in webhooks |
+| `JX_SERVICE_ACCOUNT` | the service account to use for generated pipelines |
+
 
     
 ## Comparisons to Prow

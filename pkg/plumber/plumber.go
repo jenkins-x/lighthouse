@@ -2,6 +2,7 @@ package plumber
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -87,7 +88,12 @@ func (b *PipelineBuilder) Create(request *PlumberJob) (*PlumberJob, error) {
 		PullRefs:  pullRefs,
 		Context:   spec.Context,
 	}
+	sa := os.Getenv("JX_SERVICE_ACCOUNT")
+	if sa == "" {
+		sa = "tekton-bot"
+	}
 	po.CommonOptions = b.commonOptions
+	po.ServiceAccount = sa
 
 	err := po.Run()
 	if err != nil {
