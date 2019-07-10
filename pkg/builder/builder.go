@@ -47,12 +47,9 @@ func (b *PipelineBuilder) StartBuild(hook *scm.PushHook, commonOptions *opts.Com
 	l.Info("about to start Jenkinx X meta pipeline")
 
 	po := create.StepCreatePipelineOptions{
-		SourceURL:         sourceURL,
-		Branch:            branch,
-		Job:               job,
-		PipelineKind:      pipelineKind,
-		PullRefs:          pullRefs,
-		PullRequestNumber: prNumber,
+		SourceURL: sourceURL,
+		Job:       job,
+		PullRefs:  pullRefs,
 	}
 	po.CommonOptions = commonOptions
 
