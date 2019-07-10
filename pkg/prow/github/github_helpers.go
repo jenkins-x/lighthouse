@@ -131,31 +131,6 @@ const (
 	IssueActionReopened = "reopened"
 )
 
-// SingleCommit is the commit part received when requesting a single commit
-// https://developer.github.com/v3/repos/commits/#get-a-single-commit
-type SingleCommit struct {
-	Commit struct {
-		Tree struct {
-			SHA string `json:"sha"`
-		} `json:"tree"`
-	} `json:"commit"`
-}
-
-// Team is a github organizational team
-type Team struct {
-	ID           int    `json:"id,omitempty"`
-	Name         string `json:"name"`
-	Description  string `json:"description,omitempty"`
-	Privacy      string `json:"privacy,omitempty"`
-	Parent       *Team  `json:"parent,omitempty"`         // Only present in responses
-	ParentTeamID *int   `json:"parent_team_id,omitempty"` // Only valid in creates/edits
-}
-
-// TeamMember is a member of an organizational team
-type TeamMember struct {
-	Login string `json:"login"`
-}
-
 // GenericCommentEvent is a fake event type that is instantiated for any github event that contains
 // comment like content.
 // The specific events that are also handled as GenericCommentEvents are:
@@ -181,26 +156,6 @@ type GenericCommentEvent struct {
 	IssueBody   string
 	IssueLink   string
 	GUID        string
-}
-
-// RepositoryCommit represents a commit in a repo.
-// Note that it's wrapping a GitCommit, so author/committer information is in two places,
-// but contain different details about them: in RepositoryCommit "github details", in GitCommit - "git details".
-type RepositoryCommit struct {
-	SHA         string       `json:"sha"`
-	Commit      GitCommit    `json:"commit"`
-	Author      scm.User     `json:"author"`
-	Committer   scm.User     `json:"committer"`
-	Parents     []scm.Commit `json:"parents,omitempty"`
-	HTMLURL     string       `json:"html_url"`
-	URL         string       `json:"url"`
-	CommentsURL string       `json:"comments_url"`
-}
-
-// GitCommit represents a GitHub commit.
-type GitCommit struct {
-	SHA     string `json:"sha,omitempty"`
-	Message string `json:"message,omitempty"`
 }
 
 // ReviewAction is the action that a review can be made with.
@@ -256,31 +211,4 @@ func HasLabel(label string, issueLabels []*scm.Label) bool {
 		}
 	}
 	return false
-}
-
-// Possible contents for reactions.
-const (
-	ReactionThumbsUp                  = "+1"
-	ReactionThumbsDown                = "-1"
-	ReactionLaugh                     = "laugh"
-	ReactionConfused                  = "confused"
-	ReactionHeart                     = "heart"
-	ReactionHooray                    = "hooray"
-	stateCannotBeChangedMessagePrefix = "state cannot be changed."
-)
-
-// These are possible State entries for a Status.
-const (
-	StatusPending = "pending"
-	StatusSuccess = "success"
-	StatusError   = "error"
-	StatusFailure = "failure"
-)
-
-// Status is used to set a commit status line.
-type Status struct {
-	State       string `json:"state"`
-	TargetURL   string `json:"target_url,omitempty"`
-	Description string `json:"description,omitempty"`
-	Context     string `json:"context,omitempty"`
 }
