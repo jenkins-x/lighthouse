@@ -195,24 +195,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		"CloneSSH":  repository.CloneSSH,
 	}
 
-	pushHook, ok := webhook.(*scm.PushHook)
-	l := logrus.WithFields(logrus.Fields(fields))
-	if ok {
-		fields["Ref"] = pushHook.Ref
-		fields["BaseRef"] = pushHook.BaseRef
-		fields["Commit.Sha"] = pushHook.Commit.Sha
-		fields["Commit.Link"] = pushHook.Commit.Link
-		fields["Commit.Author"] = pushHook.Commit.Author
-		fields["Commit.Message"] = pushHook.Commit.Message
-		fields["Commit.Committer.Name"] = pushHook.Commit.Committer.Name
-
-		l.Info("invoking push handler")
-
-		o.startBuild(pushHook, r, w)
-		return
-	}
-
-	// lets try invoke prow commands...
 	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
 	gitClient, _ := git.NewClient()
 
@@ -230,6 +212,23 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	}
 
 	server.OnRequest()
+
+	pushHook, ok := webhook.(*scm.PushHook)
+	l := logrus.WithFields(logrus.Fields(fields))
+	if ok {
+		fields["Ref"] = pushHook.Ref
+		fields["BaseRef"] = pushHook.BaseRef
+		fields["Commit.Sha"] = pushHook.Commit.Sha
+		fields["Commit.Link"] = pushHook.Commit.Link
+		fields["Commit.Author"] = pushHook.Commit.Author
+		fields["Commit.Message"] = pushHook.Commit.Message
+		fields["Commit.Committer.Name"] = pushHook.Commit.Committer.Name
+
+		l.Info("invoking Push handler")
+
+		server.HandlePushEvent(l, pushHook)
+		return
+	}
 
 	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
 	if ok {
