@@ -1,8 +1,7 @@
 git:
   kind: github
+  name: github
   server: ""
-  hmacToken: "todo"
-  botName: "jenkins-x-bot-test"
 
 # Default values for Go projects.
 # This is a YAML-formatted file.
@@ -10,7 +9,7 @@ git:
 replicaCount: 1
 image:
   repository: gcr.io/jenkinsxio/lighthouse
-  tag: latest
+  tag: 0.0.31
   pullPolicy: IfNotPresent
 
 # define environment variables here as a map of key: value
@@ -20,7 +19,7 @@ env:
 knativeDeploy: false
 
 service:
-  name: lighthouse
+  name: hook
   type: ClusterIP
   externalPort: 80
   internalPort: 8080

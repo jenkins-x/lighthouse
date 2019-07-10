@@ -19,6 +19,7 @@ spec:
 {{ toYaml .Values.podAnnotations | indent 8 }}
 {{- end }}
     spec:
+      serviceAccountName: {{ template "fullname" . }}
       volumes:
         - name: config-yaml
           configMap:
@@ -38,16 +39,26 @@ spec:
           - --plugin-file
           - /config/plugins.yaml
         env:
-          - name: "BOT_NAME"
-            value: "{{ .Values.git.botName }}"
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"
           - name: "GIT_SERVER"
             value: "{{ .Values.git.server }}"
+          - name: "BOT_NAME"
+            valueFrom:
+              secretKeyRef:
+                name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
+                key: username
           - name: "GIT_TOKEN"
+            valueFrom:
+              secretKeyRef:
+                name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
+                key: password
             value: "{{ .Values.git.token }}"
           - name: "HMAC_TOKEN"
-            value: "{{ .Values.git.hmacToken }}"
+            valueFrom:
+              secretKeyRef:
+                name: "hmac-token"
+                key: hmac
           - name: "JX_LOG_FORMAT"
             value: "json"
 {{- range $pkey, $pval := .Values.env }}
