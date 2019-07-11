@@ -28,6 +28,8 @@ require (
 	sigs.k8s.io/yaml v1.1.0
 )
 
+replace github.com/golang/lint => golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
+
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
 
 replace k8s.io/api => k8s.io/api v0.0.0-20181128191700-6db15a15d2d3
