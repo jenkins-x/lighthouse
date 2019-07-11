@@ -19,6 +19,8 @@ pipelineConfig:
             value: /builder/home/.helm
           - name: GOPROXY
             value: http://jenkins-x-athens-proxy
+          - name: GO111MODULE
+            value: on
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: /builder/home/kaniko-secret.json
           - name: ORG
