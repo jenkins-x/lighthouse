@@ -580,7 +580,7 @@ func (c *Configuration) TriggerFor(org, repo string) *Trigger {
 			}
 		}
 	}
-	return nil
+	return &Trigger{}
 }
 
 // EnabledReposForPlugin returns the orgs and repos that have enabled the passed plugin.

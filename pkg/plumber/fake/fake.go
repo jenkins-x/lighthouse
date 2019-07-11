@@ -23,5 +23,4 @@ func (p *FakePlumber) Create(job *plumber.PlumberJob) (*plumber.PlumberJob, erro
 }
 
 func (p *FakePlumber) PrependReactor(s string, s2 string, i func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error)) {
-	panic("TODO")
 }
