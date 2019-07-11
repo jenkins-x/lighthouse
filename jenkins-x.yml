@@ -25,7 +25,7 @@ pipelineConfig:
             value: jenkinsxio
           steps:
           - command: make test
-            dir: /workspace/source/charts/preview
+            dir: /workspace/source
             image: go
             name: make-test
           - image: jenkinsxio/jx:1.3.1008
