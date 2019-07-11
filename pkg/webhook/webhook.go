@@ -1,7 +1,6 @@
 package webhook
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,12 +8,7 @@ import (
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/driver/bitbucket"
-	"github.com/jenkins-x/go-scm/scm/driver/gitea"
-	"github.com/jenkins-x/go-scm/scm/driver/github"
-	"github.com/jenkins-x/go-scm/scm/driver/gitlab"
-	"github.com/jenkins-x/go-scm/scm/driver/gogs"
-	"github.com/jenkins-x/go-scm/scm/driver/stash"
+	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/jx/pkg/cmd/clients"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/pkg/util"
@@ -26,7 +20,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 	"k8s.io/test-infra/prow/metrics"
 
 	"github.com/spf13/cobra"
@@ -41,13 +34,10 @@ const (
 	// ReadyPath URL path for the HTTP endpoint that returns ready status.
 	ReadyPath = "/ready"
 
-	noGitServerURLMessage = "No Git Server URI defined for $GIT_SERVER"
-
-	ProwConfigMapName           = "config"
-	ProwPluginsConfigMapName    = "plugins"
-	ProwExternalPluginsFilename = "external-plugins.yaml"
-	ProwConfigFilename          = "config.yaml"
-	ProwPluginsFilename         = "plugins.yaml"
+	ProwConfigMapName        = "config"
+	ProwPluginsConfigMapName = "plugins"
+	ProwConfigFilename       = "config.yaml"
+	ProwPluginsFilename      = "plugins.yaml"
 )
 
 // WebhookOptions holds the command line arguments
@@ -342,54 +332,11 @@ func (o *WebhookOptions) createSCMClient() (*scm.Client, string, error) {
 	}
 	serverURL := os.Getenv("GIT_SERVER")
 
-	var client *scm.Client
-	var err error
-
-	switch kind {
-	case "bitbucket":
-		if serverURL != "" {
-			client, err = bitbucket.New(serverURL)
-		} else {
-			client = bitbucket.NewDefault()
-		}
-	case "gitea":
-		if serverURL == "" {
-			return nil, "", fmt.Errorf(noGitServerURLMessage)
-		}
-		client, err = gitea.New(serverURL)
-	case "github":
-		if serverURL != "" {
-			client, err = github.New(serverURL)
-		} else {
-			client = github.NewDefault()
-		}
-	case "gitlab":
-		if serverURL != "" {
-			client, err = gitlab.New(serverURL)
-		} else {
-			client = gitlab.NewDefault()
-		}
-	case "gogs":
-		if serverURL == "" {
-			return nil, "", fmt.Errorf(noGitServerURLMessage)
-		}
-		client, err = gogs.New(serverURL)
-	case "stash":
-		if serverURL == "" {
-			return nil, "", fmt.Errorf(noGitServerURLMessage)
-		}
-		client, err = stash.New(serverURL)
-	default:
-		return nil, "", fmt.Errorf("Unsupported $GIT_KIND value: %s", kind)
-	}
-	if err != nil {
-		return client, "", err
-	}
 	token, err := o.createSCMToken(kind)
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	client.Client = oauth2.NewClient(context.Background(), ts)
+	if err != nil {
+		return nil, token, err
+	}
+	client, err := factory.NewClient(kind, serverURL, token)
 	return client, token, err
 }
 
