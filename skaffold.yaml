@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta2
 kind: Config
 build:
   artifacts:
-  - image: jenkins-x-infra/lighthouse
+  - image: jenkinsxio/lighthouse
     context: .
     docker: {}
   tagPolicy:
