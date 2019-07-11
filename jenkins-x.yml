@@ -1,3 +1,4 @@
+dockerRegistryOwner: jenkinsxio
 pipelineConfig:
   pipelines:
     pullRequest:
@@ -165,3 +166,4 @@ pipelineConfig:
                 args:
                 - release
                 dir: /workspace/source/charts/lighthouse
+
