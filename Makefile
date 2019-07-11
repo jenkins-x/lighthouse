@@ -29,7 +29,10 @@ GOVENDOR := $(GOPATH)/bin/govendor
 $(GOVENDOR):
 	go get -u github.com/kardianos/govendor
 
-GO_LDFLAGS := -X $(shell go list ./$(PACKAGE)).GitCommit=$(GIT_COMMIT)
+# set dev version unless VERSION is explicitly set via environment
+VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
+
+GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 
 test: $(PKGS)
 
@@ -47,9 +50,11 @@ vendor: $(GOVENDOR)
 	$(GOVENDOR) add +external
 
 build:
-	go build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
+	go build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE) 
+
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
+
 container: build-linux
 	docker-compose build $(DOCKER_IMAGE_NAME)
 production-container: build-linux
