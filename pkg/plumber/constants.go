@@ -1,6 +1,8 @@
 package plumber
 
 const (
+	// TektonAgent the default agent name
+	TektonAgent = "tekton"
 	// PlumberJobTypeLabel is added in resources created by lighthouse and
 	// carries the job type (presubmit, postsubmit, periodic, batch)
 	// that the pod is running.

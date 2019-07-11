@@ -935,6 +935,7 @@ k8s.io/test-infra v0.0.0-20190131093439-a22cef183a8f h1:oU01ITnA+DuoV6uxzUk7bxQj
 k8s.io/test-infra v0.0.0-20190131093439-a22cef183a8f/go.mod h1:OvH4Meyzta9B/V99E3b0bm8XcSqjKJnwKMKadtMW1oo=
 k8s.io/test-infra v0.0.0-20190710141626-170e1e997f40 h1:7ER1V6ieZiEORa0npKt0A+otGRSoD9b6+iDTrD3pD64=
 k8s.io/test-infra v0.0.0-20190711021054-d4a5312e1597 h1:pQD6JjQGSKMTSQSvtRP2nil0pASOoqpzN2BogQ4K3JE=
+k8s.io/test-infra v0.0.0-20190711074854-d8ad4c879e18 h1:OGn0+fRKZYCtCUdH52ySSrNzFzX4KPeb9uWm/v2PMpc=
 k8s.io/utils v0.0.0-20181019225348-5e321f9a457c/go.mod h1:8k8uAuAQ0rXslZKaEWd0c3oVhZz7sSzSiPnVZayjIX0=
 k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a h1:2jUDc9gJja832Ftp+QbDV0tVhQHMISFn01els+2ZAcw=
 k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a/go.mod h1:sZAwmy6armz5eXlNoLmJcl4F1QuKu7sr+mFQ0byX7Ew=

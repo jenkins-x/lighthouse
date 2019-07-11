@@ -978,7 +978,7 @@ func validateLabels(labels map[string]string) error {
 }
 
 func validateAgent(v JobBase, podNamespace string) error {
-	agents := sets.NewString("tekton")
+	agents := sets.NewString(plumber.TektonAgent)
 	agent := v.Agent
 	switch {
 	case !agents.Has(agent):
@@ -1131,7 +1131,7 @@ func DefaultRerunCommandFor(name string) string {
 // defaultJobBase configures common parameters, currently Agent and Namespace.
 func (c *ProwConfig) defaultJobBase(base *JobBase) {
 	if base.Agent == "" { // Use tekton by default
-		base.Agent = "tekton"
+		base.Agent = plumber.TektonAgent
 	}
 	if base.Namespace == nil || *base.Namespace == "" {
 		s := c.PodNamespace

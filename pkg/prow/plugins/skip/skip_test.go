@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -35,9 +36,9 @@ func TestSkipStatus(t *testing.T) {
 		sha            string
 		event          *github.GenericCommentEvent
 		prChanges      map[int][]*scm.Change
-		existing       []*scm.Status
-		combinedStatus string
-		expected       []*scm.Status
+		existing       []*scm.StatusInput
+		combinedStatus scm.State
+		expected       []*scm.StatusInput
 	}{
 		{
 			name: "required contexts should not be skipped regardless of their state",
@@ -68,33 +69,33 @@ func TestSkipStatus(t *testing.T) {
 				Number:     1,
 				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
-			existing: []*scm.Status{
+			existing: []*scm.StatusInput{
 				{
-					Context: "passing-tests",
-					State:   scm.StateSuccess,
+					Label: "passing-tests",
+					State: scm.StateSuccess,
 				},
 				{
-					Context: "failed-tests",
-					State:   scm.StatusFailure,
+					Label: "failed-tests",
+					State: scm.StateFailure,
 				},
 				{
-					Context: "pending-tests",
-					State:   scm.StatusPending,
+					Label: "pending-tests",
+					State: scm.StatePending,
 				},
 			},
 
-			expected: []*scm.Status{
+			expected: []*scm.StatusInput{
 				{
-					Context: "passing-tests",
-					State:   scm.StateSuccess,
+					Label: "passing-tests",
+					State: scm.StateSuccess,
 				},
 				{
-					Context: "failed-tests",
-					State:   scm.StatusFailure,
+					Label: "failed-tests",
+					State: scm.StateFailure,
 				},
 				{
-					Context: "pending-tests",
-					State:   scm.StatusPending,
+					Label: "pending-tests",
+					State: scm.StatePending,
 				},
 			},
 		},
@@ -124,27 +125,27 @@ func TestSkipStatus(t *testing.T) {
 				Number:     1,
 				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
-			existing: []*scm.Status{
+			existing: []*scm.StatusInput{
 				{
-					State:   scm.StatusFailure,
-					Context: "failed-tests",
+					State: scm.StateFailure,
+					Label: "failed-tests",
 				},
 				{
-					State:   scm.StatusPending,
-					Context: "pending-tests",
+					State: scm.StatePending,
+					Label: "pending-tests",
 				},
 			},
 
-			expected: []*scm.Status{
+			expected: []*scm.StatusInput{
 				{
-					State:       scm.StateSuccess,
-					Description: "Skipped",
-					Context:     "failed-tests",
+					State: scm.StateSuccess,
+					Desc:  "Skipped",
+					Label: "failed-tests",
 				},
 				{
-					State:       scm.StateSuccess,
-					Description: "Skipped",
-					Context:     "pending-tests",
+					State: scm.StateSuccess,
+					Desc:  "Skipped",
+					Label: "pending-tests",
 				},
 			},
 		},
@@ -168,9 +169,9 @@ func TestSkipStatus(t *testing.T) {
 				Number:     1,
 				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
-			existing: []*scm.Status{},
+			existing: []*scm.StatusInput{},
 
-			expected: []*scm.Status{},
+			expected: []*scm.StatusInput{},
 		},
 		{
 			name: "optional contexts that have succeeded should not be skipped",
@@ -192,17 +193,17 @@ func TestSkipStatus(t *testing.T) {
 				Number:     1,
 				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
-			existing: []*scm.Status{
+			existing: []*scm.StatusInput{
 				{
-					State:   scm.StateSuccess,
-					Context: "succeeded-tests",
+					State: scm.StateSuccess,
+					Label: "succeeded-tests",
 				},
 			},
 
-			expected: []*scm.Status{
+			expected: []*scm.StatusInput{
 				{
-					State:   scm.StateSuccess,
-					Context: "succeeded-tests",
+					State: scm.StateSuccess,
+					Label: "succeeded-tests",
 				},
 			},
 		},
@@ -229,16 +230,16 @@ func TestSkipStatus(t *testing.T) {
 				Number: 1,
 				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 			},
-			existing: []*scm.Status{
+			existing: []*scm.StatusInput{
 				{
-					State:   scm.StatusFailure,
-					Context: "failed-tests",
+					State: scm.StateFailure,
+					Label: "failed-tests",
 				},
 			},
-			expected: []*scm.Status{
+			expected: []*scm.StatusInput{
 				{
-					State:   scm.StatusFailure,
-					Context: "failed-tests",
+					State: scm.StateFailure,
+					Label: "failed-tests",
 				},
 			},
 		},
@@ -269,24 +270,24 @@ func TestSkipStatus(t *testing.T) {
 				Number:     1,
 				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			},
-			existing: []*scm.Status{
+			existing: []*scm.StatusInput{
 				{
-					State:   scm.StatusFailure,
-					Context: "failed-tests",
+					State: scm.StateFailure,
+					Label: "failed-tests",
 				},
 				{
-					State:   scm.StatusPending,
-					Context: "pending-tests",
+					State: scm.StatePending,
+					Label: "pending-tests",
 				},
 			},
-			expected: []*scm.Status{
+			expected: []*scm.StatusInput{
 				{
-					State:   scm.StatusFailure,
-					Context: "failed-tests",
+					State: scm.StateFailure,
+					Label: "failed-tests",
 				},
 				{
-					State:   scm.StatusPending,
-					Context: "pending-tests",
+					State: scm.StatePending,
+					Label: "pending-tests",
 				},
 			},
 		},
@@ -306,13 +307,13 @@ func TestSkipStatus(t *testing.T) {
 				},
 			},
 			PullRequestChanges: test.prChanges,
-			CreatedStatuses: map[string][]*scm.Status{
+			CreatedStatuses: map[string][]*scm.StatusInput{
 				test.sha: test.existing,
 			},
 			CombinedStatuses: map[string]*scm.CombinedStatus{
 				test.sha: {
 					State:    test.combinedStatus,
-					Statuses: test.existing,
+					Statuses: scm.ConvertStatusInputsToStatuses(test.existing),
 				},
 			},
 		}
@@ -332,7 +333,7 @@ func TestSkipStatus(t *testing.T) {
 		for _, got := range created {
 			var found bool
 			for _, exp := range test.expected {
-				if exp.Context == got.Context {
+				if exp.Label == got.Label {
 					found = true
 					if !reflect.DeepEqual(exp, got) {
 						t.Errorf("%s: expected status: %v, got: %v", test.name, exp, got)
@@ -340,7 +341,7 @@ func TestSkipStatus(t *testing.T) {
 				}
 			}
 			if !found {
-				t.Errorf("%s: expected context %q in the results: %v", test.name, got.Context, created)
+				t.Errorf("%s: expected context %q in the results: %v", test.name, got.Label, created)
 				break
 			}
 		}

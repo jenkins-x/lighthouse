@@ -22,18 +22,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/sets"
-	clienttesting "k8s.io/client-go/testing"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/client/clientset/versioned/fake"
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
-	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func issueLabels(labels ...string) []string {
@@ -776,7 +774,7 @@ func TestHandleGenericComment(t *testing.T) {
 			tc.Branch = "master"
 		}
 		g := &fakegithub.FakeClient{
-			CreatedStatuses: map[string][]*scm.Status{},
+			CreatedStatuses: map[string][]*scm.StatusInput{},
 			IssueComments:   map[int][]*scm.Comment{},
 			OrgMembers:      map[string][]string{"org": {"trusted-member"}},
 			PullRequests: map[int]*scm.PullRequest{
@@ -796,22 +794,22 @@ func TestHandleGenericComment(t *testing.T) {
 				},
 			},
 			IssueLabelsExisting: tc.IssueLabels,
-			PullRequestChanges:  map[int][]*scm.Change{0: {{Filename: "CHANGED"}}},
+			PullRequestChanges:  map[int][]*scm.Change{0: {{Path: "CHANGED"}}},
 			CombinedStatuses: map[string]*scm.CombinedStatus{
 				"cafe": {
 					Statuses: []*scm.Status{
-						{State: scm.StatusPending, Context: "pull-job"},
-						{State: scm.StatusFailure, Context: "pull-jib"},
-						{State: scm.StateSuccess, Context: "pull-jub"},
+						{State: scm.StatePending, Label: "pull-job"},
+						{State: scm.StateFailure, Label: "pull-jib"},
+						{State: scm.StateSuccess, Label: "pull-jub"},
 					},
 				},
 			},
 		}
 		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}}
-		fakePlumberClient := fake.NewSimpleClientset()
+		fakePlumberClient := fake.NewPlumber()
 		c := Client{
 			GitHubClient:  g,
-			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs(fakeConfig.PlumberJobNamespace),
+			PlumberClient: fakePlumberClient,
 			Config:        fakeConfig,
 			Logger:        logrus.WithField("plugin", PluginName),
 		}
@@ -852,9 +850,9 @@ func TestHandleGenericComment(t *testing.T) {
 		event := github.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Repo: scm.Repository{
-				Owner:    scm.User{Login: "org"},
-				Name:     "repo",
-				FullName: "org/repo",
+				Namespace: "org",
+				Name:      "repo",
+				FullName:  "org/repo",
 			},
 			Body:        tc.Body,
 			Author:      scm.User{Login: tc.Author},
@@ -863,7 +861,7 @@ func TestHandleGenericComment(t *testing.T) {
 			IsPR:        tc.IsPR,
 		}
 
-		trigger := plugins.Trigger{
+		trigger := &plugins.Trigger{
 			IgnoreOkToTest:       tc.IgnoreOkToTest,
 			ElideSkippedContexts: tc.ElideSkippedContexts,
 		}
@@ -875,23 +873,18 @@ func TestHandleGenericComment(t *testing.T) {
 		if err := handleGenericComment(c, trigger, event); err != nil {
 			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 		}
-		validate(tc.name, fakePlumberClient.Fake.Actions(), g, tc, t)
+		validate(tc.name, fakePlumberClient, g, tc, t)
 		if err := handleGenericComment(c, trigger, event); err != nil {
 			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 		}
-		validate(tc.name, fakePlumberClient.Fake.Actions(), g, tc, t)
+		validate(tc.name, fakePlumberClient, g, tc, t)
 	}
 }
 
-func validate(name string, actions []clienttesting.Action, g *fakegithub.FakeClient, tc testcase, t *testing.T) {
+func validate(name string, fakePlumberClient *fake.FakePlumber, g *fakegithub.FakeClient, tc testcase, t *testing.T) {
 	startedContexts := sets.NewString()
-	for _, action := range actions {
-		switch action := action.(type) {
-		case clienttesting.CreateActionImpl:
-			if plumberJob, ok := action.Object.(*builder.PlumberJob); ok {
-				startedContexts.Insert(plumberJob.Spec.Context)
-			}
-		}
+	for _, job := range fakePlumberClient.Jobs {
+		startedContexts.Insert(job.Spec.Context)
 	}
 	if len(startedContexts) > 0 && !tc.ShouldBuild {
 		t.Errorf("Built but should not have: %+v", tc)

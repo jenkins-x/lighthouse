@@ -61,7 +61,7 @@ func (c *fakeClientClose) GetIssueLabels(owner, repo string, number int) ([]*scm
 		if l == "error" {
 			return nil, errors.New("issue label 500")
 		}
-		labels = append(labels, scm.Label{Name: l})
+		labels = append(labels, &scm.Label{Name: l})
 	}
 	return labels, nil
 }

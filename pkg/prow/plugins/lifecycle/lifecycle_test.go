@@ -59,7 +59,7 @@ func (c *fakeClient) RemoveLabel(owner, repo string, number int, label string) e
 func (c *fakeClient) GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error) {
 	la := []*scm.Label{}
 	for _, l := range c.labels {
-		la = append(la, scm.Label{Name: l})
+		la = append(la, &scm.Label{Name: l})
 	}
 	return la, nil
 }

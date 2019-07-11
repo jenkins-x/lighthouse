@@ -20,20 +20,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/diff"
-	"k8s.io/apimachinery/pkg/util/sets"
-	clienttesting "k8s.io/client-go/testing"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/client/clientset/versioned/fake"
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
-	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/diff"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestHelpProvider(t *testing.T) {
@@ -147,13 +143,13 @@ func TestRunAndSkipJobs(t *testing.T) {
 				Reporter: config.Reporter{Context: "second-context"},
 			}},
 			expectedStatuses: []*scm.Status{{
-				State:       scm.StateSuccess,
-				Context:     "first-context",
-				Description: "Skipped.",
+				State: scm.StateSuccess,
+				Label: "first-context",
+				Desc:  "Skipped.",
 			}, {
-				State:       scm.StateSuccess,
-				Context:     "second-context",
-				Description: "Skipped.",
+				State: scm.StateSuccess,
+				Label: "second-context",
+				Desc:  "Skipped.",
 			}},
 		},
 		{
@@ -185,9 +181,9 @@ func TestRunAndSkipJobs(t *testing.T) {
 				Reporter: config.Reporter{Context: "second-context", SkipReport: true},
 			}},
 			expectedStatuses: []*scm.Status{{
-				State:       scm.StateSuccess,
-				Context:     "first-context",
-				Description: "Skipped.",
+				State: scm.StateSuccess,
+				Label: "first-context",
+				Desc:  "Skipped.",
 			}},
 		},
 		{
@@ -237,13 +233,13 @@ func TestRunAndSkipJobs(t *testing.T) {
 			}},
 			expectedJobs: sets.NewString("first", "second"),
 			expectedStatuses: []*scm.Status{{
-				State:       scm.StateSuccess,
-				Context:     "third-context",
-				Description: "Skipped.",
+				State: scm.StateSuccess,
+				Label: "third-context",
+				Desc:  "Skipped.",
 			}, {
-				State:       scm.StateSuccess,
-				Context:     "fourth-context",
-				Description: "Skipped.",
+				State: scm.StateSuccess,
+				Label: "fourth-context",
+				Desc:  "Skipped.",
 			}},
 		},
 		{
@@ -273,13 +269,13 @@ func TestRunAndSkipJobs(t *testing.T) {
 			jobCreationErrs: sets.NewString("first"),
 			expectedJobs:    sets.NewString("second"),
 			expectedStatuses: []*scm.Status{{
-				State:       scm.StateSuccess,
-				Context:     "third-context",
-				Description: "Skipped.",
+				State: scm.StateSuccess,
+				Label: "third-context",
+				Desc:  "Skipped.",
 			}, {
-				State:       scm.StateSuccess,
-				Context:     "fourth-context",
-				Description: "Skipped.",
+				State: scm.StateSuccess,
+				Label: "fourth-context",
+				Desc:  "Skipped.",
 			}},
 			expectedErr: true,
 		},
@@ -288,10 +284,8 @@ func TestRunAndSkipJobs(t *testing.T) {
 	pr := &scm.PullRequest{
 		Base: scm.PullRequestBranch{
 			Repo: scm.Repository{
-				Owner: scm.User{
-					Login: "org",
-				},
-				Name: "repo",
+				Namespace: "org",
+				Name:      "repo",
 			},
 			Ref: "branch",
 		},
@@ -302,23 +296,17 @@ func TestRunAndSkipJobs(t *testing.T) {
 
 	for _, testCase := range testCases {
 		fakeGitHubClient := fakegithub.FakeClient{}
-		fakePlumberClient := fake.NewSimpleClientset()
-		fakePlumberClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-			switch action := action.(type) {
-			case clienttesting.CreateActionImpl:
-				plumberJob, ok := action.Object.(*builder.PlumberJob)
-				if !ok {
-					return false, nil, nil
-				}
-				if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
-					return true, action.Object, errors.New("failed to create job")
-				}
+		fakePlumberClient := fake.NewPlumber()
+		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error) {
+			if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
+				return true, plumberJob, errors.New("failed to create job")
 			}
 			return false, nil, nil
 		})
+
 		client := Client{
 			GitHubClient:  &fakeGitHubClient,
-			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("plumberJobs"),
+			PlumberClient: fakePlumberClient,
 			Logger:        logrus.WithField("testcase", testCase.name),
 		}
 
@@ -330,17 +318,13 @@ func TestRunAndSkipJobs(t *testing.T) {
 			t.Errorf("%s: expected no error but got one: %v", testCase.name, err)
 		}
 
-		if actual, expected := fakeGitHubClient.CreatedStatuses[pr.Sha], testCase.expectedStatuses; !reflect.DeepEqual(actual, expected) {
+		if actual, expected := fakeGitHubClient.CreatedStatuses[pr.Base.Ref], testCase.expectedStatuses; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: created incorrect statuses: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 
 		observedCreatedPlumberJobs := sets.NewString()
-		existingPlumberJobs, err := fakePlumberClient.ProwV1().PlumberJobs("plumberJobs").List(metav1.ListOptions{})
-		if err != nil {
-			t.Errorf("%s: could not list current state of prow jobs: %v", testCase.name, err)
-			continue
-		}
-		for _, job := range existingPlumberJobs.Items {
+		existingPlumberJobs := fakePlumberClient.Jobs
+		for _, job := range existingPlumberJobs {
 			observedCreatedPlumberJobs.Insert(job.Spec.Job)
 		}
 
@@ -403,10 +387,8 @@ func TestRunRequested(t *testing.T) {
 	pr := &scm.PullRequest{
 		Base: scm.PullRequestBranch{
 			Repo: scm.Repository{
-				Owner: scm.User{
-					Login: "org",
-				},
-				Name: "repo",
+				Namespace: "org",
+				Name:      "repo",
 			},
 			Ref: "branch",
 		},
@@ -417,23 +399,17 @@ func TestRunRequested(t *testing.T) {
 
 	for _, testCase := range testCases {
 		fakeGitHubClient := fakegithub.FakeClient{}
-		fakePlumberClient := fake.NewSimpleClientset()
-		fakePlumberClient.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-			switch action := action.(type) {
-			case clienttesting.CreateActionImpl:
-				plumberJob, ok := action.Object.(*builder.PlumberJob)
-				if !ok {
-					return false, nil, nil
-				}
-				if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
-					return true, action.Object, errors.New("failed to create job")
-				}
+		fakePlumberClient := fake.NewPlumber()
+
+		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error) {
+			if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
+				return true, plumberJob, errors.New("failed to create job")
 			}
 			return false, nil, nil
 		})
 		client := Client{
 			GitHubClient:  &fakeGitHubClient,
-			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("plumberJobs"),
+			PlumberClient: fakePlumberClient,
 			Logger:        logrus.WithField("testcase", testCase.name),
 		}
 
@@ -446,12 +422,12 @@ func TestRunRequested(t *testing.T) {
 		}
 
 		observedCreatedPlumberJobs := sets.NewString()
-		existingPlumberJobs, err := fakePlumberClient.ProwV1().PlumberJobs("plumberJobs").List(metav1.ListOptions{})
+		existingPlumberJobs := fakePlumberClient.Jobs
 		if err != nil {
 			t.Errorf("%s: could not list current state of prow jobs: %v", testCase.name, err)
 			continue
 		}
-		for _, job := range existingPlumberJobs.Items {
+		for _, job := range existingPlumberJobs {
 			observedCreatedPlumberJobs.Insert(job.Spec.Job)
 		}
 
