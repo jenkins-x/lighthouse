@@ -14,7 +14,6 @@ ifeq "$(GOVERSION)" ""
 #    $(error must be running Go version 1.12)
 endif
 export GO111MODULE=on
-#export GO15VENDOREXPERIMENT=1
 
 all: test build
 
