@@ -1,7 +1,5 @@
 module github.com/jenkins-x/lighthouse
 
-go 1.12
-
 require (
 	github.com/GeertJohan/fgt v0.0.0-20160120143236-262f7b11eec0 // indirect
 	github.com/bazelbuild/buildtools v0.0.0-20180226164855-80c7f0d45d7e
