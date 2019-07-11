@@ -19,37 +19,33 @@ package trigger
 import (
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	clienttesting "k8s.io/client-go/testing"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/client/clientset/versioned/fake"
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
-	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 )
 
 func TestCreateRefs(t *testing.T) {
-	pe := *scm.PushHook{
+	pe := &scm.PushHook{
 		Ref: "refs/heads/master",
 		Repo: scm.Repository{
-			Owner: scm.User{
-				Name: "kubernetes",
-			},
-			Name: "repo",
-			Link: "https://example.com/kubernetes/repo",
+			Namespace: "kubernetes",
+			Name:      "repo",
+			Link:      "https://example.com/kubernetes/repo",
 		},
 		After:   "abcdef",
 		Compare: "https://example.com/kubernetes/repo/compare/abcdee...abcdef",
 	}
-	expected := builder.Refs{
+	expected := plumber.Refs{
 		Org:      "kubernetes",
 		Repo:     "repo",
 		BaseRef:  "master",
-		BaseSha:  "abcdef",
+		BaseSHA:  "abcdef",
 		BaseLink: "https://example.com/kubernetes/repo/compare/abcdee...abcdef",
 	}
 	if actual := createRefs(pe); !equality.Semantic.DeepEqual(expected, actual) {
@@ -65,7 +61,7 @@ func TestHandlePE(t *testing.T) {
 	}{
 		{
 			name: "branch deleted",
-			pe: *scm.PushHook{
+			pe: &scm.PushHook{
 				Ref: "refs/heads/master",
 				Repo: scm.Repository{
 					FullName: "org/repo",
@@ -76,9 +72,9 @@ func TestHandlePE(t *testing.T) {
 		},
 		{
 			name: "no matching files",
-			pe: *scm.PushHook{
+			pe: &scm.PushHook{
 				Ref: "refs/heads/master",
-				Commits: []github.Commit{
+				Commits: []scm.PushCommit{
 					{
 						Added: []string{"example.txt"},
 					},
@@ -90,9 +86,9 @@ func TestHandlePE(t *testing.T) {
 		},
 		{
 			name: "one matching file",
-			pe: *scm.PushHook{
+			pe: &scm.PushHook{
 				Ref: "refs/heads/master",
-				Commits: []github.Commit{
+				Commits: []scm.PushCommit{
 					{
 						Added:    []string{"example.txt"},
 						Modified: []string{"hack.sh"},
@@ -106,9 +102,9 @@ func TestHandlePE(t *testing.T) {
 		},
 		{
 			name: "no change matcher",
-			pe: *scm.PushHook{
+			pe: &scm.PushHook{
 				Ref: "refs/heads/master",
-				Commits: []github.Commit{
+				Commits: []scm.PushCommit{
 					{
 						Added: []string{"example.txt"},
 					},
@@ -121,9 +117,9 @@ func TestHandlePE(t *testing.T) {
 		},
 		{
 			name: "branch name with a slash",
-			pe: *scm.PushHook{
+			pe: &scm.PushHook{
 				Ref: "refs/heads/release/v1.14",
-				Commits: []github.Commit{
+				Commits: []scm.PushCommit{
 					{
 						Added: []string{"hack.sh"},
 					},
@@ -137,10 +133,10 @@ func TestHandlePE(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		g := &fakegithub.FakeClient{}
-		fakePlumberClient := fake.NewSimpleClientset()
+		fakePlumberClient := fake.NewPlumber()
 		c := Client{
 			GitHubClient:  g,
-			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("plumberJobs"),
+			PlumberClient: fakePlumberClient,
 			Config:        &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}},
 			Logger:        logrus.WithField("plugin", PluginName),
 		}
@@ -176,16 +172,14 @@ func TestHandlePE(t *testing.T) {
 		if err := c.Config.SetPostsubmits(postsubmits); err != nil {
 			t.Fatalf("failed to set postsubmits: %v", err)
 		}
-		err := handlePE(c, tc.pe)
+		err := handlePE(c, *tc.pe)
 		if err != nil {
 			t.Errorf("test %q: handlePE returned unexpected error %v", tc.name, err)
 		}
 		var numStarted int
-		for _, action := range fakePlumberClient.Fake.Actions() {
-			switch action.(type) {
-			case clienttesting.CreateActionImpl:
-				numStarted++
-			}
+		for _, job := range fakePlumberClient.Jobs {
+			t.Logf("created job with context %s", job.Spec.Context)
+			numStarted++
 		}
 		if numStarted != tc.jobsToRun {
 			t.Errorf("test %q: expected %d jobs to run, got %d", tc.name, tc.jobsToRun, numStarted)

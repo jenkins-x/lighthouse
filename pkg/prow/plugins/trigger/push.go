@@ -46,8 +46,8 @@ func listPushEventChanges(pe scm.PushHook) config.ChangedFilesProvider {
 	}
 }
 
-func createRefs(pe scm.PushHook) plumber.Refs {
-	branch := github.PushHookBranch(&pe)
+func createRefs(pe *scm.PushHook) plumber.Refs {
+	branch := github.PushHookBranch(pe)
 	return plumber.Refs{
 		Org:      pe.Repo.Namespace,
 		Repo:     pe.Repo.Name,
@@ -69,7 +69,7 @@ func handlePE(c Client, pe scm.PushHook) error {
 		} else if !shouldRun {
 			continue
 		}
-		refs := createRefs(pe)
+		refs := createRefs(&pe)
 		labels := make(map[string]string)
 		for k, v := range j.Labels {
 			labels[k] = v

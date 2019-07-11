@@ -1,42 +1,34 @@
 module github.com/jenkins-x/lighthouse
 
-go 1.12
-
 require (
-	github.com/GeertJohan/fgt v0.0.0-20160120143236-262f7b11eec0 // indirect
-	github.com/bazelbuild/buildtools v0.0.0-20180226164855-80c7f0d45d7e
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
-	github.com/jenkins-x/go-scm v1.5.1-0.20190710111315-86b599db835f
+	github.com/jenkins-x/go-scm v1.5.1-0.20190711055222-04cc1ce524db
 	github.com/jenkins-x/jx v0.0.0-20190709173743-9710a8bca150
 	github.com/knative/build v0.5.0
-	github.com/mattn/go-zglob v0.0.0-20180607075734-49693fbb3fe3
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
-	github.com/shurcooL/githubv4 v0.0.0-20180925043049-51d7b505e2e9
 	github.com/sirupsen/logrus v1.4.2
+	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/pflag v1.0.3
 	golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	k8s.io/api v0.0.0-20190703205437-39734b2a72fe
-	k8s.io/apiextensions-apiserver v0.0.0-20190308081736-3a66ae4d2f93
 	k8s.io/apimachinery v0.0.0-20190703205208-4cfb76a8bf76
 	k8s.io/client-go v9.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
-	k8s.io/kubernetes v1.11.3
 	k8s.io/metrics v0.0.0-20190704050707-780c337c9cbd // indirect
 	k8s.io/test-infra v0.0.0-20190131093439-a22cef183a8f
-	k8s.io/utils v0.0.0-20190607212802-c55fbcfc754a // indirect
 	sigs.k8s.io/yaml v1.1.0
 )
+
+replace github.com/golang/lint => golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
 
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
 

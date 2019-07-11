@@ -2,7 +2,7 @@ FROM golang:1.12.6
 
 COPY . /go/src/github.com/jenkins-x/lighthouse
 WORKDIR /go/src/github.com/jenkins-x/lighthouse
-RUN make build-linux
+RUN make test build-linux
 
 FROM centos:7
 

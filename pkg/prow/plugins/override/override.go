@@ -187,7 +187,7 @@ func handle(oc overrideClient, log *logrus.Entry, e *github.GenericCommentEvent)
 		return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 	}
 
-	sha := pr.Sha
+	sha := pr.Head.Sha
 	statuses, err := oc.ListStatuses(org, repo, sha)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get commit statuses for PR #%d in %s/%s", number, org, repo)
@@ -230,7 +230,7 @@ Only the following contexts were expected:
 		}
 		// First create the overridden prow result if necessary
 		if pre := oc.presubmitForContext(org, repo, status.Label); pre != nil {
-			baseSHA, err := oc.GetRef(org, repo, "heads/"+pr.Ref)
+			baseSHA, err := oc.GetRef(org, repo, "heads/"+pr.Base.Ref)
 			if err != nil {
 				resp := fmt.Sprintf("Cannot get base ref of PR")
 				log.WithError(err).Warn(resp)

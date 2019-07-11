@@ -255,7 +255,7 @@ func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []config.Presubmit
 			continue
 		}
 		c.Logger.Infof("Skipping %s build.", job.Name)
-		if _, err := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Sha, skippedStatusFor(job.Context)); err != nil {
+		if _, err := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Base.Ref, skippedStatusFor(job.Context)); err != nil {
 			errors = append(errors, err)
 		}
 	}

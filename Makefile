@@ -11,10 +11,9 @@ MAIN_SRC_FILE=pkg/main/main.go
 
 GOVERSION := $(shell go version | grep 1.12)
 ifeq "$(GOVERSION)" ""
-    $(error must be running Go version 1.12)
+#    $(error must be running Go version 1.12)
 endif
 export GO111MODULE=on
-#export GO15VENDOREXPERIMENT=1
 
 all: test build
 
@@ -41,7 +40,7 @@ $(PKGS): $(GOLINT) $(FGT)
 	#@$(FGT) $(GOLINT) pkg/$@/*.go
 	#@echo "VETTING"
 	#@go vet -v $@
-	@echo "TESTING"
+	@echo "TESTING with go $(GOVERSION)"
 	@go test -v $@
 
 vendor: $(GOVENDOR)

@@ -24,12 +24,12 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
-	prowapi "k8s.io/test-infra/prow/apis/plumberJobs/v1"
 )
 
 const (
@@ -43,7 +43,7 @@ const (
 
 type fakeClient struct {
 	comments   []string
-	statuses   map[string]scm.Status
+	statuses   map[string]*scm.StatusInput
 	presubmits map[string]config.Presubmit
 	jobs       sets.String
 }
@@ -63,19 +63,19 @@ func (c *fakeClient) CreateComment(org, repo string, number int, comment string)
 	return nil
 }
 
-func (c *fakeClient) CreateStatus(org, repo, ref string, s scm.Status) error {
+func (c *fakeClient) CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error) {
 	switch {
-	case s.Context == "fail-create":
-		return errors.New("injected CreateStatus failure")
+	case s.Label == "fail-create":
+		return nil, errors.New("injected CreateStatus failure")
 	case org != fakeOrg:
-		return fmt.Errorf("bad org: %s", org)
+		return nil, fmt.Errorf("bad org: %s", org)
 	case repo != fakeRepo:
-		return fmt.Errorf("bad repo: %s", repo)
-	case ref != fakeSha:
-		return fmt.Errorf("bad ref: %s", ref)
+		return nil, fmt.Errorf("bad repo: %s", repo)
+	case ref != fakeSHA:
+		return nil, fmt.Errorf("bad ref: %s", ref)
 	}
-	c.statuses[s.Context] = s
-	return nil
+	c.statuses[s.Label] = s
+	return scm.ConvertStatusInputToStatus(s), nil
 }
 
 func (c *fakeClient) GetPullRequest(org, repo string, number int) (*scm.PullRequest, error) {
@@ -90,7 +90,7 @@ func (c *fakeClient) GetPullRequest(org, repo string, number int) (*scm.PullRequ
 		return nil, fmt.Errorf("bad number: %d", number)
 	}
 	var pr scm.PullRequest
-	pr.Sha = fakeSHA
+	pr.Head.Sha = fakeSHA
 	return &pr, nil
 }
 
@@ -100,15 +100,15 @@ func (c *fakeClient) ListStatuses(org, repo, ref string) ([]*scm.Status, error) 
 		return nil, fmt.Errorf("bad org: %s", org)
 	case repo != fakeRepo:
 		return nil, fmt.Errorf("bad repo: %s", repo)
-	case ref != fakeSha:
+	case ref != fakeSHA:
 		return nil, fmt.Errorf("bad ref: %s", ref)
 	}
 	var out []*scm.Status
 	for _, s := range c.statuses {
-		if s.Context == "fail-list" {
+		if s.Label == "fail-list" {
 			return nil, errors.New("injected ListStatuses failure")
 		}
-		out = append(out, s)
+		out = append(out, scm.ConvertStatusInputToStatus(s))
 	}
 	return out, nil
 }
@@ -134,8 +134,8 @@ func (c *fakeClient) GetRef(org, repo, ref string) (string, error) {
 	return fakeBaseSHA, nil
 }
 
-func (c *fakeClient) Create(pj *builder.PlumberJob) (*builder.PlumberJob, error) {
-	if s := pj.Status.State; s != builder.SuccessState {
+func (c *fakeClient) Create(pj *plumber.PlumberJob) (*plumber.PlumberJob, error) {
+	if s := pj.Status.State; s != plumber.SuccessState {
 		return pj, fmt.Errorf("bad status state: %s", s)
 	}
 	if pj.Spec.Context == "fail-create" {
@@ -191,11 +191,11 @@ func TestHandle(t *testing.T) {
 		issue         bool
 		state         string
 		comment       string
-		contexts      map[string]scm.Status
+		contexts      map[string]*scm.StatusInput
 		presubmits    map[string]config.Presubmit
 		user          string
 		number        int
-		expected      map[string]scm.Status
+		expected      map[string]*scm.StatusInput
 		jobs          sets.String
 		checkComments []string
 		err           bool
@@ -203,17 +203,17 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "successfully override failure",
 			comment: "/override broken-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusFailure,
+					Label: "broken-test",
+					State: scm.StateFailure,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context:     "broken-test",
-					Description: description(adminUser),
-					State:       scm.StateSuccess,
+					Label: "broken-test",
+					Desc:  description(adminUser),
+					State: scm.StateSuccess,
 				},
 			},
 			checkComments: []string{"on behalf of " + adminUser},
@@ -221,33 +221,33 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "successfully override pending",
 			comment: "/override hung-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"hung-test": {
-					Context: "hung-test",
-					State:   scm.StatusPending,
+					Label: "hung-test",
+					State: scm.StatePending,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"hung-test": {
-					Context:     "hung-test",
-					Description: description(adminUser),
-					State:       scm.StateSuccess,
+					Label: "hung-test",
+					Desc:  description(adminUser),
+					State: scm.StateSuccess,
 				},
 			},
 		},
 		{
 			name:    "comment for incorrect context",
 			comment: "/override whatever-you-want",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"hung-test": {
-					Context: "hung-test",
-					State:   scm.StatusPending,
+					Label: "hung-test",
+					State: scm.StatePending,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"hung-test": {
-					Context: "hung-test",
-					State:   scm.StatusPending,
+					Label: "hung-test",
+					State: scm.StatePending,
 				},
 			},
 			checkComments: []string{
@@ -258,62 +258,62 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "refuse override from non-admin",
 			comment: "/override broken-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 			user:          "rando",
 			checkComments: []string{"unauthorized"},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 		},
 		{
 			name:    "comment for override with no target",
 			comment: "/override",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 			user:          "rando",
 			checkComments: []string{"but none was given"},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 		},
 		{
 			name:    "override multiple",
 			comment: "/override broken-test\n/override hung-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusFailure,
+					Label: "broken-test",
+					State: scm.StateFailure,
 				},
 				"hung-test": {
-					Context: "hung-test",
-					State:   scm.StatusPending,
+					Label: "hung-test",
+					State: scm.StatePending,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"hung-test": {
-					Context:     "hung-test",
-					Description: description(adminUser),
-					State:       scm.StateSuccess,
+					Label: "hung-test",
+					Desc:  description(adminUser),
+					State: scm.StateSuccess,
 				},
 				"broken-test": {
-					Context:     "broken-test",
-					Description: description(adminUser),
-					State:       scm.StateSuccess,
+					Label: "broken-test",
+					Desc:  description(adminUser),
+					State: scm.StateSuccess,
 				},
 			},
 			checkComments: []string{fmt.Sprintf("%s: broken-test, hung-test", adminUser)},
@@ -322,16 +322,16 @@ func TestHandle(t *testing.T) {
 			name:    "ignore non-PRs",
 			issue:   true,
 			comment: "/override broken-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 		},
@@ -339,16 +339,16 @@ func TestHandle(t *testing.T) {
 			name:    "ignore closed issues",
 			state:   "closed",
 			comment: "/override broken-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 		},
@@ -356,32 +356,32 @@ func TestHandle(t *testing.T) {
 			name:    "ignore edits",
 			action:  scm.ActionUpdate,
 			comment: "/override broken-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 		},
 		{
 			name:    "ignore random text",
 			comment: "/test broken-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusPending,
+					Label: "broken-test",
+					State: scm.StatePending,
 				},
 			},
 		},
@@ -389,17 +389,17 @@ func TestHandle(t *testing.T) {
 			name:    "comment on get pr failure",
 			number:  fakePR * 2,
 			comment: "/override broken-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context: "broken-test",
-					State:   scm.StatusFailure,
+					Label: "broken-test",
+					State: scm.StateFailure,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"broken-test": {
-					Context:     "broken-test",
-					Description: description(adminUser),
-					State:       scm.StateSuccess,
+					Label: "broken-test",
+					Desc:  description(adminUser),
+					State: scm.StateSuccess,
 				},
 			},
 			checkComments: []string{"Cannot get PR"},
@@ -407,16 +407,16 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "comment on list statuses failure",
 			comment: "/override fail-list",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"fail-list": {
-					Context: "fail-list",
-					State:   scm.StatusFailure,
+					Label: "fail-list",
+					State: scm.StateFailure,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"fail-list": {
-					Context: "fail-list",
-					State:   scm.StatusFailure,
+					Label: "fail-list",
+					State: scm.StateFailure,
 				},
 			},
 			checkComments: []string{"Cannot get commit statuses"},
@@ -424,29 +424,29 @@ func TestHandle(t *testing.T) {
 		{
 			name:    "do not override passing contexts",
 			comment: "/override passing-test",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"passing-test": {
-					Context:     "passing-test",
-					Description: "preserve description",
-					State:       scm.StateSuccess,
+					Label: "passing-test",
+					Desc:  "preserve description",
+					State: scm.StateSuccess,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"passing-test": {
-					Context:     "passing-test",
-					State:       scm.StateSuccess,
-					Description: "preserve description",
+					Label: "passing-test",
+					State: scm.StateSuccess,
+					Desc:  "preserve description",
 				},
 			},
 		},
 		{
 			name:    "create successful prow job",
 			comment: "/override prow-job",
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"prow-job": {
-					Context:     "prow-job",
-					Description: "failed",
-					State:       scm.StatusFailure,
+					Label: "prow-job",
+					Desc:  "failed",
+					State: scm.StateFailure,
 				},
 			},
 			presubmits: map[string]config.Presubmit{
@@ -457,29 +457,29 @@ func TestHandle(t *testing.T) {
 				},
 			},
 			jobs: sets.NewString("prow-job"),
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"prow-job": {
-					Context:     "prow-job",
-					State:       scm.StateSuccess,
-					Description: description(adminUser),
+					Label: "prow-job",
+					State: scm.StateSuccess,
+					Desc:  description(adminUser),
 				},
 			},
 		},
 		{
 			name:    "override with explanation works",
 			comment: "/override job\r\nobnoxious flake", // github ends lines with \r\n
-			contexts: map[string]scm.Status{
+			contexts: map[string]*scm.StatusInput{
 				"job": {
-					Context:     "job",
-					Description: "failed",
-					State:       scm.StatusFailure,
+					Label: "job",
+					Desc:  "failed",
+					State: scm.StateFailure,
 				},
 			},
-			expected: map[string]scm.Status{
+			expected: map[string]*scm.StatusInput{
 				"job": {
-					Context:     "job",
-					Description: description(adminUser),
-					State:       scm.StateSuccess,
+					Label: "job",
+					Desc:  description(adminUser),
+					State: scm.StateSuccess,
 				},
 			},
 		},
@@ -502,12 +502,12 @@ func TestHandle(t *testing.T) {
 				tc.state = "open"
 			}
 			event.IssueState = tc.state
-			if tc.action == "" {
+			if int(tc.action) == 0 {
 				tc.action = scm.ActionCreate
 			}
 			event.Action = tc.action
 			if tc.contexts == nil {
-				tc.contexts = map[string]scm.Status{}
+				tc.contexts = map[string]*scm.StatusInput{}
 			}
 			fc := fakeClient{
 				statuses:   tc.contexts,

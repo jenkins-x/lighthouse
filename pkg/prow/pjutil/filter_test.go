@@ -19,11 +19,11 @@ package pjutil
 import (
 	"errors"
 	"fmt"
-	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"reflect"
 	"testing"
+
+	"github.com/jenkins-x/go-scm/scm"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/sirupsen/logrus"
 

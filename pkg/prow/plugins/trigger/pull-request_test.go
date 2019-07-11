@@ -17,16 +17,15 @@ limitations under the License.
 package trigger
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/sirupsen/logrus"
-	clienttesting "k8s.io/client-go/testing"
 )
 
 func TestTrusted(t *testing.T) {
@@ -86,7 +85,7 @@ func TestTrusted(t *testing.T) {
 				Collaborators: []string{friend},
 				IssueComments: map[int][]*scm.Comment{},
 			}
-			trigger := plugins.Trigger{
+			trigger := &plugins.Trigger{
 				TrustedOrg:     "kubernetes",
 				OnlyOrgMembers: tc.onlyOrg,
 			}
@@ -277,10 +276,10 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 		}
-		fakePlumberClient := fake.NewSimpleClientset()
+		fakePlumberClient := fake.NewPlumber()
 		c := Client{
 			GitHubClient:  g,
-			PlumberClient: fakePlumberClient.ProwV1().PlumberJobs("namespace"),
+			PlumberClient: fakePlumberClient,
 			Config:        &config.Config{},
 			Logger:        logrus.WithField("plugin", PluginName),
 		}
@@ -311,18 +310,26 @@ func TestHandlePullRequest(t *testing.T) {
 				Base: scm.PullRequestBranch{
 					Ref: "master",
 					Repo: scm.Repository{
-						Owner:    scm.User{Login: "org"},
-						Name:     "repo",
-						FullName: "org/repo",
+						Namespace: "org",
+						Name:      "repo",
+						FullName:  "org/repo",
 					},
 				},
 			},
 		}
 		if tc.prChanges {
-			data := []byte(`{"base":{"ref":{"from":"REF"}, "sha":{"from":"SHA"}}}`)
-			pr.Changes = (json.RawMessage)(data)
+			pr.Changes = scm.PullRequestHookChanges{
+				Base: scm.PullRequestHookBranch{
+					Ref: scm.PullRequestHookBranchFrom{
+						From: "REF",
+					},
+					Sha: scm.PullRequestHookBranchFrom{
+						From: "SHA",
+					},
+				},
+			}
 		}
-		trigger := plugins.Trigger{
+		trigger := &plugins.Trigger{
 			TrustedOrg:     "org",
 			OnlyOrgMembers: true,
 		}
@@ -330,11 +337,9 @@ func TestHandlePullRequest(t *testing.T) {
 			t.Fatalf("Didn't expect error: %s", err)
 		}
 		var numStarted int
-		for _, action := range fakePlumberClient.Actions() {
-			switch action.(type) {
-			case clienttesting.CreateActionImpl:
-				numStarted++
-			}
+		for _, job := range fakePlumberClient.Jobs {
+			t.Logf("created job with context %s", job.Spec.Context)
+			numStarted++
 		}
 		if numStarted > 0 && !tc.ShouldBuild {
 			t.Errorf("Built but should not have: %+v", tc)

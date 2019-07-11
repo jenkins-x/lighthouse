@@ -88,7 +88,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
-	combinedStatus, err := gc.GetCombinedStatus(org, repo, pr.Sha)
+	combinedStatus, err := gc.GetCombinedStatus(org, repo, pr.Head.Sha)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get combined commit statuses for PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
@@ -138,7 +138,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 			Desc:  "Skipped",
 			Label: context,
 		}
-		if _, err := gc.CreateStatus(org, repo, pr.Sha, status); err != nil {
+		if _, err := gc.CreateStatus(org, repo, pr.Head.Sha, status); err != nil {
 			resp := fmt.Sprintf("Cannot update PR status for context %s: %v", context, err)
 			log.Warn(resp)
 			return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))

@@ -19,6 +19,7 @@ package pjutil
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -62,27 +63,23 @@ func createRefs(pr *scm.PullRequest, baseSHA string) plumber.Refs {
 	org := pr.Base.Repo.Namespace
 	repo := pr.Base.Repo.Name
 	number := pr.Number
+	repoLink := pr.Base.Repo.Link
 	return plumber.Refs{
-		Org:  org,
-		Repo: repo,
-		// TODO
-		/*
-			RepoLink: pr.Base.Repo.Link,
-			BaseLink: fmt.Sprintf("%s/commit/%s", repoLink, baseSHA),
-		*/
+		Org:      org,
+		Repo:     repo,
+		RepoLink: repoLink,
+		BaseLink: fmt.Sprintf("%s/commit/%s", repoLink, baseSHA),
+
 		BaseRef: pr.Base.Ref,
 		BaseSHA: baseSHA,
 		Pulls: []plumber.Pull{
 			{
-				Number: number,
-				Author: pr.Author.Login,
-				SHA:    pr.Head.Sha,
-				// TODO
-				/*
-					Link:       pr.Link,
-					AuthorLink: pr.Author.Link,
-					CommitLink: fmt.Sprintf("%s/pull/%d/commits/%s", repoLink, number, pr.Head.Sha),
-				*/
+				Number:     number,
+				Author:     pr.Author.Login,
+				SHA:        pr.Head.Sha,
+				Link:       pr.Link,
+				AuthorLink: pr.Author.Link,
+				CommitLink: fmt.Sprintf("%s/pull/%d/commits/%s", repoLink, number, pr.Head.Sha),
 			},
 		},
 	}
