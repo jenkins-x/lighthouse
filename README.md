@@ -12,7 +12,6 @@ Then to run it:
 
     ./bin/lighthouse
 
-
 ## Environment variables
 
 The following environment variables are used:
