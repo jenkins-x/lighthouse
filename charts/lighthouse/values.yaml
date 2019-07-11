@@ -3,6 +3,9 @@ git:
   name: github
   server: ""
 
+# the secret used for webhooks
+hmacToken: ""
+
 # Default values for Go projects.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
