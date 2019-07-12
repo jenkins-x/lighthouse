@@ -214,6 +214,24 @@ func (br Brancher) RunsAgainstAllBranch() bool {
 	return len(br.SkipBranches) == 0 && len(br.Branches) == 0
 }
 
+// GetRESkip
+func (br Brancher) GetRESkip() *regexp.Regexp {
+	if br.reSkip == nil {
+		br2, _ := setBrancherRegexes(br)
+		br.reSkip = br2.reSkip
+	}
+	return br.reSkip
+}
+
+// GetRESkip
+func (br Brancher) GetRE() *regexp.Regexp {
+	if br.re == nil {
+		br2, _ := setBrancherRegexes(br)
+		br.re = br2.re
+	}
+	return br.re
+}
+
 // ShouldRun returns true if the input branch matches, given the whitelist/blacklist.
 func (br Brancher) ShouldRun(branch string) bool {
 	if br.RunsAgainstAllBranch() {
@@ -221,10 +239,10 @@ func (br Brancher) ShouldRun(branch string) bool {
 	}
 
 	// Favor SkipBranches over Branches
-	if len(br.SkipBranches) != 0 && (br.reSkip != nil && br.reSkip.MatchString(branch)) {
+	if len(br.SkipBranches) != 0 && br.GetRESkip().MatchString(branch) {
 		return false
 	}
-	if len(br.Branches) == 0 || (br.re != nil && br.re.MatchString(branch)) {
+	if len(br.Branches) == 0 || br.GetRE().MatchString(branch) {
 		return true
 	}
 	return false
