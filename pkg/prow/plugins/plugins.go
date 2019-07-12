@@ -234,6 +234,18 @@ func (pa *ConfigAgent) Load(path string) error {
 	return nil
 }
 
+// LoadYAMLConfig loads the configuration from the given data
+func (pa *ConfigAgent) LoadYAMLConfig(data []byte) (*Configuration, error) {
+	c := &Configuration{}
+	if err := yaml.Unmarshal(data, c); err != nil {
+		return c, err
+	}
+	if err := c.Validate(); err != nil {
+		return c, err
+	}
+	return c, nil
+}
+
 // Config returns the agent current Configuration.
 func (pa *ConfigAgent) Config() *Configuration {
 	pa.mut.Lock()

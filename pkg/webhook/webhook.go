@@ -19,6 +19,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/version"
+	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/test-infra/prow/metrics"
@@ -46,12 +47,13 @@ type WebhookOptions struct {
 	Port        int
 	JSONLog     bool
 
-	factory        clients.Factory
-	namespace      string
-	pluginFilename string
-	configFilename string
-	server         *hook.Server
-	botName        string
+	factory          clients.Factory
+	namespace        string
+	pluginFilename   string
+	configFilename   string
+	server           *hook.Server
+	botName          string
+	configMapWatcher *watcher.ConfigMapWatcher
 }
 
 // NewCmdWebhook creates the command
@@ -75,7 +77,7 @@ func NewCmdWebhook() *cobra.Command {
 		"The path to listen on for requests to trigger a pipeline run.")
 	cmd.Flags().StringVar(&options.pluginFilename, "plugin-file", "", "Path to the plugins.yaml file. If not specified it is loaded from the 'plugins' ConfigMap")
 	cmd.Flags().StringVar(&options.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
-	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $BOT_NAME if not specified.")
+	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
 
 	return cmd
 }
@@ -345,7 +347,7 @@ func (o *WebhookOptions) createSCMClient() (*scm.Client, string, error) {
 }
 
 func (o *WebhookOptions) GetBotName() string {
-	o.botName = os.Getenv("BOT_NAME")
+	o.botName = os.Getenv("GIT_USER")
 	if o.botName == "" {
 		o.botName = "jenkins-x-bot"
 	}
@@ -367,19 +369,53 @@ func (o *WebhookOptions) returnError(err error, message string, w http.ResponseW
 }
 
 func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
-	err := o.createConfigFiles()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to lazy create the prow config files from ConfigMaps")
+	configAgent := &config.Agent{}
+	pluginAgent := &plugins.ConfigAgent{}
+
+	onConfigYamlChange := func(text string) {
+		if text != "" {
+			config, err := config.LoadYAMLConfig([]byte(text))
+			if err != nil {
+				logrus.WithError(err).Error("Error processing the prow Config YAML")
+			} else {
+				logrus.Info("updating the prow core configuration")
+				configAgent.Set(config)
+			}
+		}
 	}
 
-	configAgent := &config.Agent{}
-	configFilename := o.configFilename
-	pluginFilename := o.pluginFilename
+	onPluginsYamlChange := func(text string) {
+		if text != "" {
+			config, err := pluginAgent.LoadYAMLConfig([]byte(text))
+			if err != nil {
+				logrus.WithError(err).Error("Error processing the prow Plugins YAML")
+			} else {
+				logrus.Info("updating the prow plugins configuration")
+				pluginAgent.Set(config)
+			}
+		}
+	}
 
-	logrus.WithField("file", configFilename).Info("loading ChatOps Config")
+	kubeClient, _, err := o.GetFactory().CreateKubeClient()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create Kube client")
+	}
 
-	if err := configAgent.Start(configFilename, pluginFilename); err != nil {
-		logrus.WithError(err).Fatal("Error starting config agent.")
+	callbacks := []watcher.ConfigMapCallback{
+		&watcher.ConfigMapEntryCallback{
+			Name:     ProwConfigMapName,
+			Key:      ProwConfigFilename,
+			Callback: onConfigYamlChange,
+		},
+		&watcher.ConfigMapEntryCallback{
+			Name:     ProwPluginsConfigMapName,
+			Key:      ProwPluginsFilename,
+			Callback: onPluginsYamlChange,
+		},
+	}
+	o.configMapWatcher, err = watcher.NewConfigMapWatcher(kubeClient, o.namespace, callbacks)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
 
 	/*
@@ -427,15 +463,6 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 	}
 	defer gitClient.Clean()
 
-	pluginAgent := &plugins.ConfigAgent{}
-
-	logrus.WithField("file", pluginFilename).Info("loading ChatOps Plugins configuration")
-
-	err = pluginAgent.Load(pluginFilename)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load configuration from %s", pluginFilename)
-	}
-
 	/*
 			// Get the bot's name in order to set credentials for the git client.
 			botName, err := githubClient.BotName()
@@ -478,7 +505,6 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 		Metrics:     promMetrics,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
-
 	return server, nil
 }
 
