@@ -923,12 +923,16 @@ func parseProwConfig(c *Config) error {
 	c.GitHubOptions.LinkURL = linkURL
 
 	if c.LogLevel == "" {
-		c.LogLevel = "info"
+		c.LogLevel = os.Getenv("LOG_LEVEL")
+		if c.LogLevel == "" {
+			c.LogLevel = "info"
+		}
 	}
 	lvl, err := logrus.ParseLevel(c.LogLevel)
 	if err != nil {
 		return err
 	}
+	logrus.WithField("level", lvl.String()).Infof("setting the log level")
 	logrus.SetLevel(lvl)
 
 	return nil
