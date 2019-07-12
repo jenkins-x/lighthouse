@@ -54,8 +54,7 @@ pipelineConfig:
             - --destination=gcr.io/jenkinsxio/lighthouse:${inputs.params.version}
             - --context=/workspace/source
             - --cache-dir=/workspace
-            - --build-arg
-            - VERSION=${VERSION}
+            - --build-arg=VERSION=${inputs.params.version}
 
           - name: helm-lint
             image: gcr.io/jenkinsxio/builder-go:0.1.332
