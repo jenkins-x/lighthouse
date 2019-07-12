@@ -329,6 +329,18 @@ func Load(prowConfig, jobConfig string) (c *Config, err error) {
 	return c, nil
 }
 
+// LoadYAMLConfig loads the configuration from the given data
+func LoadYAMLConfig(data []byte) (*Config, error) {
+	c := &Config{}
+	if err := yaml.Unmarshal(data, c); err != nil {
+		return c, err
+	}
+	if err := parseProwConfig(c); err != nil {
+		return c, err
+	}
+	return c, nil
+}
+
 // loadConfig loads one or multiple config files and returns a config object.
 func loadConfig(prowConfig, jobConfig string) (*Config, error) {
 	stat, err := os.Stat(prowConfig)

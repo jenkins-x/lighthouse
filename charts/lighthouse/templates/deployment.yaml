@@ -20,24 +20,10 @@ spec:
 {{- end }}
     spec:
       serviceAccountName: {{ template "fullname" . }}
-      volumes:
-        - name: config-yaml
-          configMap:
-            name: config
-        - name: plugins-yaml
-          configMap:
-            name: plugins
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
-        command:
-          - /lighthouse
-        args:
-          - --config-file
-          - /config/config.yaml
-          - --plugin-file
-          - /config/plugins.yaml
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"
@@ -65,13 +51,6 @@ spec:
         - name: {{ $pkey }}
           value: {{ quote $pval }}
 {{- end }}
-        volumeMounts:
-          - name: config-yaml
-            mountPath: /config/config.yaml
-            subPath: config.yaml
-          - name: plugins-yaml
-            mountPath: /config/plugins.yaml
-            subPath: plugins.yaml
         ports:
         - containerPort: {{ .Values.service.internalPort }}
         livenessProbe:

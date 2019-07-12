@@ -18,9 +18,9 @@ The following environment variables are used:
 
 | Name  |  Description |
 | ------------- | ------------- |
-| `BOT_NAME` | the bot user name to use on git operations |
 | `GIT_KIND` | the kind of git server: `github, bitbucket, gitea, stash` |
 | `GIT_SERVER` | the URL of the server if not using the public hosted git providers: https://github.com or https://bitbucket.org https://gitlab.com |
+| `GIT_USER` | the git user (bot name) to use on git operations |
 | `GIT_TOKEN` | the git token to perform operations on git (add comments, labels etc) |
 | `HMAC_TOKEN` | the token sent from the git provider in webhooks |
 | `JX_SERVICE_ACCOUNT` | the service account to use for generated pipelines |
