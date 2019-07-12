@@ -113,7 +113,7 @@ func (o *WebhookOptions) Run() error {
 	}
 	mux.Handle(o.Path, http.HandlerFunc(o.handleWebHookRequests))
 
-	logrus.Infof("Environment Controller is now listening on path %s for WebHooks", o.Path)
+	logrus.Infof("Lighthouse is now listening on path %s and port %d for WebHooks", o.Path, o.Port)
 	return http.ListenAndServe(":"+strconv.Itoa(o.Port), mux)
 }
 
@@ -153,6 +153,7 @@ func (o *WebhookOptions) isReady() bool {
 func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		// liveness probe etc
+		logrus.WithField("method", r.Method).Debug("invalid http method so returning index")
 		o.getIndex(w, r)
 		return
 	}
@@ -200,8 +201,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		KubernetesClient: kubeClient,
 		GitClient:        gitClient,
 	}
-
-	server.OnRequest()
 
 	pushHook, ok := webhook.(*scm.PushHook)
 	l := logrus.WithFields(logrus.Fields(fields))
