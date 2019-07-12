@@ -42,7 +42,7 @@ func (c *GitHubClient) Query(context.Context, interface{}, map[string]interface{
 func (c *GitHubClient) BotName() (string, error) {
 	botName := c.botName
 	if botName == "" {
-		botName = os.Getenv("BOT_NAME")
+		botName = os.Getenv("GIT_USER")
 		if botName == "" {
 			botName = "jenkins-x-bot"
 		}
