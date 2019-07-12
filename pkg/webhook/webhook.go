@@ -18,6 +18,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/test-infra/prow/metrics"
@@ -27,8 +28,6 @@ import (
 )
 
 const (
-	helloMessage = "hello from the Jenkins X Lighthouse\n"
-
 	// HealthPath is the URL path for the HTTP endpoint that returns health status.
 	HealthPath = "/health"
 	// ReadyPath URL path for the HTTP endpoint that returns ready status.
@@ -137,7 +136,12 @@ func (o *WebhookOptions) ready(w http.ResponseWriter, r *http.Request) {
 // getIndex returns a simple home page
 func (o *WebhookOptions) getIndex(w http.ResponseWriter, r *http.Request) {
 	logrus.Debug("GET index")
-	w.Write([]byte(helloMessage))
+	message := fmt.Sprintf(`Hello from Jenkins X Lighthouse version: %s
+
+For more information see: https://github.com/jenkins-x/lighthouse
+`, version.Version)
+
+	w.Write([]byte(message))
 }
 
 func (o *WebhookOptions) isReady() bool {
