@@ -71,13 +71,7 @@ var (
 	*/
 )
 
-// OnRequest lets get ready to invoke a request
-func (s *Server) OnRequest() {
-	s.wg.Add(1)
-}
-
 func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHook) {
-	defer s.wg.Done()
 	l = l.WithFields(logrus.Fields{
 		github.OrgLogField:  ic.Repo.Namespace,
 		github.RepoLogField: ic.Repo.Name,
@@ -141,7 +135,6 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *github.GenericComment
 }
 
 func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
-	defer s.wg.Done()
 	repo := pe.Repository()
 	l = l.WithFields(logrus.Fields{
 		github.OrgLogField:  repo.Namespace,
@@ -150,8 +143,10 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		"head":              pe.After,
 	})
 	l.Info("Push event.")
+	c := 0
 	for p, h := range s.Plugins.PushEventHandlers(repo.Namespace, repo.Name) {
 		s.wg.Add(1)
+		c++
 		go func(p string, h plugins.PushEventHandler) {
 			defer s.wg.Done()
 			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
@@ -160,6 +155,7 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 			}
 		}(p, h)
 	}
+	l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 }
 
 /*
