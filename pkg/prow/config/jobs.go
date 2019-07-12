@@ -221,7 +221,7 @@ func (br Brancher) ShouldRun(branch string) bool {
 	}
 
 	// Favor SkipBranches over Branches
-	if len(br.SkipBranches) != 0 && br.reSkip.MatchString(branch) {
+	if len(br.SkipBranches) != 0 && (br.reSkip != nil && br.reSkip.MatchString(branch)) {
 		return false
 	}
 	if len(br.Branches) == 0 || br.re.MatchString(branch) {
