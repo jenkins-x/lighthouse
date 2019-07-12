@@ -1,5 +1,8 @@
 FROM golang:1.12.6
 
+ARG VERSION
+ENV VERSION ${VERSION:-v0.0.0-preview}
+
 COPY . /go/src/github.com/jenkins-x/lighthouse
 WORKDIR /go/src/github.com/jenkins-x/lighthouse
 RUN make test build-linux

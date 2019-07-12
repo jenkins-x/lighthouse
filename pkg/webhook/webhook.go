@@ -18,6 +18,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/test-infra/prow/metrics"
@@ -27,8 +28,6 @@ import (
 )
 
 const (
-	helloMessage = "hello from the Jenkins X Lighthouse\n"
-
 	// HealthPath is the URL path for the HTTP endpoint that returns health status.
 	HealthPath = "/health"
 	// ReadyPath URL path for the HTTP endpoint that returns ready status.
@@ -137,7 +136,12 @@ func (o *WebhookOptions) ready(w http.ResponseWriter, r *http.Request) {
 // getIndex returns a simple home page
 func (o *WebhookOptions) getIndex(w http.ResponseWriter, r *http.Request) {
 	logrus.Debug("GET index")
-	w.Write([]byte(helloMessage))
+	message := fmt.Sprintf(`Hello from Jenkins X Lighthouse version: %s
+
+For more information see: https://github.com/jenkins-x/lighthouse
+`, version.Version)
+
+	w.Write([]byte(message))
 }
 
 func (o *WebhookOptions) isReady() bool {
@@ -212,12 +216,13 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Push handler")
 
-		err := o.updatePlumberClient(l, server, pushHook.Repository(), w)
+		err := o.updatePlumberClientAndReturnError(l, server, pushHook.Repository(), w)
 		if err != nil {
 			return
 		}
 
 		server.HandlePushEvent(l, pushHook)
+		w.Write([]byte("processed push hook"))
 		return
 	}
 
@@ -238,12 +243,12 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updatePlumberClient(l, server, issueCommentHook.Repository(), w)
+		err := o.updatePlumberClientAndReturnError(l, server, issueCommentHook.Repository(), w)
 		if err != nil {
 			return
 		}
 		server.HandleIssueCommentEvent(l, *issueCommentHook)
-		w.Write([]byte("OK"))
+		w.Write([]byte("processed issue comment hook"))
 		return
 	}
 
@@ -260,7 +265,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 
 		l.Info("invoking PR handler")
 
-		w.Write([]byte("OK"))
+		w.Write([]byte("processed PR hook"))
 		return
 	}
 
@@ -282,11 +287,11 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["Author.Avatar"] = author.Avatar
 
 		l.Info("invoking PR Comment handler")
-		w.Write([]byte("OK"))
+		w.Write([]byte("processed PR comment hook"))
 		return
 	} else {
 		l.Info("invoking webhook handler")
-		w.Write([]byte("OK"))
+		w.Write([]byte("ignored unknown hook"))
 		return
 	}
 }
@@ -541,7 +546,7 @@ func (o *WebhookOptions) createConfigFiles() error {
 	return nil
 }
 
-func (o *WebhookOptions) updatePlumberClient(l *logrus.Entry, server hook.Server, repository scm.Repository, w http.ResponseWriter) error {
+func (o *WebhookOptions) updatePlumberClientAndReturnError(l *logrus.Entry, server hook.Server, repository scm.Repository, w http.ResponseWriter) error {
 	plumberClient, err := plumber.NewPlumber(repository, o.createCommonOptions(o.namespace))
 	if err != nil {
 		l.Errorf("failed to create Plumber webhook: %s", err.Error())
