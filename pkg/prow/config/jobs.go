@@ -373,7 +373,7 @@ func (ps Presubmit) TriggerMatches(body string) bool {
 		var err error
 		re, err = regexp.Compile(ps.Trigger)
 		if err != nil {
-			return false
+			return body == ps.Trigger
 		}
 	}
 	return ps.Trigger != "" && re != nil && re.MatchString(body)
