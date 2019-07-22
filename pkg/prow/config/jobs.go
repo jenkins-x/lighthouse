@@ -365,7 +365,8 @@ func (ps Presubmit) NeedsExplicitTrigger() bool {
 //
 // This is usually a /test foo string.
 func (ps Presubmit) TriggerMatches(body string) bool {
-	return ps.Trigger != "" && ps.re.MatchString(body)
+	re := ps.GetRE()
+	return ps.Trigger != "" && re.MatchString(body)
 }
 
 // ContextRequired checks whether a context is required from github points of view (required check).
