@@ -141,7 +141,7 @@ type Presubmit struct {
 	Reporter
 
 	// We'll set these when we load it.
-	re *regexp.Regexp // from Trigger.
+	//re *regexp.Regexp // from Trigger.
 }
 
 // Postsubmit runs on push events.
@@ -218,7 +218,7 @@ func (br Brancher) RunsAgainstAllBranch() bool {
 func (br Brancher) GetRESkip() *regexp.Regexp {
 	if br.reSkip == nil {
 		br2, _ := setBrancherRegexes(br)
-		br.reSkip = br2.reSkip
+		return br2.reSkip
 	}
 	return br.reSkip
 }
@@ -227,7 +227,7 @@ func (br Brancher) GetRESkip() *regexp.Regexp {
 func (br Brancher) GetRE() *regexp.Regexp {
 	if br.re == nil {
 		br2, _ := setBrancherRegexes(br)
-		br.re = br2.re
+		return br2.re
 	}
 	return br.re
 }
@@ -365,8 +365,18 @@ func (ps Presubmit) NeedsExplicitTrigger() bool {
 //
 // This is usually a /test foo string.
 func (ps Presubmit) TriggerMatches(body string) bool {
-	re := ps.GetRE()
-	return ps.Trigger != "" && re.MatchString(body)
+	re := ps.re
+	if ps.Trigger == "" {
+		return false
+	}
+	if re == nil {
+		var err error
+		re, err = regexp.Compile(ps.Trigger)
+		if err != nil {
+			return false
+		}
+	}
+	return ps.Trigger != "" && re != nil && re.MatchString(body)
 }
 
 // ContextRequired checks whether a context is required from github points of view (required check).
