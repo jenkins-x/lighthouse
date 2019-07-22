@@ -31,10 +31,6 @@ func (c *GitHubClient) ListMilestones(org, repo string) ([]Milestone, error) {
 	panic("implement me")
 }
 
-func (c *GitHubClient) GetFile(org, repo, filepath, commit string) ([]byte, error) {
-	panic("implement me")
-}
-
 func (c *GitHubClient) Query(context.Context, interface{}, map[string]interface{}) error {
 	panic("implement me")
 }
