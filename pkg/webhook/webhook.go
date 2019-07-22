@@ -227,6 +227,29 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	prHook, ok := webhook.(*scm.PullRequestHook)
+	if ok {
+		action := prHook.Action
+		fields["Action"] = action.String()
+		pr := prHook.PullRequest
+		fields["PR.Number"] = pr.Number
+		fields["PR.Ref"] = pr.Ref
+		fields["PR.Sha"] = pr.Sha
+		fields["PR.Title"] = pr.Title
+		fields["PR.Body"] = pr.Body
+
+		l.Info("invoking PR handler")
+
+		err := o.updatePlumberClientAndReturnError(l, server, prHook.Repository(), w)
+		if err != nil {
+			return
+		}
+
+		server.HandlePullRequestEvent(l, prHook)
+		w.Write([]byte("processed PR hook"))
+		return
+	}
+
 	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
 	if ok {
 		action := issueCommentHook.Action
@@ -250,23 +273,6 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		}
 		server.HandleIssueCommentEvent(l, *issueCommentHook)
 		w.Write([]byte("processed issue comment hook"))
-		return
-	}
-
-	prHook, ok := webhook.(*scm.PullRequestHook)
-	if ok {
-		action := prHook.Action
-		fields["Action"] = action.String()
-		pr := prHook.PullRequest
-		fields["PR.Number"] = pr.Number
-		fields["PR.Ref"] = pr.Ref
-		fields["PR.Sha"] = pr.Sha
-		fields["PR.Title"] = pr.Title
-		fields["PR.Body"] = pr.Body
-
-		l.Info("invoking PR handler")
-
-		w.Write([]byte("processed PR hook"))
 		return
 	}
 
