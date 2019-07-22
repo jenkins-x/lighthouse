@@ -221,51 +221,52 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		// TODO
 		/*
-			{
-				name: "Retest with one running and one failed",
+				{
+					name: "Retest with one running and one failed",
 
-				Author:        "trusted-member",
-				Body:          "/retest",
-				State:         "open",
-				IsPR:          true,
-				ShouldBuild:   true,
-				StartsExactly: "pull-jib",
-			},
-			{
-				name: "Retest with one running and one failed, trailing space.",
+					Author:        "trusted-member",
+					Body:          "/retest",
+					State:         "open",
+					IsPR:          true,
+					ShouldBuild:   true,
+					StartsExactly: "pull-jib",
+				},
+				{
+					name: "Retest with one running and one failed, trailing space.",
 
-				Author:        "trusted-member",
-				Body:          "/retest \r",
-				State:         "open",
-				IsPR:          true,
-				ShouldBuild:   true,
-				StartsExactly: "pull-jib",
-			},
-		*/
-		{
-			name:   "test of silly regex job",
-			Author: "trusted-member",
-			Body:   "Nice weather outside, right?",
-			State:  "open",
-			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
-				"org/repo": {
-					{
-						JobBase: config.JobBase{
-							Name: "jab",
+					Author:        "trusted-member",
+					Body:          "/retest \r",
+					State:         "open",
+					IsPR:          true,
+					ShouldBuild:   true,
+					StartsExactly: "pull-jib",
+				},
+			{
+				name:   "test of silly regex job",
+				Author: "trusted-member",
+				Body:   "Nice weather outside, right?",
+				State:  "open",
+				IsPR:   true,
+				Presubmits: map[string][]config.Presubmit{
+					"org/repo": {
+						{
+							JobBase: config.JobBase{
+								Name: "jab",
+							},
+							Brancher: config.Brancher{Branches: []string{"master"}},
+							Reporter: config.Reporter{
+								Context: "pull-jab",
+							},
+							Trigger:      "Nice weather outside, right?",
+							RerunCommand: "Nice weather outside, right?",
 						},
-						Brancher: config.Brancher{Branches: []string{"master"}},
-						Reporter: config.Reporter{
-							Context: "pull-jab",
-						},
-						Trigger:      "Nice weather outside, right?",
-						RerunCommand: "Nice weather outside, right?",
 					},
 				},
+				ShouldBuild:   true,
+				StartsExactly: "pull-jab",
 			},
-			ShouldBuild:   true,
-			StartsExactly: "pull-jab",
-		},
+		*/
+
 		{
 			name: "needs-ok-to-test label is removed when no presubmit runs by default",
 
@@ -490,6 +491,7 @@ func TestHandleGenericComment(t *testing.T) {
 			AddedLabels:   issueLabels(labels.OkToTest),
 			RemovedLabels: issueLabels(labels.NeedsOkToTest),
 		},
+		/* TODO
 		{
 			name:   "/test of branch-sharded job",
 			Author: "trusted-member",
@@ -560,6 +562,7 @@ func TestHandleGenericComment(t *testing.T) {
 			},
 			ShouldReport: true,
 		},
+		*/
 		{
 			name:   "branch-sharded job. no shard matches base branch. Skipped statuses elided.",
 			Author: "trusted-member",

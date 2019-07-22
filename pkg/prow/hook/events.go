@@ -56,19 +56,6 @@ var (
 		github.IssueActionClosed:       true,
 		github.IssueActionReopened:     true,
 	}
-	/*
-		nonCommentPullRequestActions = map[github.PullRequestEventAction]bool{
-			github.PullRequestActionAssigned:             true,
-			github.PullRequestActionUnassigned:           true,
-			github.PullRequestActionReviewRequested:      true,
-			github.PullRequestActionReviewRequestRemoved: true,
-			github.PullRequestActionLabeled:              true,
-			github.PullRequestActionUnlabeled:            true,
-			github.PullRequestActionClosed:               true,
-			github.PullRequestActionReopened:             true,
-			github.PullRequestActionSynchronize:          true,
-		}
-	*/
 )
 
 func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHook) {
@@ -156,6 +143,94 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		}(p, h)
 	}
 	l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
+}
+
+func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook) {
+	l = l.WithFields(logrus.Fields{
+		github.OrgLogField:  pr.Repo.Namespace,
+		github.RepoLogField: pr.Repo.Name,
+		github.PrLogField:   pr.PullRequest.Number,
+		"author":            pr.PullRequest.Author.Login,
+		"url":               pr.PullRequest.Link,
+	})
+	action := pr.Action
+	l.Infof("Pull request %s.", action)
+	c := 0
+	for p, h := range s.Plugins.PullRequestHandlers(pr.PullRequest.Base.Repo.Namespace, pr.PullRequest.Base.Repo.Name) {
+		s.wg.Add(1)
+		c++
+		go func(p string, h plugins.PullRequestHandler) {
+			defer s.wg.Done()
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
+			agent.InitializeCommentPruner(
+				pr.Repo.Namespace,
+				pr.Repo.Name,
+				pr.PullRequest.Number,
+			)
+			if err := h(agent, *pr); err != nil {
+				agent.Logger.WithError(err).Error("Error handling PullRequestEvent.")
+			}
+		}(p, h)
+	}
+	l.WithField("count", strconv.Itoa(c)).Info("number of PR handlers")
+
+	if !actionRelatesToPullRequestComment(action, l) {
+		return
+	}
+	s.handleGenericComment(
+		l,
+		&github.GenericCommentEvent{
+			GUID:        pr.GUID,
+			IsPR:        true,
+			Action:      action,
+			Body:        pr.PullRequest.Body,
+			Link:        pr.PullRequest.Link,
+			Number:      pr.PullRequest.Number,
+			Repo:        pr.Repo,
+			Author:      pr.PullRequest.Author,
+			IssueAuthor: pr.PullRequest.Author,
+			Assignees:   pr.PullRequest.Assignees,
+			IssueState:  pr.PullRequest.State,
+			IssueBody:   pr.PullRequest.Body,
+			IssueLink:   pr.PullRequest.Link,
+		},
+	)
+}
+
+func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool {
+	switch action {
+
+	case scm.ActionCreate, scm.ActionOpen, scm.ActionSubmitted, scm.ActionEdited, scm.ActionDelete, scm.ActionDismissed:
+		return true
+
+	/*
+		nonCommentPullRequestActions = map[*scm.PullRequestHookAction]bool{
+			github.PullRequestActionAssigned:             true,
+			github.PullRequestActionUnassigned:           true,
+			github.PullRequestActionReviewRequested:      true,
+			github.PullRequestActionReviewRequestRemoved: true,
+			github.PullRequestActionLabeled:              true,
+			github.PullRequestActionUnlabeled:            true,
+			github.PullRequestActionClosed:               true,
+			github.PullRequestActionReopened:             true,
+			github.PullRequestActionSynchronize:          true,
+		}
+	*/
+	case scm.ActionAssigned,
+		scm.ActionUnassigned,
+		scm.ActionReviewRequested,
+		scm.ActionReviewRequestRemoved,
+		scm.ActionLabel,
+		scm.ActionUnlabel,
+		scm.ActionClose,
+		scm.ActionReopen,
+		scm.ActionSync:
+		return false
+
+	default:
+		l.Errorf(failedCommentCoerceFmt, "pull_request", string(action))
+		return false
+	}
 }
 
 /*
@@ -261,57 +336,6 @@ func (s *Server) handleReviewCommentEvent(l *logrus.Entry, rce scm.ReviewEvent) 
 	)
 }
 
-func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr github.PullRequestEvent) {
-	defer s.wg.Done()
-	l = l.WithFields(logrus.Fields{
-		github.OrgLogField:  pr.Repo.Namespace,
-		github.RepoLogField: pr.Repo.Name,
-		github.PrLogField:   pr.Number,
-		"author":            pr.PullRequest.Author.Login,
-		"url":               pr.PullRequest.Link,
-	})
-	l.Infof("Pull request %s.", pr.Action)
-	for p, h := range s.Plugins.PullRequestHandlers(pr.PullRequest.Base.Repo.Namespace, pr.PullRequest.Base.Repo.Name) {
-		s.wg.Add(1)
-		go func(p string, h plugins.PullRequestHandler) {
-			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
-			agent.InitializeCommentPruner(
-				pr.Repo.Namespace,
-				pr.Repo.Name,
-				pr.PullRequest.Number,
-			)
-			if err := h(agent, pr); err != nil {
-				agent.Logger.WithError(err).Error("Error handling PullRequestEvent.")
-			}
-		}(p, h)
-	}
-	action := genericCommentAction(pr.Action))
-	if action == "" {
-		if !nonCommentPullRequestActions[pr.Action] {
-			l.Errorf(failedCommentCoerceFmt, "pull_request", string(pr.Action))
-		}
-		return
-	}
-	s.handleGenericComment(
-		l,
-		&github.GenericCommentEvent{
-			GUID:         pr.GUID,
-			IsPR:         true,
-			Action:       action,
-			Body:         pr.PullRequest.Body,
-			Link:      pr.PullRequest.Link,
-			Number:       pr.PullRequest.Number,
-			Repo:         pr.Repo,
-			Author:         pr.PullRequest.Author,
-			IssueAuthor:  pr.PullRequest.Author,
-			Assignees:    pr.PullRequest.Assignees,
-			IssueState:   pr.PullRequest.State,
-			IssueBody:    pr.PullRequest.Body,
-			IssueLink: pr.PullRequest.Link,
-		},
-	)
-}
 
 
 func (s *Server) handleIssueEvent(l *logrus.Entry, i github.IssueEvent) {
