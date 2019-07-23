@@ -375,6 +375,8 @@ github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
 github.com/jenkins-x/jx v0.0.0-20190709173743-9710a8bca150 h1:3T2KD3a7Oq7dMqTHfRuvYBh/uoMEYfcqJR6RJDc+B7o=
 github.com/jenkins-x/jx v0.0.0-20190709173743-9710a8bca150/go.mod h1:UFeDZbFaVqGuTUI9cfopDr82DmYTe1+rvtmwKzvapAk=
+github.com/jenkins-x/jx v0.0.0-20190723153540-305dbe863f6d h1:D8tw6TuIzSJZeHfRoBCX50Pd6PALrpa0CfImUPwzKQU=
+github.com/jenkins-x/jx v0.0.0-20190723153540-305dbe863f6d/go.mod h1:3WcOHE7PZIE1SuovxPp5Sjrxgx5oCh14PZfUHg/JDms=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767/go.mod h1:UR3AoCKJHHKi2AoOWeFbZcMKyd5LqQkdCRgwqZkX/io=
 github.com/jetstack/cert-manager v0.5.2 h1:qs74mdAprZ5kcCYF3arzmEAZtbt+9HneldSJrk21tKs=
@@ -629,6 +631,8 @@ github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/tektoncd/pipeline v0.3.2-0.20190508171555-91b53326d376 h1:utWJ9NWtR2XfC3oqsYXqo2tKd40pYSX8/6QlA9xuwnQ=
 github.com/tektoncd/pipeline v0.3.2-0.20190508171555-91b53326d376/go.mod h1:IZzJdiX9EqEMuUcgdnElozdYYRh0/ZRC+NKMLj1K3Yw=
+github.com/tektoncd/pipeline v0.5.1 h1:8722SzGr6TZyFL2D36RO16N5Llb1VL3hGWdnPYTgBXs=
+github.com/tektoncd/pipeline v0.5.1/go.mod h1:IZzJdiX9EqEMuUcgdnElozdYYRh0/ZRC+NKMLj1K3Yw=
 github.com/tidwall/gjson v1.1.0/go.mod h1:c/nTNbUr0E0OrXEhq1pwa8iEgc2DOt4ZZqAt1HtCkPA=
 github.com/tidwall/match v0.0.0-20171002075945-1731857f09b1/go.mod h1:LujAq0jyVjBy028G1WhWfIzbpQfMO8bBZ6Tyb0+pL9E=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
@@ -755,6 +759,8 @@ golang.org/x/tools v0.0.0-20190312151545-0bb0c0a6e846/go.mod h1:LCzVGOaR6xXOjkQ3
 golang.org/x/tools v0.0.0-20190328211700-ab21143f2384/go.mod h1:LCzVGOaR6xXOjkQ3onu1FJEFr0SW1gC7cKk1uF8kGRs=
 golang.org/x/tools v0.0.0-20190614205625-5aca471b1d59 h1:QjA/9ArTfVTLfEhClDCG7SGrZkZixxWpwNCDiwJfh88=
 golang.org/x/tools v0.0.0-20190614205625-5aca471b1d59/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
+golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522 h1:bhOzK9QyoD0ogCnFro1m2mz41+Ib0oOhfJnBp5MR4K4=
+golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485/go.mod h1:2ltnJ7xHfj0zHS40VVPYEAAMTa3ZGguvHGBSJeRWqE0=
 gonum.org/v1/netlib v0.0.0-20190313105609-8cb42192e0e0/go.mod h1:wa6Ws7BG/ESfp6dHfk7C6KdzKA7wR7u/rKwOGE66zvw=
 gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e/go.mod h1:kS+toOQn6AQKjmKJ7gzohV1XkqsFehRA2FbsbkopSuQ=
