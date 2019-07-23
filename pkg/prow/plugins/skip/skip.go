@@ -65,7 +65,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
 	honorOkToTest := trigger.HonorOkToTest(pc.PluginConfig.TriggerFor(e.Repo.Namespace, e.Repo.Name))
-	return handle(pc.GitHubClient, pc.Logger, &e, pc.Config.Presubmits[e.Repo.FullName], honorOkToTest)
+	return handle(pc.GitHubClient, pc.Logger, &e, pc.Config.GetPresubmits(e.Repo), honorOkToTest)
 }
 
 func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, presubmits []config.Presubmit, honorOkToTest bool) error {

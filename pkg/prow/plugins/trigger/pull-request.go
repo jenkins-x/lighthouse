@@ -30,7 +30,7 @@ import (
 )
 
 func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error {
-	if len(c.Config.Presubmits[pr.PullRequest.Base.Repo.FullName]) == 0 {
+	if len(c.Config.GetPresubmits(pr.PullRequest.Base.Repo)) == 0 {
 		return nil
 	}
 
@@ -213,7 +213,7 @@ func TrustedPullRequest(ghc githubClient, trigger *plugins.Trigger, author, org,
 func buildAll(c Client, pr *scm.PullRequest, eventGUID string, elideSkippedContexts bool) error {
 	org, repo, number, branch := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Number, pr.Base.Ref
 	changes := config.NewGitHubDeferredChangedFilesProvider(c.GitHubClient, org, repo, number)
-	toTest, toSkip, err := pjutil.FilterPresubmits(pjutil.TestAllFilter(), changes, branch, c.Config.Presubmits[pr.Base.Repo.FullName], c.Logger)
+	toTest, toSkip, err := pjutil.FilterPresubmits(pjutil.TestAllFilter(), changes, branch, c.Config.GetPresubmits(pr.Base.Repo), c.Logger)
 	if err != nil {
 		return err
 	}

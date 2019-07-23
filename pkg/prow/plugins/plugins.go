@@ -402,9 +402,18 @@ func (pa *ConfigAgent) PushEventHandlers(owner, repo string) map[string]PushEven
 func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 	var plugins []string
 
-	fullName := fmt.Sprintf("%s/%s", owner, repo)
-	plugins = append(plugins, pa.configuration.Plugins[owner]...)
-	plugins = append(plugins, pa.configuration.Plugins[fullName]...)
+	// on bitbucket server the owner can be the ProjectKey which is upper case - so lets also check for the case
+	// of a lower case project key matching projects
+	owners := []string{owner}
+	lowerOwner := strings.ToLower(owner)
+	if lowerOwner != owner {
+		owners = append(owners, lowerOwner)
+	}
+	for _, o := range owners {
+		fullName := fmt.Sprintf("%s/%s", o, repo)
+		plugins = append(plugins, pa.configuration.Plugins[o]...)
+		plugins = append(plugins, pa.configuration.Plugins[fullName]...)
+	}
 
 	// until we have the configuration stuff setup nicely - lets add a simple way to enable plugins
 	pluginNames := os.Getenv("LIGHTHOUSE_PLUGINS")

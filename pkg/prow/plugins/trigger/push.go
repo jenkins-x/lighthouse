@@ -62,7 +62,7 @@ func handlePE(c Client, pe scm.PushHook) error {
 		// we should not trigger jobs for a branch deletion
 		return nil
 	}
-	for _, j := range c.Config.Postsubmits[pe.Repo.FullName] {
+	for _, j := range c.Config.GetPostsubmits(pe.Repo) {
 		branch := github.PushHookBranch(&pe)
 		if shouldRun, err := j.ShouldRun(branch, listPushEventChanges(pe)); err != nil {
 			return err
