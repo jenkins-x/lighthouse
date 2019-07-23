@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,7 +61,7 @@ func (c *client) Clean() error {
 
 // NewClient returns a client that talks to GitHub. It will fail if git is not
 // in the PATH.
-func NewClient() (*client, error) {
+func NewClient(serverURL string) (*client, error) {
 	g, err := exec.LookPath("git")
 	if err != nil {
 		return nil, err
@@ -73,7 +74,7 @@ func NewClient() (*client, error) {
 		logger:    logrus.WithField("client", "git"),
 		dir:       t,
 		git:       g,
-		base:      fmt.Sprintf("https://%s", github),
+		base:      serverURL,
 		repoLocks: make(map[string]*sync.Mutex),
 	}, nil
 }
@@ -129,7 +130,8 @@ func (c *client) Clone(repo string) (*Repo, error) {
 	base := c.base
 	user, pass := c.getCredentials()
 	if user != "" && pass != "" {
-		base = fmt.Sprintf("https://%s:%s@%s", user, pass, github)
+		host := gitHost(c.base)
+		base = fmt.Sprintf("https://%s:%s@%s", user, pass, host)
 	}
 	cache := filepath.Join(c.dir, repo) + ".git"
 	if _, err := os.Stat(cache); os.IsNotExist(err) {
@@ -167,6 +169,14 @@ func (c *client) Clone(repo string) (*Repo, error) {
 		user:   user,
 		pass:   pass,
 	}, nil
+}
+
+func gitHost(s string) string {
+	u, err := url.Parse(s)
+	if err == nil {
+		return u.Host
+	}
+	return strings.TrimPrefix(s, "https://")
 }
 
 // Repo is a clone of a git repository. Create with Client.Clone, and don't
@@ -279,7 +289,8 @@ func (r *Repo) Push(repo, branch string) error {
 		return errors.New("cannot push without credentials - configure your git client")
 	}
 	r.logger.Infof("Pushing to '%s/%s (branch: %s)'.", r.user, repo, branch)
-	remote := fmt.Sprintf("https://%s:%s@%s/%s/%s", r.user, r.pass, github, r.user, repo)
+	host := gitHost(r.base)
+	remote := fmt.Sprintf("https://%s:%s@%s/%s/%s", r.user, r.pass, host, r.user, repo)
 	co := r.gitCommand("push", remote, branch)
 	_, err := co.CombinedOutput()
 	return err

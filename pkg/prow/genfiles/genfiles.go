@@ -50,7 +50,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/go-scm/scm"
 )
 
 const genConfigFile = ".generated_files"
@@ -78,8 +78,8 @@ func NewGroup(gc ghFileClient, owner, repo, sha string) (*Group, error) {
 
 	bs, err := gc.GetFile(owner, repo, genConfigFile, sha)
 	if err != nil {
-		switch err.(type) {
-		case *github.FileNotFound:
+		switch err.Error() {
+		case scm.ErrNotFound.Error():
 			return g, nil
 		default:
 			return nil, fmt.Errorf("could not get .generated_files: %v", err)

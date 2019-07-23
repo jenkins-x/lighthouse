@@ -53,6 +53,7 @@ type WebhookOptions struct {
 	configFilename   string
 	server           *hook.Server
 	botName          string
+	gitServerURL     string
 	configMapWatcher *watcher.ConfigMapWatcher
 }
 
@@ -98,7 +99,7 @@ func (o *WebhookOptions) Run() error {
 		return errors.Wrapf(err, "failed to create Hook Server")
 	}
 
-	_, _, err = o.createSCMClient()
+	_, o.gitServerURL, _, err = o.createSCMClient()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create ScmClient")
 	}
@@ -161,7 +162,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	}
 	logrus.Infof("about to parse webhook")
 
-	scmClient, token, err := o.createSCMClient()
+	scmClient, serverURL, token, err := o.createSCMClient()
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
@@ -188,7 +189,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	}
 
 	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
-	gitClient, _ := git.NewClient()
+	gitClient, _ := git.NewClient(serverURL)
 
 	user := o.GetBotName()
 	gitClient.SetCredentials(user, func() []byte {
@@ -303,7 +304,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (o *WebhookOptions) misingSourceRepository(hook scm.Webhook, w http.ResponseWriter) {
+func (o *WebhookOptions) missingSourceRepository(hook scm.Webhook, w http.ResponseWriter) {
 	repoText := repositoryToString(hook.Repository())
 	logrus.Errorf("cannot trigger a pipeline on %s as there is no SourceRepository", repoText)
 	responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: No source repository for %s", repoText))
@@ -337,7 +338,7 @@ func (o *WebhookOptions) secretFn(webhook scm.Webhook) (string, error) {
 	return os.Getenv("HMAC_TOKEN"), nil
 }
 
-func (o *WebhookOptions) createSCMClient() (*scm.Client, string, error) {
+func (o *WebhookOptions) createSCMClient() (*scm.Client, string, string, error) {
 	kind := os.Getenv("GIT_KIND")
 	if kind == "" {
 		kind = "github"
@@ -346,10 +347,10 @@ func (o *WebhookOptions) createSCMClient() (*scm.Client, string, error) {
 
 	token, err := o.createSCMToken(kind)
 	if err != nil {
-		return nil, token, err
+		return nil, serverURL, token, err
 	}
 	client, err := factory.NewClient(kind, serverURL, token)
-	return client, token, err
+	return client, serverURL, token, err
 }
 
 func (o *WebhookOptions) GetBotName() string {
@@ -463,7 +464,7 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 		}
 	*/
 
-	gitClient, err := git.NewClient()
+	gitClient, err := git.NewClient(o.gitServerURL)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}
