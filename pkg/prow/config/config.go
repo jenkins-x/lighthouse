@@ -29,6 +29,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/org"
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
@@ -733,6 +734,41 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	return nil
+}
+
+// GetPostsubmits lets return all the post submits
+func (c *Config) GetPostsubmits(repository scm.Repository) []Postsubmit {
+	fullNames := c.fullNames(repository)
+	var answer []Postsubmit
+	for _, fn := range fullNames {
+		answer = append(answer, c.Postsubmits[fn]...)
+	}
+	return answer
+}
+
+// GetPresubmits lets return all the pre submits for the given repo
+func (c *Config) GetPresubmits(repository scm.Repository) []Presubmit {
+	fullNames := c.fullNames(repository)
+	var answer []Presubmit
+	for _, fn := range fullNames {
+		answer = append(answer, c.Presubmits[fn]...)
+	}
+	return answer
+}
+
+func (c *Config) fullNames(repository scm.Repository) []string {
+	owner := repository.Namespace
+	name := repository.Name
+	fullName := repository.FullName
+	if fullName == "" {
+		fullName = scm.Join(owner, name)
+	}
+	fullNames := []string{fullName}
+	lowerOwner := strings.ToLower(owner)
+	if lowerOwner != owner {
+		fullNames = append(fullNames, scm.Join(lowerOwner, name))
+	}
+	return fullNames
 }
 
 func parseProwConfig(c *Config) error {

@@ -44,7 +44,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc github.GenericC
 	// Skip comments not germane to this plugin
 	if !pjutil.RetestRe.MatchString(gc.Body) && !pjutil.OkToTestRe.MatchString(gc.Body) && !pjutil.TestAllRe.MatchString(gc.Body) {
 		matched := false
-		for _, presubmit := range c.Config.Presubmits[gc.Repo.FullName] {
+		for _, presubmit := range c.Config.GetPresubmits(gc.Repo) {
 			matched = matched || presubmit.TriggerMatches(gc.Body)
 			if matched {
 				break
@@ -111,7 +111,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc github.GenericC
 		}
 	}
 
-	toTest, toSkip, err := FilterPresubmits(HonorOkToTest(trigger), c.GitHubClient, gc.Body, pr, c.Config.Presubmits[gc.Repo.FullName], c.Logger)
+	toTest, toSkip, err := FilterPresubmits(HonorOkToTest(trigger), c.GitHubClient, gc.Body, pr, c.Config.GetPresubmits(gc.Repo), c.Logger)
 	if err != nil {
 		return err
 	}
