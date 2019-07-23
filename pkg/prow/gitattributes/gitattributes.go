@@ -23,7 +23,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/go-scm/scm"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -47,8 +47,8 @@ func NewGroup(gitAttributesContent func() ([]byte, error)) (*Group, error) {
 
 	bs, err := gitAttributesContent()
 	if err != nil {
-		switch err.(type) {
-		case *github.FileNotFound:
+		switch err.Error() {
+		case scm.ErrNotFound.Error():
 			return g, nil
 		default:
 			return nil, fmt.Errorf("could not get .gitattributes: %v", err)

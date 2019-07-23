@@ -22,7 +22,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
@@ -126,7 +125,7 @@ func TestHandlePR(t *testing.T) {
 			name: "simple size/S, no .generated_files",
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
-				getFileErr: &github.FileNotFound{},
+				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
@@ -471,7 +470,7 @@ func TestHandlePR(t *testing.T) {
 			name: "pull request reopened",
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
-				getFileErr: &github.FileNotFound{},
+				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
@@ -511,7 +510,7 @@ func TestHandlePR(t *testing.T) {
 			name: "pull request edited",
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
-				getFileErr: &github.FileNotFound{},
+				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
@@ -544,7 +543,7 @@ func TestHandlePR(t *testing.T) {
 			name: "different label constraints",
 			client: &ghc{
 				labels:     map[scm.Label]bool{},
-				getFileErr: &github.FileNotFound{},
+				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{
 					{
 						Sha:       "abcd",
