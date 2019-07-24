@@ -9,6 +9,7 @@ rules:
   - pipelineactivities
   - pipelinestructures
   - sourcerepositories
+  - environments
   verbs:
   - create
   - list
@@ -20,7 +21,6 @@ rules:
   - jenkins.io
   resources:
   - apps
-  - environments
   - plugins
   verbs:
   - list
