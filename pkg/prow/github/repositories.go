@@ -71,5 +71,7 @@ func (c *GitHubClient) GetUserPermission(org, repo, user string) (string, error)
 }
 
 func (c *GitHubClient) IsMember(org, user string) (bool, error) {
-	panic("implement me")
+	ctx := context.Background()
+	member, _, err := c.client.Organizations.IsMember(ctx, org, user)
+	return member, err
 }

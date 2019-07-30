@@ -62,7 +62,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
 type joker interface {
@@ -123,7 +123,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, j
 		}
 		if simple.MatchString(resp) {
 			log.Infof("Commenting with \"%s\".", resp)
-			return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+			return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 		}
 
 		log.Errorf("joke contains invalid characters: %v", resp)

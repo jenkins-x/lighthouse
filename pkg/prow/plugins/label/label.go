@@ -77,7 +77,7 @@ func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error 
 }
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
@@ -193,7 +193,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 	// Tried to remove Labels that were not present on the Issue
 	if len(noSuchLabelsOnIssue) > 0 {
 		msg := fmt.Sprintf(nonExistentLabelOnIssue, strings.Join(noSuchLabelsOnIssue, ", "))
-		return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
 	return nil

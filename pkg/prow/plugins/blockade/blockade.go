@@ -48,7 +48,7 @@ type githubClient interface {
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
-	CreateComment(org, repo string, number int, comment string) error
+	CreateComment(org, repo string, number int, pr bool, comment string) error
 }
 
 type pruneClient interface {
@@ -166,7 +166,7 @@ func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp p
 			return err
 		}
 		msg := plugins.FormatResponse(pre.PullRequest.Author.Login, blockedPathsBody, sum.String())
-		return ghc.CreateComment(org, repo, prNumber, msg)
+		return ghc.CreateComment(org, repo, prNumber, true, msg)
 	} else if !shouldBlock && labelPresent {
 		// Remove the label and delete any comments created by this plugin.
 		if err := ghc.RemoveLabel(org, repo, prNumber, labels.BlockedPaths); err != nil {

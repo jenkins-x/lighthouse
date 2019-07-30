@@ -103,6 +103,53 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 	)
 }
 
+func (s *Server) HandlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullRequestCommentHook) {
+	l = l.WithFields(logrus.Fields{
+		github.OrgLogField:  pc.Repo.Namespace,
+		github.RepoLogField: pc.Repo.Name,
+		github.PrLogField:   pc.PullRequest.Number,
+		"author":            pc.Comment.Author.Login,
+		"url":               pc.Comment.Link,
+	})
+	l.Infof("PR comment %s.", pc.Action)
+
+	/*	for p, h := range s.Plugins.IssueCommentHandlers(pc.Repo.Namespace, pc.Repo.Name) {
+			s.wg.Add(1)
+			go func(p string, h plugins.IssueCommentHandler) {
+				defer s.wg.Done()
+				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
+				agent.InitializeCommentPruner(
+					pc.Repo.Namespace,
+					pc.Repo.Name,
+					pc.PullRequest.Number,
+				)
+				if err := h(agent, pc); err != nil {
+					agent.Logger.WithError(err).Error("Error handling IssueCommentEvent.")
+				}
+			}(p, h)
+		}
+	*/
+
+	s.handleGenericComment(
+		l,
+		&github.GenericCommentEvent{
+			GUID:        strconv.Itoa(pc.Comment.ID),
+			IsPR:        true,
+			Action:      pc.Action,
+			Body:        pc.Comment.Body,
+			Link:        pc.Comment.Link,
+			Number:      pc.PullRequest.Number,
+			Repo:        pc.Repo,
+			Author:      pc.Comment.Author,
+			IssueAuthor: pc.PullRequest.Author,
+			Assignees:   pc.PullRequest.Assignees,
+			IssueState:  pc.PullRequest.State,
+			IssueBody:   pc.PullRequest.Body,
+			IssueLink:   pc.PullRequest.Link,
+		},
+	)
+}
+
 func (s *Server) handleGenericComment(l *logrus.Entry, ce *github.GenericCommentEvent) {
 	for p, h := range s.Plugins.GenericCommentHandlers(ce.Repo.Namespace, ce.Repo.Name) {
 		s.wg.Add(1)
@@ -156,7 +203,11 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	action := pr.Action
 	l.Infof("Pull request %s.", action)
 	c := 0
-	for p, h := range s.Plugins.PullRequestHandlers(pr.PullRequest.Base.Repo.Namespace, pr.PullRequest.Base.Repo.Name) {
+	repo := pr.PullRequest.Base.Repo
+	if repo.Name == "" {
+		repo = pr.Repo
+	}
+	for p, h := range s.Plugins.PullRequestHandlers(repo.Namespace, repo.Name) {
 		s.wg.Add(1)
 		c++
 		go func(p string, h plugins.PullRequestHandler) {
@@ -195,6 +246,10 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 			IssueLink:   pr.PullRequest.Link,
 		},
 	)
+}
+
+func (s *Server) HandleBranchEvent(entry *logrus.Entry, hook *scm.BranchHook) {
+	// TODO
 }
 
 func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool {

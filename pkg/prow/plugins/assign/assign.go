@@ -70,7 +70,7 @@ type githubClient interface {
 	RequestReview(org, repo string, number int, logins []string) error
 	UnrequestReview(org, repo string, number int, logins []string) error
 
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
 func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
@@ -152,7 +152,7 @@ func handle(h *handler) error {
 				if len(msg) == 0 {
 					return nil
 				}
-				if err := h.gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
+				if err := h.gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 					return fmt.Errorf("comment err: %v", err)
 				}
 				return nil

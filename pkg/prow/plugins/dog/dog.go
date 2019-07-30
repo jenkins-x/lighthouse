@@ -69,7 +69,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
 type pack interface {
@@ -167,7 +167,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 			log.WithError(err).Println("Failed to get dog img")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	return errors.New("could not find a valid dog image")

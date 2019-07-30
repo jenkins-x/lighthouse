@@ -136,7 +136,7 @@ type githubClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
 	AddLabel(owner, repo string, number int, label string) error
 	AssignIssue(owner, repo string, number int, assignees []string) error
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
@@ -276,7 +276,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if isAuthor && wantLGTM {
 		resp := "you cannot LGTM your own PR."
 		log.Infof("Commenting with \"%s\".", resp)
-		return gc.CreateComment(rc.repo.Namespace, rc.repo.Name, rc.number, plugins.FormatResponseRaw(rc.body, rc.htmlURL, rc.author, resp))
+		return gc.CreateComment(rc.repo.Namespace, rc.repo.Name, rc.number, true, plugins.FormatResponseRaw(rc.body, rc.htmlURL, rc.author, resp))
 	}
 
 	// Determine if reviewer is already assigned
@@ -302,7 +302,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if !isAuthor && !skipCollaborators && !isCollaborator {
 		resp := "changing LGTM is restricted to collaborators"
 		log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
-		return gc.CreateComment(org, repoName, number, plugins.FormatResponseRaw(body, htmlURL, author, resp))
+		return gc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
 	}
 
 	// either ensure that the commentor is a collaborator or an approver/reviwer
@@ -328,7 +328,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 		if !loadReviewers(ro, filenames).Has(github.NormLogin(author)) {
 			resp := "adding LGTM is restricted to approvers and reviewers in OWNERS files."
 			log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
-			return gc.CreateComment(org, repoName, number, plugins.FormatResponseRaw(body, htmlURL, author, resp))
+			return gc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
 		}
 	}
 
@@ -374,7 +374,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				}
 				treeHash := commit.Tree.Sha
 				log.WithField("tree", treeHash).Info("Adding comment to store tree-hash.")
-				if err := gc.CreateComment(org, repoName, number, fmt.Sprintf(addLGTMLabelNotification, treeHash)); err != nil {
+				if err := gc.CreateComment(org, repoName, number, true, fmt.Sprintf(addLGTMLabelNotification, treeHash)); err != nil {
 					log.WithError(err).Error("Failed to add comment.")
 				}
 			}
@@ -484,7 +484,7 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 	// Create a comment to inform participants that LGTM label is removed due to new
 	// pull request changes.
 	log.Infof("Commenting with an LGTM removed notification to %s/%s#%d with a message: %s", org, repo, number, removeLGTMLabelNoti)
-	return gc.CreateComment(org, repo, number, removeLGTMLabelNoti)
+	return gc.CreateComment(org, repo, number, true, removeLGTMLabelNoti)
 }
 
 func skipCollaborators(config *plugins.Configuration, org, repo string) bool {

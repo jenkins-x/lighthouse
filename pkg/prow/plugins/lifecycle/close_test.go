@@ -33,7 +33,7 @@ type fakeClientClose struct {
 	labels         []string
 }
 
-func (c *fakeClientClose) CreateComment(owner, repo string, number int, comment string) error {
+func (c *fakeClientClose) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	c.commented = true
 	return nil
 }

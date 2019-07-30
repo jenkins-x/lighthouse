@@ -179,7 +179,7 @@ I understand the commands that are listed [here](https://go.k8s.io/bot-commands?
 		}
 	}
 
-	if err := ghc.CreateComment(org, repo, pr.Number, comment); err != nil {
+	if err := ghc.CreateComment(org, repo, pr.Number, true, comment); err != nil {
 		errors = append(errors, err)
 	}
 

@@ -30,7 +30,7 @@ type fakeClientReopen struct {
 	open      bool
 }
 
-func (c *fakeClientReopen) CreateComment(owner, repo string, number int, comment string) error {
+func (c *fakeClientReopen) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	c.commented = true
 	return nil
 }

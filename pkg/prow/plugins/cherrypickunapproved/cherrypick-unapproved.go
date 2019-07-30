@@ -59,7 +59,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
@@ -135,7 +135,7 @@ func handlePR(gc githubClient, log *logrus.Entry, pr *scm.PullRequestHook, cp co
 	}
 
 	formattedComment := plugins.FormatSimpleResponse(pr.PullRequest.Author.Login, commentBody)
-	if err := gc.CreateComment(org, repo, prNumber, formattedComment); err != nil {
+	if err := gc.CreateComment(org, repo, prNumber, true, formattedComment); err != nil {
 		log.WithError(err).Errorf("Failed to comment %q", formattedComment)
 	}
 

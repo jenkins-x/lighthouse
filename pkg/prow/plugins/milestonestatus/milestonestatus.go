@@ -45,7 +45,7 @@ var (
 )
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 }
@@ -121,7 +121,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 	if !found {
 		// not in the milestone maintainers team
 		msg := fmt.Sprintf(mustBeAuthorized, org, milestone.MaintainersTeam, org, milestone.MaintainersTeam, milestone.MaintainersFriendlyName)
-		return gc.CreateComment(org, repo, e.Number, msg)
+		return gc.CreateComment(org, repo, e.Number, e.IsPR, msg)
 	}
 
 	for _, statusMatch := range statusMatches {

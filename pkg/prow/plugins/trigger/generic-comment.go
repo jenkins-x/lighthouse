@@ -86,7 +86,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc github.GenericC
 		if !trusted {
 			resp := fmt.Sprintf("Cannot trigger testing until a trusted user reviews the PR and leaves an `/ok-to-test` message.")
 			c.Logger.Infof("Commenting \"%s\".", resp)
-			return c.GitHubClient.CreateComment(org, repo, number, plugins.FormatResponseRaw(gc.Body, gc.Link, gc.Author.Login, resp))
+			return c.GitHubClient.CreateComment(org, repo, number, true, plugins.FormatResponseRaw(gc.Body, gc.Link, gc.Author.Login, resp))
 		}
 	}
 

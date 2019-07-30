@@ -93,7 +93,7 @@ func (c *fakeClient) UnrequestReview(org, repo string, number int, logins []stri
 	return nil
 }
 
-func (c *fakeClient) CreateComment(owner, repo string, number int, comment string) error {
+func (c *fakeClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	c.commented = comment != ""
 	return nil
 }

@@ -99,7 +99,7 @@ type githubClient interface {
 	IsMember(org, user string) (bool, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetRef(org, repo, ref string) (string, error)
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	ListIssueComments(owner, repo string, issue int) ([]*scm.Comment, error)
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)

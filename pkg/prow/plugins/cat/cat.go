@@ -72,7 +72,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
 type clowder interface {
@@ -213,7 +213,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c
 			log.WithError(err).Error("Failed to get cat img")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	var msg string
@@ -222,7 +222,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c
 	} else {
 		msg = "https://thecatapi.com appears to be down"
 	}
-	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
+	if err := gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

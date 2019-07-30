@@ -73,7 +73,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	FindIssues(query, sort string, asc bool) ([]scm.Issue, error)
 }
 
@@ -128,7 +128,7 @@ func handlePR(c client, pre scm.PullRequestHook, welcomeTemplate string) error {
 		}
 
 		// actually post the comment
-		return c.GitHubClient.CreateComment(org, repo, pre.PullRequest.Number, msgBuffer.String())
+		return c.GitHubClient.CreateComment(org, repo, pre.PullRequest.Number, true, msgBuffer.String())
 	}
 
 	return nil

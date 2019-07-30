@@ -42,7 +42,7 @@ var (
 )
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetRef(org, repo, ref string) (string, error)
@@ -66,8 +66,8 @@ type client struct {
 	plumberClient plumberClient
 }
 
-func (c client) CreateComment(owner, repo string, number int, comment string) error {
-	return c.gc.CreateComment(owner, repo, number, comment)
+func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
+	return c.gc.CreateComment(owner, repo, number, pr, comment)
 }
 func (c client) CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error) {
 	return c.gc.CreateStatus(org, repo, ref, s)
@@ -169,7 +169,7 @@ func handle(oc overrideClient, log *logrus.Entry, e *github.GenericCommentEvent)
 		if m[1] == "" {
 			resp := "/override requires a failed status context to operate on, but none was given"
 			log.Debug(resp)
-			return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 		}
 		overrides.Insert(m[2])
 	}
@@ -177,14 +177,14 @@ func handle(oc overrideClient, log *logrus.Entry, e *github.GenericCommentEvent)
 	if !authorized(oc, log, org, repo, user) {
 		resp := fmt.Sprintf("%s unauthorized: /override is restricted to repo administrators", user)
 		log.Debug(resp)
-		return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 	}
 
 	pr, err := oc.GetPullRequest(org, repo, number)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get PR #%d in %s/%s", number, org, repo)
 		log.WithError(err).Warn(resp)
-		return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 	}
 
 	sha := pr.Head.Sha
@@ -192,7 +192,7 @@ func handle(oc overrideClient, log *logrus.Entry, e *github.GenericCommentEvent)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get commit statuses for PR #%d in %s/%s", number, org, repo)
 		log.WithError(err).Warn(resp)
-		return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 	}
 
 	contexts := sets.NewString()
@@ -210,7 +210,7 @@ The following unknown contexts were given:
 Only the following contexts were expected:
 %s`, formatList(unknown.List()), formatList(contexts.List()))
 		log.Debug(resp)
-		return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 	}
 
 	done := sets.String{}
@@ -221,7 +221,7 @@ Only the following contexts were expected:
 		}
 		msg := fmt.Sprintf("Overrode contexts on behalf of %s: %s", user, strings.Join(done.List(), ", "))
 		log.Info(msg)
-		oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, msg))
+		oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, msg))
 	}()
 
 	for _, status := range statuses {
@@ -234,7 +234,7 @@ Only the following contexts were expected:
 			if err != nil {
 				resp := fmt.Sprintf("Cannot get base ref of PR")
 				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 			}
 
 			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
@@ -250,7 +250,7 @@ Only the following contexts were expected:
 			if _, err := oc.Create(&pj); err != nil {
 				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
 				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 			}
 		}
 		statusInput := &scm.StatusInput{
@@ -262,7 +262,7 @@ Only the following contexts were expected:
 		if _, err := oc.CreateStatus(org, repo, sha, statusInput); err != nil {
 			resp := fmt.Sprintf("Cannot update PR status for context %s", statusInput.Label)
 			log.WithError(err).Warn(resp)
-			return oc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
 		}
 		done.Insert(status.Label)
 	}
