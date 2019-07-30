@@ -288,7 +288,8 @@ func handlePullRequest(log *logrus.Entry, ghc githubClient, oc ownersClient, git
 		return nil
 	}
 
-	repo, err := oc.LoadRepoOwners(pre.Repo.Namespace, pre.Repo.Name, pre.PullRequest.Base.Ref)
+	ref := pre.PullRequest.Base.Ref
+	repo, err := oc.LoadRepoOwners(pre.Repo.Namespace, pre.Repo.Name, ref)
 	if err != nil {
 		return err
 	}
@@ -302,7 +303,7 @@ func handlePullRequest(log *logrus.Entry, ghc githubClient, oc ownersClient, git
 		&state{
 			org:       pre.Repo.Namespace,
 			repo:      pre.Repo.Name,
-			branch:    pre.PullRequest.Base.Ref,
+			branch:    ref,
 			number:    pre.PullRequest.Number,
 			body:      pre.PullRequest.Body,
 			author:    pre.PullRequest.Author.Login,

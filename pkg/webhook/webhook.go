@@ -176,6 +176,12 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
 		return
 	}
+	if webhook == nil {
+		logrus.Error("no webhook was parsed")
+
+		responseHTTPError(w, http.StatusInternalServerError, "500 Internal Server Error: No webhook could be parsed")
+		return
+	}
 
 	repository := webhook.Repository()
 	fields := map[string]interface{}{
@@ -189,7 +195,7 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 	}
 
 	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
-	gitClient, _ := git.NewClient(serverURL)
+	gitClient, _ := git.NewClient(serverURL, o.gitKind())
 
 	user := o.GetBotName()
 	gitClient.SetCredentials(user, func() []byte {
@@ -251,6 +257,27 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	branchHook, ok := webhook.(*scm.BranchHook)
+	if ok {
+		action := branchHook.Action
+		ref := branchHook.Ref
+		sender := branchHook.Sender
+		fields["Action"] = action.String()
+		fields["Ref.Sha"] = ref.Sha
+		fields["Sender.Name"] = sender.Name
+
+		l.Info("invoking branch handler")
+
+		err := o.updatePlumberClientAndReturnError(l, server, branchHook.Repository(), w)
+		if err != nil {
+			return
+		}
+
+		server.HandleBranchEvent(l, branchHook)
+		w.Write([]byte("processed Branch hook"))
+		return
+	}
+
 	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
 	if ok {
 		action := issueCommentHook.Action
@@ -297,11 +324,10 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		l.Info("invoking PR Comment handler")
 		w.Write([]byte("processed PR comment hook"))
 		return
-	} else {
-		l.Info("invoking webhook handler")
-		w.Write([]byte("ignored unknown hook"))
-		return
 	}
+
+	l.Infof("unknown webhook %#v", webhook)
+	w.Write([]byte("ignored unknown hook"))
 }
 
 func (o *WebhookOptions) missingSourceRepository(hook scm.Webhook, w http.ResponseWriter) {
@@ -339,10 +365,7 @@ func (o *WebhookOptions) secretFn(webhook scm.Webhook) (string, error) {
 }
 
 func (o *WebhookOptions) createSCMClient() (*scm.Client, string, string, error) {
-	kind := os.Getenv("GIT_KIND")
-	if kind == "" {
-		kind = "github"
-	}
+	kind := o.gitKind()
 	serverURL := os.Getenv("GIT_SERVER")
 
 	token, err := o.createSCMToken(kind)
@@ -351,6 +374,14 @@ func (o *WebhookOptions) createSCMClient() (*scm.Client, string, string, error) 
 	}
 	client, err := factory.NewClient(kind, serverURL, token)
 	return client, serverURL, token, err
+}
+
+func (o *WebhookOptions) gitKind() string {
+	kind := os.Getenv("GIT_KIND")
+	if kind == "" {
+		kind = "github"
+	}
+	return kind
 }
 
 func (o *WebhookOptions) GetBotName() string {
@@ -464,7 +495,7 @@ func (o *WebhookOptions) createHookServer() (*hook.Server, error) {
 		}
 	*/
 
-	gitClient, err := git.NewClient(o.gitServerURL)
+	gitClient, err := git.NewClient(o.gitServerURL, o.gitKind())
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}

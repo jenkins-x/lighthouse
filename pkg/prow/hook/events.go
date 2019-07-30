@@ -156,7 +156,11 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	action := pr.Action
 	l.Infof("Pull request %s.", action)
 	c := 0
-	for p, h := range s.Plugins.PullRequestHandlers(pr.PullRequest.Base.Repo.Namespace, pr.PullRequest.Base.Repo.Name) {
+	repo := pr.PullRequest.Base.Repo
+	if repo.Name == "" {
+		repo = pr.Repo
+	}
+	for p, h := range s.Plugins.PullRequestHandlers(repo.Namespace, repo.Name) {
 		s.wg.Add(1)
 		c++
 		go func(p string, h plugins.PullRequestHandler) {
@@ -195,6 +199,10 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 			IssueLink:   pr.PullRequest.Link,
 		},
 	)
+}
+
+func (s *Server) HandleBranchEvent(entry *logrus.Entry, hook *scm.BranchHook) {
+	// TODO
 }
 
 func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool {

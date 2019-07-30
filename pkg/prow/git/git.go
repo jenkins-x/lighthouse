@@ -15,7 +15,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const github = "github.com"
+const (
+	github = "github.com"
+
+	kindBitbucketServer = "bitbucketserver"
+)
 
 // Client represents a git client
 type Client interface {
@@ -45,6 +49,8 @@ type client struct {
 	// base is the base path for git clone calls. For users it will be set to
 	// GitHub, but for tests set it to a directory with git repos.
 	base string
+	// gitKind the kind of git provider like github, bitbucketserver etc
+	gitKind string
 
 	// The mutex protects repoLocks which protect individual repos. This is
 	// necessary because Clone calls for the same repo are racy. Rather than
@@ -61,7 +67,7 @@ func (c *client) Clean() error {
 
 // NewClient returns a client that talks to GitHub. It will fail if git is not
 // in the PATH.
-func NewClient(serverURL string) (*client, error) {
+func NewClient(serverURL string, gitKind string) (*client, error) {
 	g, err := exec.LookPath("git")
 	if err != nil {
 		return nil, err
@@ -75,6 +81,7 @@ func NewClient(serverURL string) (*client, error) {
 		dir:       t,
 		git:       g,
 		base:      serverURL,
+		gitKind:   gitKind,
 		repoLocks: make(map[string]*sync.Mutex),
 	}, nil
 }
@@ -140,7 +147,18 @@ func (c *client) Clone(repo string) (*Repo, error) {
 		if err := os.Mkdir(filepath.Dir(cache), os.ModePerm); err != nil && !os.IsExist(err) {
 			return nil, err
 		}
-		remote := fmt.Sprintf("%s/%s", base, repo)
+		prefix := ""
+		repoText := repo
+		if c.gitKind == kindBitbucketServer {
+			prefix = "scm/"
+			idx := strings.Index(repo, "/")
+
+			// to clone on bitbucket we need to lower case the projectKey owner
+			if idx > 0 {
+				repoText = fmt.Sprintf("%s/%s", strings.ToLower(repo[0:idx]), repo[idx+1:])
+			}
+		}
+		remote := fmt.Sprintf("%s/%s%s", base, prefix, repoText)
 		if b, err := retryCmd(c.logger, "", c.git, "clone", "--mirror", remote, cache); err != nil {
 			return nil, fmt.Errorf("git cache clone error: %v. output: %s", err, string(b))
 		}
