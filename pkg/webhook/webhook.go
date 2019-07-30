@@ -322,6 +322,15 @@ func (o *WebhookOptions) handleWebHookRequests(w http.ResponseWriter, r *http.Re
 		fields["Author.Avatar"] = author.Avatar
 
 		l.Info("invoking PR Comment handler")
+
+		l.Info("invoking Issue Comment handler")
+
+		err := o.updatePlumberClientAndReturnError(l, server, prCommentHook.Repository(), w)
+		if err != nil {
+			return
+		}
+		server.HandlePullRequestCommentEvent(l, *prCommentHook)
+
 		w.Write([]byte("processed PR comment hook"))
 		return
 	}
