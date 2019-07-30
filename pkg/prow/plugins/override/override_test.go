@@ -48,7 +48,7 @@ type fakeClient struct {
 	jobs       sets.String
 }
 
-func (c *fakeClient) CreateComment(org, repo string, number int, comment string) error {
+func (c *fakeClient) CreateComment(org, repo string, number int, pr bool, comment string) error {
 	switch {
 	case org != fakeOrg:
 		return fmt.Errorf("bad org: %s", org)

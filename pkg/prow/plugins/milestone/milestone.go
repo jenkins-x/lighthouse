@@ -43,7 +43,7 @@ var (
 )
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	ClearMilestone(org, repo string, num int) error
 	SetMilestone(org, repo string, issueNum, milestoneNum int) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
@@ -128,7 +128,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 	if !found {
 		// not in the milestone maintainers team
 		msg := fmt.Sprintf(mustBeAuthorized, org, milestone.MaintainersTeam, org, milestone.MaintainersTeam, milestone.MaintainersFriendlyName)
-		return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
 	milestones, err := gc.ListMilestones(org, repo)
@@ -156,7 +156,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 		sort.Strings(slice)
 
 		msg := fmt.Sprintf(invalidMilestone, strings.Join(slice, ", "), clearKeyword)
-		return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
 	if err := gc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {

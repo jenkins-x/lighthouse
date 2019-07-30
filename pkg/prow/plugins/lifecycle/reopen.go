@@ -31,7 +31,7 @@ var reopenRe = regexp.MustCompile(`(?mi)^/reopen\s*$`)
 
 type githubClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	ReopenIssue(owner, repo string, number int) error
 	ReopenPR(owner, repo string, number int) error
 }
@@ -65,6 +65,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *github.GenericCommentEv
 			org,
 			repo,
 			number,
+			true,
 			plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, response),
 		)
 	}
@@ -78,6 +79,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *github.GenericCommentEv
 					org,
 					repo,
 					number,
+					true,
 					plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp),
 				)
 			}
@@ -89,6 +91,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *github.GenericCommentEv
 			org,
 			repo,
 			number,
+			true,
 			plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Reopened this PR."),
 		)
 	}
@@ -101,6 +104,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *github.GenericCommentEv
 				org,
 				repo,
 				number,
+				true,
 				plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp),
 			)
 		}
@@ -112,6 +116,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *github.GenericCommentEv
 		org,
 		repo,
 		number,
+		true,
 		plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Reopened this issue."),
 	)
 }

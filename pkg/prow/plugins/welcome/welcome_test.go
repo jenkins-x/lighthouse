@@ -49,7 +49,7 @@ func newFakeClient() *fakeClient {
 }
 
 // CreateComment adds and tracks a comment in the client
-func (fc *fakeClient) CreateComment(owner, repo string, number int, comment string) error {
+func (fc *fakeClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	fc.commentsAdded[number] = append(fc.commentsAdded[number], comment)
 	return nil
 }

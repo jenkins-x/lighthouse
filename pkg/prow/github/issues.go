@@ -86,17 +86,27 @@ func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]*scm.Labe
 	return labels, err
 }
 
-func (c *GitHubClient) CreateComment(owner, repo string, number int, comment string) error {
+func (c *GitHubClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	fullName := c.repositoryName(owner, repo)
 	commentInput := scm.CommentInput{
 		Body: comment,
 	}
 	ctx := context.Background()
-	_, response, err := c.client.Issues.CreateComment(ctx, fullName, number, &commentInput)
-	if err != nil {
-		var b bytes.Buffer
-		io.Copy(&b, response.Body)
-		return errors.Wrapf(err, "response: %s", b.String())
+	if pr {
+		_, response, err := c.client.PullRequests.CreateComment(ctx, fullName, number, &commentInput)
+		if err != nil {
+			var b bytes.Buffer
+			io.Copy(&b, response.Body)
+			return errors.Wrapf(err, "response: %s", b.String())
+		}
+
+	} else {
+		_, response, err := c.client.Issues.CreateComment(ctx, fullName, number, &commentInput)
+		if err != nil {
+			var b bytes.Buffer
+			io.Copy(&b, response.Body)
+			return errors.Wrapf(err, "response: %s", b.String())
+		}
 	}
 	return nil
 }

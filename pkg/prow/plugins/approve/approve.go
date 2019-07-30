@@ -69,7 +69,7 @@ type githubClient interface {
 	ListReviews(org, repo string, number int) ([]*scm.Review, error)
 	ListPullRequestComments(org, repo string, number int) ([]*scm.Comment, error)
 	DeleteComment(org, repo string, number, ID int) error
-	CreateComment(org, repo string, number int, comment string) error
+	CreateComment(org, repo string, number int, pr bool, comment string) error
 	BotName() (string, error)
 	AddLabel(org, repo string, number int, label string) error
 	RemoveLabel(org, repo string, number int, label string) error
@@ -432,7 +432,7 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 				log.WithError(err).Errorf("Failed to delete comment from %s/%s#%d, ID: %d.", pr.org, pr.repo, pr.number, notif.ID)
 			}
 		}
-		if err := ghc.CreateComment(pr.org, pr.repo, pr.number, *newMessage); err != nil {
+		if err := ghc.CreateComment(pr.org, pr.repo, pr.number, true, *newMessage); err != nil {
 			log.WithError(err).Errorf("Failed to create comment on %s/%s#%d: %q.", pr.org, pr.repo, pr.number, *newMessage)
 		}
 	}

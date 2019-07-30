@@ -69,7 +69,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 type githubClient interface {
 	AddLabel(owner, repo string, number int, label string) error
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
@@ -111,7 +111,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent) e
 		log.Info("Removing Shrug label.")
 		resp := "¯\\\\\\_(ツ)\\_/¯"
 		log.Infof("Commenting with \"%s\".", resp)
-		if err := gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp)); err != nil {
+		if err := gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp)); err != nil {
 			return fmt.Errorf("failed to comment on %s/%s#%d: %v", org, repo, e.Number, err)
 		}
 		return gc.RemoveLabel(org, repo, e.Number, labels.Shrug)

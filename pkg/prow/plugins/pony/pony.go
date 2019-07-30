@@ -77,7 +77,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 var client = http.Client{}
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
 type herd interface {
@@ -142,7 +142,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 			log.WithError(err).Println("Failed to get a pony")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	var msg string
@@ -151,7 +151,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 	} else {
 		msg = "https://theponyapi.com appears to be down"
 	}
-	if err := gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
+	if err := gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

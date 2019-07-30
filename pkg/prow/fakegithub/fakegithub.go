@@ -122,7 +122,7 @@ func (f *FakeClient) ListIssueEvents(owner, repo string, number int) ([]*scm.Lis
 }
 
 // CreateComment adds a comment to a PR
-func (f *FakeClient) CreateComment(owner, repo string, number int, comment string) error {
+func (f *FakeClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	f.IssueCommentsAdded = append(f.IssueCommentsAdded, fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, comment))
 	f.IssueComments[number] = append(f.IssueComments[number], &scm.Comment{
 		ID:     f.IssueCommentID,

@@ -38,7 +38,7 @@ var (
 )
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
@@ -85,14 +85,14 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	combinedStatus, err := gc.GetCombinedStatus(org, repo, pr.Head.Sha)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get combined commit statuses for PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 	if combinedStatus.State == scm.StateSuccess {
 		return nil
@@ -103,7 +103,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get combined status for PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 	triggerWillHandle := func(p config.Presubmit) bool {
 		for _, presubmit := range filteredPresubmits {
@@ -141,7 +141,7 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p
 		if _, err := gc.CreateStatus(org, repo, pr.Head.Sha, status); err != nil {
 			resp := fmt.Sprintf("Cannot update PR status for context %s: %v", context, err)
 			log.Warn(resp)
-			return gc.CreateComment(org, repo, number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+			return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 		}
 	}
 	return nil

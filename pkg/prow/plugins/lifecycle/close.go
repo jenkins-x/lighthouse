@@ -31,7 +31,7 @@ var closeRe = regexp.MustCompile(`(?mi)^/close\s*$`)
 
 type closeClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	CloseIssue(owner, repo string, number int) error
 	ClosePR(owner, repo string, number int) error
 	GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error)
@@ -86,6 +86,7 @@ func handleClose(gc closeClient, log *logrus.Entry, e *github.GenericCommentEven
 			org,
 			repo,
 			number,
+			true,
 			plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, response),
 		)
 	}
@@ -98,7 +99,7 @@ func handleClose(gc closeClient, log *logrus.Entry, e *github.GenericCommentEven
 			return fmt.Errorf("Error closing PR: %v", err)
 		}
 		response := plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Closed this PR.")
-		return gc.CreateComment(org, repo, number, response)
+		return gc.CreateComment(org, repo, number, true, response)
 	}
 
 	log.Info("Closing issue.")
@@ -106,5 +107,5 @@ func handleClose(gc closeClient, log *logrus.Entry, e *github.GenericCommentEven
 		return fmt.Errorf("Error closing issue: %v", err)
 	}
 	response := plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Closing this issue.")
-	return gc.CreateComment(org, repo, number, response)
+	return gc.CreateComment(org, repo, number, true, response)
 }

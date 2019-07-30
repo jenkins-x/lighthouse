@@ -46,7 +46,7 @@ var (
 )
 
 type githubClient interface {
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	IsMember(org, user string) (bool, error)
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
@@ -147,5 +147,5 @@ func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, r
 	}
 
 	msg := fmt.Sprintf(chatBack, strings.Join(toRepeat, ", "))
-	return gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+	return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 }

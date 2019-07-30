@@ -77,7 +77,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 type githubClient interface {
 	BotName() (string, error)
-	CreateComment(owner, repo string, number int, comment string) error
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	AddLabel(owner, repo string, number int, label string) error
 	RemoveLabel(owner, repo string, number int, label string) error
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
@@ -139,7 +139,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *github.Gene
 	// If PR does not have the good-first-issue label and we are asking for it to be added,
 	// add both the good-first-issue and help labels
 	if !hasGoodFirstIssue && helpGoodFirstIssueRe.MatchString(e.Body) {
-		if err := gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.IssueLink, commentAuthor, goodFirstIssueMsg)); err != nil {
+		if err := gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, commentAuthor, goodFirstIssueMsg)); err != nil {
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", goodFirstIssueMsg)
 		}
 
@@ -159,7 +159,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *github.Gene
 	// If PR does not have the help label and we're asking it to be added,
 	// add the label
 	if !hasHelp && helpRe.MatchString(e.Body) {
-		if err := gc.CreateComment(org, repo, e.Number, plugins.FormatResponseRaw(e.Body, e.IssueLink, commentAuthor, helpMsg)); err != nil {
+		if err := gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, commentAuthor, helpMsg)); err != nil {
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", helpMsg)
 		}
 		if err := gc.AddLabel(org, repo, e.Number, labels.Help); err != nil {
