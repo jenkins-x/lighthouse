@@ -381,6 +381,8 @@ github.com/jenkins-x/jx v0.0.0-20190723153540-305dbe863f6d h1:D8tw6TuIzSJZeHfRoB
 github.com/jenkins-x/jx v0.0.0-20190723153540-305dbe863f6d/go.mod h1:3WcOHE7PZIE1SuovxPp5Sjrxgx5oCh14PZfUHg/JDms=
 github.com/jenkins-x/jx v0.0.0-20190723230538-781c691cc075 h1:dh+6zOOUraeOV6zZDvZlQUCiOZUkoeuqrwun9rCZ62I=
 github.com/jenkins-x/jx v0.0.0-20190723230538-781c691cc075/go.mod h1:3WcOHE7PZIE1SuovxPp5Sjrxgx5oCh14PZfUHg/JDms=
+github.com/jenkins-x/jx v0.0.0-20190730101642-1c57a62ad4a8 h1:NqarpnFnNcPc2Ng+5ezaTb7vyCnbGLvlJN8vTD3Wgt8=
+github.com/jenkins-x/jx v0.0.0-20190730101642-1c57a62ad4a8/go.mod h1:jVvSX3Do9rvwv2z22BSHqlp1N0BU6sCatBsN9Qz91mE=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767/go.mod h1:UR3AoCKJHHKi2AoOWeFbZcMKyd5LqQkdCRgwqZkX/io=
 github.com/jetstack/cert-manager v0.5.2 h1:qs74mdAprZ5kcCYF3arzmEAZtbt+9HneldSJrk21tKs=
