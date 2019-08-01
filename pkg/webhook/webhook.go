@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
@@ -108,12 +109,7 @@ func (o *WebhookOptions) Run() error {
 	mux.Handle(HealthPath, http.HandlerFunc(o.health))
 	mux.Handle(ReadyPath, http.HandlerFunc(o.ready))
 
-	indexPaths := []string{"/", "/index.html"}
-	for _, p := range indexPaths {
-		if o.Path != p {
-			mux.Handle(p, http.HandlerFunc(o.getIndex))
-		}
-	}
+	mux.Handle("/", http.HandlerFunc(o.defaultHandler))
 	mux.Handle(o.Path, http.HandlerFunc(o.handleWebHookRequests))
 
 	logrus.Infof("Lighthouse is now listening on path %s and port %d for WebHooks", o.Path, o.Port)
@@ -134,6 +130,22 @@ func (o *WebhookOptions) ready(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
+}
+
+func (o *WebhookOptions) defaultHandler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	logrus.WithField("path", path).Infof("invoked path")
+
+	if path == o.Path || strings.HasPrefix(path, o.Path+"/") {
+		o.handleWebHookRequests(w, r)
+		return
+	}
+	path = strings.TrimPrefix(path, "/")
+	if path == "" || path == "index.html" {
+		o.getIndex(w, r)
+		return
+	}
+	http.Error(w, fmt.Sprintf("unknown path %s", path), 404)
 }
 
 // getIndex returns a simple home page
