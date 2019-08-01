@@ -134,8 +134,6 @@ func (o *WebhookOptions) ready(w http.ResponseWriter, r *http.Request) {
 
 func (o *WebhookOptions) defaultHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	logrus.WithField("path", path).Infof("invoked path")
-
 	if path == o.Path || strings.HasPrefix(path, o.Path+"/") {
 		o.handleWebHookRequests(w, r)
 		return
