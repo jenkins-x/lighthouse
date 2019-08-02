@@ -5,7 +5,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
-	github.com/jenkins-x/go-scm v1.5.1-0.20190801154224-e7a6e6f74306
+	github.com/jenkins-x/go-scm v1.5.17
 	github.com/jenkins-x/jx v0.0.0-20190730101642-1c57a62ad4a8
 	github.com/knative/build v0.5.0
 	github.com/pkg/errors v0.8.1
