@@ -389,6 +389,8 @@ github.com/jenkins-x/go-scm v1.5.19 h1:tj4tDfCW9mX6mAgY59ZCP4udrkzkEqaTz+a4nh9xS
 github.com/jenkins-x/go-scm v1.5.19/go.mod h1:IGz2tEc64kTBSAh/dYppH1Hw74onK2aeRTsxC2x3A6Q=
 github.com/jenkins-x/go-scm v1.5.20 h1:PDv9WNgZsG/sPwCdVkHJKBHE2jouLDFL2e5P5LyoQyU=
 github.com/jenkins-x/go-scm v1.5.20/go.mod h1:IGz2tEc64kTBSAh/dYppH1Hw74onK2aeRTsxC2x3A6Q=
+github.com/jenkins-x/go-scm v1.5.21 h1:xAbVDPBPoZUk5ntI72rt2rXeUx/tsDELj4ohdJgFBIQ=
+github.com/jenkins-x/go-scm v1.5.21/go.mod h1:IGz2tEc64kTBSAh/dYppH1Hw74onK2aeRTsxC2x3A6Q=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
 github.com/jenkins-x/jx v0.0.0-20190709173743-9710a8bca150 h1:3T2KD3a7Oq7dMqTHfRuvYBh/uoMEYfcqJR6RJDc+B7o=
@@ -423,6 +425,10 @@ github.com/jpillora/longestcommon v0.0.0-20161227235612-adb9d91ee629/go.mod h1:m
 github.com/json-iterator/go v0.0.0-20180701071628-ab8a2e0c74be/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/json-iterator/go v1.1.5 h1:gL2yXlmiIo4+t+y32d4WGwOjKGYcGOuyrg46vadswDE=
 github.com/json-iterator/go v1.1.5/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
+github.com/jstrachan/jx v1.3.981-0.20190805085524-1274d2d61967 h1:SgxU0dUs42Cw0Nyd8xuuElt16we9iXajwdsvXSWBu3Q=
+github.com/jstrachan/jx v1.3.981-0.20190805085524-1274d2d61967/go.mod h1:6xbr9x3XRRcMCevgM95dbUnKfb7UO9SVXV0VkJaj53U=
+github.com/jstrachan/jx v1.3.981-0.20190805092123-390a490a1c64 h1:Xvk+rEy2buDLQK9hhUtcz7aSKGAAF9HKfm4Dftj5gS0=
+github.com/jstrachan/jx v1.3.981-0.20190805092123-390a490a1c64/go.mod h1:6xbr9x3XRRcMCevgM95dbUnKfb7UO9SVXV0VkJaj53U=
 github.com/jtnord/logrus v1.4.2-0.20190423161236-606ffcaf8f5d h1:95Dc4I4Pw81p6Gc1IUqOtLPPf2qnhrcC3Lsv3tLdb1I=
 github.com/jtnord/logrus v1.4.2-0.20190423161236-606ffcaf8f5d/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/jtolds/gls v4.2.1+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=

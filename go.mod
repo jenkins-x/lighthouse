@@ -5,7 +5,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
-	github.com/jenkins-x/go-scm v1.5.20
+	github.com/jenkins-x/go-scm v1.5.21
 	github.com/jenkins-x/jx v0.0.0-20190802135929-b11e46767f35
 	github.com/knative/build v0.5.0
 	github.com/pkg/errors v0.8.1
@@ -27,6 +27,8 @@ require (
 	k8s.io/test-infra v0.0.0-20190131093439-a22cef183a8f
 	sigs.k8s.io/yaml v1.1.0
 )
+
+replace github.com/jenkins-x/jx => github.com/jstrachan/jx v1.3.981-0.20190805092123-390a490a1c64
 
 replace github.com/golang/lint => golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
 
