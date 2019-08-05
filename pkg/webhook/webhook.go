@@ -10,8 +10,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/jx/pkg/cmd/clients"
-	"github.com/jenkins-x/jx/pkg/cmd/opts"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
@@ -48,7 +47,7 @@ type WebhookOptions struct {
 	Port        int
 	JSONLog     bool
 
-	factory          clients.Factory
+	factory          jxfactory.Factory
 	namespace        string
 	pluginFilename   string
 	configFilename   string
@@ -356,23 +355,11 @@ func (o *WebhookOptions) missingSourceRepository(hook scm.Webhook, w http.Respon
 }
 
 // GetFactory lazily creates a Factory if its not already created
-func (o *WebhookOptions) GetFactory() clients.Factory {
+func (o *WebhookOptions) GetFactory() jxfactory.Factory {
 	if o.factory == nil {
-		o.factory = clients.NewFactory()
+		o.factory = jxfactory.NewFactory()
 	}
 	return o.factory
-}
-
-func (o *WebhookOptions) createCommonOptions(ns string) *opts.CommonOptions {
-	factory := o.GetFactory()
-	options := opts.NewCommonOptionsWithFactory(factory)
-	options.SetDevNamespace(ns)
-	options.SetCurrentNamespace(ns)
-	options.Verbose = true
-	options.BatchMode = true
-	options.Out = os.Stdout
-	options.Err = os.Stderr
-	return &options
 }
 
 func repositoryToString(repo scm.Repository) string {
@@ -629,7 +616,7 @@ func (o *WebhookOptions) createConfigFiles() error {
 }
 
 func (o *WebhookOptions) updatePlumberClientAndReturnError(l *logrus.Entry, server hook.Server, repository scm.Repository, w http.ResponseWriter) error {
-	plumberClient, err := plumber.NewPlumber(repository, o.createCommonOptions(o.namespace))
+	plumberClient, err := plumber.NewPlumber(repository)
 	if err != nil {
 		l.Errorf("failed to create Plumber webhook: %s", err.Error())
 

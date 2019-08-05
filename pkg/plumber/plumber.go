@@ -6,24 +6,21 @@ import (
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/pkg/cmd/opts"
-	"github.com/jenkins-x/jx/pkg/cmd/step/create"
 	"github.com/jenkins-x/jx/pkg/prow"
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline/metaclient"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // PipelineBuilder default builder
 type PipelineBuilder struct {
-	repository    scm.Repository
-	commonOptions *opts.CommonOptions
+	repository scm.Repository
 }
 
 // NewPlumber creates a new builder
-func NewPlumber(repository scm.Repository, commonOptions *opts.CommonOptions) (Plumber, error) {
+func NewPlumber(repository scm.Repository) (Plumber, error) {
 	b := &PipelineBuilder{
-		repository:    repository,
-		commonOptions: commonOptions,
+		repository: repository,
 	}
 	return b, nil
 }
@@ -82,17 +79,18 @@ func (b *PipelineBuilder) Create(request *PlumberArguments) (*PlumberArguments, 
 	}))
 	l.Info("about to start Jenkinx X meta pipeline")
 
-	po := create.StepCreatePipelineOptions{
-		SourceURL: sourceURL,
-		Job:       job,
-		PullRefs:  pullRefs,
-		Context:   spec.Context,
-	}
 	sa := os.Getenv("JX_SERVICE_ACCOUNT")
 	if sa == "" {
 		sa = "tekton-bot"
 	}
-	po.CommonOptions = b.commonOptions
+
+	po := metaclient.MetaClient{
+		SourceURL:      sourceURL,
+		Job:            job,
+		PullRefs:       pullRefs,
+		Context:        spec.Context,
+		ServiceAccount: sa,
+	}
 	po.ServiceAccount = sa
 
 	err := po.Run()
