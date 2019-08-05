@@ -29,6 +29,8 @@ RUN yum install -y curl-devel expat-devel gettext-devel openssl-devel zlib-devel
   make prefix=/usr/local/git all  && \
   make prefix=/usr/local/git install
 
+ENV PATH /usr/local/git/bin:$PATH
+
 COPY --from=0 /go/src/github.com/jenkins-x/lighthouse/bin/lighthouse /lighthouse
 
 CMD ["/lighthouse"]
