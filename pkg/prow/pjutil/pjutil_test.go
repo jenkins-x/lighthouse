@@ -36,7 +36,7 @@ func TestPostsubmitSpec(t *testing.T) {
 		name     string
 		p        config.Postsubmit
 		refs     plumber.Refs
-		expected plumber.PlumberJobSpec
+		expected plumber.PipelineOptionsSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -48,7 +48,7 @@ func TestPostsubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.PostsubmitJob,
 				Refs: &plumber.Refs{
 					PathAlias: "foo",
@@ -62,7 +62,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.PostsubmitJob,
 				Refs: &plumber.Refs{
 					PathAlias: "fancy",
@@ -84,7 +84,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.PostsubmitJob,
 				Refs: &plumber.Refs{
 					PathAlias: "foo",
@@ -107,7 +107,7 @@ func TestPresubmitSpec(t *testing.T) {
 		name     string
 		p        config.Presubmit
 		refs     plumber.Refs
-		expected plumber.PlumberJobSpec
+		expected plumber.PipelineOptionsSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -119,7 +119,7 @@ func TestPresubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.PresubmitJob,
 				Refs: &plumber.Refs{
 					PathAlias: "foo",
@@ -133,7 +133,7 @@ func TestPresubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.PresubmitJob,
 				Refs: &plumber.Refs{
 					PathAlias: "fancy",
@@ -155,7 +155,7 @@ func TestPresubmitSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.PresubmitJob,
 				Refs: &plumber.Refs{
 					PathAlias: "foo",
@@ -178,7 +178,7 @@ func TestBatchSpec(t *testing.T) {
 		name     string
 		p        config.Presubmit
 		refs     plumber.Refs
-		expected plumber.PlumberJobSpec
+		expected plumber.PipelineOptionsSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -190,7 +190,7 @@ func TestBatchSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.BatchJob,
 				Refs: &plumber.Refs{
 					PathAlias: "foo",
@@ -204,7 +204,7 @@ func TestBatchSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.BatchJob,
 				Refs: &plumber.Refs{
 					PathAlias: "fancy",
@@ -226,7 +226,7 @@ func TestBatchSpec(t *testing.T) {
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PlumberJobSpec{
+			expected: plumber.PipelineOptionsSpec{
 				Type: plumber.BatchJob,
 				Refs: &plumber.Refs{
 					PathAlias: "foo",
@@ -247,7 +247,7 @@ func TestBatchSpec(t *testing.T) {
 func TestNewPlumberJob(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                plumber.PlumberJobSpec
+		spec                plumber.PipelineOptionsSpec
 		labels              map[string]string
 		expectedLabels      map[string]string
 		annotations         map[string]string
@@ -255,7 +255,7 @@ func TestNewPlumberJob(t *testing.T) {
 	}{
 		{
 			name: "periodic job, no extra labels",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job",
 				Type: plumber.PeriodicJob,
 			},
@@ -271,7 +271,7 @@ func TestNewPlumberJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job",
 				Type: plumber.PeriodicJob,
 			},
@@ -290,7 +290,7 @@ func TestNewPlumberJob(t *testing.T) {
 		},
 		{
 			name: "presubmit job",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job",
 				Type: plumber.PresubmitJob,
 				Refs: &plumber.Refs{
@@ -316,7 +316,7 @@ func TestNewPlumberJob(t *testing.T) {
 		},
 		{
 			name: "non-github presubmit job",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job",
 				Type: plumber.PresubmitJob,
 				Refs: &plumber.Refs{
@@ -341,7 +341,7 @@ func TestNewPlumberJob(t *testing.T) {
 			},
 		}, {
 			name: "job with name too long to fit in a label",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
 				Type: plumber.PresubmitJob,
 				Refs: &plumber.Refs{
@@ -367,7 +367,7 @@ func TestNewPlumberJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels, extra annotations",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job",
 				Type: plumber.PeriodicJob,
 			},
@@ -392,13 +392,13 @@ func TestNewPlumberJob(t *testing.T) {
 	for _, testCase := range testCases {
 		pj := NewPlumberJob(testCase.spec, testCase.labels, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Labels, testCase.expectedLabels; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberArguments labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberArguments annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptions annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 	}
 }
@@ -406,13 +406,13 @@ func TestNewPlumberJob(t *testing.T) {
 func TestNewPlumberJobWithAnnotations(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                plumber.PlumberJobSpec
+		spec                plumber.PipelineOptionsSpec
 		annotations         map[string]string
 		expectedAnnotations map[string]string
 	}{
 		{
 			name: "job without annotation",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job",
 				Type: plumber.PeriodicJob,
 			},
@@ -423,7 +423,7 @@ func TestNewPlumberJobWithAnnotations(t *testing.T) {
 		},
 		{
 			name: "job with annotation",
-			spec: plumber.PlumberJobSpec{
+			spec: plumber.PipelineOptionsSpec{
 				Job:  "job",
 				Type: plumber.PeriodicJob,
 			},
@@ -440,10 +440,10 @@ func TestNewPlumberJobWithAnnotations(t *testing.T) {
 	for _, testCase := range testCases {
 		pj := NewPlumberJob(testCase.spec, nil, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberArguments labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 	}
 }
@@ -452,7 +452,7 @@ func TestJobURL(t *testing.T) {
 	var testCases = []struct {
 		name     string
 		plank    config.Plank
-		pj       plumber.PlumberArguments
+		pj       plumber.PipelineOptions
 		expected string
 	}{
 		{
@@ -462,7 +462,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       plumber.PlumberArguments{Spec: plumber.PlumberJobSpec{Type: plumber.PeriodicJob}},
+			pj:       plumber.PipelineOptions{Spec: plumber.PipelineOptionsSpec{Type: plumber.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -472,7 +472,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Garbage}}")),
 				},
 			},
-			pj:       plumber.PlumberArguments{},
+			pj:       plumber.PipelineOptions{},
 			expected: "",
 		},
 		{
@@ -482,7 +482,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       plumber.PlumberArguments{Spec: plumber.PlumberJobSpec{Type: plumber.PeriodicJob}},
+			pj:       plumber.PipelineOptions{Spec: plumber.PipelineOptionsSpec{Type: plumber.PeriodicJob}},
 			expected: "periodic",
 		},
 	}
@@ -544,7 +544,7 @@ func TestSpecFromJobBase(t *testing.T) {
 	testCases := []struct {
 		name    string
 		jobBase config.JobBase
-		verify  func(plumber.PlumberJobSpec) error
+		verify  func(plumber.PipelineOptionsSpec) error
 	}{
 		{
 			name:    "Verify reporter config gets copied",
@@ -556,7 +556,7 @@ func TestSpecFromJobBase(t *testing.T) {
 								},
 				*/
 			},
-			verify: func(pj plumber.PlumberJobSpec) error {
+			verify: func(pj plumber.PipelineOptionsSpec) error {
 				/*				if pj.ReporterConfig == nil {
 									return errors.New("Expected ReporterConfig to be non-nil")
 								}

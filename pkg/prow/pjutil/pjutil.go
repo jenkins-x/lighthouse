@@ -36,15 +36,15 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/github"
 )
 
-// NewPlumberJob initializes a PlumberArguments out of a PlumberJobSpec.
-func NewPlumberJob(spec plumber.PlumberJobSpec, extraLabels, extraAnnotations map[string]string) plumber.PlumberArguments {
+// NewPlumberJob initializes a PipelineOptions out of a PipelineOptionsSpec.
+func NewPlumberJob(spec plumber.PipelineOptionsSpec, extraLabels, extraAnnotations map[string]string) plumber.PipelineOptions {
 	labels, annotations := LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
 	newID, _ := uuid.NewV1()
 
-	return plumber.PlumberArguments{
+	return plumber.PipelineOptions{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "prow.k8s.io/v1",
-			Kind:       "PlumberArguments",
+			Kind:       "PipelineOptions",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        newID.String(),
@@ -81,10 +81,10 @@ func createRefs(pr *scm.PullRequest, baseSHA string) plumber.Refs {
 	}
 }
 
-// NewPresubmit converts a config.Presubmit into a builder.PlumberArguments.
+// NewPresubmit converts a config.Presubmit into a builder.PipelineOptions.
 // The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a github.EventGUID label.
-func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) plumber.PlumberArguments {
+func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) plumber.PipelineOptions {
 	refs := createRefs(pr, baseSHA)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
@@ -98,8 +98,8 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eve
 	return NewPlumberJob(PresubmitSpec(job, refs), labels, annotations)
 }
 
-// PresubmitSpec initializes a PlumberJobSpec for a given presubmit job.
-func PresubmitSpec(p config.Presubmit, refs plumber.Refs) plumber.PlumberJobSpec {
+// PresubmitSpec initializes a PipelineOptionsSpec for a given presubmit job.
+func PresubmitSpec(p config.Presubmit, refs plumber.Refs) plumber.PipelineOptionsSpec {
 	pjs := specFromJobBase(p.JobBase)
 	pjs.Type = plumber.PresubmitJob
 	pjs.Context = p.Context
@@ -109,8 +109,8 @@ func PresubmitSpec(p config.Presubmit, refs plumber.Refs) plumber.PlumberJobSpec
 	return pjs
 }
 
-// PostsubmitSpec initializes a PlumberJobSpec for a given postsubmit job.
-func PostsubmitSpec(p config.Postsubmit, refs plumber.Refs) plumber.PlumberJobSpec {
+// PostsubmitSpec initializes a PipelineOptionsSpec for a given postsubmit job.
+func PostsubmitSpec(p config.Postsubmit, refs plumber.Refs) plumber.PipelineOptionsSpec {
 	pjs := specFromJobBase(p.JobBase)
 	pjs.Type = plumber.PostsubmitJob
 	pjs.Context = p.Context
@@ -119,16 +119,16 @@ func PostsubmitSpec(p config.Postsubmit, refs plumber.Refs) plumber.PlumberJobSp
 	return pjs
 }
 
-// PeriodicSpec initializes a PlumberJobSpec for a given periodic job.
-func PeriodicSpec(p config.Periodic) plumber.PlumberJobSpec {
+// PeriodicSpec initializes a PipelineOptionsSpec for a given periodic job.
+func PeriodicSpec(p config.Periodic) plumber.PipelineOptionsSpec {
 	pjs := specFromJobBase(p.JobBase)
 	pjs.Type = plumber.PeriodicJob
 
 	return pjs
 }
 
-// BatchSpec initializes a PlumberJobSpec for a given batch job and ref spec.
-func BatchSpec(p config.Presubmit, refs plumber.Refs) plumber.PlumberJobSpec {
+// BatchSpec initializes a PipelineOptionsSpec for a given batch job and ref spec.
+func BatchSpec(p config.Presubmit, refs plumber.Refs) plumber.PipelineOptionsSpec {
 	pjs := specFromJobBase(p.JobBase)
 	pjs.Type = plumber.BatchJob
 	pjs.Context = p.Context
@@ -137,12 +137,12 @@ func BatchSpec(p config.Presubmit, refs plumber.Refs) plumber.PlumberJobSpec {
 	return pjs
 }
 
-func specFromJobBase(jb config.JobBase) plumber.PlumberJobSpec {
+func specFromJobBase(jb config.JobBase) plumber.PipelineOptionsSpec {
 	var namespace string
 	if jb.Namespace != nil {
 		namespace = *jb.Namespace
 	}
-	return plumber.PlumberJobSpec{
+	return plumber.PipelineOptionsSpec{
 		Job:            jb.Name,
 		Namespace:      namespace,
 		MaxConcurrency: jb.MaxConcurrency,
@@ -163,7 +163,7 @@ func completePrimaryRefs(refs plumber.Refs, jb config.JobBase) *plumber.Refs {
 }
 
 // PlumberJobFields extracts logrus fields from a plumberJob useful for logging.
-func PlumberJobFields(pj *plumber.PlumberArguments) logrus.Fields {
+func PlumberJobFields(pj *plumber.PipelineOptions) logrus.Fields {
 	fields := make(logrus.Fields)
 	fields["name"] = pj.ObjectMeta.Name
 	fields["job"] = pj.Spec.Job
@@ -182,7 +182,7 @@ func PlumberJobFields(pj *plumber.PlumberArguments) logrus.Fields {
 // JobURL returns the expected URL for PlumberJobStatus.
 //
 // TODO(fejta): consider moving default JobURLTemplate and JobURLPrefix out of plank
-func JobURL(plank config.Plank, pj plumber.PlumberArguments, log *logrus.Entry) string {
+func JobURL(plank config.Plank, pj plumber.PipelineOptions, log *logrus.Entry) string {
 	/*	if pj.Spec.DecorationConfig != nil && plank.GetJobURLPrefix(pj.Spec.Refs) != "" {
 			spec := downwardapi.NewJobSpec(pj.Spec, pj.Status.BuildID, pj.Name)
 			gcsConfig := pj.Spec.DecorationConfig.GCSConfiguration
@@ -205,7 +205,7 @@ func JobURL(plank config.Plank, pj plumber.PlumberArguments, log *logrus.Entry) 
 // LabelsAndAnnotationsForSpec returns a minimal set of labels to add to plumberJobs or its owned resources.
 //
 // User-provided extraLabels and extraAnnotations values will take precedence over auto-provided values.
-func LabelsAndAnnotationsForSpec(spec plumber.PlumberJobSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForSpec(spec plumber.PipelineOptionsSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
 	jobNameForLabel := spec.Job
 	if len(jobNameForLabel) > validation.LabelValueMaxLength {
 		// TODO(fejta): consider truncating middle rather than end.
@@ -263,7 +263,7 @@ func LabelsAndAnnotationsForSpec(spec plumber.PlumberJobSpec, extraLabels, extra
 }
 
 // LabelsAndAnnotationsForJob returns a standard set of labels to add to pod/build/etc resources.
-func LabelsAndAnnotationsForJob(pj plumber.PlumberArguments) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForJob(pj plumber.PipelineOptions) (map[string]string, map[string]string) {
 	var extraLabels map[string]string
 	if extraLabels = pj.ObjectMeta.Labels; extraLabels == nil {
 		extraLabels = map[string]string{}

@@ -50,7 +50,7 @@ type githubClient interface {
 }
 
 type plumberClient interface {
-	Create(pj *plumber.PlumberArguments) (*plumber.PlumberArguments, error)
+	Create(pj *plumber.PipelineOptions) (*plumber.PipelineOptions, error)
 }
 
 type overrideClient interface {
@@ -86,7 +86,7 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.gc.HasPermission(org, repo, user, role...)
 }
 
-func (c client) Create(pj *plumber.PlumberArguments) (*plumber.PlumberArguments, error) {
+func (c client) Create(pj *plumber.PipelineOptions) (*plumber.PipelineOptions, error) {
 	return c.plumberClient.Create(pj)
 }
 

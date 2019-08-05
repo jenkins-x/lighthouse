@@ -98,7 +98,7 @@ type JobBase struct {
 	//   nil: results in config.PodNamespace (aka pod default)
 	//   empty: results in config.PlumberJobNamespace (aka same as plumberJob)
 	Namespace *string `json:"namespace,omitempty"`
-	// ErrorOnEviction indicates that the PlumberArguments should be completed and given
+	// ErrorOnEviction indicates that the PipelineOptions should be completed and given
 	// the ErrorState status if the pod that is executing the job is evicted.
 	// If this field is unspecified or false, a new pod will be created to replace
 	// the evicted one.

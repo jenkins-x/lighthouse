@@ -110,7 +110,7 @@ type githubClient interface {
 }
 
 type plumberClient interface {
-	Create(*plumber.PlumberArguments) (*plumber.PlumberArguments, error)
+	Create(*plumber.PipelineOptions) (*plumber.PipelineOptions, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.

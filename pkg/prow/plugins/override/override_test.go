@@ -134,7 +134,7 @@ func (c *fakeClient) GetRef(org, repo, ref string) (string, error) {
 	return fakeBaseSHA, nil
 }
 
-func (c *fakeClient) Create(pj *plumber.PlumberArguments) (*plumber.PlumberArguments, error) {
+func (c *fakeClient) Create(pj *plumber.PipelineOptions) (*plumber.PipelineOptions, error) {
 	if pj.Spec.Context == "fail-create" {
 		return pj, errors.New("injected CreatePlumberJob error")
 	}

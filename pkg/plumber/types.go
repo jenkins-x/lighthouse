@@ -7,34 +7,34 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PlumberJobType specifies how the job is triggered.
-type PlumberJobType string
+// PipelineKind specifies how the job is triggered.
+type PipelineKind string
 
 // Various job types.
 const (
 	// PresubmitJob means it runs on unmerged PRs.
-	PresubmitJob PlumberJobType = "presubmit"
+	PresubmitJob PipelineKind = "presubmit"
 	// PostsubmitJob means it runs on each new commit.
-	PostsubmitJob PlumberJobType = "postsubmit"
+	PostsubmitJob PipelineKind = "postsubmit"
 	// Periodic job means it runs on a time-basis, unrelated to git changes.
-	PeriodicJob PlumberJobType = "periodic"
+	PeriodicJob PipelineKind = "periodic"
 	// BatchJob tests multiple unmerged PRs at the same time.
-	BatchJob PlumberJobType = "batch"
+	BatchJob PipelineKind = "batch"
 )
 
-// PlumberArguments contains the arguments to pass to the Plumber to create a Tekton Pipeline
-type PlumberArguments struct {
+// PipelineOptions contains the arguments to pass to the Plumber to create a Tekton Pipeline
+type PipelineOptions struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec PlumberJobSpec `json:"spec,omitempty"`
+	Spec PipelineOptionsSpec `json:"spec,omitempty"`
 }
 
-// PlumberJobSpec the spec of a pipeline request
-type PlumberJobSpec struct {
+// PipelineOptionsSpec the spec of a pipeline request
+type PipelineOptionsSpec struct {
 	// Type is the type of job and informs how
 	// the jobs is triggered
-	Type PlumberJobType `json:"type,omitempty"`
+	Type PipelineKind `json:"type,omitempty"`
 	// Namespace defines where to create pods/resources.
 	Namespace string `json:"namespace,omitempty"`
 	// Job is the name of the job
@@ -42,9 +42,6 @@ type PlumberJobSpec struct {
 	// Refs is the code under test, determined at
 	// runtime by Prow itself
 	Refs *Refs `json:"refs,omitempty"`
-	// ExtraRefs are auxiliary repositories that
-	// need to be cloned, determined from config
-	ExtraRefs []Refs `json:"extra_refs,omitempty"`
 	// Context is the name of the status context used to
 	// report back to GitHub
 	Context string `json:"context,omitempty"`

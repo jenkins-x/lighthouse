@@ -139,14 +139,14 @@ type Controller struct {
 	// JobURLTemplateString compiles into JobURLTemplate at load time.
 	JobURLTemplateString string `json:"job_url_template,omitempty"`
 	// JobURLTemplate is compiled at load time from JobURLTemplateString. It
-	// will be passed a builder.PlumberArguments and is used to set the URL for the
+	// will be passed a builder.PipelineOptions and is used to set the URL for the
 	// "Details" link on GitHub as well as the link from deck.
 	JobURLTemplate *template.Template `json:"-"`
 
 	// ReportTemplateString compiles into ReportTemplate at load time.
 	ReportTemplateString string `json:"report_template,omitempty"`
 	// ReportTemplate is compiled at load time from ReportTemplateString. It
-	// will be passed a builder.PlumberArguments and can provide an optional blurb below
+	// will be passed a builder.PipelineOptions and can provide an optional blurb below
 	// the test failures comment.
 	ReportTemplate *template.Template `json:"-"`
 
@@ -216,7 +216,7 @@ type Sinker struct {
 	ResyncPeriod time.Duration `json:"-"`
 	// MaxPlumberJobAgeString compiles into MaxPlumberJobAge at load time.
 	MaxPlumberJobAgeString string `json:"max_plumberJob_age,omitempty"`
-	// MaxPlumberJobAge is how old a PlumberArguments can be before it is garbage-collected.
+	// MaxPlumberJobAge is how old a PipelineOptions can be before it is garbage-collected.
 	// Defaults to one week.
 	MaxPlumberJobAge time.Duration `json:"-"`
 	// MaxPodAgeString compiles into MaxPodAge at load time.
@@ -274,8 +274,8 @@ type ExternalAgentLog struct {
 	// URLTemplateString compiles into URLTemplate at load time.
 	URLTemplateString string `json:"url_template,omitempty"`
 	// URLTemplate is compiled at load time from URLTemplateString. It
-	// will be passed a builder.PlumberArguments and the generated URL should provide
-	// logs for the PlumberArguments.
+	// will be passed a builder.PipelineOptions and the generated URL should provide
+	// logs for the PipelineOptions.
 	URLTemplate *template.Template `json:"-"`
 }
 
@@ -626,7 +626,7 @@ func (c *Config) validateComponentConfig() error {
 
 var jobNameRegex = regexp.MustCompile(`^[A-Za-z0-9-._]+$`)
 
-func validateJobBase(v JobBase, jobType plumber.PlumberJobType, podNamespace string) error {
+func validateJobBase(v JobBase, jobType plumber.PipelineKind, podNamespace string) error {
 	if !jobNameRegex.MatchString(v.Name) {
 		return fmt.Errorf("name: must match regex %q", jobNameRegex.String())
 	}
@@ -1084,7 +1084,7 @@ func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, pre
 	return nil
 }
 
-func validatePodSpec(jobType plumber.PlumberJobType, spec *v1.PodSpec) error {
+func validatePodSpec(jobType plumber.PipelineKind, spec *v1.PodSpec) error {
 	if spec == nil {
 		return nil
 	}
