@@ -386,6 +386,8 @@ github.com/json-iterator/go v1.1.5 h1:gL2yXlmiIo4+t+y32d4WGwOjKGYcGOuyrg46vadswD
 github.com/json-iterator/go v1.1.5/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
 github.com/jstrachan/jx v1.3.981-0.20190805134406-e0d0e738d085 h1:Ui67N7ef4vyXjhuSqpQKEC09MtZjVg3lbId2CT/hsVk=
 github.com/jstrachan/jx v1.3.981-0.20190805134406-e0d0e738d085/go.mod h1:jVvSX3Do9rvwv2z22BSHqlp1N0BU6sCatBsN9Qz91mE=
+github.com/jstrachan/jx v1.3.981-0.20190805145115-9d4c23048fae h1:DNmMYBrusoihEpo29CsKbpBWUYlOY48MJjLzU2Esk98=
+github.com/jstrachan/jx v1.3.981-0.20190805145115-9d4c23048fae/go.mod h1:jVvSX3Do9rvwv2z22BSHqlp1N0BU6sCatBsN9Qz91mE=
 github.com/jtnord/logrus v1.4.2-0.20190423161236-606ffcaf8f5d h1:95Dc4I4Pw81p6Gc1IUqOtLPPf2qnhrcC3Lsv3tLdb1I=
 github.com/jtnord/logrus v1.4.2-0.20190423161236-606ffcaf8f5d/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/jtolds/gls v4.2.1+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
