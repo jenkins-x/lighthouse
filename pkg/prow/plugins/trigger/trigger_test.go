@@ -303,7 +303,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 	for _, testCase := range testCases {
 		fakeGitHubClient := fakegithub.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
-		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error) {
+		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberArguments) (handled bool, ret *plumber.PlumberArguments, err error) {
 			if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
 				return true, plumberJob, errors.New("failed to create job")
 			}
@@ -410,7 +410,7 @@ func TestRunRequested(t *testing.T) {
 		fakeGitHubClient := fakegithub.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
 
-		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error) {
+		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberArguments) (handled bool, ret *plumber.PlumberArguments, err error) {
 			if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
 				return true, plumberJob, errors.New("failed to create job")
 			}

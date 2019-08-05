@@ -139,14 +139,14 @@ type Controller struct {
 	// JobURLTemplateString compiles into JobURLTemplate at load time.
 	JobURLTemplateString string `json:"job_url_template,omitempty"`
 	// JobURLTemplate is compiled at load time from JobURLTemplateString. It
-	// will be passed a builder.PlumberJob and is used to set the URL for the
+	// will be passed a builder.PlumberArguments and is used to set the URL for the
 	// "Details" link on GitHub as well as the link from deck.
 	JobURLTemplate *template.Template `json:"-"`
 
 	// ReportTemplateString compiles into ReportTemplate at load time.
 	ReportTemplateString string `json:"report_template,omitempty"`
 	// ReportTemplate is compiled at load time from ReportTemplateString. It
-	// will be passed a builder.PlumberJob and can provide an optional blurb below
+	// will be passed a builder.PlumberArguments and can provide an optional blurb below
 	// the test failures comment.
 	ReportTemplate *template.Template `json:"-"`
 
@@ -216,7 +216,7 @@ type Sinker struct {
 	ResyncPeriod time.Duration `json:"-"`
 	// MaxPlumberJobAgeString compiles into MaxPlumberJobAge at load time.
 	MaxPlumberJobAgeString string `json:"max_plumberJob_age,omitempty"`
-	// MaxPlumberJobAge is how old a PlumberJob can be before it is garbage-collected.
+	// MaxPlumberJobAge is how old a PlumberArguments can be before it is garbage-collected.
 	// Defaults to one week.
 	MaxPlumberJobAge time.Duration `json:"-"`
 	// MaxPodAgeString compiles into MaxPodAge at load time.
@@ -274,8 +274,8 @@ type ExternalAgentLog struct {
 	// URLTemplateString compiles into URLTemplate at load time.
 	URLTemplateString string `json:"url_template,omitempty"`
 	// URLTemplate is compiled at load time from URLTemplateString. It
-	// will be passed a builder.PlumberJob and the generated URL should provide
-	// logs for the PlumberJob.
+	// will be passed a builder.PlumberArguments and the generated URL should provide
+	// logs for the PlumberArguments.
 	URLTemplate *template.Template `json:"-"`
 }
 

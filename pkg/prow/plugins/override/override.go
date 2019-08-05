@@ -25,7 +25,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -51,7 +50,7 @@ type githubClient interface {
 }
 
 type plumberClient interface {
-	Create(pj *plumber.PlumberJob) (*plumber.PlumberJob, error)
+	Create(pj *plumber.PlumberArguments) (*plumber.PlumberArguments, error)
 }
 
 type overrideClient interface {
@@ -87,7 +86,7 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.gc.HasPermission(org, repo, user, role...)
 }
 
-func (c client) Create(pj *plumber.PlumberJob) (*plumber.PlumberJob, error) {
+func (c client) Create(pj *plumber.PlumberArguments) (*plumber.PlumberArguments, error) {
 	return c.plumberClient.Create(pj)
 }
 
@@ -238,14 +237,6 @@ Only the following contexts were expected:
 			}
 
 			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
-			now := metav1.Now()
-			pj.Status = plumber.PlumberJobStatus{
-				StartTime:      now,
-				CompletionTime: &now,
-				State:          plumber.SuccessState,
-				Description:    description(user),
-				URL:            e.Link,
-			}
 			log.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
 			if _, err := oc.Create(&pj); err != nil {
 				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)

@@ -6,21 +6,21 @@ import (
 
 // FakePlumber a fake Plumber
 type FakePlumber struct {
-	Jobs []*plumber.PlumberJob
+	Jobs []*plumber.PlumberArguments
 }
 
 // NewPlumber creates a fake plumber
 func NewPlumber() *FakePlumber {
 	return &FakePlumber{
-		Jobs: []*plumber.PlumberJob{},
+		Jobs: []*plumber.PlumberArguments{},
 	}
 }
 
 // Create creates a plumber job
-func (p *FakePlumber) Create(job *plumber.PlumberJob) (*plumber.PlumberJob, error) {
+func (p *FakePlumber) Create(job *plumber.PlumberArguments) (*plumber.PlumberArguments, error) {
 	p.Jobs = append(p.Jobs, job)
 	return job, nil
 }
 
-func (p *FakePlumber) PrependReactor(s string, s2 string, i func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error)) {
+func (p *FakePlumber) PrependReactor(s string, s2 string, i func(plumberJob *plumber.PlumberArguments) (handled bool, ret *plumber.PlumberArguments, err error)) {
 }

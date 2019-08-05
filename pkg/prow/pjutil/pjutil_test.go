@@ -20,13 +20,11 @@ import (
 	"reflect"
 	"testing"
 	"text/template"
-	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -56,7 +54,6 @@ func TestPostsubmitSpec(t *testing.T) {
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
-				Report: true,
 			},
 		},
 		{
@@ -71,7 +68,6 @@ func TestPostsubmitSpec(t *testing.T) {
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
-				Report: true,
 			},
 		},
 		{
@@ -94,7 +90,6 @@ func TestPostsubmitSpec(t *testing.T) {
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
-				Report: true,
 			},
 		},
 	}
@@ -130,7 +125,6 @@ func TestPresubmitSpec(t *testing.T) {
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
-				Report: true,
 			},
 		},
 		{
@@ -145,7 +139,6 @@ func TestPresubmitSpec(t *testing.T) {
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
-				Report: true,
 			},
 		},
 		{
@@ -168,7 +161,6 @@ func TestPresubmitSpec(t *testing.T) {
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
-				Report: true,
 			},
 		},
 	}
@@ -248,174 +240,6 @@ func TestBatchSpec(t *testing.T) {
 		actual := BatchSpec(tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
-		}
-	}
-}
-
-func TestPartitionActive(t *testing.T) {
-	tests := []struct {
-		pjs []plumber.PlumberJob
-
-		pending   map[string]struct{}
-		triggered map[string]struct{}
-	}{
-		{
-			pjs: []plumber.PlumberJob{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "foo",
-					},
-					Status: plumber.PlumberJobStatus{
-						State: plumber.TriggeredState,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "bar",
-					},
-					Status: plumber.PlumberJobStatus{
-						State: plumber.PendingState,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "baz",
-					},
-					Status: plumber.PlumberJobStatus{
-						State: plumber.SuccessState,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "error",
-					},
-					Status: plumber.PlumberJobStatus{
-						State: plumber.ErrorState,
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "bak",
-					},
-					Status: plumber.PlumberJobStatus{
-						State: plumber.PendingState,
-					},
-				},
-			},
-			pending: map[string]struct{}{
-				"bar": {}, "bak": {},
-			},
-			triggered: map[string]struct{}{
-				"foo": {},
-			},
-		},
-	}
-
-	for i, test := range tests {
-		t.Logf("test run #%d", i)
-		pendingCh, triggeredCh := PartitionActive(test.pjs)
-		for job := range pendingCh {
-			if _, ok := test.pending[job.ObjectMeta.Name]; !ok {
-				t.Errorf("didn't find pending job %#v", job)
-			}
-		}
-		for job := range triggeredCh {
-			if _, ok := test.triggered[job.ObjectMeta.Name]; !ok {
-				t.Errorf("didn't find triggered job %#v", job)
-			}
-		}
-	}
-}
-
-func TestGetLatestPlumberJobs(t *testing.T) {
-	tests := []struct {
-		name string
-
-		pjs     []plumber.PlumberJob
-		jobType string
-
-		expected map[string]struct{}
-	}{
-		{
-			pjs: []plumber.PlumberJob{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "831c7df0-baa4-11e7-a1a4-0a58ac10134a",
-					},
-					Spec: plumber.PlumberJobSpec{
-						Type: plumber.PresubmitJob,
-						Job:  "test_pull_request_origin_extended_networking_minimal",
-						Refs: &plumber.Refs{
-							Org:     "openshift",
-							Repo:    "origin",
-							BaseRef: "master",
-							BaseSHA: "e92d5c525795eafb82cf16e3ab151b567b47e333",
-							Pulls: []plumber.Pull{
-								{
-									Number: 17061,
-									Author: "enj",
-									SHA:    "f94a3a51f59a693642e39084f03efa83af9442d3",
-								},
-							},
-						},
-						Report:       true,
-						Context:      "ci/openshift-jenkins/extended_networking_minimal",
-						RerunCommand: "/test extended_networking_minimal",
-					},
-					Status: plumber.PlumberJobStatus{
-						StartTime:   metav1.Date(2017, time.October, 26, 23, 22, 19, 0, time.UTC),
-						State:       plumber.FailureState,
-						Description: "Jenkins job failed.",
-						URL:         "https://openshift-gce-devel.appspot.com/build/origin-ci-test/pr-logs/pull/17061/test_pull_request_origin_extended_networking_minimal/9756/",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "0079d4d3-ba25-11e7-ae3f-0a58ac10123b",
-					},
-					Spec: plumber.PlumberJobSpec{
-						Type: plumber.PresubmitJob,
-						Job:  "test_pull_request_origin_extended_networking_minimal",
-						Refs: &plumber.Refs{
-							Org:     "openshift",
-							Repo:    "origin",
-							BaseRef: "master",
-							BaseSHA: "e92d5c525795eafb82cf16e3ab151b567b47e333",
-							Pulls: []plumber.Pull{
-								{
-									Number: 17061,
-									Author: "enj",
-									SHA:    "f94a3a51f59a693642e39084f03efa83af9442d3",
-								},
-							},
-						},
-						Report:       true,
-						Context:      "ci/openshift-jenkins/extended_networking_minimal",
-						RerunCommand: "/test extended_networking_minimal",
-					},
-					Status: plumber.PlumberJobStatus{
-						StartTime:   metav1.Date(2017, time.October, 26, 22, 22, 19, 0, time.UTC),
-						State:       plumber.FailureState,
-						Description: "Jenkins job failed.",
-						URL:         "https://openshift-gce-devel.appspot.com/build/origin-ci-test/pr-logs/pull/17061/test_pull_request_origin_extended_networking_minimal/9755/",
-					},
-				},
-			},
-			jobType:  "presubmit",
-			expected: map[string]struct{}{"831c7df0-baa4-11e7-a1a4-0a58ac10134a": {}},
-		},
-	}
-
-	for _, test := range tests {
-		got := GetLatestPlumberJobs(test.pjs, plumber.PlumberJobType(test.jobType))
-		if len(got) != len(test.expected) {
-			t.Errorf("expected jobs:\n%+v\ngot jobs:\n%+v", test.expected, got)
-			continue
-		}
-		for name := range test.expected {
-			if _, ok := got[name]; ok {
-				t.Errorf("expected job: %s", name)
-			}
 		}
 	}
 }
@@ -571,10 +395,10 @@ func TestNewPlumberJob(t *testing.T) {
 			t.Errorf("%s: incorrect PlumberJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Labels, testCase.expectedLabels; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberJob labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberArguments labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberJob annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberArguments annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 	}
 }
@@ -619,7 +443,7 @@ func TestNewPlumberJobWithAnnotations(t *testing.T) {
 			t.Errorf("%s: incorrect PlumberJobSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PlumberJob labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PlumberArguments labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
 	}
 }
@@ -628,7 +452,7 @@ func TestJobURL(t *testing.T) {
 	var testCases = []struct {
 		name     string
 		plank    config.Plank
-		pj       plumber.PlumberJob
+		pj       plumber.PlumberArguments
 		expected string
 	}{
 		{
@@ -638,7 +462,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       plumber.PlumberJob{Spec: plumber.PlumberJobSpec{Type: plumber.PeriodicJob}},
+			pj:       plumber.PlumberArguments{Spec: plumber.PlumberJobSpec{Type: plumber.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -648,7 +472,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Garbage}}")),
 				},
 			},
-			pj:       plumber.PlumberJob{},
+			pj:       plumber.PlumberArguments{},
 			expected: "",
 		},
 		{
@@ -658,7 +482,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       plumber.PlumberJob{Spec: plumber.PlumberJobSpec{Type: plumber.PeriodicJob}},
+			pj:       plumber.PlumberArguments{Spec: plumber.PlumberJobSpec{Type: plumber.PeriodicJob}},
 			expected: "periodic",
 		},
 	}

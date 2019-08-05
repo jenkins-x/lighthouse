@@ -29,7 +29,7 @@ func NewPlumber(repository scm.Repository, commonOptions *opts.CommonOptions) (P
 }
 
 // Create creates a pipeline
-func (b *PipelineBuilder) Create(request *PlumberJob) (*PlumberJob, error) {
+func (b *PipelineBuilder) Create(request *PlumberArguments) (*PlumberArguments, error) {
 	spec := &request.Spec
 
 	pipelineKind := "release"
