@@ -444,7 +444,7 @@ func (c Config) GetTideContextPolicy(org, repo, branch string) (*TideContextPoli
 	requiredIfPresent := sets.NewString(options.RequiredIfPresentContexts...)
 	optional := sets.NewString(options.OptionalContexts...)
 
-	// automatically generate required and optional entries for Prow Jobs
+	// automatically generate required and optional entries for Prow Pipelines
 	prowRequired, prowRequiredIfPresent, prowOptional := BranchRequirements(org, repo, branch, c.Presubmits)
 	required.Insert(prowRequired...)
 	requiredIfPresent.Insert(prowRequiredIfPresent...)

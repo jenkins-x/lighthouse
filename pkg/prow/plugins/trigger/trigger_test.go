@@ -329,7 +329,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 		}
 
 		observedCreatedPlumberJobs := sets.NewString()
-		existingPlumberJobs := fakePlumberClient.Jobs
+		existingPlumberJobs := fakePlumberClient.Pipelines
 		for _, job := range existingPlumberJobs {
 			observedCreatedPlumberJobs.Insert(job.Spec.Job)
 		}
@@ -431,7 +431,7 @@ func TestRunRequested(t *testing.T) {
 		}
 
 		observedCreatedPlumberJobs := sets.NewString()
-		existingPlumberJobs := fakePlumberClient.Jobs
+		existingPlumberJobs := fakePlumberClient.Pipelines
 		if err != nil {
 			t.Errorf("%s: could not list current state of prow jobs: %v", testCase.name, err)
 			continue
