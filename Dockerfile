@@ -9,6 +9,15 @@ RUN make test build-linux
 
 FROM centos:7
 
+RUN yum update  -y
+RUN yum install -y epel-release && \
+  yum install -y unzip \
+  which \
+  make \
+  wget \
+  zip \
+  bzip2
+
 # Git
 ENV GIT_VERSION 2.21.0
 RUN yum install -y curl-devel expat-devel gettext-devel openssl-devel zlib-devel && \
