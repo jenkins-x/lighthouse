@@ -27,7 +27,7 @@ require (
 	sigs.k8s.io/yaml v1.1.0
 )
 
-replace github.com/jenkins-x/jx => github.com/jstrachan/jx v1.3.981-0.20190805145115-9d4c23048fae
+replace github.com/jenkins-x/jx => github.com/jstrachan/jx v1.3.981-0.20190805151743-085b0142dfc0
 
 replace github.com/golang/lint => golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
 
