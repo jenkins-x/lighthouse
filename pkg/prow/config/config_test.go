@@ -662,35 +662,35 @@ func TestValidConfigLoading(t *testing.T) {
 
 		// TODO get these tests passing...
 		/*
-						{
-					name:       "decorated periodic missing `command`",
-					prowConfig: ``,
-					jobConfigs: []string{
-						`
-		periodics:
-		- interval: 10m
-		  agent: tekton
-		  name: foo
-		  decorate: true
-		  spec:
-		    containers:
-		    - image: alpine`,
+							{
+						name:       "decorated periodic missing `command`",
+						prowConfig: ``,
+						jobConfigs: []string{
+							`
+			periodics:
+			- interval: 10m
+			  agent: tekton
+			  name: foo
+			  decorate: true
+			  spec:
+			    containers:
+			    - image: alpine`,
+						},
+						expectError: true,
 					},
-					expectError: true,
-				},
-				{
-					name:       "reject invalid kubernetes periodic",
-					prowConfig: ``,
-					jobConfigs: []string{
-						`
-		periodics:
-		- interval: 10m
-		  agent: tekton
-		  build_spec:
-		  name: foo`,
+					{
+						name:       "reject invalid kubernetes periodic",
+						prowConfig: ``,
+						jobConfigs: []string{
+							`
+			periodics:
+			- interval: 10m
+			  agent: tekton
+			  build_spec:
+			  name: foo`,
+						},
+						expectError: true,
 					},
-					expectError: true,
-				},
 		*/
 		{
 			name:       "reject invalid build periodic",
