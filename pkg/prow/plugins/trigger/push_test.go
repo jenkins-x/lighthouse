@@ -177,7 +177,7 @@ func TestHandlePE(t *testing.T) {
 			t.Errorf("test %q: handlePE returned unexpected error %v", tc.name, err)
 		}
 		var numStarted int
-		for _, job := range fakePlumberClient.Jobs {
+		for _, job := range fakePlumberClient.Pipelines {
 			t.Logf("created job with context %s", job.Spec.Context)
 			numStarted++
 		}

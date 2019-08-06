@@ -303,7 +303,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 	for _, testCase := range testCases {
 		fakeGitHubClient := fakegithub.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
-		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error) {
+		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error) {
 			if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
 				return true, plumberJob, errors.New("failed to create job")
 			}
@@ -329,7 +329,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 		}
 
 		observedCreatedPlumberJobs := sets.NewString()
-		existingPlumberJobs := fakePlumberClient.Jobs
+		existingPlumberJobs := fakePlumberClient.Pipelines
 		for _, job := range existingPlumberJobs {
 			observedCreatedPlumberJobs.Insert(job.Spec.Job)
 		}
@@ -410,7 +410,7 @@ func TestRunRequested(t *testing.T) {
 		fakeGitHubClient := fakegithub.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
 
-		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PlumberJob) (handled bool, ret *plumber.PlumberJob, err error) {
+		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error) {
 			if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
 				return true, plumberJob, errors.New("failed to create job")
 			}
@@ -431,7 +431,7 @@ func TestRunRequested(t *testing.T) {
 		}
 
 		observedCreatedPlumberJobs := sets.NewString()
-		existingPlumberJobs := fakePlumberClient.Jobs
+		existingPlumberJobs := fakePlumberClient.Pipelines
 		if err != nil {
 			t.Errorf("%s: could not list current state of prow jobs: %v", testCase.name, err)
 			continue

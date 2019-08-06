@@ -47,7 +47,7 @@ func CommandFilter(body string) Filter {
 }
 
 // TestAllFilter builds a filter for the automatic behavior of `/test all`.
-// Jobs that explicitly match `/test all` in their trigger regex will be
+// Pipelines that explicitly match `/test all` in their trigger regex will be
 // handled by a commandFilter for the comment in question.
 func TestAllFilter() Filter {
 	return func(p config.Presubmit) (bool, bool, bool) {

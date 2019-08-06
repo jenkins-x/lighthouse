@@ -337,7 +337,7 @@ func TestHandlePullRequest(t *testing.T) {
 			t.Fatalf("Didn't expect error: %s", err)
 		}
 		var numStarted int
-		for _, job := range fakePlumberClient.Jobs {
+		for _, job := range fakePlumberClient.Pipelines {
 			t.Logf("created job with context %s", job.Spec.Context)
 			numStarted++
 		}

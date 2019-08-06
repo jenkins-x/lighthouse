@@ -7,63 +7,34 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PlumberJobType specifies how the job is triggered.
-type PlumberJobType string
+// PipelineKind specifies how the job is triggered.
+type PipelineKind string
 
 // Various job types.
 const (
 	// PresubmitJob means it runs on unmerged PRs.
-	PresubmitJob PlumberJobType = "presubmit"
+	PresubmitJob PipelineKind = "presubmit"
 	// PostsubmitJob means it runs on each new commit.
-	PostsubmitJob PlumberJobType = "postsubmit"
+	PostsubmitJob PipelineKind = "postsubmit"
 	// Periodic job means it runs on a time-basis, unrelated to git changes.
-	PeriodicJob PlumberJobType = "periodic"
+	PeriodicJob PipelineKind = "periodic"
 	// BatchJob tests multiple unmerged PRs at the same time.
-	BatchJob PlumberJobType = "batch"
+	BatchJob PipelineKind = "batch"
 )
 
-// PlumberJobState specifies whether the job is running
-type PlumberJobState string
-
-// Various job states.
-const (
-	// TriggeredState means the job has been created but not yet scheduled.
-	TriggeredState PlumberJobState = "triggered"
-	// PendingState means the job is scheduled but not yet running.
-	PendingState PlumberJobState = "pending"
-	// SuccessState means the job completed without error (exit 0)
-	SuccessState PlumberJobState = "success"
-	// FailureState means the job completed with errors (exit non-zero)
-	FailureState PlumberJobState = "failure"
-	// AbortedState means prow killed the job early (new commit pushed, perhaps).
-	AbortedState PlumberJobState = "aborted"
-	// ErrorState means the job could not schedule (bad config, perhaps).
-	ErrorState PlumberJobState = "error"
-)
-
-// PlumberJob is used to request a pipeline to be created
-// its the lighthouse equivalent of a ProwJob
-// though its not a CRD directly; but a set of parameters used to actually create the
-// Tekton Pipeline CRDs
-//
-// By default we tend to turn Webhoks into tekton Pipeline CRDs
-type PlumberJob struct {
+// PipelineOptions contains the arguments to pass to the Plumber to create a Tekton Pipeline
+type PipelineOptions struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PlumberJobSpec   `json:"spec,omitempty"`
-	Status PlumberJobStatus `json:"status,omitempty"`
+	Spec PipelineOptionsSpec `json:"spec,omitempty"`
 }
 
-// PlumberJobSpec the spec of a pipeline request
-type PlumberJobSpec struct {
+// PipelineOptionsSpec the spec of a pipeline request
+type PipelineOptionsSpec struct {
 	// Type is the type of job and informs how
 	// the jobs is triggered
-	Type PlumberJobType `json:"type,omitempty"`
-	// Cluster is which Kubernetes cluster is used
-	// to run the job, only applicable for that
-	// specific agent
-	Cluster string `json:"cluster,omitempty"`
+	Type PipelineKind `json:"type,omitempty"`
 	// Namespace defines where to create pods/resources.
 	Namespace string `json:"namespace,omitempty"`
 	// Job is the name of the job
@@ -71,12 +42,6 @@ type PlumberJobSpec struct {
 	// Refs is the code under test, determined at
 	// runtime by Prow itself
 	Refs *Refs `json:"refs,omitempty"`
-	// ExtraRefs are auxiliary repositories that
-	// need to be cloned, determined from config
-	ExtraRefs []Refs `json:"extra_refs,omitempty"`
-	// Report determines if the result of this job should
-	// be posted as a status on GitHub
-	Report bool `json:"report,omitempty"`
 	// Context is the name of the status context used to
 	// report back to GitHub
 	Context string `json:"context,omitempty"`
@@ -86,41 +51,6 @@ type PlumberJobSpec struct {
 	// MaxConcurrency restricts the total number of instances
 	// of this job that can run in parallel at once
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
-	// ErrorOnEviction indicates that the PlumberJob should be completed and given
-	// the ErrorState status if the pod that is executing the job is evicted.
-	// If this field is unspecified or false, a new pod will be created to replace
-	// the evicted one.
-	ErrorOnEviction bool `json:"error_on_eviction,omitempty"`
-
-	/*
-			// Agent determines which controller fulfills
-		// this specific PlumberJobSpec and runs the job
-		Agent PlumberJobAgent `json:"agent,omitempty"`
-
-		// PodSpec provides the basis for running the test under
-		// a Kubernetes agent
-		PodSpec *corev1.PodSpec `json:"pod_spec,omitempty"`
-
-		// BuildSpec provides the basis for running the test as
-		// a build-crd resource
-		// https://github.com/knative/build
-		BuildSpec *buildv1alpha1.BuildSpec `json:"build_spec,omitempty"`
-
-		// JenkinsSpec holds configuration specific to Jenkins jobs
-		JenkinsSpec *JenkinsSpec `json:"jenkins_spec,omitempty"`
-
-		// PipelineRunSpec provides the basis for running the test as
-		// a pipeline-crd resource
-		// https://github.com/tektoncd/pipeline
-		PipelineRunSpec *pipelinev1alpha1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
-
-
-		// ReporterConfig holds reporter-specific configuration
-		ReporterConfig *ReporterConfig `json:"reporter_config,omitempty"`
-	*/
-	// DecorationConfig holds configuration options for
-	// decorating PodSpecs that users provide
-	DecorationConfig *DecorationConfig `json:"decoration_config,omitempty"`
 }
 
 // Duration is a wrapper around time.Duration that parses times in either
@@ -197,39 +127,6 @@ type DecorationConfig struct {
 // Validate ensures all the values set in the DecorationConfig are valid.
 func (d *DecorationConfig) Validate() error {
 	return nil
-}
-
-// PlumberJobStatus provides runtime metadata, such as when it finished, whether it is running, etc.
-type PlumberJobStatus struct {
-	StartTime      metav1.Time     `json:"startTime,omitempty"`
-	CompletionTime *metav1.Time    `json:"completionTime,omitempty"`
-	State          PlumberJobState `json:"state,omitempty"`
-	Description    string          `json:"description,omitempty"`
-	URL            string          `json:"url,omitempty"`
-
-	/*	// PodName applies only to PlumberJobs fulfilled by
-		// plank. This field should always be the same as
-		// the PlumberJob.ObjectMeta.Name field.
-		PodName string `json:"pod_name,omitempty"`
-
-		// BuildID is the build identifier vended either by tot
-		// or the snowflake library for this job and used as an
-		// identifier for grouping artifacts in GCS for views in
-		// TestGrid and Gubernator. Idenitifiers vended by tot
-		// are monotonically increasing whereas identifiers vended
-		// by the snowflake library are not.
-		BuildID string `json:"build_id,omitempty"`
-
-		// JenkinsBuildID applies only to PlumberJobs fulfilled
-		// by the jenkins-operator. This field is the build
-		// identifier that Jenkins gave to the build for this
-		// PlumberJob.
-		JenkinsBuildID string `json:"jenkins_build_id,omitempty"`
-
-		// PrevReportStates stores the previous reported plumberJob state per reporter
-		// So crier won't make duplicated report attempt
-		PrevReportStates map[string]PlumberJobState `json:"prev_report_states,omitempty"`
-	*/
 }
 
 // Pull describes a pull request at a particular point in time.
