@@ -5,7 +5,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
-	github.com/jenkins-x/go-scm v1.5.21
+	github.com/jenkins-x/go-scm v1.5.22
 	github.com/jenkins-x/jx v0.0.0-20190807091323-2bcf1b1e4251
 	github.com/knative/build v0.5.0
 	github.com/pkg/errors v0.8.1
@@ -15,7 +15,6 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.5
-	golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
