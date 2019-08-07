@@ -29,7 +29,7 @@ spec:
             value: "{{ .Values.git.kind }}"
           - name: "GIT_SERVER"
             value: "{{ .Values.git.server }}"
-          - name: "BOT_NAME"
+          - name: "GIT_USER"
             valueFrom:
               secretKeyRef:
                 name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
