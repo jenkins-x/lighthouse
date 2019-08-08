@@ -98,7 +98,7 @@ func (c *realClowder) setKey(keyPath string, log *logrus.Entry) {
 		c.key = ""
 		return
 	}
-	b, err := ioutil.ReadFile(keyPath)
+	b, err := ioutil.ReadFile(keyPath) // #nosec
 	if err == nil {
 		c.key = strings.TrimSpace(string(b))
 		return
@@ -145,7 +145,7 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 	if grumpyKeywords.MatchString(category) {
 		cats = append(cats, catResult{grumpyURL})
 	} else {
-		resp, err := http.Get(uri)
+		resp, err := http.Get(uri) // #nosec
 		if err != nil {
 			return "", fmt.Errorf("could not read cat from %s: %v", uri, err)
 		}

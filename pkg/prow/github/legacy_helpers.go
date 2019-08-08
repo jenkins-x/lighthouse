@@ -85,7 +85,7 @@ func ImageTooBig(url string) (bool, error) {
 	// limit is 10MB
 	limit := 10000000
 	// try to get the image size from Content-Length header
-	resp, err := http.Head(url)
+	resp, err := http.Head(url) // #nosec
 	if err != nil {
 		return true, fmt.Errorf("HEAD error: %v", err)
 	}

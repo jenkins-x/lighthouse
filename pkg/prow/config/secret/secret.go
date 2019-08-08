@@ -24,7 +24,7 @@ import (
 
 // LoadSecrets loads multiple paths of secrets and add them in a map.
 func LoadSecrets(paths []string) (map[string][]byte, error) {
-	secretsMap := make(map[string][]byte, len(paths))
+	secretsMap := make(map[string][]byte, len(paths)) // #nosec
 
 	for _, path := range paths {
 		secretValue, err := LoadSingleSecret(path)
@@ -38,7 +38,7 @@ func LoadSecrets(paths []string) (map[string][]byte, error) {
 
 // LoadSingleSecret reads and returns the value of a single file.
 func LoadSingleSecret(path string) ([]byte, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := ioutil.ReadFile(path) // #nosec
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s: %v", path, err)
 	}

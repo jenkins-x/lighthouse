@@ -218,7 +218,7 @@ type ConfigAgent struct {
 // Load attempts to load config from the path. It returns an error if either
 // the file can't be read or the configuration is invalid.
 func (pa *ConfigAgent) Load(path string) error {
-	b, err := ioutil.ReadFile(path)
+	b, err := ioutil.ReadFile(path) // #nosec
 	if err != nil {
 		return err
 	}

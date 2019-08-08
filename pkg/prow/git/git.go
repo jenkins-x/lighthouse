@@ -173,7 +173,8 @@ func (c *client) Clone(repo string) (*Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	if b, err := exec.Command(c.git, "clone", cache, t).CombinedOutput(); err != nil {
+	b, err := exec.Command(c.git, "clone", cache, t).CombinedOutput() // #nosec
+	if err != nil {
 		return nil, fmt.Errorf("git repo clone error: %v. output: %s", err, string(b))
 	}
 	return &Repo{
@@ -221,7 +222,7 @@ func (r *Repo) Clean() error {
 }
 
 func (r *Repo) gitCommand(arg ...string) *exec.Cmd {
-	cmd := exec.Command(r.git, arg...)
+	cmd := exec.Command(r.git, arg...) // #nosec
 	cmd.Dir = r.Dir
 	return cmd
 }
@@ -341,7 +342,7 @@ func retryCmd(l *logrus.Entry, dir, cmd string, arg ...string) ([]byte, error) {
 	var err error
 	sleepyTime := time.Second
 	for i := 0; i < 3; i++ {
-		c := exec.Command(cmd, arg...)
+		c := exec.Command(cmd, arg...) // #nosec
 		c.Dir = dir
 		b, err = c.CombinedOutput()
 		if err != nil {

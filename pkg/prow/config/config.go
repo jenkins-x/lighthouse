@@ -434,7 +434,7 @@ func loadConfig(prowConfig, jobConfig string) (*Config, error) {
 
 // yamlToConfig converts a yaml file into a Config object
 func yamlToConfig(path string, nc interface{}) error {
-	b, err := ioutil.ReadFile(path)
+	b, err := ioutil.ReadFile(path) // #nosec
 	if err != nil {
 		return fmt.Errorf("error reading %s: %v", path, err)
 	}

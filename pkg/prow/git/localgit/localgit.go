@@ -50,8 +50,11 @@ func New() (*LocalGit, git.Client, error) {
 	}
 	c, err := git.NewClient("https://github.com", "github")
 	if err != nil {
-		os.RemoveAll(t)
-		return nil, nil, err
+		rerr := os.RemoveAll(t)
+		if rerr != nil {
+			return nil, nil, fmt.Errorf("cleaning up the temporary files: %v", rerr)
+		}
+		return nil, nil, fmt.Errorf("creating new local git clinet: %v", err)
 	}
 
 	getSecret := func() []byte {
@@ -73,7 +76,7 @@ func (lg *LocalGit) Clean() error {
 }
 
 func runCmd(cmd, dir string, arg ...string) error {
-	c := exec.Command(cmd, arg...)
+	c := exec.Command(cmd, arg...) // #nosec
 	c.Dir = dir
 	if b, err := c.CombinedOutput(); err != nil {
 		return fmt.Errorf("%s %v: %v, %s", cmd, arg, err, string(b))
@@ -82,7 +85,7 @@ func runCmd(cmd, dir string, arg ...string) error {
 }
 
 func runCmdOutput(cmd, dir string, arg ...string) (string, error) {
-	c := exec.Command(cmd, arg...)
+	c := exec.Command(cmd, arg...) // #nosec
 	c.Dir = dir
 	b, err := c.CombinedOutput()
 	if err != nil {
