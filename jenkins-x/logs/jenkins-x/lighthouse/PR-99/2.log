@@ -1,0 +1,41 @@
+Step: build-step-credential-initializer-bx662:
+
+{"level":"warn","ts":1565279925.0754378,"logger":"fallback-logger","caller":"logging/config.go:65","msg":"Fetch GitHub commit ID from kodata failed: \"ref: refs/heads/master\" is not a valid GitHub commit ID"}
+{"level":"info","ts":1565279925.07638,"logger":"fallback-logger","caller":"creds-init/main.go:40","msg":"Credentials initialized."}
+Step: build-step-working-dir-initializer-pnpzr:
+
+{"level":"warn","ts":1565279925.483272,"logger":"fallback-logger","caller":"logging/config.go:65","msg":"Fetch GitHub commit ID from kodata failed: open /var/run/ko/HEAD: no such file or directory"}
+{"level":"info","ts":1565279925.4850223,"logger":"fallback-logger","caller":"bash/main.go:65","msg":"Successfully executed command \"mkdir -p /workspace/source /workspace/source/charts/lighthouse /workspace/source/charts/preview\""}
+Step: build-step-place-tools:
+
+Step: build-step-git-source-jenkins-x-lighthouse-pr-99-tekt-8clsk:
+
+{"level":"warn","ts":1565279927.5216968,"logger":"fallback-logger","caller":"logging/config.go:65","msg":"Fetch GitHub commit ID from kodata failed: \"ref: refs/heads/master\" is not a valid GitHub commit ID"}
+{"level":"info","ts":1565279929.3914118,"logger":"fallback-logger","caller":"git/git.go:102","msg":"Successfully cloned https://github.com/jenkins-x/lighthouse @ bae5764b01dab09d52525f7472b449aecf69e988 in path /workspace/source"}
+Step: build-step-git-merge:
+
+Warning failed to load version: failed to parse version -dev+9e73adc0b: No Major.Minor.Patch elements found
+time="2019-08-08T15:58:49Z" level=info msg="got "
+Using SHAs from PULL_REFS=master:18319eb9ff296bb65978914fff27b0d8022ac0a8,99:bae5764b01dab09d52525f7472b449aecf69e988
+ran git fetch --unshallow origin bae5764b01dab09d52525f7472b449aecf69e988: 18319eb9ff296bb65978914fff27b0d8022ac0a8: in 
+ran git checkout master in 
+ran git reset --hard 18319eb9ff296bb65978914fff27b0d8022ac0a8 in 
+ran clean --force -d . in 
+ran git merge bae5764b01dab09d52525f7472b449aecf69e988 in 
+Step: build-step-lint-checks:
+
+make: *** No rule to make target `checks'.  Stop.
+Step: build-step-unit-tests:
+
+Step: build-step-init-helm:
+
+Step: build-step-helm-lint:
+
+Step: build-step-kaniko-credentials:
+
+Step: build-step-build-and-push-image:
+
+Step: build-step-promote-make-preview:
+
+Step: build-step-promote-**-preview:
+
