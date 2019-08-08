@@ -56,6 +56,7 @@ const (
 	GenericCommentActionDeleted = "deleted" // "dismissed"
 )
 
+// PullRequestMergeType inidicates the type of the pull request
 type PullRequestMergeType string
 
 // Possible types of merges for the GitHub merge API
@@ -78,12 +79,13 @@ func HasLabel(label string, issueLabels []*scm.Label) bool {
 	return false
 }
 */
+
 // ImageTooBig checks if image is bigger than github limits
 func ImageTooBig(url string) (bool, error) {
 	// limit is 10MB
 	limit := 10000000
 	// try to get the image size from Content-Length header
-	resp, err := http.Head(url)
+	resp, err := http.Head(url) // #nosec
 	if err != nil {
 		return true, fmt.Errorf("HEAD error: %v", err)
 	}
@@ -158,8 +160,8 @@ type ReviewAction string
 // Possible review actions. Leave Action blank for a pending review.
 const (
 	Approve        ReviewAction = "APPROVE"
-	RequestChanges              = "REQUEST_CHANGES"
-	Comment                     = "COMMENT"
+	RequestChanges ReviewAction = "REQUEST_CHANGES"
+	Comment        ReviewAction = "COMMENT"
 )
 
 // DraftReview is what we give GitHub when we want to make a PR Review. This is
@@ -200,7 +202,7 @@ type Milestone struct {
 // HasLabel checks if label is in the label set "issueLabels".
 func HasLabel(label string, issueLabels []*scm.Label) bool {
 	for _, l := range issueLabels {
-		if strings.ToLower(l.Name) == strings.ToLower(label) {
+		if strings.EqualFold(l.Name, label) {
 			return true
 		}
 	}

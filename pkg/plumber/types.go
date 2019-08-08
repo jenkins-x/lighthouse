@@ -57,9 +57,10 @@ type PipelineOptionsSpec struct {
 // 'integer number of nanoseconds' or 'duration string' formats and serializes
 // to 'duration string' format.
 type Duration struct {
-	time.Duration
+	Duration time.Duration
 }
 
+// UnmarshalJSON unmarshal a byte array into a Duration object
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &d.Duration); err == nil {
 		// b was an integer number of nanoseconds.
@@ -81,6 +82,7 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalJSON marshals a duration object to a byte array
 func (d *Duration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.Duration.String())
 }

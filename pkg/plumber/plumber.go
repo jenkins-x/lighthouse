@@ -103,7 +103,7 @@ func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, er
 	return request, nil
 }
 
-func (o *PipelineBuilder) getBranch(spec *PipelineOptionsSpec) string {
+func (b *PipelineBuilder) getBranch(spec *PipelineOptionsSpec) string {
 	branch := spec.Refs.BaseRef
 	if spec.Type == PostsubmitJob {
 		return branch
@@ -117,7 +117,7 @@ func (o *PipelineBuilder) getBranch(spec *PipelineOptionsSpec) string {
 	return branch
 }
 
-func (o *PipelineBuilder) getPullRefs(spec *PipelineOptionsSpec) *prow.PullRefs {
+func (b *PipelineBuilder) getPullRefs(spec *PipelineOptionsSpec) *prow.PullRefs {
 	toMerge := make(map[string]string)
 	for _, pull := range spec.Refs.Pulls {
 		toMerge[strconv.Itoa(pull.Number)] = pull.SHA

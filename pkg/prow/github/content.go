@@ -4,7 +4,8 @@ import (
 	"context"
 )
 
-func (c *GitHubClient) GetFile(owner, repo, filepath, commit string) ([]byte, error) {
+// GetFile retruns the file from GitHub
+func (c *Client) GetFile(owner, repo, filepath, commit string) ([]byte, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	answer, _, err := c.client.Contents.Find(ctx, fullName, filepath, commit)

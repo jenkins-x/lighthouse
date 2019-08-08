@@ -926,7 +926,7 @@ func TestHandlePullRequest(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			fakeScmClient, fakeGitHub := fake.NewDefault()
-			fakeClient := github.ToGitHubClient(fakeScmClient, fakeBotName)
+			fakeClient := github.ToClient(fakeScmClient, fakeBotName)
 
 			fakeGitHub.IssueComments = c.issueComments
 			fakeGitHub.PullRequests[101] = &scm.PullRequest{
@@ -1092,7 +1092,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 	}
 	fakeBotName := "k8s-ci-robot"
 	fakeScmClient, fc := fake.NewDefault()
-	fakeClient := github.ToGitHubClient(fakeScmClient, fakeBotName)
+	fakeClient := github.ToClient(fakeScmClient, fakeBotName)
 
 	fc.IssueComments[101] = []*scm.Comment{&scm.Comment{
 		Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),

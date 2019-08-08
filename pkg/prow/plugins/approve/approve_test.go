@@ -98,7 +98,7 @@ func newTestReviewTime(t time.Time, user, body string, state string) *scm.Review
 	return r
 }
 
-func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*github.GitHubClient, *fake.Data) {
+func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*github.Client, *fake.Data) {
 	labels := []string{"org/repo#1:lgtm"}
 	if hasLabel {
 		labels = append(labels, fmt.Sprintf("org/repo#%v:approved", prNumber))
@@ -128,7 +128,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	fakeScmClient, fc := fake.NewDefault()
 	fc.RepoLabelsExisting = nil
 
-	fakeClient := github.ToGitHubClient(fakeScmClient, testBotName)
+	fakeClient := github.ToClient(fakeScmClient, testBotName)
 
 	fc.IssueLabelsAdded = labels
 	fc.PullRequestChanges[prNumber] = changes

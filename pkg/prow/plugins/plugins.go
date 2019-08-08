@@ -133,7 +133,7 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
-	GitHubClient     *github.GitHubClient
+	GitHubClient     *github.Client
 	PlumberClient    plumber.Plumber
 	GitClient        git2.Client
 	KubernetesClient kubernetes.Interface
@@ -159,7 +159,7 @@ type Agent struct {
 func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
-	gitHubClient := github.ToGitHubClient(clientAgent.GitHubClient, clientAgent.BotName)
+	gitHubClient := github.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
 	return Agent{
 		GitHubClient:  gitHubClient,
 		GitClient:     clientAgent.GitClient,
@@ -218,7 +218,7 @@ type ConfigAgent struct {
 // Load attempts to load config from the path. It returns an error if either
 // the file can't be read or the configuration is invalid.
 func (pa *ConfigAgent) Load(path string) error {
-	b, err := ioutil.ReadFile(path)
+	b, err := ioutil.ReadFile(path) // #nosec
 	if err != nil {
 		return err
 	}

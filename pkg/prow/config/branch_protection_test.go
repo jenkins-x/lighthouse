@@ -812,19 +812,20 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			actual, err := tc.config.GetBranchProtection("org", "repo", "branch")
-			switch {
-			case err != nil:
+			if err != nil {
 				if !tc.err {
 					t.Errorf("unexpected error: %v", err)
 				}
-			case err == nil && tc.err:
-				t.Errorf("failed to receive an error")
-			default:
-				normalize(actual)
-				normalize(tc.expected)
-				if !reflect.DeepEqual(actual, tc.expected) {
-					t.Errorf("actual %+v != expected %+v", actual, tc.expected)
+			} else {
+				if tc.err {
+					t.Errorf("failed to receive an error")
 				}
+			}
+
+			normalize(actual)
+			normalize(tc.expected)
+			if !reflect.DeepEqual(actual, tc.expected) {
+				t.Errorf("actual %+v != expected %+v", actual, tc.expected)
 			}
 		})
 	}

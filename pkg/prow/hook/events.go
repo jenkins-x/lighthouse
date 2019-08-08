@@ -17,7 +17,6 @@ limitations under the License.
 package hook
 
 import (
-	"net/http"
 	"strconv"
 	"sync"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
+// Server keeps the information required to start a server
 type Server struct {
 	ClientAgent    *plugins.ClientAgent
 	Plugins        *plugins.ConfigAgent
@@ -36,28 +36,13 @@ type Server struct {
 	TokenGenerator func() []byte
 	Metrics        *Metrics
 
-	// c is an http client used for dispatching events
-	// to external plugin services.
-	c http.Client
 	// Tracks running handlers for graceful shutdown
 	wg sync.WaitGroup
 }
 
 const failedCommentCoerceFmt = "Could not coerce %s event to a GenericCommentEvent. Unknown 'action': %q."
 
-var (
-	nonCommentIssueActions = map[github.IssueEventAction]bool{
-		github.IssueActionAssigned:     true,
-		github.IssueActionUnassigned:   true,
-		github.IssueActionLabeled:      true,
-		github.IssueActionUnlabeled:    true,
-		github.IssueActionMilestoned:   true,
-		github.IssueActionDemilestoned: true,
-		github.IssueActionClosed:       true,
-		github.IssueActionReopened:     true,
-	}
-)
-
+// HandleIssueCommentEvent handle comment events
 func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHook) {
 	l = l.WithFields(logrus.Fields{
 		github.OrgLogField:  ic.Repo.Namespace,
@@ -103,6 +88,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 	)
 }
 
+// HandlePullRequestCommentEvent handles pull request comments events
 func (s *Server) HandlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullRequestCommentHook) {
 	l = l.WithFields(logrus.Fields{
 		github.OrgLogField:  pc.Repo.Namespace,
@@ -168,6 +154,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *github.GenericComment
 	}
 }
 
+// HandlePushEvent handles a push event
 func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	repo := pe.Repository()
 	l = l.WithFields(logrus.Fields{
@@ -192,6 +179,7 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 }
 
+// HandlePullRequestEvent handles a pull request event
 func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook) {
 	l = l.WithFields(logrus.Fields{
 		github.OrgLogField:  pr.Repo.Namespace,
@@ -248,6 +236,7 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	)
 }
 
+// HandleBranchEvent handles a branch event
 func (s *Server) HandleBranchEvent(entry *logrus.Entry, hook *scm.BranchHook) {
 	// TODO
 }

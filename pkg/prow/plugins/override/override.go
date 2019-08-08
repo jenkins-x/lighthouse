@@ -220,7 +220,10 @@ Only the following contexts were expected:
 		}
 		msg := fmt.Sprintf("Overrode contexts on behalf of %s: %s", user, strings.Join(done.List(), ", "))
 		log.Info(msg)
-		oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, msg))
+		err := oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, msg))
+		if err != nil {
+			log.WithError(err).Warn("Failed to create the comment")
+		}
 	}()
 
 	for _, status := range statuses {

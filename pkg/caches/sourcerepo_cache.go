@@ -44,7 +44,7 @@ func (c *SourceRepositoryCache) Get(name string) *jxv1.SourceRepository {
 	return nil
 }
 
-// Get looks up the repository by name
+// FindRepository looks up the repository by name
 func (c *SourceRepositoryCache) FindRepository(owner string, name string) *jxv1.SourceRepository {
 	var answer *jxv1.SourceRepository
 	c.resources.Range(func(_, obj interface{}) bool {

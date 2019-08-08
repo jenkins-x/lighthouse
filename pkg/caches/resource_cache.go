@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+// Cache handles interactions with the cache
 type Cache interface {
 	// IsLoaded returns true when the cache is loaded
 	IsLoaded() bool
@@ -116,7 +117,7 @@ func (c *ResourceCache) Size() int {
 	return size
 }
 
-// Query objects returning false from the function to stop iterating
+// Range objects returning false from the function to stop iterating
 func (c *ResourceCache) Range(fn func(_, obj interface{}) bool) {
 	c.resources.Range(fn)
 }

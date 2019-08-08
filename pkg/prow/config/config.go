@@ -291,7 +291,7 @@ type Branding struct {
 	HeaderColor string `json:"header_color,omitempty"`
 }
 
-// PubSubSubscriptions maps GCP projects to a list of Topics.
+// PubsubSubscriptions maps GCP projects to a list of Topics.
 type PubsubSubscriptions map[string][]string
 
 // GitHubOptions allows users to control how prow applications display GitHub website links.
@@ -434,7 +434,7 @@ func loadConfig(prowConfig, jobConfig string) (*Config, error) {
 
 // yamlToConfig converts a yaml file into a Config object
 func yamlToConfig(path string, nc interface{}) error {
-	b, err := ioutil.ReadFile(path)
+	b, err := ioutil.ReadFile(path) // #nosec
 	if err != nil {
 		return fmt.Errorf("error reading %s: %v", path, err)
 	}
@@ -449,8 +449,7 @@ func yamlToConfig(path string, nc interface{}) error {
 		jc = &v.JobConfig
 	}
 	for rep := range jc.Presubmits {
-		var fix func(*Presubmit)
-		fix = func(job *Presubmit) {
+		fix := func(job *Presubmit) {
 			job.SourcePath = path
 		}
 		for i := range jc.Presubmits[rep] {
@@ -458,8 +457,7 @@ func yamlToConfig(path string, nc interface{}) error {
 		}
 	}
 	for rep := range jc.Postsubmits {
-		var fix func(*Postsubmit)
-		fix = func(job *Postsubmit) {
+		fix := func(job *Postsubmit) {
 			job.SourcePath = path
 		}
 		for i := range jc.Postsubmits[rep] {
@@ -467,8 +465,7 @@ func yamlToConfig(path string, nc interface{}) error {
 		}
 	}
 
-	var fix func(*Periodic)
-	fix = func(job *Periodic) {
+	fix := func(job *Periodic) {
 		job.SourcePath = path
 	}
 	for i := range jc.Periodics {
