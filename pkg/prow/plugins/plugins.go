@@ -133,7 +133,7 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
-	GitHubClient     *github.GitHubClient
+	GitHubClient     *github.Client
 	PlumberClient    plumber.Plumber
 	GitClient        git2.Client
 	KubernetesClient kubernetes.Interface
@@ -159,7 +159,7 @@ type Agent struct {
 func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
-	gitHubClient := github.ToGitHubClient(clientAgent.GitHubClient, clientAgent.BotName)
+	gitHubClient := github.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
 	return Agent{
 		GitHubClient:  gitHubClient,
 		GitClient:     clientAgent.GitClient,

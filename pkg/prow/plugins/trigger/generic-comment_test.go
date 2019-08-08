@@ -887,7 +887,7 @@ func TestHandleGenericComment(t *testing.T) {
 	}
 }
 
-func validate(name string, fakePlumberClient *fake.FakePlumber, g *fakegithub.FakeClient, tc testcase, t *testing.T) {
+func validate(name string, fakePlumberClient *fake.Plumber, g *fakegithub.FakeClient, tc testcase, t *testing.T) {
 	startedContexts := sets.NewString()
 	for _, job := range fakePlumberClient.Pipelines {
 		startedContexts.Insert(job.Spec.Context)

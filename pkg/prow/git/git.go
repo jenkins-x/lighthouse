@@ -16,8 +16,6 @@ import (
 )
 
 const (
-	github = "github.com"
-
 	kindBitbucketServer = "bitbucketserver"
 )
 
@@ -67,7 +65,7 @@ func (c *client) Clean() error {
 
 // NewClient returns a client that talks to GitHub. It will fail if git is not
 // in the PATH.
-func NewClient(serverURL string, gitKind string) (*client, error) {
+func NewClient(serverURL string, gitKind string) (Client, error) {
 	g, err := exec.LookPath("git")
 	if err != nil {
 		return nil, err
@@ -289,7 +287,7 @@ func (r *Repo) Am(path string) error {
 	}
 	output := string(b)
 	r.logger.WithError(err).Warningf("Patch apply failed with output: %s", output)
-	if b, abortErr := r.gitCommand("am", "--abort").CombinedOutput(); err != nil {
+	if b, abortErr := r.gitCommand("am", "--abort").CombinedOutput(); abortErr != nil {
 		r.logger.WithError(abortErr).Warningf("Aborting patch apply failed with output: %s", string(b))
 	}
 	applyMsg := "The copy of the patch that failed is found in: .git/rebase-apply/patch"

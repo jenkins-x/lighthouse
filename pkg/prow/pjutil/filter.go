@@ -25,11 +25,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+// TestAllRe provides the regex for `/test all`
 var TestAllRe = regexp.MustCompile(`(?m)^/test all,?($|\s.*)`)
 
 // RetestRe provides the regex for `/retest`
 var RetestRe = regexp.MustCompile(`(?m)^/retest\s*$`)
 
+// OkToTestRe provies the regex for `/ok-to-test`
 var OkToTestRe = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
 
 // Filter digests a presubmit config to determine if:

@@ -3,7 +3,7 @@ package watcher
 import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -78,10 +78,12 @@ func NewConfigMapWatcher(kubeClient kubernetes.Interface, ns string, callbacks [
 	return w, nil
 }
 
+// IsStopped checks if configmap watcher is stopped
 func (w *ConfigMapWatcher) IsStopped() bool {
 	return w.stopped
 }
 
+// Stop stops the configmap watcher
 func (w *ConfigMapWatcher) Stop() {
 	w.stopped = true
 	w.watch.Stop()
@@ -111,8 +113,6 @@ func (w *ConfigMapWatcher) watchChannel() {
 					return
 				}
 				l.Errorf("failed with event %#v", event.Object)
-				break
-
 			}
 		}
 
@@ -123,7 +123,6 @@ func (w *ConfigMapWatcher) watchChannel() {
 			// TODO should we terminate or retry?
 			return
 		}
-		break
 	}
 }
 

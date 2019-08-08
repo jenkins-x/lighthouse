@@ -201,6 +201,7 @@ type RegexpChangeMatcher struct {
 	reChanges    *regexp.Regexp // from RunIfChanged
 }
 
+// Reporter keeps various details for status reporting
 type Reporter struct {
 	// Context is the name of the GitHub status context for the job.
 	// Defaults: the same as the name of the job.
@@ -214,7 +215,7 @@ func (br Brancher) RunsAgainstAllBranch() bool {
 	return len(br.SkipBranches) == 0 && len(br.Branches) == 0
 }
 
-// GetRESkip
+// GetRESkip return the branch skip regexp
 func (br Brancher) GetRESkip() *regexp.Regexp {
 	if br.reSkip == nil {
 		br2, _ := setBrancherRegexes(br)
@@ -223,7 +224,7 @@ func (br Brancher) GetRESkip() *regexp.Regexp {
 	return br.reSkip
 }
 
-// GetRESkip
+// GetRE returns the branch regexp
 func (br Brancher) GetRE() *regexp.Regexp {
 	if br.re == nil {
 		br2, _ := setBrancherRegexes(br)
@@ -257,10 +258,7 @@ func (br Brancher) Intersects(other Brancher) bool {
 		baseBranches := sets.NewString(br.Branches...)
 		if len(other.Branches) > 0 {
 			otherBranches := sets.NewString(other.Branches...)
-			if baseBranches.Intersection(otherBranches).Len() > 0 {
-				return true
-			}
-			return false
+			return baseBranches.Intersection(otherBranches).Len() > 0
 		}
 		if !baseBranches.Intersection(sets.NewString(other.SkipBranches...)).Equal(baseBranches) {
 			return true
@@ -541,12 +539,9 @@ func (c *JobConfig) AllPostsubmits(repos []string) []Postsubmit {
 
 // AllPeriodics returns all prow periodic jobs.
 func (c *JobConfig) AllPeriodics() []Periodic {
-	var listPeriodic func(ps []Periodic) []Periodic
-	listPeriodic = func(ps []Periodic) []Periodic {
+	listPeriodic := func(ps []Periodic) []Periodic {
 		var res []Periodic
-		for _, p := range ps {
-			res = append(res, p)
-		}
+		res = append(res, ps...)
 		return res
 	}
 

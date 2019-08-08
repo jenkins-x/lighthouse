@@ -10,42 +10,48 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *GitHubClient) ListIssueEvents(org, repo string, number int) ([]*scm.ListedIssueEvent, error) {
+// ListIssueEvents list issue events
+func (c *Client) ListIssueEvents(org, repo string, number int) ([]*scm.ListedIssueEvent, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
 	events, _, err := c.client.Issues.ListEvents(ctx, fullName, number, c.createListOptions())
 	return events, err
 }
 
-func (c *GitHubClient) AssignIssue(owner, repo string, number int, logins []string) error {
+// AssignIssue assigns issue
+func (c *Client) AssignIssue(owner, repo string, number int, logins []string) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	_, err := c.client.Issues.AssignIssue(ctx, fullName, number, logins)
 	return err
 }
 
-func (c *GitHubClient) UnassignIssue(owner, repo string, number int, logins []string) error {
+// UnassignIssue unassigns issue
+func (c *Client) UnassignIssue(owner, repo string, number int, logins []string) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	_, err := c.client.Issues.UnassignIssue(ctx, fullName, number, logins)
 	return err
 }
 
-func (c *GitHubClient) AddLabel(owner, repo string, number int, label string) error {
+// AddLabel adds a label
+func (c *Client) AddLabel(owner, repo string, number int, label string) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	_, err := c.client.Issues.AddLabel(ctx, fullName, number, label)
 	return err
 }
 
-func (c *GitHubClient) RemoveLabel(owner, repo string, number int, label string) error {
+// RemoveLabel removes labesl
+func (c *Client) RemoveLabel(owner, repo string, number int, label string) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	_, err := c.client.Issues.DeleteLabel(ctx, fullName, number, label)
 	return err
 }
 
-func (c *GitHubClient) DeleteComment(org, repo string, number, ID int) error {
+// DeleteComment delete comments
+func (c *Client) DeleteComment(org, repo string, number, ID int) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
 	_, err := c.client.Issues.DeleteComment(ctx, fullName, number, ID)
@@ -54,7 +60,7 @@ func (c *GitHubClient) DeleteComment(org, repo string, number, ID int) error {
 
 // DeleteStaleComments iterates over comments on an issue/PR, deleting those which the 'isStale'
 // function identifies as stale. If 'comments' is nil, the comments will be fetched from GitHub.
-func (c *GitHubClient) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, isStale func(*scm.Comment) bool) error {
+func (c *Client) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, isStale func(*scm.Comment) bool) error {
 	var err error
 	if comments == nil {
 		comments, err = c.ListIssueComments(org, repo, number)
@@ -72,21 +78,24 @@ func (c *GitHubClient) DeleteStaleComments(org, repo string, number int, comment
 	return nil
 }
 
-func (c *GitHubClient) ListIssueComments(org, repo string, number int) ([]*scm.Comment, error) {
+// ListIssueComments list comments associated with an issue
+func (c *Client) ListIssueComments(org, repo string, number int) ([]*scm.Comment, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
 	comments, _, err := c.client.Issues.ListComments(ctx, fullName, number, c.createListOptions())
 	return comments, err
 }
 
-func (c *GitHubClient) GetIssueLabels(org, repo string, number int) ([]*scm.Label, error) {
+// GetIssueLabels returns the issue labels
+func (c *Client) GetIssueLabels(org, repo string, number int) ([]*scm.Label, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
 	labels, _, err := c.client.Issues.ListLabels(ctx, fullName, number, c.createListOptions())
 	return labels, err
 }
 
-func (c *GitHubClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
+// CreateComment create a comment
+func (c *Client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	fullName := c.repositoryName(owner, repo)
 	commentInput := scm.CommentInput{
 		Body: comment,
@@ -96,7 +105,10 @@ func (c *GitHubClient) CreateComment(owner, repo string, number int, pr bool, co
 		_, response, err := c.client.PullRequests.CreateComment(ctx, fullName, number, &commentInput)
 		if err != nil {
 			var b bytes.Buffer
-			io.Copy(&b, response.Body)
+			_, cperr := io.Copy(&b, response.Body)
+			if cperr != nil {
+				return errors.Wrapf(cperr, "response: %s", b.String())
+			}
 			return errors.Wrapf(err, "response: %s", b.String())
 		}
 
@@ -104,21 +116,27 @@ func (c *GitHubClient) CreateComment(owner, repo string, number int, pr bool, co
 		_, response, err := c.client.Issues.CreateComment(ctx, fullName, number, &commentInput)
 		if err != nil {
 			var b bytes.Buffer
-			io.Copy(&b, response.Body)
+			_, cperr := io.Copy(&b, response.Body)
+			if cperr != nil {
+				return errors.Wrapf(cperr, "reponse: %s", b.String())
+			}
 			return errors.Wrapf(err, "response: %s", b.String())
 		}
 	}
 	return nil
 }
 
-func (c *GitHubClient) ReopenIssue(owner, repo string, number int) error {
+// ReopenIssue reopen an issue
+func (c *Client) ReopenIssue(owner, repo string, number int) error {
 	panic("implement me")
 }
 
-func (c *GitHubClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
+// FindIssues find issues
+func (c *Client) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
 	panic("implement me")
 }
 
-func (c *GitHubClient) CloseIssue(owner, repo string, number int) error {
+// CloseIssue close issue
+func (c *Client) CloseIssue(owner, repo string, number int) error {
 	panic("implement me")
 }

@@ -4,23 +4,24 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 )
 
-// FakePlumber a fake Plumber
-type FakePlumber struct {
+// Plumber a fake Plumber
+type Plumber struct {
 	Pipelines []*plumber.PipelineOptions
 }
 
 // NewPlumber creates a fake plumber
-func NewPlumber() *FakePlumber {
-	return &FakePlumber{
+func NewPlumber() *Plumber {
+	return &Plumber{
 		Pipelines: []*plumber.PipelineOptions{},
 	}
 }
 
 // Create creates a plumber job
-func (p *FakePlumber) Create(po *plumber.PipelineOptions) (*plumber.PipelineOptions, error) {
+func (p *Plumber) Create(po *plumber.PipelineOptions) (*plumber.PipelineOptions, error) {
 	p.Pipelines = append(p.Pipelines, po)
 	return po, nil
 }
 
-func (p *FakePlumber) PrependReactor(s string, s2 string, i func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error)) {
+// PrependReactor prepends a reactor
+func (p *Plumber) PrependReactor(s string, s2 string, i func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error)) {
 }

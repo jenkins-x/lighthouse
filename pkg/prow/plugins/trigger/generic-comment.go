@@ -118,10 +118,12 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc github.GenericC
 	return RunAndSkipJobs(c, pr, toTest, toSkip, gc.GUID, trigger.ElideSkippedContexts)
 }
 
+// HonorOkToTest checks if shoudn't ignore the ok test
 func HonorOkToTest(trigger *plugins.Trigger) bool {
 	return !trigger.IgnoreOkToTest
 }
 
+// GitHubClient Github client
 type GitHubClient interface {
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)

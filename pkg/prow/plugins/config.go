@@ -280,6 +280,7 @@ func warnDeprecated(last *time.Time, freq time.Duration, msg string) {
 	logrus.Warn(msg)
 }
 
+// HasSelfApproval checks if it has self-approval
 func (a Approve) HasSelfApproval() bool {
 	if a.DeprecatedImplicitSelfApprove != nil {
 		warnDeprecated(&warnImplicitSelfApprove, 5*time.Minute, "Please update plugins.yaml to use require_self_approval instead of the deprecated implicit_self_approve before June 2019")
@@ -290,6 +291,7 @@ func (a Approve) HasSelfApproval() bool {
 	return true
 }
 
+// ConsiderReviewState checks if the rewview state is active
 func (a Approve) ConsiderReviewState() bool {
 	if a.DeprecatedReviewActsAsApprove != nil {
 		warnDeprecated(&warnReviewActsAsApprove, 5*time.Minute, "Please update plugins.yaml to use ignore_review_state instead of the deprecated review_acts_as_approve before June 2019")
@@ -873,6 +875,7 @@ func compileRegexpsAndDurations(pc *Configuration) error {
 	return nil
 }
 
+// Validate validates the plugin configuration
 func (c *Configuration) Validate() error {
 	if len(c.Plugins) == 0 {
 		logrus.Warn("no plugins specified-- check syntax?")

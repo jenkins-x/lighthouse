@@ -322,10 +322,10 @@ periodics:
       - "./..."`,
 			expected: &plumber.DecorationConfig{
 				Timeout: &plumber.Duration{
-					time.Duration(2 * time.Hour),
+					Duration: time.Duration(2 * time.Hour),
 				},
 				GracePeriod: &plumber.Duration{
-					time.Duration(15 * time.Second),
+					Duration: time.Duration(15 * time.Second),
 				},
 				GCSCredentialsSecret: "default-service-account",
 				/*
@@ -387,10 +387,10 @@ periodics:
       - "./..."`,
 			expected: &plumber.DecorationConfig{
 				Timeout: &plumber.Duration{
-					time.Duration(1 * time.Nanosecond),
+					Duration: time.Duration(1 * time.Nanosecond),
 				},
 				GracePeriod: &plumber.Duration{
-					time.Duration(1 * time.Nanosecond),
+					Duration: time.Duration(1 * time.Nanosecond),
 				},
 				GCSCredentialsSecret: "explicit-service-account",
 				/*

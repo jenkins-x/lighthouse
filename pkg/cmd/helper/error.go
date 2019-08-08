@@ -105,5 +105,5 @@ func StandardErrorMessage(err error) (string, bool) {
 // UsageError prints an error with how to run the help for the specified command.
 func UsageError(cmd *cobra.Command, format string, args ...interface{}) error {
 	msg := fmt.Sprintf(format, args...)
-	return fmt.Errorf("%s\nsee '%s -h' for help and examples.", msg, cmd.CommandPath())
+	return fmt.Errorf("%s\nsee '%s -h' for help and examples", msg, cmd.CommandPath())
 }
