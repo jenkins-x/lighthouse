@@ -31,7 +31,7 @@ pipelineConfig:
             image: gcr.io/jenkinsxio/builder-go:0.1.576
             command: make
             args:
-            - checks
+            - check
             dir: /workspace/source
 
           - name: unit-tests
@@ -112,11 +112,11 @@ pipelineConfig:
               - name: ORG
                 value: jenkinsxio
             steps:
-              - name: lint-checks
+              - name: lint-check
                 image: gcr.io/jenkinsxio/builder-go:0.1.576
                 command: make
                 args:
-                - checks
+                - check
                 dir: /workspace/source
 
               - name: unit-tests
