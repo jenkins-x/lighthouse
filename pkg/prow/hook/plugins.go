@@ -43,19 +43,4 @@ import (
 	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/welcome"
 	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/wip"
 	_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/yuks"
-	/*
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/blunderbuss"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/branchcleaner"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/buildifier"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/cla"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/dco"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/docs-no-retest"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/golint"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/heart"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/releasenote"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/require-matching-label"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/requiresig"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/slackevents"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/updateconfig"
-		_ "github.com/jenkins-x/lighthouse/pkg/prow/plugins/verify-owners"
-	*/)
+)
