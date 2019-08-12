@@ -30,7 +30,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	git2 "github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/repoowners"
 	"github.com/sirupsen/logrus"
@@ -123,7 +123,7 @@ func RegisterReviewCommentEventHandler(name string, fn ReviewCommentEventHandler
 }
 
 // GenericCommentHandler defines the function contract for a scm.Comment handler.
-type GenericCommentHandler func(Agent, github.GenericCommentEvent) error
+type GenericCommentHandler func(Agent, gitprovider.GenericCommentEvent) error
 
 // RegisterGenericCommentHandler registers a plugin's scm.Comment handler.
 func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help HelpProvider) {
@@ -133,7 +133,7 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
-	GitHubClient     *github.Client
+	GitHubClient     *gitprovider.Client
 	PlumberClient    plumber.Plumber
 	GitClient        git2.Client
 	KubernetesClient kubernetes.Interface
@@ -159,7 +159,7 @@ type Agent struct {
 func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
-	gitHubClient := github.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
+	gitHubClient := gitprovider.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
 	return Agent{
 		GitHubClient:  gitHubClient,
 		GitClient:     clientAgent.GitClient,

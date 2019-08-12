@@ -23,7 +23,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
@@ -36,7 +36,7 @@ type githubClient interface {
 	ReopenPR(owner, repo string, number int) error
 }
 
-func handleReopen(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent) error {
+func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
 	// Only consider closed issues and new comments.
 	if e.IssueState != "closed" || e.Action != scm.ActionCreate {
 		return nil

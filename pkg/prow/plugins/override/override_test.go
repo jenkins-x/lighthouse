@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 const (
@@ -119,7 +119,7 @@ func (c *fakeClient) HasPermission(org, repo, user string, roles ...string) (boo
 		return false, fmt.Errorf("bad org: %s", org)
 	case repo != fakeRepo:
 		return false, fmt.Errorf("bad repo: %s", repo)
-	case roles[0] != github.RoleAdmin:
+	case roles[0] != gitprovider.RoleAdmin:
 		return false, fmt.Errorf("bad roles: %s", roles)
 	case user == "fail":
 		return true, errors.New("injected HasPermission error")
@@ -485,7 +485,7 @@ func TestHandle(t *testing.T) {
 	log := logrus.WithField("plugin", pluginName)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var event github.GenericCommentEvent
+			var event gitprovider.GenericCommentEvent
 			event.Repo.Namespace = fakeOrg
 			event.Repo.Name = fakeRepo
 			event.Body = tc.comment

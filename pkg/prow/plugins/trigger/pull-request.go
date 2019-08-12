@@ -23,7 +23,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -63,7 +63,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 		} else if trusted {
 			// Eventually remove need-ok-to-test
 			// Does not work for TrustedUser() == true since labels are not fetched in this case
-			if github.HasLabel(labels.NeedsOkToTest, l) {
+			if gitprovider.HasLabel(labels.NeedsOkToTest, l) {
 				if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest); err != nil {
 					return err
 				}
@@ -119,7 +119,7 @@ func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHoo
 	} else if trusted {
 		// Eventually remove needs-ok-to-test
 		// Will not work for org members since labels are not fetched in this case
-		if github.HasLabel(labels.NeedsOkToTest, l) {
+		if gitprovider.HasLabel(labels.NeedsOkToTest, l) {
 			if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest); err != nil {
 				return err
 			}
@@ -206,7 +206,7 @@ func TrustedPullRequest(ghc githubClient, trigger *plugins.Trigger, author, org,
 			return l, false, err
 		}
 	}
-	return l, github.HasLabel(labels.OkToTest, l), nil
+	return l, gitprovider.HasLabel(labels.OkToTest, l), nil
 }
 
 // buildAll ensures that all builds that should run and will be required are built

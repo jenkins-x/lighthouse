@@ -1,4 +1,4 @@
-package github
+package gitprovider
 
 import (
 	"github.com/jenkins-x/go-scm/scm"
@@ -7,7 +7,7 @@ import (
 // TestBotName is the default bot name used in tests
 var TestBotName = "jenkins-x-bot"
 
-// ToTestGitHubClient converts the scm client to an API that the prow plugins expect
-func ToTestGitHubClient(client *scm.Client) *Client {
+// ToTestClient converts the scm client to an API that the prow plugins expect
+func ToTestClient(client *scm.Client) *Client {
 	return &Client{client: client, botName: TestBotName}
 }

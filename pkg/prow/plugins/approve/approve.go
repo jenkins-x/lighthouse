@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -143,7 +143,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, ce github.GenericCommentEvent) error {
+func handleGenericCommentEvent(pc plugins.Agent, ce gitprovider.GenericCommentEvent) error {
 	return handleGenericComment(
 		pc.Logger,
 		pc.GitHubClient,
@@ -154,7 +154,7 @@ func handleGenericCommentEvent(pc plugins.Agent, ce github.GenericCommentEvent) 
 	)
 }
 
-func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, ce *github.GenericCommentEvent) error {
+func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, ce *gitprovider.GenericCommentEvent) error {
 	if ce.Action != scm.ActionCreate || !ce.IsPR || ce.IssueState == "closed" {
 		return nil
 	}
@@ -464,7 +464,7 @@ func humanAddedApproved(ghc githubClient, log *logrus.Entry, org, repo string, n
 		lastAdded := scm.ListedIssueEvent{}
 		for _, event := range events {
 			// Only consider "approved" label added events.
-			if event.Event != github.IssueActionLabeled || event.Label.Name != labels.Approved {
+			if event.Event != gitprovider.IssueActionLabeled || event.Label.Name != labels.Approved {
 				continue
 			}
 			lastAdded = *event

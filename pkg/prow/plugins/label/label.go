@@ -24,7 +24,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -72,7 +72,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	return handle(pc.GitHubClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
 }
 
@@ -116,7 +116,7 @@ func getLabelsFromGenericMatches(matches [][]string, additionalLabels []string) 
 	return labels
 }
 
-func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *github.GenericCommentEvent) error {
+func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gitprovider.GenericCommentEvent) error {
 	labelMatches := labelRegex.FindAllStringSubmatch(e.Body, -1)
 	removeLabelMatches := removeLabelRegex.FindAllStringSubmatch(e.Body, -1)
 	customLabelMatches := customLabelRegex.FindAllStringSubmatch(e.Body, -1)
@@ -154,7 +154,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 
 	// Add labels
 	for _, labelToAdd := range labelsToAdd {
-		if github.HasLabel(labelToAdd, labels) {
+		if gitprovider.HasLabel(labelToAdd, labels) {
 			continue
 		}
 
@@ -170,7 +170,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 
 	// Remove labels
 	for _, labelToRemove := range labelsToRemove {
-		if !github.HasLabel(labelToRemove, labels) {
+		if !gitprovider.HasLabel(labelToRemove, labels) {
 			noSuchLabelsOnIssue = append(noSuchLabelsOnIssue, labelToRemove)
 			continue
 		}

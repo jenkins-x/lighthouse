@@ -22,7 +22,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -71,7 +71,7 @@ type lifecycleClient interface {
 	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
 }
 
-func lifecycleHandleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
+func lifecycleHandleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	gc := pc.GitHubClient
 	log := pc.Logger
 	if err := handleReopen(gc, log, &e); err != nil {
@@ -83,7 +83,7 @@ func lifecycleHandleGenericComment(pc plugins.Agent, e github.GenericCommentEven
 	return handle(gc, log, &e)
 }
 
-func handle(gc lifecycleClient, log *logrus.Entry, e *github.GenericCommentEvent) error {
+func handle(gc lifecycleClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
 	// Only consider new comments.
 	if e.Action != scm.ActionCreate {
 		return nil
@@ -97,7 +97,7 @@ func handle(gc lifecycleClient, log *logrus.Entry, e *github.GenericCommentEvent
 	return nil
 }
 
-func handleOne(gc lifecycleClient, log *logrus.Entry, e *github.GenericCommentEvent, mat []string) error {
+func handleOne(gc lifecycleClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, mat []string) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number
@@ -114,15 +114,15 @@ func handleOne(gc lifecycleClient, log *logrus.Entry, e *github.GenericCommentEv
 	}
 
 	// If the label exists and we asked for it to be removed, remove it.
-	if github.HasLabel(lbl, labels) && remove {
+	if gitprovider.HasLabel(lbl, labels) && remove {
 		return gc.RemoveLabel(org, repo, number, lbl)
 	}
 
 	// If the label does not exist and we asked for it to be added,
 	// remove other existing lifecycle labels and add it.
-	if !github.HasLabel(lbl, labels) && !remove {
+	if !gitprovider.HasLabel(lbl, labels) && !remove {
 		for _, label := range lifecycleLabels {
-			if label != lbl && github.HasLabel(label, labels) {
+			if label != lbl && gitprovider.HasLabel(label, labels) {
 				if err := gc.RemoveLabel(org, repo, number, label); err != nil {
 					log.WithError(err).Errorf("GitHub failed to remove the following label: %s", label)
 				}

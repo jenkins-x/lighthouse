@@ -23,14 +23,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func handleGenericComment(c Client, trigger *plugins.Trigger, gc github.GenericCommentEvent) error {
+func handleGenericComment(c Client, trigger *plugins.Trigger, gc gitprovider.GenericCommentEvent) error {
 	org := gc.Repo.Namespace
 	repo := gc.Repo.Name
 	number := gc.Number
@@ -100,12 +100,12 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc github.GenericC
 		}
 	}
 	isOkToTest := HonorOkToTest(trigger) && pjutil.OkToTestRe.MatchString(gc.Body)
-	if isOkToTest && !github.HasLabel(labels.OkToTest, l) {
+	if isOkToTest && !gitprovider.HasLabel(labels.OkToTest, l) {
 		if err := c.GitHubClient.AddLabel(org, repo, number, labels.OkToTest); err != nil {
 			return err
 		}
 	}
-	if (isOkToTest || github.HasLabel(labels.OkToTest, l)) && github.HasLabel(labels.NeedsOkToTest, l) {
+	if (isOkToTest || gitprovider.HasLabel(labels.OkToTest, l)) && gitprovider.HasLabel(labels.NeedsOkToTest, l) {
 		if err := c.GitHubClient.RemoveLabel(org, repo, number, labels.NeedsOkToTest); err != nil {
 			return err
 		}

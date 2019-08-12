@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -158,7 +158,7 @@ type reviewCtx struct {
 	number                             int
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, e github.GenericCommentEvent) error {
+func handleGenericCommentEvent(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	cp, err := pc.CommentPruner()
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func handlePullRequestReviewEvent(pc plugins.Agent, e scm.ReviewHook) error {
 	return handlePullRequestReview(pc.GitHubClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
 }
 
-func handleGenericComment(gc githubClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e github.GenericCommentEvent) error {
+func handleGenericComment(gc githubClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e gitprovider.GenericCommentEvent) error {
 	rc := reviewCtx{
 		author:      e.Author.Login,
 		issueAuthor: e.IssueAuthor.Login,
@@ -325,7 +325,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 		if err != nil {
 			return err
 		}
-		if !loadReviewers(ro, filenames).Has(github.NormLogin(author)) {
+		if !loadReviewers(ro, filenames).Has(gitprovider.NormLogin(author)) {
 			resp := "adding LGTM is restricted to approvers and reviewers in OWNERS files."
 			log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
 			return gc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
@@ -340,7 +340,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if err != nil {
 		log.WithError(err).Error("Failed to get issue labels.")
 	}
-	hasLGTM := github.HasLabel(LGTMLabel, labels)
+	hasLGTM := gitprovider.HasLabel(LGTMLabel, labels)
 
 	// remove the label if necessary, we're done after this
 	opts := optionsForRepo(config, rc.repo.Namespace, rc.repo.Name)
@@ -394,7 +394,7 @@ func stickyLgtm(log *logrus.Entry, gc githubClient, config *plugins.Configuratio
 			for _, teamInOrg := range teams {
 				// lgtm.TrustedAuthorTeams is supposed to be a very short list.
 				if strings.Compare(teamInOrg.Name, lgtm.StickyLgtmTeam) == 0 {
-					if members, err := gc.ListTeamMembers(teamInOrg.ID, github.RoleAll); err == nil {
+					if members, err := gc.ListTeamMembers(teamInOrg.ID, gitprovider.RoleAll); err == nil {
 						for _, member := range members {
 							if strings.Compare(member.Login, author) == 0 {
 								// The author is in a trusted team
@@ -437,7 +437,7 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 	if err != nil {
 		log.WithError(err).Error("Failed to get labels.")
 	}
-	if !github.HasLabel(LGTMLabel, labels) {
+	if !gitprovider.HasLabel(LGTMLabel, labels) {
 		return nil
 	}
 

@@ -25,7 +25,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
@@ -297,7 +297,7 @@ func TestHandle(t *testing.T) {
 	for _, tc := range tcs {
 		expectAdded := []string{}
 		fakeScmClient, fakeClient := fake.NewDefault()
-		fakeGHClient := github.ToTestGitHubClient(fakeScmClient)
+		fakeGHClient := gitprovider.ToTestClient(fakeScmClient)
 		fakeClient.RepoLabelsExisting = []string{labels.BlockedPaths, otherLabel}
 
 		if tc.hasLabel {

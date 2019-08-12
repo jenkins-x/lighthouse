@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -79,7 +79,7 @@ type Tide struct {
 
 	// A key/value pair of an org/repo as the key and merge method to override
 	// the default method of merge. Valid options are squash, rebase, and merge.
-	MergeType map[string]github.PullRequestMergeType `json:"merge_method,omitempty"`
+	MergeType map[string]gitprovider.PullRequestMergeType `json:"merge_method,omitempty"`
 
 	// URL for tide status contexts.
 	// We can consider allowing this to be set separately for separate repos, or
@@ -115,7 +115,7 @@ type Tide struct {
 
 // MergeMethod returns the merge method to use for a repo. The default of merge is
 // returned when not overridden.
-func (t *Tide) MergeMethod(org, repo string) github.PullRequestMergeType {
+func (t *Tide) MergeMethod(org, repo string) gitprovider.PullRequestMergeType {
 	name := org + "/" + repo
 
 	v, ok := t.MergeType[name]
@@ -124,7 +124,7 @@ func (t *Tide) MergeMethod(org, repo string) github.PullRequestMergeType {
 			return ov
 		}
 
-		return github.MergeMerge
+		return gitprovider.MergeMerge
 	}
 
 	return v

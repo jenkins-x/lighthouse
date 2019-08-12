@@ -32,7 +32,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -165,7 +165,7 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 		return "", fmt.Errorf("no image url in response from %s", uri)
 	}
 	// checking size, GitHub doesn't support big images
-	toobig, err := github.ImageTooBig(a.Image)
+	toobig, err := gitprovider.ImageTooBig(a.Image)
 	if err != nil {
 		return "", fmt.Errorf("could not validate image size %s: %v", a.Image, err)
 	} else if toobig {
@@ -174,7 +174,7 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 	return a.Format()
 }
 
-func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	return handle(
 		pc.GitHubClient,
 		pc.Logger,
@@ -184,7 +184,7 @@ func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error 
 	)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, c clowder, setKey func()) error {
+func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, c clowder, setKey func()) error {
 	// Only consider new comments.
 	if e.Action != scm.ActionCreate {
 		return nil

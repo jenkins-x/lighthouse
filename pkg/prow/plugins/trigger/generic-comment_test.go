@@ -26,7 +26,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -853,7 +853,7 @@ func TestHandleGenericComment(t *testing.T) {
 			t.Fatalf("%s: failed to set presubmits: %v", tc.name, err)
 		}
 
-		event := github.GenericCommentEvent{
+		event := gitprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Repo: scm.Repository{
 				Namespace: "org",

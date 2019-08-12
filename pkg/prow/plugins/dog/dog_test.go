@@ -31,7 +31,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 type fakePack string
@@ -220,10 +220,10 @@ func TestHttpResponse(t *testing.T) {
 
 		// github fake client
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToTestGitHubClient(fakeScmClient)
+		fakeClient := gitprovider.ToTestClient(fakeScmClient)
 
 		// fully test handling a comment
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Action:     scm.ActionCreate,
 			Body:       testcase.comment,
 			Number:     5,
@@ -323,9 +323,9 @@ func TestDogs(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToTestGitHubClient(fakeScmClient)
+		fakeClient := gitprovider.ToTestClient(fakeScmClient)
 
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Action:     tc.action,
 			Body:       tc.body,
 			Number:     5,

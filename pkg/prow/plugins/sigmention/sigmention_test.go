@@ -28,7 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 )
 
@@ -161,7 +161,7 @@ func TestSigMention(t *testing.T) {
 		for _, label := range tc.issueLabels {
 			fakeClient.AddLabel("org", "repo", 1, label)
 		}
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,

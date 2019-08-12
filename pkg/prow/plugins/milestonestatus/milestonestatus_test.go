@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
@@ -127,7 +127,7 @@ func TestMilestoneStatus(t *testing.T) {
 
 	for _, tc := range testcases {
 		fakeClient := &fakegithub.FakeClient{IssueComments: make(map[int][]*scm.Comment)}
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,

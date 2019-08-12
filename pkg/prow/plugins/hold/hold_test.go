@@ -24,7 +24,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 )
 
@@ -76,7 +76,7 @@ func TestHandle(t *testing.T) {
 	for _, tc := range tests {
 		client, fc := fake.NewDefault()
 
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,
@@ -86,7 +86,7 @@ func TestHandle(t *testing.T) {
 			return tc.hasLabel
 		}
 
-		if err := handle(github.ToTestGitHubClient(client), logrus.WithField("plugin", PluginName), e, hasLabel); err != nil {
+		if err := handle(gitprovider.ToTestClient(client), logrus.WithField("plugin", PluginName), e, hasLabel); err != nil {
 			t.Errorf("For case %s, didn't expect error from hold: %v", tc.name, err)
 			continue
 		}

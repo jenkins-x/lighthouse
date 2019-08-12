@@ -28,7 +28,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -121,7 +121,7 @@ func (u realPack) readDog(dogURL string) (string, error) {
 		return "", errors.New("unsupported doggo :( unknown filetype: " + dogURL)
 	}
 	// checking size, GitHub doesn't support big images
-	toobig, err := github.ImageTooBig(dogURL)
+	toobig, err := gitprovider.ImageTooBig(dogURL)
 	if err != nil {
 		return "", err
 	} else if toobig {
@@ -130,11 +130,11 @@ func (u realPack) readDog(dogURL string) (string, error) {
 	return FormatURL(dogURL)
 }
 
-func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	return handle(pc.GitHubClient, pc.Logger, &e, dogURL)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *github.GenericCommentEvent, p pack) error {
+func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, p pack) error {
 	// Only consider new comments.
 	if e.Action != scm.ActionCreate {
 		return nil

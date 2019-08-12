@@ -23,7 +23,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 type fakeClientClose struct {
@@ -173,7 +173,7 @@ func TestCloseComment(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fc := &fakeClientClose{labels: tc.labels}
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Action:      tc.action,
 			IssueState:  tc.state,
 			Body:        tc.body,

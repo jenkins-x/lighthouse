@@ -24,7 +24,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/sirupsen/logrus"
 )
@@ -176,7 +176,7 @@ func TestLabel(t *testing.T) {
 	for _, tc := range testcases {
 		sort.Strings(tc.expectedNewLabels)
 		fakeScmClient, fakeClient := fake.NewDefault()
-		fakeGHClient := github.ToTestGitHubClient(fakeScmClient)
+		fakeGHClient := gitprovider.ToTestClient(fakeScmClient)
 		fakeClient.RepoLabelsExisting = []string{labels.Help, labels.GoodFirstIssue}
 
 		// Add initial labels
@@ -191,7 +191,7 @@ func TestLabel(t *testing.T) {
 			tc.action = scm.ActionCreate
 		}
 
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			IsPR:       tc.isPR,
 			IssueState: tc.issueState,
 			Action:     tc.action,

@@ -33,7 +33,7 @@ import (
 	"k8s.io/test-infra/prow/kube"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 // NewPlumberJob initializes a PipelineOptions out of a PipelineOptionsSpec.
@@ -83,7 +83,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string) plumber.Refs {
 
 // NewPresubmit converts a config.Presubmit into a builder.PipelineOptions.
 // The builder.Refs are configured correctly per the pr, baseSHA.
-// The eventGUID becomes a github.EventGUID label.
+// The eventGUID becomes a gitprovider.EventGUID label.
 func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) plumber.PipelineOptions {
 	refs := createRefs(pr, baseSHA)
 	labels := make(map[string]string)
@@ -94,7 +94,7 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eve
 	for k, v := range job.Annotations {
 		annotations[k] = v
 	}
-	labels[github.EventGUID] = eventGUID
+	labels[gitprovider.EventGUID] = eventGUID
 	return NewPlumberJob(PresubmitSpec(job, refs), labels, annotations)
 }
 
@@ -168,13 +168,13 @@ func PlumberJobFields(pj *plumber.PipelineOptions) logrus.Fields {
 	fields["name"] = pj.ObjectMeta.Name
 	fields["job"] = pj.Spec.Job
 	fields["type"] = pj.Spec.Type
-	if len(pj.ObjectMeta.Labels[github.EventGUID]) > 0 {
-		fields[github.EventGUID] = pj.ObjectMeta.Labels[github.EventGUID]
+	if len(pj.ObjectMeta.Labels[gitprovider.EventGUID]) > 0 {
+		fields[gitprovider.EventGUID] = pj.ObjectMeta.Labels[gitprovider.EventGUID]
 	}
 	if pj.Spec.Refs != nil && len(pj.Spec.Refs.Pulls) == 1 {
-		fields[github.PrLogField] = pj.Spec.Refs.Pulls[0].Number
-		fields[github.RepoLogField] = pj.Spec.Refs.Repo
-		fields[github.OrgLogField] = pj.Spec.Refs.Org
+		fields[gitprovider.PrLogField] = pj.Spec.Refs.Pulls[0].Number
+		fields[gitprovider.RepoLogField] = pj.Spec.Refs.Repo
+		fields[gitprovider.OrgLogField] = pj.Spec.Refs.Org
 	}
 	return fields
 }

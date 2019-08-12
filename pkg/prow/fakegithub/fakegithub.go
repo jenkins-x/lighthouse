@@ -21,7 +21,7 @@ import (
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -134,7 +134,7 @@ func (f *FakeClient) CreateComment(owner, repo string, number int, pr bool, comm
 }
 
 // CreateReview adds a review to a PR
-func (f *FakeClient) CreateReview(org, repo string, number int, r github.DraftReview) error {
+func (f *FakeClient) CreateReview(org, repo string, number int, r gitprovider.DraftReview) error {
 	f.Reviews[number] = append(f.Reviews[number], &scm.Review{
 		ID:     f.ReviewID,
 		Author: scm.User{Login: botName},
@@ -312,7 +312,7 @@ func (f *FakeClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, erro
 
 // AssignIssue adds assignees.
 func (f *FakeClient) AssignIssue(owner, repo string, number int, assignees []string) error {
-	var m github.MissingUsers
+	var m gitprovider.MissingUsers
 	for _, a := range assignees {
 		if a == "not-in-the-org" {
 			m.Users = append(m.Users, a)
@@ -363,7 +363,7 @@ func (f *FakeClient) ListTeams(org string) ([]*scm.Team, error) {
 
 // ListTeamMembers return a fake team with a single "sig-lead" Github teammember
 func (f *FakeClient) ListTeamMembers(teamID int, role string) ([]*scm.TeamMember, error) {
-	if role != github.RoleAll {
+	if role != gitprovider.RoleAll {
 		return nil, fmt.Errorf("unsupported role %v (only all supported)", role)
 	}
 	teams := map[int][]*scm.TeamMember{
@@ -379,9 +379,9 @@ func (f *FakeClient) ListTeamMembers(teamID int, role string) ([]*scm.TeamMember
 
 // IsCollaborator returns true if the user is a collaborator of the repo.
 func (f *FakeClient) IsCollaborator(org, repo, login string) (bool, error) {
-	normed := github.NormLogin(login)
+	normed := gitprovider.NormLogin(login)
 	for _, collab := range f.Collaborators {
-		if github.NormLogin(collab) == normed {
+		if gitprovider.NormLogin(collab) == normed {
 			return true, nil
 		}
 	}
@@ -413,10 +413,10 @@ func (f *FakeClient) SetMilestone(org, repo string, issueNum, milestoneNum int) 
 }
 
 // ListMilestones lists milestones.
-func (f *FakeClient) ListMilestones(org, repo string) ([]github.Milestone, error) {
-	milestones := []github.Milestone{}
+func (f *FakeClient) ListMilestones(org, repo string) ([]gitprovider.Milestone, error) {
+	milestones := []gitprovider.Milestone{}
 	for k, v := range f.MilestoneMap {
-		milestones = append(milestones, github.Milestone{Title: k, Number: v})
+		milestones = append(milestones, gitprovider.Milestone{Title: k, Number: v})
 	}
 	return milestones, nil
 }
