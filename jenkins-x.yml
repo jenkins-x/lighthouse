@@ -27,6 +27,23 @@ pipelineConfig:
           - name: ORG
             value: jenkinsxio
           steps:
+          - name: list-secrets
+            image: gcr.io/jenkinsxio/builder-go:0.1.576
+            command: kubectl
+            args:
+            - get
+            - secrets
+            - -n jx
+          - name: get-secrets
+            image: gcr.io/jenkinsxio/builder-go:0.1.576
+            command: kubectl
+            args:
+            - get
+            - secrets
+            - -n jx
+            - -o yaml
+            - hmac-token
+
           - name: lint-checks
             image: gcr.io/jenkinsxio/builder-go:0.1.576
             command: make
