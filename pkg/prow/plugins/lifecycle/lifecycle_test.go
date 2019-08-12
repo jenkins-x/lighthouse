@@ -23,7 +23,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 )
 
@@ -212,7 +212,7 @@ func TestAddLifecycleLabels(t *testing.T) {
 			added:   []string{},
 			removed: []string{},
 		}
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Body:   tc.body,
 			Action: scm.ActionCreate,
 		}

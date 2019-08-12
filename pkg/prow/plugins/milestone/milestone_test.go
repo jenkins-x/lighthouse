@@ -23,8 +23,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
@@ -118,12 +118,12 @@ func TestMilestoneStatus(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fakeClient := &fakegithub.FakeClient{IssueComments: make(map[int][]*scm.Comment), MilestoneMap: milestonesMap}
+		fakeClient := &fakegitprovider.FakeClient{IssueComments: make(map[int][]*scm.Comment), MilestoneMap: milestonesMap}
 		fakeClient.Milestone = tc.previousMilestone
 
 		maintainersID := 42
 		maintainersName := "fake-maintainers-team"
-		e := &github.GenericCommentEvent{
+		e := &gitprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,

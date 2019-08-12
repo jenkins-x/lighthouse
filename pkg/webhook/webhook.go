@@ -488,13 +488,13 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 			logrus.WithError(err).Fatal("Error starting secrets agent.")
 		}
 
-		var githubClient *github.Client
+		var githubClient *gitprovider.Client
 		var kubeClient *kube.Client
 		if o.dryRun {
-			githubClient = github.NewDryRunClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
+			githubClient = gitprovider.NewDryRunClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
 			kubeClient = kube.NewFakeClient(o.deckURL)
 		} else {
-			githubClient = github.NewClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
+			githubClient = gitprovider.NewClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
 			if o.cluster == "" {
 				kubeClient, err = kube.NewClientInCluster(configAgent.Config().PlumberJobNamespace)
 				if err != nil {

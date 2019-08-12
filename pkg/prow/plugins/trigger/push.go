@@ -20,7 +20,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 )
 
@@ -47,7 +47,7 @@ func listPushEventChanges(pe scm.PushHook) config.ChangedFilesProvider {
 }
 
 func createRefs(pe *scm.PushHook) plumber.Refs {
-	branch := github.PushHookBranch(pe)
+	branch := gitprovider.PushHookBranch(pe)
 	return plumber.Refs{
 		Org:      pe.Repo.Namespace,
 		Repo:     pe.Repo.Name,
@@ -63,7 +63,7 @@ func handlePE(c Client, pe scm.PushHook) error {
 		return nil
 	}
 	for _, j := range c.Config.GetPostsubmits(pe.Repo) {
-		branch := github.PushHookBranch(&pe)
+		branch := gitprovider.PushHookBranch(&pe)
 		if shouldRun, err := j.ShouldRun(branch, listPushEventChanges(pe)); err != nil {
 			return err
 		} else if !shouldRun {
@@ -74,7 +74,7 @@ func handlePE(c Client, pe scm.PushHook) error {
 		for k, v := range j.Labels {
 			labels[k] = v
 		}
-		labels[github.EventGUID] = pe.GUID
+		labels[gitprovider.EventGUID] = pe.GUID
 		pj := pjutil.NewPlumberJob(pjutil.PostsubmitSpec(j, refs), labels, j.Annotations)
 		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
 		if _, err := c.PlumberClient.Create(&pj); err != nil {

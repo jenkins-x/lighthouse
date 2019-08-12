@@ -24,7 +24,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -301,7 +301,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fakeGitHubClient := fakegithub.FakeClient{}
+		fakeGitHubClient := fakegitprovider.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
 		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error) {
 			if testCase.jobCreationErrs.Has(plumberJob.Spec.Job) {
@@ -407,7 +407,7 @@ func TestRunRequested(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		fakeGitHubClient := fakegithub.FakeClient{}
+		fakeGitHubClient := fakegitprovider.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
 
 		fakePlumberClient.PrependReactor("*", "*", func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error) {

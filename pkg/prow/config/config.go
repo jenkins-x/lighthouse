@@ -32,7 +32,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/org"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/robfig/cron.v2"
 	v1 "k8s.io/api/core/v1"
@@ -938,9 +938,9 @@ func parseProwConfig(c *Config) error {
 	}
 
 	for name, method := range c.Tide.MergeType {
-		if method != github.MergeMerge &&
-			method != github.MergeRebase &&
-			method != github.MergeSquash {
+		if method != gitprovider.MergeMerge &&
+			method != gitprovider.MergeRebase &&
+			method != gitprovider.MergeSquash {
 			return fmt.Errorf("merge type %q for %s is not a valid type", method, name)
 		}
 	}

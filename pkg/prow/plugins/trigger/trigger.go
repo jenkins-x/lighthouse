@@ -24,7 +24,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -142,7 +142,7 @@ func handlePullRequest(pc plugins.Agent, pr scm.PullRequestHook) error {
 	return handlePR(getClient(pc), pc.PluginConfig.TriggerFor(org, repo), pr)
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, gc github.GenericCommentEvent) error {
+func handleGenericCommentEvent(pc plugins.Agent, gc gitprovider.GenericCommentEvent) error {
 	return handleGenericComment(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc)
 }
 

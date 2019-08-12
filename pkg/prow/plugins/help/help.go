@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -87,7 +87,7 @@ type commentPruner interface {
 	PruneComments(shouldPrune func(*scm.Comment) bool)
 }
 
-func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	cp, err := pc.CommentPruner()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error 
 	return handle(pc.GitHubClient, pc.Logger, cp, &e)
 }
 
-func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *github.GenericCommentEvent) error {
+func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider.GenericCommentEvent) error {
 	// Only consider open issues and new comments.
 	if e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil
@@ -110,8 +110,8 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *github.Gene
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get issue labels.")
 	}
-	hasHelp := github.HasLabel(labels.Help, issueLabels)
-	hasGoodFirstIssue := github.HasLabel(labels.GoodFirstIssue, issueLabels)
+	hasHelp := gitprovider.HasLabel(labels.Help, issueLabels)
+	hasGoodFirstIssue := gitprovider.HasLabel(labels.GoodFirstIssue, issueLabels)
 
 	// If PR has help label and we're asking for it to be removed, remove label
 	if hasHelp && helpRemoveRe.MatchString(e.Body) {

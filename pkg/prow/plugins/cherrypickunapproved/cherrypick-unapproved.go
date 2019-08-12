@@ -27,7 +27,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -106,8 +106,8 @@ func handlePR(gc githubClient, log *logrus.Entry, pr *scm.PullRequestHook, cp co
 	if err != nil {
 		return err
 	}
-	hasCherryPickApprovedLabel := github.HasLabel(labels.CpApproved, issueLabels)
-	hasCherryPickUnapprovedLabel := github.HasLabel(labels.CpUnapproved, issueLabels)
+	hasCherryPickApprovedLabel := gitprovider.HasLabel(labels.CpApproved, issueLabels)
+	hasCherryPickUnapprovedLabel := gitprovider.HasLabel(labels.CpUnapproved, issueLabels)
 
 	// if it has the approved label,
 	// remove the unapproved label (if it exists) and

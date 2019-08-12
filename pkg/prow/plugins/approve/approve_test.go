@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve/approvers"
@@ -98,14 +98,14 @@ func newTestReviewTime(t time.Time, user, body string, state string) *scm.Review
 	return r
 }
 
-func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*github.Client, *fake.Data) {
+func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*gitprovider.Client, *fake.Data) {
 	labels := []string{"org/repo#1:lgtm"}
 	if hasLabel {
 		labels = append(labels, fmt.Sprintf("org/repo#%v:approved", prNumber))
 	}
 	events := []*scm.ListedIssueEvent{
 		{
-			Event: github.IssueActionLabeled,
+			Event: gitprovider.IssueActionLabeled,
 			Label: scm.Label{Name: "approved"},
 			Actor: scm.User{Login: "k8s-merge-robot"},
 		},
@@ -114,7 +114,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 		events = append(
 			events,
 			&scm.ListedIssueEvent{
-				Event:   github.IssueActionLabeled,
+				Event:   gitprovider.IssueActionLabeled,
 				Label:   scm.Label{Name: "approved"},
 				Actor:   scm.User{Login: "human"},
 				Created: time.Now(),
@@ -128,7 +128,7 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 	fakeScmClient, fc := fake.NewDefault()
 	fc.RepoLabelsExisting = nil
 
-	fakeClient := github.ToClient(fakeScmClient, testBotName)
+	fakeClient := gitprovider.ToClient(fakeScmClient, testBotName)
 
 	fc.IssueLabelsAdded = labels
 	fc.PullRequestChanges[prNumber] = changes
@@ -1186,14 +1186,14 @@ func (fro fakeRepoOwners) RequiredReviewers(path string) sets.String {
 func TestHandleGenericComment(t *testing.T) {
 	tests := []struct {
 		name              string
-		commentEvent      github.GenericCommentEvent
+		commentEvent      gitprovider.GenericCommentEvent
 		lgtmActsAsApprove bool
 		expectHandle      bool
 		expectState       *state
 	}{
 		{
 			name: "valid approve command",
-			commentEvent: github.GenericCommentEvent{
+			commentEvent: gitprovider.GenericCommentEvent{
 				Action: scm.ActionCreate,
 				IsPR:   true,
 				Body:   "/approve",
@@ -1220,7 +1220,7 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "not comment created",
-			commentEvent: github.GenericCommentEvent{
+			commentEvent: gitprovider.GenericCommentEvent{
 				Action: scm.ActionUpdate,
 				IsPR:   true,
 				Body:   "/approve",
@@ -1233,7 +1233,7 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "not PR",
-			commentEvent: github.GenericCommentEvent{
+			commentEvent: gitprovider.GenericCommentEvent{
 				Action: scm.ActionUpdate,
 				IsPR:   false,
 				Body:   "/approve",
@@ -1246,7 +1246,7 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "closed PR",
-			commentEvent: github.GenericCommentEvent{
+			commentEvent: gitprovider.GenericCommentEvent{
 				Action: scm.ActionCreate,
 				IsPR:   true,
 				Body:   "/approve",
@@ -1260,7 +1260,7 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "no approve command",
-			commentEvent: github.GenericCommentEvent{
+			commentEvent: gitprovider.GenericCommentEvent{
 				Action: scm.ActionCreate,
 				IsPR:   true,
 				Body:   "stuff",
@@ -1273,7 +1273,7 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "lgtm without lgtmActsAsApprove",
-			commentEvent: github.GenericCommentEvent{
+			commentEvent: gitprovider.GenericCommentEvent{
 				Action: scm.ActionCreate,
 				IsPR:   true,
 				Body:   "/lgtm",
@@ -1286,7 +1286,7 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "lgtm with lgtmActsAsApprove",
-			commentEvent: github.GenericCommentEvent{
+			commentEvent: gitprovider.GenericCommentEvent{
 				Action: scm.ActionCreate,
 				IsPR:   true,
 				Body:   "/lgtm",
@@ -1322,7 +1322,7 @@ func TestHandleGenericComment(t *testing.T) {
 		Number: 1,
 	}
 	fakeScmClient, fghc := fake.NewDefault()
-	fakeClient := github.ToTestGitHubClient(fakeScmClient)
+	fakeClient := gitprovider.ToTestClient(fakeScmClient)
 	fghc.PullRequests[1] = &pr
 
 	for _, test := range tests {
@@ -1539,7 +1539,7 @@ func TestHandleReview(t *testing.T) {
 		Body:   "Fix everything",
 	}
 	fakeScmClient, fghc := fake.NewDefault()
-	fakeClient := github.ToTestGitHubClient(fakeScmClient)
+	fakeClient := gitprovider.ToTestClient(fakeScmClient)
 	fghc.PullRequests[1] = &pr
 
 	for _, test := range tests {
@@ -1692,7 +1692,7 @@ func TestHandlePullRequest(t *testing.T) {
 		Name:      "repo",
 	}
 	fakeScmClient, _ := fake.NewDefault()
-	fakeClient := github.ToTestGitHubClient(fakeScmClient)
+	fakeClient := gitprovider.ToTestClient(fakeScmClient)
 
 	for _, test := range tests {
 		test.prEvent.Repo = repo

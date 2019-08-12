@@ -27,7 +27,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	git2 "github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
@@ -271,7 +271,7 @@ func (a RepoAliases) ExpandAlias(alias string) sets.String {
 	if a == nil {
 		return nil
 	}
-	return a[github.NormLogin(alias)]
+	return a[gitprovider.NormLogin(alias)]
 }
 
 // ExpandAliases returns members of multiple aliases, duplicates are pruned
@@ -310,7 +310,7 @@ func loadAliasesFrom(baseDir string, log *logrus.Entry) RepoAliases {
 
 	result := make(RepoAliases)
 	for alias, expanded := range config.Data {
-		result[github.NormLogin(alias)] = normLogins(expanded)
+		result[gitprovider.NormLogin(alias)] = normLogins(expanded)
 	}
 	log.Infof("Loaded %d aliases from %q.", len(result), path)
 	return result
@@ -461,7 +461,7 @@ func decodeOwnersMdConfig(path string, config *SimpleConfig) error {
 func normLogins(logins []string) sets.String {
 	normed := sets.NewString()
 	for _, login := range logins {
-		normed.Insert(github.NormLogin(login))
+		normed.Insert(gitprovider.NormLogin(login))
 	}
 	return normed
 }
@@ -504,7 +504,7 @@ func (o *RepoOwners) applyOptionsToPath(path string, opts dirOptions) {
 func (o *RepoOwners) filterCollaborators(toKeep []scm.User) *RepoOwners {
 	collabs := sets.NewString()
 	for _, keeper := range toKeep {
-		collabs.Insert(github.NormLogin(keeper.Login))
+		collabs.Insert(gitprovider.NormLogin(keeper.Login))
 	}
 
 	filter := func(ownerMap map[string]map[*regexp.Regexp]sets.String) map[string]map[*regexp.Regexp]sets.String {

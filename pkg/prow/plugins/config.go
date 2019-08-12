@@ -376,7 +376,7 @@ type Heart struct {
 // milestonestatus plugins.
 type Milestone struct {
 	// ID of the github team for the milestone maintainers (used for setting status labels)
-	// You can curl the following endpoint in order to determine the github ID of your team
+	// You can curl the following endpoint in order to determine the gitprovider.ID of your team
 	// responsible for maintaining the milestones:
 	// curl -H "Authorization: token <token>" https://api.github.com/orgs/<org-name>/teams
 	MaintainersID           int    `json:"maintainers_id,omitempty"`

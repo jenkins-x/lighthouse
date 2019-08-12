@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -117,7 +117,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	c := client{
 		gc:            pc.GitHubClient,
 		jc:            pc.Config.JobConfig,
@@ -127,7 +127,7 @@ func handleGenericComment(pc plugins.Agent, e github.GenericCommentEvent) error 
 }
 
 func authorized(gc githubClient, log *logrus.Entry, org, repo, user string) bool {
-	ok, err := gc.HasPermission(org, repo, user, github.RoleAdmin)
+	ok, err := gc.HasPermission(org, repo, user, gitprovider.RoleAdmin)
 	if err != nil {
 		log.WithError(err).Warnf("cannot determine whether %s is an admin of %s/%s", user, org, repo)
 		return false
@@ -147,7 +147,7 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(oc overrideClient, log *logrus.Entry, e *github.GenericCommentEvent) error {
+func handle(oc overrideClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
 
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil

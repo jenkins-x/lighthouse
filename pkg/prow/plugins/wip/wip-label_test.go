@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
-	"github.com/jenkins-x/lighthouse/pkg/prow/github"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
@@ -92,7 +92,7 @@ func TestWipLabel(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := github.ToTestGitHubClient(fakeScmClient)
+		fakeClient := gitprovider.ToTestClient(fakeScmClient)
 
 		org, repo, number := "org", "repo", 5
 		e := &event{
