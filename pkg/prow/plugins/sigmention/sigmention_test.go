@@ -27,7 +27,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 )
@@ -152,7 +152,7 @@ func TestSigMention(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fakeClient := &fakegithub.FakeClient{
+		fakeClient := &fakegitprovider.FakeClient{
 			OrgMembers:         map[string][]string{"org": {orgMember, bot}},
 			RepoLabelsExisting: tc.repoLabels,
 			IssueComments:      make(map[int][]*scm.Comment),

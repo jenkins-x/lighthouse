@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
@@ -297,7 +297,7 @@ func TestSkipStatus(t *testing.T) {
 			t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
 		}
 
-		fghc := &fakegithub.FakeClient{
+		fghc := &fakegitprovider.FakeClient{
 			IssueComments: make(map[int][]*scm.Comment),
 			PullRequests: map[int]*scm.PullRequest{
 				test.event.Number: {

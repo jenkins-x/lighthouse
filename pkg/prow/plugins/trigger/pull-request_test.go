@@ -22,7 +22,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/sirupsen/logrus"
@@ -80,8 +80,8 @@ func TestTrusted(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := &fakegithub.FakeClient{
-				OrgMembers:    map[string][]string{"kubernetes": {sister}, "kubernetes-incubator": {member, fakegithub.Bot}},
+			g := &fakegitprovider.FakeClient{
+				OrgMembers:    map[string][]string{"kubernetes": {sister}, "kubernetes-incubator": {member, fakegitprovider.Bot}},
 				Collaborators: []string{friend},
 				IssueComments: map[int][]*scm.Comment{},
 			}
@@ -259,7 +259,7 @@ func TestHandlePullRequest(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("running scenario %q", tc.name)
 
-		g := &fakegithub.FakeClient{
+		g := &fakegitprovider.FakeClient{
 			IssueComments: map[int][]*scm.Comment{},
 			OrgMembers:    map[string][]string{"org": {"t"}},
 			PullRequests: map[int]*scm.PullRequest{

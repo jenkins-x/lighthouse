@@ -25,7 +25,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
@@ -779,7 +779,7 @@ func TestHandleGenericComment(t *testing.T) {
 		if tc.Branch == "" {
 			tc.Branch = "master"
 		}
-		g := &fakegithub.FakeClient{
+		g := &fakegitprovider.FakeClient{
 			CreatedStatuses: map[string][]*scm.StatusInput{},
 			IssueComments:   map[int][]*scm.Comment{},
 			OrgMembers:      map[string][]string{"org": {"trusted-member"}},
@@ -887,7 +887,7 @@ func TestHandleGenericComment(t *testing.T) {
 	}
 }
 
-func validate(name string, fakePlumberClient *fake.Plumber, g *fakegithub.FakeClient, tc testcase, t *testing.T) {
+func validate(name string, fakePlumberClient *fake.Plumber, g *fakegitprovider.FakeClient, tc testcase, t *testing.T) {
 	startedContexts := sets.NewString()
 	for _, job := range fakePlumberClient.Pipelines {
 		startedContexts.Insert(job.Spec.Context)

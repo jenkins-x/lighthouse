@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegithub"
+	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 )
 
 func TestCreateRefs(t *testing.T) {
@@ -132,7 +132,7 @@ func TestHandlePE(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		g := &fakegithub.FakeClient{}
+		g := &fakegitprovider.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
 		c := Client{
 			GitHubClient:  g,
