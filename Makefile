@@ -57,11 +57,11 @@ build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
 
 .PHONY: container
-container: build-linux
+container: 
 	docker-compose build $(DOCKER_IMAGE_NAME)
 
 .PHONY: production-container
-production-container: build-linux
+production-container:
 	docker build --rm -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME) .
 
 .PHONY: push-container
