@@ -482,45 +482,6 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
 
-	/*
-		secretAgent := &config.SecretAgent{}
-		if err := secretAgent.Start(tokens); err != nil {
-			logrus.WithError(err).Fatal("Error starting secrets agent.")
-		}
-
-		var githubClient *gitprovider.Client
-		var kubeClient *kube.Client
-		if o.dryRun {
-			githubClient = gitprovider.NewDryRunClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
-			kubeClient = kube.NewFakeClient(o.deckURL)
-		} else {
-			githubClient = gitprovider.NewClient(secretAgent.GetTokenGenerator(o.githubTokenFile), o.githubEndpoint.Strings()...)
-			if o.cluster == "" {
-				kubeClient, err = kube.NewClientInCluster(configAgent.Config().PlumberJobNamespace)
-				if err != nil {
-					logrus.WithError(err).Fatal("Error getting kube client.")
-				}
-			} else {
-				kubeClient, err = kube.NewClientFromFile(o.cluster, configAgent.Config().PlumberJobNamespace)
-				if err != nil {
-					logrus.WithError(err).Fatal("Error getting kube client.")
-				}
-			}
-		}
-
-	*/
-
-	/*	var slackClient *slack.Client
-		if !o.dryRun && string(secretAgent.GetSecret(o.slackTokenFile)) != "" {
-			logrus.Info("Using real slack client.")
-			slackClient = slack.NewClient(secretAgent.GetTokenGenerator(o.slackTokenFile))
-		}
-		if slackClient == nil {
-			logrus.Info("Using fake slack client.")
-			slackClient = slack.NewFakeClient()
-		}
-	*/
-
 	gitClient, err := git.NewClient(o.gitServerURL, o.gitKind())
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
@@ -531,34 +492,6 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 			logrus.WithError(err).Fatal("Error cleaning the git client.")
 		}
 	}()
-
-	/*
-			// Get the bot's name in order to set credentials for the git client.
-			botName, err := githubClient.BotName()
-			if err != nil {
-				logrus.WithError(err).Fatal("Error getting bot name.")
-			}
-			gitClient.SetCredentials(botName, secretAgent.GetTokenGenerator(o.githubTokenFile))
-
-
-		ownersClient := repoowners.NewClient(
-			configAgent, pluginAgent.MDYAMLEnabled,
-			pluginAgent.SkipCollaborators,
-		)
-
-			pluginAgent.PluginClient = plugins.PluginClient{
-				GitHubClient: githubClient,
-				KubeClient:   kubeClient,
-				GitClient:    gitClient,
-				// TODO
-				//SlackClient:  slackClient,
-				OwnersClient: ownersClient,
-				Logger:       logrus.WithField("agent", "plugin"),
-			}
-			if err := pluginAgent.Start(o.pluginConfig); err != nil {
-				logrus.WithError(err).Fatal("Error starting plugins.")
-			}
-	*/
 
 	promMetrics := hook.NewMetrics()
 

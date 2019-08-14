@@ -32,22 +32,10 @@ func NewPlumber(repository scm.Repository, commonOptions *opts.CommonOptions) (P
 func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, error) {
 	spec := &request.Spec
 
-	pipelineKind := "release"
-	revision := ""
-	prNumber := ""
 	pullRefData := b.getPullRefs(spec)
 	pullRefs := ""
 	if len(spec.Refs.Pulls) > 0 {
 		pullRefs = pullRefData.String()
-	}
-
-	// Only if there is one Pull in Refs, it's a PR build so we are going to pass it
-	if len(spec.Refs.Pulls) == 1 {
-		revision = spec.Refs.Pulls[0].SHA
-		prNumber = strconv.Itoa(spec.Refs.Pulls[0].Number)
-	} else {
-		//Otherwise it's a Master / Batch build, and we handle it later
-		revision = spec.Refs.BaseSHA
 	}
 
 	repository := b.repository
@@ -62,7 +50,6 @@ func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, er
 	if branch == "" {
 		branch = "master"
 	}
-
 	if pullRefs == "" {
 		pullRefs = branch + ":"
 	}
@@ -70,15 +57,12 @@ func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, er
 	job := spec.Job
 
 	l := logrus.WithFields(logrus.Fields(map[string]interface{}{
-		"Owner":             owner,
-		"Name":              name,
-		"SourceURL":         sourceURL,
-		"Branch":            branch,
-		"PipelineKind":      pipelineKind,
-		"PullRefs":          pullRefs,
-		"PullRequestNumber": prNumber,
-		"Revision":          revision,
-		"Job":               job,
+		"Owner":     owner,
+		"Name":      name,
+		"SourceURL": sourceURL,
+		"Branch":    branch,
+		"PullRefs":  pullRefs,
+		"Job":       job,
 	}))
 	l.Info("about to start Jenkinx X meta pipeline")
 
