@@ -7,8 +7,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/cmd/opts"
-	"github.com/jenkins-x/jx/pkg/cmd/step/create"
-	"github.com/jenkins-x/jx/pkg/prow"
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -32,16 +31,16 @@ func NewPlumber(repository scm.Repository, commonOptions *opts.CommonOptions) (P
 func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, error) {
 	spec := &request.Spec
 
-	pullRefData := b.getPullRefs(spec)
-	pullRefs := ""
-	if len(spec.Refs.Pulls) > 0 {
-		pullRefs = pullRefData.String()
-	}
-
 	repository := b.repository
 	name := repository.Name
 	owner := repository.Namespace
 	sourceURL := repository.Clone
+
+	pullRefData := b.getPullRefs(sourceURL, spec)
+	pullRefs := ""
+	if len(spec.Refs.Pulls) > 0 {
+		pullRefs = pullRefData.String()
+	}
 
 	branch := b.getBranch(spec)
 	if branch == "" {
@@ -55,6 +54,12 @@ func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, er
 	}
 
 	job := spec.Job
+	var kind metapipeline.PipelineKind
+	if len(spec.Refs.Pulls) > 0 {
+		kind = metapipeline.PullRequestPipeline
+	} else {
+		kind = metapipeline.ReleasePipeline
+	}
 
 	l := logrus.WithFields(logrus.Fields(map[string]interface{}{
 		"Owner":     owner,
@@ -66,23 +71,36 @@ func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, er
 	}))
 	l.Info("about to start Jenkinx X meta pipeline")
 
-	po := create.StepCreatePipelineOptions{
-		SourceURL: sourceURL,
-		Job:       job,
-		PullRefs:  pullRefs,
-		Context:   spec.Context,
-	}
 	sa := os.Getenv("JX_SERVICE_ACCOUNT")
 	if sa == "" {
 		sa = "tekton-bot"
 	}
-	po.CommonOptions = b.commonOptions
-	po.ServiceAccount = sa
 
-	err := po.Run()
+	pipelineCreateParam := metapipeline.PipelineCreateParam{
+		PullRef:      pullRefData,
+		PipelineKind: kind,
+		Context:      spec.Context,
+		// No equivalent to https://github.com/jenkins-x/jx/blob/bb59278c2707e0e99b3c24be926745c324824388/pkg/cmd/controller/pipeline/pipelinerunner_controller.go#L236
+		//   for getting environment variables from the prow job here, so far as I can tell (abayer)
+		// Also not finding an equivalent to labels from the PipelineRunRequest
+		ServiceAccount: sa,
+		// I believe we can use an empty string default image?
+		DefaultImage: "",
+	}
+
+	metaPipelineClient, err := metapipeline.NewMetaPipelineClient()
 	if err != nil {
-		l.Errorf("failed to create Jenkinx X meta pipeline %s", err.Error())
-		return request, errors.Wrap(err, "failed to create Jenkins X Pipeline")
+		return request, errors.Wrap(err, "couldn't create metapipeline client")
+	}
+
+	pipelineActivity, tektonCRDs, err := metaPipelineClient.Create(pipelineCreateParam)
+	if err != nil {
+		return request, errors.Wrap(err, "unable to create Tekton CRDs")
+	}
+
+	err = metaPipelineClient.Apply(pipelineActivity, tektonCRDs)
+	if err != nil {
+		return request, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}
 	return request, nil
 }
@@ -101,16 +119,18 @@ func (b *PipelineBuilder) getBranch(spec *PipelineOptionsSpec) string {
 	return branch
 }
 
-func (b *PipelineBuilder) getPullRefs(spec *PipelineOptionsSpec) *prow.PullRefs {
-	toMerge := make(map[string]string)
-	for _, pull := range spec.Refs.Pulls {
-		toMerge[strconv.Itoa(pull.Number)] = pull.SHA
+func (b *PipelineBuilder) getPullRefs(sourceURL string, spec *PipelineOptionsSpec) metapipeline.PullRef {
+	var pullRef metapipeline.PullRef
+	if len(spec.Refs.Pulls) > 0 {
+		var prs []metapipeline.PullRequestRef
+		for _, pull := range spec.Refs.Pulls {
+			prs = append(prs, metapipeline.PullRequestRef{ID: strconv.Itoa(pull.Number), MergeSHA: pull.SHA})
+		}
+
+		pullRef = metapipeline.NewPullRefWithPullRequest(sourceURL, spec.Refs.BaseRef, spec.Refs.BaseSHA, prs...)
+	} else {
+		pullRef = metapipeline.NewPullRef(sourceURL, spec.Refs.BaseRef, spec.Refs.BaseSHA)
 	}
 
-	pullRef := &prow.PullRefs{
-		BaseBranch: spec.Refs.BaseRef,
-		BaseSha:    spec.Refs.BaseSHA,
-		ToMerge:    toMerge,
-	}
 	return pullRef
 }
