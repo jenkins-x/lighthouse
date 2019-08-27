@@ -28,7 +28,7 @@ func NewPlumber(repository scm.Repository, commonOptions *opts.CommonOptions) (P
 }
 
 // Create creates a pipeline
-func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, error) {
+func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient metapipeline.Client) (*PipelineOptions, error) {
 	spec := &request.Spec
 
 	repository := b.repository
@@ -88,17 +88,12 @@ func (b *PipelineBuilder) Create(request *PipelineOptions) (*PipelineOptions, er
 		DefaultImage: "",
 	}
 
-	metaPipelineClient, err := metapipeline.NewMetaPipelineClient()
-	if err != nil {
-		return request, errors.Wrap(err, "couldn't create metapipeline client")
-	}
-
-	pipelineActivity, tektonCRDs, err := metaPipelineClient.Create(pipelineCreateParam)
+	pipelineActivity, tektonCRDs, err := metapipelineClient.Create(pipelineCreateParam)
 	if err != nil {
 		return request, errors.Wrap(err, "unable to create Tekton CRDs")
 	}
 
-	err = metaPipelineClient.Apply(pipelineActivity, tektonCRDs)
+	err = metapipelineClient.Apply(pipelineActivity, tektonCRDs)
 	if err != nil {
 		return request, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}

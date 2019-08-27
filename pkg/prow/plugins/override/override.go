@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
@@ -50,7 +51,7 @@ type githubClient interface {
 }
 
 type plumberClient interface {
-	Create(pj *plumber.PipelineOptions) (*plumber.PipelineOptions, error)
+	Create(*plumber.PipelineOptions, metapipeline.Client) (*plumber.PipelineOptions, error)
 }
 
 type overrideClient interface {
@@ -86,8 +87,12 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.gc.HasPermission(org, repo, user, role...)
 }
 
-func (c client) Create(pj *plumber.PipelineOptions) (*plumber.PipelineOptions, error) {
-	return c.plumberClient.Create(pj)
+func (c client) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client) (*plumber.PipelineOptions, error) {
+	metapipelineClient, err := metapipeline.NewMetaPipelineClient()
+	if err != nil {
+		return nil, err
+	}
+	return c.plumberClient.Create(pj, metapipelineClient)
 }
 
 func (c client) presubmitForContext(org, repo, context string) *config.Presubmit {
@@ -241,7 +246,11 @@ Only the following contexts were expected:
 
 			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
 			log.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-			if _, err := oc.Create(&pj); err != nil {
+			metapipelineClient, err := metapipeline.NewMetaPipelineClient()
+			if err != nil {
+				return err
+			}
+			if _, err := oc.Create(&pj, metapipelineClient); err != nil {
 				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
 				log.WithError(err).Warn(resp)
 				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
