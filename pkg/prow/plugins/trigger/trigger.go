@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
@@ -110,17 +111,18 @@ type githubClient interface {
 }
 
 type plumberClient interface {
-	Create(*plumber.PipelineOptions) (*plumber.PipelineOptions, error)
+	Create(*plumber.PipelineOptions, metapipeline.Client) (*plumber.PipelineOptions, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.
 //
 // TODO(fejta): consider exporting an interface rather than a struct
 type Client struct {
-	GitHubClient  githubClient
-	PlumberClient plumberClient
-	Config        *config.Config
-	Logger        *logrus.Entry
+	GitHubClient       githubClient
+	PlumberClient      plumberClient
+	Config             *config.Config
+	Logger             *logrus.Entry
+	MetapipelineClient metapipeline.Client
 }
 
 type trustedUserClient interface {
@@ -130,10 +132,11 @@ type trustedUserClient interface {
 
 func getClient(pc plugins.Agent) Client {
 	return Client{
-		GitHubClient:  pc.GitHubClient,
-		Config:        pc.Config,
-		PlumberClient: pc.PlumberClient,
-		Logger:        pc.Logger,
+		GitHubClient:       pc.GitHubClient,
+		Config:             pc.Config,
+		PlumberClient:      pc.PlumberClient,
+		Logger:             pc.Logger,
+		MetapipelineClient: pc.MetapipelineClient,
 	}
 }
 
@@ -239,7 +242,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 		c.Logger.Infof("Starting %s build.", job.Name)
 		pj := pjutil.NewPresubmit(pr, baseSHA, job, eventGUID)
 		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-		if _, err := c.PlumberClient.Create(&pj); err != nil {
+		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient); err != nil {
 			c.Logger.WithError(err).Error("Failed to create plumberJob.")
 			errors = append(errors, err)
 		}

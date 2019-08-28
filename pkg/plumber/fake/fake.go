@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 )
 
@@ -17,7 +18,7 @@ func NewPlumber() *Plumber {
 }
 
 // Create creates a plumber job
-func (p *Plumber) Create(po *plumber.PipelineOptions) (*plumber.PipelineOptions, error) {
+func (p *Plumber) Create(po *plumber.PipelineOptions, metapipelineClient metapipeline.Client) (*plumber.PipelineOptions, error) {
 	p.Pipelines = append(p.Pipelines, po)
 	return po, nil
 }

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -133,10 +134,11 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
-	GitHubClient     *gitprovider.Client
-	PlumberClient    plumber.Plumber
-	GitClient        git2.Client
-	KubernetesClient kubernetes.Interface
+	GitHubClient       *gitprovider.Client
+	PlumberClient      plumber.Plumber
+	MetapipelineClient metapipeline.Client
+	GitClient          git2.Client
+	KubernetesClient   kubernetes.Interface
 	/*
 		SlackClient      *slack.Client
 	*/
@@ -160,10 +162,15 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
 	gitHubClient := gitprovider.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
+	metapipelineClient, err := metapipeline.NewMetaPipelineClient()
+	if err != nil {
+		logger.Errorf("Metapipeline client creation failed: %s", err)
+	}
 	return Agent{
-		GitHubClient:  gitHubClient,
-		GitClient:     clientAgent.GitClient,
-		PlumberClient: clientAgent.PlumberClient,
+		GitHubClient:       gitHubClient,
+		GitClient:          clientAgent.GitClient,
+		PlumberClient:      clientAgent.PlumberClient,
+		MetapipelineClient: metapipelineClient,
 		/*
 			SlackClient:   clientAgent.SlackClient,
 		*/
@@ -201,9 +208,10 @@ type ClientAgent struct {
 	BotName      string
 	GitHubClient *scm.Client
 
-	KubernetesClient kubernetes.Interface
-	GitClient        git2.Client
-	PlumberClient    plumber.Plumber
+	KubernetesClient   kubernetes.Interface
+	GitClient          git2.Client
+	PlumberClient      plumber.Plumber
+	MetapipelineClient metapipeline.Client
 
 	/*	SlackClient      *slack.Client
 	 */
