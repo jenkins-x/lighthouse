@@ -7,6 +7,8 @@ metadata:
   labels:
     draft: {{ default "draft-app" .Values.draft }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/hmacsecret.yaml") . | sha256sum }}
 spec:
   replicas: {{ .Values.replicaCount }}
   template:
