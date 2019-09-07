@@ -52,6 +52,11 @@ clean:
 build:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE) 
 
+.PHONY: mod
+mod: build
+	echo "tidying the go module"
+	$(GO) mod tidy
+
 .PHONY: build-linux
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
