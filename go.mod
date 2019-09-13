@@ -27,7 +27,13 @@ require (
 	sigs.k8s.io/yaml v1.1.0
 )
 
+exclude github.com/jenkins-x/jx/pkg/prow v0.0.0-20190912224545-e8f82ee218ba
+
 replace github.com/golang/lint => golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
+
+replace github.com/jenkins-x/jx => /workspace/go/src/github.com/jenkins-x/jx
+
+replace github.com/jenkins-x/go-scm => /workspace/go/src/github.com/jenkins-x/go-scm
 
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
 

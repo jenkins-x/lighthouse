@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 )
@@ -79,6 +80,12 @@ func HasLabel(label string, issueLabels []*scm.Label) bool {
 	return false
 }
 */
+
+var (
+	// FoundingYear is the year GitHub was founded. This is just used so that
+	// we can lower bound dates related to PRs and issues.
+	FoundingYear, _ = time.Parse(SearchTimeFormat, "2007-01-01T00:00:00Z")
+)
 
 // ImageTooBig checks if image is bigger than github limits
 func ImageTooBig(url string) (bool, error) {
@@ -214,4 +221,7 @@ func PushHookBranch(pe *scm.PushHook) string {
 	ref := strings.TrimPrefix(pe.Ref, "refs/heads/") // if Ref is a branch
 	ref = strings.TrimPrefix(ref, "refs/tags/")      // if Ref is a tag
 	return ref
+}
+
+type PullRequestChange struct {
 }

@@ -30,6 +30,11 @@ type PipelineOptions struct {
 	Spec PipelineOptionsSpec `json:"spec,omitempty"`
 }
 
+// PipelineOptionsList represents a list of pipeline options
+type PipelineOptionsList struct {
+	Items []PipelineOptions
+}
+
 // PipelineOptionsSpec the spec of a pipeline request
 type PipelineOptionsSpec struct {
 	// Type is the type of job and informs how

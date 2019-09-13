@@ -9,19 +9,18 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/jx/pkg/cmd/clients"
-	"github.com/jenkins-x/jx/pkg/cmd/opts"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
+	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/test-infra/prow/metrics"
 
 	"github.com/spf13/cobra"
 )
@@ -49,7 +48,7 @@ type Options struct {
 	Port        int
 	JSONLog     bool
 
-	factory          clients.Factory
+	factory          jxfactory.Factory
 	namespace        string
 	pluginFilename   string
 	configFilename   string
@@ -371,23 +370,11 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 }
 
 // GetFactory lazily creates a Factory if its not already created
-func (o *Options) GetFactory() clients.Factory {
+func (o *Options) GetFactory() jxfactory.Factory {
 	if o.factory == nil {
-		o.factory = clients.NewFactory()
+		o.factory = jxfactory.NewFactory()
 	}
 	return o.factory
-}
-
-func (o *Options) createCommonOptions(ns string) *opts.CommonOptions {
-	factory := o.GetFactory()
-	options := opts.NewCommonOptionsWithFactory(factory)
-	options.SetDevNamespace(ns)
-	options.SetCurrentNamespace(ns)
-	options.Verbose = true
-	options.BatchMode = true
-	options.Out = os.Stdout
-	options.Err = os.Stderr
-	return &options
 }
 
 func (o *Options) secretFn(webhook scm.Webhook) (string, error) {
@@ -498,7 +485,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	// Push metrics to the configured prometheus pushgateway endpoint.
 	pushGateway := configAgent.Config().PushGateway
 	if pushGateway.Endpoint != "" {
-		go metrics.PushMetrics("hook", pushGateway.Endpoint, pushGateway.Interval)
+		go metrics.ExposeMetrics("hook", pushGateway)
 	}
 
 	server := &hook.Server{
@@ -511,7 +498,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 }
 
 func (o *Options) updatePlumberClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository, w http.ResponseWriter) error {
-	plumberClient, err := plumber.NewPlumber(repository, o.createCommonOptions(o.namespace))
+	plumberClient, err := plumber.NewPlumber(repository)
 	if err != nil {
 		l.Errorf("failed to create Plumber webhook: %s", err.Error())
 

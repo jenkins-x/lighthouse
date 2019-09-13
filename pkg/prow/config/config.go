@@ -131,6 +131,8 @@ type PushGateway struct {
 	// Interval specifies how often prow will push metrics
 	// to the pushgateway. Defaults to 1m.
 	Interval time.Duration `json:"-"`
+	// ServeMetrics tells if or not the components serve metrics
+	ServeMetrics bool `json:"serve_metrics"`
 }
 
 // Controller holds configuration applicable to all agent-specific

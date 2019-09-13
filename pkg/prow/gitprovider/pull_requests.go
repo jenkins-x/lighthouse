@@ -6,6 +6,13 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 )
 
+// MergeDetails optional extra parameters
+type MergeDetails struct {
+	SHA         string
+	MergeMethod string
+	CommitTitle string
+}
+
 // GetPullRequest returns the pull request
 func (c *Client) GetPullRequest(owner, repo string, number int) (*scm.PullRequest, error) {
 	ctx := context.Background()
@@ -28,6 +35,14 @@ func (c *Client) GetPullRequestChanges(org, repo string, number int) ([]*scm.Cha
 	fullName := c.repositoryName(org, repo)
 	changes, _, err := c.client.PullRequests.ListChanges(ctx, fullName, number, c.createListOptions())
 	return changes, err
+}
+
+// Merge reopens a pull request
+func (c *Client) Merge(owner, repo string, number int, details MergeDetails) error {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.PullRequests.Merge(ctx, fullName, number)
+	return err
 }
 
 // ReopenPR reopens a pull request

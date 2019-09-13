@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
@@ -60,6 +61,15 @@ type TideContextPolicyOptions struct {
 	TideContextPolicy
 	// Github Orgs
 	Orgs map[string]TideOrgContextPolicy `json:"orgs,omitempty"`
+}
+
+// TideMergeCommitTemplate holds templates to use for merge commits.
+type TideMergeCommitTemplate struct {
+	TitleTemplate string `json:"title,omitempty"`
+	BodyTemplate  string `json:"body,omitempty"`
+
+	Title *template.Template `json:"-"`
+	Body  *template.Template `json:"-"`
 }
 
 // Tide is config for the tide pool.

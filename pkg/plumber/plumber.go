@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/pkg/cmd/opts"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -14,15 +13,13 @@ import (
 
 // PipelineBuilder default builder
 type PipelineBuilder struct {
-	repository    scm.Repository
-	commonOptions *opts.CommonOptions
+	repository scm.Repository
 }
 
 // NewPlumber creates a new builder
-func NewPlumber(repository scm.Repository, commonOptions *opts.CommonOptions) (Plumber, error) {
+func NewPlumber(repository scm.Repository) (Plumber, error) {
 	b := &PipelineBuilder{
-		repository:    repository,
-		commonOptions: commonOptions,
+		repository: repository,
 	}
 	return b, nil
 }
