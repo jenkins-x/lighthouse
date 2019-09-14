@@ -21,6 +21,7 @@ package tide
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -30,38 +31,38 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
+	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
+	"github.com/jenkins-x/lighthouse/pkg/prow/git"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
+	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
+	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 	"github.com/prometheus/client_golang/prometheus"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	"github.com/jenkins-x/lighthouse/pkg/io"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
-	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
-	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
-	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
-	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 )
 
 // For mocking out sleep during unit tests.
 var sleep = time.Sleep
 
 type prowJobClient interface {
-	Create(*plumber.PipelineOptions) (*plumber.PipelineOptions, error)
+	Create(*plumber.PipelineOptions, metapipeline.Client) (*plumber.PipelineOptions, error)
 	List(opts metav1.ListOptions) (*plumber.PipelineOptionsList, error)
 }
 
 type githubClient interface {
-	CreateStatus(string, string, string, *scm.StatusInput) (*scm.Status, error)
+	CreateGraphQLStatus(string, string, string, *gitprovider.Status) (*scm.Status, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
-	GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error)
+	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetRef(string, string, string) (string, error)
-	Merge(string, string, int, github.MergeDetails) error
-	Query(opts scm.SearchOptions) ([]*scm.SearchIssue, *github.RateLimits, error)
+	Merge(string, string, int, gitprovider.MergeDetails) error
+	Query(context.Context, interface{}, map[string]interface{}) error
 }
 
 type contextChecker interface {
@@ -77,7 +78,8 @@ type Controller struct {
 	config        config.Getter
 	ghc           githubClient
 	prowJobClient prowJobClient
-	gc            *git.Client
+	gc            git.Client
+	mpClient      metapipeline.Client
 
 	sc *statusController
 
@@ -198,7 +200,7 @@ func init() {
 }
 
 // NewController makes a Controller out of the given clients.
-func NewController(ghcSync, ghcStatus github.Client, prowJobClient prowJobClient, cfg config.Getter, gc *git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*Controller, error) {
+func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJobClient, mpClient metapipeline.Client, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*Controller, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -220,6 +222,7 @@ func NewController(ghcSync, ghcStatus github.Client, prowJobClient prowJobClient
 		logger:        logger.WithField("controller", "sync"),
 		ghc:           ghcSync,
 		prowJobClient: prowJobClient,
+		mpClient:      mpClient,
 		config:        cfg,
 		gc:            gc,
 		sc:            sc,
@@ -256,9 +259,9 @@ func byRepoAndNumber(prs []PullRequest) map[string]PullRequest {
 // newExpectedContext creates a Context with Expected state.
 func newExpectedContext(c string) Context {
 	return Context{
-		Context:     string(c),
-		State:       scm.StateExpected,
-		Description: string(""),
+		Context:     githubql.String(c),
+		State:       githubql.StatusStateExpected,
+		Description: githubql.String(""),
 	}
 }
 
@@ -285,7 +288,7 @@ func (c *Controller) Sync() error {
 	prs := make(map[string]PullRequest)
 	for _, query := range c.config().Tide.Queries {
 		q := query.Query()
-		results, err := search(c.ghc, c.logger, q, time.Time{}, time.Now())
+		results, err := search(c.ghc.Query, c.logger, q, time.Time{}, time.Now())
 		if err != nil && len(results) == 0 {
 			return fmt.Errorf("query %q, err: %v", q, err)
 		}
@@ -502,7 +505,7 @@ func filterPR(ghc githubClient, sp *subpool, pr *PullRequest) bool {
 		return false
 	}
 	for _, ctx := range unsuccessfulContexts(contexts, sp.cc, log) {
-		if ctx.State != scm.StatePending {
+		if ctx.State != githubql.StatusStatePending {
 			log.WithField("context", ctx.Context).Debug("filtering out PR as unsuccessful context is not pending")
 			return true
 		}
@@ -534,10 +537,10 @@ const (
 	successState simpleState = "success"
 )
 
-func toSimpleState(s plumber.PipelineOptionsState) simpleState {
-	if s == prowapi.TriggeredState || s == prowapi.PendingState {
+func toSimpleState(s plumber.PipelineState) simpleState {
+	if s == plumber.TriggeredState || s == plumber.PendingState {
 		return pendingState
-	} else if s == prowapi.SuccessState {
+	} else if s == plumber.SuccessState {
 		return successState
 	}
 	return failureState
@@ -571,7 +574,7 @@ func unsuccessfulContexts(contexts []Context, cc contextChecker, log *logrus.Ent
 		if cc.IsOptional(string(ctx.Context)) {
 			continue
 		}
-		if ctx.State != scm.StateSuccess {
+		if ctx.State != githubql.StatusStateSuccess {
 			failed = append(failed, ctx)
 		}
 	}
@@ -624,7 +627,7 @@ func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, p
 	}
 	states := make(map[string]*accState)
 	for _, pj := range pjs {
-		if pj.Spec.Type != prowapi.BatchJob {
+		if pj.Spec.Type != plumber.BatchJob {
 			continue
 		}
 		// First validate the batch job's refs.
@@ -705,7 +708,7 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 		// We can ignore the baseSHA here because the subPool only contains ProwJobs with the correct baseSHA
 		psStates := make(map[string]simpleState)
 		for _, pj := range pjs {
-			if pj.Spec.Type != prowapi.PresubmitJob {
+			if pj.Spec.Type != plumber.PresubmitJob {
 				continue
 			}
 			if pj.Spec.Refs.Pulls[0].Number != int(pr.Number) {
@@ -821,18 +824,18 @@ func (c *Controller) pickBatch(sp subpool, cc contextChecker) ([]PullRequest, er
 	return res, nil
 }
 
-func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method github.PullRequestMergeType) (github.PullRequestMergeType, error) {
+func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method gitprovider.PullRequestMergeType) (gitprovider.PullRequestMergeType, error) {
 	labelCount := 0
-	for _, prlabel := range pr.Labels {
-		switch prlabel {
+	for _, prlabel := range pr.Labels.Nodes {
+		switch string(prlabel.Name) {
 		case squash:
-			method = github.MergeSquash
+			method = gitprovider.MergeSquash
 			labelCount++
 		case rebase:
-			method = github.MergeRebase
+			method = gitprovider.MergeRebase
 			labelCount++
 		case merge:
-			method = github.MergeMerge
+			method = gitprovider.MergeMerge
 			labelCount++
 		}
 		if labelCount > 1 {
@@ -842,8 +845,8 @@ func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method githu
 	return method, nil
 }
 
-func (c *Controller) prepareMergeDetails(commitTemplates config.TideMergeCommitTemplate, pr PullRequest, mergeMethod github.PullRequestMergeType) github.MergeDetails {
-	ghMergeDetails := github.MergeDetails{
+func (c *Controller) prepareMergeDetails(commitTemplates config.TideMergeCommitTemplate, pr PullRequest, mergeMethod gitprovider.PullRequestMergeType) gitprovider.MergeDetails {
+	ghMergeDetails := gitprovider.MergeDetails{
 		SHA:         string(pr.HeadRefOID),
 		MergeMethod: string(mergeMethod),
 	}
@@ -956,19 +959,19 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 		// Note: We would also need to be able to roll back any merges for the
 		// batch that were already successfully completed before the failure.
 		// Ref: https://github.com/kubernetes/test-infra/issues/10621
-		if _, ok := err.(github.ModifiedHeadError); ok {
+		if _, ok := err.(gitprovider.ModifiedHeadError); ok {
 			// This is a possible source of incorrect behavior. If someone
 			// modifies their PR as we try to merge it in a batch then we
 			// end up in an untested state. This is unlikely to cause any
 			// real problems.
 			return true, fmt.Errorf("PR was modified: %v", err)
-		} else if _, ok = err.(github.UnmergablePRBaseChangedError); ok {
+		} else if _, ok = err.(gitprovider.UnmergablePRBaseChangedError); ok {
 			//  complained that the base branch was modified. This is a
 			// strange error because the API doesn't even allow the request to
 			// specify the base branch sha, only the head sha.
 			// We suspect that github is complaining because we are making the
 			// merge requests too rapidly and it cannot recompute mergability
-			// in time. https://github.com/kubernetes/test-infra/issues/5171
+			// in time. https://gitprovider.com/kubernetes/test-infra/issues/5171
 			// We handle this by sleeping for a few seconds before trying to
 			// merge again.
 			err = fmt.Errorf("base branch was modified: %v", err)
@@ -976,20 +979,20 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 				sleep(backoff)
 				backoff *= 2
 			}
-		} else if _, ok = err.(github.UnauthorizedToPushError); ok {
+		} else if _, ok = err.(gitprovider.UnauthorizedToPushError); ok {
 			// GitHub let us know that the token used cannot push to the branch.
 			// Even if the robot is set up to have write access to the repo, an
 			// overzealous branch protection setting will not allow the robot to
 			// push to a specific branch.
 			// We won't be able to merge the other PRs.
 			return false, fmt.Errorf("branch needs to be configured to allow this robot to push: %v", err)
-		} else if _, ok = err.(github.MergeCommitsForbiddenError); ok {
+		} else if _, ok = err.(gitprovider.MergeCommitsForbiddenError); ok {
 			// GitHub let us know that the merge method configured for this repo
 			// is not allowed by other repo settings, so we should let the admins
 			// know that the configuration needs to be updated.
 			// We won't be able to merge the other PRs.
 			return false, fmt.Errorf("Tide needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", err)
-		} else if _, ok = err.(github.UnmergablePRError); ok {
+		} else if _, ok = err.(gitprovider.UnmergablePRError); ok {
 			return true, fmt.Errorf("PR is unmergable. Do the Tide merge requirements match the GitHub settings for the repo? %v", err)
 		} else {
 			return true, err
@@ -1000,7 +1003,7 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 }
 
 func (c *Controller) trigger(sp subpool, presubmits map[int][]config.Presubmit, prs []PullRequest) error {
-	refs := prowapi.Refs{
+	refs := plumber.Refs{
 		Org:     sp.org,
 		Repo:    sp.repo,
 		BaseRef: sp.branch,
@@ -1009,7 +1012,7 @@ func (c *Controller) trigger(sp subpool, presubmits map[int][]config.Presubmit, 
 	for _, pr := range prs {
 		refs.Pulls = append(
 			refs.Pulls,
-			TektonPull{
+			plumber.Pull{
 				Number: int(pr.Number),
 				Author: string(pr.Author.Login),
 				SHA:    string(pr.HeadRefOID),
@@ -1033,9 +1036,9 @@ func (c *Controller) trigger(sp subpool, presubmits map[int][]config.Presubmit, 
 			} else {
 				spec = pjutil.BatchSpec(ps, refs)
 			}
-			pj := pjutil.NewProwJob(spec, ps.Labels, ps.Annotations)
+			pj := pjutil.NewPlumberJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
-			if _, err := c.prowJobClient.Create(&pj); err != nil {
+			if _, err := c.prowJobClient.Create(&pj, c.mpClient); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create ProwJob on the cluster.")
 				return fmt.Errorf("failed to create a ProwJob for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
 			}
@@ -1134,7 +1137,7 @@ func (c *changedFilesAgent) prChanges(pr *PullRequest) config.ChangedFilesProvid
 		}
 		changedFiles = make([]string, 0, len(changes))
 		for _, change := range changes {
-			changedFiles = append(changedFiles, change.Filename)
+			changedFiles = append(changedFiles, change.Path)
 		}
 
 		c.Lock()
@@ -1237,10 +1240,10 @@ func (c *Controller) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, e
 		err
 }
 
-func prMeta(prs ...PullRequest) []history.TektonPull {
-	var res []history.TektonPull
+func prMeta(prs ...PullRequest) []plumber.Pull {
+	var res []plumber.Pull
 	for _, pr := range prs {
-		res = append(res, history.TektonPull{
+		res = append(res, plumber.Pull{
 			Number: int(pr.Number),
 			Author: string(pr.Author.Login),
 			Title:  string(pr.Title),
@@ -1326,7 +1329,7 @@ func (c *Controller) dividePool(pool map[string]PullRequest, pjs []plumber.Pipel
 		sps[fn].prs = append(sps[fn].prs, pr)
 	}
 	for _, pj := range pjs {
-		if pj.Spec.Type != prowapi.PresubmitJob && pj.Spec.Type != prowapi.BatchJob {
+		if pj.Spec.Type != plumber.PresubmitJob && pj.Spec.Type != plumber.BatchJob {
 			continue
 		}
 		fn := poolKey(pj.Spec.Refs.Org, pj.Spec.Refs.Repo, pj.Spec.Refs.BaseRef)
@@ -1339,23 +1342,24 @@ func (c *Controller) dividePool(pool map[string]PullRequest, pjs []plumber.Pipel
 }
 
 // PullRequest holds graphql data about a PR, including its commits and their contexts.
+// PullRequest holds graphql data about a PR, including its commits and their contexts.
 type PullRequest struct {
-	Number int
+	Number githubql.Int
 	Author struct {
-		Login string
+		Login githubql.String
 	}
 	BaseRef struct {
-		Name   string
-		Prefix string
+		Name   githubql.String
+		Prefix githubql.String
 	}
-	HeadRefName string `graphql:"headRefName"`
-	HeadRefOID  string `graphql:"headRefOid"`
+	HeadRefName githubql.String `graphql:"headRefName"`
+	HeadRefOID  githubql.String `graphql:"headRefOid"`
 	Mergeable   githubql.MergeableState
 	Repository  struct {
-		Name          string
-		NameWithOwner string
+		Name          githubql.String
+		NameWithOwner githubql.String
 		Owner         struct {
-			Login string
+			Login githubql.String
 		}
 	}
 	Commits struct {
@@ -1368,13 +1372,17 @@ type PullRequest struct {
 		// We can't raise this too much or we could hit the limit of 50,000 nodes
 		// per query: https://developer.github.com/v4/guides/resource-limitations/#node-limit
 	} `graphql:"commits(last: 4)"`
-	Labels    []string
+	Labels struct {
+		Nodes []struct {
+			Name githubql.String
+		}
+	} `graphql:"labels(first: 100)"`
 	Milestone *struct {
-		Title string
+		Title githubql.String
 	}
-	Body      string
-	Title     string
-	UpdatedAt time.Time
+	Body      githubql.String
+	Title     githubql.String
+	UpdatedAt githubql.DateTime
 }
 
 // Commit holds graphql data about commits and which contexts they have
@@ -1382,14 +1390,14 @@ type Commit struct {
 	Status struct {
 		Contexts []Context
 	}
-	OID string `graphql:"oid"`
+	OID githubql.String `graphql:"oid"`
 }
 
 // Context holds graphql response data for github contexts.
 type Context struct {
-	Context     string
-	Description string
-	State       scm.State
+	Context     githubql.String
+	Description githubql.String
+	State       githubql.StatusState
 }
 
 type PRNode struct {
@@ -1398,13 +1406,13 @@ type PRNode struct {
 
 type searchQuery struct {
 	RateLimit struct {
-		Cost      int
-		Remaining int
+		Cost      githubql.Int
+		Remaining githubql.Int
 	}
 	Search struct {
 		PageInfo struct {
 			HasNextPage githubql.Boolean
-			EndCursor   string
+			EndCursor   githubql.String
 		}
 		Nodes []PRNode
 	} `graphql:"search(type: ISSUE, first: 100, after: $searchCursor, query: $query)"`
@@ -1450,9 +1458,9 @@ func headContexts(log *logrus.Entry, ghc githubClient, pr *PullRequest) ([]Conte
 		contexts = append(
 			contexts,
 			Context{
-				Context:     string(status.Label),
-				Description: string(status.Desc),
-				State:       status.State,
+				Context:     githubql.String(status.Label),
+				Description: githubql.String(status.Desc),
+				State:       githubql.StatusState(strings.ToUpper(status.State.String())),
 			},
 		)
 	}

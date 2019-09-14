@@ -21,11 +21,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
+	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -45,14 +46,14 @@ func TestExpectedStatus(t *testing.T) {
 		inPool          bool
 		blocks          []int
 
-		state scm.State
+		state string
 		desc  string
 	}{
 		{
 			name:   "in pool",
 			inPool: true,
 
-			state: scm.StateSuccess,
+			state: github.StatusSuccess,
 			desc:  statusInPool,
 		},
 		{
@@ -60,7 +61,7 @@ func TestExpectedStatus(t *testing.T) {
 			milestone: "v1.0",
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Needs need-1, need-2 labels."),
 		},
 		{
@@ -69,7 +70,7 @@ func TestExpectedStatus(t *testing.T) {
 			milestone: "v1.0",
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Needs need-a-very-super-duper-extra-not-short-at-all-label-name label."),
 		},
 		{
@@ -78,7 +79,7 @@ func TestExpectedStatus(t *testing.T) {
 			milestone: "v1.0",
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Should not have forbidden-1, forbidden-2 labels."),
 		},
 		{
@@ -87,7 +88,7 @@ func TestExpectedStatus(t *testing.T) {
 			milestone: "v1.0",
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Should not have forbidden-1 label."),
 		},
 		{
@@ -96,7 +97,7 @@ func TestExpectedStatus(t *testing.T) {
 			milestone: "v1.0",
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Needs need-1 label."),
 		},
 		{
@@ -107,7 +108,7 @@ func TestExpectedStatus(t *testing.T) {
 			labels:          neededLabels,
 			inPool:          false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Merging to branch bad is forbidden."),
 		},
 		{
@@ -118,7 +119,7 @@ func TestExpectedStatus(t *testing.T) {
 			labels:          neededLabels,
 			inPool:          false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Merging to branch bad is forbidden."),
 		},
 		{
@@ -129,27 +130,27 @@ func TestExpectedStatus(t *testing.T) {
 			labels:          neededLabels,
 			inPool:          false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Needs 1, 2, 3, 4, 5, 6, 7 labels."),
 		},
 		{
 			name:      "only failed tide context",
 			labels:    neededLabels,
 			milestone: "v1.0",
-			contexts:  []Context{{Context: string(statusContext), State: scm.StateError}},
+			contexts:  []Context{{Context: githubql.String(statusContext), State: githubql.StatusStateError}},
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, ""),
 		},
 		{
 			name:      "single bad context",
 			labels:    neededLabels,
-			contexts:  []Context{{Context: string("job-name"), State: scm.StateError}},
+			contexts:  []Context{{Context: githubql.String("job-name"), State: githubql.StatusStateError}},
 			milestone: "v1.0",
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Job job-name has not succeeded."),
 		},
 		{
@@ -157,32 +158,32 @@ func TestExpectedStatus(t *testing.T) {
 			labels:    neededLabels,
 			milestone: "v1.0",
 			contexts: []Context{
-				{Context: string("job-name"), State: scm.StateError},
-				{Context: string("other-job-name"), State: scm.StateError},
+				{Context: githubql.String("job-name"), State: githubql.StatusStateError},
+				{Context: githubql.String("other-job-name"), State: githubql.StatusStateError},
 			},
 			inPool: false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Jobs job-name, other-job-name have not succeeded."),
 		},
 		{
 			name:      "wrong milestone",
 			labels:    neededLabels,
 			milestone: "v1.1",
-			contexts:  []Context{{Context: string("job-name"), State: scm.StateSuccess}},
+			contexts:  []Context{{Context: githubql.String("job-name"), State: githubql.StatusStateSuccess}},
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Must be in milestone v1.0."),
 		},
 		{
 			name:      "unknown requirement",
 			labels:    neededLabels,
 			milestone: "v1.0",
-			contexts:  []Context{{Context: string("job-name"), State: scm.StateSuccess}},
+			contexts:  []Context{{Context: githubql.String("job-name"), State: githubql.StatusStateSuccess}},
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, ""),
 		},
 		{
@@ -191,7 +192,7 @@ func TestExpectedStatus(t *testing.T) {
 			milestone: "v1.0",
 			inPool:    false,
 
-			state: scm.StatePending,
+			state: github.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Needs 1, 2 labels."),
 		},
 		{
@@ -201,7 +202,7 @@ func TestExpectedStatus(t *testing.T) {
 			inPool:    false,
 			blocks:    []int{1, 2},
 
-			state: scm.StateError,
+			state: github.StatusError,
 			desc:  fmt.Sprintf(statusNotInPool, " Merging is blocked by issues 1, 2."),
 		},
 	}
@@ -230,19 +231,19 @@ func TestExpectedStatus(t *testing.T) {
 		}.QueryMap()
 		var pr PullRequest
 		pr.BaseRef = struct {
-			Name   string
-			Prefix string
+			Name   githubql.String
+			Prefix githubql.String
 		}{
-			Name: string(tc.baseref),
+			Name: githubql.String(tc.baseref),
 		}
 		for _, label := range tc.labels {
 			pr.Labels.Nodes = append(
 				pr.Labels.Nodes,
-				struct{ Name string }{Name: string(label)},
+				struct{ Name githubql.String }{Name: githubql.String(label)},
 			)
 		}
 		if len(tc.contexts) > 0 {
-			pr.HeadRefOID = string("head")
+			pr.HeadRefOID = githubql.String("head")
 			pr.Commits.Nodes = append(
 				pr.Commits.Nodes,
 				struct{ Commit Commit }{
@@ -250,15 +251,15 @@ func TestExpectedStatus(t *testing.T) {
 						Status: struct{ Contexts []Context }{
 							Contexts: tc.contexts,
 						},
-						OID: string("head"),
+						OID: githubql.String("head"),
 					},
 				},
 			)
 		}
 		if tc.milestone != "" {
 			pr.Milestone = &struct {
-				Title string
-			}{string(tc.milestone)}
+				Title githubql.String
+			}{githubql.String(tc.milestone)}
 		}
 		var pool map[string]PullRequest
 		if tc.inPool {
@@ -290,7 +291,7 @@ func TestSetStatuses(t *testing.T) {
 
 		inPool     bool
 		hasContext bool
-		state      scm.State
+		state      githubql.StatusState
 		desc       string
 
 		shouldSet bool
@@ -300,7 +301,7 @@ func TestSetStatuses(t *testing.T) {
 
 			inPool:     true,
 			hasContext: true,
-			state:      scm.StateSuccess,
+			state:      githubql.StatusStateSuccess,
 			desc:       statusInPool,
 
 			shouldSet: false,
@@ -318,7 +319,7 @@ func TestSetStatuses(t *testing.T) {
 
 			inPool:     true,
 			hasContext: true,
-			state:      scm.StateSuccess,
+			state:      githubql.StatusStateSuccess,
 			desc:       statusNotInPoolEmpty,
 
 			shouldSet: true,
@@ -328,7 +329,7 @@ func TestSetStatuses(t *testing.T) {
 
 			inPool:     true,
 			hasContext: true,
-			state:      scm.StatePending,
+			state:      githubql.StatusStatePending,
 			desc:       statusInPool,
 
 			shouldSet: true,
@@ -338,7 +339,7 @@ func TestSetStatuses(t *testing.T) {
 
 			inPool:     false,
 			hasContext: true,
-			state:      scm.StatePending,
+			state:      githubql.StatusStatePending,
 			desc:       statusNotInPoolEmpty,
 
 			shouldSet: false,
@@ -348,7 +349,7 @@ func TestSetStatuses(t *testing.T) {
 
 			inPool:     false,
 			hasContext: true,
-			state:      scm.StatePending,
+			state:      githubql.StatusStatePending,
 			desc:       statusInPool,
 
 			shouldSet: true,
@@ -368,9 +369,9 @@ func TestSetStatuses(t *testing.T) {
 		if tc.hasContext {
 			pr.Commits.Nodes[0].Commit.Status.Contexts = []Context{
 				{
-					Context:     string(statusContext),
+					Context:     githubql.String(statusContext),
 					State:       tc.state,
-					Description: string(tc.desc),
+					Description: githubql.String(tc.desc),
 				},
 			}
 		}
@@ -434,15 +435,15 @@ func TestTargetUrl(t *testing.T) {
 			name: "PR dashboard config",
 			pr: &PullRequest{
 				Author: struct {
-					Login string
-				}{Login: string("author")},
+					Login githubql.String
+				}{Login: githubql.String("author")},
 				Repository: struct {
-					Name          string
-					NameWithOwner string
+					Name          githubql.String
+					NameWithOwner githubql.String
 					Owner         struct {
-						Login string
+						Login githubql.String
 					}
-				}{NameWithOwner: string("org/repo")},
+				}{NameWithOwner: githubql.String("org/repo")},
 				HeadRefName: "head",
 			},
 			config:      config.Tide{PRStatusBaseURL: "pr.status.com"},

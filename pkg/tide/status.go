@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jenkins-x/go-scm/scm"
+	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -35,6 +35,7 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 )
 
@@ -150,8 +151,8 @@ func requirementDiff(pr *PullRequest, q *config.TideQuery, cc contextChecker) (s
 	var missingLabels []string
 	for _, l1 := range q.Labels {
 		var found bool
-		for _, l2 := range pr.Labels {
-			if l2 == l1 {
+		for _, l2 := range pr.Labels.Nodes {
+			if string(l2.Name) == l1 {
 				found = true
 				break
 			}
@@ -173,8 +174,8 @@ func requirementDiff(pr *PullRequest, q *config.TideQuery, cc contextChecker) (s
 
 	var presentLabels []string
 	for _, l1 := range q.MissingLabels {
-		for _, l2 := range pr.Labels {
-			if l2 == l1 {
+		for _, l2 := range pr.Labels.Nodes {
+			if string(l2.Name) == l1 {
 				presentLabels = append(presentLabels, l1)
 				break
 			}
@@ -222,7 +223,7 @@ func requirementDiff(pr *PullRequest, q *config.TideQuery, cc contextChecker) (s
 // in order to generate a diff for the status description. We choose the query
 // for the repo that the PR is closest to meeting (as determined by the number
 // of unmet/violated requirements).
-func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]PullRequest, cc contextChecker, blocks blockers.Blockers) (scm.State, string) {
+func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]PullRequest, cc contextChecker, blocks blockers.Blockers) (string, string) {
 	if _, ok := pool[prKey(pr)]; !ok {
 		// if the branch is blocked forget checking for a diff
 		blockingIssues := blocks.GetApplicable(string(pr.Repository.Owner.Login), string(pr.Repository.Name), string(pr.BaseRef.Name))
@@ -235,7 +236,7 @@ func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]
 			if len(numbers) > 1 {
 				s = "s"
 			}
-			return scm.StateError, fmt.Sprintf(statusNotInPool, fmt.Sprintf(" Merging is blocked by issue%s %s.", s, strings.Join(numbers, ", ")))
+			return gitprovider.StatusError, fmt.Sprintf(statusNotInPool, fmt.Sprintf(" Merging is blocked by issue%s %s.", s, strings.Join(numbers, ", ")))
 		}
 		minDiffCount := -1
 		var minDiff string
@@ -246,9 +247,9 @@ func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]
 				minDiff = diff
 			}
 		}
-		return scm.StatePending, fmt.Sprintf(statusNotInPool, minDiff)
+		return gitprovider.StatusPending, fmt.Sprintf(statusNotInPool, minDiff)
 	}
-	return scm.StateSuccess, statusInPool
+	return gitprovider.StatusSuccess, statusInPool
 }
 
 // targetURL determines the URL used for more details in the status
@@ -297,24 +298,24 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 		}
 
 		wantState, wantDesc := expectedStatus(queryMap, pr, pool, cr, blocks)
-		var actualState scm.State
+		var actualState githubql.StatusState
 		var actualDesc string
 		for _, ctx := range contexts {
 			if string(ctx.Context) == statusContext {
 				actualState = ctx.State
-				actualDesc = ctx.Description
+				actualDesc = string(ctx.Description)
 			}
 		}
-		if wantState != actualState || wantDesc != actualDesc {
-			if _, err := sc.ghc.CreateStatus(
+		if wantState != strings.ToLower(string(actualState)) || wantDesc != actualDesc {
+			if _, err := sc.ghc.CreateGraphQLStatus(
 				string(pr.Repository.Owner.Login),
 				string(pr.Repository.Name),
 				string(pr.HeadRefOID),
-				&scm.StatusInput{
-					Label:  statusContext,
-					State:  wantState,
-					Desc:   wantDesc,
-					Target: targetURL(sc.config, pr, log),
+				&gitprovider.Status{
+					Context:     statusContext,
+					State:       wantState,
+					Description: wantDesc,
+					TargetURL:   targetURL(sc.config, pr, log),
 				}); err != nil {
 				log.WithError(err).Errorf(
 					"Failed to set status context from %q to %q.",
@@ -470,7 +471,7 @@ func (sc *statusController) search() []PullRequest {
 		sc.PreviousQuery = query
 	}
 
-	prs, err := search(sc.ghc, sc.logger, query, sc.LatestPR.Time, now)
+	prs, err := search(sc.ghc.Query, sc.logger, query, sc.LatestPR.Time, now)
 	log.WithField("duration", time.Since(now).String()).Debugf("Found %d open PRs.", len(prs))
 	if err != nil {
 		log := log.WithError(err)

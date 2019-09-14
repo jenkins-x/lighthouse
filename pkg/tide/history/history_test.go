@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"k8s.io/apimachinery/pkg/util/diff"
 )
 
@@ -42,8 +43,8 @@ func TestHistory(t *testing.T) {
 		return nowTime
 	}
 
-	testMeta := func(num int, author string) TektonPull {
-		return TektonPull{
+	testMeta := func(num int, author string) plumber.Pull {
+		return plumber.Pull{
 			Number: num,
 			Title:  fmt.Sprintf("PR #%d", num),
 			SHA:    fmt.Sprintf("SHA for %d", num),
@@ -56,17 +57,17 @@ func TestHistory(t *testing.T) {
 		t.Fatalf("Failed to create history client: %v", err)
 	}
 	time1 := nextTime()
-	hist.Record("pool A", "TRIGGER", "sha A", "", []TektonPull{testMeta(1, "bob")})
+	hist.Record("pool A", "TRIGGER", "sha A", "", []plumber.Pull{testMeta(1, "bob")})
 	nextTime()
-	hist.Record("pool B", "MERGE", "sha B1", "", []TektonPull{testMeta(2, "joe")})
+	hist.Record("pool B", "MERGE", "sha B1", "", []plumber.Pull{testMeta(2, "joe")})
 	time3 := nextTime()
-	hist.Record("pool B", "MERGE", "sha B2", "", []TektonPull{testMeta(3, "jeff")})
+	hist.Record("pool B", "MERGE", "sha B2", "", []plumber.Pull{testMeta(3, "jeff")})
 	time4 := nextTime()
-	hist.Record("pool B", "MERGE_BATCH", "sha B3", "", []TektonPull{testMeta(4, "joe"), testMeta(5, "jim")})
+	hist.Record("pool B", "MERGE_BATCH", "sha B3", "", []plumber.Pull{testMeta(4, "joe"), testMeta(5, "jim")})
 	time5 := nextTime()
-	hist.Record("pool C", "TRIGGER_BATCH", "sha C1", "", []TektonPull{testMeta(6, "joe"), testMeta(8, "me")})
+	hist.Record("pool C", "TRIGGER_BATCH", "sha C1", "", []plumber.Pull{testMeta(6, "joe"), testMeta(8, "me")})
 	time6 := nextTime()
-	hist.Record("pool B", "TRIGGER", "sha B4", "", []TektonPull{testMeta(7, "abe")})
+	hist.Record("pool B", "TRIGGER", "sha B4", "", []plumber.Pull{testMeta(7, "abe")})
 
 	expected := map[string][]*Record{
 		"pool A": {
@@ -74,7 +75,7 @@ func TestHistory(t *testing.T) {
 				Time:    time1,
 				BaseSHA: "sha A",
 				Action:  "TRIGGER",
-				Target: []TektonPull{
+				Target: []plumber.Pull{
 					testMeta(1, "bob"),
 				},
 			},
@@ -84,7 +85,7 @@ func TestHistory(t *testing.T) {
 				Time:    time6,
 				BaseSHA: "sha B4",
 				Action:  "TRIGGER",
-				Target: []TektonPull{
+				Target: []plumber.Pull{
 					testMeta(7, "abe"),
 				},
 			},
@@ -92,7 +93,7 @@ func TestHistory(t *testing.T) {
 				Time:    time4,
 				BaseSHA: "sha B3",
 				Action:  "MERGE_BATCH",
-				Target: []TektonPull{
+				Target: []plumber.Pull{
 					testMeta(4, "joe"),
 					testMeta(5, "jim"),
 				},
@@ -101,7 +102,7 @@ func TestHistory(t *testing.T) {
 				Time:    time3,
 				BaseSHA: "sha B2",
 				Action:  "MERGE",
-				Target: []TektonPull{
+				Target: []plumber.Pull{
 					testMeta(3, "jeff"),
 				},
 			},
@@ -111,7 +112,7 @@ func TestHistory(t *testing.T) {
 				Time:    time5,
 				BaseSHA: "sha C1",
 				Action:  "TRIGGER_BATCH",
-				Target: []TektonPull{
+				Target: []plumber.Pull{
 					testMeta(6, "joe"),
 					testMeta(8, "me"),
 				},

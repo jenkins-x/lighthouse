@@ -22,7 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jenkins-x/go-scm/scm"
+	githubql "github.com/shurcooL/githubv4"
+
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -135,16 +136,23 @@ func TestBlockerQuery(t *testing.T) {
 	}
 }
 
-func testIssue(number int, title, org, repo string) *scm.SearchIssue {
-	return &scm.SearchIssue{
-		Issue: scm.Issue{
-			Number: number,
-			Title:  title,
-			Link:   strconv.Itoa(number),
-		},
-		Repository: scm.Repository{
-			Name:      repo,
-			Namespace: org,
+func testIssue(number int, title, org, repo string) Issue {
+	return Issue{
+		Number: githubql.Int(number),
+		Title:  githubql.String(title),
+		URL:    githubql.String(strconv.Itoa(number)),
+		Repository: struct {
+			Name  githubql.String
+			Owner struct {
+				Login githubql.String
+			}
+		}{
+			Name: githubql.String(repo),
+			Owner: struct {
+				Login githubql.String
+			}{
+				Login: githubql.String(org),
+			},
 		},
 	}
 }
@@ -157,12 +165,12 @@ func TestBlockers(t *testing.T) {
 
 	tcs := []struct {
 		name   string
-		issues []*scm.SearchIssue
+		issues []Issue
 		checks []check
 	}{
 		{
 			name:   "No blocker issues",
-			issues: []*scm.SearchIssue{},
+			issues: []Issue{},
 			checks: []check{
 				{
 					org:      "org",
@@ -174,7 +182,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "1 repo blocker",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(5, "BLOCK THE WHOLE REPO!", "k", "t-i"),
 			},
 			checks: []check{
@@ -200,7 +208,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "1 repo blocker for a branch",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(6, "BLOCK THE release-1.11 BRANCH! branch:release-1.11", "k", "t-i"),
 			},
 			checks: []check{
@@ -214,7 +222,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "1 repo blocker for a branch",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(6, "BLOCK THE slash/in/name BRANCH! branch:slash/in/name", "k", "t-i"),
 			},
 			checks: []check{
@@ -228,7 +236,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "2 repo blockers for same repo",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(5, "BLOCK THE WHOLE REPO!", "k", "t-i"),
 				testIssue(6, "BLOCK THE WHOLE REPO AGAIN!", "k", "t-i"),
 			},
@@ -255,7 +263,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "2 repo blockers for different repos",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(5, "BLOCK THE WHOLE REPO!", "k", "t-i"),
 				testIssue(6, "BLOCK THE WHOLE (different) REPO!", "k", "community"),
 			},
@@ -294,7 +302,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "1 repo blocker, 1 branch blocker for different repos",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(5, "BLOCK THE WHOLE REPO!", "k", "t-i"),
 				testIssue(6, "BLOCK THE feature BRANCH! branch:feature", "k", "community"),
 			},
@@ -333,7 +341,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "1 repo blocker, 1 branch blocker for same repo",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(5, "BLOCK THE WHOLE REPO!", "k", "t-i"),
 				testIssue(6, "BLOCK THE feature BRANCH! branch:feature", "k", "t-i"),
 			},
@@ -360,7 +368,7 @@ func TestBlockers(t *testing.T) {
 		},
 		{
 			name: "2 repo blockers, 3 branch blockers (with overlap) for same repo",
-			issues: []*scm.SearchIssue{
+			issues: []Issue{
 				testIssue(5, "BLOCK THE WHOLE REPO!", "k", "t-i"),
 				testIssue(6, "BLOCK THE WHOLE REPO AGAIN!", "k", "t-i"),
 				testIssue(7, "BLOCK THE feature BRANCH! branch:feature", "k", "t-i"),

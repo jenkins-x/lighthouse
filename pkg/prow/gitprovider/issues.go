@@ -40,8 +40,14 @@ func firstNumber(values []string) int {
 	return answer
 }
 
-// Query query issues/PRs using a query string
-func (c *Client) Query(opts scm.SearchOptions) ([]*scm.SearchIssue, *RateLimits, error) {
+// Query performs a GraphQL query on the git provider
+func (c *Client) Query(context.Context, interface{}, map[string]interface{}) error {
+	// TODO
+	return nil
+}
+
+// Search query issues/PRs using a query string
+func (c *Client) Search(opts scm.SearchOptions) ([]*scm.SearchIssue, *RateLimits, error) {
 	ctx := context.Background()
 	results, res, err := c.client.Issues.Search(ctx, opts)
 

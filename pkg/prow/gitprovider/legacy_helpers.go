@@ -171,6 +171,14 @@ const (
 	Comment        ReviewAction = "COMMENT"
 )
 
+// These are possible State entries for a Status.
+const (
+	StatusPending = "pending"
+	StatusSuccess = "success"
+	StatusError   = "error"
+	StatusFailure = "failure"
+)
+
 // DraftReview is what we give GitHub when we want to make a PR Review. This is
 // different than what we receive when we ask for a Review.
 type DraftReview struct {
@@ -221,7 +229,4 @@ func PushHookBranch(pe *scm.PushHook) string {
 	ref := strings.TrimPrefix(pe.Ref, "refs/heads/") // if Ref is a branch
 	ref = strings.TrimPrefix(ref, "refs/tags/")      // if Ref is a tag
 	return ref
-}
-
-type PullRequestChange struct {
 }

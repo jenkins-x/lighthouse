@@ -36,14 +36,14 @@ func TestSearch(t *testing.T) {
 	makePRs := func(numbers ...int) []PullRequest {
 		var prs []PullRequest
 		for _, n := range numbers {
-			prs = append(prs, PullRequest{Number: int(n)})
+			prs = append(prs, PullRequest{Number: githubql.Int(n)})
 		}
 		return prs
 	}
 	makeQuery := func(more bool, cursor string, numbers ...int) searchQuery {
 		var sq searchQuery
 		sq.Search.PageInfo.HasNextPage = githubql.Boolean(more)
-		sq.Search.PageInfo.EndCursor = string(cursor)
+		sq.Search.PageInfo.EndCursor = githubql.String(cursor)
 		for _, pr := range makePRs(numbers...) {
 			sq.Search.Nodes = append(sq.Search.Nodes, PRNode{pr})
 		}
@@ -55,7 +55,7 @@ func TestSearch(t *testing.T) {
 		start    time.Time
 		end      time.Time
 		q        string
-		cursors  []*string
+		cursors  []*githubql.String
 		sqs      []searchQuery
 		errs     []error
 		expected []PullRequest
@@ -66,7 +66,7 @@ func TestSearch(t *testing.T) {
 			start:   earlier,
 			end:     now,
 			q:       datedQuery(q, earlier, now),
-			cursors: []*string{nil},
+			cursors: []*githubql.String{nil},
 			sqs: []searchQuery{
 				makeQuery(false, "", 1, 2),
 			},
@@ -78,7 +78,7 @@ func TestSearch(t *testing.T) {
 			start:   earlier,
 			end:     now,
 			q:       datedQuery(q, earlier, now),
-			cursors: []*string{nil},
+			cursors: []*githubql.String{nil},
 			sqs: []searchQuery{
 				{},
 			},
@@ -90,7 +90,7 @@ func TestSearch(t *testing.T) {
 			start:   time.Time{},
 			end:     now,
 			q:       datedQuery(q, floor(time.Time{}), now),
-			cursors: []*string{nil},
+			cursors: []*githubql.String{nil},
 			sqs: []searchQuery{
 				makeQuery(false, "", 1, 2),
 			},
@@ -102,10 +102,10 @@ func TestSearch(t *testing.T) {
 			start: earlier,
 			end:   now,
 			q:     datedQuery(q, earlier, now),
-			cursors: []*string{
+			cursors: []*githubql.String{
 				nil,
-				newString("first"),
-				newString("second"),
+				githubql.NewString("first"),
+				githubql.NewString("second"),
 			},
 			sqs: []searchQuery{
 				makeQuery(true, "first", 1, 2),
@@ -120,9 +120,9 @@ func TestSearch(t *testing.T) {
 			start: earlier,
 			end:   now,
 			q:     datedQuery(q, earlier, now),
-			cursors: []*string{
+			cursors: []*githubql.String{
 				nil,
-				newString("first"),
+				githubql.NewString("first"),
 			},
 			sqs: []searchQuery{
 				makeQuery(true, "first", 1, 2),
@@ -139,7 +139,7 @@ func TestSearch(t *testing.T) {
 			var i int
 			querier := func(_ context.Context, result interface{}, actual map[string]interface{}) error {
 				expected := map[string]interface{}{
-					"query":        string(tc.q),
+					"query":        githubql.String(tc.q),
 					"searchCursor": tc.cursors[i],
 				}
 				if !equality.Semantic.DeepEqual(expected, actual) {
@@ -170,8 +170,4 @@ func TestSearch(t *testing.T) {
 			}
 		})
 	}
-}
-
-func newString(s string) *string {
-	return &s
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PipelineBuilder default builder
@@ -125,4 +126,8 @@ func (b *PipelineBuilder) getPullRefs(sourceURL string, spec *PipelineOptionsSpe
 	}
 
 	return pullRef
+}
+
+func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, error) {
+	panic("implement me")
 }

@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	githubql "github.com/shurcooL/githubv4"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,7 +34,7 @@ var (
 )
 
 type githubClient interface {
-	Query(opts scm.SearchOptions) ([]*scm.SearchIssue, *gitprovider.RateLimits, error)
+	Query(context.Context, interface{}, map[string]interface{}) error
 }
 
 // Blocker specifies an issue number that should block tide from merging.
@@ -85,21 +85,21 @@ func FindAll(ghc githubClient, log *logrus.Entry, label, orgRepoTokens string) (
 	return fromIssues(issues, log), nil
 }
 
-func fromIssues(issues []*scm.SearchIssue, log *logrus.Entry) Blockers {
+func fromIssues(issues []Issue, log *logrus.Entry) Blockers {
 	log.Debugf("Finding blockers from %d issues.", len(issues))
 	res := Blockers{Repo: make(map[OrgRepo][]Blocker), Branch: make(map[OrgRepoBranch][]Blocker)}
 	for _, issue := range issues {
-		logger := log.WithFields(logrus.Fields{"org": issue.Repository.Namespace, "repo": issue.Repository.Name, "issue": issue.Number})
+		logger := log.WithFields(logrus.Fields{"org": issue.Repository.Owner.Login, "repo": issue.Repository.Name, "issue": issue.Number})
 		strippedTitle := branchRE.ReplaceAllLiteralString(string(issue.Title), "")
 		block := Blocker{
 			Number: int(issue.Number),
 			Title:  strippedTitle,
-			URL:    string(issue.Link),
+			URL:    string(issue.URL),
 		}
 		if branches := parseBranches(string(issue.Title)); len(branches) > 0 {
 			for _, branch := range branches {
 				key := OrgRepoBranch{
-					Org:    string(issue.Repository.Namespace),
+					Org:    string(issue.Repository.Owner.Login),
 					Repo:   string(issue.Repository.Name),
 					Branch: branch,
 				}
@@ -108,7 +108,7 @@ func fromIssues(issues []*scm.SearchIssue, log *logrus.Entry) Blockers {
 			}
 		} else {
 			key := OrgRepo{
-				Org:  string(issue.Repository.Namespace),
+				Org:  string(issue.Repository.Owner.Login),
 				Repo: string(issue.Repository.Name),
 			}
 			logger.Debug("Blocking merges to all branches via issue.")
@@ -136,17 +136,61 @@ func parseBranches(str string) []string {
 	return res
 }
 
-func search(ctx context.Context, ghc githubClient, log *logrus.Entry, q string) ([]*scm.SearchIssue, error) {
-	opts := scm.SearchOptions{
-		Query: q,
-	}
+func search(ctx context.Context, ghc githubClient, log *logrus.Entry, q string) ([]Issue, error) {
 	requestStart := time.Now()
-	results, rates, err := ghc.Query(opts)
-	if err != nil {
-		return results, err
+	var ret []Issue
+	vars := map[string]interface{}{
+		"query":        githubql.String(q),
+		"searchCursor": (*githubql.String)(nil),
+	}
+	var totalCost int
+	var remaining int
+	for {
+		sq := searchQuery{}
+		if err := ghc.Query(ctx, &sq, vars); err != nil {
+			return nil, err
+		}
+		totalCost += int(sq.RateLimit.Cost)
+		remaining = int(sq.RateLimit.Remaining)
+		for _, n := range sq.Search.Nodes {
+			ret = append(ret, n.Issue)
+		}
+		if !sq.Search.PageInfo.HasNextPage {
+			break
+		}
+		vars["searchCursor"] = githubql.NewString(sq.Search.PageInfo.EndCursor)
 	}
 	log.WithField(
 		"duration", time.Since(requestStart).String(),
-	).Debugf("Search for blocker query \"%s\"  %d remaining.", q, rates.Remaining)
-	return results, nil
+	).Debugf("Search for blocker query \"%s\" cost %d point(s). %d remaining.", q, totalCost, remaining)
+	return ret, nil
+}
+
+// Issue holds graphql response data about issues
+type Issue struct {
+	Number     githubql.Int
+	Title      githubql.String
+	URL        githubql.String
+	Repository struct {
+		Name  githubql.String
+		Owner struct {
+			Login githubql.String
+		}
+	}
+}
+
+type searchQuery struct {
+	RateLimit struct {
+		Cost      githubql.Int
+		Remaining githubql.Int
+	}
+	Search struct {
+		PageInfo struct {
+			HasNextPage githubql.Boolean
+			EndCursor   githubql.String
+		}
+		Nodes []struct {
+			Issue Issue `graphql:"... on Issue"`
+		}
+	} `graphql:"search(type: ISSUE, first: 100, after: $searchCursor, query: $query)"`
 }

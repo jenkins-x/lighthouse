@@ -2,6 +2,8 @@ package plumber
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,12 +24,36 @@ const (
 	BatchJob PipelineKind = "batch"
 )
 
+// PipelineState specifies the current pipelne status
+type PipelineState string
+
+// Various job types.
+const (
+	// TriggeredState for pipelines that have been triggered
+	TriggeredState PipelineState = "triggered"
+
+	// PendingState pipeline is pending
+	PendingState PipelineState = "pending"
+
+	// SuccessState pipeline is successful
+	SuccessState PipelineState = "success"
+
+	// FailureState failed
+	FailureState PipelineState = "failure"
+)
+
 // PipelineOptions contains the arguments to pass to the Plumber to create a Tekton Pipeline
 type PipelineOptions struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec PipelineOptionsSpec `json:"spec,omitempty"`
+	Spec   PipelineOptionsSpec `json:"spec,omitempty"`
+	Status PipelineStatus      `json:"status,omitempty"`
+}
+
+// PipelineStatus represents the status of a pipeline
+type PipelineStatus struct {
+	State PipelineState `json:"state,omitempty"`
 }
 
 // PipelineOptionsList represents a list of pipeline options
@@ -188,3 +214,30 @@ type Refs struct {
 	// A depth of zero will do a full clone.
 	CloneDepth int `json:"clone_depth,omitempty"`
 }
+
+func (r *Refs) String() string {
+	rs := []string{}
+	if r.BaseSHA != "" {
+		rs = append(rs, fmt.Sprintf("%s:%s", r.BaseRef, r.BaseSHA))
+	} else {
+		rs = append(rs, r.BaseRef)
+	}
+
+	for _, pull := range r.Pulls {
+		ref := fmt.Sprintf("%d:%s", pull.Number, pull.SHA)
+
+		if pull.Ref != "" {
+			ref = fmt.Sprintf("%s:%s", ref, pull.Ref)
+		}
+
+		rs = append(rs, ref)
+	}
+	return strings.Join(rs, ",")
+}
+
+// ByNum implements sort.Interface for []Pull to sort by ascending PR number.
+type ByNum []Pull
+
+func (prs ByNum) Len() int           { return len(prs) }
+func (prs ByNum) Swap(i, j int)      { prs[i], prs[j] = prs[j], prs[i] }
+func (prs ByNum) Less(i, j int) bool { return prs[i].Number < prs[j].Number }

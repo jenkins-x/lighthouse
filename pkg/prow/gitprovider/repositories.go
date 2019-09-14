@@ -38,6 +38,25 @@ func (c *Client) CreateStatus(owner, repo, ref string, s *scm.StatusInput) (*scm
 	return status, err
 }
 
+// CreateStatus create a status into a repository
+func (c *Client) CreateGraphQLStatus(owner, repo, ref string, s *Status) (*scm.Status, error) {
+	si := &scm.StatusInput{
+		State:  scm.ToState(s.State),
+		Label:  s.Context,
+		Desc:   s.Description,
+		Target: s.TargetURL,
+	}
+	return c.CreateStatus(owner, repo, ref, si)
+}
+
+// Status is used to set a commit status line.
+type Status struct {
+	State       string `json:"state"`
+	TargetURL   string `json:"target_url,omitempty"`
+	Description string `json:"description,omitempty"`
+	Context     string `json:"context,omitempty"`
+}
+
 // ListStatuses list the statuses
 func (c *Client) ListStatuses(owner, repo, ref string) ([]*scm.Status, error) {
 	ctx := context.Background()

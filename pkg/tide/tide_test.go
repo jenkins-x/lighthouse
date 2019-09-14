@@ -34,13 +34,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
-	clienttesting "k8s.io/client-go/testing"
 
+	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+
+	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git/localgit"
-	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 )
 
@@ -82,7 +82,7 @@ func TestAccumulateBatch(t *testing.T) {
 	type prowjob struct {
 		prs   []pull
 		job   string
-		state plumber.PipelineOptionsState
+		state plumber.PipelineState
 	}
 	tests := []struct {
 		name       string
@@ -103,26 +103,26 @@ func TestAccumulateBatch(t *testing.T) {
 				2: {{Reporter: config.Reporter{Context: "foo"}}},
 			},
 			pulls:    []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{{job: "foo", state: prowapi.PendingState, prs: []pull{{1, "a"}}}},
+			prowJobs: []prowjob{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
 			pending:  true,
 		},
 		{
 			name:       "pending batch missing presubmits is ignored",
 			presubmits: map[int][]config.Presubmit{1: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs:   []prowjob{{job: "foo", state: prowapi.PendingState, prs: []pull{{1, "a"}}}},
+			prowJobs:   []prowjob{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
 		},
 		{
 			name:       "batch pending, successful previous run",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.PendingState, prs: []pull{{1, "a"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{1, "a"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{1, "a"}}},
-				{job: "foo", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}}},
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
 			},
 			pending: true,
 			merges:  []int{2},
@@ -132,9 +132,9 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
 			},
 			merges: []int{2},
 		},
@@ -143,9 +143,9 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 			},
 			merges: []int{1, 2},
 		},
@@ -154,12 +154,12 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "foo", state: prowapi.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: prowapi.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "foo", state: prowapi.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
 			},
 			merges: []int{1, 2},
 		},
@@ -168,10 +168,10 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: prowapi.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "foo", state: prowapi.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
+				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
 			},
 		},
 		{
@@ -179,9 +179,9 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: append(jobSet, config.Presubmit{Reporter: config.Reporter{Context: "boo"}})},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 			},
 		},
 		{
@@ -189,10 +189,10 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: append(jobSet, config.Presubmit{Reporter: config.Reporter{Context: "boo"}})},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "boo", state: prowapi.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "boo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 			},
 			merges: []int{1, 2},
 		},
@@ -206,10 +206,10 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{2: jobSet},
 			pulls:      []pull{{2, "b"}},
 			prowJobs: []prowjob{
-				{job: "foo", state: prowapi.PendingState, prs: []pull{{1, "a"}}},
-				{job: "foo", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "bar", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "baz", state: prowapi.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}},
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
 			},
 			pending: false,
 			merges:  []int{2},
@@ -219,8 +219,8 @@ func TestAccumulateBatch(t *testing.T) {
 		var pulls []PullRequest
 		for _, p := range test.pulls {
 			pr := PullRequest{
-				Number:     int(p.number),
-				HeadRefOID: string(p.sha),
+				Number:     githubql.Int(p.number),
+				HeadRefOID: githubql.String(p.sha),
 			}
 			pulls = append(pulls, pr)
 		}
@@ -230,13 +230,13 @@ func TestAccumulateBatch(t *testing.T) {
 				Spec: plumber.PipelineOptionsSpec{
 					Job:     pj.job,
 					Context: pj.job,
-					Type:    prowapi.BatchJob,
-					Refs:    new(prowapi.Refs),
+					Type:    plumber.BatchJob,
+					Refs:    new(plumber.Refs),
 				},
-				Status: plumber.PipelineOptionsStatus{State: pj.state},
+				Status: plumber.PipelineStatus{State: pj.state},
 			}
 			for _, pr := range pj.prs {
-				npj.Spec.Refs.Pulls = append(npj.Spec.Refs.Pulls, TektonPull{
+				npj.Spec.Refs.Pulls = append(npj.Spec.Refs.Pulls, plumber.Pull{
 					Number: pr.number,
 					SHA:    pr.sha,
 				})
@@ -267,7 +267,7 @@ func TestAccumulate(t *testing.T) {
 	type prowjob struct {
 		prNumber int
 		job      string
-		state    plumber.PipelineOptionsState
+		state    plumber.PipelineState
 		sha      string
 	}
 	tests := []struct {
@@ -291,19 +291,19 @@ func TestAccumulate(t *testing.T) {
 				7: jobSet,
 			},
 			prowJobs: []prowjob{
-				{2, "job1", prowapi.PendingState, ""},
-				{3, "job1", prowapi.PendingState, ""},
-				{3, "job2", prowapi.TriggeredState, ""},
-				{4, "job1", prowapi.FailureState, ""},
-				{4, "job2", prowapi.PendingState, ""},
-				{5, "job1", prowapi.PendingState, ""},
-				{5, "job2", prowapi.FailureState, ""},
-				{5, "job2", prowapi.PendingState, ""},
-				{6, "job1", prowapi.SuccessState, ""},
-				{6, "job2", prowapi.PendingState, ""},
-				{7, "job1", prowapi.SuccessState, ""},
-				{7, "job2", prowapi.SuccessState, ""},
-				{7, "job1", prowapi.FailureState, ""},
+				{2, "job1", plumber.PendingState, ""},
+				{3, "job1", plumber.PendingState, ""},
+				{3, "job2", plumber.TriggeredState, ""},
+				{4, "job1", plumber.FailureState, ""},
+				{4, "job2", plumber.PendingState, ""},
+				{5, "job1", plumber.PendingState, ""},
+				{5, "job2", plumber.FailureState, ""},
+				{5, "job2", plumber.PendingState, ""},
+				{6, "job1", plumber.SuccessState, ""},
+				{6, "job2", plumber.PendingState, ""},
+				{7, "job1", plumber.SuccessState, ""},
+				{7, "job2", plumber.SuccessState, ""},
+				{7, "job1", plumber.FailureState, ""},
 			},
 
 			successes: []int{7},
@@ -321,15 +321,15 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			prowJobs: []prowjob{
-				{7, "job1", prowapi.SuccessState, ""},
-				{7, "job2", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job2", prowapi.SuccessState, ""},
-				{7, "job3", prowapi.SuccessState, ""},
-				{7, "job4", prowapi.FailureState, ""},
+				{7, "job1", plumber.SuccessState, ""},
+				{7, "job2", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job2", plumber.SuccessState, ""},
+				{7, "job3", plumber.SuccessState, ""},
+				{7, "job4", plumber.FailureState, ""},
 			},
 
 			successes: []int{},
@@ -347,15 +347,15 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			prowJobs: []prowjob{
-				{7, "job1", prowapi.FailureState, ""},
-				{7, "job2", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job2", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
+				{7, "job1", plumber.FailureState, ""},
+				{7, "job2", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job2", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
 			},
 
 			successes: []int{},
@@ -373,16 +373,16 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			prowJobs: []prowjob{
-				{7, "job1", prowapi.SuccessState, ""},
-				{7, "job2", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job2", prowapi.SuccessState, ""},
-				{7, "job3", prowapi.SuccessState, ""},
-				{7, "job4", prowapi.SuccessState, ""},
-				{7, "job1", prowapi.FailureState, ""},
+				{7, "job1", plumber.SuccessState, ""},
+				{7, "job2", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job2", plumber.SuccessState, ""},
+				{7, "job3", plumber.SuccessState, ""},
+				{7, "job4", plumber.SuccessState, ""},
+				{7, "job1", plumber.FailureState, ""},
 			},
 
 			successes: []int{7},
@@ -400,16 +400,16 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			prowJobs: []prowjob{
-				{7, "job1", prowapi.SuccessState, ""},
-				{7, "job2", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job3", prowapi.FailureState, ""},
-				{7, "job4", prowapi.FailureState, ""},
-				{7, "job2", prowapi.SuccessState, ""},
-				{7, "job3", prowapi.SuccessState, ""},
-				{7, "job4", prowapi.PendingState, ""},
-				{7, "job1", prowapi.FailureState, ""},
+				{7, "job1", plumber.SuccessState, ""},
+				{7, "job2", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job3", plumber.FailureState, ""},
+				{7, "job4", plumber.FailureState, ""},
+				{7, "job2", plumber.SuccessState, ""},
+				{7, "job3", plumber.SuccessState, ""},
+				{7, "job4", plumber.PendingState, ""},
+				{7, "job1", plumber.FailureState, ""},
 			},
 
 			successes: []int{},
@@ -424,10 +424,10 @@ func TestAccumulate(t *testing.T) {
 			},
 			pullRequests: map[int]string{7: "new", 8: "new"},
 			prowJobs: []prowjob{
-				{7, "job1", prowapi.SuccessState, "old"},
-				{7, "job1", prowapi.FailureState, "new"},
-				{8, "job1", prowapi.FailureState, "old"},
-				{8, "job1", prowapi.SuccessState, "new"},
+				{7, "job1", plumber.SuccessState, "old"},
+				{7, "job1", plumber.FailureState, "new"},
+				{8, "job1", plumber.FailureState, "old"},
+				{8, "job1", plumber.SuccessState, "new"},
 			},
 
 			successes: []int{8},
@@ -449,7 +449,7 @@ func TestAccumulate(t *testing.T) {
 		for num, sha := range test.pullRequests {
 			pulls = append(
 				pulls,
-				PullRequest{Number: int(num), HeadRefOID: string(sha)},
+				PullRequest{Number: githubql.Int(num), HeadRefOID: githubql.String(sha)},
 			)
 		}
 		var pjs []plumber.PipelineOptions
@@ -458,10 +458,10 @@ func TestAccumulate(t *testing.T) {
 				Spec: plumber.PipelineOptionsSpec{
 					Job:     pj.job,
 					Context: pj.job,
-					Type:    prowapi.PresubmitJob,
-					Refs:    &prowapi.Refs{Pulls: []TektonPull{{Number: pj.prNumber, SHA: pj.sha}}},
+					Type:    plumber.PresubmitJob,
+					Refs:    &plumber.Refs{Pulls: []plumber.Pull{{Number: pj.prNumber, SHA: pj.sha}}},
 				},
-				Status: plumber.PipelineOptionsStatus{State: pj.state},
+				Status: plumber.PipelineStatus{State: pj.state},
 			})
 		}
 
@@ -513,22 +513,22 @@ func (f *fgc) Merge(org, repo string, number int, details github.MergeDetails) e
 	return nil
 }
 
-func (f *fgc) CreateStatus(org, repo, ref string, s scm.Status) error {
+func (f *fgc) CreateGraphQLStatus(org, repo, ref string, s *github.Status) (*scm.Status, error) {
 	switch s.State {
-	case scm.StatusSuccess, scm.StatusError, scm.StatusPending, scm.StatusFailure:
+	case github.StatusSuccess, github.StatusError, github.StatusPending, github.StatusFailure:
 		f.setStatus = true
-		return nil
+		return nil, nil
 	}
-	return fmt.Errorf("invalid 'state' value: %q", s.State)
+	return nil, fmt.Errorf("invalid 'state' value: %q", s.State)
 }
 
 func (f *fgc) GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error) {
 	if f.expectedSHA != ref {
 		return nil, errors.New("bad combined status request: incorrect sha")
 	}
-	var statuses []scm.Status
+	var statuses []*scm.Status
 	for c, s := range f.combinedStatus {
-		statuses = append(statuses, scm.Status{Context: c, State: s})
+		statuses = append(statuses, &scm.Status{Label: c, State: scm.ToState(s)})
 	}
 	return &scm.CombinedStatus{
 			Statuses: statuses,
@@ -536,13 +536,13 @@ func (f *fgc) GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, err
 		nil
 }
 
-func (f *fgc) GetPullRequestChanges(org, repo string, number int) ([]github.PullRequestChange, error) {
+func (f *fgc) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
 	if number != 100 {
 		return nil, nil
 	}
-	return []github.PullRequestChange{
+	return []*scm.Change{
 			{
-				Filename: "CHANGED",
+				Path: "CHANGED",
 			},
 		},
 		nil
@@ -583,52 +583,52 @@ func TestDividePool(t *testing.T) {
 		},
 	}
 	testPJs := []struct {
-		jobType plumber.PipelineOptionsType
+		jobType plumber.PipelineKind
 		org     string
 		repo    string
 		baseRef string
 		baseSHA string
 	}{
 		{
-			jobType: prowapi.PresubmitJob,
+			jobType: plumber.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: prowapi.BatchJob,
+			jobType: plumber.BatchJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: prowapi.PeriodicJob,
+			jobType: plumber.PeriodicJob,
 		},
 		{
-			jobType: prowapi.PresubmitJob,
+			jobType: plumber.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "patch",
 			baseSHA: "123",
 		},
 		{
-			jobType: prowapi.PresubmitJob,
+			jobType: plumber.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "abc",
 		},
 		{
-			jobType: prowapi.PresubmitJob,
+			jobType: plumber.PresubmitJob,
 			org:     "o",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: prowapi.PresubmitJob,
+			jobType: plumber.PresubmitJob,
 			org:     "k",
 			repo:    "other",
 			baseRef: "master",
@@ -644,11 +644,11 @@ func TestDividePool(t *testing.T) {
 	}
 	pulls := make(map[string]PullRequest)
 	for _, p := range testPulls {
-		npr := PullRequest{Number: int(p.number)}
-		npr.BaseRef.Name = string(p.branch)
+		npr := PullRequest{Number: githubql.Int(p.number)}
+		npr.BaseRef.Name = githubql.String(p.branch)
 		npr.BaseRef.Prefix = "refs/heads/"
-		npr.Repository.Name = string(p.repo)
-		npr.Repository.Owner.Login = string(p.org)
+		npr.Repository.Name = githubql.String(p.repo)
+		npr.Repository.Owner.Login = githubql.String(p.org)
 		pulls[prKey(&npr)] = npr
 	}
 	var pjs []plumber.PipelineOptions
@@ -656,7 +656,7 @@ func TestDividePool(t *testing.T) {
 		pjs = append(pjs, plumber.PipelineOptions{
 			Spec: plumber.PipelineOptionsSpec{
 				Type: pj.jobType,
-				Refs: &prowapi.Refs{
+				Refs: &plumber.Refs{
 					Org:     pj.org,
 					Repo:    pj.repo,
 					BaseRef: pj.baseRef,
@@ -687,7 +687,7 @@ func TestDividePool(t *testing.T) {
 			}
 		}
 		for _, pj := range sp.pjs {
-			if pj.Spec.Type != prowapi.PresubmitJob && pj.Spec.Type != prowapi.BatchJob {
+			if pj.Spec.Type != plumber.PresubmitJob && pj.Spec.Type != plumber.BatchJob {
 				t.Errorf("PJ with bad type in subpool %s: %+v", name, pj)
 			}
 			if pj.Spec.Refs.Org != sp.org || pj.Spec.Refs.Repo != sp.repo || pj.Spec.Refs.BaseRef != sp.branch || pj.Spec.Refs.BaseSHA != sp.sha {
@@ -783,16 +783,16 @@ func TestPickBatch(t *testing.T) {
 		if err := lg.Checkout("o", "r", "master"); err != nil {
 			t.Fatalf("Error checking out master: %v", err)
 		}
-		oid := string(fmt.Sprintf("origin/pr-%d", testpr.number))
+		oid := githubql.String(fmt.Sprintf("origin/pr-%d", testpr.number))
 		var pr PullRequest
-		pr.Number = int(testpr.number)
+		pr.Number = githubql.Int(testpr.number)
 		pr.HeadRefOID = oid
 		pr.Commits.Nodes = []struct {
 			Commit Commit
 		}{{Commit: Commit{OID: oid}}}
-		pr.Commits.Nodes[0].Commit.Status.Contexts = append(pr.Commits.Nodes[0].Commit.Status.Contexts, Context{State: scm.StateSuccess})
+		pr.Commits.Nodes[0].Commit.Status.Contexts = append(pr.Commits.Nodes[0].Commit.Status.Contexts, Context{State: githubql.StatusStateSuccess})
 		if !testpr.success {
-			pr.Commits.Nodes[0].Commit.Status.Contexts[0].State = scm.StateFailure
+			pr.Commits.Nodes[0].Commit.Status.Contexts[0].State = githubql.StatusStateFailure
 		}
 		sp.prs = append(sp.prs, pr)
 	}
@@ -853,8 +853,8 @@ func TestCheckMergeLabels(t *testing.T) {
 			name: "irrelevant PR labels ignored",
 			pr: PullRequest{
 				Labels: struct {
-					Nodes []struct{ Name string }
-				}{Nodes: []struct{ Name string }{{Name: string("sig/testing")}}},
+					Nodes []struct{ Name githubql.String }
+				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String("sig/testing")}}},
 			},
 			method:    github.MergeMerge,
 			expected:  github.MergeMerge,
@@ -864,8 +864,8 @@ func TestCheckMergeLabels(t *testing.T) {
 			name: "default method overridden by a PR label",
 			pr: PullRequest{
 				Labels: struct {
-					Nodes []struct{ Name string }
-				}{Nodes: []struct{ Name string }{{Name: string(squashLabel)}}},
+					Nodes []struct{ Name githubql.String }
+				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String(squashLabel)}}},
 			},
 			method:    github.MergeMerge,
 			expected:  github.MergeSquash,
@@ -875,10 +875,10 @@ func TestCheckMergeLabels(t *testing.T) {
 			name: "multiple merge method PR labels should not merge",
 			pr: PullRequest{
 				Labels: struct {
-					Nodes []struct{ Name string }
-				}{Nodes: []struct{ Name string }{
-					{Name: string(squashLabel)},
-					{Name: string(rebaseLabel)}},
+					Nodes []struct{ Name githubql.String }
+				}{Nodes: []struct{ Name githubql.String }{
+					{Name: githubql.String(squashLabel)},
+					{Name: githubql.String(rebaseLabel)}},
 				},
 			},
 			method:    github.MergeMerge,
@@ -1266,9 +1266,9 @@ func TestTakeAction(t *testing.T) {
 				if err := lg.Checkout("o", "r", "master"); err != nil {
 					t.Fatalf("Error checking out master: %v", err)
 				}
-				oid := string(fmt.Sprintf("origin/pr-%d", i))
+				oid := githubql.String(fmt.Sprintf("origin/pr-%d", i))
 				var pr PullRequest
-				pr.Number = int(i)
+				pr.Number = githubql.Int(i)
 				pr.HeadRefOID = oid
 				pr.Commits.Nodes = []struct {
 					Commit Commit
@@ -1279,13 +1279,13 @@ func TestTakeAction(t *testing.T) {
 			return prs
 		}
 		fgc := fgc{mergeErrs: tc.mergeErrs}
-		fakeProwJobClient := fake.NewSimpleClientset()
+		fakePlumberClient := fake.NewPlumber()
 		c := &Controller{
 			logger:        logrus.WithField("controller", "tide"),
 			gc:            gc,
 			config:        ca.Config,
 			ghc:           &fgc,
-			prowJobClient: fakeProwJobClient.ProwV1().ProwJobs("prowjobs"),
+			prowJobClient: fakePlumberClient,
 		}
 		var batchPending []PullRequest
 		if tc.batchPending {
@@ -1303,13 +1303,10 @@ func TestTakeAction(t *testing.T) {
 
 		numCreated := 0
 		var batchJobs []*plumber.PipelineOptions
-		for _, action := range fakeProwJobClient.Actions() {
-			switch action := action.(type) {
-			case clienttesting.CreateActionImpl:
-				numCreated++
-				if prowJob, ok := action.Object.(*plumber.PipelineOptions); ok && prowJob.Spec.Type == prowapi.BatchJob {
-					batchJobs = append(batchJobs, prowJob)
-				}
+		for _, prowJob := range fakePlumberClient.Pipelines {
+			numCreated++
+			if prowJob.Spec.Type == plumber.BatchJob {
+				batchJobs = append(batchJobs, prowJob)
 			}
 		}
 		if tc.triggered != numCreated {
@@ -1334,8 +1331,8 @@ func TestServeHTTP(t *testing.T) {
 	pr1 := PullRequest{}
 	pr1.Commits.Nodes = append(pr1.Commits.Nodes, struct{ Commit Commit }{})
 	pr1.Commits.Nodes[0].Commit.Status.Contexts = []Context{{
-		Context:     string("coverage/coveralls"),
-		Description: string("Coverage increased (+0.1%) to 27.599%"),
+		Context:     githubql.String("coverage/coveralls"),
+		Description: githubql.String("Coverage increased (+0.1%) to 27.599%"),
 	}}
 	hist, err := history.New(100, nil, "")
 	if err != nil {
@@ -1410,21 +1407,21 @@ func TestHeadContexts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Logf("Running test case %q", tc.name)
-		fgc := &fgc{combinedStatus: map[string]string{win: string(scm.StateSuccess)}}
+		fgc := &fgc{combinedStatus: map[string]string{win: string(githubql.StatusStateSuccess)}}
 		if tc.expectAPICall {
 			fgc.expectedSHA = headSHA
 		}
-		pr := &PullRequest{HeadRefOID: string(headSHA)}
+		pr := &PullRequest{HeadRefOID: githubql.String(headSHA)}
 		for _, ctx := range tc.commitContexts {
 			commit := Commit{
 				Status: struct{ Contexts []Context }{
 					Contexts: []Context{
 						{
-							Context: string(ctx.context),
+							Context: githubql.String(ctx.context),
 						},
 					},
 				},
-				OID: string(ctx.sha),
+				OID: githubql.String(ctx.sha),
 			}
 			pr.Commits.Nodes = append(pr.Commits.Nodes, struct{ Commit Commit }{commit})
 		}
@@ -1441,26 +1438,26 @@ func TestHeadContexts(t *testing.T) {
 
 func testPR(org, repo, branch string, number int, mergeable githubql.MergeableState) PullRequest {
 	pr := PullRequest{
-		Number:     int(number),
+		Number:     githubql.Int(number),
 		Mergeable:  mergeable,
-		HeadRefOID: string("SHA"),
+		HeadRefOID: githubql.String("SHA"),
 	}
-	pr.Repository.Owner.Login = string(org)
-	pr.Repository.Name = string(repo)
-	pr.Repository.NameWithOwner = string(fmt.Sprintf("%s/%s", org, repo))
-	pr.BaseRef.Name = string(branch)
+	pr.Repository.Owner.Login = githubql.String(org)
+	pr.Repository.Name = githubql.String(repo)
+	pr.Repository.NameWithOwner = githubql.String(fmt.Sprintf("%s/%s", org, repo))
+	pr.BaseRef.Name = githubql.String(branch)
 
 	pr.Commits.Nodes = append(pr.Commits.Nodes, struct{ Commit Commit }{
 		Commit{
 			Status: struct{ Contexts []Context }{
 				Contexts: []Context{
 					{
-						Context: string("context"),
-						State:   scm.StateSuccess,
+						Context: githubql.String("context"),
+						State:   githubql.StatusStateSuccess,
 					},
 				},
 			},
-			OID: string("SHA"),
+			OID: githubql.String("SHA"),
 		},
 	})
 	return pr
@@ -1556,14 +1553,14 @@ func TestSync(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Starting case %q...", tc.name)
 		fgc := &fgc{prs: tc.prs}
-		fakeProwJobClient := fake.NewSimpleClientset()
+		fakePlumberClient := fake.NewPlumber()
 		ca := &config.Agent{}
 		ca.Set(&config.Config{
 			ProwConfig: config.ProwConfig{
 				Tide: config.Tide{
 					Queries:            []config.TideQuery{{}},
 					MaxGoroutines:      4,
-					StatusUpdatePeriod: &metav1.Duration{Duration: time.Second * 0},
+					StatusUpdatePeriod: time.Second * 0,
 				},
 			},
 		})
@@ -1583,7 +1580,7 @@ func TestSync(t *testing.T) {
 		c := &Controller{
 			config:        ca.Config,
 			ghc:           fgc,
-			prowJobClient: fakeProwJobClient.ProwV1().ProwJobs("prowjobs"),
+			prowJobClient: fakePlumberClient,
 			logger:        logrus.WithField("controller", "sync"),
 			sc:            sc,
 			changedFiles: &changedFilesAgent{
@@ -1649,16 +1646,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1673,16 +1670,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: false,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1697,16 +1694,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StatePending,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStatePending,
 						},
 					},
 				},
@@ -1721,16 +1718,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StatePending,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStatePending,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1745,16 +1742,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateFailure,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateFailure,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1769,12 +1766,12 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1789,20 +1786,20 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("unknown"),
-							State:   scm.StateFailure,
+							Context: githubql.String("unknown"),
+							State:   githubql.StatusStateFailure,
 						},
 					},
 				},
@@ -1817,16 +1814,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateFailure,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateFailure,
 						},
 					},
 				},
@@ -1835,20 +1832,20 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("unknown"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("unknown"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1863,16 +1860,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1881,16 +1878,16 @@ func TestFilterSubpool(t *testing.T) {
 					mergeable: true,
 					contexts: []Context{
 						{
-							Context: string("pj-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("pj-b"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("pj-b"),
+							State:   githubql.StatusStateSuccess,
 						},
 						{
-							Context: string("other-a"),
-							State:   scm.StateSuccess,
+							Context: githubql.String("other-a"),
+							State:   githubql.StatusStateSuccess,
 						},
 					},
 				},
@@ -1910,7 +1907,7 @@ func TestFilterSubpool(t *testing.T) {
 			}
 			for _, pull := range tc.prs {
 				pr := PullRequest{
-					Number: int(pull.number),
+					Number: githubql.Int(pull.number),
 				}
 				pr.Commits.Nodes = []struct{ Commit Commit }{
 					{
@@ -1948,8 +1945,8 @@ func TestIsPassing(t *testing.T) {
 	yes := true
 	no := false
 	headSHA := "head"
-	success := string(scm.StateSuccess)
-	failure := string(scm.StateFailure)
+	success := string(githubql.StatusStateSuccess)
+	failure := string(githubql.StatusStateFailure)
 	testCases := []struct {
 		name             string
 		passing          bool
@@ -2054,7 +2051,7 @@ func TestIsPassing(t *testing.T) {
 			t.Errorf("Failed to get log output before testing: %v", err)
 			t.FailNow()
 		}
-		pr := PullRequest{HeadRefOID: string(headSHA)}
+		pr := PullRequest{HeadRefOID: githubql.String(headSHA)}
 		passing := isPassingTests(log, ghc, pr, &tc.config)
 		if passing != tc.passing {
 			t.Errorf("%s: Expected %t got %t", tc.name, tc.passing, passing)
@@ -2064,8 +2061,8 @@ func TestIsPassing(t *testing.T) {
 
 func TestPresubmitsByPull(t *testing.T) {
 	samplePR := PullRequest{
-		Number:     int(100),
-		HeadRefOID: string("sha"),
+		Number:     githubql.Int(100),
+		HeadRefOID: githubql.String("sha"),
 	}
 	testcases := []struct {
 		name string
@@ -2324,9 +2321,9 @@ func getTemplate(name, tplStr string) *template.Template {
 
 func TestPrepareMergeDetails(t *testing.T) {
 	pr := PullRequest{
-		Number:     int(1),
+		Number:     githubql.Int(1),
 		Mergeable:  githubql.MergeableStateMergeable,
-		HeadRefOID: string("SHA"),
+		HeadRefOID: githubql.String("SHA"),
 		Title:      "my commit title",
 		Body:       "my commit body",
 	}
@@ -2429,8 +2426,8 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 		{
 			name: "All presubmits missing, no changes",
 			prs: []PullRequest{{
-				Number:     int(1),
-				HeadRefOID: string("sha"),
+				Number:     githubql.Int(1),
+				HeadRefOID: githubql.String("sha"),
 			}},
 			presubmits: map[int][]config.Presubmit{1: {{
 				Reporter: config.Reporter{
@@ -2444,21 +2441,21 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 		{
 			name: "All presubmits successful, no retesting needed",
 			prs: []PullRequest{{
-				Number:     int(1),
-				HeadRefOID: string("sha"),
+				Number:     githubql.Int(1),
+				HeadRefOID: githubql.String("sha"),
 			}},
 			pjs: []plumber.PipelineOptions{{
 				Spec: plumber.PipelineOptionsSpec{
-					Type: prowapi.PresubmitJob,
-					Refs: &prowapi.Refs{
-						Pulls: []TektonPull{{
+					Type: plumber.PresubmitJob,
+					Refs: &plumber.Refs{
+						Pulls: []plumber.Pull{{
 							Number: 1,
 							SHA:    "sha",
 						}},
 					},
 					Context: "my-presubmit",
 				},
-				Status: plumber.PipelineOptionsStatus{State: prowapi.SuccessState},
+				Status: plumber.PipelineStatus{State: plumber.SuccessState},
 			}},
 			presubmits: map[int][]config.Presubmit{
 				1: {{Reporter: config.Reporter{Context: "my-presubmit"}}},
@@ -2467,21 +2464,21 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 		{
 			name: "All presubmits pending, no retesting needed",
 			prs: []PullRequest{{
-				Number:     int(1),
-				HeadRefOID: string("sha"),
+				Number:     githubql.Int(1),
+				HeadRefOID: githubql.String("sha"),
 			}},
 			pjs: []plumber.PipelineOptions{{
 				Spec: plumber.PipelineOptionsSpec{
-					Type: prowapi.PresubmitJob,
-					Refs: &prowapi.Refs{
-						Pulls: []TektonPull{{
+					Type: plumber.PresubmitJob,
+					Refs: &plumber.Refs{
+						Pulls: []plumber.Pull{{
 							Number: 1,
 							SHA:    "sha",
 						}},
 					},
 					Context: "my-presubmit",
 				},
-				Status: plumber.PipelineOptionsStatus{State: prowapi.PendingState},
+				Status: plumber.PipelineStatus{State: plumber.PendingState},
 			}},
 			presubmits: map[int][]config.Presubmit{
 				1: {{Reporter: config.Reporter{Context: "my-presubmit"}}}},
@@ -2489,48 +2486,48 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 		{
 			name: "One successful, one pending, one missing, one failing, only missing and failing remain",
 			prs: []PullRequest{{
-				Number:     int(1),
-				HeadRefOID: string("sha"),
+				Number:     githubql.Int(1),
+				HeadRefOID: githubql.String("sha"),
 			}},
 			pjs: []plumber.PipelineOptions{
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-successful-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.SuccessState},
+					Status: plumber.PipelineStatus{State: plumber.SuccessState},
 				},
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-pending-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.PendingState},
+					Status: plumber.PipelineStatus{State: plumber.PendingState},
 				},
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-failing-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.FailureState},
+					Status: plumber.PipelineStatus{State: plumber.FailureState},
 				},
 			},
 			presubmits: map[int][]config.Presubmit{
@@ -2550,92 +2547,92 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			name: "Two prs, each with one successful, one pending, one missing, one failing, only missing and failing remain",
 			prs: []PullRequest{
 				{
-					Number:     int(1),
-					HeadRefOID: string("sha"),
+					Number:     githubql.Int(1),
+					HeadRefOID: githubql.String("sha"),
 				},
 				{
-					Number:     int(2),
-					HeadRefOID: string("sha"),
+					Number:     githubql.Int(2),
+					HeadRefOID: githubql.String("sha"),
 				},
 			},
 			pjs: []plumber.PipelineOptions{
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-successful-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.SuccessState},
+					Status: plumber.PipelineStatus{State: plumber.SuccessState},
 				},
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-pending-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.PendingState},
+					Status: plumber.PipelineStatus{State: plumber.PendingState},
 				},
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-failing-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.FailureState},
+					Status: plumber.PipelineStatus{State: plumber.FailureState},
 				},
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 2,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-successful-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.SuccessState},
+					Status: plumber.PipelineStatus{State: plumber.SuccessState},
 				},
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 2,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-pending-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.PendingState},
+					Status: plumber.PipelineStatus{State: plumber.PendingState},
 				},
 				{
 					Spec: plumber.PipelineOptionsSpec{
-						Type: prowapi.PresubmitJob,
-						Refs: &prowapi.Refs{
-							Pulls: []TektonPull{{
+						Type: plumber.PresubmitJob,
+						Refs: &plumber.Refs{
+							Pulls: []plumber.Pull{{
 								Number: 2,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-failing-presubmit",
 					},
-					Status: plumber.PipelineOptionsStatus{State: prowapi.FailureState},
+					Status: plumber.PipelineStatus{State: plumber.FailureState},
 				},
 			},
 			presubmits: map[int][]config.Presubmit{

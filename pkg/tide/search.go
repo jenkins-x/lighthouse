@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jenkins-x/go-scm/scm"
 	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 
+	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,7 +40,7 @@ func floor(t time.Time) time.Time {
 	return t
 }
 
-func search(ghc githubClient, log *logrus.Entry, q string, start, end time.Time) ([]PullRequest, error) {
+func search(query querier, log *logrus.Entry, q string, start, end time.Time) ([]PullRequest, error) {
 	start = floor(start)
 	end = floor(end)
 	log = log.WithFields(logrus.Fields{
@@ -49,32 +49,38 @@ func search(ghc githubClient, log *logrus.Entry, q string, start, end time.Time)
 		"end":   end.String(),
 	})
 	requestStart := time.Now()
+	var cursor *githubql.String
+	vars := map[string]interface{}{
+		"query":        githubql.String(datedQuery(q, start, end)),
+		"searchCursor": cursor,
+	}
+
+	var totalCost, remaining int
 	var ret []PullRequest
-	log.Debug("Sending query")
-	opts := scm.SearchOptions{Query: q}
-	results, rates, err := ghc.Query(opts)
-	if err != nil {
-		return ret, err
+	var sq searchQuery
+	ctx := context.Background()
+	for {
+		log.Debug("Sending query")
+		if err := query(ctx, &sq, vars); err != nil {
+			if cursor != nil {
+				err = fmt.Errorf("cursor: %q, err: %v", *cursor, err)
+			}
+			return ret, err
+		}
+		totalCost += int(sq.RateLimit.Cost)
+		remaining = int(sq.RateLimit.Remaining)
+		for _, n := range sq.Search.Nodes {
+			ret = append(ret, n.PullRequest)
+		}
+		if !sq.Search.PageInfo.HasNextPage {
+			break
+		}
+		cursor = &sq.Search.PageInfo.EndCursor
+		vars["searchCursor"] = cursor
+		log = log.WithField("searchCursor", *cursor)
 	}
-	log.WithField("duration", time.Since(requestStart).String()).Debugf("Query returned %d PRs and %d remaining.", len(ret), rates.Remaining)
-
-	for _, n := range results {
-		ret = append(ret, toPullRequest(n))
-	}
+	log.WithField("duration", time.Since(requestStart).String()).Debugf("Query returned %d PRs and cost %d point(s). %d remaining.", len(ret), totalCost, remaining)
 	return ret, nil
-}
-
-func toPullRequest(from *scm.SearchIssue) PullRequest {
-	return PullRequest{
-		Number: from.Number,
-
-		Labels: from.Labels,
-		// TODO Milestone.Title
-		Body:      from.Body,
-		Title:     from.Title,
-		UpdatedAt: from.Updated,
-	}
-
 }
 
 // dateToken generates a GitHub search query token for the specified date range.
