@@ -53,7 +53,13 @@ clean:
 .PHONY: build
 build:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE) 
+
+.PHONY: tide
+tide:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TIDE_EXECUTABLE) $(TIDE_MAIN_SRC_FILE)
+
+.PHONY: all
+all: build tide
 
 .PHONY: mod
 mod: build
@@ -63,6 +69,9 @@ mod: build
 .PHONY: build-linux
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
+
+.PHONY: build-tide-linux
+build-tide-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TIDE_EXECUTABLE) $(TIDE_MAIN_SRC_FILE)
 
 .PHONY: container
