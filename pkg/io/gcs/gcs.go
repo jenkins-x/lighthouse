@@ -47,6 +47,7 @@ type Path struct {
 	url url.URL
 }
 
+// NewPath creates a path
 func NewPath(path string) (*Path, error) {
 	var p Path
 	err := p.Set(path)

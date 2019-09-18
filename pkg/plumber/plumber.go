@@ -14,22 +14,18 @@ import (
 
 // PipelineBuilder default builder
 type PipelineBuilder struct {
-	repository scm.Repository
 }
 
 // NewPlumber creates a new builder
-func NewPlumber(repository scm.Repository) (Plumber, error) {
-	b := &PipelineBuilder{
-		repository: repository,
-	}
+func NewPlumber() (Plumber, error) {
+	b := &PipelineBuilder{}
 	return b, nil
 }
 
 // Create creates a pipeline
-func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient metapipeline.Client) (*PipelineOptions, error) {
+func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*PipelineOptions, error) {
 	spec := &request.Spec
 
-	repository := b.repository
 	name := repository.Name
 	owner := repository.Namespace
 	sourceURL := repository.Clone
@@ -128,6 +124,7 @@ func (b *PipelineBuilder) getPullRefs(sourceURL string, spec *PipelineOptionsSpe
 	return pullRef
 }
 
+// List list current pipelines
 func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, error) {
 	panic("implement me")
 }

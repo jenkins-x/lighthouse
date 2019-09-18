@@ -38,7 +38,7 @@ func (c *Client) CreateStatus(owner, repo, ref string, s *scm.StatusInput) (*scm
 	return status, err
 }
 
-// CreateStatus create a status into a repository
+// CreateGraphQLStatus create a status into a repository
 func (c *Client) CreateGraphQLStatus(owner, repo, ref string, s *Status) (*scm.Status, error) {
 	si := &scm.StatusInput{
 		State:  scm.ToState(s.State),

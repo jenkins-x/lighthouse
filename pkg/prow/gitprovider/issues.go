@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -41,9 +42,13 @@ func firstNumber(values []string) int {
 }
 
 // Query performs a GraphQL query on the git provider
-func (c *Client) Query(context.Context, interface{}, map[string]interface{}) error {
-	// TODO
-	return nil
+func (c *Client) Query(ctx context.Context, q interface{}, vars map[string]interface{}) error {
+	graphql := c.client.GraphQL
+	if graphql == nil {
+		log.Logger().Warnf("no GraphQL graphql supported for git provider %s", c.client.Driver.String())
+		return nil
+	}
+	return graphql.Query(ctx, q, vars)
 }
 
 // Search query issues/PRs using a query string

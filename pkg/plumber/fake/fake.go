@@ -1,39 +1,40 @@
 package fake
 
 import (
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// FakePlumber a fake FakePlumber
-type FakePlumber struct {
+// Plumber a fake Plumber
+type Plumber struct {
 	Pipelines []*plumber.PipelineOptions
 }
 
 // implements interface
-var _ plumber.Plumber = &FakePlumber{}
+var _ plumber.Plumber = &Plumber{}
 
 // NewPlumber creates a fake plumber
-func NewPlumber() *FakePlumber {
-	return &FakePlumber{
+func NewPlumber() *Plumber {
+	return &Plumber{
 		Pipelines: []*plumber.PipelineOptions{},
 	}
 }
 
 // Create creates a plumber job
-func (p *FakePlumber) Create(po *plumber.PipelineOptions, metapipelineClient metapipeline.Client) (*plumber.PipelineOptions, error) {
+func (p *Plumber) Create(po *plumber.PipelineOptions, metapipelineClient metapipeline.Client, repo scm.Repository) (*plumber.PipelineOptions, error) {
 	p.Pipelines = append(p.Pipelines, po)
 	po.Status.State = plumber.SuccessState
 	return po, nil
 }
 
 // PrependReactor prepends a reactor
-func (p *FakePlumber) PrependReactor(s string, s2 string, i func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error)) {
+func (p *Plumber) PrependReactor(s string, s2 string, i func(plumberJob *plumber.PipelineOptions) (handled bool, ret *plumber.PipelineOptions, err error)) {
 }
 
 // List lists the pipelines and ttheir options
-func (p *FakePlumber) List(opts metav1.ListOptions) (*plumber.PipelineOptionsList, error) {
+func (p *Plumber) List(opts metav1.ListOptions) (*plumber.PipelineOptionsList, error) {
 	list := plumber.PipelineOptionsList{}
 	for _, p := range p.Pipelines {
 		list.Items = append(list.Items, *p)

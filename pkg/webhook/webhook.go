@@ -498,7 +498,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 }
 
 func (o *Options) updatePlumberClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository, w http.ResponseWriter) error {
-	plumberClient, err := plumber.NewPlumber(repository)
+	plumberClient, err := plumber.NewPlumber()
 	if err != nil {
 		l.Errorf("failed to create Plumber webhook: %s", err.Error())
 

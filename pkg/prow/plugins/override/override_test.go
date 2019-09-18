@@ -28,10 +28,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
-	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
-
 )
 
 const (
@@ -136,7 +135,7 @@ func (c *fakeClient) GetRef(org, repo, ref string) (string, error) {
 	return fakeBaseSHA, nil
 }
 
-func (c *fakeClient) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client) (*plumber.PipelineOptions, error) {
+func (c *fakeClient) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*plumber.PipelineOptions, error) {
 	if pj.Spec.Context == "fail-create" {
 		return pj, errors.New("injected CreatePlumberJob error")
 	}

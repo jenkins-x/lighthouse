@@ -52,7 +52,7 @@ import (
 var sleep = time.Sleep
 
 type prowJobClient interface {
-	Create(*plumber.PipelineOptions, metapipeline.Client) (*plumber.PipelineOptions, error)
+	Create(*plumber.PipelineOptions, metapipeline.Client, scm.Repository) (*plumber.PipelineOptions, error)
 	List(opts metav1.ListOptions) (*plumber.PipelineOptionsList, error)
 }
 
@@ -994,9 +994,8 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 			return false, fmt.Errorf("Tide needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", err)
 		} else if _, ok = err.(gitprovider.UnmergablePRError); ok {
 			return true, fmt.Errorf("PR is unmergable. Do the Tide merge requirements match the GitHub settings for the repo? %v", err)
-		} else {
-			return true, err
 		}
+		return true, err
 	}
 	// We ran out of retries. Return the last transient error.
 	return true, err
@@ -1038,7 +1037,12 @@ func (c *Controller) trigger(sp subpool, presubmits map[int][]config.Presubmit, 
 			}
 			pj := pjutil.NewPlumberJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
-			if _, err := c.prowJobClient.Create(&pj, c.mpClient); err != nil {
+			repo := scm.Repository{
+				Name:      string(pr.Repository.Name),
+				Namespace: string(pr.Repository.Owner.Login),
+				Branch:    string(pr.BaseRef.Name),
+			}
+			if _, err := c.prowJobClient.Create(&pj, c.mpClient, repo); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create ProwJob on the cluster.")
 				return fmt.Errorf("failed to create a ProwJob for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
 			}
@@ -1342,7 +1346,6 @@ func (c *Controller) dividePool(pool map[string]PullRequest, pjs []plumber.Pipel
 }
 
 // PullRequest holds graphql data about a PR, including its commits and their contexts.
-// PullRequest holds graphql data about a PR, including its commits and their contexts.
 type PullRequest struct {
 	Number githubql.Int
 	Author struct {
@@ -1400,6 +1403,7 @@ type Context struct {
 	State       githubql.StatusState
 }
 
+// PRNode a node containing a PR
 type PRNode struct {
 	PullRequest PullRequest `graphql:"... on PullRequest"`
 }

@@ -163,6 +163,7 @@ func (t *Tide) MergeMethod(org, repo string) gitprovider.PullRequestMergeType {
 	return v
 }
 
+// BatchSizeLimit return the batch size limit for the given repo
 func (t *Tide) BatchSizeLimit(org, repo string) int {
 	if limit, ok := t.BatchSizeLimitMap[fmt.Sprintf("%s/%s", org, repo)]; ok {
 		return limit

@@ -41,7 +41,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
-	"k8s.io/test-infra/prow/kube"
 	"k8s.io/test-infra/prow/pod-utils/decorate"
 )
 
@@ -770,6 +769,19 @@ func (c *Config) fullNames(repository scm.Repository) []string {
 	return fullNames
 }
 
+// DefaultConfigPath will be used if a --config-path is unset
+const DefaultConfigPath = "/etc/config/config.yaml"
+
+// Path returns the value for the component's configPath if provided
+// explicitly or default otherwise.
+func Path(value string) string {
+	if value != "" {
+		return value
+	}
+	logrus.Warningf("defaulting to %s until 15 July 2019, please migrate", DefaultConfigPath)
+	return DefaultConfigPath
+}
+
 func parseProwConfig(c *Config) error {
 	if err := ValidateController(&c.Plank.Controller); err != nil {
 		return fmt.Errorf("validating plank config: %v", err)
@@ -1189,7 +1201,7 @@ func (c *ProwConfig) defaultJobBase(base *JobBase) {
 		base.Namespace = &s
 	}
 	if base.Cluster == "" {
-		base.Cluster = kube.DefaultClusterAlias
+		base.Cluster = "default"
 	}
 }
 

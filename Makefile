@@ -1,9 +1,11 @@
 SHELL := /bin/bash
 PROJECT := github.com/jenkins-x/lighthouse
 EXECUTABLE := lighthouse
+TIDE_EXECUTABLE := tide
 DOCKER_REGISTRY := jenkinsxio
 DOCKER_IMAGE_NAME := lighthouse
 MAIN_SRC_FILE=pkg/main/main.go
+TIDE_MAIN_SRC_FILE=cmd/tide/main.go
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
 VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
@@ -51,6 +53,7 @@ clean:
 .PHONY: build
 build:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE) 
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TIDE_EXECUTABLE) $(TIDE_MAIN_SRC_FILE)
 
 .PHONY: mod
 mod: build
@@ -60,6 +63,7 @@ mod: build
 .PHONY: build-linux
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TIDE_EXECUTABLE) $(TIDE_MAIN_SRC_FILE)
 
 .PHONY: container
 container: 

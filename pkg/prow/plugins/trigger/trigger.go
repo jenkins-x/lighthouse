@@ -111,7 +111,7 @@ type githubClient interface {
 }
 
 type plumberClient interface {
-	Create(*plumber.PipelineOptions, metapipeline.Client) (*plumber.PipelineOptions, error)
+	Create(*plumber.PipelineOptions, metapipeline.Client, scm.Repository) (*plumber.PipelineOptions, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.
@@ -242,7 +242,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 		c.Logger.Infof("Starting %s build.", job.Name)
 		pj := pjutil.NewPresubmit(pr, baseSHA, job, eventGUID)
 		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient); err != nil {
+		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient, pr.Repository()); err != nil {
 			c.Logger.WithError(err).Error("Failed to create plumberJob.")
 			errors = append(errors, err)
 		}

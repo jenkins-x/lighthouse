@@ -44,10 +44,12 @@ type Blocker struct {
 	// TODO: time blocked? (when blocker label was added)
 }
 
+// OrgRepo the org + repo
 type OrgRepo struct {
 	Org, Repo string
 }
 
+// OrgRepoBranch the org + repo + branch
 type OrgRepoBranch struct {
 	Org, Repo, Branch string
 }

@@ -38,7 +38,10 @@ type storageClient interface {
 
 // Aliases to types in the standard library
 type (
-	ReadCloser  = io.ReadCloser
+	// ReadCloser thingy
+	ReadCloser = io.ReadCloser
+
+	// WriteCloser thingy
 	WriteCloser = io.WriteCloser
 )
 
