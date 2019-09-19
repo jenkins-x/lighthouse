@@ -6,19 +6,24 @@ import (
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
+	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
+	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PipelineBuilder default builder
 type PipelineBuilder struct {
+	jxClient  jxclient.Interface
+	namespace string
 }
 
 // NewPlumber creates a new builder
-func NewPlumber() (Plumber, error) {
-	b := &PipelineBuilder{}
+func NewPlumber(jxClient jxclient.Interface, namespace string) (Plumber, error) {
+	b := &PipelineBuilder{jxClient, namespace}
 	return b, nil
 }
 
@@ -126,5 +131,66 @@ func (b *PipelineBuilder) getPullRefs(sourceURL string, spec *PipelineOptionsSpe
 
 // List list current pipelines
 func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, error) {
-	panic("implement me")
+	list, err := b.jxClient.JenkinsV1().PipelineActivities(b.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	answer := &PipelineOptionsList{}
+	for _, pa := range list.Items {
+		item := ToPipelineOptions(&pa)
+		answer.Items = append(answer.Items, item)
+	}
+	return answer, nil
+}
+
+// ToPipelineOptions converts the PipelineActivity to a PipelineOptions object
+func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
+	spec := activity.Spec
+	ref := &Refs{
+		Org:      spec.GitOwner,
+		Repo:     spec.GitRepository,
+		RepoLink: spec.GitURL,
+		BaseRef:  spec.GitBranch,
+		BaseSHA:  spec.LastCommitSHA,
+	}
+
+	kind := PresubmitJob
+	// TODO how to detect batch / periodic?
+	if spec.GitBranch == "master" {
+		kind = PostsubmitJob
+	}
+	return PipelineOptions{
+		ObjectMeta: activity.ObjectMeta,
+		Spec: PipelineOptionsSpec{
+			Type:           kind,
+			Namespace:      activity.Namespace,
+			Job:            spec.Pipeline,
+			Refs:           ref,
+			Context:        spec.Context,
+			RerunCommand:   "",
+			MaxConcurrency: 0,
+		},
+		Status: PipelineStatus{State: ToPipelineState(spec.Status)},
+	}
+}
+
+// ToPipelineState converts the PipelineActivity state to plumber state
+func ToPipelineState(status v1.ActivityStatusType) PipelineState {
+	switch status {
+	case v1.ActivityStatusTypePending:
+		return PendingState
+	case v1.ActivityStatusTypeAborted:
+		return AbortedState
+	case v1.ActivityStatusTypeRunning:
+		return RunningState
+	case v1.ActivityStatusTypeSucceeded:
+		return SuccessState
+	case v1.ActivityStatusTypeFailed, v1.ActivityStatusTypeError:
+		return FailureState
+	default:
+		return FailureState
+	}
 }

@@ -35,11 +35,17 @@ const (
 	// PendingState pipeline is pending
 	PendingState PipelineState = "pending"
 
+	// RunningState pipeline is running
+	RunningState PipelineState = "running"
+
 	// SuccessState pipeline is successful
 	SuccessState PipelineState = "success"
 
 	// FailureState failed
 	FailureState PipelineState = "failure"
+
+	// AbortedState aborted
+	AbortedState PipelineState = "aborted"
 )
 
 // PipelineOptions contains the arguments to pass to the Plumber to create a Tekton Pipeline

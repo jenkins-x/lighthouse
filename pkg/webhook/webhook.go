@@ -498,7 +498,14 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 }
 
 func (o *Options) updatePlumberClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository, w http.ResponseWriter) error {
-	plumberClient, err := plumber.NewPlumber()
+	jxClient, _, err := o.GetFactory().CreateJXClient()
+	if err != nil {
+		l.Errorf("failed to create JX Client: %s", err.Error())
+
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create JX Client: %s", err.Error()))
+		return err
+	}
+	plumberClient, err := plumber.NewPlumber(jxClient, o.namespace)
 	if err != nil {
 		l.Errorf("failed to create Plumber webhook: %s", err.Error())
 
