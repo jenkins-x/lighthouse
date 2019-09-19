@@ -90,8 +90,8 @@ github.com/aws/aws-sdk-go v1.15.27/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZo
 github.com/aws/aws-sdk-go v1.15.31/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.15.57/go.mod h1:mFuSZ37Z9YOHbQEwBWztmVzqXrEkub65tZoCYDt7FT0=
 github.com/aws/aws-sdk-go v1.16.18/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
-github.com/aws/aws-sdk-go v1.17.10 h1:m8vArG9yPW5YZ27IXcLg1tRkOXZtGrjgzljAo46qWaE=
-github.com/aws/aws-sdk-go v1.17.10/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/aws/aws-sdk-go v1.24.0 h1:TtQCY3HaFXeo1yg2JAdfSbpN/Nsd9V5SCfDksEf2nSE=
+github.com/aws/aws-sdk-go v1.24.0/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/awslabs/goformation v0.0.0-20190320125420-ac0a17860cf1/go.mod h1:HezUyH08DSwwGn3GioVXWZYUhkdvC+oGJ7ya7vBRm7k=
 github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f/go.mod h1:AuiFmCCPBSrqvVMvuqFuk0qogytodnVFVSN5CeJB8Gc=
 github.com/banzaicloud/bank-vaults v0.0.0-20190508130850-5673d28c46bd h1:68jpTyXEbdY6kHET0g6WacHX+II2jXomOZocpd9reno=
@@ -365,8 +365,8 @@ github.com/jenkins-x/go-scm v1.5.33 h1:LpzcI/LtoYYY35iIn6PxmzQ7Kh1yQGvbPXHKPRDDC
 github.com/jenkins-x/go-scm v1.5.33/go.mod h1:IGz2tEc64kTBSAh/dYppH1Hw74onK2aeRTsxC2x3A6Q=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
-github.com/jenkins-x/jx v0.0.0-20190919134248-3cd1e7708b89 h1:I8hFUDuR8i3m3VXZWkQWCVwp9tlALkNuVzD6ALNgApU=
-github.com/jenkins-x/jx v0.0.0-20190919134248-3cd1e7708b89/go.mod h1:5tr8fujoGTCHzUnsKVnX3WIRwBR8/k3P5u9qndlKROw=
+github.com/jenkins-x/jx v0.0.0-20190919183643-eade29ef3c37 h1:tKpEV++U1mplsqaX6dL/jjV5rhSFxTPCJ0LXVyOdihU=
+github.com/jenkins-x/jx v0.0.0-20190919183643-eade29ef3c37/go.mod h1:e4u70Zck6AI+8buQXw2HdTB21TIOXK6d/6hv/DkfxHw=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767/go.mod h1:UR3AoCKJHHKi2AoOWeFbZcMKyd5LqQkdCRgwqZkX/io=
 github.com/jetstack/cert-manager v0.5.2 h1:qs74mdAprZ5kcCYF3arzmEAZtbt+9HneldSJrk21tKs=
