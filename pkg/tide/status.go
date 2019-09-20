@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,6 +82,8 @@ type statusController struct {
 }
 
 func (sc *statusController) shutdown() {
+	err := errors.WithStack(fmt.Errorf("shutting down"))
+	logrus.WithError(err).Infof("shutting down the pool pending channel")
 	close(sc.newPoolPending)
 	<-sc.shutDown
 }

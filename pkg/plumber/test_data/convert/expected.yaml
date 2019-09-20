@@ -21,8 +21,8 @@ spec:
   job: jstrachan/godemo25/PR-1
   namespace: jx
   refs:
-    base_ref: PR-1
-    base_sha: 49e54b4ab808d780fd86abb25dc725112b6fd9ee
+    base_ref: master
+    base_sha: 94a9623247eb27cca6079c629177f2fbd3988cee
     org: jstrachan
     repo: godemo25
     repo_link: https://github.com/jstrachan/godemo25.git

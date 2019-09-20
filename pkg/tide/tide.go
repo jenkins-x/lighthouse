@@ -1037,10 +1037,16 @@ func (c *Controller) trigger(sp subpool, presubmits map[int][]config.Presubmit, 
 			}
 			pj := pjutil.NewPlumberJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
+			cloneURL := string(pr.Repository.URL)
+			if cloneURL == "" {
+				c.logger.WithField("owner", refs.Org).WithField("repository", refs.Repo).Warnf("no GitURL returned")
+				// TODO load URL via scm client?
+			}
 			repo := scm.Repository{
 				Name:      string(pr.Repository.Name),
 				Namespace: string(pr.Repository.Owner.Login),
 				Branch:    string(pr.BaseRef.Name),
+				Clone:     cloneURL,
 			}
 			if _, err := c.prowJobClient.Create(&pj, c.mpClient, repo); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create ProwJob on the cluster.")
@@ -1337,6 +1343,23 @@ func (c *Controller) dividePool(pool map[string]PullRequest, pjs []plumber.Pipel
 			continue
 		}
 		fn := poolKey(pj.Spec.Refs.Org, pj.Spec.Refs.Repo, pj.Spec.Refs.BaseRef)
+		if sps[fn] != nil {
+			refs := pj.Spec.Refs
+			pr := ""
+			if len(refs.Pulls) > 0 {
+				pr = refs.Pulls[0].Link
+			}
+			labels := pj.Labels
+			if labels == nil {
+				labels = map[string]string{}
+			}
+			logrus.WithField("PJRef", pj.Spec.Refs.BaseSHA).WithField("sha", sps[fn].sha).
+				WithField("pr", pr).
+				WithField("build", labels["build"]).
+				WithField("branch", labels["branch"]).
+				WithField("owner", refs.Org).
+				WithField("repo", refs.Repo).WithField("baseRef", refs.BaseRef).Infof("base sha mismatch")
+		}
 		if sps[fn] == nil || pj.Spec.Refs.BaseSHA != sps[fn].sha {
 			continue
 		}
@@ -1361,6 +1384,7 @@ type PullRequest struct {
 	Repository  struct {
 		Name          githubql.String
 		NameWithOwner githubql.String
+		URL           githubql.String
 		Owner         struct {
 			Login githubql.String
 		}

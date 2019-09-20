@@ -149,12 +149,13 @@ func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, e
 // ToPipelineOptions converts the PipelineActivity to a PipelineOptions object
 func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 	spec := activity.Spec
+	baseRef := "master"
 	ref := &Refs{
 		Org:      spec.GitOwner,
 		Repo:     spec.GitRepository,
 		RepoLink: spec.GitURL,
-		BaseRef:  spec.GitBranch,
-		BaseSHA:  spec.LastCommitSHA,
+		BaseRef:  baseRef,
+		BaseSHA:  spec.BaseSHA,
 	}
 
 	kind := PresubmitJob

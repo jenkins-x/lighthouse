@@ -18,6 +18,9 @@ limitations under the License.
 package logrusutil
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,10 +40,26 @@ func Init(formatter *DefaultFieldsFormatter) {
 		return
 	}
 	if formatter.WrappedFormatter == nil {
-		formatter.WrappedFormatter = &logrus.JSONFormatter{}
+		formatter.WrappedFormatter = CreateDefaultFormatter()
 	}
 	logrus.SetFormatter(formatter)
 	logrus.SetReportCaller(formatter.PrintLineNumber)
+}
+
+// CreateDefaultFormatter creates a default JSON formatter
+func CreateDefaultFormatter() logrus.Formatter {
+	if os.Getenv("LOGRUS_FORMAT") == "text" {
+		return &logrus.TextFormatter{
+			ForceColors:      true,
+			DisableTimestamp: true,
+		}
+	}
+	jsonFormat := &logrus.JSONFormatter{}
+	if os.Getenv("LOGRUS_JSON_PRETTY") == "true" {
+		jsonFormat.PrettyPrint = true
+	}
+	fmt.Println("using JSON formatter!")
+	return jsonFormat
 }
 
 // ComponentInit is a syntax sugar for easier Init

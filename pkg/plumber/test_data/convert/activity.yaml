@@ -21,6 +21,7 @@ metadata:
 spec:
   author: jstrachan
   batchPipelineActivity: {}
+  baseSHA: 94a9623247eb27cca6079c629177f2fbd3988cee
   build: "1"
   completedTimestamp: "2019-09-19T14:27:11Z"
   context: pr-build

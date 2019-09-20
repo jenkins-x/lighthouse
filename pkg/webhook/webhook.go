@@ -15,6 +15,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
+	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/version"
@@ -87,7 +88,7 @@ func NewCmdWebhook() *cobra.Command {
 // Run will implement this command
 func (o *Options) Run() error {
 	if o.JSONLog {
-		logrus.SetFormatter(&logrus.JSONFormatter{})
+		logrus.SetFormatter(logrusutil.CreateDefaultFormatter())
 	}
 
 	_, ns, err := o.GetFactory().CreateJXClient()
@@ -485,7 +486,10 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	// Push metrics to the configured prometheus pushgateway endpoint.
 	pushGateway := configAgent.Config().PushGateway
 	if pushGateway.Endpoint != "" {
+		logrus.WithField("gateway", pushGateway.Endpoint).Infof("using push gateway")
 		go metrics.ExposeMetrics("hook", pushGateway)
+	} else {
+		logrus.Warn("not pushing metrics as there is no push_gateway defined in the config.yaml")
 	}
 
 	server := &hook.Server{

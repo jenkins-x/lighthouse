@@ -188,17 +188,11 @@ func main() {
 	http.Handle("/history", c.History)
 	server := &http.Server{Addr: ":" + strconv.Itoa(o.port)}
 
-	// Push metrics to the configured prometheus pushgateway endpoint or serve them
-	metrics.ExposeMetrics("tide", cfg().PushGateway)
-
 	start := time.Now()
 	sync(c)
 	if o.runOnce {
 		return
 	}
-
-	// serve data
-	interrupts.ListenAndServe(server, 10*time.Second)
 
 	// run the controller, but only after one sync period expires after our first run
 	time.Sleep(time.Until(start.Add(cfg().Tide.SyncPeriod)))
@@ -207,6 +201,22 @@ func main() {
 	}, func() time.Duration {
 		return cfg().Tide.SyncPeriod
 	})
+
+	// Push metrics to the configured prometheus pushgateway endpoint or serve them
+	gateway := cfg().PushGateway
+	if gateway.Endpoint != "" {
+		logrus.WithField("gateway", gateway.Endpoint).Infof("using push gateway")
+		go metrics.ExposeMetrics("tide", gateway)
+
+		// serve data
+		interrupts.ListenAndServe(server, 10*time.Second)
+	} else {
+		logrus.Warn("not pushing metrics as there is no push_gateway defined in the config.yaml")
+
+		// serve data
+		err := server.ListenAndServe()
+		logrus.WithError(err).Errorf("failed to server HTTP")
+	}
 }
 
 func sync(c *tide.Controller) {
