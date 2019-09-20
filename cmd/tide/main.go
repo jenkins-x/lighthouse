@@ -26,6 +26,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -94,7 +95,10 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store tide action history. GCS writes will use the default object ACL for the bucket")
 	fs.StringVar(&o.statusURI, "status-path", "", "The /local/path or gs://path/to/object to store status controller state. GCS writes will use the default object ACL for the bucket.")
 
-	fs.Parse(args)
+	err := fs.Parse(args)
+	if err != nil {
+		logrus.WithError(err).Fatal("Invalid options")
+	}
 	o.configPath = config.Path(o.configPath)
 	return o
 }
@@ -160,7 +164,12 @@ func main() {
 	}
 	defer gitClient.Clean()
 
-	plumberClient, err := plumber.NewPlumber()
+	_, jxClient, _, ns, err := clients.GetClientsAndNamespace()
+	if err != nil {
+		logrus.WithError(err).Fatal("Error creating kubernetes resource clients.")
+	}
+
+	plumberClient, err := plumber.NewPlumber(jxClient, ns)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting Plumber client.")
 	}
