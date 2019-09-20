@@ -440,6 +440,7 @@ func TestTargetUrl(t *testing.T) {
 				Repository: struct {
 					Name          githubql.String
 					NameWithOwner githubql.String
+					URL           githubql.String
 					Owner         struct {
 						Login githubql.String
 					}
