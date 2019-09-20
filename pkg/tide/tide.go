@@ -711,7 +711,7 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 			if pj.Spec.Type != plumber.PresubmitJob {
 				continue
 			}
-			if pj.Spec.Refs.Pulls[0].Number != int(pr.Number) {
+			if len(pj.Spec.Refs.Pulls) == 0 || pj.Spec.Refs.Pulls[0].Number != int(pr.Number) {
 				continue
 			}
 			if pj.Spec.Refs.Pulls[0].SHA != string(pr.HeadRefOID) {

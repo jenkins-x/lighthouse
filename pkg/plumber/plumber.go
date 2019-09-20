@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
@@ -150,6 +151,7 @@ func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, e
 func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 	spec := activity.Spec
 	baseRef := "master"
+
 	ref := &Refs{
 		Org:      spec.GitOwner,
 		Repo:     spec.GitRepository,
@@ -163,6 +165,27 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 	if spec.GitBranch == "master" {
 		kind = PostsubmitJob
 	}
+
+	if strings.HasPrefix(spec.GitBranch, "PR-") {
+		nt := strings.TrimPrefix(spec.GitBranch, "PR-")
+		if nt != "" {
+			n, err := strconv.Atoi(nt)
+			if err == nil {
+				kind = PresubmitJob
+				ref.Pulls = append(ref.Pulls, Pull{
+					Number: n,
+					SHA:    spec.LastCommitSHA,
+					Title:  spec.PullTitle,
+					Ref:    "pull/" + nt + "/head",
+
+					// TODO
+					// Link: spec.LastCommitURL,
+					CommitLink: spec.LastCommitURL,
+				})
+			}
+		}
+	}
+
 	return PipelineOptions{
 		ObjectMeta: activity.ObjectMeta,
 		Spec: PipelineOptionsSpec{
