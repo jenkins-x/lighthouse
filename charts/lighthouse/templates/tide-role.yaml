@@ -6,8 +6,18 @@ rules:
   - apiGroups:
       - jenkins.io
     resources:
+      - environments
       - pipelineactivities
       - sourcerepositories
     verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
       - list
       - watch

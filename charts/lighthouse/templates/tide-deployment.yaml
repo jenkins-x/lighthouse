@@ -42,8 +42,23 @@ spec:
           httpGet:
             path: {{ .Values.tide.probe.path }}
             port: http
-{{- if .Values.tide.env }}
         env:
+        - name: "GIT_KIND"
+          value: "{{ .Values.git.kind }}"
+        - name: "GIT_SERVER"
+          value: "{{ .Values.git.server }}"
+        - name: "GIT_USER"
+          valueFrom:
+            secretKeyRef:
+              name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
+              key: username
+        - name: "GIT_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
+              key: password
+          value: "{{ .Values.git.token }}"
+{{- if .Values.tide.env }}
 {{- range $pkey, $pval := .Values.tide.env }}
         - name: {{ $pkey }}
           value: {{ $pval }}
@@ -52,16 +67,10 @@ spec:
         resources:
 {{ toYaml .Values.tide.resources | indent 10 }}
         volumeMounts:
-        - name: oauth
-          mountPath: /etc/github
-          readOnly: true
         - name: config
           mountPath: /etc/config
           readOnly: true
       volumes:
-      - name: oauth
-        secret:
-          secretName: oauth-token
       - name: config
         configMap:
           name: config
