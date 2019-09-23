@@ -1,7 +1,6 @@
 package gitprovider
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -31,11 +30,6 @@ func (c *Client) SetMilestone(org, repo string, issueNum, milestoneNum int) erro
 
 // ListMilestones list milestones
 func (c *Client) ListMilestones(org, repo string) ([]Milestone, error) {
-	panic("implement me")
-}
-
-// Query query GitHub
-func (c *Client) Query(context.Context, interface{}, map[string]interface{}) error {
 	panic("implement me")
 }
 

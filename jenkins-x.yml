@@ -76,8 +76,15 @@ pipelineConfig:
             - --context=/workspace/source
             - --cache-dir=/workspace
             - --build-arg=VERSION=${inputs.params.version}
-
-
+          - name: build-and-push-image2
+            image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+            command: /kaniko/executor
+            args:
+            - --dockerfile=/workspace/source/Dockerfile.tide
+            - --destination=gcr.io/jenkinsxio/lh-tide:${inputs.params.version}
+            - --context=/workspace/source
+            - --cache-dir=/workspace
+            - --build-arg=VERSION=${inputs.params.version}
           - command: make preview
             dir: /workspace/source/charts/preview
             image: go
@@ -200,6 +207,16 @@ pipelineConfig:
                 - --destination=gcr.io/jenkinsxio/lighthouse:${inputs.params.version}
                 - --context=/workspace/source
                 - --cache-dir=/workspace
+
+              - name: build-and-push-image2
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                - --dockerfile=/workspace/source/Dockerfile.tide
+                - --destination=gcr.io/jenkinsxio/lh-tide:${inputs.params.version}
+                - --context=/workspace/source
+                - --cache-dir=/workspace
+                - --build-arg=VERSION=${inputs.params.version}
 
               - name: release
                 image: gcr.io/jenkinsxio/builder-go:0.1.576

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
@@ -62,6 +63,15 @@ type TideContextPolicyOptions struct {
 	Orgs map[string]TideOrgContextPolicy `json:"orgs,omitempty"`
 }
 
+// TideMergeCommitTemplate holds templates to use for merge commits.
+type TideMergeCommitTemplate struct {
+	TitleTemplate string `json:"title,omitempty"`
+	BodyTemplate  string `json:"body,omitempty"`
+
+	Title *template.Template `json:"-"`
+	Body  *template.Template `json:"-"`
+}
+
 // Tide is config for the tide pool.
 type Tide struct {
 	// SyncPeriodString compiles into SyncPeriod at load time.
@@ -80,6 +90,11 @@ type Tide struct {
 	// A key/value pair of an org/repo as the key and merge method to override
 	// the default method of merge. Valid options are squash, rebase, and merge.
 	MergeType map[string]gitprovider.PullRequestMergeType `json:"merge_method,omitempty"`
+
+	// A key/value pair of an org/repo as the key and Go template to override
+	// the default merge commit title and/or message. Template is passed the
+	// PullRequest struct (prow/github/types.go#PullRequest)
+	MergeTemplate map[string]TideMergeCommitTemplate `json:"merge_commit_template,omitempty"`
 
 	// URL for tide status contexts.
 	// We can consider allowing this to be set separately for separate repos, or
@@ -101,6 +116,16 @@ type Tide struct {
 	// Leave this blank to disable this feature.
 	SquashLabel string `json:"squash_label,omitempty"`
 
+	// RebaseLabel is an optional label that is used to identify PRs that should
+	// always be rebased and merged.
+	// Leave this blank to disable this feature.
+	RebaseLabel string `json:"rebase_label,omitempty"`
+
+	// MergeLabel is an optional label that is used to identify PRs that should
+	// always be merged with all individual commits from the PR.
+	// Leave this blank to disable this feature.
+	MergeLabel string `json:"merge_label,omitempty"`
+
 	// MaxGoroutines is the maximum number of goroutines spawned inside the
 	// controller to handle org/repo:branch pools. Defaults to 20. Needs to be a
 	// positive number.
@@ -111,6 +136,14 @@ type Tide struct {
 	// combined status; otherwise it may apply the branch protection setting or let user
 	// define their own options in case branch protection is not used.
 	ContextOptions TideContextPolicyOptions `json:"context_options,omitempty"`
+
+	// BatchSizeLimitMap is a key/value pair of an org or org/repo as the key and
+	// integer batch size limit as the value. The empty string key can be used as
+	// a global default.
+	// Special values:
+	//  0 => unlimited batch size
+	// -1 => batch merging disabled :(
+	BatchSizeLimitMap map[string]int `json:"batch_size_limit,omitempty"`
 }
 
 // MergeMethod returns the merge method to use for a repo. The default of merge is
@@ -125,6 +158,29 @@ func (t *Tide) MergeMethod(org, repo string) gitprovider.PullRequestMergeType {
 		}
 
 		return gitprovider.MergeMerge
+	}
+
+	return v
+}
+
+// BatchSizeLimit return the batch size limit for the given repo
+func (t *Tide) BatchSizeLimit(org, repo string) int {
+	if limit, ok := t.BatchSizeLimitMap[fmt.Sprintf("%s/%s", org, repo)]; ok {
+		return limit
+	}
+	if limit, ok := t.BatchSizeLimitMap[org]; ok {
+		return limit
+	}
+	return t.BatchSizeLimitMap["*"]
+}
+
+// MergeCommitTemplate returns a struct with Go template string(s) or nil
+func (t *Tide) MergeCommitTemplate(org, repo string) TideMergeCommitTemplate {
+	name := org + "/" + repo
+
+	v, ok := t.MergeTemplate[name]
+	if !ok {
+		return t.MergeTemplate[org]
 	}
 
 	return v

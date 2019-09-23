@@ -5,10 +5,61 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/log"
 	"github.com/pkg/errors"
 )
+
+// RateLimits contains rate limit information
+type RateLimits struct {
+	Remaining int
+	Limit     int
+	Reset     int
+}
+
+func (r *RateLimits) populate(res *scm.Response) {
+	if res == nil {
+		return
+	}
+	h := res.Header
+
+	r.Remaining = firstNumber(h["X-Ratelimit-Remaining"])
+	r.Limit = firstNumber(h["X-Ratelimit-Limit"])
+	r.Reset = firstNumber(h["X-Ratelimit-Reset"])
+}
+
+func firstNumber(values []string) int {
+	if len(values) == 0 {
+		return 0
+	}
+	answer, err := strconv.Atoi(values[0])
+	if err != nil {
+		answer = 0
+	}
+	return answer
+}
+
+// Query performs a GraphQL query on the git provider
+func (c *Client) Query(ctx context.Context, q interface{}, vars map[string]interface{}) error {
+	graphql := c.client.GraphQL
+	if graphql == nil {
+		log.Logger().Warnf("no GraphQL graphql supported for git provider %s", c.client.Driver.String())
+		return nil
+	}
+	return graphql.Query(ctx, q, vars)
+}
+
+// Search query issues/PRs using a query string
+func (c *Client) Search(opts scm.SearchOptions) ([]*scm.SearchIssue, *RateLimits, error) {
+	ctx := context.Background()
+	results, res, err := c.client.Issues.Search(ctx, opts)
+
+	rates := &RateLimits{}
+	rates.populate(res)
+	return results, rates, err
+}
 
 // ListIssueEvents list issue events
 func (c *Client) ListIssueEvents(org, repo string, number int) ([]*scm.ListedIssueEvent, error) {

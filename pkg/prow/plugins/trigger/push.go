@@ -77,7 +77,7 @@ func handlePE(c Client, pe scm.PushHook) error {
 		labels[gitprovider.EventGUID] = pe.GUID
 		pj := pjutil.NewPlumberJob(pjutil.PostsubmitSpec(j, refs), labels, j.Annotations)
 		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient); err != nil {
+		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient, pe.Repository()); err != nil {
 			return err
 		}
 	}

@@ -51,7 +51,7 @@ type githubClient interface {
 }
 
 type plumberClient interface {
-	Create(*plumber.PipelineOptions, metapipeline.Client) (*plumber.PipelineOptions, error)
+	Create(*plumber.PipelineOptions, metapipeline.Client, scm.Repository) (*plumber.PipelineOptions, error)
 }
 
 type overrideClient interface {
@@ -87,12 +87,12 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.gc.HasPermission(org, repo, user, role...)
 }
 
-func (c client) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client) (*plumber.PipelineOptions, error) {
+func (c client) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*plumber.PipelineOptions, error) {
 	metapipelineClient, err := metapipeline.NewMetaPipelineClient()
 	if err != nil {
 		return nil, err
 	}
-	return c.plumberClient.Create(pj, metapipelineClient)
+	return c.plumberClient.Create(pj, metapipelineClient, repository)
 }
 
 func (c client) presubmitForContext(org, repo, context string) *config.Presubmit {
@@ -250,7 +250,7 @@ Only the following contexts were expected:
 			if err != nil {
 				return err
 			}
-			if _, err := oc.Create(&pj, metapipelineClient); err != nil {
+			if _, err := oc.Create(&pj, metapipelineClient, pr.Repository()); err != nil {
 				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
 				log.WithError(err).Warn(resp)
 				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))

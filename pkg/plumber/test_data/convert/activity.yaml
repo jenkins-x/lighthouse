@@ -1,0 +1,137 @@
+apiVersion: jenkins.io/v1
+kind: PipelineActivity
+metadata:
+  annotations:
+    jenkins.io/git-report-state: Succeeded
+  creationTimestamp: "2019-09-19T14:25:31Z"
+  generation: 1
+  labels:
+    branch: PR-1
+    build: "1"
+    context: pr-build
+    owner: jstrachan
+    provider: github
+    repository: godemo25
+    sourcerepository: jstrachan-godemo25
+  name: jstrachan-godemo25-pr-1-1
+  namespace: jx
+  resourceVersion: "4036895"
+  selfLink: /apis/jenkins.io/v1/namespaces/jx/pipelineactivities/jstrachan-godemo25-pr-1-1
+  uid: 562adadb-dae9-11e9-a942-42010a8400f9
+spec:
+  author: jstrachan
+  batchPipelineActivity: {}
+  baseSHA: 94a9623247eb27cca6079c629177f2fbd3988cee
+  build: "1"
+  completedTimestamp: "2019-09-19T14:27:11Z"
+  context: pr-build
+  gitBranch: PR-1
+  gitOwner: jstrachan
+  gitRepository: godemo25
+  gitUrl: https://github.com/jstrachan/godemo25.git
+  lastCommitSHA: 49e54b4ab808d780fd86abb25dc725112b6fd9ee
+  pipeline: jstrachan/godemo25/PR-1
+  pullTitle: 'fix: better message'
+  startedTimestamp: "2019-09-19T14:26:09Z"
+  status: Succeeded
+  steps:
+  - kind: Stage
+    stage:
+      completedTimestamp: "2019-09-19T14:27:09Z"
+      name: Release
+      startedTimestamp: "2019-09-19T14:26:09Z"
+      status: Succeeded
+  - kind: Preview
+    preview:
+      applicationURL: http://godemo25.jx-jstrachan-godemo25-pr-1.35.189.201.111.nip.io
+      pullRequestURL: https://github.com/jstrachan/godemo25/pull/1
+      startedTimestamp: "2019-09-19T14:27:09Z"
+  - kind: Stage
+    stage:
+      completedTimestamp: "2019-09-19T14:27:11Z"
+      name: from build pack
+      startedTimestamp: "2019-09-19T14:25:57Z"
+      status: Succeeded
+      steps:
+      - completedTimestamp: "2019-09-19T14:25:57Z"
+        name: Credential Initializer 22gbk
+        startedTimestamp: "2019-09-19T14:25:57Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:58Z"
+        name: Working Dir Initializer Xstrc
+        startedTimestamp: "2019-09-19T14:25:57Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:59Z"
+        name: Place Tools
+        startedTimestamp: "2019-09-19T14:25:58Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:26:05Z"
+        description: https://github.com/jstrachan/godemo25.git
+        name: Git Source Jstrachan Godemo25 Pr 1 Pr Buil Pjnht
+        startedTimestamp: "2019-09-19T14:25:59Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:26:08Z"
+        name: Git Merge
+        startedTimestamp: "2019-09-19T14:26:05Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:26:15Z"
+        name: Build Make Linux
+        startedTimestamp: "2019-09-19T14:26:08Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:26:23Z"
+        name: Build Container Build
+        startedTimestamp: "2019-09-19T14:26:15Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:26:24Z"
+        name: Postbuild Post Build
+        startedTimestamp: "2019-09-19T14:26:23Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:26:47Z"
+        name: Promote Make Preview
+        startedTimestamp: "2019-09-19T14:26:24Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:27:11Z"
+        name: Promote Jx Preview
+        startedTimestamp: "2019-09-19T14:26:47Z"
+        status: Succeeded
+  - kind: Stage
+    stage:
+      completedTimestamp: "2019-09-19T14:25:53Z"
+      name: meta pipeline
+      startedTimestamp: "2019-09-19T14:25:33Z"
+      status: Succeeded
+      steps:
+      - completedTimestamp: "2019-09-19T14:25:33Z"
+        name: Credential Initializer Czfgp
+        startedTimestamp: "2019-09-19T14:25:33Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:34Z"
+        name: Working Dir Initializer Q78hb
+        startedTimestamp: "2019-09-19T14:25:33Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:35Z"
+        name: Place Tools
+        startedTimestamp: "2019-09-19T14:25:34Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:42Z"
+        description: https://github.com/jstrachan/godemo25.git
+        name: Git Source Meta Jstrachan Godemo25 Pr 1 Pr Glq4x
+        startedTimestamp: "2019-09-19T14:25:35Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:44Z"
+        name: Git Merge
+        startedTimestamp: "2019-09-19T14:25:42Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:45Z"
+        name: Merge Pull Refs
+        startedTimestamp: "2019-09-19T14:25:44Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:52Z"
+        name: Create Effective Pipeline
+        startedTimestamp: "2019-09-19T14:25:45Z"
+        status: Succeeded
+      - completedTimestamp: "2019-09-19T14:25:53Z"
+        name: Create Tekton Crds
+        startedTimestamp: "2019-09-19T14:25:52Z"
+        status: Succeeded
+status: {}
