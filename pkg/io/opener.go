@@ -113,6 +113,7 @@ func (o opener) Reader(ctx context.Context, path string) (io.ReadCloser, error) 
 		return nil, fmt.Errorf("bad gcs path: %v", err)
 	}
 	if g == nil {
+		/* #nosec */
 		return os.Open(path)
 	}
 	return g.NewReader(ctx)
