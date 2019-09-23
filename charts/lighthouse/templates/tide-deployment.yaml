@@ -1,0 +1,79 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "tide.name" . }}
+  labels:
+    app: {{ template "tide.name" . }}
+spec:
+  replicas: {{ .Values.tide.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+{{- if .Values.tide.datadog.enabled }}
+      annotations:
+        ad.datadoghq.com/tide.logs: '[{"source":"prow","service":"tide"}]'
+{{- end }}
+      labels:
+        app: {{ template "tide.name" . }}
+    spec:
+      serviceAccountName: {{ template "tide.name" . }}
+      terminationGracePeriodSeconds: {{ .Values.tide.terminationGracePeriodSeconds }}
+      containers:
+      - name: {{ template "tide.name" . }}
+        image: {{ tpl .Values.tide.image.repository . }}:{{ tpl .Values.tide.image.tag . }}
+        imagePullPolicy: {{ .Values.tide.imagePullPolicy }}
+{{ if .Values.tide.args }}
+        args:
+{{ toYaml .Values.tide.args | indent 10 }}
+{{- end }}
+        ports:
+          - name: http
+            containerPort: {{ .Values.tide.service.internalPort }}
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.tide.probe.path }}
+            port: http
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.tide.probe.path }}
+            port: http
+{{- if .Values.tide.env }}
+        env:
+{{- range $pkey, $pval := .Values.tide.env }}
+        - name: {{ $pkey }}
+          value: {{ $pval }}
+{{- end }}
+{{- end }}
+        resources:
+{{ toYaml .Values.tide.resources | indent 10 }}
+        volumeMounts:
+        - name: oauth
+          mountPath: /etc/github
+          readOnly: true
+        - name: config
+          mountPath: /etc/config
+          readOnly: true
+      volumes:
+      - name: oauth
+        secret:
+          secretName: oauth-token
+      - name: config
+        configMap:
+          name: config
+    {{- with .Values.tide.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tide.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tide.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

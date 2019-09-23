@@ -46,3 +46,33 @@ readinessProbe:
   periodSeconds: 10
   successThreshold: 1
   timeoutSeconds: 1
+
+tide:
+  replicaCount: 1
+  probe:
+    path: /
+  image:
+    repository: gcr.io/jenkinsxio/lh-tide
+    tag: "{{ .Values.image.tag }}"
+  imagePullPolicy: IfNotPresent
+  terminationGracePeriodSeconds: 30
+  args:
+    - --dry-run=false
+    #- --github-endpoint=http://ghproxy
+    - --github-endpoint=https://api.github.com
+  resources:
+    limits:
+     cpu: 200m
+     memory: 256Mi
+    requests:
+     cpu: 100m
+     memory: 128Mi
+  service:
+    type: ClusterIP
+    externalPort: 80
+    internalPort: 8888
+    annotations:
+      fabric8.io/expose: "true"
+      fabric8.io/ingress.annotations: "kubernetes.io/ingress.class: nginx\nnginx.ingress.kubernetes.io/auth-type: basic\nnginx.ingress.kubernetes.io/auth-secret: jx-basic-auth"
+  datadog:
+    enabled: "true"
