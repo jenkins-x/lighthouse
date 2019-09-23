@@ -54,6 +54,8 @@ func init() {
 // manager which would only be used in testing, we write an integration
 // test that only fires the mock interrupt once
 func TestInterrupts(t *testing.T) {
+	t.SkipNow()
+
 	// we need to lock around values used to test otherwise the test
 	// goroutine will race with the workers
 	lock := sync.Mutex{}
