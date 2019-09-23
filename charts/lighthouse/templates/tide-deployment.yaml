@@ -38,10 +38,17 @@ spec:
           httpGet:
             path: {{ .Values.tide.probe.path }}
             port: http
+          initialDelaySeconds: {{ Values.tide.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ Values.tide.livenessProbe.periodSeconds }}
+          successThreshold: {{ Values.tide.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ Values.tide.livenessProbe.timeoutSeconds }}
         readinessProbe:
           httpGet:
             path: {{ .Values.tide.probe.path }}
             port: http
+          periodSeconds: {{ Values.tide.readinessProbe.periodSeconds }}
+          successThreshold: {{ Values.tide.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ Values.tide.readinessProbe.timeoutSeconds }}
         env:
         - name: "GIT_KIND"
           value: "{{ .Values.git.kind }}"
