@@ -48,7 +48,7 @@ readinessProbe:
   timeoutSeconds: 1
 
 tide:
-  replicaCount: 1
+  replicaCount: 0
   probe:
     path: /
   image:
