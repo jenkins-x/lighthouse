@@ -26,6 +26,12 @@ spec:
     org: jstrachan
     repo: godemo25
     repo_link: https://github.com/jstrachan/godemo25.git
+    pulls:
+      - author: ""
+        number: 1
+        ref: pull/1/head
+        sha: 49e54b4ab808d780fd86abb25dc725112b6fd9ee
+        title: 'fix: better message'
   type: presubmit
 status:
   state: success
