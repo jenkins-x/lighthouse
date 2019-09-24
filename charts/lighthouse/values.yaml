@@ -49,6 +49,15 @@ readinessProbe:
 
 tide:
   replicaCount: 1
+  livenessProbe:
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readinessProbe:
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
   probe:
     path: /
   image:
