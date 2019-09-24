@@ -420,8 +420,8 @@ github.com/jenkins-x/go-scm v1.5.35 h1:fsNqGbBnIgD+78InvDyO7S9aqJ8kZmTUhaxs+ZFec
 github.com/jenkins-x/go-scm v1.5.35/go.mod h1:MgGRkJScE/rJ30J/bXYqduN5sDPZqZFITJopsnZmTOw=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
-github.com/jenkins-x/jx v0.0.0-20190923204659-688310626aaa h1:5zhr07Cm1uikHQQzSNWIvCwBp2NsbGm1aIDC5AbSqrw=
-github.com/jenkins-x/jx v0.0.0-20190923204659-688310626aaa/go.mod h1:e4u70Zck6AI+8buQXw2HdTB21TIOXK6d/6hv/DkfxHw=
+github.com/jenkins-x/jx v0.0.0-20190924081411-d718f25f9fe4 h1:n36tXoWgLEp3lX6ECW0s63Ql4uGWSaL3RaYK5wGWe+E=
+github.com/jenkins-x/jx v0.0.0-20190924081411-d718f25f9fe4/go.mod h1:e4u70Zck6AI+8buQXw2HdTB21TIOXK6d/6hv/DkfxHw=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767/go.mod h1:UR3AoCKJHHKi2AoOWeFbZcMKyd5LqQkdCRgwqZkX/io=
 github.com/jetstack/cert-manager v0.5.2 h1:qs74mdAprZ5kcCYF3arzmEAZtbt+9HneldSJrk21tKs=
