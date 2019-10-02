@@ -9,5 +9,5 @@ dependencies:
   owner: jenkins-x
   repo: jx
   url: https://github.com/jenkins-x/jx
-  version: 2.0.816
-  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.0.816
+  version: 2.0.817
+  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.0.817
