@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.3.1
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
-	github.com/jenkins-x/go-scm v1.5.41
+	github.com/jenkins-x/go-scm v1.5.42
 	github.com/jenkins-x/jx v0.0.0-20191009125912-92e207920975
 	github.com/knative/build v0.5.0
 	github.com/petergtz/pegomock v2.6.0+incompatible // indirect
