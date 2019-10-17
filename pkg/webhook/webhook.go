@@ -174,7 +174,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		o.getIndex(w, r)
 		return
 	}
-	logrus.Infof("about to parse webhook")
+	logrus.Debug("about to parse webhook")
 
 	scmClient, serverURL, token, err := o.createSCMClient()
 	if err != nil {
@@ -222,9 +222,19 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		KubernetesClient: kubeClient,
 		GitClient:        gitClient,
 	}
+	l := logrus.WithFields(logrus.Fields(fields))
+
+	_, ok := webhook.(*scm.PingHook)
+	if ok {
+		l.Info("received ping")
+		_, err = w.Write([]byte(fmt.Sprintf("pong from lighthouse %s", version.Version)))
+		if err != nil {
+			l.Debugf("failed to process the push hook: %v", err)
+		}
+		return
+	}
 
 	pushHook, ok := webhook.(*scm.PushHook)
-	l := logrus.WithFields(logrus.Fields(fields))
 	if ok {
 		fields["Ref"] = pushHook.Ref
 		fields["BaseRef"] = pushHook.BaseRef
