@@ -18,7 +18,6 @@ limitations under the License.
 package logrusutil
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -58,7 +57,6 @@ func CreateDefaultFormatter() logrus.Formatter {
 	if os.Getenv("LOGRUS_JSON_PRETTY") == "true" {
 		jsonFormat.PrettyPrint = true
 	}
-	fmt.Println("using JSON formatter!")
 	return jsonFormat
 }
 
