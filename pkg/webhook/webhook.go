@@ -85,6 +85,14 @@ func NewCmdWebhook() *cobra.Command {
 	return cmd
 }
 
+// NewWebhook creates a new webhook handler
+func NewWebhook(factory jxfactory.Factory, server *hook.Server) *Options {
+	return &Options{
+		factory: factory,
+		server:  server,
+	}
+}
+
 // Run will implement this command
 func (o *Options) Run() error {
 	if o.JSONLog {
@@ -197,17 +205,6 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	repository := webhook.Repository()
-	fields := map[string]interface{}{
-		"Namespace": repository.Namespace,
-		"Name":      repository.Name,
-		"Branch":    repository.Branch,
-		"Link":      repository.Link,
-		"ID":        repository.ID,
-		"Clone":     repository.Clone,
-		"CloneSSH":  repository.CloneSSH,
-	}
-
 	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
 	gitClient, _ := git.NewClient(serverURL, o.gitKind())
 
@@ -222,18 +219,34 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		KubernetesClient: kubeClient,
 		GitClient:        gitClient,
 	}
-	l := logrus.WithFields(logrus.Fields(fields))
+	l, output, err := o.ProcessWebHook(webhook)
+	if err != nil {
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+	}
+	_, err = w.Write([]byte(output))
+	if err != nil {
+		l.Debugf("failed to process the push hook: %v", err)
+	}
+}
 
+// ProcessWebHook process a webhook
+func (o *Options) ProcessWebHook(webhook scm.Webhook) (*logrus.Entry, string, error) {
+	repository := webhook.Repository()
+	fields := map[string]interface{}{
+		"Namespace": repository.Namespace,
+		"Name":      repository.Name,
+		"Branch":    repository.Branch,
+		"Link":      repository.Link,
+		"ID":        repository.ID,
+		"Clone":     repository.Clone,
+		"CloneSSH":  repository.CloneSSH,
+	}
+	l := logrus.WithFields(logrus.Fields(fields))
 	_, ok := webhook.(*scm.PingHook)
 	if ok {
 		l.Info("received ping")
-		_, err = w.Write([]byte(fmt.Sprintf("pong from lighthouse %s", version.Version)))
-		if err != nil {
-			l.Debugf("failed to process the push hook: %v", err)
-		}
-		return
+		return l, fmt.Sprintf("pong from lighthouse %s", version.Version), nil
 	}
-
 	pushHook, ok := webhook.(*scm.PushHook)
 	if ok {
 		fields["Ref"] = pushHook.Ref
@@ -246,19 +259,14 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 
 		l.Info("invoking Push handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, pushHook.Repository(), w)
+		err := o.updatePlumberClientAndReturnError(l, o.server, pushHook.Repository())
 		if err != nil {
-			return
+			return l, "", err
 		}
 
 		o.server.HandlePushEvent(l, pushHook)
-		_, err = w.Write([]byte("processed push hook"))
-		if err != nil {
-			l.Debugf("failed to process the push hook: %v", err)
-		}
-		return
+		return l, "processed push hook", nil
 	}
-
 	prHook, ok := webhook.(*scm.PullRequestHook)
 	if ok {
 		action := prHook.Action
@@ -272,19 +280,14 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 
 		l.Info("invoking PR handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, prHook.Repository(), w)
+		err := o.updatePlumberClientAndReturnError(l, o.server, prHook.Repository())
 		if err != nil {
-			return
+			return l, "", err
 		}
 
 		o.server.HandlePullRequestEvent(l, prHook)
-		_, err = w.Write([]byte("processed PR hook"))
-		if err != nil {
-			l.Debugf("failed to process the PR hook: %v", err)
-		}
-		return
+		return l, "processed PR hook", nil
 	}
-
 	branchHook, ok := webhook.(*scm.BranchHook)
 	if ok {
 		action := branchHook.Action
@@ -296,19 +299,14 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 
 		l.Info("invoking branch handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, branchHook.Repository(), w)
+		err := o.updatePlumberClientAndReturnError(l, o.server, branchHook.Repository())
 		if err != nil {
-			return
+			return l, "", err
 		}
 
 		o.server.HandleBranchEvent(l, branchHook)
-		_, err = w.Write([]byte("processed Branch hook"))
-		if err != nil {
-			l.Debugf("failed to process the branch hook: %v", err)
-		}
-		return
+		return l, "processed branch hook", nil
 	}
-
 	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
 	if ok {
 		action := issueCommentHook.Action
@@ -326,18 +324,13 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, issueCommentHook.Repository(), w)
+		err := o.updatePlumberClientAndReturnError(l, o.server, issueCommentHook.Repository())
 		if err != nil {
-			return
+			return l, "", err
 		}
 		o.server.HandleIssueCommentEvent(l, *issueCommentHook)
-		_, err = w.Write([]byte("processed issue comment hook"))
-		if err != nil {
-			l.Debugf("failed to process the issue comment hook: %v", err)
-		}
-		return
+		return l, "processed issue comment hook", nil
 	}
-
 	prCommentHook, ok := webhook.(*scm.PullRequestCommentHook)
 	if ok {
 		action := prCommentHook.Action
@@ -359,25 +352,15 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, prCommentHook.Repository(), w)
+		err := o.updatePlumberClientAndReturnError(l, o.server, prCommentHook.Repository())
 		if err != nil {
-			return
+			return l, "", err
 		}
 		o.server.HandlePullRequestCommentEvent(l, *prCommentHook)
-
-		_, err = w.Write([]byte("processed PR comment hook"))
-		if err != nil {
-			l.Debugf("failed to PR comment hook: %v", err)
-		}
-
-		return
+		return l, "processed PR comment hook", nil
 	}
-
-	l.Infof("unknown webhook %#v", webhook)
-	_, err = w.Write([]byte("ignored unknown hook"))
-	if err != nil {
-		l.Debugf("failed to process the unknown hook")
-	}
+	l.Infof("unknown kind %s webhook %#v", webhook.Kind(), webhook)
+	return l, fmt.Sprintf("unknown hook %s", webhook.Kind()), nil
 }
 
 // GetFactory lazily creates a Factory if its not already created
@@ -511,19 +494,17 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	return server, nil
 }
 
-func (o *Options) updatePlumberClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository, w http.ResponseWriter) error {
+func (o *Options) updatePlumberClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository) error {
 	jxClient, _, err := o.GetFactory().CreateJXClient()
 	if err != nil {
-		l.Errorf("failed to create JX Client: %s", err.Error())
-
-		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create JX Client: %s", err.Error()))
+		err = errors.Wrapf(err, "failed to create JX client")
+		l.Errorf("%s", err.Error())
 		return err
 	}
 	plumberClient, err := plumber.NewPlumber(jxClient, o.namespace)
 	if err != nil {
-		l.Errorf("failed to create Plumber webhook: %s", err.Error())
-
-		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to create Plumber: %s", err.Error()))
+		err = errors.Wrapf(err, "failed to create Plumber client")
+		l.Errorf("%s", err.Error())
 		return err
 	}
 	server.ClientAgent.PlumberClient = plumberClient
