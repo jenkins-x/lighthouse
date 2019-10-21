@@ -229,6 +229,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// ProcessWebHook process a webhook
 func (o *Options) ProcessWebHook(webhook scm.Webhook) (*logrus.Entry, string, error) {
 	repository := webhook.Repository()
 	fields := map[string]interface{}{
