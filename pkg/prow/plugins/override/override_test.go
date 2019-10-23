@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/pkg/jxfactory"
 	jxfactory_test "github.com/jenkins-x/jx/pkg/jxfactory/mocks"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
@@ -154,7 +153,6 @@ func (c *fakeClient) presubmitForContext(org, repo, context string) *config.Pres
 }
 
 func TestAuthorized(t *testing.T) {
-	clientFactory := jxfactory_test.NewMockFactory()
 	cases := []struct {
 		name     string
 		user     string
@@ -186,6 +184,7 @@ func TestAuthorized(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
+	clientFactory := jxfactory_test.NewMockFactory()
 	cases := []struct {
 		name          string
 		action        scm.Action
