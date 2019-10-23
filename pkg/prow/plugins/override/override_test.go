@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
+	jxfactory_test "github.com/jenkins-x/jx/pkg/jxfactory/mocks"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -152,6 +154,7 @@ func (c *fakeClient) presubmitForContext(org, repo, context string) *config.Pres
 }
 
 func TestAuthorized(t *testing.T) {
+	clientFactory := jxfactory_test.NewMockFactory()
 	cases := []struct {
 		name     string
 		user     string
@@ -517,7 +520,7 @@ func TestHandle(t *testing.T) {
 				tc.jobs = sets.String{}
 			}
 
-			err := handle(&fc, log, &event)
+			err := handle(clientFactory, &fc, log, &event)
 			switch {
 			case err != nil:
 				if !tc.err {

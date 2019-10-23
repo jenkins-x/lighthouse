@@ -131,7 +131,7 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 		plumberClient: pc.PlumberClient,
 		clientFactory: pc.ClientFactory,
 	}
-	return handle(pc, c, pc.Logger, &e)
+	return handle(pc.ClientFactory, c, pc.Logger, &e)
 }
 
 func authorized(gc githubClient, log *logrus.Entry, org, repo, user string) bool {
@@ -155,7 +155,7 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(pc plugins.Agent, oc overrideClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
 
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil
@@ -249,7 +249,7 @@ Only the following contexts were expected:
 
 			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
 			log.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-			metapipelineClient, err := plumber.NewMetaPipelineClient(pc.ClientFactory)
+			metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
 			if err != nil {
 				return err
 			}
