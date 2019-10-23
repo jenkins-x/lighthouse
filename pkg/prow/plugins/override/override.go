@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -64,6 +65,7 @@ type client struct {
 	gc            githubClient
 	jc            config.JobConfig
 	plumberClient plumberClient
+	clientFactory jxfactory.Factory
 }
 
 func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
@@ -88,7 +90,7 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 }
 
 func (c client) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*plumber.PipelineOptions, error) {
-	metapipelineClient, err := metapipeline.NewMetaPipelineClient()
+	metapipelineClient, err := plumber.NewMetaPipelineClient(c.clientFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +129,9 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 		gc:            pc.GitHubClient,
 		jc:            pc.Config.JobConfig,
 		plumberClient: pc.PlumberClient,
+		clientFactory: pc.ClientFactory,
 	}
-	return handle(c, pc.Logger, &e)
+	return handle(pc, c, pc.Logger, &e)
 }
 
 func authorized(gc githubClient, log *logrus.Entry, org, repo, user string) bool {
@@ -152,7 +155,7 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(oc overrideClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handle(pc plugins.Agent, oc overrideClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
 
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil
@@ -246,7 +249,7 @@ Only the following contexts were expected:
 
 			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
 			log.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-			metapipelineClient, err := metapipeline.NewMetaPipelineClient()
+			metapipelineClient, err := plumber.NewMetaPipelineClient(pc.ClientFactory)
 			if err != nil {
 				return err
 			}
