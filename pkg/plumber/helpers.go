@@ -18,7 +18,7 @@ import (
 // the this execution pipeline.
 func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, error) {
 	if factory == nil {
-		logrus.Warn("no jxfactory passed in to create metapipeline.Client: %s", string(debug.Stack()))
+		logrus.Warnf("no jxfactory passed in to create metapipeline.Client: %s", string(debug.Stack()))
 		factory = jxfactory.NewFactory()
 	}
 	tektonClient, jxClient, kubeClient, ns, err := getClientsAndNamespace(factory)
