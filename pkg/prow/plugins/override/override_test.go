@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -183,6 +184,7 @@ func TestAuthorized(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
+	clientFactory := jxfactory.NewFactory()
 	cases := []struct {
 		name          string
 		action        scm.Action
@@ -517,7 +519,7 @@ func TestHandle(t *testing.T) {
 				tc.jobs = sets.String{}
 			}
 
-			err := handle(&fc, log, &event)
+			err := handle(clientFactory, &fc, log, &event)
 			switch {
 			case err != nil:
 				if !tc.err {

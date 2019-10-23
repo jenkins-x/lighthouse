@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
@@ -134,6 +135,7 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
+	ClientFactory      jxfactory.Factory
 	GitHubClient       *gitprovider.Client
 	PlumberClient      plumber.Plumber
 	MetapipelineClient metapipeline.Client
@@ -158,15 +160,16 @@ type Agent struct {
 }
 
 // NewAgent bootstraps a new Agent struct from the passed dependencies.
-func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, logger *logrus.Entry) Agent {
+func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
 	gitHubClient := gitprovider.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
-	metapipelineClient, err := metapipeline.NewMetaPipelineClient()
+	metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
 	if err != nil {
 		logger.Errorf("Metapipeline client creation failed: %s", err)
 	}
 	return Agent{
+		ClientFactory:      clientFactory,
 		GitHubClient:       gitHubClient,
 		GitClient:          clientAgent.GitClient,
 		PlumberClient:      clientAgent.PlumberClient,
