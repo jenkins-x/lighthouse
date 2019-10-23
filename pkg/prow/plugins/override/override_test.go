@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	jxfactory_test "github.com/jenkins-x/jx/pkg/jxfactory/mocks"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -184,7 +184,7 @@ func TestAuthorized(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
-	clientFactory := jxfactory_test.NewMockFactory()
+	clientFactory := jxfactory.NewFactory()
 	cases := []struct {
 		name          string
 		action        scm.Action
