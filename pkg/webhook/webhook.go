@@ -441,7 +441,8 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		}
 	}
 
-	kubeClient, _, err := o.GetFactory().CreateKubeClient()
+	clientFactory := o.GetFactory()
+	kubeClient, _, err := clientFactory.CreateKubeClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Kube client")
 	}
@@ -486,9 +487,10 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	}
 
 	server := &hook.Server{
-		ConfigAgent: configAgent,
-		Plugins:     pluginAgent,
-		Metrics:     promMetrics,
+		ClientFactory: clientFactory,
+		ConfigAgent:   configAgent,
+		Plugins:       pluginAgent,
+		Metrics:       promMetrics,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil
