@@ -1,6 +1,7 @@
 package plumber
 
 import (
+	"fmt"
 	"os"
 	"runtime/debug"
 
@@ -24,6 +25,13 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 		logrus.Warnf("no jxfactory passed in to create metapipeline.Client: %s", string(debug.Stack()))
 		factory = jxfactory.NewFactory()
 	}
+	// lets make sure that we have the jx home dir created
+	cfgHome := util.HomeDir()
+	err := os.MkdirAll(cfgHome, util.DefaultWritePermissions)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create jx home dir %s", cfgHome)
+	}
+
 	tektonClient, jxClient, kubeClient, ns, err := getClientsAndNamespace(factory)
 	if err != nil {
 		return nil, err
@@ -34,7 +42,11 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 		In:  os.Stdin,
 		Out: os.Stdout,
 	}
-	return metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns, gitter, fileHandles)
+	client, err := metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns, gitter, fileHandles)
+	if err == nil && client == nil {
+		return nil, fmt.Errorf("no metapipeline client created")
+	}
+	return client, err
 }
 
 func getClientsAndNamespace(factory jxfactory.Factory) (tektonclient.Interface, jxclient.Interface, kubeclient.Interface, string, error) {
