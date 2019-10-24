@@ -8,7 +8,7 @@ require (
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
 	github.com/jenkins-x/go-scm v1.5.49
-	github.com/jenkins-x/jx v0.0.0-20191024084133-6c6d66071d4f
+	github.com/jenkins-x/jx v0.0.0-20191024102726-eaf27fb30221
 	github.com/knative/build v0.5.0
 	github.com/petergtz/pegomock v2.6.0+incompatible // indirect
 	github.com/pkg/errors v0.8.1
