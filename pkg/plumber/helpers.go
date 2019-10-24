@@ -1,12 +1,15 @@
 package plumber
 
 import (
+	"os"
 	"runtime/debug"
 
 	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
+	"github.com/jenkins-x/jx/pkg/gits"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/kube"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
+	"github.com/jenkins-x/jx/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
@@ -25,7 +28,13 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 	if err != nil {
 		return nil, err
 	}
-	return metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns)
+	gitter := gits.NewGitCLI()
+	fileHandles := util.IOFileHandles{
+		Err: os.Stderr,
+		In:  os.Stdin,
+		Out: os.Stdout,
+	}
+	return metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns, gitter, fileHandles)
 }
 
 func getClientsAndNamespace(factory jxfactory.Factory) (tektonclient.Interface, jxclient.Interface, kubeclient.Interface, string, error) {
