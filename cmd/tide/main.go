@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
+	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
@@ -174,7 +174,8 @@ func main() {
 		logrus.WithError(err).Fatal("Error getting Plumber client.")
 	}
 
-	mpClient, err := metapipeline.NewMetaPipelineClient()
+	clientFactory := jxfactory.NewFactory()
+	mpClient, err := plumber.NewMetaPipelineClient(clientFactory)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting Kubernetes client.")
 	}
