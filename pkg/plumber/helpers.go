@@ -6,7 +6,6 @@ import (
 	"runtime/debug"
 
 	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx/pkg/gits"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/kube"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
@@ -36,13 +35,15 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 	if err != nil {
 		return nil, err
 	}
-	gitter := gits.NewGitCLI()
-	fileHandles := util.IOFileHandles{
-		Err: os.Stderr,
-		In:  os.Stdin,
-		Out: os.Stdout,
-	}
-	client, err := metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns, gitter, fileHandles)
+	/*
+		gitter := gits.NewGitCLI()
+		fileHandles := util.IOFileHandles{
+			Err: os.Stderr,
+			In:  os.Stdin,
+			Out: os.Stdout,
+		}
+	*/
+	client, err := metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns)
 	if err == nil && client == nil {
 		return nil, fmt.Errorf("no metapipeline client created")
 	}
