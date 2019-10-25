@@ -10,4 +10,6 @@ RUN make build-linux
 FROM alpine:3.10
 RUN apk add --update --no-cache ca-certificates git 
 COPY --from=builder /go/src/github.com/jenkins-x/lighthouse/bin/lighthouse /lighthouse
+RUN mkdir /jxhome/jenkins-x-versions
+ENV JX_HOME /jxhome
 ENTRYPOINT ["/lighthouse"]
