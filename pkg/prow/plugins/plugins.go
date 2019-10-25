@@ -166,7 +166,7 @@ func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, plugin
 	gitHubClient := gitprovider.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
 	metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
 	if err != nil {
-		logger.Errorf("Metapipeline client creation failed: %s", err)
+		logger.Errorf("Metapipeline client creation failed: %s", err.Error())
 	}
 	return Agent{
 		ClientFactory:      clientFactory,

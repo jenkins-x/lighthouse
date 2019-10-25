@@ -1,11 +1,11 @@
 package plumber
 
 import (
+	"fmt"
 	"os"
 	"runtime/debug"
 
 	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx/pkg/gits"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/kube"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
@@ -24,17 +24,30 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 		logrus.Warnf("no jxfactory passed in to create metapipeline.Client: %s", string(debug.Stack()))
 		factory = jxfactory.NewFactory()
 	}
+	// lets make sure that we have the jx home dir created
+	cfgHome := util.HomeDir()
+	err := os.MkdirAll(cfgHome, util.DefaultWritePermissions)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create jx home dir %s", cfgHome)
+	}
+
 	tektonClient, jxClient, kubeClient, ns, err := getClientsAndNamespace(factory)
 	if err != nil {
 		return nil, err
 	}
-	gitter := gits.NewGitCLI()
-	fileHandles := util.IOFileHandles{
-		Err: os.Stderr,
-		In:  os.Stdin,
-		Out: os.Stdout,
+	/*
+		gitter := gits.NewGitCLI()
+		fileHandles := util.IOFileHandles{
+			Err: os.Stderr,
+			In:  os.Stdin,
+			Out: os.Stdout,
+		}
+	*/
+	client, err := metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns)
+	if err == nil && client == nil {
+		return nil, fmt.Errorf("no metapipeline client created")
 	}
-	return metapipeline.NewMetaPipelineClientWithClientsAndNamespace(jxClient, tektonClient, kubeClient, ns, gitter, fileHandles)
+	return client, err
 }
 
 func getClientsAndNamespace(factory jxfactory.Factory) (tektonclient.Interface, jxclient.Interface, kubeclient.Interface, string, error) {

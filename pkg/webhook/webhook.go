@@ -225,7 +225,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 	_, err = w.Write([]byte(output))
 	if err != nil {
-		l.Debugf("failed to process the push hook: %v", err)
+		l.Debugf("failed to process the webhook: %v", err)
 	}
 }
 
@@ -239,7 +239,7 @@ func (o *Options) ProcessWebHook(webhook scm.Webhook) (*logrus.Entry, string, er
 		"Link":      repository.Link,
 		"ID":        repository.ID,
 		"Clone":     repository.Clone,
-		"CloneSSH":  repository.CloneSSH,
+		"Webhook":   webhook.Kind(),
 	}
 	l := logrus.WithFields(logrus.Fields(fields))
 	_, ok := webhook.(*scm.PingHook)
