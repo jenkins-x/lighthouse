@@ -3,11 +3,11 @@ dependencies:
   owner: jenkins-x
   repo: go-scm
   url: https://github.com/jenkins-x/go-scm
-  version: 1.5.46
+  version: 1.5.51
   versionURL: ""
 - host: github.com
   owner: jenkins-x
   repo: jx
   url: https://github.com/jenkins-x/jx
-  version: 2.0.915
-  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.0.915
+  version: 2.0.916
+  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.0.916
