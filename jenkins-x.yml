@@ -224,4 +224,8 @@ pipelineConfig:
                 args:
                 - release
                 dir: /workspace/source/charts/lighthouse
-
+                
+              - image: gcr.io/jenkinsxio/builder-go
+                command: ./updatebot.sh
+                name: updatebot
+                dir: /workspace/source
