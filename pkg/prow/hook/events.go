@@ -22,6 +22,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/sirupsen/logrus"
 
@@ -31,12 +32,13 @@ import (
 
 // Server keeps the information required to start a server
 type Server struct {
-	ClientFactory  jxfactory.Factory
-	ClientAgent    *plugins.ClientAgent
-	Plugins        *plugins.ConfigAgent
-	ConfigAgent    *config.Agent
-	TokenGenerator func() []byte
-	Metrics        *Metrics
+	ClientFactory      jxfactory.Factory
+	MetapipelineClient metapipeline.Client
+	ClientAgent        *plugins.ClientAgent
+	Plugins            *plugins.ConfigAgent
+	ConfigAgent        *config.Agent
+	TokenGenerator     func() []byte
+	Metrics            *Metrics
 
 	// Tracks running handlers for graceful shutdown
 	wg sync.WaitGroup
@@ -58,7 +60,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		s.wg.Add(1)
 		go func(p string, h plugins.IssueCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ic.Repo.Namespace,
 				ic.Repo.Name,
@@ -126,7 +128,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *gitprovider.GenericCo
 		s.wg.Add(1)
 		go func(p string, h plugins.GenericCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ce.Repo.Namespace,
 				ce.Repo.Name,
@@ -155,7 +157,7 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		c++
 		go func(p string, h plugins.PushEventHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
 			if err := h(agent, *pe); err != nil {
 				agent.Logger.WithError(err).Error("Error handling PushEvent.")
 			}
@@ -185,7 +187,7 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 		c++
 		go func(p string, h plugins.PullRequestHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				pr.Repo.Namespace,
 				pr.Repo.Name,

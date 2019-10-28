@@ -160,14 +160,10 @@ type Agent struct {
 }
 
 // NewAgent bootstraps a new Agent struct from the passed dependencies.
-func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, logger *logrus.Entry) Agent {
+func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, metapipelineClient metapipeline.Client, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
 	gitHubClient := gitprovider.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
-	metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
-	if err != nil {
-		logger.Errorf("Metapipeline client creation failed: %s", err.Error())
-	}
 	return Agent{
 		ClientFactory:      clientFactory,
 		GitHubClient:       gitHubClient,

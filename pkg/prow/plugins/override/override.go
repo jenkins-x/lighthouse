@@ -62,10 +62,11 @@ type overrideClient interface {
 }
 
 type client struct {
-	gc            githubClient
-	jc            config.JobConfig
-	plumberClient plumberClient
-	clientFactory jxfactory.Factory
+	gc                 githubClient
+	jc                 config.JobConfig
+	plumberClient      plumberClient
+	clientFactory      jxfactory.Factory
+	metapipelineClient metapipeline.Client
 }
 
 func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
@@ -90,9 +91,15 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 }
 
 func (c client) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*plumber.PipelineOptions, error) {
-	metapipelineClient, err := plumber.NewMetaPipelineClient(c.clientFactory)
-	if err != nil {
-		return nil, err
+	if metapipelineClient == nil {
+		metapipelineClient = c.metapipelineClient
+	}
+	if metapipelineClient == nil {
+		var err error
+		metapipelineClient, err = plumber.NewMetaPipelineClient(c.clientFactory)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return c.plumberClient.Create(pj, metapipelineClient, repository)
 }
@@ -126,10 +133,11 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	c := client{
-		gc:            pc.GitHubClient,
-		jc:            pc.Config.JobConfig,
-		plumberClient: pc.PlumberClient,
-		clientFactory: pc.ClientFactory,
+		gc:                 pc.GitHubClient,
+		jc:                 pc.Config.JobConfig,
+		plumberClient:      pc.PlumberClient,
+		clientFactory:      pc.ClientFactory,
+		metapipelineClient: pc.MetapipelineClient,
 	}
 	return handle(pc.ClientFactory, c, pc.Logger, &e)
 }
