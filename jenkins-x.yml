@@ -28,17 +28,19 @@ pipelineConfig:
             value: jenkinsxio
           steps:
           - name: lint-checks
-            image: gcr.io/jenkinsxio/builder-go:0.1.576
+            image: gcr.io/jenkinsxio/builder-go
             command: make
             args:
             - check
             dir: /workspace/source
 
           - name: unit-tests
-            image: gcr.io/jenkinsxio/builder-go:0.1.576
+            image: gcr.io/jenkinsxio/builder-go
             command: make
             args:
             - test
+            - build-linux
+            - build-tide-linux
             dir: /workspace/source
 
           - name: init-helm
@@ -49,7 +51,7 @@ pipelineConfig:
             - --client-only
 
           - name: helm-lint
-            image: gcr.io/jenkinsxio/builder-go:0.1.576
+            image: gcr.io/jenkinsxio/builder-go
             command: make
             args:
             - build
@@ -120,14 +122,14 @@ pipelineConfig:
                 value: jenkinsxio
             steps:
               - name: lint-check
-                image: gcr.io/jenkinsxio/builder-go:0.1.576
+                image: gcr.io/jenkinsxio/builder-go
                 command: make
                 args:
                 - check
                 dir: /workspace/source
 
               - name: unit-tests
-                image: gcr.io/jenkinsxio/builder-go:0.1.576
+                image: gcr.io/jenkinsxio/builder-go
                 command: make
                 args:
                 - test
@@ -141,10 +143,12 @@ pipelineConfig:
                 - --client-only
 
               - name: helm-lint
-                image: gcr.io/jenkinsxio/builder-go:0.1.576
+                image: gcr.io/jenkinsxio/builder-go
                 command: make
                 args:
                 - build
+                - build-linux
+                - build-tide-linux
                 dir: /workspace/source/charts/lighthouse
 
               - name: kaniko-credentials 
@@ -219,7 +223,7 @@ pipelineConfig:
                 - --build-arg=VERSION=${inputs.params.version}
 
               - name: release
-                image: gcr.io/jenkinsxio/builder-go:0.1.576
+                image: gcr.io/jenkinsxio/builder-go
                 command: make
                 args:
                 - release
