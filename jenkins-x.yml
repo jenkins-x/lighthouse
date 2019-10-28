@@ -133,6 +133,8 @@ pipelineConfig:
                 command: make
                 args:
                 - test
+                - build-linux
+                - build-tide-linux
                 dir: /workspace/source
 
               - name: init-helm
@@ -147,8 +149,6 @@ pipelineConfig:
                 command: make
                 args:
                 - build
-                - build-linux
-                - build-tide-linux
                 dir: /workspace/source/charts/lighthouse
 
               - name: kaniko-credentials 
