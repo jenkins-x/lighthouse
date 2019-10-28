@@ -24,6 +24,7 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 		logrus.Warnf("no jxfactory passed in to create metapipeline.Client: %s", string(debug.Stack()))
 		factory = jxfactory.NewFactory()
 	}
+	logrus.Info("creating a metapipeline client")
 	// lets make sure that we have the jx home dir created
 	cfgHome := util.HomeDir()
 	err := os.MkdirAll(cfgHome, util.DefaultWritePermissions)

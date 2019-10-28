@@ -486,11 +486,17 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		logrus.Warn("not pushing metrics as there is no push_gateway defined in the config.yaml")
 	}
 
+	metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create metapipeline client")
+	}
+
 	server := &hook.Server{
-		ClientFactory: clientFactory,
-		ConfigAgent:   configAgent,
-		Plugins:       pluginAgent,
-		Metrics:       promMetrics,
+		ClientFactory:      clientFactory,
+		ConfigAgent:        configAgent,
+		Plugins:            pluginAgent,
+		Metrics:            promMetrics,
+		MetapipelineClient: metapipelineClient,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil
