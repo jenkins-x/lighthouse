@@ -242,6 +242,7 @@ func (c *Controller) Shutdown() {
 	c.sc.shutdown()
 }
 
+// GetHistory returns the history
 func (c *Controller) GetHistory() *history.History {
 	return c.History
 }
@@ -392,6 +393,7 @@ func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetPools returns the pool status
 func (c *Controller) GetPools() []Pool {
 	c.m.Lock()
 	defer c.m.Unlock()

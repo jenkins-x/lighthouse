@@ -10,18 +10,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ownerTokensDir struct {
+// OwnerTokensDir handles finding owner based tokens in a directory for GitHub Apps
+type OwnerTokensDir struct {
 	gitServer string
 	dir       string
 }
 
 // NewOwnerTokensDir creates a new dir token scanner
-func NewOwnerTokensDir(gitServer, dir string) *ownerTokensDir {
-	return &ownerTokensDir{gitServer, dir}
+func NewOwnerTokensDir(gitServer, dir string) *OwnerTokensDir {
+	return &OwnerTokensDir{gitServer, dir}
 }
 
 // FindToken finds the token for the given owner
-func (o *ownerTokensDir) FindToken(owner string) (string, error) {
+func (o *OwnerTokensDir) FindToken(owner string) (string, error) {
 	dir := o.dir
 	ownerURL := util.UrlJoin(o.gitServer, owner)
 	prefix := ownerURL + "="

@@ -29,7 +29,7 @@ const (
 
 type gitHubAppTideController struct {
 	controllers        []tide.TideController
-	ownerTokenFinder   *ownerTokensDir
+	ownerTokenFinder   *OwnerTokensDir
 	gitServer          string
 	githubAppSecretDir string
 	configAgent        *config.Agent
@@ -43,7 +43,7 @@ type gitHubAppTideController struct {
 	m                  sync.Mutex
 }
 
-// newGitHubAppTideController creates a GitHub App style controller which needs to process each github owner
+// NewGitHubAppTideController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
 func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitClient git.Client, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.TideController, error) {
 
