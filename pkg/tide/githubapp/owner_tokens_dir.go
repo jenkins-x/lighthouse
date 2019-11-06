@@ -32,7 +32,7 @@ func (o *OwnerTokensDir) FindToken(owner string) (string, error) {
 	}
 	for _, f := range files {
 		localName := f.Name()
-		if f.IsDir() || localName == "username" {
+		if f.IsDir() || localName == "username" || strings.HasPrefix(localName, ".") {
 			continue
 		}
 		name := filepath.Join(dir, localName)
