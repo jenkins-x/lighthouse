@@ -49,6 +49,8 @@ readinessProbe:
 
 tide:
   replicaCount: 1
+  githubApp:
+    enabled: false
   livenessProbe:
     initialDelaySeconds: 120
     periodSeconds: 10

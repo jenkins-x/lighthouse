@@ -204,6 +204,17 @@ func (h *History) AllRecords() map[string][]*Record {
 	return res
 }
 
+// Merge combines the logs from the other history
+func (h *History) Merge(other *History) {
+	otherLogs := other.AllRecords()
+
+	for key, logs := range otherLogs {
+		for _, log := range logs {
+			h.addRecord(key, log)
+		}
+	}
+}
+
 // recordLog is a space efficient, limited size, append only list.
 type recordLog struct {
 	buff  []*Record

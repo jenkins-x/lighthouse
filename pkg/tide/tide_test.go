@@ -638,7 +638,7 @@ func TestDividePool(t *testing.T) {
 	fc := &fgc{
 		refs: map[string]string{"k/t-i heads/master": "123"},
 	}
-	c := &Controller{
+	c := &DefaultController{
 		ghc:    fc,
 		logger: logrus.WithField("component", "tide"),
 	}
@@ -804,7 +804,7 @@ func TestPickBatch(t *testing.T) {
 			},
 		},
 	})
-	c := &Controller{
+	c := &DefaultController{
 		logger: logrus.WithField("component", "tide"),
 		gc:     gc,
 		config: ca.Config,
@@ -1280,7 +1280,7 @@ func TestTakeAction(t *testing.T) {
 		}
 		fgc := fgc{mergeErrs: tc.mergeErrs}
 		fakePlumberClient := fake.NewPlumber()
-		c := &Controller{
+		c := &DefaultController{
 			logger:        logrus.WithField("controller", "tide"),
 			gc:            gc,
 			config:        ca.Config,
@@ -1338,7 +1338,7 @@ func TestServeHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create history client: %v", err)
 	}
-	c := &Controller{
+	c := &DefaultController{
 		pools: []Pool{
 			{
 				MissingPRs: []PullRequest{pr1},
@@ -1577,7 +1577,7 @@ func TestSync(t *testing.T) {
 		}
 		go sc.run()
 		defer sc.shutdown()
-		c := &Controller{
+		c := &DefaultController{
 			config:        ca.Config,
 			ghc:           fgc,
 			prowJobClient: fakePlumberClient,
@@ -2287,7 +2287,7 @@ func TestPresubmitsByPull(t *testing.T) {
 			branch: "master",
 			prs:    []PullRequest{samplePR},
 		}
-		c := &Controller{
+		c := &DefaultController{
 			config: cfgAgent.Config,
 			ghc:    &fgc{},
 			changedFiles: &changedFilesAgent{
@@ -2401,7 +2401,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		cfg := &config.Config{}
 		cfgAgent := &config.Agent{}
 		cfgAgent.Set(cfg)
-		c := &Controller{
+		c := &DefaultController{
 			config: cfgAgent.Config,
 			ghc:    &fgc{},
 			logger: logrus.WithField("component", "tide"),
