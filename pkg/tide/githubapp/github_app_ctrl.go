@@ -28,7 +28,7 @@ const (
 )
 
 type gitHubAppTideController struct {
-	controllers        []tide.TideController
+	controllers        []tide.Controller
 	ownerTokenFinder   *OwnerTokensDir
 	gitServer          string
 	githubAppSecretDir string
@@ -45,7 +45,7 @@ type gitHubAppTideController struct {
 
 // NewGitHubAppTideController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitClient git.Client, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.TideController, error) {
+func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitClient git.Client, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
 
 	gitServer := GithubServer
 	return &gitHubAppTideController{
@@ -153,7 +153,7 @@ func (g *gitHubAppTideController) createOwnerControllers() error {
 	return util.CombineErrors(errs...)
 }
 
-func (g *gitHubAppTideController) createOwnerController(owner string, configGetter config.Getter) (tide.TideController, error) {
+func (g *gitHubAppTideController) createOwnerController(owner string, configGetter config.Getter) (tide.Controller, error) {
 	token, err := g.ownerTokenFinder.FindToken(owner)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find GitHub App token for %s", owner)

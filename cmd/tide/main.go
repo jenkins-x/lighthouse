@@ -193,7 +193,7 @@ func main() {
 	}
 }
 
-func sync(c tide.TideController) {
+func sync(c tide.Controller) {
 	if err := c.Sync(); err != nil {
 		logrus.WithError(err).Error("Error syncing.")
 	}

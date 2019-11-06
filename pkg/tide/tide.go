@@ -72,8 +72,8 @@ type contextChecker interface {
 	MissingRequiredContexts([]string) []string
 }
 
-// Controller knows how to sync PRs and PJs.
-type Controller struct {
+// DefaultController knows how to sync PRs and PJs.
+type DefaultController struct {
 	logger        *logrus.Entry
 	config        config.Getter
 	ghc           githubClient
@@ -199,8 +199,8 @@ func init() {
 	prometheus.MustRegister(tideMetrics.statusUpdateDuration)
 }
 
-// NewController makes a Controller out of the given clients.
-func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJobClient, mpClient metapipeline.Client, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*Controller, error) {
+// NewController makes a DefaultController out of the given clients.
+func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJobClient, mpClient metapipeline.Client, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -218,7 +218,7 @@ func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJob
 		path:           statusURI,
 	}
 	go sc.run()
-	return &Controller{
+	return &DefaultController{
 		logger:        logger.WithField("controller", "sync"),
 		ghc:           ghcSync,
 		prowJobClient: prowJobClient,
@@ -236,14 +236,14 @@ func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJob
 
 // Shutdown signals the statusController to stop working and waits for it to
 // finish its last update loop before terminating.
-// Controller.Sync() should not be used after this function is called.
-func (c *Controller) Shutdown() {
+// DefaultController.Sync() should not be used after this function is called.
+func (c *DefaultController) Shutdown() {
 	c.History.Flush()
 	c.sc.shutdown()
 }
 
 // GetHistory returns the history
-func (c *Controller) GetHistory() *history.History {
+func (c *DefaultController) GetHistory() *history.History {
 	return c.History
 }
 
@@ -280,7 +280,7 @@ func contextsToStrings(contexts []Context) []string {
 }
 
 // Sync runs one sync iteration.
-func (c *Controller) Sync() error {
+func (c *DefaultController) Sync() error {
 	start := time.Now()
 	defer func() {
 		duration := time.Since(start)
@@ -380,7 +380,7 @@ func (c *Controller) Sync() error {
 	return nil
 }
 
-func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *DefaultController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.m.Lock()
 	defer c.m.Unlock()
 	b, err := json.Marshal(c.pools)
@@ -394,7 +394,7 @@ func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPools returns the pool status
-func (c *Controller) GetPools() []Pool {
+func (c *DefaultController) GetPools() []Pool {
 	c.m.Lock()
 	defer c.m.Unlock()
 	answer := []Pool{}
@@ -431,7 +431,7 @@ func subpoolsInParallel(goroutines int, sps map[string]*subpool, process func(*s
 // filterSubpools filters non-pool PRs out of the initially identified subpools,
 // deleting any pools that become empty.
 // See filterSubpool for filtering details.
-func (c *Controller) filterSubpools(goroutines int, raw map[string]*subpool) map[string]*subpool {
+func (c *DefaultController) filterSubpools(goroutines int, raw map[string]*subpool) map[string]*subpool {
 	filtered := make(map[string]*subpool)
 	var lock sync.Mutex
 
@@ -458,7 +458,7 @@ func (c *Controller) filterSubpools(goroutines int, raw map[string]*subpool) map
 	return filtered
 }
 
-func (c *Controller) initSubpoolData(sp *subpool) error {
+func (c *DefaultController) initSubpoolData(sp *subpool) error {
 	var err error
 	sp.presubmits, err = c.presubmitsByPull(sp)
 	if err != nil {
@@ -783,7 +783,7 @@ func prNumbers(prs []PullRequest) []int {
 	return nums
 }
 
-func (c *Controller) pickBatch(sp subpool, cc contextChecker) ([]PullRequest, error) {
+func (c *DefaultController) pickBatch(sp subpool, cc contextChecker) ([]PullRequest, error) {
 	batchLimit := c.config().Tide.BatchSizeLimit(sp.org, sp.repo)
 	if batchLimit < 0 {
 		sp.log.Debug("Batch merges disabled by configuration in this repo.")
@@ -861,7 +861,7 @@ func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method gitpr
 	return method, nil
 }
 
-func (c *Controller) prepareMergeDetails(commitTemplates config.TideMergeCommitTemplate, pr PullRequest, mergeMethod gitprovider.PullRequestMergeType) gitprovider.MergeDetails {
+func (c *DefaultController) prepareMergeDetails(commitTemplates config.TideMergeCommitTemplate, pr PullRequest, mergeMethod gitprovider.PullRequestMergeType) gitprovider.MergeDetails {
 	ghMergeDetails := gitprovider.MergeDetails{
 		SHA:         string(pr.HeadRefOID),
 		MergeMethod: string(mergeMethod),
@@ -890,7 +890,7 @@ func (c *Controller) prepareMergeDetails(commitTemplates config.TideMergeCommitT
 	return ghMergeDetails
 }
 
-func (c *Controller) mergePRs(sp subpool, prs []PullRequest) error {
+func (c *DefaultController) mergePRs(sp subpool, prs []PullRequest) error {
 	var merged, failed []int
 	defer func() {
 		if len(merged) == 0 {
@@ -1017,7 +1017,7 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 	return true, err
 }
 
-func (c *Controller) trigger(sp subpool, presubmits map[int][]config.Presubmit, prs []PullRequest) error {
+func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Presubmit, prs []PullRequest) error {
 	refs := plumber.Refs{
 		Org:     sp.org,
 		Repo:    sp.repo,
@@ -1074,7 +1074,7 @@ func (c *Controller) trigger(sp subpool, presubmits map[int][]config.Presubmit, 
 	return nil
 }
 
-func (c *Controller) takeAction(sp subpool, batchPending, successes, pendings, missings, batchMerges []PullRequest, missingSerialTests map[int][]config.Presubmit) (Action, []PullRequest, error) {
+func (c *DefaultController) takeAction(sp subpool, batchPending, successes, pendings, missings, batchMerges []PullRequest, missingSerialTests map[int][]config.Presubmit) (Action, []PullRequest, error) {
 	// Merge the batch!
 	if len(batchMerges) > 0 {
 		return MergeBatch, batchMerges, c.mergePRs(sp, batchMerges)
@@ -1181,7 +1181,7 @@ func (c *changedFilesAgent) prune() {
 	c.nextChangeCache = make(map[changeCacheKey][]string)
 }
 
-func (c *Controller) presubmitsByPull(sp *subpool) (map[int][]config.Presubmit, error) {
+func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]config.Presubmit, error) {
 	presubmits := make(map[int][]config.Presubmit, len(sp.prs))
 	record := func(num int, job config.Presubmit) {
 		if jobs, ok := presubmits[num]; ok {
@@ -1207,7 +1207,7 @@ func (c *Controller) presubmitsByPull(sp *subpool) (map[int][]config.Presubmit, 
 	return presubmits, nil
 }
 
-func (c *Controller) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, error) {
+func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, error) {
 	sp.log.Infof("Syncing subpool: %d PRs, %d PJs.", len(sp.prs), len(sp.pjs))
 	successes, pendings, missings, missingSerialTests := accumulate(sp.presubmits, sp.prs, sp.pjs, sp.log)
 	batchMerge, batchPending := accumulateBatch(sp.presubmits, sp.prs, sp.pjs, sp.log)
@@ -1326,7 +1326,7 @@ func poolKey(org, repo, branch string) string {
 
 // dividePool splits up the list of pull requests and prow jobs into a group
 // per repo and branch. It only keeps ProwJobs that match the latest branch.
-func (c *Controller) dividePool(pool map[string]PullRequest, pjs []plumber.PipelineOptions) (map[string]*subpool, error) {
+func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []plumber.PipelineOptions) (map[string]*subpool, error) {
 	sps := make(map[string]*subpool)
 	for _, pr := range pool {
 		org := string(pr.Repository.Owner.Login)
