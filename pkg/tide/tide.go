@@ -242,6 +242,10 @@ func (c *Controller) Shutdown() {
 	c.sc.shutdown()
 }
 
+func (c *Controller) GetHistory() *history.History {
+	return c.History
+}
+
 func prKey(pr *PullRequest) string {
 	return fmt.Sprintf("%s#%d", string(pr.Repository.NameWithOwner), int(pr.Number))
 }
@@ -386,6 +390,16 @@ func (c *Controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if _, err = w.Write(b); err != nil {
 		c.logger.WithError(err).Error("Writing JSON response.")
 	}
+}
+
+func (c *Controller) GetPools() []Pool {
+	c.m.Lock()
+	defer c.m.Unlock()
+	answer := []Pool{}
+	for _, p := range c.pools {
+		answer = append(answer, p)
+	}
+	return answer
 }
 
 func subpoolsInParallel(goroutines int, sps map[string]*subpool, process func(*subpool)) {

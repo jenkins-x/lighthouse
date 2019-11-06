@@ -1,0 +1,38 @@
+tide:
+  context_options:
+    from-branch-protection: true
+    required-if-present-contexts: null
+    skip-unknown-contexts: false
+  merge_method:
+    jstrachan/demo292: merge
+    jstrachan/environment-jstrachan-cb2-production: merge
+    jstrachan/environment-jstrachan-cb2-staging: merge
+    rawlingsj/nodey238: merge
+  queries:
+  - labels:
+    - approved
+    missingLabels:
+    - do-not-merge
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - needs-ok-to-test
+    - needs-rebase
+    repos:
+    - jstrachan/demo292
+    - jstrachan/environment-jstrachan-cb2-production
+    - jstrachan/environment-jstrachan-cb2-staging
+    - rawlingsj/nodey238
+  - labels:
+    - updatebot
+    missingLabels:
+    - do-not-merge
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - needs-ok-to-test
+    - needs-rebase
+    repos:
+    - jstrachan/demo292
+    - jstrachan/environment-jstrachan-cb2-production
+    - jstrachan/environment-jstrachan-cb2-staging
+    - rawlingsj/nodey238
+  target_url: http://deck-jx.35.205.166.161.nip.io

@@ -24,19 +24,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/jx/pkg/jxfactory"
-	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/io"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/tide"
+	"github.com/jenkins-x/lighthouse/pkg/tide/githubapp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -128,12 +124,6 @@ func main() {
 	if err := configAgent.Start(o.configPath, o.jobConfigPath); err != nil {
 		logrus.WithError(err).Fatal("Error starting config agent.")
 	}
-	cfg := configAgent.Config
-
-	scmClient, err := factory.NewClientFromEnvironment()
-	if err != nil {
-		logrus.WithError(err).Fatal("cannot create SCM client")
-	}
 
 	botName := o.botName
 	if botName == "" {
@@ -142,8 +132,6 @@ func main() {
 	if botName == "" {
 		logrus.Fatal("no $GIT_USER defined")
 	}
-	gitproviderClient := gitprovider.ToClient(scmClient, botName)
-
 	serverURL := o.gitServerURL
 	if serverURL == "" {
 		serverURL = os.Getenv("GIT_SERVER")
@@ -164,29 +152,14 @@ func main() {
 	}
 	defer gitClient.Clean()
 
-	_, jxClient, _, ns, err := clients.GetClientsAndNamespace()
-	if err != nil {
-		logrus.WithError(err).Fatal("Error creating kubernetes resource clients.")
-	}
-
-	plumberClient, err := plumber.NewPlumber(jxClient, ns)
-	if err != nil {
-		logrus.WithError(err).Fatal("Error getting Plumber client.")
-	}
-
-	clientFactory := jxfactory.NewFactory()
-	mpClient, err := plumber.NewMetaPipelineClient(clientFactory)
-	if err != nil {
-		logrus.WithError(err).Fatal("Error getting Kubernetes client.")
-	}
-
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, cfg, gitClient, o.maxRecordsPerPool, opener, o.historyURI, o.statusURI, nil)
+	cfg := configAgent.Config
+	c, err := githubapp.NewTideController(configAgent, botName, gitClient, o.maxRecordsPerPool, opener, o.historyURI, o.statusURI)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Tide controller.")
 	}
 	defer c.Shutdown()
 	http.Handle("/", c)
-	http.Handle("/history", c.History)
+	http.Handle("/history", c.GetHistory())
 	server := &http.Server{Addr: ":" + strconv.Itoa(o.port)}
 
 	start := time.Now()
@@ -220,13 +193,8 @@ func main() {
 	}
 }
 
-func sync(c *tide.Controller) {
+func sync(c tide.TideController) {
 	if err := c.Sync(); err != nil {
 		logrus.WithError(err).Error("Error syncing.")
 	}
-}
-
-func tokensPerIteration(hourlyTokens int, iterPeriod time.Duration) int {
-	tokenRate := float64(hourlyTokens) / float64(time.Hour)
-	return int(tokenRate * float64(iterPeriod))
 }

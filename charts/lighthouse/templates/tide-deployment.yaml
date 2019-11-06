@@ -65,6 +65,10 @@ spec:
               name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
               key: password
           value: "{{ .Values.git.token }}"
+{{- if .Values.tide.githubApp.enabled }}
+        - name: "GITHUB_APP_SECRET_DIR"
+          value: "/secrets/githubapp/tokens"
+{{- end }}
 {{- if .Values.tide.env }}
 {{- range $pkey, $pval := .Values.tide.env }}
         - name: {{ $pkey }}
@@ -77,10 +81,20 @@ spec:
         - name: config
           mountPath: /etc/config
           readOnly: true
+{{- if .Values.tide.githubApp.enabled }}
+        - name: githubapp-tokens
+          mountPath: /secrets/githubapp/tokens
+          readOnly: true
+{{- end }}
       volumes:
       - name: config
         configMap:
           name: config
+{{- if .Values.tide.githubApp.enabled }}
+      - name: githubapp-tokens
+        secret:
+          name: tide-githubapp-tokens
+{{- end }}
     {{- with .Values.tide.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
