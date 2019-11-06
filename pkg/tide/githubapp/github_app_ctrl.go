@@ -139,9 +139,6 @@ func (g *gitHubAppTideController) createOwnerControllers() error {
 		// create copy of config with different queries
 		ocfg := *cfg
 		ocfg.Tide.Queries = queries
-		agent := *g.configAgent
-		agent.Set(&ocfg)
-
 		configGetter := func() *config.Config {
 			return &ocfg
 		}
