@@ -32,11 +32,13 @@ func (o *OwnerTokensDir) FindToken(owner string) (string, error) {
 	}
 	for _, f := range files {
 		localName := f.Name()
-		if localName == "username" {
+		if f.IsDir() || localName == "username" {
 			continue
 		}
 		name := filepath.Join(dir, localName)
+
 		logrus.Tracef("loading file %s", name)
+		/* #nosec */
 		data, err := ioutil.ReadFile(name)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to load file %s", name)
