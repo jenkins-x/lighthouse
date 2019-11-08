@@ -599,6 +599,9 @@ func GenerateTemplate(templ, name string, data interface{}) (string, error) {
 // 	- how an approver can indicate their approval
 // 	- how an approver can cancel their approval
 func GetMessage(ap Approvers, linkURL *url.URL, org, repo, branch string) *string {
+	if linkURL == nil {
+		return nil
+	}
 	linkURL.Path = org + "/" + repo
 	message, err := GenerateTemplate(`{{if (and (not .ap.RequirementsMet) (call .ap.ManuallyApproved )) }}
 Approval requirements bypassed by manually added approval.
