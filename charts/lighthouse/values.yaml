@@ -51,6 +51,7 @@ tide:
   replicaCount: 1
   githubApp:
     enabled: false
+    username:  "jenkins-x[bot]"
   livenessProbe:
     initialDelaySeconds: 120
     periodSeconds: 10
