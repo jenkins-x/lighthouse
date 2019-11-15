@@ -51,7 +51,7 @@ jx step bdd \
     --use-revision \
     --version-repo-pr \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
-    --config ../jx/bdd/boot-lh/cluster.yaml \
+    --config ../bdd/default/cluster.yaml \
     --gopath /tmp \
     --git-provider=github \
     --git-username $GH_USERNAME \
