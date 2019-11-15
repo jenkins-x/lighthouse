@@ -96,6 +96,9 @@ pipelineConfig:
             dir: /workspace/source/charts/preview
             image: go
             name: promote-jx-preview
+          - command: bdd/default/ci.sh
+            image: go
+            name: runci
 
     release:
       pipeline:
