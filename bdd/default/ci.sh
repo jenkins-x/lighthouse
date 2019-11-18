@@ -36,8 +36,8 @@ export JX_VALUE_PROW_HMACTOKEN="$GH_ACCESS_TOKEN"
 export JX_BATCH_MODE="true"
 
 git clone https://github.com/jenkins-x/jenkins-x-boot-config.git boot-source
-cp jx/bdd/boot-lh/jx-requirements.yml boot-source
-cp jx/bdd/boot-lh/parameters.yaml boot-source/env
+cp bdd/default/jx-requirements.yml boot-source
+cp bdd/default/parameters.yaml boot-source/env
 cd boot-source
 
 # TODO hack until we fix boot to do this too!
