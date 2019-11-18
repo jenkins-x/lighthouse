@@ -1,238 +1,48 @@
-dockerRegistryOwner: jenkinsxio
+buildPack: none
 pipelineConfig:
   pipelines:
     pullRequest:
       pipeline:
-        agent:
-          image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
-        stages:
-        - name: ci
-          environment:
-          - name: GIT_COMMITTER_EMAIL
-            value: jenkins-x@googlegroups.com
-          - name: GIT_AUTHOR_EMAIL
-            value: jenkins-x@googlegroups.com
-          - name: GIT_AUTHOR_NAME
-            value: jenkins-x-bot
-          - name: GIT_COMMITTER_NAME
-            value: jenkins-x-bot
-          - name: HELM_HOME
-            value: /builder/home/.helm
+        options:
+          containerOptions:
+            resources:
+              limits:
+                cpu: 4
+                memory: 6144Mi
+              requests:
+                cpu: 1
+                memory: 2048Mi
+        environment:
           - name: GOPROXY
-            value: http://jenkins-x-athens-proxy
-          - name: GO111MODULE
-            value: "on"
-          - name: GOOGLE_APPLICATION_CREDENTIALS
-            value: /builder/home/kaniko-secret.json
-          - name: ORG
-            value: jenkinsxio
-          steps:
-          - name: lint-checks
-            image: gcr.io/jenkinsxio/builder-go
-            command: make
-            args:
-            - check
-            dir: /workspace/source
-
-          - name: unit-tests
-            image: gcr.io/jenkinsxio/builder-go
-            command: make
-            args:
-            - test
-            - build-linux
-            - build-tide-linux
-            dir: /workspace/source
-
-          - name: init-helm
-            image: alpine/helm:2.12.3
-            command: helm
-            args:
-            - init
-            - --client-only
-
-          - name: helm-lint
-            image: gcr.io/jenkinsxio/builder-go
-            command: make
-            args:
-            - build
-            dir: /workspace/source/charts/lighthouse
-          - name: kaniko-credentials
-            image: jenkinsxio/jx:1.3.963
-            command: jx
-            args:
-              - step 
-              - credential
-              - -s
-              - kaniko-secret
-              - -k
-              - kaniko-secret
-              - -f
-              - /builder/home/kaniko-secret.json
-
-          - name: build-and-push-image
-            image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
-            command: /kaniko/executor
-            args: 
-            - --dockerfile=/workspace/source/Dockerfile
-            - --destination=gcr.io/jenkinsxio/lighthouse:${inputs.params.version}
-            - --context=/workspace/source
-            - --cache-dir=/workspace
-            - --build-arg=VERSION=${inputs.params.version}
-          - name: build-and-push-image2
-            image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
-            command: /kaniko/executor
-            args:
-            - --dockerfile=/workspace/source/Dockerfile.tide
-            - --destination=gcr.io/jenkinsxio/lh-tide:${inputs.params.version}
-            - --context=/workspace/source
-            - --cache-dir=/workspace
-            - --build-arg=VERSION=${inputs.params.version}
-          - command: make preview
-            dir: /workspace/source/charts/preview
-            image: go
-            name: promote-make-preview
-
-          - command: jx preview --app $APP_NAME --dir ../..
-            dir: /workspace/source/charts/preview
-            image: go
-            name: promote-jx-preview
-          - command: bdd/default/ci.sh
-            image: gcr.io/jenkinsxio/builder-go
-            name: run-e2e-tests
-
-    release:
-      pipeline:
+            value: http://jenkins-x-athens-proxy:80
+          - name: GKE_SA
+            value: /secrets/bdd/sa.json
+          - name: GH_ACCESS_TOKEN 
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-bot-test-github
+                key: password
+          - name: JENKINS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: test-jenkins-user 
+                key: password
         agent:
-          image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+          image: gcr.io/jenkinsxio/builder-go-nodejs:2.0.998-328
         stages:
-          - name: release
-            environment:
-              - name: GIT_COMMITTER_EMAIL
-                value: jenkins-x@googlegroups.com
-              - name: GIT_AUTHOR_EMAIL
-                value: jenkins-x@googlegroups.com
-              - name: GIT_AUTHOR_NAME
-                value: jenkins-x-bot
-              - name: GIT_COMMITTER_NAME
-                value: jenkins-x-bot
-              - name: HELM_HOME
-                value: /builder/home/.helm
-              - name: GOPROXY
-                value: http://jenkins-x-athens-proxy
-              - name: GOOGLE_APPLICATION_CREDENTIALS
-                value: /builder/home/kaniko-secret.json
-              - name: ORG
-                value: jenkinsxio
+          - name: ci
+            options:
+              volumes:
+                - name: sa
+                  secret:
+                    secretName: bdd-secret
+                    items:
+                      - key: bdd-credentials.json
+                        path: bdd/sa.json
+              containerOptions:
+                volumeMounts:
+                  - mountPath: /secrets
+                    name: sa
             steps:
-              - name: lint-check
-                image: gcr.io/jenkinsxio/builder-go
-                command: make
-                args:
-                - check
-                dir: /workspace/source
-
-              - name: unit-tests
-                image: gcr.io/jenkinsxio/builder-go
-                command: make
-                args:
-                - test
-                - build-linux
-                - build-tide-linux
-                dir: /workspace/source
-
-              - name: init-helm
-                image: alpine/helm:2.12.3
-                command: helm
-                args:
-                - init
-                - --client-only
-
-              - name: helm-lint
-                image: gcr.io/jenkinsxio/builder-go
-                command: make
-                args:
-                - build
-                dir: /workspace/source/charts/lighthouse
-
-              - name: kaniko-credentials 
-                image: jenkinsxio/jx:1.3.963 
-                command: jx
-                args:
-                  - step 
-                  - credential
-                  - -s
-                  - kaniko-secret
-                  - -k
-                  - kaniko-secret
-                  - -f
-                  - /builder/home/kaniko-secret.json
-
-              - name: git-user-pass 
-                image: jenkinsxio/jx:1.3.963
-                command: jx
-                args:
-                  - step
-                  - credential
-                  - -s
-                  - knative-git-user-pass
-                  - -k
-                  - password
-                  - -f
-                  - /builder/home/git-token
-
-              - name: chartmuseum-credentials-user
-                image: jenkinsxio/jx:1.3.963
-                command: jx
-                args:
-                  - step
-                  - credential
-                  - -s
-                  - jenkins-x-chartmuseum
-                  - -k
-                  - BASIC_AUTH_USER
-                  - -f
-                  - /builder/home/basic-auth-user
-
-              - name: chartmuseum-credentials-password
-                image: gcr.io/jenkinsxio/builder-jx:0.1.639
-                command: jx
-                args:
-                  - step
-                  - credential
-                  - -s
-                  - jenkins-x-chartmuseum
-                  - -k
-                  - BASIC_AUTH_PASS
-                  - -f
-                  - /builder/home/basic-auth-pass
-
-              - name: build-and-push-image
-                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
-                command: /kaniko/executor
-                args: 
-                - --dockerfile=/workspace/source/Dockerfile
-                - --destination=gcr.io/jenkinsxio/lighthouse:${inputs.params.version}
-                - --context=/workspace/source
-                - --cache-dir=/workspace
-
-              - name: build-and-push-image2
-                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
-                command: /kaniko/executor
-                args:
-                - --dockerfile=/workspace/source/Dockerfile.tide
-                - --destination=gcr.io/jenkinsxio/lh-tide:${inputs.params.version}
-                - --context=/workspace/source
-                - --cache-dir=/workspace
-                - --build-arg=VERSION=${inputs.params.version}
-
-              - name: release
-                image: gcr.io/jenkinsxio/builder-go
-                command: make
-                args:
-                - release
-                dir: /workspace/source/charts/lighthouse
-                
-              - name: updatebot
-                image: gcr.io/jenkinsxio/builder-go
-                command: ./updatebot.sh
-                dir: /workspace/source
+              - command: bdd/default/ci.sh
+                name: runci
