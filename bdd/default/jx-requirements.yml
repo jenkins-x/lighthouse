@@ -1,5 +1,5 @@
 cluster:
-  clusterName: lighthouse-bdd
+  clusterName: lh-bdd-default
   environmentGitOwner: cb-kubecd
   project: jenkins-x-bdd3
   provider: gke

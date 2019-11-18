@@ -1,5 +1,5 @@
 clusters:
-  - name: bdd-boot-lh
+  - name: lh-bdd-default
     args:
       - create
       - cluster

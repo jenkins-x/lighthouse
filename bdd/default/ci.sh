@@ -48,8 +48,6 @@ helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 export BDD_TEST_SINGLE_IMPORT="node-http"
 
 jx step bdd \
-    --use-revision \
-    --version-repo-pr \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/default/cluster.yaml \
     --gopath /tmp \
