@@ -109,6 +109,7 @@ pipelineConfig:
             image: go
             name: promote-jx-preview
           - command: bdd/default/ci.sh
+            image: gcr.io/jenkinsxio/builder-go-nodejs:2.0.998-328
             name: run-e2e-tests
 
     release:
