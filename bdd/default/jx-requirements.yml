@@ -32,6 +32,4 @@ storage:
     enabled: true
     url: "gs://jx-bdd-log-store3"
 webhook: lighthouse
-lighthouse:
-  version: 0.0.0-SNAPSHOT-PR-337-5
 
