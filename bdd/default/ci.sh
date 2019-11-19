@@ -40,7 +40,7 @@ cp bdd/default/jx-requirements.yml boot-source
 cp bdd/default/parameters.yaml boot-source/env
 cd boot-source
 
-cat ../lighthouse/bdd/default/values.yaml.template >> env/lighthouse/values.tmpl.yaml
+cat ../bdd/default/values.yaml.template >> env/lighthouse/values.tmpl.yaml
 echo "Building lighthouse with version $VERSION"
 
 # TODO hack until we fix boot to do this too!
