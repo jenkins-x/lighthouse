@@ -38,6 +38,18 @@ pipelineConfig:
               secretKeyRef:
                 name: test-jenkins-user 
                 key: password
+          options:
+            volumes:
+              - name: sa
+                secret:
+                  secretName: bdd-secret
+                  items:
+                    - key: bdd-credentials.json
+                      path: bdd/sa.json
+            containerOptions:
+              volumeMounts:
+                - mountPath: /secrets
+                  name: sa
           steps:
           - name: lint-checks
             image: gcr.io/jenkinsxio/builder-go
