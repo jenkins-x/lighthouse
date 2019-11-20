@@ -43,6 +43,7 @@ cd boot-source
 # Manually interpolate lighthouse version tag
 cat ../bdd/default/values.yaml.template >> env/lighthouse/values.tmpl.yaml
 sed 's/$VERSION/'"$VERSION"'/' env/lighthouse/values.tmpl.yaml > env/lighthouse/values.tmpl.yaml
+cat env/lighthouse/values.tmpl.yaml
 echo "Building lighthouse with version $VERSION"
 
 # TODO hack until we fix boot to do this too!
