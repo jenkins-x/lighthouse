@@ -1,5 +1,4 @@
 # Override the lighthouse image tag
 image:
   repository: gcr.io/jenkinsxio/lighthouse
-  tag: $VERSION
   pullPolicy: IfNotPresent
