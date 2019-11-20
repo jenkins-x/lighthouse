@@ -1,0 +1,25 @@
+{{- if eq .Requirements.webhook "lighthouse" }}
+enabled: true
+{{- else }}
+enabled: false
+{{- end }}
+
+hmacToken: "{{ .Parameters.prow.hmacToken }}"
+
+git:
+  kind: {{ .Requirements.cluster.gitKind | default "github" }}
+  name: {{ .Requirements.cluster.gitName | default "github" }}
+  server: {{ .Requirements.cluster.gitServer | default "https://github.com" }}
+
+service:
+  name: hook
+  
+replicaCount: 2
+
+image:
+  repository: gcr.io/jenkinsxio/lighthouse:{{ .Requirements.lighthouse.version | default "latest" }}
+# Override the lighthouse image tag
+image:
+  repository: gcr.io/jenkinsxio/lighthouse
+  tag: $VERSION
+  pullPolicy: IfNotPresent
