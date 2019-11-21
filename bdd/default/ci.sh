@@ -15,7 +15,6 @@ KUBECONFIG="/tmp/jxhome/config"
 mkdir -p $JX_HOME
 
 jx --version
-jx step git credentials
 
 gcloud auth activate-service-account --key-file $GKE_SA
 
