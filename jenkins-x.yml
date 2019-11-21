@@ -26,6 +26,30 @@ pipelineConfig:
             value: /builder/home/kaniko-secret.json
           - name: ORG
             value: jenkinsxio
+          - name: GKE_SA
+            value: /secrets/bdd/sa.json
+          - name: GH_ACCESS_TOKEN 
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-bot-test-github
+                key: password
+          - name: JENKINS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: test-jenkins-user 
+                key: password
+          options:
+            volumes:
+              - name: sa
+                secret:
+                  secretName: bdd-secret
+                  items:
+                    - key: bdd-credentials.json
+                      path: bdd/sa.json
+            containerOptions:
+              volumeMounts:
+                - mountPath: /secrets
+                  name: sa
           steps:
           - name: lint-checks
             image: gcr.io/jenkinsxio/builder-go
@@ -96,6 +120,9 @@ pipelineConfig:
             dir: /workspace/source/charts/preview
             image: go
             name: promote-jx-preview
+          - command: bdd/default/ci.sh
+            image: gcr.io/jenkinsxio/builder-go-nodejs:2.0.998-328
+            name: run-e2e-tests
 
     release:
       pipeline:

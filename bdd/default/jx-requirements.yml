@@ -1,0 +1,35 @@
+cluster:
+  clusterName: lh-bdd-default
+  environmentGitOwner: cb-kubecd
+  project: jenkins-x-bdd3
+  provider: gke
+  zone: europe-west1-c
+environments:
+  - key: dev
+    owner: ""
+    repository: ""
+  - key: staging
+    owner: ""
+    repository: ""
+  - key: production
+    owner: ""
+    repository: ""
+ingress:
+  domain: ""
+  externalDNS: false
+  tls:
+    email: ""
+    enabled: false
+    production: false
+kaniko: true
+repository: nexus
+secretStorage: local
+storage:
+  logs:
+    enabled: true
+    url: "gs://jx-bdd-log-store3"
+  reports:
+    enabled: true
+    url: "gs://jx-bdd-log-store3"
+webhook: lighthouse
+
