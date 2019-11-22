@@ -1,0 +1,48 @@
+buildPack: none
+pipelineConfig:
+  pipelines:
+    pullRequest:
+      pipeline:
+        options:
+          containerOptions:
+            resources:
+              limits:
+                cpu: 4
+                memory: 6144Mi
+              requests:
+                cpu: 1
+                memory: 2048Mi
+        environment:
+          - name: GOPROXY
+            value: http://jenkins-x-athens-proxy:80
+          - name: GKE_SA
+            value: /secrets/bdd/sa.json
+          - name: GH_ACCESS_TOKEN 
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-bot-test-github
+                key: password
+          - name: JENKINS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: test-jenkins-user 
+                key: password
+        agent:
+          image: gcr.io/jenkinsxio/builder-go-nodejs:2.0.1007-338
+        stages:
+          - name: ci
+            options:
+              volumes:
+                - name: sa
+                  secret:
+                    secretName: bdd-secret
+                    items:
+                      - key: bdd-credentials.json
+                        path: bdd/sa.json
+              containerOptions:
+                volumeMounts:
+                  - mountPath: /secrets
+                    name: sa
+            steps:
+              - command: bdd/default/ci.sh
+                name: runci
