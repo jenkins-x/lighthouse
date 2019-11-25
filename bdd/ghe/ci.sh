@@ -48,7 +48,7 @@ jx step bdd \
     --use-revision \
     --version-repo-pr \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
-    --config ../jx/bdd/boot-lh-ghe/cluster.yaml \
+    --config ../bdd/ghe/cluster.yaml \
     --gopath /tmp \
     --git-provider=github \
     --git-provider-url https://github.beescloud.com \
