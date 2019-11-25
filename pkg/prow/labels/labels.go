@@ -40,4 +40,5 @@ const (
 	OkToTest        = "ok-to-test"
 	Shrug           = "¯\\_(ツ)_/¯"
 	WorkInProgress  = "do-not-merge/work-in-progress"
+	Updatebot       = "updatebot"
 )

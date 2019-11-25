@@ -84,12 +84,12 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 		return buildAllIfTrusted(c, trigger, pr)
 	case scm.ActionLabel:
 		// When a PR is LGTMd, if it is untrusted then build it once.
-		if pr.Label.Name == labels.LGTM {
+		if pr.Label.Name == labels.LGTM || pr.Label.Name == labels.Updatebot {
 			_, trusted, err := TrustedPullRequest(c.GitHubClient, trigger, author, org, repo, num, nil)
 			if err != nil {
 				return fmt.Errorf("could not validate PR: %s", err)
 			} else if !trusted {
-				c.Logger.Info("Starting all jobs for untrusted PR with LGTM.")
+				c.Logger.Infof("Starting all jobs for untrusted PR with %s.", pr.Label.Name)
 				return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 			}
 		}
