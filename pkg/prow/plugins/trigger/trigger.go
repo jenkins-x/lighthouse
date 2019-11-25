@@ -128,6 +128,7 @@ type Client struct {
 type trustedUserClient interface {
 	IsCollaborator(org, repo, user string) (bool, error)
 	IsMember(org, user string) (bool, error)
+	BotName() (string, error)
 }
 
 func getClient(pc plugins.Agent) Client {
@@ -158,6 +159,10 @@ func handlePush(pc plugins.Agent, pe scm.PushHook) error {
 // Trusted users are either repo collaborators, org members or trusted org members.
 // Whether repo collaborators and/or a second org is trusted is configured by trigger.
 func TrustedUser(ghc trustedUserClient, trigger *plugins.Trigger, user, org, repo string) (bool, error) {
+	botUser, err := ghc.BotName()
+	if err == nil && user == botUser {
+		return true, nil
+	}
 	// First check if user is a collaborator, assuming this is allowed
 	if !trigger.OnlyOrgMembers {
 		if ok, err := ghc.IsCollaborator(org, repo, user); err != nil {
