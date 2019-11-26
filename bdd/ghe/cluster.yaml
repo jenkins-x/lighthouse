@@ -1,5 +1,5 @@
 clusters:
-  - name: lh-bdd-default
+  - name: lh-bdd-ghe
     args:
       - create
       - cluster
