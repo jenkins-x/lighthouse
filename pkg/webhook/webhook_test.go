@@ -1,23 +1,81 @@
 package webhook
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
+	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
-func TestProcessWebhook(t *testing.T) {
-	options := &Options{}
-	var err error
-	options.server, err = options.createHookServer()
-	assert.NoError(t, err)
-	assert.NotNil(t, options.server)
+type WebhookTestSuite struct {
+	suite.Suite
+	KubeClient     kubernetes.Interface
+	SCMCLient      scm.Client
+	GitClient      git.Client
+	WebhookOptions *Options
+	TestRepo       scm.Repository
+}
 
-	kubeClient, _, _ := options.GetFactory().CreateKubeClient()
+func (suite *WebhookTestSuite) TestProcessWebhookPRComment() {
+	t := suite.T()
+	webhook := &scm.PullRequestCommentHook{
+		Action: scm.ActionUpdate,
+		Repo:   suite.TestRepo,
+	}
+
+	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(webhook)
+	assert.NoError(t, err)
+	assert.Equal(t, "processed PR comment hook", message)
+	assert.NotNil(t, logrusEntry)
+}
+
+func (suite *WebhookTestSuite) TestProcessWebhookPR() {
+	t := suite.T()
+
+	webhook := &scm.PullRequestHook{
+		Action: scm.ActionCreate,
+		Repo:   suite.TestRepo,
+	}
+	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(webhook)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "processed PR hook", message)
+	assert.NotNil(t, logrusEntry)
+}
+
+func (suite *WebhookTestSuite) SetupSuite() {
+	options := &Options{}
+	t := suite.T()
+	configAgent := &config.Agent{}
+	pluginAgent := &plugins.ConfigAgent{}
+
+	workDir, err := os.Getwd()
+	assert.NoError(t, err)
+	configBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/test_data/test_config.yaml", workDir))
+	assert.NoError(t, err)
+	loadedConfig, err := config.LoadYAMLConfig(configBytes)
+	configAgent.Set(loadedConfig)
+	assert.NoError(t, err)
+
+	pluginBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/test_data/test_plugins.yaml", workDir))
+	assert.NoError(t, err)
+	loadedPlugins, err := pluginAgent.LoadYAMLConfig(pluginBytes)
+	pluginAgent.Set(loadedPlugins)
+	assert.NoError(t, err)
+
+	var objs []runtime.Object
+	kubeClient := fake.NewSimpleClientset(objs...)
 	scmClient, serverURL, token, err := options.createSCMClient()
 	assert.NoError(t, err)
 	gitClient, err := git.NewClient(serverURL, options.gitKind())
@@ -27,37 +85,30 @@ func TestProcessWebhook(t *testing.T) {
 		return []byte(token)
 	})
 
-	options.server.ClientAgent = &plugins.ClientAgent{
-		BotName:          user,
-		GitHubClient:     scmClient,
-		KubernetesClient: kubeClient,
-		GitClient:        gitClient,
-	}
-
-	factory := options.GetFactory()
-
-	options = NewWebhook(factory, options.server)
-
-	webhook := &scm.PullRequestCommentHook{
-		Action: scm.ActionUpdate,
-		Repo: scm.Repository{
-			ID:        "1",
-			Namespace: "default",
-			Name:      "test-repo",
-			FullName:  "test-org/test-repo",
-			Branch:    "master",
-			Private:   false,
+	suite.WebhookOptions = &Options{
+		server: &hook.Server{
+			ConfigAgent: configAgent,
+			Plugins:     pluginAgent,
+			ClientAgent: &plugins.ClientAgent{
+				BotName:          options.GetBotName(),
+				GitHubClient:     scmClient,
+				KubernetesClient: kubeClient,
+				GitClient:        gitClient,
+			},
 		},
 	}
 
-	logrusEntry, message, err := options.ProcessWebHook(webhook)
-	assert.NoError(t, err)
-	assert.Equal(t, "processed PR comment hook", message)
-	assert.NotNil(t, logrusEntry)
+	suite.TestRepo = scm.Repository{
+		ID:        "1",
+		Namespace: "default",
+		Name:      "test-repo",
+		FullName:  "test-org/test-repo",
+		Branch:    "master",
+		Private:   false,
+	}
 }
 
-func TestMain(m *testing.M) {
-	// call flag.Parse() here if TestMain uses flags
+func TestWebhookTestSuite(t *testing.T) {
 	os.Setenv("GIT_TOKEN", "abc123")
-	os.Exit(m.Run())
+	suite.Run(t, new(WebhookTestSuite))
 }
