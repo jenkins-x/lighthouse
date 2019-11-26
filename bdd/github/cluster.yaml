@@ -1,5 +1,5 @@
 clusters:
-  - name: lh-bdd-default
+  - name: lh-bdd-github
     args:
       - create
       - cluster

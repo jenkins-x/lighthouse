@@ -35,12 +35,12 @@ export JX_VALUE_PROW_HMACTOKEN="$GH_ACCESS_TOKEN"
 export JX_BATCH_MODE="true"
 
 git clone https://github.com/jenkins-x/jenkins-x-boot-config.git boot-source
-cp bdd/default/jx-requirements.yml boot-source
-cp bdd/default/parameters.yaml boot-source/env
+cp bdd/github/jx-requirements.yml boot-source
+cp bdd/github/parameters.yaml boot-source/env
 cd boot-source
 
 # Manually interpolate lighthouse version tag
-cat ../bdd/default/values.yaml.template >> env/lighthouse/values.tmpl.yaml
+cat ../bdd/values.yaml.template >> env/lighthouse/values.tmpl.yaml
 cp env/lighthouse/values.tmpl.yaml values.tmpl.yaml.tmp
 sed 's/$VERSION/'"$VERSION"'/' values.tmpl.yaml.tmp > env/lighthouse/values.tmpl.yaml
 cat env/lighthouse/values.tmpl.yaml
@@ -57,7 +57,7 @@ export BDD_TEST_SINGLE_IMPORT="node-http"
 
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
-    --config ../bdd/default/cluster.yaml \
+    --config ../bdd/github/cluster.yaml \
     --gopath /tmp \
     --git-provider=github \
     --git-username $GH_USERNAME \

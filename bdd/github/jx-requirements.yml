@@ -1,5 +1,5 @@
 cluster:
-  clusterName: lh-bdd-default
+  clusterName: lh-bdd-github
   environmentGitOwner: cb-kubecd
   project: jenkins-x-bdd3
   provider: gke
