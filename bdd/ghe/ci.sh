@@ -39,14 +39,20 @@ cp bdd/ghe/jx-requirements.yml boot-source
 cp bdd/ghe/parameters.yaml boot-source/env
 cd boot-source
 
+# Manually interpolate lighthouse version tag
+cat ../bdd/default/values.yaml.template >> env/lighthouse/values.tmpl.yaml
+cp env/lighthouse/values.tmpl.yaml values.tmpl.yaml.tmp
+sed 's/$VERSION/'"$VERSION"'/' values.tmpl.yaml.tmp > env/lighthouse/values.tmpl.yaml
+cat env/lighthouse/values.tmpl.yaml
+rm values.tmpl.yaml.tmp
+
+echo "Building lighthouse with version $VERSION"
+
 # TODO hack until we fix boot to do this too!
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
-
 jx step bdd \
-    --use-revision \
-    --version-repo-pr \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/ghe/cluster.yaml \
     --gopath /tmp \
