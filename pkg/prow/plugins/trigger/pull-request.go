@@ -93,6 +93,8 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 				return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 			}
 		}
+	default:
+		c.Logger.Warnf("unknown PR Action %d of %s", int(pr.Action), pr.Action.String())
 	}
 	return nil
 }
