@@ -219,7 +219,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		KubernetesClient: kubeClient,
 		GitClient:        gitClient,
 	}
-	l, output, err := o.ProcessWebHook(logrus.WithField("webhook", webhook.Kind()), webhook)
+	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
