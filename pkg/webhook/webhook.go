@@ -193,7 +193,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 
 	webhook, err := scmClient.Webhooks.Parse(r, o.secretFn)
 	if err != nil {
-		logrus.Errorf("failed to parse webhook: %s", err.Error())
+		logrus.Warnf("failed to parse webhook: %s", err.Error())
 
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
 		return
