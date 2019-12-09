@@ -193,7 +193,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 
 	webhook, err := scmClient.Webhooks.Parse(r, o.secretFn)
 	if err != nil {
-		logrus.Errorf("failed to parse webhook: %s", err.Error())
+		logrus.Warnf("failed to parse webhook: %s", err.Error())
 
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
 		return
@@ -219,7 +219,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		KubernetesClient: kubeClient,
 		GitClient:        gitClient,
 	}
-	l, output, err := o.ProcessWebHook(webhook)
+	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
@@ -230,7 +230,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 }
 
 // ProcessWebHook process a webhook
-func (o *Options) ProcessWebHook(webhook scm.Webhook) (*logrus.Entry, string, error) {
+func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.Entry, string, error) {
 	repository := webhook.Repository()
 	fields := map[string]interface{}{
 		"Namespace": repository.Namespace,
@@ -241,7 +241,7 @@ func (o *Options) ProcessWebHook(webhook scm.Webhook) (*logrus.Entry, string, er
 		"Clone":     repository.Clone,
 		"Webhook":   webhook.Kind(),
 	}
-	l := logrus.WithFields(logrus.Fields(fields))
+	l = l.WithFields(logrus.Fields(fields))
 	_, ok := webhook.(*scm.PingHook)
 	if ok {
 		l.Info("received ping")

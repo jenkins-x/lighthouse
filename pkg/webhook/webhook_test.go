@@ -11,6 +11,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,8 +34,8 @@ func (suite *WebhookTestSuite) TestProcessWebhookPRComment() {
 		Action: scm.ActionUpdate,
 		Repo:   suite.TestRepo,
 	}
-
-	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(webhook)
+	l := logrus.WithField("test", t.Name())
+	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(l, webhook)
 	assert.NoError(t, err)
 	assert.Equal(t, "processed PR comment hook", message)
 	assert.NotNil(t, logrusEntry)
@@ -47,7 +48,8 @@ func (suite *WebhookTestSuite) TestProcessWebhookPR() {
 		Action: scm.ActionCreate,
 		Repo:   suite.TestRepo,
 	}
-	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(webhook)
+	l := logrus.WithField("test", t.Name())
+	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(l, webhook)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "processed PR hook", message)
