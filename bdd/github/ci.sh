@@ -2,9 +2,9 @@
 set -e
 set -x
 
-export GH_USERNAME="jenkins-x-bot-test"
+export GH_USERNAME="jenkins-x-versions-bot-test"
 export GH_EMAIL="jenkins-x@googlegroups.com"
-export GH_OWNER="jenkins-x-bot-test"
+export GH_OWNER="jenkins-x-versions-bot-test"
 
 # fix broken `BUILD_NUMBER` env var
 export BUILD_NUMBER="$BUILD_ID"
