@@ -6,5 +6,5 @@ gpg: {}
 pipelineUser:
   github:
     host: github.com
-    username: jenkins-x-bot-test
+    username: jenkins-x-versions-bot-test
     email: jenkins-x@googlegroups.com
