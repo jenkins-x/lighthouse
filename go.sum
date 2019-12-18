@@ -531,6 +531,8 @@ github.com/jenkins-x/jx v0.0.0-20191217162133-d096628941a8 h1:FpMjlHPFMIIucB46jn
 github.com/jenkins-x/jx v0.0.0-20191217162133-d096628941a8/go.mod h1:RkYs3T/+yjw+U3zvwTtRQOXOELN4gl6Qsw2E253OiD8=
 github.com/jenkins-x/jx v0.0.0-20191218152943-53b7fa63a6ee h1:gB2XHZzrrYfqO68N0NQpSLUGF82GV6OeBBEgtaXkNX4=
 github.com/jenkins-x/jx v0.0.0-20191218152943-53b7fa63a6ee/go.mod h1:RkYs3T/+yjw+U3zvwTtRQOXOELN4gl6Qsw2E253OiD8=
+github.com/jenkins-x/jx v0.0.0-20191218181031-12797a799f16 h1:FggMgoXGkNxWSj1T960j7UmrmtdvP1QGMpUyPFuuS1g=
+github.com/jenkins-x/jx v0.0.0-20191218181031-12797a799f16/go.mod h1:0dLqnHcJqrN5qxawvrjOmQfXIkUbhdixV8KdZxovouw=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767/go.mod h1:UR3AoCKJHHKi2AoOWeFbZcMKyd5LqQkdCRgwqZkX/io=
 github.com/jetstack/cert-manager v0.5.2 h1:qs74mdAprZ5kcCYF3arzmEAZtbt+9HneldSJrk21tKs=
@@ -851,6 +853,8 @@ github.com/ulikunitz/xz v0.5.6/go.mod h1:2bypXElzHzzJZwzH67Y6wb67pO62Rzfn7BSiF4A
 github.com/urfave/cli v1.18.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/viniciuschiele/tarx v0.0.0-20151205142357-6e3da540444d h1:Z8Bp/K+wf1+IUvu5Vk2Ml/mMI7fmZTT7rQjkLC8pAmQ=
 github.com/viniciuschiele/tarx v0.0.0-20151205142357-6e3da540444d/go.mod h1:8uo3DXfN526YN7JjAp4JkOMm4foTW4vPzPHaAzb4xiY=
+github.com/vrischmann/envconfig v1.2.0 h1:5/u4fI34/g3m0SdTQj/6f3r640jv9E5+yTXIZOWsxk0=
+github.com/vrischmann/envconfig v1.2.0/go.mod h1:c5DuUlkzfsnspy1g7qiqryPCsW+NjsrLsYq4zhwsoHo=
 github.com/wbrefvem/go-bitbucket v0.0.0-20190128183802-fc08fd046abb h1:KrmaSo+FHWBt1H652w/uerwzKvQqh4H7Jgyxm4hz2BQ=
 github.com/wbrefvem/go-bitbucket v0.0.0-20190128183802-fc08fd046abb/go.mod h1:Z91j2jYBApRjJ0zlXDCxPrrZR8ohkkd4g0n+Hqs1w0Q=
 github.com/xanzy/go-gitlab v0.0.0-20180814191223-f3bc634ab936 h1:sW9o8nzZskZn9WSsSzuXN2PJHOlSLkS4sAgz2VWF3Nc=
