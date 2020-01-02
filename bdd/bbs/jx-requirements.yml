@@ -1,0 +1,37 @@
+cluster:
+  clusterName: lh-bdd-bbs
+  project: jenkins-x-bdd3
+  provider: gke
+  zone: europe-west1-c
+  environmentGitOwner: jxbdd
+  gitKind: bitbucketserver
+  gitName: bs
+  gitServer: https://bitbucket.beescloud.com
+environments:
+  - key: dev
+    owner: ""
+    repository: ""
+  - key: staging
+    owner: ""
+    repository: ""
+  - key: production
+    owner: ""
+    repository: ""
+ingress:
+  domain: ""
+  externalDNS: false
+  tls:
+    email: ""
+    enabled: false
+    production: false
+kaniko: true
+secretStorage: local
+storage:
+  logs:
+    enabled: true
+    url: "gs://jx-bdd-log-store3"
+  reports:
+    enabled: true
+    url: "gs://jx-bdd-log-store3"
+webhook: lighthouse
+
