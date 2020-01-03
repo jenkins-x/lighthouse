@@ -202,6 +202,14 @@ func skippedStatusFor(context string) *scm.StatusInput {
 	}
 }
 
+func failedStatusForMetapipelineCreation(context string, err error) *scm.StatusInput {
+	return &scm.StatusInput{
+		State: scm.StateError,
+		Label: context,
+		Desc:  fmt.Sprintf("Error creating metapipeline: %s", err),
+	}
+}
+
 // RunAndSkipJobs executes the config.Presubmits that are requested and posts skipped statuses
 // for the reporting jobs that are skipped
 func RunAndSkipJobs(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmit, skippedJobs []config.Presubmit, eventGUID string, elideSkippedContexts bool) error {
@@ -250,6 +258,9 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient, pr.Repository()); err != nil {
 			c.Logger.WithError(err).Error("Failed to create plumberJob.")
 			errors = append(errors, err)
+			if _, statusErr := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Base.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
+				errors = append(errors, statusErr)
+			}
 		}
 	}
 	return errorutil.NewAggregate(errors...)
