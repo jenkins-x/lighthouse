@@ -8,8 +8,8 @@ require (
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
 	github.com/jenkins-x/go-scm v1.5.61
-	github.com/jenkins-x/jx v0.0.0-20200107134252-896ecf5f1e69
-	github.com/knative/build v0.5.0
+	github.com/jenkins-x/jx v0.0.0-20200107144239-dae04f4d6013
+	github.com/knative/build v0.7.0
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.4
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect
@@ -18,7 +18,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.4.0
-	github.com/tektoncd/pipeline v0.5.1
+	github.com/tektoncd/pipeline v0.8.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	google.golang.org/api v0.3.2
