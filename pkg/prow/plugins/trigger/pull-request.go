@@ -71,7 +71,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 			c.Logger.Info("Starting all jobs for updated PR.")
 			return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 		}
-	case scm.ActionEdited:
+	case scm.ActionEdited, scm.ActionUpdate:
 		// if someone changes the base of their PR, we will get this
 		// event and the changes field will list that the base SHA and
 		// ref changes so we can detect such a case and retrigger tests
