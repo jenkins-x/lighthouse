@@ -37,6 +37,9 @@ export JX_VALUE_PIPELINEUSER_EMAIL="$GL_EMAIL"
 export JX_VALUE_PIPELINEUSER_TOKEN="$GL_ACCESS_TOKEN"
 export JX_VALUE_PROW_HMACTOKEN="$GL_ACCESS_TOKEN"
 
+# TODO: Disable chatops tests until issue creation and labeling on Gitlab is ready
+export JX_DISABLE_TEST_CHATOPS_COMMANDS="true"
+
 # TODO temporary hack until the batch mode in jx is fixed...
 export JX_BATCH_MODE="true"
 

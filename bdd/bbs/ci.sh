@@ -37,6 +37,9 @@ export JX_VALUE_PIPELINEUSER_EMAIL="$BB_EMAIL"
 export JX_VALUE_PIPELINEUSER_TOKEN="$BB_ACCESS_TOKEN"
 export JX_VALUE_PROW_HMACTOKEN="$BB_ACCESS_TOKEN"
 
+# TODO: Disable chatops tests until issue creation and labeling on BBS is ready
+export JX_DISABLE_TEST_CHATOPS_COMMANDS="true"
+
 # TODO temporary hack until the batch mode in jx is fixed...
 export JX_BATCH_MODE="true"
 
