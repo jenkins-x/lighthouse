@@ -1,6 +1,6 @@
 cluster:
   clusterName: lh-bdd-github
-  environmentGitOwner: cb-kubecd
+  environmentGitOwner: jenkins-x-bot-test
   project: jenkins-x-bdd3
   provider: gke
   zone: europe-west1-c
