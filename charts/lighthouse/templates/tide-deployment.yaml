@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "tide.name" . }}
@@ -11,6 +11,9 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ template "tide.name" . }}
   template:
     metadata:
 {{- if .Values.tide.datadog.enabled }}
