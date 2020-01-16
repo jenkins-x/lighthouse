@@ -75,6 +75,7 @@ func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
 	if pe.Action != scm.ActionOpen &&
 		pe.Action != scm.ActionReopen &&
 		pe.Action != scm.ActionEdited &&
+		pe.Action != scm.ActionUpdate &&
 		pe.Action != scm.ActionReadyForReview {
 		return nil
 	}

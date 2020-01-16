@@ -224,6 +224,8 @@ func isPRChanged(pe scm.PullRequestHook) bool {
 		return true
 	case scm.ActionEdited:
 		return true
+	case scm.ActionUpdate:
+		return true
 	default:
 		return false
 	}

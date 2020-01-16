@@ -231,7 +231,7 @@ func (s *Server) HandleBranchEvent(entry *logrus.Entry, hook *scm.BranchHook) {
 func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool {
 	switch action {
 
-	case scm.ActionCreate, scm.ActionOpen, scm.ActionSubmitted, scm.ActionEdited, scm.ActionDelete, scm.ActionDismissed:
+	case scm.ActionCreate, scm.ActionOpen, scm.ActionSubmitted, scm.ActionEdited, scm.ActionDelete, scm.ActionDismissed, scm.ActionUpdate:
 		return true
 
 	case scm.ActionAssigned,
@@ -246,7 +246,7 @@ func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool 
 		return false
 
 	default:
-		l.Errorf(failedCommentCoerceFmt, "pull_request", string(action))
+		l.Errorf(failedCommentCoerceFmt, "pull_request", action.String())
 		return false
 	}
 }
