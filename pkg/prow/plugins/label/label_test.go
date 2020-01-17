@@ -441,7 +441,7 @@ func TestLabel(t *testing.T) {
 
 		// Add initial labels
 		for _, label := range tc.issueLabels {
-			fakeClient.AddLabel("org", "repo", 1, label)
+			fakeClient.AddLabel("org", "repo", 1, label, false)
 		}
 		e := &gitprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,

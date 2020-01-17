@@ -65,9 +65,9 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 // Strict subset of gitprovider.Client methods.
 type githubClient interface {
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
-	AddLabel(owner, repo string, number int, label string) error
-	RemoveLabel(owner, repo string, number int, label string) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	AddLabel(owner, repo string, number int, label string, pr bool) error
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 }
 
 func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
@@ -88,7 +88,7 @@ func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
 		draft  = pe.PullRequest.Draft
 	)
 
-	currentLabels, err := pc.GitHubClient.GetIssueLabels(org, repo, number)
+	currentLabels, err := pc.GitHubClient.GetIssueLabels(org, repo, number, true)
 	if err != nil {
 		return fmt.Errorf("could not get labels for PR %s/%s:%d in WIP plugin: %v", org, repo, number, err)
 	}
@@ -117,12 +117,12 @@ func handle(gc githubClient, le *logrus.Entry, e *event) error {
 	needsLabel := e.draft || titleRegex.MatchString(e.title)
 
 	if needsLabel && !e.hasLabel {
-		if err := gc.AddLabel(e.org, e.repo, e.number, labels.WorkInProgress); err != nil {
+		if err := gc.AddLabel(e.org, e.repo, e.number, labels.WorkInProgress, true); err != nil {
 			le.Warnf("error while adding Label %q: %v", labels.WorkInProgress, err)
 			return err
 		}
 	} else if !needsLabel && e.hasLabel {
-		if err := gc.RemoveLabel(e.org, e.repo, e.number, labels.WorkInProgress); err != nil {
+		if err := gc.RemoveLabel(e.org, e.repo, e.number, labels.WorkInProgress, true); err != nil {
 			le.Warnf("error while removing Label %q: %v", labels.WorkInProgress, err)
 			return err
 		}

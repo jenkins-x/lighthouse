@@ -260,8 +260,8 @@ func TestHandlePullRequest(t *testing.T) {
 		t.Logf("running scenario %q", tc.name)
 
 		g := &fakegitprovider.FakeClient{
-			IssueComments: map[int][]*scm.Comment{},
-			OrgMembers:    map[string][]string{"org": {"t"}},
+			PullRequestComments: map[int][]*scm.Comment{},
+			OrgMembers:          map[string][]string{"org": {"t"}},
 			PullRequests: map[int]*scm.PullRequest{
 				0: {
 					Number: 0,
@@ -299,7 +299,7 @@ func TestHandlePullRequest(t *testing.T) {
 		}
 
 		if tc.HasOkToTest {
-			g.IssueLabelsExisting = append(g.IssueLabelsExisting, issueLabels(labels.OkToTest)...)
+			g.PullRequestLabelsExisting = append(g.PullRequestLabelsExisting, issueLabels(labels.OkToTest)...)
 		}
 		pr := scm.PullRequestHook{
 			Action: tc.prAction,
@@ -346,9 +346,9 @@ func TestHandlePullRequest(t *testing.T) {
 		} else if numStarted == 0 && tc.ShouldBuild {
 			t.Errorf("Not built but should have: %+v", tc)
 		}
-		if tc.ShouldComment && len(g.IssueCommentsAdded) == 0 {
+		if tc.ShouldComment && len(g.PullRequestCommentsAdded) == 0 {
 			t.Error("Expected comment to github")
-		} else if !tc.ShouldComment && len(g.IssueCommentsAdded) > 0 {
+		} else if !tc.ShouldComment && len(g.PullRequestCommentsAdded) > 0 {
 			t.Errorf("Expected no comments to github, but got %d", len(g.CreatedStatuses))
 		}
 	}

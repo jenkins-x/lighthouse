@@ -72,9 +72,9 @@ func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
 
 // Strict subset of gitprovider.Client methods.
 type githubClient interface {
-	AddLabel(owner, repo string, number int, label string) error
-	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	AddLabel(owner, repo string, number int, label string, pr bool) error
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	GetFile(org, repo, filepath, commit string) ([]byte, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
@@ -122,7 +122,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		count += change.Additions + change.Deletions
 	}
 
-	labels, err := gc.GetIssueLabels(owner, repo, num)
+	labels, err := gc.GetIssueLabels(owner, repo, num, true)
 	if err != nil {
 		le.Warnf("while retrieving labels, error: %v", err)
 	}
@@ -137,7 +137,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		}
 
 		if strings.HasPrefix(label.Name, labelPrefix) {
-			if err := gc.RemoveLabel(owner, repo, num, label.Name); err != nil {
+			if err := gc.RemoveLabel(owner, repo, num, label.Name, true); err != nil {
 				le.Warnf("error while removing label %q: %v", label.Name, err)
 			}
 		}
@@ -147,7 +147,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		return nil
 	}
 
-	if err := gc.AddLabel(owner, repo, num, newLabel); err != nil {
+	if err := gc.AddLabel(owner, repo, num, newLabel, true); err != nil {
 		return fmt.Errorf("error adding label to %s/%s PR #%d: %v", owner, repo, num, err)
 	}
 

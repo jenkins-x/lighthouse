@@ -94,7 +94,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 type githubClient interface {
-	AddLabel(org, repo string, number int, label string) error
+	AddLabel(org, repo string, number int, label string, pr bool) error
 	BotName() (string, error)
 	IsCollaborator(org, repo, user string) (bool, error)
 	IsMember(org, user string) (bool, error)
@@ -105,9 +105,9 @@ type githubClient interface {
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
-	RemoveLabel(org, repo string, number int, label string) error
-	DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, isStale func(*scm.Comment) bool) error
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	RemoveLabel(org, repo string, number int, label string, pr bool) error
+	DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
 type plumberClient interface {

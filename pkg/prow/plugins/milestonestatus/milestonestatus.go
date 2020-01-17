@@ -46,7 +46,7 @@ var (
 
 type githubClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	AddLabel(owner, repo string, number int, label string) error
+	AddLabel(owner, repo string, number int, label string, pr bool) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 }
 
@@ -129,7 +129,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		if !validStatus {
 			continue
 		}
-		if err := gc.AddLabel(org, repo, e.Number, sLabel); err != nil {
+		if err := gc.AddLabel(org, repo, e.Number, sLabel, e.IsPR); err != nil {
 			log.WithError(err).Errorf("Error adding the label %q to %s/%s#%d.", sLabel, org, repo, e.Number)
 		}
 	}

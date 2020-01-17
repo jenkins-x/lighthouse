@@ -474,18 +474,24 @@ func TestCats(t *testing.T) {
 			t.Errorf("%s: expected an error to occur", tc.name)
 			continue
 		}
-		if tc.shouldComment && len(fc.IssueComments[5]) != 1 {
+		var comments map[int][]*scm.Comment
+		if tc.pr {
+			comments = fc.PullRequestComments
+		} else {
+			comments = fc.IssueComments
+		}
+		if tc.shouldComment && len(comments[5]) != 1 {
 			t.Errorf("%s: should have commented.", tc.name)
 		} else if tc.shouldComment {
 			shouldImage := !tc.shouldError
-			body := fc.IssueComments[5][0].Body
+			body := comments[5][0].Body
 			hasImage := strings.Contains(body, "![")
 			if hasImage && !shouldImage {
 				t.Errorf("%s: unexpected image in %s", tc.name, body)
 			} else if !hasImage && shouldImage {
 				t.Errorf("%s: no image in %s", tc.name, body)
 			}
-		} else if !tc.shouldComment && len(fc.IssueComments[5]) != 0 {
+		} else if !tc.shouldComment && len(comments[5]) != 0 {
 			t.Errorf("%s: should not have commented.", tc.name)
 		}
 	}

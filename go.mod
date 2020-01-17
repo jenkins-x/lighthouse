@@ -58,3 +58,6 @@ replace github.com/Azure/azure-sdk-for-go => github.com/Azure/azure-sdk-for-go v
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v10.15.5+incompatible
 
 replace github.com/banzaicloud/bank-vaults => github.com/banzaicloud/bank-vaults v0.0.0-20190508130850-5673d28c46bd
+
+// TODO: Remove once https://github.com/jenkins-x/go-scm/pull/65 is merged and we can update the real dependency
+replace github.com/jenkins-x/go-scm => github.com/abayer/go-scm v1.5.1-0.20200117190616-8db331f9cc60

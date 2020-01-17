@@ -66,9 +66,9 @@ func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.Plu
 }
 
 type lifecycleClient interface {
-	AddLabel(owner, repo string, number int, label string) error
-	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	AddLabel(owner, repo string, number int, label string, pr bool) error
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
 func lifecycleHandleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
@@ -108,14 +108,14 @@ func handleOne(gc lifecycleClient, log *logrus.Entry, e *gitprovider.GenericComm
 
 	// Let's start simple and allow anyone to add/remove frozen, stale, rotten labels.
 	// Adjust if we find evidence of the community abusing these labels.
-	labels, err := gc.GetIssueLabels(org, repo, number)
+	labels, err := gc.GetIssueLabels(org, repo, number, e.IsPR)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get labels.")
 	}
 
 	// If the label exists and we asked for it to be removed, remove it.
 	if gitprovider.HasLabel(lbl, labels) && remove {
-		return gc.RemoveLabel(org, repo, number, lbl)
+		return gc.RemoveLabel(org, repo, number, lbl, e.IsPR)
 	}
 
 	// If the label does not exist and we asked for it to be added,
@@ -123,13 +123,13 @@ func handleOne(gc lifecycleClient, log *logrus.Entry, e *gitprovider.GenericComm
 	if !gitprovider.HasLabel(lbl, labels) && !remove {
 		for _, label := range lifecycleLabels {
 			if label != lbl && gitprovider.HasLabel(label, labels) {
-				if err := gc.RemoveLabel(org, repo, number, label); err != nil {
+				if err := gc.RemoveLabel(org, repo, number, label, e.IsPR); err != nil {
 					log.WithError(err).Errorf("GitHub failed to remove the following label: %s", label)
 				}
 			}
 		}
 
-		if err := gc.AddLabel(org, repo, number, lbl); err != nil {
+		if err := gc.AddLabel(org, repo, number, lbl, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", lbl)
 		}
 	}

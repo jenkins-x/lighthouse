@@ -195,7 +195,7 @@ func formatLabel(label string) string {
 
 type fakePruner struct{}
 
-func (f *fakePruner) PruneComments(_ func(ic *scm.Comment) bool) {}
+func (f *fakePruner) PruneComments(_ bool, _ func(ic *scm.Comment) bool) {}
 
 // TestHandle validates that:
 // - The correct labels are added/removed.
@@ -302,7 +302,9 @@ func TestHandle(t *testing.T) {
 
 		if tc.hasLabel {
 			label := formatLabel(labels.BlockedPaths)
-			fakeClient.IssueLabelsAdded = append(fakeClient.IssueLabelsAdded, label)
+			fakeClient.PullRequestLabelsAdded = append(fakeClient.PullRequestLabelsAdded, label)
+			// TODO: Fix go-scm's fake/pr.go's ListLabels to look at PullRequestLabelsAdded too, like the issue.go one.
+			fakeClient.PullRequestLabelsExisting = append(fakeClient.PullRequestLabelsExisting, label)
 			expectAdded = append(expectAdded, label)
 		}
 		calcF := func(_ []*scm.Change, blockades []blockade) summary {
@@ -332,21 +334,21 @@ func TestHandle(t *testing.T) {
 			expectAdded = append(expectAdded, formatLabel(tc.labelAdded))
 		}
 		sort.Strings(expectAdded)
-		sort.Strings(fakeClient.IssueLabelsAdded)
-		if !reflect.DeepEqual(expectAdded, fakeClient.IssueLabelsAdded) {
-			t.Errorf("[%s]: Expected labels to be added: %q, but got: %q.", tc.name, expectAdded, fakeClient.IssueLabelsAdded)
+		sort.Strings(fakeClient.PullRequestLabelsAdded)
+		if !reflect.DeepEqual(expectAdded, fakeClient.PullRequestLabelsAdded) {
+			t.Errorf("[%s]: Expected labels to be added: %q, but got: %q.", tc.name, expectAdded, fakeClient.PullRequestLabelsAdded)
 		}
 		expectRemoved := []string{}
 		if tc.labelRemoved != "" {
 			expectRemoved = append(expectRemoved, formatLabel(tc.labelRemoved))
 		}
 		sort.Strings(expectRemoved)
-		sort.Strings(fakeClient.IssueLabelsRemoved)
-		if !reflect.DeepEqual(expectRemoved, fakeClient.IssueLabelsRemoved) {
-			t.Errorf("[%s]: Expected labels to be removed: %q, but got: %q.", tc.name, expectRemoved, fakeClient.IssueLabelsRemoved)
+		sort.Strings(fakeClient.PullRequestLabelsRemoved)
+		if !reflect.DeepEqual(expectRemoved, fakeClient.PullRequestLabelsRemoved) {
+			t.Errorf("[%s]: Expected labels to be removed: %q, but got: %q.", tc.name, expectRemoved, fakeClient.PullRequestLabelsRemoved)
 		}
 
-		if count := len(fakeClient.IssueComments[1]); count > 1 {
+		if count := len(fakeClient.PullRequestComments[1]); count > 1 {
 			t.Errorf("[%s] More than 1 comment created! (%d created).", tc.name, count)
 		} else if (count == 1) != tc.commentCreated {
 			t.Errorf("[%s] Expected comment created: %t, but got %t.", tc.name, tc.commentCreated, count == 1)

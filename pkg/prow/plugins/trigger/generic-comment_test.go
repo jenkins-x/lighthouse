@@ -780,9 +780,10 @@ func TestHandleGenericComment(t *testing.T) {
 			tc.Branch = "master"
 		}
 		g := &fakegitprovider.FakeClient{
-			CreatedStatuses: map[string][]*scm.StatusInput{},
-			IssueComments:   map[int][]*scm.Comment{},
-			OrgMembers:      map[string][]string{"org": {"trusted-member"}},
+			CreatedStatuses:     map[string][]*scm.StatusInput{},
+			IssueComments:       map[int][]*scm.Comment{},
+			PullRequestComments: map[int][]*scm.Comment{},
+			OrgMembers:          map[string][]string{"org": {"trusted-member"}},
 			PullRequests: map[int]*scm.PullRequest{
 				0: {
 					Author: scm.User{Login: tc.PRAuthor},
@@ -799,8 +800,7 @@ func TestHandleGenericComment(t *testing.T) {
 					},
 				},
 			},
-			IssueLabelsExisting: tc.IssueLabels,
-			PullRequestChanges:  map[int][]*scm.Change{0: {{Path: "CHANGED"}}},
+			PullRequestChanges: map[int][]*scm.Change{0: {{Path: "CHANGED"}}},
 			CombinedStatuses: map[string]*scm.CombinedStatus{
 				"cafe": {
 					Statuses: []*scm.Status{
@@ -810,6 +810,11 @@ func TestHandleGenericComment(t *testing.T) {
 					},
 				},
 			},
+		}
+		if tc.IsPR {
+			g.PullRequestLabelsExisting = tc.IssueLabels
+		} else {
+			g.IssueLabelsExisting = tc.IssueLabels
 		}
 		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}}
 		fakePlumberClient := fake.NewPlumber()
@@ -905,11 +910,20 @@ func validate(name string, fakePlumberClient *fake.Plumber, g *fakegitprovider.F
 	} else if !tc.ShouldReport && len(g.CreatedStatuses) > 0 {
 		t.Errorf("%s: Expected no reports to github, but got %d: %v", name, len(g.CreatedStatuses), g.CreatedStatuses)
 	}
-	if !reflect.DeepEqual(g.IssueLabelsAdded, tc.AddedLabels) {
-		t.Errorf("%s: expected %q to be added, got %q", name, tc.AddedLabels, g.IssueLabelsAdded)
+	var labelsAdded []string
+	var labelsRemoved []string
+	if tc.IsPR {
+		labelsAdded = g.PullRequestLabelsAdded
+		labelsRemoved = g.PullRequestLabelsRemoved
+	} else {
+		labelsAdded = g.IssueLabelsAdded
+		labelsRemoved = g.IssueLabelsRemoved
 	}
-	if !reflect.DeepEqual(g.IssueLabelsRemoved, tc.RemovedLabels) {
-		t.Errorf("%s: expected %q to be removed, got %q", name, tc.RemovedLabels, g.IssueLabelsRemoved)
+	if !reflect.DeepEqual(labelsAdded, tc.AddedLabels) {
+		t.Errorf("%s: expected %q to be added, got %q", name, tc.AddedLabels, labelsAdded)
+	}
+	if !reflect.DeepEqual(labelsRemoved, tc.RemovedLabels) {
+		t.Errorf("%s: expected %q to be removed, got %q", name, tc.RemovedLabels, labelsRemoved)
 	}
 }
 

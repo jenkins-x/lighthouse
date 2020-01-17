@@ -48,8 +48,8 @@ type ownersClient interface {
 }
 
 type githubClient interface {
-	AddLabel(org, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	AddLabel(org, repo string, number int, label string, pr bool) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
@@ -90,7 +90,7 @@ func handle(ghc githubClient, oc ownersClient, log *logrus.Entry, pre *scm.PullR
 	if err != nil {
 		return err
 	}
-	issuelabels, err := ghc.GetIssueLabels(org, repo, number)
+	issuelabels, err := ghc.GetIssueLabels(org, repo, number, true)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func handle(ghc githubClient, oc ownersClient, log *logrus.Entry, pre *scm.PullR
 			nonexistent.Insert(labelToAdd)
 			continue
 		}
-		if err := ghc.AddLabel(org, repo, number, labelToAdd); err != nil {
+		if err := ghc.AddLabel(org, repo, number, labelToAdd, true); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", labelToAdd)
 		}
 	}

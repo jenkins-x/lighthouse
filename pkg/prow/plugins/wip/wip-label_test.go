@@ -111,18 +111,18 @@ func TestWipLabel(t *testing.T) {
 
 		fakeLabel := fmt.Sprintf("%s/%s#%d:%s", org, repo, number, labels.WorkInProgress)
 		if tc.shouldLabel {
-			if len(fc.IssueLabelsAdded) != 1 || fc.IssueLabelsAdded[0] != fakeLabel {
-				t.Errorf("For case %s: expected to add %q Label but instead added: %v", tc.name, labels.WorkInProgress, fc.IssueLabelsAdded)
+			if len(fc.PullRequestLabelsAdded) != 1 || fc.PullRequestLabelsAdded[0] != fakeLabel {
+				t.Errorf("For case %s: expected to add %q Label but instead added: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsAdded)
 			}
-		} else if len(fc.IssueLabelsAdded) > 0 {
-			t.Errorf("For case %s, expected to not add %q Label but added: %v", tc.name, labels.WorkInProgress, fc.IssueLabelsAdded)
+		} else if len(fc.PullRequestLabelsAdded) > 0 {
+			t.Errorf("For case %s, expected to not add %q Label but added: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsAdded)
 		}
 		if tc.shouldUnlabel {
-			if len(fc.IssueLabelsRemoved) != 1 || fc.IssueLabelsRemoved[0] != fakeLabel {
-				t.Errorf("For case %s: expected to remove %q Label but instead removed: %v", tc.name, labels.WorkInProgress, fc.IssueLabelsRemoved)
+			if len(fc.PullRequestLabelsRemoved) != 1 || fc.PullRequestLabelsRemoved[0] != fakeLabel {
+				t.Errorf("For case %s: expected to remove %q Label but instead removed: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsRemoved)
 			}
-		} else if len(fc.IssueLabelsRemoved) > 0 {
-			t.Errorf("For case %s, expected to not remove %q Label but removed: %v", tc.name, labels.WorkInProgress, fc.IssueLabelsRemoved)
+		} else if len(fc.PullRequestLabelsRemoved) > 0 {
+			t.Errorf("For case %s, expected to not remove %q Label but removed: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsRemoved)
 		}
 	}
 }

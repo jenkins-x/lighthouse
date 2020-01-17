@@ -48,11 +48,11 @@ var (
 type githubClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	IsMember(org, user string) (bool, error)
-	AddLabel(owner, repo string, number int, label string) error
-	RemoveLabel(owner, repo string, number int, label string) error
+	AddLabel(owner, repo string, number int, label string, pr bool) error
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
 	BotName() (string, error)
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
 func init() {
@@ -96,7 +96,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
-	labels, err := gc.GetIssueLabels(org, repo, e.Number)
+	labels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		return err
 	}
@@ -118,14 +118,14 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 			continue
 		}
 		if !gitprovider.HasLabel(sigLabel, labels) {
-			if err := gc.AddLabel(org, repo, e.Number, sigLabel); err != nil {
+			if err := gc.AddLabel(org, repo, e.Number, sigLabel, e.IsPR); err != nil {
 				log.WithError(err).Errorf("GitHub failed to add the following label: %s", sigLabel)
 			}
 		}
 
 		if len(sigMatch) > 2 {
 			if kindLabel, ok := kindMap[sigMatch[2]]; ok && !gitprovider.HasLabel(kindLabel, labels) {
-				if err := gc.AddLabel(org, repo, e.Number, kindLabel); err != nil {
+				if err := gc.AddLabel(org, repo, e.Number, kindLabel, e.IsPR); err != nil {
 					log.WithError(err).Errorf("GitHub failed to add the following label: %s", kindLabel)
 				}
 			}

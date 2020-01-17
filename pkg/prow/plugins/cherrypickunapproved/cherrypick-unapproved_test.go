@@ -39,14 +39,14 @@ type fakeClient struct {
 }
 
 // AddLabel adds a label to the specified PR or issue
-func (fc *fakeClient) AddLabel(owner, repo string, number int, label string) error {
+func (fc *fakeClient) AddLabel(owner, repo string, number int, label string, pr bool) error {
 	fc.added = append(fc.added, label)
 	fc.labels = append(fc.labels, label)
 	return nil
 }
 
 // RemoveLabel removes the label from the specified PR or issue
-func (fc *fakeClient) RemoveLabel(owner, repo string, number int, label string) error {
+func (fc *fakeClient) RemoveLabel(owner, repo string, number int, label string, pr bool) error {
 	fc.removed = append(fc.removed, label)
 
 	// remove from existing labels
@@ -61,7 +61,7 @@ func (fc *fakeClient) RemoveLabel(owner, repo string, number int, label string) 
 }
 
 // GetIssueLabels gets the current labels on the specified PR or issue
-func (fc *fakeClient) GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error) {
+func (fc *fakeClient) GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error) {
 	la := []*scm.Label{}
 	for _, l := range fc.labels {
 		la = append(la, &scm.Label{Name: l})
@@ -86,7 +86,7 @@ func (fc *fakeClient) NumComments() int {
 
 type fakePruner struct{}
 
-func (fp *fakePruner) PruneComments(shouldPrune func(*scm.Comment) bool) {}
+func (fp *fakePruner) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool) {}
 
 func makeFakePullRequestEvent(action scm.Action, branch string) scm.PullRequestHook {
 	return scm.PullRequestHook{

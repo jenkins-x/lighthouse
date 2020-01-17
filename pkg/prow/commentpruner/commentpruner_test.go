@@ -40,7 +40,12 @@ func (f *fakeGHClient) ListIssueComments(_, _ string, _ int) ([]*scm.Comment, er
 	return f.comments, nil
 }
 
-func (f *fakeGHClient) DeleteComment(_, _ string, number, ID int) error {
+func (f *fakeGHClient) ListPullRequestComments(_, _ string, _ int) ([]*scm.Comment, error) {
+	f.listCallCount++
+	return f.comments, nil
+}
+
+func (f *fakeGHClient) DeleteComment(_, _ string, number, ID int, _ bool) error {
 	f.deletedComments = append(f.deletedComments, ID)
 	return nil
 }
@@ -129,7 +134,7 @@ func TestPruneComments(t *testing.T) {
 		fgc := newFakeGHClient(tc.comments)
 		client := NewEventClient(fgc, logrus.WithField("client", "commentpruner"), "org", "repo", 1)
 		for _, call := range tc.callers {
-			client.PruneComments(call)
+			client.PruneComments(true, call)
 		}
 
 		if fgc.listCallCount != 1 {

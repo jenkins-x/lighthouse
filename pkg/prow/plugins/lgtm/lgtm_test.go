@@ -54,14 +54,14 @@ type fakeRepoOwners struct {
 }
 
 type fakePruner struct {
-	GitHubClient  *fake.Data
-	IssueComments []*scm.Comment
+	GitHubClient        *fake.Data
+	PullRequestComments []*scm.Comment
 }
 
-func (fp *fakePruner) PruneComments(shouldPrune func(*scm.Comment) bool) {
-	for _, comment := range fp.IssueComments {
+func (fp *fakePruner) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool) {
+	for _, comment := range fp.PullRequestComments {
 		if shouldPrune(comment) {
-			fp.GitHubClient.IssueCommentsDeleted = append(fp.GitHubClient.IssueCommentsDeleted, comment.Body)
+			fp.GitHubClient.PullRequestCommentsDeleted = append(fp.GitHubClient.PullRequestCommentsDeleted, comment.Body)
 		}
 	}
 }
@@ -289,7 +289,7 @@ func TestLGTMComment(t *testing.T) {
 			Link:        "<url>",
 		}
 		if tc.hasLGTM {
-			fc.IssueLabelsAdded = []string{"org/repo#5:" + LGTMLabel}
+			fc.PullRequestLabelsAdded = []string{"org/repo#5:" + LGTMLabel}
 		}
 		oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
 		pc := &plugins.Configuration{}
@@ -301,8 +301,8 @@ func TestLGTMComment(t *testing.T) {
 			StoreTreeHash: true,
 		})
 		fp := &fakePruner{
-			GitHubClient:  fc,
-			IssueComments: fc.IssueComments[5],
+			GitHubClient:        fc,
+			PullRequestComments: fc.PullRequestComments[5],
 		}
 		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
 			t.Errorf("didn't expect error from lgtmComment: %v", err)
@@ -324,26 +324,26 @@ func TestLGTMComment(t *testing.T) {
 		}
 		if tc.shouldToggle {
 			if tc.hasLGTM {
-				if len(fc.IssueLabelsRemoved) == 0 {
+				if len(fc.PullRequestLabelsRemoved) == 0 {
 					t.Error("should have removed LGTM.")
-				} else if len(fc.IssueLabelsAdded) > 1 {
+				} else if len(fc.PullRequestLabelsAdded) > 1 {
 					t.Error("should not have added LGTM.")
 				}
 			} else {
-				if len(fc.IssueLabelsAdded) == 0 {
+				if len(fc.PullRequestLabelsAdded) == 0 {
 					t.Error("should have added LGTM.")
-				} else if len(fc.IssueLabelsRemoved) > 0 {
+				} else if len(fc.PullRequestLabelsRemoved) > 0 {
 					t.Error("should not have removed LGTM.")
 				}
 			}
-		} else if len(fc.IssueLabelsRemoved) > 0 {
+		} else if len(fc.PullRequestLabelsRemoved) > 0 {
 			t.Error("should not have removed LGTM.")
-		} else if (tc.hasLGTM && len(fc.IssueLabelsAdded) > 1) || (!tc.hasLGTM && len(fc.IssueLabelsAdded) > 0) {
+		} else if (tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 1) || (!tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 0) {
 			t.Error("should not have added LGTM.")
 		}
-		if tc.shouldComment && len(fc.IssueComments[5]) != 1 {
+		if tc.shouldComment && len(fc.PullRequestComments[5]) != 1 {
 			t.Error("should have commented.")
-		} else if !tc.shouldComment && len(fc.IssueComments[5]) != 0 {
+		} else if !tc.shouldComment && len(fc.PullRequestComments[5]) != 0 {
 			t.Error("should not have commented.")
 		}
 	}
@@ -451,19 +451,19 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			},
 			Body: removeLGTMLabelNoti,
 		}
-		fc.IssueComments[5] = append(fc.IssueComments[5], ic)
+		fc.PullRequestComments[5] = append(fc.PullRequestComments[5], ic)
 		oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
 		pc := &plugins.Configuration{}
 		fp := &fakePruner{
-			GitHubClient:  fc,
-			IssueComments: fc.IssueComments[5],
+			GitHubClient:        fc,
+			PullRequestComments: fc.PullRequestComments[5],
 		}
 		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
 			t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
 			continue
 		}
 		deleted := false
-		for _, body := range fc.IssueCommentsDeleted {
+		for _, body := range fc.PullRequestCommentsDeleted {
 			if body == removeLGTMLabelNoti {
 				deleted = true
 				break
@@ -643,7 +643,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 			Repo:        scm.Repository{Namespace: "org", Name: "repo"},
 		}
 		if tc.hasLGTM {
-			fc.IssueLabelsAdded = append(fc.IssueLabelsAdded, "org/repo#5:"+LGTMLabel)
+			fc.PullRequestLabelsAdded = append(fc.PullRequestLabelsAdded, "org/repo#5:"+LGTMLabel)
 		}
 		oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
 		pc := &plugins.Configuration{}
@@ -652,8 +652,8 @@ func TestLGTMFromApproveReview(t *testing.T) {
 			StoreTreeHash: tc.storeTreeHash,
 		})
 		fp := &fakePruner{
-			GitHubClient:  fc,
-			IssueComments: fc.IssueComments[5],
+			GitHubClient:        fc,
+			PullRequestComments: fc.PullRequestComments[5],
 		}
 		if err := handlePullRequestReview(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
 			t.Errorf("For case %s, didn't expect error from pull request review: %v", tc.name, err)
@@ -675,26 +675,26 @@ func TestLGTMFromApproveReview(t *testing.T) {
 		}
 		if tc.shouldToggle {
 			if tc.hasLGTM {
-				if len(fc.IssueLabelsRemoved) == 0 {
+				if len(fc.PullRequestLabelsRemoved) == 0 {
 					t.Errorf("For case %s, should have removed LGTM.", tc.name)
-				} else if len(fc.IssueLabelsAdded) > 1 {
+				} else if len(fc.PullRequestLabelsAdded) > 1 {
 					t.Errorf("For case %s, should not have added LGTM.", tc.name)
 				}
 			} else {
-				if len(fc.IssueLabelsAdded) == 0 {
+				if len(fc.PullRequestLabelsAdded) == 0 {
 					t.Errorf("For case %s, should have added LGTM.", tc.name)
-				} else if len(fc.IssueLabelsRemoved) > 0 {
+				} else if len(fc.PullRequestLabelsRemoved) > 0 {
 					t.Errorf("For case %s, should not have removed LGTM.", tc.name)
 				}
 			}
-		} else if len(fc.IssueLabelsRemoved) > 0 {
+		} else if len(fc.PullRequestLabelsRemoved) > 0 {
 			t.Errorf("For case %s, should not have removed LGTM.", tc.name)
-		} else if (tc.hasLGTM && len(fc.IssueLabelsAdded) > 1) || (!tc.hasLGTM && len(fc.IssueLabelsAdded) > 0) {
+		} else if (tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 1) || (!tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 0) {
 			t.Errorf("For case %s, should not have added LGTM.", tc.name)
 		}
-		if tc.shouldComment && len(fc.IssueComments[5]) != 1 {
+		if tc.shouldComment && len(fc.PullRequestComments[5]) != 1 {
 			t.Errorf("For case %s, should have commented.", tc.name)
-		} else if !tc.shouldComment && len(fc.IssueComments[5]) != 0 {
+		} else if !tc.shouldComment && len(fc.PullRequestComments[5]) != 0 {
 			t.Errorf("For case %s, should not have commented.", tc.name)
 		}
 	}
@@ -711,11 +711,11 @@ func TestHandlePullRequest(t *testing.T) {
 		removeLabelErr   error
 		createCommentErr error
 
-		err                error
-		IssueLabelsAdded   []string
-		IssueLabelsRemoved []string
-		issueComments      map[int][]*scm.Comment
-		trustedTeam        string
+		err                      error
+		PullRequestLabelsAdded   []string
+		PullRequestLabelsRemoved []string
+		PullRequestComments      map[int][]*scm.Comment
+		trustedTeam              string
 
 		expectNoComments bool
 	}{
@@ -736,8 +736,8 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 				},
 			},
-			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]*scm.Comment{
+			PullRequestLabelsRemoved: []string{LGTMLabel},
+			PullRequestComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
@@ -786,8 +786,8 @@ func TestHandlePullRequest(t *testing.T) {
 					MergeSha: SHA,
 				},
 			},
-			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]*scm.Comment{
+			PullRequestLabelsRemoved: []string{LGTMLabel},
+			PullRequestComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
@@ -815,8 +815,8 @@ func TestHandlePullRequest(t *testing.T) {
 					MergeSha: SHA,
 				},
 			},
-			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]*scm.Comment{
+			PullRequestLabelsRemoved: []string{LGTMLabel},
+			PullRequestComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   removeLGTMLabelNoti,
@@ -851,7 +851,7 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 				},
 			},
-			issueComments: map[int][]*scm.Comment{
+			PullRequestComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
@@ -878,8 +878,8 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 				},
 			},
-			IssueLabelsRemoved: []string{LGTMLabel},
-			issueComments: map[int][]*scm.Comment{
+			PullRequestLabelsRemoved: []string{LGTMLabel},
+			PullRequestComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:    fmt.Sprintf(addLGTMLabelNotification, treeSHA),
@@ -908,7 +908,7 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 				},
 			},
-			issueComments: map[int][]*scm.Comment{
+			PullRequestComments: map[int][]*scm.Comment{
 				101: {
 					{
 						Body:   fmt.Sprintf(addLGTMLabelNotification, "older_treeSHA"),
@@ -928,7 +928,7 @@ func TestHandlePullRequest(t *testing.T) {
 			fakeScmClient, fakeGitHub := fake.NewDefault()
 			fakeClient := gitprovider.ToClient(fakeScmClient, fakeBotName)
 
-			fakeGitHub.IssueComments = c.issueComments
+			fakeGitHub.PullRequestComments = c.PullRequestComments
 			fakeGitHub.PullRequests[101] = &scm.PullRequest{
 				Number: 101,
 				Base: scm.PullRequestBranch{
@@ -939,8 +939,8 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			}
 			fakeGitHub.Collaborators = []string{"collab"}
-			fakeGitHub.IssueLabelsAdded = c.IssueLabelsAdded
-			fakeGitHub.IssueLabelsAdded = append(fakeGitHub.IssueLabelsAdded, "kubernetes/kubernetes#101:lgtm")
+			fakeGitHub.PullRequestLabelsAdded = c.PullRequestLabelsAdded
+			fakeGitHub.PullRequestLabelsAdded = append(fakeGitHub.PullRequestLabelsAdded, "kubernetes/kubernetes#101:lgtm")
 
 			commit := &scm.Commit{}
 			commit.Tree.Sha = treeSHA
@@ -970,18 +970,18 @@ func TestHandlePullRequest(t *testing.T) {
 				t.Fatalf("handlePullRequest error mismatch: got %v, want %v", got, want)
 			}
 
-			if got, want := len(fakeGitHub.IssueLabelsRemoved), len(c.IssueLabelsRemoved); got != want {
-				t.Logf("IssueLabelsRemoved: got %v, want: %v", fakeGitHub.IssueLabelsRemoved, c.IssueLabelsRemoved)
-				t.Fatalf("IssueLabelsRemoved length mismatch: got %d, want %d", got, want)
+			if got, want := len(fakeGitHub.PullRequestLabelsRemoved), len(c.PullRequestLabelsRemoved); got != want {
+				t.Logf("PullRequestLabelsRemoved: got %v, want: %v", fakeGitHub.PullRequestLabelsRemoved, c.PullRequestLabelsRemoved)
+				t.Fatalf("PullRequestLabelsRemoved length mismatch: got %d, want %d", got, want)
 			}
 
-			if got, want := fakeGitHub.IssueComments, c.issueComments; !equality.Semantic.DeepEqual(got, want) {
+			if got, want := fakeGitHub.PullRequestComments, c.PullRequestComments; !equality.Semantic.DeepEqual(got, want) {
 				t.Fatalf("LGTM revmoved notifications mismatch: got %v, want %v", got, want)
 			}
-			if c.expectNoComments && len(fakeGitHub.IssueCommentsAdded) > 0 {
-				t.Fatalf("expected no comments but got %v", fakeGitHub.IssueCommentsAdded)
+			if c.expectNoComments && len(fakeGitHub.PullRequestCommentsAdded) > 0 {
+				t.Fatalf("expected no comments but got %v", fakeGitHub.PullRequestCommentsAdded)
 			}
-			if !c.expectNoComments && len(fakeGitHub.IssueCommentsAdded) == 0 {
+			if !c.expectNoComments && len(fakeGitHub.PullRequestCommentsAdded) == 0 {
 				t.Fatalf("expected comments but got none")
 			}
 		})
@@ -1053,7 +1053,7 @@ func TestAddTreeHashComment(t *testing.T) {
 			fc.Commits[SHA] = commit
 			handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), &fakePruner{})
 			found := false
-			for _, body := range fc.IssueCommentsAdded {
+			for _, body := range fc.PullRequestCommentsAdded {
 				if addLGTMLabelNotificationRe.MatchString(body) {
 					found = true
 					break
@@ -1094,21 +1094,21 @@ func TestRemoveTreeHashComment(t *testing.T) {
 	fakeScmClient, fc := fake.NewDefault()
 	fakeClient := gitprovider.ToClient(fakeScmClient, fakeBotName)
 
-	fc.IssueComments[101] = []*scm.Comment{&scm.Comment{
+	fc.PullRequestComments[101] = []*scm.Comment{&scm.Comment{
 		Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
 		Author: scm.User{Login: fakeBotName},
 	},
 	}
 	fc.Collaborators = []string{"collab1", "collab2"}
 
-	fc.IssueLabelsAdded = []string{"kubernetes/kubernetes#101:" + LGTMLabel}
+	fc.PullRequestLabelsAdded = []string{"kubernetes/kubernetes#101:" + LGTMLabel}
 	fp := &fakePruner{
-		GitHubClient:  fc,
-		IssueComments: fc.IssueComments[101],
+		GitHubClient:        fc,
+		PullRequestComments: fc.PullRequestComments[101],
 	}
 	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), fp)
 	found := false
-	for _, body := range fc.IssueCommentsDeleted {
+	for _, body := range fc.PullRequestCommentsDeleted {
 		if addLGTMLabelNotificationRe.MatchString(body) {
 			found = true
 			break
