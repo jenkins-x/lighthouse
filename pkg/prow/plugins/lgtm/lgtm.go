@@ -55,7 +55,7 @@ func configInfoStickyLgtmTeam(team string) string {
 }
 
 type commentPruner interface {
-	PruneComments(shouldPrune func(*scm.Comment) bool)
+	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
 }
 
 func init() {
@@ -134,15 +134,15 @@ func optionsForRepo(config *plugins.Configuration, org, repo string) *plugins.Lg
 
 type githubClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
-	AddLabel(owner, repo string, number int, label string) error
+	AddLabel(owner, repo string, number int, label string, pr bool) error
 	AssignIssue(owner, repo string, number int, assignees []string) error
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
-	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
-	DeleteComment(org, repo string, number, ID int) error
+	ListPullRequestComments(org, repo string, number int) ([]*scm.Comment, error)
+	DeleteComment(org, repo string, number, ID int, pr bool) error
 	BotName() (string, error)
 	GetSingleCommit(org, repo, SHA string) (*scm.Commit, error)
 	IsMember(org, user string) (bool, error)
@@ -336,7 +336,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	// LGTM was not allowed for the commentor
 
 	// Only add the label if it doesn't have it, and vice versa.
-	labels, err := gc.GetIssueLabels(org, repoName, number)
+	labels, err := gc.GetIssueLabels(org, repoName, number, true)
 	if err != nil {
 		log.WithError(err).Error("Failed to get issue labels.")
 	}
@@ -346,17 +346,17 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	opts := optionsForRepo(config, rc.repo.Namespace, rc.repo.Name)
 	if hasLGTM && !wantLGTM {
 		log.Info("Removing LGTM label.")
-		if err := gc.RemoveLabel(org, repoName, number, LGTMLabel); err != nil {
+		if err := gc.RemoveLabel(org, repoName, number, LGTMLabel, true); err != nil {
 			return err
 		}
 		if opts.StoreTreeHash {
-			cp.PruneComments(func(comment *scm.Comment) bool {
+			cp.PruneComments(true, func(comment *scm.Comment) bool {
 				return addLGTMLabelNotificationRe.MatchString(comment.Body)
 			})
 		}
 	} else if !hasLGTM && wantLGTM {
 		log.Info("Adding LGTM label.")
-		if err := gc.AddLabel(org, repoName, number, LGTMLabel); err != nil {
+		if err := gc.AddLabel(org, repoName, number, LGTMLabel, true); err != nil {
 			return err
 		}
 		if !stickyLgtm(log, gc, config, opts, issueAuthor, org, repoName) {
@@ -379,7 +379,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				}
 			}
 			// Delete the LGTM removed noti after the LGTM label is added.
-			cp.PruneComments(func(comment *scm.Comment) bool {
+			cp.PruneComments(true, func(comment *scm.Comment) bool {
 				return strings.Contains(comment.Body, removeLGTMLabelNoti)
 			})
 		}
@@ -433,7 +433,7 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 	}
 
 	// If we don't have the lgtm label, we don't need to check anything
-	labels, err := gc.GetIssueLabels(org, repo, number)
+	labels, err := gc.GetIssueLabels(org, repo, number, true)
 	if err != nil {
 		log.WithError(err).Error("Failed to get labels.")
 	}
@@ -448,7 +448,7 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 		if err != nil {
 			return err
 		}
-		comments, err := gc.ListIssueComments(org, repo, number)
+		comments, err := gc.ListPullRequestComments(org, repo, number)
 		if err != nil {
 			log.WithError(err).Error("Failed to get issue comments.")
 		}
@@ -477,7 +477,7 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 		}
 	}
 
-	if err := gc.RemoveLabel(org, repo, number, LGTMLabel); err != nil {
+	if err := gc.RemoveLabel(org, repo, number, LGTMLabel, true); err != nil {
 		return fmt.Errorf("failed removing lgtm label: %v", err)
 	}
 

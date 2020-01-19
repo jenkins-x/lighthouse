@@ -78,13 +78,13 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 type githubClient interface {
 	BotName() (string, error)
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	AddLabel(owner, repo string, number int, label string) error
-	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	AddLabel(owner, repo string, number int, label string, pr bool) error
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
 type commentPruner interface {
-	PruneComments(shouldPrune func(*scm.Comment) bool)
+	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
@@ -106,7 +106,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider
 	commentAuthor := e.Author.Login
 
 	// Determine if the issue has the help and the good-first-issue label
-	issueLabels, err := gc.GetIssueLabels(org, repo, e.Number)
+	issueLabels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get issue labels.")
 	}
@@ -115,7 +115,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider
 
 	// If PR has help label and we're asking for it to be removed, remove label
 	if hasHelp && helpRemoveRe.MatchString(e.Body) {
-		if err := gc.RemoveLabel(org, repo, e.Number, labels.Help); err != nil {
+		if err := gc.RemoveLabel(org, repo, e.Number, labels.Help, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labels.Help)
 		}
 
@@ -123,14 +123,14 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider
 		if err != nil {
 			log.WithError(err).Errorf("Failed to get bot name.")
 		}
-		cp.PruneComments(shouldPrune(log, botName, helpMsgPruneMatch))
+		cp.PruneComments(e.IsPR, shouldPrune(log, botName, helpMsgPruneMatch))
 
 		// if it has the good-first-issue label, remove it too
 		if hasGoodFirstIssue {
-			if err := gc.RemoveLabel(org, repo, e.Number, labels.GoodFirstIssue); err != nil {
+			if err := gc.RemoveLabel(org, repo, e.Number, labels.GoodFirstIssue, e.IsPR); err != nil {
 				log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labels.GoodFirstIssue)
 			}
-			cp.PruneComments(shouldPrune(log, botName, goodFirstIssueMsgPruneMatch))
+			cp.PruneComments(e.IsPR, shouldPrune(log, botName, goodFirstIssueMsgPruneMatch))
 		}
 
 		return nil
@@ -143,12 +143,12 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", goodFirstIssueMsg)
 		}
 
-		if err := gc.AddLabel(org, repo, e.Number, labels.GoodFirstIssue); err != nil {
+		if err := gc.AddLabel(org, repo, e.Number, labels.GoodFirstIssue, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", labels.GoodFirstIssue)
 		}
 
 		if !hasHelp {
-			if err := gc.AddLabel(org, repo, e.Number, labels.Help); err != nil {
+			if err := gc.AddLabel(org, repo, e.Number, labels.Help, e.IsPR); err != nil {
 				log.WithError(err).Errorf("GitHub failed to add the following label: %s", labels.Help)
 			}
 		}
@@ -162,7 +162,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider
 		if err := gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, commentAuthor, helpMsg)); err != nil {
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", helpMsg)
 		}
-		if err := gc.AddLabel(org, repo, e.Number, labels.Help); err != nil {
+		if err := gc.AddLabel(org, repo, e.Number, labels.Help, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", labels.Help)
 		}
 
@@ -172,7 +172,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider
 	// If PR has good-first-issue label and we are asking for it to be removed,
 	// remove just the good-first-issue label
 	if hasGoodFirstIssue && helpGoodFirstIssueRemoveRe.MatchString(e.Body) {
-		if err := gc.RemoveLabel(org, repo, e.Number, labels.GoodFirstIssue); err != nil {
+		if err := gc.RemoveLabel(org, repo, e.Number, labels.GoodFirstIssue, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labels.GoodFirstIssue)
 		}
 
@@ -180,7 +180,7 @@ func handle(gc githubClient, log *logrus.Entry, cp commentPruner, e *gitprovider
 		if err != nil {
 			log.WithError(err).Errorf("Failed to get bot name.")
 		}
-		cp.PruneComments(shouldPrune(log, botName, goodFirstIssueMsgPruneMatch))
+		cp.PruneComments(e.IsPR, shouldPrune(log, botName, goodFirstIssueMsgPruneMatch))
 
 		return nil
 	}

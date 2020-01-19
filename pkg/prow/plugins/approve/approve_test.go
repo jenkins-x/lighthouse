@@ -130,9 +130,9 @@ func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments 
 
 	fakeClient := gitprovider.ToClient(fakeScmClient, testBotName)
 
-	fc.IssueLabelsAdded = labels
+	fc.PullRequestLabelsAdded = labels
 	fc.PullRequestChanges[prNumber] = changes
-	fc.IssueComments[prNumber] = comments
+	fc.PullRequestComments[prNumber] = comments
 	fc.IssueEvents[prNumber] = events
 	fc.Reviews[prNumber] = reviews
 	return fakeClient, fc
@@ -1077,30 +1077,30 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 		}
 
 		if test.expectDelete {
-			if len(fghc.IssueCommentsDeleted) != 1 {
+			if len(fghc.PullRequestCommentsDeleted) != 1 {
 				t.Errorf(
 					"[%s] Expected 1 notification to be deleted but %d notifications were deleted.",
 					test.name,
-					len(fghc.IssueCommentsDeleted),
+					len(fghc.PullRequestCommentsDeleted),
 				)
 			}
 		} else {
-			if len(fghc.IssueCommentsDeleted) != 0 {
+			if len(fghc.PullRequestCommentsDeleted) != 0 {
 				t.Errorf(
 					"[%s] Expected 0 notifications to be deleted but %d notification was deleted.",
 					test.name,
-					len(fghc.IssueCommentsDeleted),
+					len(fghc.PullRequestCommentsDeleted),
 				)
 			}
 		}
 		if test.expectComment {
-			if len(fghc.IssueCommentsAdded) != 1 {
+			if len(fghc.PullRequestCommentsAdded) != 1 {
 				t.Errorf(
 					"[%s] Expected 1 notification to be added but %d notifications were added.",
 					test.name,
-					len(fghc.IssueCommentsAdded),
+					len(fghc.PullRequestCommentsAdded),
 				)
-			} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fghc.IssueCommentsAdded[0]; test.expectedComment != "" && got != expect {
+			} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fghc.PullRequestCommentsAdded[0]; test.expectedComment != "" && got != expect {
 				t.Errorf(
 					"[%s] Expected the created notification to be:\n%s\n\nbut got:\n%s\n\n",
 					test.name,
@@ -1109,17 +1109,17 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				)
 			}
 		} else {
-			if len(fghc.IssueCommentsAdded) != 0 {
+			if len(fghc.PullRequestCommentsAdded) != 0 {
 				t.Errorf(
 					"[%s] Expected 0 notifications to be added but %d notification was added.",
 					test.name,
-					len(fghc.IssueCommentsAdded),
+					len(fghc.PullRequestCommentsAdded),
 				)
 			}
 		}
 
 		labelAdded := false
-		for _, l := range fghc.IssueLabelsAdded {
+		for _, l := range fghc.PullRequestLabelsAdded {
 			if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
 				if labelAdded {
 					t.Errorf("[%s] The approved label was applied to a PR that already had it!", test.name)
@@ -1131,7 +1131,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			labelAdded = false
 		}
 		toggled := labelAdded
-		for _, l := range fghc.IssueLabelsRemoved {
+		for _, l := range fghc.PullRequestLabelsRemoved {
 			if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
 				if !test.hasLabel {
 					t.Errorf("[%s] The approved label was removed from a PR that doesn't have it!", test.name)

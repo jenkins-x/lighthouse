@@ -35,14 +35,14 @@ type ghc struct {
 	getFileErr, getPullRequestChangesErr error
 }
 
-func (c *ghc) AddLabel(_, _ string, _ int, label string) error {
+func (c *ghc) AddLabel(_, _ string, _ int, label string, _ bool) error {
 	c.T.Logf("AddLabel: %s", label)
 	c.labels[scm.Label{Name: label}] = true
 
 	return c.addLabelErr
 }
 
-func (c *ghc) RemoveLabel(_, _ string, _ int, label string) error {
+func (c *ghc) RemoveLabel(_, _ string, _ int, label string, _ bool) error {
 	c.T.Logf("RemoveLabel: %s", label)
 	for k := range c.labels {
 		if k.Name == label {
@@ -53,7 +53,7 @@ func (c *ghc) RemoveLabel(_, _ string, _ int, label string) error {
 	return c.removeLabelErr
 }
 
-func (c *ghc) GetIssueLabels(_, _ string, _ int) (ls []*scm.Label, err error) {
+func (c *ghc) GetIssueLabels(_, _ string, _ int, _ bool) (ls []*scm.Label, err error) {
 	c.T.Log("GetIssueLabels")
 	for k, ok := range c.labels {
 		if ok {

@@ -64,7 +64,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 			// Eventually remove need-ok-to-test
 			// Does not work for TrustedUser() == true since labels are not fetched in this case
 			if gitprovider.HasLabel(labels.NeedsOkToTest, l) {
-				if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest); err != nil {
+				if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest, true); err != nil {
 					return err
 				}
 			}
@@ -122,7 +122,7 @@ func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHoo
 		// Eventually remove needs-ok-to-test
 		// Will not work for org members since labels are not fetched in this case
 		if gitprovider.HasLabel(labels.NeedsOkToTest, l) {
-			if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest); err != nil {
+			if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest, true); err != nil {
 				return err
 			}
 		}
@@ -176,7 +176,7 @@ I understand the commands that are listed [here](https://go.k8s.io/bot-commands?
 %s
 </details>
 `, author, org, org, more, joinOrgURL, labels.OkToTest, encodedRepoFullName, plugins.AboutThisBotWithoutCommands)
-		if err := ghc.AddLabel(org, repo, pr.Number, labels.NeedsOkToTest); err != nil {
+		if err := ghc.AddLabel(org, repo, pr.Number, labels.NeedsOkToTest, true); err != nil {
 			errors = append(errors, err)
 		}
 	}
@@ -203,7 +203,7 @@ func TrustedPullRequest(ghc githubClient, trigger *plugins.Trigger, author, org,
 	// Then check if PR has ok-to-test label
 	if l == nil {
 		var err error
-		l, err = ghc.GetIssueLabels(org, repo, num)
+		l, err = ghc.GetIssueLabels(org, repo, num, true)
 		if err != nil {
 			return l, false, err
 		}

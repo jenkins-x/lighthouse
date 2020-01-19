@@ -31,7 +31,7 @@ import (
 
 type fakePruner struct{}
 
-func (fp *fakePruner) PruneComments(shouldPrune func(*scm.Comment) bool) {}
+func (fp *fakePruner) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool) {}
 
 func formatLabels(labels ...string) []string {
 	r := []string{}
@@ -181,7 +181,7 @@ func TestLabel(t *testing.T) {
 
 		// Add initial labels
 		for _, label := range tc.issueLabels {
-			fakeGHClient.AddLabel("org", "repo", 1, label)
+			fakeGHClient.AddLabel("org", "repo", 1, label, false)
 		}
 
 		if len(tc.issueState) == 0 {

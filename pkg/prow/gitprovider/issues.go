@@ -86,42 +86,58 @@ func (c *Client) UnassignIssue(owner, repo string, number int, logins []string) 
 }
 
 // AddLabel adds a label
-func (c *Client) AddLabel(owner, repo string, number int, label string) error {
+func (c *Client) AddLabel(owner, repo string, number int, label string, pr bool) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
+	if pr {
+		_, err := c.client.PullRequests.AddLabel(ctx, fullName, number, label)
+		return err
+	}
 	_, err := c.client.Issues.AddLabel(ctx, fullName, number, label)
 	return err
 }
 
 // RemoveLabel removes labesl
-func (c *Client) RemoveLabel(owner, repo string, number int, label string) error {
+func (c *Client) RemoveLabel(owner, repo string, number int, label string, pr bool) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
+	if pr {
+		_, err := c.client.PullRequests.DeleteLabel(ctx, fullName, number, label)
+		return err
+	}
 	_, err := c.client.Issues.DeleteLabel(ctx, fullName, number, label)
 	return err
 }
 
 // DeleteComment delete comments
-func (c *Client) DeleteComment(org, repo string, number, ID int) error {
+func (c *Client) DeleteComment(org, repo string, number, ID int, pr bool) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
+	if pr {
+		_, err := c.client.PullRequests.DeleteComment(ctx, fullName, number, ID)
+		return err
+	}
 	_, err := c.client.Issues.DeleteComment(ctx, fullName, number, ID)
 	return err
 }
 
 // DeleteStaleComments iterates over comments on an issue/PR, deleting those which the 'isStale'
 // function identifies as stale. If 'comments' is nil, the comments will be fetched from GitHub.
-func (c *Client) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, isStale func(*scm.Comment) bool) error {
+func (c *Client) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error {
 	var err error
 	if comments == nil {
-		comments, err = c.ListIssueComments(org, repo, number)
+		if pr {
+			comments, err = c.ListPullRequestComments(org, repo, number)
+		} else {
+			comments, err = c.ListIssueComments(org, repo, number)
+		}
 		if err != nil {
 			return fmt.Errorf("failed to list comments while deleting stale comments. err: %v", err)
 		}
 	}
 	for _, comment := range comments {
 		if isStale(comment) {
-			if err := c.DeleteComment(org, repo, number, comment.ID); err != nil {
+			if err := c.DeleteComment(org, repo, number, comment.ID, pr); err != nil {
 				return fmt.Errorf("failed to delete stale comment with ID '%d'", comment.ID)
 			}
 		}
@@ -138,9 +154,13 @@ func (c *Client) ListIssueComments(org, repo string, number int) ([]*scm.Comment
 }
 
 // GetIssueLabels returns the issue labels
-func (c *Client) GetIssueLabels(org, repo string, number int) ([]*scm.Label, error) {
+func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
+	if pr {
+		labels, _, err := c.client.PullRequests.ListLabels(ctx, fullName, number, c.createListOptions())
+		return labels, err
+	}
 	labels, _, err := c.client.Issues.ListLabels(ctx, fullName, number, c.createListOptions())
 	return labels, err
 }

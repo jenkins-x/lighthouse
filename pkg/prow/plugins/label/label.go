@@ -78,10 +78,10 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 
 type githubClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	AddLabel(owner, repo string, number int, label string) error
-	RemoveLabel(owner, repo string, number int, label string) error
+	AddLabel(owner, repo string, number int, label string, pr bool) error
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
 // Get Labels from Regexp matches
@@ -132,7 +132,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 	if err != nil {
 		return err
 	}
-	labels, err := gc.GetIssueLabels(org, repo, e.Number)
+	labels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 			continue
 		}
 
-		if err := gc.AddLabel(org, repo, e.Number, RepoLabelsExisting[labelToAdd]); err != nil {
+		if err := gc.AddLabel(org, repo, e.Number, RepoLabelsExisting[labelToAdd], e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", labelToAdd)
 		}
 	}
@@ -180,7 +180,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 			continue
 		}
 
-		if err := gc.RemoveLabel(org, repo, e.Number, labelToRemove); err != nil {
+		if err := gc.RemoveLabel(org, repo, e.Number, labelToRemove, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labelToRemove)
 		}
 	}

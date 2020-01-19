@@ -54,14 +54,19 @@ type FakeClient struct {
 	//All Labels That Exist In The Repo
 	RepoLabelsExisting []string
 	// org/repo#number:label
-	IssueLabelsAdded    []string
-	IssueLabelsExisting []string
-	IssueLabelsRemoved  []string
+	IssueLabelsAdded          []string
+	IssueLabelsExisting       []string
+	IssueLabelsRemoved        []string
+	PullRequestLabelsAdded    []string
+	PullRequestLabelsExisting []string
+	PullRequestLabelsRemoved  []string
 
 	// org/repo#number:body
-	IssueCommentsAdded []string
+	IssueCommentsAdded       []string
+	PullRequestCommentsAdded []string
 	// org/repo#issuecommentid
-	IssueCommentsDeleted []string
+	IssueCommentsDeleted       []string
+	PullRequestCommentsDeleted []string
 
 	// org/repo#issuecommentid:reaction
 	IssueReactionsAdded   []string
@@ -123,12 +128,21 @@ func (f *FakeClient) ListIssueEvents(owner, repo string, number int) ([]*scm.Lis
 
 // CreateComment adds a comment to a PR
 func (f *FakeClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
-	f.IssueCommentsAdded = append(f.IssueCommentsAdded, fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, comment))
-	f.IssueComments[number] = append(f.IssueComments[number], &scm.Comment{
-		ID:     f.IssueCommentID,
-		Body:   comment,
-		Author: scm.User{Login: botName},
-	})
+	if pr {
+		f.PullRequestCommentsAdded = append(f.PullRequestCommentsAdded, fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, comment))
+		f.PullRequestComments[number] = append(f.PullRequestComments[number], &scm.Comment{
+			ID:     f.IssueCommentID,
+			Body:   comment,
+			Author: scm.User{Login: botName},
+		})
+	} else {
+		f.IssueCommentsAdded = append(f.IssueCommentsAdded, fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, comment))
+		f.IssueComments[number] = append(f.IssueComments[number], &scm.Comment{
+			ID:     f.IssueCommentID,
+			Body:   comment,
+			Author: scm.User{Login: botName},
+		})
+	}
 	f.IssueCommentID++
 	return nil
 }
@@ -157,7 +171,20 @@ func (f *FakeClient) CreateIssueReaction(org, repo string, ID int, reaction stri
 }
 
 // DeleteComment deletes a comment.
-func (f *FakeClient) DeleteComment(owner, repo string, number, ID int) error {
+func (f *FakeClient) DeleteComment(owner, repo string, number, ID int, pr bool) error {
+	if pr {
+		f.PullRequestCommentsDeleted = append(f.PullRequestCommentsDeleted, fmt.Sprintf("%s/%s#%d", owner, repo, ID))
+		for num, ics := range f.PullRequestComments {
+			for i, ic := range ics {
+				if ic.ID == ID {
+					f.PullRequestComments[num] = append(ics[:i], ics[i+1:]...)
+					return nil
+				}
+			}
+		}
+		return fmt.Errorf("could not find pull request comment %d", ID)
+	}
+
 	f.IssueCommentsDeleted = append(f.IssueCommentsDeleted, fmt.Sprintf("%s/%s#%d", owner, repo, ID))
 	for num, ics := range f.IssueComments {
 		for i, ic := range ics {
@@ -171,13 +198,17 @@ func (f *FakeClient) DeleteComment(owner, repo string, number, ID int) error {
 }
 
 // DeleteStaleComments deletes comments flagged by isStale.
-func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, isStale func(*scm.Comment) bool) error {
+func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error {
 	if comments == nil {
-		comments, _ = f.ListIssueComments(org, repo, number)
+		if pr {
+			comments, _ = f.ListPullRequestComments(org, repo, number)
+		} else {
+			comments, _ = f.ListIssueComments(org, repo, number)
+		}
 	}
 	for _, comment := range comments {
 		if isStale(comment) {
-			if err := f.DeleteComment(org, repo, number, comment.ID); err != nil {
+			if err := f.DeleteComment(org, repo, number, comment.ID, pr); err != nil {
 				return fmt.Errorf("failed to delete stale comment with ID '%d'", comment.ID)
 			}
 		}
@@ -255,12 +286,19 @@ func (f *FakeClient) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
 }
 
 // GetIssueLabels gets labels on an issue
-func (f *FakeClient) GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error) {
+func (f *FakeClient) GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error) {
 	re := regexp.MustCompile(fmt.Sprintf(`^%s/%s#%d:(.*)$`, owner, repo, number))
 	la := []*scm.Label{}
-	allLabels := sets.NewString(f.IssueLabelsExisting...)
-	allLabels.Insert(f.IssueLabelsAdded...)
-	allLabels.Delete(f.IssueLabelsRemoved...)
+	var allLabels sets.String
+	if pr {
+		allLabels = sets.NewString(f.PullRequestLabelsExisting...)
+		allLabels.Insert(f.PullRequestLabelsAdded...)
+		allLabels.Delete(f.PullRequestLabelsRemoved...)
+	} else {
+		allLabels = sets.NewString(f.IssueLabelsExisting...)
+		allLabels.Insert(f.IssueLabelsAdded...)
+		allLabels.Delete(f.IssueLabelsRemoved...)
+	}
 	for _, l := range allLabels.List() {
 		groups := re.FindStringSubmatch(l)
 		if groups != nil {
@@ -271,30 +309,53 @@ func (f *FakeClient) GetIssueLabels(owner, repo string, number int) ([]*scm.Labe
 }
 
 // AddLabel adds a label
-func (f *FakeClient) AddLabel(owner, repo string, number int, label string) error {
+func (f *FakeClient) AddLabel(owner, repo string, number int, label string, pr bool) error {
 	labelString := fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, label)
-	if sets.NewString(f.IssueLabelsAdded...).Has(labelString) {
-		return fmt.Errorf("cannot add %v to %s/%s/#%d", label, owner, repo, number)
-	}
-	if f.RepoLabelsExisting == nil {
-		f.IssueLabelsAdded = append(f.IssueLabelsAdded, labelString)
-		return nil
-	}
-	for _, l := range f.RepoLabelsExisting {
-		if label == l {
+	if pr {
+		if sets.NewString(f.PullRequestLabelsAdded...).Has(labelString) {
+			return fmt.Errorf("cannot add %v to %s/%s/#%d", label, owner, repo, number)
+		}
+		if f.RepoLabelsExisting == nil {
+			f.PullRequestLabelsAdded = append(f.PullRequestLabelsAdded, labelString)
+			return nil
+		}
+		for _, l := range f.RepoLabelsExisting {
+			if label == l {
+				f.PullRequestLabelsAdded = append(f.PullRequestLabelsAdded, labelString)
+				return nil
+			}
+		}
+	} else {
+		if sets.NewString(f.IssueLabelsAdded...).Has(labelString) {
+			return fmt.Errorf("cannot add %v to %s/%s/#%d", label, owner, repo, number)
+		}
+		if f.RepoLabelsExisting == nil {
 			f.IssueLabelsAdded = append(f.IssueLabelsAdded, labelString)
 			return nil
+		}
+		for _, l := range f.RepoLabelsExisting {
+			if label == l {
+				f.IssueLabelsAdded = append(f.IssueLabelsAdded, labelString)
+				return nil
+			}
 		}
 	}
 	return fmt.Errorf("cannot add %v to %s/%s/#%d", label, owner, repo, number)
 }
 
 // RemoveLabel removes a label
-func (f *FakeClient) RemoveLabel(owner, repo string, number int, label string) error {
+func (f *FakeClient) RemoveLabel(owner, repo string, number int, label string, pr bool) error {
 	labelString := fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, label)
-	if !sets.NewString(f.IssueLabelsRemoved...).Has(labelString) {
-		f.IssueLabelsRemoved = append(f.IssueLabelsRemoved, labelString)
-		return nil
+	if pr {
+		if !sets.NewString(f.PullRequestLabelsRemoved...).Has(labelString) {
+			f.PullRequestLabelsRemoved = append(f.PullRequestLabelsRemoved, labelString)
+			return nil
+		}
+	} else {
+		if !sets.NewString(f.IssueLabelsRemoved...).Has(labelString) {
+			f.IssueLabelsRemoved = append(f.IssueLabelsRemoved, labelString)
+			return nil
+		}
 	}
 	return fmt.Errorf("cannot remove %v from %s/%s/#%d", label, owner, repo, number)
 }

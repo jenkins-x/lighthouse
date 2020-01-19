@@ -68,10 +68,10 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 type githubClient interface {
-	AddLabel(owner, repo string, number int, label string) error
+	AddLabel(owner, repo string, number int, label string, pr bool) error
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	RemoveLabel(owner, repo string, number int, label string) error
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
@@ -97,7 +97,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 
 	// Only add the label if it doesn't have it yet.
 	hasShrug := false
-	issueLabels, err := gc.GetIssueLabels(org, repo, e.Number)
+	issueLabels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get the labels on %s/%s#%d.", org, repo, e.Number)
 	}
@@ -114,10 +114,10 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		if err := gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp)); err != nil {
 			return fmt.Errorf("failed to comment on %s/%s#%d: %v", org, repo, e.Number, err)
 		}
-		return gc.RemoveLabel(org, repo, e.Number, labels.Shrug)
+		return gc.RemoveLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
 	} else if !hasShrug && wantShrug {
 		log.Info("Adding Shrug label.")
-		return gc.AddLabel(org, repo, e.Number, labels.Shrug)
+		return gc.AddLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
 	}
 	return nil
 }

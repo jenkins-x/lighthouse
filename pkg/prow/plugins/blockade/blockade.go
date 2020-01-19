@@ -45,14 +45,14 @@ var blockedPathsBody = fmt.Sprintf("Adding label: `%s` because PR changes a prot
 
 type githubClient interface {
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
-	AddLabel(owner, repo string, number int, label string) error
-	RemoveLabel(owner, repo string, number int, label string) error
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	AddLabel(owner, repo string, number int, label string, pr bool) error
+	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	CreateComment(org, repo string, number int, pr bool, comment string) error
 }
 
 type pruneClient interface {
-	PruneComments(func(ic *scm.Comment) bool)
+	PruneComments(bool, func(ic *scm.Comment) bool)
 }
 
 func init() {
@@ -138,7 +138,7 @@ func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp p
 	org := pre.Repo.Namespace
 	repo := pre.Repo.Name
 	prNumber := pre.PullRequest.Number
-	issueLabels, err := ghc.GetIssueLabels(org, repo, prNumber)
+	issueLabels, err := ghc.GetIssueLabels(org, repo, prNumber, true)
 	if err != nil {
 		return err
 	}
@@ -162,17 +162,17 @@ func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp p
 	shouldBlock := len(sum) > 0
 	if shouldBlock && !labelPresent {
 		// Add the label and leave a comment explaining why the label was added.
-		if err := ghc.AddLabel(org, repo, prNumber, labels.BlockedPaths); err != nil {
+		if err := ghc.AddLabel(org, repo, prNumber, labels.BlockedPaths, true); err != nil {
 			return err
 		}
 		msg := plugins.FormatResponse(pre.PullRequest.Author.Login, blockedPathsBody, sum.String())
 		return ghc.CreateComment(org, repo, prNumber, true, msg)
 	} else if !shouldBlock && labelPresent {
 		// Remove the label and delete any comments created by this plugin.
-		if err := ghc.RemoveLabel(org, repo, prNumber, labels.BlockedPaths); err != nil {
+		if err := ghc.RemoveLabel(org, repo, prNumber, labels.BlockedPaths, true); err != nil {
 			return err
 		}
-		cp.PruneComments(func(ic *scm.Comment) bool {
+		cp.PruneComments(true, func(ic *scm.Comment) bool {
 			return strings.Contains(ic.Body, blockedPathsBody)
 		})
 	}

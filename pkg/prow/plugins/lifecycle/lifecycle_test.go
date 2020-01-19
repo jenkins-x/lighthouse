@@ -36,13 +36,13 @@ type fakeClient struct {
 	removed []string
 }
 
-func (c *fakeClient) AddLabel(owner, repo string, number int, label string) error {
+func (c *fakeClient) AddLabel(owner, repo string, number int, label string, pr bool) error {
 	c.added = append(c.added, label)
 	c.labels = append(c.labels, label)
 	return nil
 }
 
-func (c *fakeClient) RemoveLabel(owner, repo string, number int, label string) error {
+func (c *fakeClient) RemoveLabel(owner, repo string, number int, label string, pr bool) error {
 	c.removed = append(c.removed, label)
 
 	// remove from existing labels
@@ -56,7 +56,7 @@ func (c *fakeClient) RemoveLabel(owner, repo string, number int, label string) e
 	return nil
 }
 
-func (c *fakeClient) GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error) {
+func (c *fakeClient) GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error) {
 	la := []*scm.Label{}
 	for _, l := range c.labels {
 		la = append(la, &scm.Label{Name: l})

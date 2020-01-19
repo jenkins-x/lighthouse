@@ -94,19 +94,19 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc gitprovider.Gen
 	// Ensure we have labels before test, because TrustedPullRequest() won't be called
 	// when commentAuthor is trusted.
 	if l == nil {
-		l, err = c.GitHubClient.GetIssueLabels(org, repo, number)
+		l, err = c.GitHubClient.GetIssueLabels(org, repo, number, gc.IsPR)
 		if err != nil {
 			return err
 		}
 	}
 	isOkToTest := HonorOkToTest(trigger) && pjutil.OkToTestRe.MatchString(gc.Body)
 	if isOkToTest && !gitprovider.HasLabel(labels.OkToTest, l) {
-		if err := c.GitHubClient.AddLabel(org, repo, number, labels.OkToTest); err != nil {
+		if err := c.GitHubClient.AddLabel(org, repo, number, labels.OkToTest, gc.IsPR); err != nil {
 			return err
 		}
 	}
 	if (isOkToTest || gitprovider.HasLabel(labels.OkToTest, l)) && gitprovider.HasLabel(labels.NeedsOkToTest, l) {
-		if err := c.GitHubClient.RemoveLabel(org, repo, number, labels.NeedsOkToTest); err != nil {
+		if err := c.GitHubClient.RemoveLabel(org, repo, number, labels.NeedsOkToTest, gc.IsPR); err != nil {
 			return err
 		}
 	}

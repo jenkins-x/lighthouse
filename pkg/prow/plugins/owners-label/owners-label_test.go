@@ -67,7 +67,7 @@ func TestHandle(t *testing.T) {
 		filesChanged      []string
 		expectedNewLabels []string
 		repoLabels        []string
-		issueLabels       []string
+		prLabels          []string
 	}
 	testcases := []testCase{
 		{
@@ -75,84 +75,84 @@ func TestHandle(t *testing.T) {
 			filesChanged:      []string{"other.go", "something.go"},
 			expectedNewLabels: []string{},
 			repoLabels:        []string{},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "1 file 1 label",
 			filesChanged:      []string{"b.go"},
 			expectedNewLabels: formatLabels(labels.LGTM),
 			repoLabels:        []string{labels.LGTM},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "1 file 3 labels",
 			filesChanged:      []string{"a.go"},
 			expectedNewLabels: formatLabels(labels.LGTM, labels.Approved, "kind/docs"),
 			repoLabels:        []string{labels.LGTM, labels.Approved, "kind/docs"},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "2 files no overlap",
 			filesChanged:      []string{"c.go", "d.sh"},
 			expectedNewLabels: formatLabels(labels.LGTM, "dnm/frozen-docs", "dnm/bash"),
 			repoLabels:        []string{labels.LGTM, "dnm/frozen-docs", "dnm/bash"},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "2 files partial overlap",
 			filesChanged:      []string{"a.go", "b.go"},
 			expectedNewLabels: formatLabels(labels.LGTM, labels.Approved, "kind/docs"),
 			repoLabels:        []string{labels.LGTM, labels.Approved, "kind/docs"},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "2 files complete overlap",
 			filesChanged:      []string{"d.sh", "e.sh"},
 			expectedNewLabels: formatLabels("dnm/bash"),
 			repoLabels:        []string{"dnm/bash"},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "3 files partial overlap",
 			filesChanged:      []string{"a.go", "b.go", "c.go"},
 			expectedNewLabels: formatLabels(labels.LGTM, labels.Approved, "kind/docs", "dnm/frozen-docs"),
 			repoLabels:        []string{labels.LGTM, labels.Approved, "kind/docs", "dnm/frozen-docs"},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "no labels to add, initial unrelated label",
 			filesChanged:      []string{"other.go", "something.go"},
 			expectedNewLabels: []string{},
 			repoLabels:        []string{labels.LGTM},
-			issueLabels:       []string{labels.LGTM},
+			prLabels:          []string{labels.LGTM},
 		},
 		{
 			name:              "1 file 1 label, already present",
 			filesChanged:      []string{"b.go"},
 			expectedNewLabels: []string{},
 			repoLabels:        []string{labels.LGTM},
-			issueLabels:       []string{labels.LGTM},
+			prLabels:          []string{labels.LGTM},
 		},
 		{
 			name:              "1 file 1 label, doesn't exist on the repo",
 			filesChanged:      []string{"b.go"},
 			expectedNewLabels: []string{},
 			repoLabels:        []string{labels.Approved},
-			issueLabels:       []string{},
+			prLabels:          []string{},
 		},
 		{
 			name:              "2 files no overlap, 1 label already present",
 			filesChanged:      []string{"c.go", "d.sh"},
 			expectedNewLabels: formatLabels(labels.LGTM, "dnm/frozen-docs"),
 			repoLabels:        []string{"dnm/bash", labels.Approved, labels.LGTM, "dnm/frozen-docs"},
-			issueLabels:       []string{"dnm/bash", labels.Approved},
+			prLabels:          []string{"dnm/bash", labels.Approved},
 		},
 		{
 			name:              "2 files complete overlap, label already present",
 			filesChanged:      []string{"d.sh", "e.sh"},
 			expectedNewLabels: []string{},
 			repoLabels:        []string{"dnm/bash"},
-			issueLabels:       []string{"dnm/bash"},
+			prLabels:          []string{"dnm/bash"},
 		},
 	}
 
@@ -184,8 +184,8 @@ func TestHandle(t *testing.T) {
 		fghc.RepoLabelsExisting = tc.repoLabels
 
 		// Add initial labels
-		for _, label := range tc.issueLabels {
-			fakeClient.AddLabel(basicPR.Base.Repo.Namespace, basicPR.Base.Repo.Name, basicPR.Number, label)
+		for _, label := range tc.prLabels {
+			fakeClient.AddLabel(basicPR.Base.Repo.Namespace, basicPR.Base.Repo.Name, basicPR.Number, label, true)
 		}
 		pre := &scm.PullRequestHook{
 			Action:      scm.ActionOpen,
@@ -200,14 +200,14 @@ func TestHandle(t *testing.T) {
 		}
 
 		// Check that all the correct labels (and only the correct labels) were added.
-		expectLabels := append(formatLabels(tc.issueLabels...), tc.expectedNewLabels...)
+		expectLabels := append(formatLabels(tc.prLabels...), tc.expectedNewLabels...)
 		if expectLabels == nil {
 			expectLabels = []string{}
 		}
 		sort.Strings(expectLabels)
-		sort.Strings(fghc.IssueLabelsAdded)
-		if !reflect.DeepEqual(expectLabels, fghc.IssueLabelsAdded) {
-			t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fghc.IssueLabelsAdded)
+		sort.Strings(fghc.PullRequestLabelsAdded)
+		if !reflect.DeepEqual(expectLabels, fghc.PullRequestLabelsAdded) {
+			t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fghc.PullRequestLabelsAdded)
 		}
 
 	}

@@ -27,7 +27,8 @@ import (
 type githubClient interface {
 	BotName() (string, error)
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
-	DeleteComment(org, repo string, number, id int) error
+	ListPullRequestComments(org, repo string, number int) ([]*scm.Comment, error)
+	DeleteComment(org, repo string, number, id int, pr bool) error
 }
 
 // EventClient is a struct that provides bot comment deletion for an event related to an issue.
@@ -63,13 +64,18 @@ func NewEventClient(ghc githubClient, log *logrus.Entry, org, repo string, numbe
 
 // PruneComments fetches issue comments if they have not yet been fetched for this webhook event
 // and then deletes any bot comments indicated by the func 'shouldPrune'.
-func (c *EventClient) PruneComments(shouldPrune func(*scm.Comment) bool) {
+func (c *EventClient) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool) {
 	c.once.Do(func() {
 		botName, err := c.ghc.BotName()
 		if err != nil {
 			c.log.WithError(err).Error("failed to get the bot's name. Pruning will consider all comments.")
 		}
-		comments, err := c.ghc.ListIssueComments(c.org, c.repo, c.number)
+		var comments []*scm.Comment
+		if pr {
+			comments, err = c.ghc.ListPullRequestComments(c.org, c.repo, c.number)
+		} else {
+			comments, err = c.ghc.ListIssueComments(c.org, c.repo, c.number)
+		}
 		if err != nil {
 			c.log.WithError(err).Errorf("failed to list comments for %s/%s#%d", c.org, c.repo, c.number)
 		}
@@ -89,7 +95,7 @@ func (c *EventClient) PruneComments(shouldPrune func(*scm.Comment) bool) {
 	for _, comment := range c.comments {
 		removed := false
 		if shouldPrune(comment) {
-			if err := c.ghc.DeleteComment(c.org, c.repo, c.number, comment.ID); err != nil {
+			if err := c.ghc.DeleteComment(c.org, c.repo, c.number, comment.ID, pr); err != nil {
 				c.log.WithError(err).Errorf("failed to delete stale comment with ID '%d'", comment.ID)
 			} else {
 				removed = true

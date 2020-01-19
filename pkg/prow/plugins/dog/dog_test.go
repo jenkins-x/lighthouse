@@ -336,9 +336,15 @@ func TestDogs(t *testing.T) {
 		if err != nil {
 			t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
 		}
-		if tc.shouldComment && len(fc.IssueComments[5]) != 1 {
+		var comments map[int][]*scm.Comment
+		if tc.pr {
+			comments = fc.PullRequestComments
+		} else {
+			comments = fc.IssueComments
+		}
+		if tc.shouldComment && len(comments[5]) != 1 {
 			t.Errorf("For case %s, should have commented.", tc.name)
-		} else if !tc.shouldComment && len(fc.IssueComments[5]) != 0 {
+		} else if !tc.shouldComment && len(comments[5]) != 0 {
 			t.Errorf("For case %s, should not have commented.", tc.name)
 		}
 	}

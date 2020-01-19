@@ -55,7 +55,7 @@ func (c *fakeClientClose) IsCollaborator(owner, repo, login string) (bool, error
 	return false, nil
 }
 
-func (c *fakeClientClose) GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error) {
+func (c *fakeClientClose) GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error) {
 	var labels []*scm.Label
 	for _, l := range c.labels {
 		if l == "error" {

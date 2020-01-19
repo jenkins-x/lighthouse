@@ -64,15 +64,15 @@ var (
 type githubClient interface {
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
-	GetIssueLabels(org, repo string, number int) ([]*scm.Label, error)
+	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
 	ListReviews(org, repo string, number int) ([]*scm.Review, error)
 	ListPullRequestComments(org, repo string, number int) ([]*scm.Comment, error)
-	DeleteComment(org, repo string, number, ID int) error
+	DeleteComment(org, repo string, number, ID int, pr bool) error
 	CreateComment(org, repo string, number int, pr bool, comment string) error
 	BotName() (string, error)
-	AddLabel(org, repo string, number int, label string) error
-	RemoveLabel(org, repo string, number int, label string) error
+	AddLabel(org, repo string, number int, label string, pr bool) error
+	RemoveLabel(org, repo string, number int, label string, pr bool) error
 	ListIssueEvents(org, repo string, num int) ([]*scm.ListedIssueEvent, error)
 }
 
@@ -359,7 +359,7 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 	for _, change := range changes {
 		filenames = append(filenames, change.Path)
 	}
-	issueLabels, err := ghc.GetIssueLabels(pr.org, pr.repo, pr.number)
+	issueLabels, err := ghc.GetIssueLabels(pr.org, pr.repo, pr.number, true)
 	if err != nil {
 		return fetchErr("issue labels", err)
 	}
@@ -423,12 +423,12 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 		approversHandler.AddAssignees(user.Login)
 	}
 
-	notifications := filterComments(commentsFromIssueComments, notificationMatcher(botName))
+	notifications := filterComments(comments, notificationMatcher(botName))
 	latestNotification := getLast(notifications)
 	newMessage := updateNotification(githubConfig.LinkURL, pr.org, pr.repo, pr.branch, latestNotification, approversHandler)
 	if newMessage != nil {
 		for _, notif := range notifications {
-			if err := ghc.DeleteComment(pr.org, pr.repo, pr.number, notif.ID); err != nil {
+			if err := ghc.DeleteComment(pr.org, pr.repo, pr.number, notif.ID, true); err != nil {
 				log.WithError(err).Errorf("Failed to delete comment from %s/%s#%d, ID: %d.", pr.org, pr.repo, pr.number, notif.ID)
 			}
 		}
@@ -439,12 +439,12 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 
 	if !approversHandler.IsApproved() {
 		if hasApprovedLabel {
-			if err := ghc.RemoveLabel(pr.org, pr.repo, pr.number, labels.Approved); err != nil {
+			if err := ghc.RemoveLabel(pr.org, pr.repo, pr.number, labels.Approved, true); err != nil {
 				log.WithError(err).Errorf("Failed to remove %q label from %s/%s#%d.", labels.Approved, pr.org, pr.repo, pr.number)
 			}
 		}
 	} else if !hasApprovedLabel {
-		if err := ghc.AddLabel(pr.org, pr.repo, pr.number, labels.Approved); err != nil {
+		if err := ghc.AddLabel(pr.org, pr.repo, pr.number, labels.Approved, true); err != nil {
 			log.WithError(err).Errorf("Failed to add %q label to %s/%s#%d.", labels.Approved, pr.org, pr.repo, pr.number)
 		}
 	}

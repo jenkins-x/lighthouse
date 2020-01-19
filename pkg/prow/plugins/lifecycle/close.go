@@ -34,11 +34,11 @@ type closeClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	CloseIssue(owner, repo string, number int) error
 	ClosePR(owner, repo string, number int) error
-	GetIssueLabels(owner, repo string, number int) ([]*scm.Label, error)
+	GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-func isActive(gc closeClient, org, repo string, number int) (bool, error) {
-	labels, err := gc.GetIssueLabels(org, repo, number)
+func isActive(gc closeClient, org, repo string, number int, pr bool) (bool, error) {
+	labels, err := gc.GetIssueLabels(org, repo, number, pr)
 	if err != nil {
 		return true, fmt.Errorf("list issue labels error: %v", err)
 	}
@@ -72,7 +72,7 @@ func handleClose(gc closeClient, log *logrus.Entry, e *gitprovider.GenericCommen
 		log.WithError(err).Errorf("Failed IsCollaborator(%s, %s, %s)", org, repo, commentAuthor)
 	}
 
-	active, err := isActive(gc, org, repo, number)
+	active, err := isActive(gc, org, repo, number, e.IsPR)
 	if err != nil {
 		log.Infof("Cannot determine if issue is active: %v", err)
 		active = true // Fail active
