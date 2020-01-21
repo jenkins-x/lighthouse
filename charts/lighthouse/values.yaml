@@ -82,3 +82,10 @@ tide:
     internalPort: 8888
   datadog:
     enabled: "true"
+
+vault:
+  enabled: false
+
+clusterName: ""
+
+user: ""

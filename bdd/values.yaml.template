@@ -3,3 +3,23 @@ image:
   repository: gcr.io/jenkinsxio/lighthouse
   tag: $VERSION
   pullPolicy: IfNotPresent
+
+# Override the tide image tag
+tide:
+  image:
+    repository: gcr.io/jenkinsxio/lh-tide
+    tag: $VERSION
+    pullPolicy: IfNotPresent
+
+vault:
+{{- if eq .Requirements.secretStorage "vault" }}
+  enabled: true
+{{- else }}
+  enabled: false
+{{- end }}
+
+clusterName: {{ .Requirements.cluster.clusterName }}
+
+user: "{{ .Parameters.pipelineUser.username }}"
+
+oauthToken: "{{ .Parameters.pipelineUser.token }}"

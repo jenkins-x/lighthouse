@@ -27,6 +27,16 @@ pipelineConfig:
             value: http://jenkins-x-athens-proxy:80
           - name: GKE_SA
             value: /secrets/bdd/sa.json
+          - name: CHARTMUSEUM_USER
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-chartmuseum
+                key: BASIC_AUTH_USER
+          - name: CHARTMUSEUM_PASS
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-chartmuseum
+                key: BASIC_AUTH_PASS
           - name: GL_ACCESS_TOKEN
             valueFrom:
               secretKeyRef:

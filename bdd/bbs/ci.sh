@@ -43,10 +43,21 @@ export JX_DISABLE_TEST_CHATOPS_COMMANDS="true"
 # TODO temporary hack until the batch mode in jx is fixed...
 export JX_BATCH_MODE="true"
 
+# Push the snapshot chart
+pushd charts/lighthouse
+make snapshot
+popd
+
+# Use the latest boot config promoted in the version stream instead of master to avoid conflicts during boot, because
+# boot fetches always the latest version available in the version stream.
+git clone https://github.com/jenkins-x/jenkins-x-versions.git versions
+export BOOT_CONFIG_VERSION=$(jx step get dependency-version --host=github.com --owner=jenkins-x --repo=jenkins-x-boot-config --dir versions | sed 's/.*: \(.*\)/\1/')
 git clone https://github.com/jenkins-x/jenkins-x-boot-config.git boot-source
-cp bdd/bbs/jx-requirements.yml boot-source
-cp bdd/bbs/parameters.yaml boot-source/env
 cd boot-source
+git checkout tags/v${BOOT_CONFIG_VERSION} -b latest-boot-config
+
+cp ../bdd/bbs/jx-requirements.yml .
+cp ../bdd/bbs/parameters.yaml env
 
 # Manually interpolate lighthouse version tag
 cat ../bdd/values.yaml.template >> env/lighthouse/values.tmpl.yaml
@@ -54,6 +65,7 @@ cp env/lighthouse/values.tmpl.yaml values.tmpl.yaml.tmp
 sed 's/$VERSION/'"$VERSION"'/' values.tmpl.yaml.tmp > env/lighthouse/values.tmpl.yaml
 cat env/lighthouse/values.tmpl.yaml
 rm values.tmpl.yaml.tmp
+sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/requirements.yaml
 
 echo "Building lighthouse with version $VERSION"
 
@@ -61,7 +73,7 @@ echo "Building lighthouse with version $VERSION"
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
-
+set +e
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/bbs/cluster.yaml \
@@ -75,4 +87,11 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
+    --tests test-create-spring \
     --tests test-quickstart-golang-http
+
+bdd_result=$?
+cd ../charts/lighthouse
+make delete-from-chartmuseum
+
+exit $bdd_result

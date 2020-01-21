@@ -36,16 +36,12 @@ spec:
           - name: "GIT_SERVER"
             value: "{{ .Values.git.server }}"
           - name: "GIT_USER"
-            valueFrom:
-              secretKeyRef:
-                name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
-                key: username
+            value: {{ .Values.user }}
           - name: "GIT_TOKEN"
             valueFrom:
               secretKeyRef:
-                name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
-                key: password
-            value: "{{ .Values.git.token }}"
+                name: lighthouse-oauth-token
+                key: oauth
           - name: "HMAC_TOKEN"
             valueFrom:
               secretKeyRef:
