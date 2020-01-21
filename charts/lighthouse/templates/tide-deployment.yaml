@@ -61,17 +61,11 @@ spec:
         - name: "GITHUB_APP_SECRET_DIR"
           value: "/secrets/githubapp/tokens"
 {{- else }}
-        - name: "GIT_USER"
-          valueFrom:
-            secretKeyRef:
-              name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
-              key: username
         - name: "GIT_TOKEN"
           valueFrom:
             secretKeyRef:
-              name: "jx-pipeline-git-{{ .Values.git.kind }}-{{ .Values.git.name }}"
-              key: password
-          value: "{{ .Values.git.token }}"
+              name: lighthouse-oauth-token
+              key: oauth
 {{- end }}
 {{- if .Values.tide.env }}
 {{- range $pkey, $pval := .Values.tide.env }}

@@ -14,6 +14,7 @@ environments:
   - key: production
     owner: ""
     repository: ""
+gitops: true
 ingress:
   domain: ""
   externalDNS: false
@@ -23,13 +24,15 @@ ingress:
     production: false
 kaniko: true
 repository: nexus
-secretStorage: local
+secretStorage: vault
 storage:
   logs:
-    enabled: true
-    url: "gs://jx-bdd-log-store3"
+    enabled: false
+    url: ""
   reports:
-    enabled: true
-    url: "gs://jx-bdd-log-store3"
+    enabled: false
+    url: ""
+vault:
+  disableURLDiscovery: true
 webhook: lighthouse
 
