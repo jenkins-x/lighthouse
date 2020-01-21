@@ -87,8 +87,7 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring \
-    --tests test-quickstart-golang-http
+    --tests test-create-spring
 
 bdd_result=$?
 cd ../charts/lighthouse
