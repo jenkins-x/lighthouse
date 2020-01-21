@@ -32,6 +32,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
+	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -1554,6 +1555,7 @@ func TestSync(t *testing.T) {
 		t.Logf("Starting case %q...", tc.name)
 		fgc := &fgc{prs: tc.prs}
 		fakePlumberClient := fake.NewPlumber()
+		fakeTektonClient := tektonfake.NewSimpleClientset()
 		ca := &config.Agent{}
 		ca.Set(&config.Config{
 			ProwConfig: config.ProwConfig{
@@ -1581,6 +1583,8 @@ func TestSync(t *testing.T) {
 			config:        ca.Config,
 			ghc:           fgc,
 			prowJobClient: fakePlumberClient,
+			tektonClient:  fakeTektonClient,
+			ns:            "jx",
 			logger:        logrus.WithField("controller", "sync"),
 			sc:            sc,
 			changedFiles: &changedFilesAgent{

@@ -28,7 +28,7 @@ func NewTideController(configAgent *config.Agent, botName string, gitClient git.
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
 	gitproviderClient := gitprovider.ToClient(scmClient, botName)
-	_, jxClient, _, ns, err := clients.GetClientsAndNamespace()
+	tektonClient, jxClient, _, ns, err := clients.GetClientsAndNamespace()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
@@ -41,6 +41,6 @@ func NewTideController(configAgent *config.Agent, botName string, gitClient git.
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
 	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, configAgent.Config, gitClient, maxRecordsPerPool, opener, historyURI, statusURI, nil)
+	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, tektonClient, ns, configAgent.Config, gitClient, maxRecordsPerPool, opener, historyURI, statusURI, nil)
 	return c, err
 }

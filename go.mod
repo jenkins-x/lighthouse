@@ -2,6 +2,7 @@ module github.com/jenkins-x/lighthouse
 
 require (
 	cloud.google.com/go v0.37.4
+	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.1
@@ -29,6 +30,7 @@ require (
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/metrics v0.0.0-20190704050707-780c337c9cbd // indirect
 	k8s.io/test-infra v0.0.0-20190830205203-56bd52b0eb20
+	knative.dev/pkg v0.0.0-20191217184203-cf220a867b3d
 	sigs.k8s.io/yaml v1.1.0
 	vbom.ml/util v0.0.0-20170409195630-256737ac55c4
 )
@@ -39,15 +41,15 @@ replace github.com/golang/lint => golang.org/x/lint v0.0.0-20180702182130-06c868
 
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
 
-replace k8s.io/api => k8s.io/api v0.0.0-20181128191700-6db15a15d2d3
+replace k8s.io/api => k8s.io/api v0.0.0-20190528110122-9ad12a4af326
 
 replace k8s.io/metrics => k8s.io/metrics v0.0.0-20181128195641-3954d62a524d
 
-replace k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190122181752-bebe27e40fb7
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190221084156-01f179d85dbc
 
-replace k8s.io/client-go => k8s.io/client-go v2.0.0-alpha.0.0.20190115164855-701b91367003+incompatible
+replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190528110200-4f3abb12cae2
 
-replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20181128195303-1f84094d7e8e
+replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190528110544-fa58353d80f3
 
 replace git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 
