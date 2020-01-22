@@ -44,6 +44,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
+	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -80,6 +81,8 @@ type DefaultController struct {
 	prowJobClient prowJobClient
 	gc            git.Client
 	mpClient      metapipeline.Client
+	tektonClient  tektonclient.Interface
+	ns            string
 
 	sc *statusController
 
@@ -200,7 +203,7 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJobClient, mpClient metapipeline.Client, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJobClient, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -223,6 +226,8 @@ func NewController(ghcSync, ghcStatus *gitprovider.Client, prowJobClient prowJob
 		ghc:           ghcSync,
 		prowJobClient: prowJobClient,
 		mpClient:      mpClient,
+		tektonClient:  tektonClient,
+		ns:            ns,
 		config:        cfg,
 		gc:            gc,
 		sc:            sc,
@@ -374,6 +379,13 @@ func (c *DefaultController) Sync() error {
 	sortPools(pools)
 	c.m.Lock()
 	c.pools = pools
+	// While we're locked, rerun failed-but-rerunnable PipelineRuns.
+	c.logger.WithField("duration", time.Since(start).String()).Debug("Rerunning PipelineRuns failed due to race condition.")
+	err = rerunPipelineRunsWithRaceConditionFailure(c.tektonClient, c.ns, c.logger)
+	if err != nil {
+		c.logger.WithError(err).Error("Error rerunning PipelineRuns failed by Tekton race condition")
+	}
+	c.logger.WithField("duration", time.Since(start).String()).Debug("Finished rerunning PipelineRuns failed due to race condition.")
 	c.m.Unlock()
 
 	c.History.Flush()
