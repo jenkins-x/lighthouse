@@ -38,7 +38,7 @@ export JX_VALUE_PIPELINEUSER_TOKEN="$BB_ACCESS_TOKEN"
 export JX_VALUE_PROW_HMACTOKEN="$BB_ACCESS_TOKEN"
 
 # TODO: Disable chatops tests until issue creation and labeling on BBS is ready
-export JX_DISABLE_TEST_CHATOPS_COMMANDS="true"
+export JX_ENABLE_TEST_CHATOPS_COMMANDS="false"
 
 # TODO temporary hack until the batch mode in jx is fixed...
 export JX_BATCH_MODE="true"
@@ -92,7 +92,16 @@ jx step bdd \
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
-  kubectl logs --tail=-1 "$(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}')"
+  mkdir -p extra-logs
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}')" > extra-logs/controllerbuild.log
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=tide -o jsonpath='{.items[*].metadata.name}')" > extra-logs/tide.log
+  lh_cnt=0
+  for lh_pod in $(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}'); do
+    ((lh_cnt=lh_cnt+1))
+    kubectl logs --tail=-1 "${lh_pod}" > extra-logs/lh.${lh_cnt}.log
+  done
+
+  jx step stash -c lighthouse-tests -p extra-logs/*.log --bucket-url gs://jx-prod-logs
 fi
 cd ../charts/lighthouse
 make delete-from-chartmuseum
