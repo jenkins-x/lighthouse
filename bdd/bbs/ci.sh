@@ -87,8 +87,9 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring \
-    --tests test-quickstart-golang-http
+    --tests test-create-spring
+
+# Bitbucket doesn't have pull request labels, so...yeah. Can't do quickstart tests, to say the least.
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then

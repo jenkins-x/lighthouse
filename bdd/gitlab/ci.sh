@@ -90,8 +90,9 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring \
-    --tests test-quickstart-golang-http
+    --tests test-create-spring
+
+# Gitlab labels on pull requests aren't properly implemented yet on our side, so no quickstart tests - they depend on them.
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
