@@ -93,7 +93,7 @@ jx step bdd \
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
-  kubectl logs -l app=controllerbuild
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}')"
 fi
 cd ../charts/lighthouse
 make delete-from-chartmuseum
