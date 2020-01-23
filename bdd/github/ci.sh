@@ -91,6 +91,9 @@ jx step bdd \
     --tests test-quickstart-golang-http
 
 bdd_result=$?
+if [[ $bdd_result != 0 ]]; then
+  kubectl logs -l app=controllerbuild
+fi
 cd ../charts/lighthouse
 make delete-from-chartmuseum
 
