@@ -103,7 +103,7 @@ if [[ $bdd_result != 0 ]]; then
     kubectl logs --tail=-1 "${lh_pod}" > extra-logs/lh.${lh_cnt}.log
   done
 
-  jx step stash -c lighthouse-tests -p extra-logs/*.log --bucket-url gs://jx-prod-logs
+  jx step stash -c lighthouse-tests -p "extra-logs/*.log" --bucket-url gs://jx-prod-logs
   popd
 fi
 cd ../charts/lighthouse
