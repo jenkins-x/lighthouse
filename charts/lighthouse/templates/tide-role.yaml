@@ -33,3 +33,6 @@ rules:
       - list
       - get
       - update
+      - watch
+      - patch
+      - delete
