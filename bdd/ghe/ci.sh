@@ -91,6 +91,7 @@ jx step bdd \
     --tests test-create-spring \
     --tests test-quickstart-golang-http
 
+bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
   pushd ..
   mkdir -p extra-logs
