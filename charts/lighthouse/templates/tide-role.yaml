@@ -21,3 +21,15 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - pipelineresources
+      - tasks
+      - pipelines
+      - pipelineruns
+    verbs:
+      - create
+      - list
+      - get
+      - update
