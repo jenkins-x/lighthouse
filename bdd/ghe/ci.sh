@@ -89,7 +89,8 @@ jx step bdd \
     --no-delete-repo \
     --tests install \
     --tests test-create-spring \
-    --tests test-quickstart-golang-http
+    --tests test-quickstart-golang-http \
+    --tests test-app-lifecycle
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
