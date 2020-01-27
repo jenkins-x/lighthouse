@@ -44,8 +44,6 @@ pushd charts/lighthouse
 make snapshot
 popd
 
-export JX_ENABLE_TEST_CHATOPS_COMMANDS="true"
-
 rm -rf boot-source
 # Use the latest boot config promoted in the version stream instead of master to avoid conflicts during boot, because
 # boot fetches always the latest version available in the version stream.
@@ -72,7 +70,8 @@ echo "Building lighthouse with version $VERSION"
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
-export JX_GIT_TOKEN_ALREADY_SET="true"
+export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
+export BDD_GIT_TOKEN_ALREADY_SET="true"
 
 set +e
 jx step bdd \
