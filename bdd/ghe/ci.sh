@@ -57,9 +57,6 @@ git checkout tags/v${BOOT_CONFIG_VERSION} -b latest-boot-config
 
 cp ../bdd/ghe/jx-requirements.yml .
 cp ../bdd/ghe/parameters.yaml env
-cp env/jenkins-x-platform/values.tmpl.yaml tmp.yaml
-cat tmp.yaml ../bdd/boot-vault.platform.yaml > env/jenkins-x-platform/values.tmpl.yaml
-rm tmp.yaml
 
 # Manually interpolate lighthouse version tag
 cat ../bdd/values.yaml.template >> env/lighthouse/values.tmpl.yaml
@@ -75,8 +72,11 @@ echo "Building lighthouse with version $VERSION"
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
+export JX_GIT_TOKEN_ALREADY_SET="true"
+
 set +e
 jx step bdd \
+    --test-git-repo https://github.com/abayer/bdd-jx.git \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/ghe/cluster.yaml \
     --gopath /tmp \

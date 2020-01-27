@@ -57,9 +57,6 @@ git checkout tags/v${BOOT_CONFIG_VERSION} -b latest-boot-config
 
 cp ../bdd/github/jx-requirements.yml .
 cp ../bdd/github/parameters.yaml env
-cp env/jenkins-x-platform/values.tmpl.yaml tmp.yaml
-cat tmp.yaml ../bdd/boot-vault.platform.yaml > env/jenkins-x-platform/values.tmpl.yaml
-rm tmp.yaml
 
 # Manually interpolate lighthouse version tag
 cat ../bdd/values.yaml.template >> env/lighthouse/values.tmpl.yaml
@@ -77,6 +74,7 @@ helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 set +e
 jx step bdd \
+    --test-git-repo https://github.com/abayer/bdd-jx.git \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/github/cluster.yaml \
     --gopath /tmp \
