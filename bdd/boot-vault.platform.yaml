@@ -27,7 +27,7 @@ controllerbuild:
   - "--verbose"
   image:
     repository: gcr.io/jenkinsxio/builder-go
-    tag: 0.0.0-SNAPSHOT-PR-6644-5
+    tag: 0.0.0-SNAPSHOT-PR-6644-20
 {{- else }}
 controllerbuild:
   enabled: true
