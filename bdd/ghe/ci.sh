@@ -71,11 +71,9 @@ helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
-export BDD_GIT_TOKEN_ALREADY_SET="true"
 
 set +e
 jx step bdd \
-    --test-git-repo https://github.com/abayer/bdd-jx.git \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/ghe/cluster.yaml \
     --gopath /tmp \
