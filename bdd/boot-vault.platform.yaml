@@ -1,0 +1,42 @@
+# override the build pod images
+jenkins:
+  Agent:
+    PodTemplates:
+      Maven:
+        Containers:
+          Maven:
+            Image: gcr.io/jenkinsxio/builder-maven:0.0.0-SNAPSHOT-PR-6601-50
+      Nodejs:
+        Containers:
+          Nodejs:
+            Image: gcr.io/jenkinsxio/builder-nodejs:0.0.0-SNAPSHOT-PR-6601-50
+      Go:
+        Containers:
+          Go:
+            Image: gcr.io/jenkinsxio/builder-go:0.0.0-SNAPSHOT-PR-6601-50
+
+{{- if eq .Requirements.webhook "lighthouse" }}
+controllerbuild:
+  enabled: true
+  args:
+  - "controller"
+  - "build"
+  - "--git-reporting"
+  - "--batch-mode"
+  - "--git-credentials"
+  - "--verbose"
+  image:
+    repository: gcr.io/jenkinsxio/builder-go
+    tag: 0.0.0-SNAPSHOT-PR-6601-50
+{{- else }}
+controllerbuild:
+  enabled: true
+  args:
+  - "controller"
+  - "build"
+  - "--batch-mode"
+  - "--verbose"
+  image:
+    repository: gcr.io/jenkinsxio/builder-go
+    tag: 0.0.0-SNAPSHOT-PR-6601-50
+{{- end }}
