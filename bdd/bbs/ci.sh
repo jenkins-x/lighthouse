@@ -37,9 +37,6 @@ export JX_VALUE_PIPELINEUSER_EMAIL="$BB_EMAIL"
 export JX_VALUE_PIPELINEUSER_TOKEN="$BB_ACCESS_TOKEN"
 export JX_VALUE_PROW_HMACTOKEN="$BB_ACCESS_TOKEN"
 
-# TODO: Disable chatops tests until issue creation and labeling on BBS is ready
-export JX_DISABLE_TEST_CHATOPS_COMMANDS="true"
-
 # TODO temporary hack until the batch mode in jx is fixed...
 export JX_BATCH_MODE="true"
 
@@ -67,6 +64,9 @@ cat env/lighthouse/values.tmpl.yaml
 rm values.tmpl.yaml.tmp
 sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/requirements.yaml
 
+# TODO: Disable chatops tests until issue creation and labeling on BBS is ready
+export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
+
 echo "Building lighthouse with version $VERSION"
 
 # TODO hack until we fix boot to do this too!
@@ -87,10 +87,25 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring \
-    --tests test-quickstart-golang-http
+    --tests test-create-spring
+
+# Bitbucket doesn't have pull request labels, so...yeah. Can't do quickstart tests, to say the least.
 
 bdd_result=$?
+if [[ $bdd_result != 0 ]]; then
+  pushd ..
+  mkdir -p extra-logs
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}')" > extra-logs/controllerbuild.log
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=tide -o jsonpath='{.items[*].metadata.name}')" > extra-logs/tide.log
+  lh_cnt=0
+  for lh_pod in $(kubectl get pod -l app=jenkins-x-lighthouse -o jsonpath='{.items[*].metadata.name}'); do
+    ((lh_cnt=lh_cnt+1))
+    kubectl logs --tail=-1 "${lh_pod}" > extra-logs/lh.${lh_cnt}.log
+  done
+
+  jx step stash -c lighthouse-tests -p "extra-logs/*.log" --bucket-url gs://jx-prod-logs
+  popd
+fi
 cd ../charts/lighthouse
 make delete-from-chartmuseum
 
