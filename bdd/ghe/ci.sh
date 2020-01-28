@@ -44,8 +44,6 @@ pushd charts/lighthouse
 make snapshot
 popd
 
-export JX_ENABLE_TEST_CHATOPS_COMMANDS="true"
-
 rm -rf boot-source
 # Use the latest boot config promoted in the version stream instead of master to avoid conflicts during boot, because
 # boot fetches always the latest version available in the version stream.
@@ -72,6 +70,8 @@ echo "Building lighthouse with version $VERSION"
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
+export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
+
 set +e
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
@@ -89,6 +89,20 @@ jx step bdd \
     --tests test-quickstart-golang-http
 
 bdd_result=$?
+if [[ $bdd_result != 0 ]]; then
+  pushd ..
+  mkdir -p extra-logs
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}')" > extra-logs/controllerbuild.log
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=tide -o jsonpath='{.items[*].metadata.name}')" > extra-logs/tide.log
+  lh_cnt=0
+  for lh_pod in $(kubectl get pod -l app=jenkins-x-lighthouse -o jsonpath='{.items[*].metadata.name}'); do
+    ((lh_cnt=lh_cnt+1))
+    kubectl logs --tail=-1 "${lh_pod}" > extra-logs/lh.${lh_cnt}.log
+  done
+
+  jx step stash -c lighthouse-tests -p "extra-logs/*.log" --bucket-url gs://jx-prod-logs
+  popd
+fi
 cd ../charts/lighthouse
 make delete-from-chartmuseum
 
