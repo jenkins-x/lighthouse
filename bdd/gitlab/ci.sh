@@ -71,7 +71,7 @@ helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 # TODO: Figure out why chatops doesn't work for gitlab!
-export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
+export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
 
 set +e
 jx step bdd \
@@ -87,7 +87,7 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring
+    --tests test-quickstart-golang-http
 
 # Gitlab labels on pull requests aren't properly implemented yet on our side, so no quickstart tests - they depend on them.
 

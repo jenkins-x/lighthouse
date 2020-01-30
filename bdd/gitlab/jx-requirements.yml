@@ -17,7 +17,6 @@ environments:
   - key: production
     owner: ""
     repository: ""
-gitops: true
 ingress:
   domain: ""
   externalDNS: false
