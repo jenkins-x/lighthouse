@@ -74,6 +74,7 @@ export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
 
 set +e
 jx step bdd \
+    --test-git-repo https://github.com/abayer/bdd-jx.git \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/ghe/cluster.yaml \
     --gopath /tmp \
