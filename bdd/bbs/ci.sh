@@ -66,6 +66,7 @@ sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/req
 
 # TODO: Disable chatops tests until issue creation and labeling on BBS is ready
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
+export BDD_ENABLE_ADD_COMMIT_TO_PULL_REQUEST="true"
 
 echo "Building lighthouse with version $VERSION"
 
@@ -88,7 +89,7 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring
+    --tests test-quickstart-golang-http
 
 # Bitbucket doesn't have pull request labels, so...yeah. Can't do quickstart tests, to say the least.
 

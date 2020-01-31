@@ -71,7 +71,8 @@ helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 # TODO: Figure out why chatops doesn't work for gitlab!
-export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
+export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
+export BDD_ENABLE_ADD_COMMIT_TO_PULL_REQUEST="true"
 
 set +e
 jx step bdd \

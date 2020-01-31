@@ -71,6 +71,7 @@ helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
+export BDD_ENABLE_ADD_COMMIT_TO_PULL_REQUEST="true"
 
 set +e
 jx step bdd \
@@ -86,7 +87,6 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring \
     --tests test-quickstart-golang-http
 
 bdd_result=$?
