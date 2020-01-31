@@ -61,4 +61,4 @@ replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v10.15.5+in
 
 replace github.com/banzaicloud/bank-vaults => github.com/banzaicloud/bank-vaults v0.0.0-20190508130850-5673d28c46bd
 
-replace github.com/jenkins-x/go-scm => github.com/abayer/go-scm v1.5.1-0.20200130212948-b0ac4373acc7
+replace github.com/jenkins-x/go-scm => github.com/abayer/go-scm v1.5.1-0.20200131204529-8106340c03db
