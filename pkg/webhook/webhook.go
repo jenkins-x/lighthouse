@@ -478,12 +478,17 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	promMetrics := hook.NewMetrics()
 
 	// Push metrics to the configured prometheus pushgateway endpoint.
-	pushGateway := configAgent.Config().PushGateway
-	if pushGateway.Endpoint != "" {
-		logrus.WithField("gateway", pushGateway.Endpoint).Infof("using push gateway")
-		go metrics.ExposeMetrics("hook", pushGateway)
+	agentConfig := configAgent.Config()
+	if agentConfig != nil {
+		pushGateway := agentConfig.PushGateway
+		if pushGateway.Endpoint != "" {
+			logrus.WithField("gateway", pushGateway.Endpoint).Infof("using push gateway")
+			go metrics.ExposeMetrics("hook", pushGateway)
+		} else {
+			logrus.Warn("not pushing metrics as there is no push_gateway defined in the config.yaml")
+		}
 	} else {
-		logrus.Warn("not pushing metrics as there is no push_gateway defined in the config.yaml")
+		logrus.Warn("no configAgent configuration")
 	}
 
 	metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
