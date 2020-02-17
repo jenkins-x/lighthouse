@@ -73,6 +73,9 @@ echo "Building lighthouse with version $VERSION"
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
+# TODO: Re-enable checking whether build controller has updated PipelineActivity once BBS is actually being worked on again.
+export BDD_DISABLE_PIPELINEACTIVITY_CHECK=true
+
 set +e
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
