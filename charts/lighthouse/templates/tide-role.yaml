@@ -6,17 +6,24 @@ rules:
   - apiGroups:
       - jenkins.io
     resources:
+      - apps
       - environments
       - pipelineactivities
       - sourcerepositories
+      - pipelinestructures
     verbs:
+      - create
       - get
+      - edit
+      - update
+      - patch
       - list
       - watch
   - apiGroups:
       - ""
     resources:
       - namespaces
+      - configmaps
     verbs:
       - get
       - list
