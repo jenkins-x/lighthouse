@@ -1386,7 +1386,7 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []plumbe
 				WithField("build", labels["build"]).
 				WithField("branch", labels["branch"]).
 				WithField("owner", refs.Org).
-				WithField("repo", refs.Repo).WithField("baseRef", refs.BaseRef).Infof("base sha mismatch")
+				WithField("repo", refs.Repo).WithField("baseRef", refs.BaseRef).Debugf("base sha mismatch")
 		}
 		if sps[fn] == nil || pj.Spec.Refs.BaseSHA != sps[fn].sha {
 			continue
