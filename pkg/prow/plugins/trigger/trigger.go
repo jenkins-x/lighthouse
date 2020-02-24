@@ -258,7 +258,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient, pr.Repository()); err != nil {
 			c.Logger.WithError(err).Error("Failed to create plumberJob.")
 			errors = append(errors, err)
-			if _, statusErr := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Base.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
+			if _, statusErr := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
 				errors = append(errors, statusErr)
 			}
 		}
@@ -274,7 +274,7 @@ func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []config.Presubmit
 			continue
 		}
 		c.Logger.Infof("Skipping %s build.", job.Name)
-		if _, err := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Base.Ref, skippedStatusFor(job.Context)); err != nil {
+		if _, err := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, skippedStatusFor(job.Context)); err != nil {
 			errors = append(errors, err)
 		}
 	}
