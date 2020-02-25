@@ -145,7 +145,7 @@ type GitHubClient interface {
 // consider the set of matching presubmits the union of the results from the
 // matching cases.
 func FilterPresubmits(honorOkToTest bool, gitHubClient GitHubClient, body string, pr *scm.PullRequest, presubmits []config.Presubmit, logger *logrus.Entry) ([]config.Presubmit, []config.Presubmit, error) {
-	org, repo, sha := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Base.Ref
+	org, repo, sha := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref
 
 	contextGetter := func() (sets.String, sets.String, error) {
 		combinedStatus, err := gitHubClient.GetCombinedStatus(org, repo, sha)
