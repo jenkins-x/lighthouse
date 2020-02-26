@@ -11,11 +11,13 @@ GO_NOMOD := GO111MODULE=off go
 VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
 GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 
+GOTEST := $(GO) test
+
 all: check test build
 
 .PHONY: test
 test: 
-	CGO_ENABLED=$(CGO_ENABLED) $(GO) test -test.v ./...
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -failfast -short ./...
 
 .PHONY: check
 check: fmt lint sec
