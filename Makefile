@@ -17,7 +17,7 @@ all: check test build
 
 .PHONY: test
 test: 
-	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -failfast -short ./...
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -short ./...
 
 .PHONY: check
 check: fmt lint sec

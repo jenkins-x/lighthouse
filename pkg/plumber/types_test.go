@@ -2,6 +2,7 @@ package plumber_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -121,9 +122,21 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			expectedEnv := make(map[string]string)
+
+			for k, v := range tt.env {
+				expectedEnv[k] = v
+			}
+
+			// In CI, this will be set, but it may not be set locally, so add it if it's in the env.
+			registry := os.Getenv("DOCKER_REGISTRY")
+			if registry != "" {
+				expectedEnv["DOCKER_REGISTRY"] = registry
+			}
+
 			generatedEnv := tt.spec.GetEnvVars()
 
-			if d := cmp.Diff(tt.env, generatedEnv); d != "" {
+			if d := cmp.Diff(expectedEnv, generatedEnv); d != "" {
 				t.Errorf("Generated environment variables did not match expected: %s", d)
 			}
 		})
