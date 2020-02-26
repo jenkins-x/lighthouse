@@ -49,7 +49,7 @@ func rerunPipelineRunsWithRaceConditionFailure(tektonClient tektonclient.Interfa
 	// Filter through the runs to find failed ones
 	for _, run := range runs.Items {
 		runCondition := run.Status.GetCondition(kpgapis.ConditionSucceeded)
-		if runCondition.Status == untypedcorev1.ConditionFalse {
+		if runCondition != nil && runCondition.Status == untypedcorev1.ConditionFalse {
 			// If a run has failed, check its message (or reason if the message is empty) for one of the known rerun cases
 			failDescription := runCondition.Message
 			if failDescription == "" {
