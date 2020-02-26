@@ -3,6 +3,8 @@ package plumber
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -48,6 +50,30 @@ const (
 	AbortedState PipelineState = "aborted"
 )
 
+// Environment variables to be added to the pipeline we kick off
+const (
+	// JobSpecEnv is a legacy Prow variable with "type:(type)"
+	JobSpecEnv = "JOB_SPEC"
+	// JobNameEnv is the name of the job
+	JobNameEnv = "JOB_NAME"
+	// JobTypeEnv is the type of job
+	JobTypeEnv = "JOB_TYPE"
+	// RepoOwnerEnv is the org/owner for the repository we're building
+	RepoOwnerEnv = "REPO_OWNER"
+	// RepoNameEnv is the name of the repository we're building
+	RepoNameEnv = "REPO_NAME"
+	// PullBaseRefEnv is the base ref (such as master) for a pull request
+	PullBaseRefEnv = "PULL_BASE_REF"
+	// PullBaseShaEnv is the actual commit sha for the base for a pull request
+	PullBaseShaEnv = "PULL_BASE_SHA"
+	// PullRefsEnv is the refs and shas for the base and PR, like "master:abcd1234...,123:5678abcd..." for PR-123.
+	PullRefsEnv = "PULL_REFS"
+	// PullNumberEnv is the pull request number
+	PullNumberEnv = "PULL_NUMBER"
+	// PullPullShaEnv is the pull request's sha
+	PullPullShaEnv = "PULL_PULL_SHA"
+)
+
 // PipelineOptions contains the arguments to pass to the Plumber to create a Tekton Pipeline
 type PipelineOptions struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -88,6 +114,40 @@ type PipelineOptionsSpec struct {
 	// MaxConcurrency restricts the total number of instances
 	// of this job that can run in parallel at once
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
+}
+
+// GetEnvVars gets a map of the environment variables we'll set in the pipeline for this spec.
+func (s *PipelineOptionsSpec) GetEnvVars() map[string]string {
+	env := map[string]string{
+		JobNameEnv: s.Job,
+		JobTypeEnv: string(s.Type),
+	}
+
+	registry := os.Getenv("DOCKER_REGISTRY")
+	if registry != "" {
+		env["DOCKER_REGISTRY"] = registry
+	}
+
+	env[JobSpecEnv] = fmt.Sprintf("type:%s", s.Type)
+
+	if s.Type == PeriodicJob {
+		return env
+	}
+
+	env[RepoOwnerEnv] = s.Refs.Org
+	env[RepoNameEnv] = s.Refs.Repo
+	env[PullBaseRefEnv] = s.Refs.BaseRef
+	env[PullBaseShaEnv] = s.Refs.BaseSHA
+	env[PullRefsEnv] = s.Refs.String()
+
+	if s.Type == PostsubmitJob || s.Type == BatchJob {
+		return env
+	}
+
+	env[PullNumberEnv] = strconv.Itoa(s.Refs.Pulls[0].Number)
+	env[PullPullShaEnv] = s.Refs.Pulls[0].SHA
+
+	return env
 }
 
 // Duration is a wrapper around time.Duration that parses times in either

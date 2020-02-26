@@ -76,11 +76,6 @@ func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient me
 		sa = "tekton-bot"
 	}
 
-	envVars := map[string]string{}
-	registry := os.Getenv("DOCKER_REGISTRY")
-	if registry != "" {
-		envVars["DOCKER_REGISTRY"] = registry
-	}
 	pipelineCreateParam := metapipeline.PipelineCreateParam{
 		PullRef:      pullRefData,
 		PipelineKind: kind,
@@ -91,7 +86,7 @@ func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient me
 		ServiceAccount: sa,
 		// I believe we can use an empty string default image?
 		DefaultImage: "",
-		EnvVariables: envVars,
+		EnvVariables: spec.GetEnvVars(),
 	}
 
 	pipelineActivity, tektonCRDs, err := metapipelineClient.Create(pipelineCreateParam)
