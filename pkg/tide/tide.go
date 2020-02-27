@@ -754,6 +754,7 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 			} else if oldState == pendingState && newState == successState {
 				psStates[name] = successState
 			}
+			log.Logger.Warnf("PJ from PA: %s, context: %s, state: %s", pj.Name, pj.Spec.Context, newState)
 		}
 		// The overall result for the PR is the worst of the best of all its
 		// required Presubmits
@@ -762,7 +763,7 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 			if s, ok := psStates[ps.Context]; !ok {
 				// No PJ with correct baseSHA+headSHA exists
 				missingTests[int(pr.Number)] = append(missingTests[int(pr.Number)], ps)
-				log.WithFields(pr.logFields()).Debugf("missing presubmit %s", ps.Context)
+				log.WithFields(pr.logFields()).Warnf("missing presubmit %s", ps.Context)
 			} else if s == failureState {
 				// PJ with correct baseSHA+headSHA exists but failed
 				missingTests[int(pr.Number)] = append(missingTests[int(pr.Number)], ps)
