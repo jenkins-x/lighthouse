@@ -12,7 +12,7 @@ hmacToken: ""
 replicaCount: 1
 image:
   repository: gcr.io/jenkinsxio/lighthouse
-  tag: 0.0.64
+  tag: 0.0.457
   pullPolicy: IfNotPresent
 
 # define environment variables here as a map of key: value
