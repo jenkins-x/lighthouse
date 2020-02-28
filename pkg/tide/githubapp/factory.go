@@ -17,10 +17,10 @@ import (
 
 // NewTideController creates a new controller; either regular or a GitHub App flavour
 // depending on the $GITHUB_APP_SECRET_DIR environment variable
-func NewTideController(configAgent *config.Agent, botName string, gitClient git.Client, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
+func NewTideController(configAgent *config.Agent, botName string, gitKind string, gitToken string, serverURL string, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
 	githubAppSecretDir := os.Getenv("GITHUB_APP_SECRET_DIR")
 	if githubAppSecretDir != "" {
-		return NewGitHubAppTideController(githubAppSecretDir, configAgent, botName, gitClient, maxRecordsPerPool, opener, historyURI, statusURI)
+		return NewGitHubAppTideController(githubAppSecretDir, configAgent, botName, gitKind, maxRecordsPerPool, opener, historyURI, statusURI)
 	}
 
 	scmClient, err := factory.NewClientFromEnvironment()
@@ -28,6 +28,14 @@ func NewTideController(configAgent *config.Agent, botName string, gitClient git.
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
 	gitproviderClient := gitprovider.ToClient(scmClient, botName)
+	gitClient, err := git.NewClient(serverURL, botName)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating git client")
+	}
+	gitClient.SetCredentials(botName, func() []byte {
+		return []byte(gitToken)
+	})
+
 	tektonClient, jxClient, _, ns, err := clients.GetClientsAndNamespace()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
