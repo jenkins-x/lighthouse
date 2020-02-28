@@ -144,14 +144,6 @@ func (c *fakeClient) Create(pj *plumber.PipelineOptions, metapipelineClient meta
 	return pj, nil
 }
 
-func (c *fakeClient) presubmitForContext(org, repo, context string) *config.Presubmit {
-	p, ok := c.presubmits[context]
-	if !ok {
-		return nil
-	}
-	return &p
-}
-
 func TestAuthorized(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -436,32 +428,6 @@ func TestHandle(t *testing.T) {
 					Label: "passing-test",
 					State: scm.StateSuccess,
 					Desc:  "preserve description",
-				},
-			},
-		},
-		{
-			name:    "create successful prow job",
-			comment: "/override prow-job",
-			contexts: map[string]*scm.StatusInput{
-				"prow-job": {
-					Label: "prow-job",
-					Desc:  "failed",
-					State: scm.StateFailure,
-				},
-			},
-			presubmits: map[string]config.Presubmit{
-				"prow-job": {
-					Reporter: config.Reporter{
-						Context: "prow-job",
-					},
-				},
-			},
-			jobs: sets.NewString("prow-job"),
-			expected: map[string]*scm.StatusInput{
-				"prow-job": {
-					Label: "prow-job",
-					State: scm.StateSuccess,
-					Desc:  description(adminUser),
 				},
 			},
 		},

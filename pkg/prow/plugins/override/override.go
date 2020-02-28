@@ -24,14 +24,12 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
-	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -51,20 +49,13 @@ type githubClient interface {
 	ListStatuses(org, repo, ref string) ([]*scm.Status, error)
 }
 
-type plumberClient interface {
-	Create(*plumber.PipelineOptions, metapipeline.Client, scm.Repository) (*plumber.PipelineOptions, error)
-}
-
 type overrideClient interface {
 	githubClient
-	plumberClient
-	presubmitForContext(org, repo, context string) *config.Presubmit
 }
 
 type client struct {
 	gc                 githubClient
 	jc                 config.JobConfig
-	plumberClient      plumberClient
 	clientFactory      jxfactory.Factory
 	metapipelineClient metapipeline.Client
 }
@@ -90,29 +81,6 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.gc.HasPermission(org, repo, user, role...)
 }
 
-func (c client) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*plumber.PipelineOptions, error) {
-	if metapipelineClient == nil {
-		metapipelineClient = c.metapipelineClient
-	}
-	if metapipelineClient == nil {
-		var err error
-		metapipelineClient, err = plumber.NewMetaPipelineClient(c.clientFactory)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return c.plumberClient.Create(pj, metapipelineClient, repository)
-}
-
-func (c client) presubmitForContext(org, repo, context string) *config.Presubmit {
-	for _, p := range c.jc.AllPresubmits([]string{org + "/" + repo}) {
-		if p.Context == context {
-			return &p
-		}
-	}
-	return nil
-}
-
 func init() {
 	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
 }
@@ -135,7 +103,6 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 	c := client{
 		gc:                 pc.GitHubClient,
 		jc:                 pc.Config.JobConfig,
-		plumberClient:      pc.PlumberClient,
 		clientFactory:      pc.ClientFactory,
 		metapipelineClient: pc.MetapipelineClient,
 	}
@@ -245,27 +212,6 @@ Only the following contexts were expected:
 	for _, status := range statuses {
 		if status.State == scm.StateSuccess || !overrides.Has(status.Label) {
 			continue
-		}
-		// First create the overridden prow result if necessary
-		if pre := oc.presubmitForContext(org, repo, status.Label); pre != nil {
-			baseSHA, err := oc.GetRef(org, repo, "heads/"+pr.Base.Ref)
-			if err != nil {
-				resp := fmt.Sprintf("Cannot get base ref of PR")
-				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
-			}
-
-			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
-			log.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-			metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
-			if err != nil {
-				return err
-			}
-			if _, err := oc.Create(&pj, metapipelineClient, pr.Repository()); err != nil {
-				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
-				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
-			}
 		}
 		statusInput := &scm.StatusInput{
 			State:  scm.StateSuccess,
