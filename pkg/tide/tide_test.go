@@ -537,6 +537,17 @@ func (f *fgc) GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, err
 		nil
 }
 
+func (f *fgc) CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error) {
+	if s.Label == "fail-create" {
+		return nil, errors.New("injected CreateStatus failure")
+	}
+	if f.combinedStatus == nil {
+		f.combinedStatus = make(map[string]string)
+	}
+	f.combinedStatus[s.Label] = s.State.String()
+	return scm.ConvertStatusInputToStatus(s), nil
+}
+
 func (f *fgc) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
 	if number != 100 {
 		return nil, nil
@@ -1203,128 +1214,133 @@ func TestTakeAction(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		ca := &config.Agent{}
-		cfg := &config.Config{}
-		if err := cfg.SetPresubmits(
-			map[string][]config.Presubmit{
-				"o/r": {
-					{
-						Reporter:     config.Reporter{Context: "foo"},
-						Trigger:      "/test all",
-						RerunCommand: "/test all",
-						AlwaysRun:    true,
-					},
-					{
-						Reporter:     config.Reporter{Context: "if-changed"},
-						Trigger:      "/test if-changed",
-						RerunCommand: "/test if-changed",
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
-							RunIfChanged: "CHANGED",
+		t.Run(tc.name, func(t *testing.T) {
+			ca := &config.Agent{}
+			cfg := &config.Config{}
+			if err := cfg.SetPresubmits(
+				map[string][]config.Presubmit{
+					"o/r": {
+						{
+							Reporter:     config.Reporter{Context: "foo"},
+							Trigger:      "/test all",
+							RerunCommand: "/test all",
+							AlwaysRun:    true,
+						},
+						{
+							Reporter:     config.Reporter{Context: "if-changed"},
+							Trigger:      "/test if-changed",
+							RerunCommand: "/test if-changed",
+							RegexpChangeMatcher: config.RegexpChangeMatcher{
+								RunIfChanged: "CHANGED",
+							},
 						},
 					},
 				},
-			},
-		); err != nil {
-			t.Fatalf("failed to set presubmits: %v", err)
-		}
-		ca.Set(cfg)
-		if len(tc.presubmits) > 0 {
-			for i := 0; i <= 8; i++ {
-				tc.presubmits[i] = []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}}
+			); err != nil {
+				t.Fatalf("failed to set presubmits: %v", err)
 			}
-		}
-		lg, gc, err := localgit.New()
-		if err != nil {
-			t.Fatalf("Error making local git: %v", err)
-		}
-		defer gc.Clean()
-		defer lg.Clean()
-		if err := lg.MakeFakeRepo("o", "r"); err != nil {
-			t.Fatalf("Error making fake repo: %v", err)
-		}
-		if err := lg.AddCommit("o", "r", map[string][]byte{"foo": []byte("foo")}); err != nil {
-			t.Fatalf("Adding initial commit: %v", err)
-		}
+			ca.Set(cfg)
+			if len(tc.presubmits) > 0 {
+				for i := 0; i <= 8; i++ {
+					tc.presubmits[i] = []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}}
+				}
+			}
+			lg, gc, err := localgit.New()
+			if err != nil {
+				t.Fatalf("Error making local git: %v", err)
+			}
+			defer gc.Clean()
+			defer lg.Clean()
+			if err := lg.MakeFakeRepo("o", "r"); err != nil {
+				t.Fatalf("Error making fake repo: %v", err)
+			}
+			if err := lg.AddCommit("o", "r", map[string][]byte{"foo": []byte("foo")}); err != nil {
+				t.Fatalf("Adding initial commit: %v", err)
+			}
 
-		sp := subpool{
-			log:        logrus.WithField("component", "tide"),
-			presubmits: tc.presubmits,
-			cc:         &config.TideContextPolicy{},
-			org:        "o",
-			repo:       "r",
-			branch:     "master",
-			sha:        "master",
-		}
-		genPulls := func(nums []int) []PullRequest {
-			var prs []PullRequest
-			for _, i := range nums {
-				if err := lg.CheckoutNewBranch("o", "r", fmt.Sprintf("pr-%d", i)); err != nil {
-					t.Fatalf("Error checking out new branch: %v", err)
-				}
-				if err := lg.AddCommit("o", "r", map[string][]byte{fmt.Sprintf("%d", i): []byte("WOW")}); err != nil {
-					t.Fatalf("Error adding commit: %v", err)
-				}
-				if err := lg.Checkout("o", "r", "master"); err != nil {
-					t.Fatalf("Error checking out master: %v", err)
-				}
-				oid := githubql.String(fmt.Sprintf("origin/pr-%d", i))
-				var pr PullRequest
-				pr.Number = githubql.Int(i)
-				pr.HeadRefOID = oid
-				pr.Commits.Nodes = []struct {
-					Commit Commit
-				}{{Commit: Commit{OID: oid}}}
-				sp.prs = append(sp.prs, pr)
-				prs = append(prs, pr)
+			sp := subpool{
+				log:        logrus.WithField("component", "tide"),
+				presubmits: tc.presubmits,
+				cc:         &config.TideContextPolicy{},
+				org:        "o",
+				repo:       "r",
+				branch:     "master",
+				sha:        "master",
 			}
-			return prs
-		}
-		fgc := fgc{mergeErrs: tc.mergeErrs}
-		fakePlumberClient := fake.NewPlumber()
-		c := &DefaultController{
-			logger:        logrus.WithField("controller", "tide"),
-			gc:            gc,
-			config:        ca.Config,
-			ghc:           &fgc,
-			prowJobClient: fakePlumberClient,
-		}
-		var batchPending []PullRequest
-		if tc.batchPending {
-			batchPending = []PullRequest{{}}
-		}
-		t.Logf("Test case: %s", tc.name)
-		if act, _, err := c.takeAction(sp, batchPending, genPulls(tc.successes), genPulls(tc.pendings), genPulls(tc.nones), genPulls(tc.batchMerges), sp.presubmits); err != nil && !tc.expectErr {
-			t.Errorf("Unexpected error in takeAction: %v", err)
-			continue
-		} else if err == nil && tc.expectErr {
-			t.Error("Missing expected error from takeAction.")
-		} else if act != tc.action {
-			t.Errorf("Wrong action. Got %v, wanted %v.", act, tc.action)
-		}
+			genPulls := func(nums []int) []PullRequest {
+				var prs []PullRequest
+				for _, i := range nums {
+					if err := lg.CheckoutNewBranch("o", "r", fmt.Sprintf("pr-%d", i)); err != nil {
+						t.Fatalf("Error checking out new branch: %v", err)
+					}
+					if err := lg.AddCommit("o", "r", map[string][]byte{fmt.Sprintf("%d", i): []byte("WOW")}); err != nil {
+						t.Fatalf("Error adding commit: %v", err)
+					}
+					if err := lg.Checkout("o", "r", "master"); err != nil {
+						t.Fatalf("Error checking out master: %v", err)
+					}
+					oid := githubql.String(fmt.Sprintf("origin/pr-%d", i))
+					var pr PullRequest
+					pr.Number = githubql.Int(i)
+					pr.HeadRefOID = oid
+					pr.Commits.Nodes = []struct {
+						Commit Commit
+					}{{Commit: Commit{OID: oid}}}
+					sp.prs = append(sp.prs, pr)
+					prs = append(prs, pr)
+				}
+				return prs
+			}
+			fgc := fgc{mergeErrs: tc.mergeErrs}
+			fakePlumberClient := fake.NewPlumber()
+			c := &DefaultController{
+				logger:        logrus.WithField("controller", "tide"),
+				gc:            gc,
+				config:        ca.Config,
+				ghc:           &fgc,
+				prowJobClient: fakePlumberClient,
+			}
+			var batchPending []PullRequest
+			if tc.batchPending {
+				batchPending = []PullRequest{{}}
+			}
+			t.Logf("Test case: %s", tc.name)
+			if act, _, err := c.takeAction(sp, batchPending, genPulls(tc.successes), genPulls(tc.pendings), genPulls(tc.nones), genPulls(tc.batchMerges), sp.presubmits); err != nil && !tc.expectErr {
+				t.Fatalf("Unexpected error in takeAction: %v", err)
+			} else if err == nil && tc.expectErr {
+				t.Error("Missing expected error from takeAction.")
+			} else if act != tc.action {
+				t.Errorf("Wrong action. Got %v, wanted %v.", act, tc.action)
+			}
 
-		numCreated := 0
-		var batchJobs []*plumber.PipelineOptions
-		for _, prowJob := range fakePlumberClient.Pipelines {
-			numCreated++
-			if prowJob.Spec.Type == plumber.BatchJob {
-				batchJobs = append(batchJobs, prowJob)
+			numCreated := 0
+			var batchJobs []*plumber.PipelineOptions
+			for _, prowJob := range fakePlumberClient.Pipelines {
+				if scm.StatePending.String() != fgc.combinedStatus[prowJob.Spec.Context] {
+					t.Errorf("Status not set to %s for context %s, is %s instead", scm.StatePending.String(), prowJob.Spec.Context,
+						fgc.combinedStatus[prowJob.Spec.Context])
+				}
+				numCreated++
+				if prowJob.Spec.Type == plumber.BatchJob {
+					batchJobs = append(batchJobs, prowJob)
+				}
 			}
-		}
-		if tc.triggered != numCreated {
-			t.Errorf("Wrong number of jobs triggered. Got %d, expected %d.", numCreated, tc.triggered)
-		}
-		if tc.merged != fgc.merged {
-			t.Errorf("Wrong number of merges. Got %d, expected %d.", fgc.merged, tc.merged)
-		}
-		// Ensure that the correct number of batch jobs were triggered
-		if tc.triggeredBatches != len(batchJobs) {
-			t.Errorf("Wrong number of batches triggered. Got %d, expected %d.", len(batchJobs), tc.triggeredBatches)
-		}
-		for _, job := range batchJobs {
-			if len(job.Spec.Refs.Pulls) <= 1 {
-				t.Error("Found a batch job that doesn't contain multiple pull refs!")
+			if tc.triggered != numCreated {
+				t.Errorf("Wrong number of jobs triggered. Got %d, expected %d.", numCreated, tc.triggered)
 			}
-		}
+			if tc.merged != fgc.merged {
+				t.Errorf("Wrong number of merges. Got %d, expected %d.", fgc.merged, tc.merged)
+			}
+			// Ensure that the correct number of batch jobs were triggered
+			if tc.triggeredBatches != len(batchJobs) {
+				t.Errorf("Wrong number of batches triggered. Got %d, expected %d.", len(batchJobs), tc.triggeredBatches)
+			}
+			for _, job := range batchJobs {
+				if len(job.Spec.Refs.Pulls) <= 1 {
+					t.Error("Found a batch job that doesn't contain multiple pull refs!")
+				}
+			}
+		})
 	}
 }
 

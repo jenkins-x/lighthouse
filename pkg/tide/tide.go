@@ -41,6 +41,8 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/tide/history"
+	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
@@ -60,6 +62,7 @@ type prowJobClient interface {
 type githubClient interface {
 	CreateGraphQLStatus(string, string, string, *gitprovider.Status) (*scm.Status, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
+	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetRef(string, string, string) (string, error)
 	Merge(string, string, int, gitprovider.MergeDetails) error
@@ -1083,6 +1086,20 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 			if _, err := c.prowJobClient.Create(&pj, c.mpClient, repo); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create ProwJob on the cluster.")
 				return fmt.Errorf("failed to create a ProwJob for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
+			}
+			sha := refs.BaseSHA
+			if len(refs.Pulls) > 0 {
+				sha = refs.Pulls[0].SHA
+			}
+
+			statusInput := &scm.StatusInput{
+				State: scm.StatePending,
+				Label: spec.Context,
+				Desc:  util.CommitStatusPendingDescription,
+			}
+			if _, err := c.ghc.CreateStatus(refs.Org, refs.Repo, sha, statusInput); err != nil {
+				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to set pending status on triggered context.")
+				return errors.Wrapf(err, "Cannot update PR status on org %s repo %s sha %s for context %s", refs.Org, refs.Repo, sha, statusInput.Label)
 			}
 			c.logger.WithField("duration", time.Since(start).String()).Debug("Created ProwJob on the cluster.")
 		}
