@@ -1077,6 +1077,9 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 				c.logger.WithField("owner", refs.Org).WithField("repository", refs.Repo).Warnf("no GitURL returned")
 				// TODO load URL via scm client?
 			}
+			if !strings.HasPrefix(cloneURL, ".git") {
+				cloneURL = cloneURL + ".git"
+			}
 			repo := scm.Repository{
 				Name:      string(pr.Repository.Name),
 				Namespace: string(pr.Repository.Owner.Login),
