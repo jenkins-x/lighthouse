@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -710,6 +711,8 @@ func TestDividePool(t *testing.T) {
 }
 
 func TestPickBatch(t *testing.T) {
+	// TODO: Remove once #564 is fixed and batch builds can work again. (APB)
+	t.Skip("Skipping TestPickBatch until #564 is fixed and batch builds can work again")
 	lg, gc, err := localgit.New()
 	if err != nil {
 		t.Fatalf("Error making local git: %v", err)
@@ -1215,6 +1218,10 @@ func TestTakeAction(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
+			// TODO: Remove once #564 is fixed and batch builds can work again. (APB)
+			if strings.Contains(tc.name, "should trigger batch") {
+				t.Skipf("Skipping TestTakeAction/%s until #564 is fixed and batch builds can work again", tc.name)
+			}
 			ca := &config.Agent{}
 			cfg := &config.Config{}
 			if err := cfg.SetPresubmits(
