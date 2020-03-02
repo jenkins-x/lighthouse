@@ -566,7 +566,7 @@ const (
 )
 
 func toSimpleState(s plumber.PipelineState) simpleState {
-	if s == plumber.TriggeredState || s == plumber.PendingState {
+	if s == plumber.TriggeredState || s == plumber.PendingState || s == plumber.RunningState {
 		return pendingState
 	} else if s == plumber.SuccessState {
 		return successState
