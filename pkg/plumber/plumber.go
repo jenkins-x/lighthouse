@@ -162,9 +162,12 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 	}
 
 	kind := PresubmitJob
-	// TODO how to detect batch / periodic?
+
+	// TODO: Something for periodic.
 	if spec.GitBranch == "master" {
 		kind = PostsubmitJob
+	} else if len(spec.BatchPipelineActivity.ComprisingPulLRequests) > 0 {
+		kind = BatchJob
 	}
 
 	if strings.HasPrefix(spec.GitBranch, "PR-") {
@@ -172,7 +175,6 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 		if nt != "" {
 			n, err := strconv.Atoi(nt)
 			if err == nil {
-				kind = PresubmitJob
 				ref.Pulls = append(ref.Pulls, Pull{
 					Number: n,
 					SHA:    spec.LastCommitSHA,

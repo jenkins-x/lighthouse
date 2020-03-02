@@ -34,7 +34,7 @@ type gitHubAppTideController struct {
 	githubAppSecretDir string
 	configAgent        *config.Agent
 	botName            string
-	gitClient          git.Client
+	gitKind            string
 	maxRecordsPerPool  int
 	opener             io.Opener
 	historyURI         string
@@ -45,7 +45,7 @@ type gitHubAppTideController struct {
 
 // NewGitHubAppTideController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitClient git.Client, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
+func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
 
 	gitServer := GithubServer
 	return &gitHubAppTideController{
@@ -53,7 +53,7 @@ func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.A
 		gitServer:         gitServer,
 		configAgent:       configAgent,
 		botName:           botName,
-		gitClient:         gitClient,
+		gitKind:           gitKind,
 		maxRecordsPerPool: maxRecordsPerPool,
 		opener:            opener,
 		historyURI:        historyURI,
@@ -167,6 +167,13 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
 	gitproviderClient := gitprovider.ToClient(scmClient, g.botName)
+	gitClient, err := git.NewClient(g.gitServer, g.gitKind)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating git client")
+	}
+	gitClient.SetCredentials(g.botName, func() []byte {
+		return []byte(token)
+	})
 	tektonClient, jxClient, _, ns, err := clients.GetClientsAndNamespace()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
@@ -180,7 +187,7 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
 	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, tektonClient, ns, configGetter, g.gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
+	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
 	return c, err
 }
 

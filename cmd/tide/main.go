@@ -26,7 +26,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
@@ -146,14 +145,10 @@ func main() {
 	if gitKind == "" {
 		gitKind = "github"
 	}
-	gitClient, err := git.NewClient(serverURL, gitKind)
-	if err != nil {
-		logrus.WithError(err).Fatal("Error getting Git client.")
-	}
-	defer gitClient.Clean()
+	gitToken := os.Getenv("GIT_TOKEN")
 
 	cfg := configAgent.Config
-	c, err := githubapp.NewTideController(configAgent, botName, gitClient, o.maxRecordsPerPool, opener, o.historyURI, o.statusURI)
+	c, err := githubapp.NewTideController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, opener, o.historyURI, o.statusURI)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Tide controller.")
 	}

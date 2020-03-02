@@ -1,0 +1,37 @@
+metadata:
+  annotations:
+    jenkins.io/git-report-running-stages: ""
+    jenkins.io/git-report-state: Succeeded
+  creationTimestamp: "2020-02-28T21:11:48Z"
+  generation: 10
+  labels:
+    branch: PR-6
+    build: "86"
+    context: promotion-build
+    owner: Abayer-UpperCase-Org
+    provider: github
+    repository: environment-lh-tide-rerun-dev.git
+  name: abayer-uppercase-org-environment-lh-tide-rerun-dev-pr-6-86
+  namespace: jx
+  resourceVersion: "429078"
+  selfLink: /apis/jenkins.io/v1/namespaces/jx/pipelineactivities/abayer-uppercase-org-environment-lh-tide-rerun-dev-pr-6-86
+  uid: eece6ce1-5a6e-11ea-bad4-42010a840143
+spec:
+  context: promotion-build
+  job: Abayer-UpperCase-Org/environment-lh-tide-rerun-dev/PR-6
+  namespace: jx
+  refs:
+    base_ref: master
+    base_sha: 9b3c92a2ce65a30dbd124fa22a2c5b1a11a4fb87
+    org: Abayer-UpperCase-Org
+    repo: environment-lh-tide-rerun-dev
+    repo_link: https://github.com/Abayer-UpperCase-Org/environment-lh-tide-rerun-dev.git
+    pulls:
+      - author: ""
+        number: 6
+        ref: pull/6/head
+        sha: 6cf1b84eefb280171676f26dd43adf95a4a0b679
+        title: 'second batch candidate'
+  type: batch
+status:
+  state: success

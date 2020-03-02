@@ -61,6 +61,8 @@ spec:
         - name: "GITHUB_APP_SECRET_DIR"
           value: "/secrets/githubapp/tokens"
 {{- else }}
+        - name: "GIT_USER"
+          value: {{ .Values.user }}
         - name: "GIT_TOKEN"
           valueFrom:
             secretKeyRef:

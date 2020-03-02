@@ -165,13 +165,15 @@ func (t *Tide) MergeMethod(org, repo string) gitprovider.PullRequestMergeType {
 
 // BatchSizeLimit return the batch size limit for the given repo
 func (t *Tide) BatchSizeLimit(org, repo string) int {
-	if limit, ok := t.BatchSizeLimitMap[fmt.Sprintf("%s/%s", org, repo)]; ok {
-		return limit
-	}
-	if limit, ok := t.BatchSizeLimitMap[org]; ok {
-		return limit
-	}
-	return t.BatchSizeLimitMap["*"]
+	// TODO: Remove once #564 is fixed and batch builds can work again. (APB)
+	return -1
+	//if limit, ok := t.BatchSizeLimitMap[fmt.Sprintf("%s/%s", org, repo)]; ok {
+	//	return limit
+	//}
+	//if limit, ok := t.BatchSizeLimitMap[org]; ok {
+	//	return limit
+	//}
+	//return t.BatchSizeLimitMap["*"]
 }
 
 // MergeCommitTemplate returns a struct with Go template string(s) or nil

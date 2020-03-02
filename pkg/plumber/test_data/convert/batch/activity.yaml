@@ -1,0 +1,120 @@
+apiVersion: jenkins.io/v1
+kind: PipelineActivity
+metadata:
+  annotations:
+    jenkins.io/git-report-running-stages: ""
+    jenkins.io/git-report-state: Succeeded
+  creationTimestamp: "2020-02-28T21:11:48Z"
+  generation: 10
+  labels:
+    branch: PR-6
+    build: "86"
+    context: promotion-build
+    owner: Abayer-UpperCase-Org
+    provider: github
+    repository: environment-lh-tide-rerun-dev.git
+  name: abayer-uppercase-org-environment-lh-tide-rerun-dev-pr-6-86
+  namespace: jx
+  resourceVersion: "429078"
+  selfLink: /apis/jenkins.io/v1/namespaces/jx/pipelineactivities/abayer-uppercase-org-environment-lh-tide-rerun-dev-pr-6-86
+  uid: eece6ce1-5a6e-11ea-bad4-42010a840143
+spec:
+  author: abayer
+  baseSHA: 9b3c92a2ce65a30dbd124fa22a2c5b1a11a4fb87
+  batchPipelineActivity:
+    pullRequestInfo:
+      - lastBuildNumberForCommit: "1"
+        pullRequestNumber: PR-7
+      - lastBuildNumberForCommit: "1"
+        pullRequestNumber: PR-8
+  build: "86"
+  buildLogsUrl: https://raw.githubusercontent.com/Abayer-UpperCase-Org/environment-lh-tide-rerun-dev/gh-pages/jenkins-x/logs/Abayer-UpperCase-Org/environment-lh-tide-rerun-dev/PR-6/86.log
+  completedTimestamp: "2020-02-28T21:17:52Z"
+  context: promotion-build
+  gitBranch: PR-6
+  gitOwner: Abayer-UpperCase-Org
+  gitRepository: environment-lh-tide-rerun-dev
+  gitUrl: https://github.com/Abayer-UpperCase-Org/environment-lh-tide-rerun-dev.git
+  lastCommitSHA: 6cf1b84eefb280171676f26dd43adf95a4a0b679
+  pipeline: Abayer-UpperCase-Org/environment-lh-tide-rerun-dev/PR-6
+  pullTitle: second batch candidate
+  startedTimestamp: "2020-02-28T21:11:51Z"
+  status: Succeeded
+  steps:
+    - kind: Stage
+      stage:
+        completedTimestamp: "2020-02-28T21:12:19Z"
+        name: meta pipeline
+        startedTimestamp: "2020-02-28T21:11:51Z"
+        status: Succeeded
+        steps:
+          - completedTimestamp: "2020-02-28T21:11:51Z"
+            name: Credential Initializer V2gfp
+            startedTimestamp: "2020-02-28T21:11:51Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:11:53Z"
+            name: Working Dir Initializer Ll7jx
+            startedTimestamp: "2020-02-28T21:11:51Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:11:54Z"
+            name: Place Tools
+            startedTimestamp: "2020-02-28T21:11:53Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:02Z"
+            description: https://github.com/Abayer-UpperCase-Org/environment-lh-tide-rerun-dev
+            name: Git Source Meta Abayer Uppercase Org Envir 8qdhc C2jng
+            startedTimestamp: "2020-02-28T21:11:54Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:05Z"
+            name: Git Merge
+            startedTimestamp: "2020-02-28T21:12:02Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:06Z"
+            name: Merge Pull Refs
+            startedTimestamp: "2020-02-28T21:12:05Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:15Z"
+            name: Create Effective Pipeline
+            startedTimestamp: "2020-02-28T21:12:06Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:19Z"
+            name: Create Tekton Crds
+            startedTimestamp: "2020-02-28T21:12:15Z"
+            status: Succeeded
+    - kind: Stage
+      stage:
+        completedTimestamp: "2020-02-28T21:17:52Z"
+        name: pr checks
+        startedTimestamp: "2020-02-28T21:12:23Z"
+        status: Succeeded
+        steps:
+          - completedTimestamp: "2020-02-28T21:12:23Z"
+            name: Credential Initializer 5nbgh
+            startedTimestamp: "2020-02-28T21:12:23Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:25Z"
+            name: Working Dir Initializer Nh5lf
+            startedTimestamp: "2020-02-28T21:12:23Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:26Z"
+            name: Place Tools
+            startedTimestamp: "2020-02-28T21:12:25Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:34Z"
+            description: https://github.com/Abayer-UpperCase-Org/environment-lh-tide-rerun-dev
+            name: Git Source Abayer Uppercase Org Environmen X62c4 Mtkt8
+            startedTimestamp: "2020-02-28T21:12:26Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:37Z"
+            name: Git Merge
+            startedTimestamp: "2020-02-28T21:12:34Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:12:40Z"
+            name: Verify Parameters
+            startedTimestamp: "2020-02-28T21:12:37Z"
+            status: Succeeded
+          - completedTimestamp: "2020-02-28T21:17:52Z"
+            name: Lint Env Helm
+            startedTimestamp: "2020-02-28T21:12:40Z"
+            status: Succeeded
+status: {}
