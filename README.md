@@ -71,7 +71,7 @@ Then to run it:
 
     ./bin/lighthouse
     
-Then if you want to test it out with a git provider running on the cloud or inside kubernetes you can use [ngrok](https://ngrok.com/) to setup a tunnel to your laptop. e.g.:
+Then if you want to test it out with a git provider running on the cloud or inside Kubernetes you can use [ngrok](https://ngrok.com/) to setup a tunnel to your laptop. e.g.:
 
     ngrok http 8080
     
