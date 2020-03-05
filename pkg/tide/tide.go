@@ -1395,23 +1395,6 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []plumbe
 			continue
 		}
 		fn := poolKey(pj.Spec.Refs.Org, pj.Spec.Refs.Repo, pj.Spec.Refs.BaseRef)
-		if sps[fn] != nil {
-			refs := pj.Spec.Refs
-			pr := ""
-			if len(refs.Pulls) > 0 {
-				pr = refs.Pulls[0].Link
-			}
-			labels := pj.Labels
-			if labels == nil {
-				labels = map[string]string{}
-			}
-			logrus.WithField("PJRef", pj.Spec.Refs.BaseSHA).WithField("sha", sps[fn].sha).
-				WithField("pr", pr).
-				WithField("build", labels["build"]).
-				WithField("branch", labels["branch"]).
-				WithField("owner", refs.Org).
-				WithField("repo", refs.Repo).WithField("baseRef", refs.BaseRef).Debugf("base sha mismatch")
-		}
 		if sps[fn] == nil || pj.Spec.Refs.BaseSHA != sps[fn].sha {
 			continue
 		}
