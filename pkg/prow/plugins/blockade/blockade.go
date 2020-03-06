@@ -43,7 +43,7 @@ const (
 
 var blockedPathsBody = fmt.Sprintf("Adding label: `%s` because PR changes a protected file.", labels.BlockedPaths)
 
-type githubClient interface {
+type scmProviderClient interface {
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	AddLabel(owner, repo string, number int, label string, pr bool) error
@@ -87,7 +87,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 type blockCalc func([]*scm.Change, []blockade) summary
 
 type client struct {
-	ghc githubClient
+	spc scmProviderClient
 	log *logrus.Entry
 
 	blockCalc blockCalc
@@ -98,7 +98,7 @@ func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
 	if err != nil {
 		return err
 	}
-	return handle(pc.GitHubClient, pc.Logger, pc.PluginConfig.Blockades, cp, calculateBlocks, &pre)
+	return handle(pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Blockades, cp, calculateBlocks, &pre)
 }
 
 // blockade is a compiled version of a plugins.Blockade config struct.
@@ -128,7 +128,7 @@ func (s summary) String() string {
 	return buf.String()
 }
 
-func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp pruneClient, blockCalc blockCalc, pre *scm.PullRequestHook) error {
+func handle(spc scmProviderClient, log *logrus.Entry, config []plugins.Blockade, cp pruneClient, blockCalc blockCalc, pre *scm.PullRequestHook) error {
 	if pre.Action != scm.ActionSync &&
 		pre.Action != scm.ActionOpen &&
 		pre.Action != scm.ActionReopen {
@@ -138,7 +138,7 @@ func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp p
 	org := pre.Repo.Namespace
 	repo := pre.Repo.Name
 	prNumber := pre.PullRequest.Number
-	issueLabels, err := ghc.GetIssueLabels(org, repo, prNumber, true)
+	issueLabels, err := spc.GetIssueLabels(org, repo, prNumber, true)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp p
 
 	var sum summary
 	if len(blockades) > 0 {
-		changes, err := ghc.GetPullRequestChanges(org, repo, prNumber)
+		changes, err := spc.GetPullRequestChanges(org, repo, prNumber)
 		if err != nil {
 			return err
 		}
@@ -162,14 +162,14 @@ func handle(ghc githubClient, log *logrus.Entry, config []plugins.Blockade, cp p
 	shouldBlock := len(sum) > 0
 	if shouldBlock && !labelPresent {
 		// Add the label and leave a comment explaining why the label was added.
-		if err := ghc.AddLabel(org, repo, prNumber, labels.BlockedPaths, true); err != nil {
+		if err := spc.AddLabel(org, repo, prNumber, labels.BlockedPaths, true); err != nil {
 			return err
 		}
 		msg := plugins.FormatResponse(pre.PullRequest.Author.Login, blockedPathsBody, sum.String())
-		return ghc.CreateComment(org, repo, prNumber, true, msg)
+		return spc.CreateComment(org, repo, prNumber, true, msg)
 	} else if !shouldBlock && labelPresent {
 		// Remove the label and delete any comments created by this plugin.
-		if err := ghc.RemoveLabel(org, repo, prNumber, labels.BlockedPaths, true); err != nil {
+		if err := spc.RemoveLabel(org, repo, prNumber, labels.BlockedPaths, true); err != nil {
 			return err
 		}
 		cp.PruneComments(true, func(ic *scm.Comment) bool {

@@ -64,7 +64,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
@@ -74,13 +74,13 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 	hasLabel := func(label string, labels []*scm.Label) bool {
 		return gitprovider.HasLabel(label, labels)
 	}
-	return handle(pc.GitHubClient, pc.Logger, &e, hasLabel)
+	return handle(pc.SCMProviderClient, pc.Logger, &e, hasLabel)
 }
 
 // handle drives the pull request to the desired state. If any user adds
 // a /hold directive, we want to add a label if one does not already exist.
 // If they add /hold cancel, we want to remove the label if it exists.
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, f hasLabelFunc) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, f hasLabelFunc) error {
 	if e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -95,7 +95,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
-	issueLabels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
+	issueLabels, err := spc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		return fmt.Errorf("failed to get the labels on %s/%s#%d: %v", org, repo, e.Number, err)
 	}
@@ -103,10 +103,10 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	hasLabel := f(labels.Hold, issueLabels)
 	if hasLabel && !needsLabel {
 		log.Infof("Removing %q Label for %s/%s#%d", labels.Hold, org, repo, e.Number)
-		return gc.RemoveLabel(org, repo, e.Number, labels.Hold, e.IsPR)
+		return spc.RemoveLabel(org, repo, e.Number, labels.Hold, e.IsPR)
 	} else if !hasLabel && needsLabel {
 		log.Infof("Adding %q Label for %s/%s#%d", labels.Hold, org, repo, e.Number)
-		return gc.AddLabel(org, repo, e.Number, labels.Hold, e.IsPR)
+		return spc.AddLabel(org, repo, e.Number, labels.Hold, e.IsPR)
 	}
 	return nil
 }

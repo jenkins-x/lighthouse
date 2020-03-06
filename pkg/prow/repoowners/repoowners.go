@@ -74,7 +74,7 @@ type FullConfig struct {
 	Filters map[string]Config `json:"filters,omitempty"`
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	ListCollaborators(org, repo string) ([]scm.User, error)
 	GetRef(org, repo, ref string) (string, error)
 }
@@ -99,7 +99,7 @@ type Client struct {
 	config *prowConf.Config
 
 	git    git2.Client
-	ghc    githubClient
+	spc    scmProviderClient
 	logger *logrus.Entry
 
 	mdYAMLEnabled     func(org, repo string) bool
@@ -112,14 +112,14 @@ type Client struct {
 // NewClient is the constructor for Client
 func NewClient(
 	gc git2.Client,
-	ghc githubClient,
+	spc scmProviderClient,
 	config *prowConf.Config,
 	mdYAMLEnabled func(org, repo string) bool,
 	skipCollaborators func(org, repo string) bool,
 ) *Client {
 	return &Client{
 		git:    gc,
-		ghc:    ghc,
+		spc:    spc,
 		logger: logrus.WithField("client", "repoowners"),
 		cache:  make(map[string]cacheEntry),
 
@@ -173,7 +173,7 @@ func (c *Client) LoadRepoAliases(org, repo, base string) (RepoAliases, error) {
 	cloneRef := fmt.Sprintf("%s/%s", org, repo)
 	fullName := fmt.Sprintf("%s:%s", cloneRef, base)
 
-	sha, err := c.ghc.GetRef(org, repo, fmt.Sprintf("heads/%s", base))
+	sha, err := c.spc.GetRef(org, repo, fmt.Sprintf("heads/%s", base))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current SHA for %s: %v", fullName, err)
 	}
@@ -208,7 +208,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	fullName := fmt.Sprintf("%s:%s", cloneRef, base)
 	mdYaml := c.mdYAMLEnabled(org, repo)
 
-	sha, err := c.ghc.GetRef(org, repo, fmt.Sprintf("heads/%s", base))
+	sha, err := c.spc.GetRef(org, repo, fmt.Sprintf("heads/%s", base))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current SHA for %s: %v", fullName, err)
 	}
@@ -256,7 +256,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	var owners *RepoOwners
 	// Filter collaborators. We must filter the RepoOwners struct even if it came from the cache
 	// because the list of collaborators could have changed without the git Sha changing.
-	collaborators, err := c.ghc.ListCollaborators(org, repo)
+	collaborators, err := c.spc.ListCollaborators(org, repo)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to list collaborators while loading RepoOwners. Skipping collaborator filtering.")
 		owners = entry.owners

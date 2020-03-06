@@ -37,7 +37,7 @@ var (
 	skipRe = regexp.MustCompile(`(?mi)^/skip\s*$`)
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
@@ -65,10 +65,10 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	honorOkToTest := trigger.HonorOkToTest(pc.PluginConfig.TriggerFor(e.Repo.Namespace, e.Repo.Name))
-	return handle(pc.GitHubClient, pc.Logger, &e, pc.Config.GetPresubmits(e.Repo), honorOkToTest)
+	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.Config.GetPresubmits(e.Repo), honorOkToTest)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, presubmits []config.Presubmit, honorOkToTest bool) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, presubmits []config.Presubmit, honorOkToTest bool) error {
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -81,29 +81,29 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	repo := e.Repo.Name
 	number := e.Number
 
-	pr, err := gc.GetPullRequest(org, repo, number)
+	pr, err := spc.GetPullRequest(org, repo, number)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
-	combinedStatus, err := gc.GetCombinedStatus(org, repo, pr.Head.Sha)
+	combinedStatus, err := spc.GetCombinedStatus(org, repo, pr.Head.Sha)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get combined commit statuses for PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 	if combinedStatus.State == scm.StateSuccess {
 		return nil
 	}
 	statuses := combinedStatus.Statuses
 
-	filteredPresubmits, _, err := trigger.FilterPresubmits(honorOkToTest, gc, e.Body, pr, presubmits, log)
+	filteredPresubmits, _, err := trigger.FilterPresubmits(honorOkToTest, spc, e.Body, pr, presubmits, log)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get combined status for PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 	triggerWillHandle := func(p config.Presubmit) bool {
 		for _, presubmit := range filteredPresubmits {
@@ -138,10 +138,10 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 			Desc:  "Skipped",
 			Label: context,
 		}
-		if _, err := gc.CreateStatus(org, repo, pr.Head.Sha, status); err != nil {
+		if _, err := spc.CreateStatus(org, repo, pr.Head.Sha, status); err != nil {
 			resp := fmt.Sprintf("Cannot update PR status for context %s: %v", context, err)
 			log.Warn(resp)
-			return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+			return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 		}
 	}
 	return nil

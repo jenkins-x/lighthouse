@@ -42,7 +42,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 		// When a PR is opened, if the author is in the org then build it.
 		// Otherwise, ask for "/ok-to-test". There's no need to look for previous
 		// "/ok-to-test" comments since the PR was just opened!
-		member, err := TrustedUser(c.GitHubClient, trigger, author, org, repo)
+		member, err := TrustedUser(c.SCMProviderClient, trigger, author, org, repo)
 		if err != nil {
 			return fmt.Errorf("could not check membership: %s", err)
 		}
@@ -51,20 +51,20 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 			return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 		}
 		c.Logger.Infof("Welcome message to PR author %q.", author)
-		if err := welcomeMsg(c.GitHubClient, trigger, pr.PullRequest); err != nil {
+		if err := welcomeMsg(c.SCMProviderClient, trigger, pr.PullRequest); err != nil {
 			return fmt.Errorf("could not welcome non-org member %q: %v", author, err)
 		}
 	case scm.ActionReopen:
 		// When a PR is reopened, check that the user is in the org or that an org
 		// member had said "/ok-to-test" before building, resulting in label ok-to-test.
-		l, trusted, err := TrustedPullRequest(c.GitHubClient, trigger, author, org, repo, num, nil)
+		l, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
 		if err != nil {
 			return fmt.Errorf("could not validate PR: %s", err)
 		} else if trusted {
 			// Eventually remove need-ok-to-test
 			// Does not work for TrustedUser() == true since labels are not fetched in this case
 			if gitprovider.HasLabel(labels.NeedsOkToTest, l) {
-				if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest, true); err != nil {
+				if err := c.SCMProviderClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest, true); err != nil {
 					return err
 				}
 			}
@@ -85,7 +85,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 	case scm.ActionLabel:
 		// When a PR is LGTMd, if it is untrusted then build it once.
 		if pr.Label.Name == labels.LGTM {
-			_, trusted, err := TrustedPullRequest(c.GitHubClient, trigger, author, org, repo, num, nil)
+			_, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
 			if err != nil {
 				return fmt.Errorf("could not validate PR: %s", err)
 			} else if !trusted {
@@ -115,14 +115,14 @@ func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHoo
 	org, repo, a := orgRepoAuthor(pr.PullRequest)
 	author := string(a)
 	num := pr.PullRequest.Number
-	l, trusted, err := TrustedPullRequest(c.GitHubClient, trigger, author, org, repo, num, nil)
+	l, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
 	if err != nil {
 		return fmt.Errorf("could not validate PR: %s", err)
 	} else if trusted {
 		// Eventually remove needs-ok-to-test
 		// Will not work for org members since labels are not fetched in this case
 		if gitprovider.HasLabel(labels.NeedsOkToTest, l) {
-			if err := c.GitHubClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest, true); err != nil {
+			if err := c.SCMProviderClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest, true); err != nil {
 				return err
 			}
 		}
@@ -132,7 +132,7 @@ func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHoo
 	return nil
 }
 
-func welcomeMsg(ghc githubClient, trigger *plugins.Trigger, pr scm.PullRequest) error {
+func welcomeMsg(spc scmProviderClient, trigger *plugins.Trigger, pr scm.PullRequest) error {
 	var errors []error
 	org, repo, a := orgRepoAuthor(pr)
 	author := string(a)
@@ -176,12 +176,12 @@ I understand the commands that are listed [here](https://go.k8s.io/bot-commands?
 %s
 </details>
 `, author, org, org, more, joinOrgURL, labels.OkToTest, encodedRepoFullName, plugins.AboutThisBotWithoutCommands)
-		if err := ghc.AddLabel(org, repo, pr.Number, labels.NeedsOkToTest, true); err != nil {
+		if err := spc.AddLabel(org, repo, pr.Number, labels.NeedsOkToTest, true); err != nil {
 			errors = append(errors, err)
 		}
 	}
 
-	if err := ghc.CreateComment(org, repo, pr.Number, true, comment); err != nil {
+	if err := spc.CreateComment(org, repo, pr.Number, true, comment); err != nil {
 		errors = append(errors, err)
 	}
 
@@ -193,9 +193,9 @@ I understand the commands that are listed [here](https://go.k8s.io/bot-commands?
 
 // TrustedPullRequest returns whether or not the given PR should be tested.
 // It first checks if the author is in the org, then looks for "ok-to-test" label.
-func TrustedPullRequest(ghc githubClient, trigger *plugins.Trigger, author, org, repo string, num int, l []*scm.Label) ([]*scm.Label, bool, error) {
+func TrustedPullRequest(spc scmProviderClient, trigger *plugins.Trigger, author, org, repo string, num int, l []*scm.Label) ([]*scm.Label, bool, error) {
 	// First check if the author is a member of the org.
-	if orgMember, err := TrustedUser(ghc, trigger, author, org, repo); err != nil {
+	if orgMember, err := TrustedUser(spc, trigger, author, org, repo); err != nil {
 		return l, false, fmt.Errorf("error checking %s for trust: %v", author, err)
 	} else if orgMember {
 		return l, true, nil
@@ -203,7 +203,7 @@ func TrustedPullRequest(ghc githubClient, trigger *plugins.Trigger, author, org,
 	// Then check if PR has ok-to-test label
 	if l == nil {
 		var err error
-		l, err = ghc.GetIssueLabels(org, repo, num, true)
+		l, err = spc.GetIssueLabels(org, repo, num, true)
 		if err != nil {
 			return l, false, err
 		}
@@ -214,7 +214,7 @@ func TrustedPullRequest(ghc githubClient, trigger *plugins.Trigger, author, org,
 // buildAll ensures that all builds that should run and will be required are built
 func buildAll(c Client, pr *scm.PullRequest, eventGUID string, elideSkippedContexts bool) error {
 	org, repo, number, branch := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Number, pr.Base.Ref
-	changes := config.NewGitHubDeferredChangedFilesProvider(c.GitHubClient, org, repo, number)
+	changes := config.NewGitHubDeferredChangedFilesProvider(c.SCMProviderClient, org, repo, number)
 	toTest, toSkip, err := pjutil.FilterPresubmits(pjutil.TestAllFilter(), changes, branch, c.Config.GetPresubmits(pr.Base.Repo), c.Logger)
 	if err != nil {
 		return err

@@ -72,20 +72,20 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		nil
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	FindIssues(query, sort string, asc bool) ([]scm.Issue, error)
 }
 
 type client struct {
-	GitHubClient githubClient
-	Logger       *logrus.Entry
+	SCMProviderClient scmProviderClient
+	Logger            *logrus.Entry
 }
 
 func getClient(pc plugins.Agent) client {
 	return client{
-		GitHubClient: pc.GitHubClient,
-		Logger:       pc.Logger,
+		SCMProviderClient: pc.SCMProviderClient,
+		Logger:            pc.Logger,
 	}
 }
 
@@ -104,7 +104,7 @@ func handlePR(c client, pre scm.PullRequestHook, welcomeTemplate string) error {
 	repo := pre.PullRequest.Base.Repo.Name
 	user := pre.PullRequest.Author.Login
 	query := fmt.Sprintf("is:pr repo:%s/%s author:%s", org, repo, user)
-	issues, err := c.GitHubClient.FindIssues(query, "", false)
+	issues, err := c.SCMProviderClient.FindIssues(query, "", false)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func handlePR(c client, pre scm.PullRequestHook, welcomeTemplate string) error {
 		}
 
 		// actually post the comment
-		return c.GitHubClient.CreateComment(org, repo, pre.PullRequest.Number, true, msgBuffer.String())
+		return c.SCMProviderClient.CreateComment(org, repo, pre.PullRequest.Number, true, msgBuffer.String())
 	}
 
 	return nil

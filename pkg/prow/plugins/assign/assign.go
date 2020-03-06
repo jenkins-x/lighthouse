@@ -63,7 +63,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	AssignIssue(owner, repo string, number int, logins []string) error
 	UnassignIssue(owner, repo string, number int, logins []string) error
 
@@ -77,9 +77,9 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 	if e.Action != scm.ActionCreate {
 		return nil
 	}
-	err := handle(newAssignHandler(e, pc.GitHubClient, pc.Logger))
+	err := handle(newAssignHandler(e, pc.SCMProviderClient, pc.Logger))
 	if e.IsPR {
-		err = combineErrors(err, handle(newReviewHandler(e, pc.GitHubClient, pc.Logger)))
+		err = combineErrors(err, handle(newReviewHandler(e, pc.SCMProviderClient, pc.Logger)))
 	}
 	return err
 }
@@ -152,7 +152,7 @@ func handle(h *handler) error {
 				if len(msg) == 0 {
 					return nil
 				}
-				if err := h.gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
+				if err := h.spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 					return fmt.Errorf("comment err: %v", err)
 				}
 				return nil
@@ -177,8 +177,8 @@ type handler struct {
 	// regexp is the regular expression describing the command. It must have an optional 'un' prefix
 	// as the first subgroup and the arguments to the command as the second subgroup.
 	regexp *regexp.Regexp
-	// gc is the githubClient to use for creating response comments in the event of a failure.
-	gc githubClient
+	// spc is the scmProviderClient to use for creating response comments in the event of a failure.
+	spc scmProviderClient
 
 	// log is a logrus.Entry used to record actions the handler takes.
 	log *logrus.Entry
@@ -186,7 +186,7 @@ type handler struct {
 	userType string
 }
 
-func newAssignHandler(e gitprovider.GenericCommentEvent, gc githubClient, log *logrus.Entry) *handler {
+func newAssignHandler(e gitprovider.GenericCommentEvent, spc scmProviderClient, log *logrus.Entry) *handler {
 	org := e.Repo.Namespace
 	addFailureResponse := func(mu gitprovider.MissingUsers) string {
 		return fmt.Sprintf("GitHub didn't allow me to assign the following users: %s.\n\nNote that only [%s members](https://github.com/orgs/%s/people), repo collaborators and people who have commented on this issue/PR can be assigned. Additionally, issues/PRs can only have 10 assignees at the same time.\nFor more information please see [the contributor guide](https://git.k8s.io/community/contributors/guide/#issue-assignment-in-github)", strings.Join(mu.Users, ", "), org, org)
@@ -194,17 +194,17 @@ func newAssignHandler(e gitprovider.GenericCommentEvent, gc githubClient, log *l
 
 	return &handler{
 		addFailureResponse: addFailureResponse,
-		remove:             gc.UnassignIssue,
-		add:                gc.AssignIssue,
+		remove:             spc.UnassignIssue,
+		add:                spc.AssignIssue,
 		event:              &e,
 		regexp:             assignRe,
-		gc:                 gc,
+		spc:                spc,
 		log:                log,
 		userType:           "assignee(s)",
 	}
 }
 
-func newReviewHandler(e gitprovider.GenericCommentEvent, gc githubClient, log *logrus.Entry) *handler {
+func newReviewHandler(e gitprovider.GenericCommentEvent, spc scmProviderClient, log *logrus.Entry) *handler {
 	org := e.Repo.Namespace
 	addFailureResponse := func(mu gitprovider.MissingUsers) string {
 		return fmt.Sprintf("GitHub didn't allow me to request PR reviews from the following users: %s.\n\nNote that only [%s members](https://github.com/orgs/%s/people) and repo collaborators can review this PR, and authors cannot review their own PRs.", strings.Join(mu.Users, ", "), org, org)
@@ -212,11 +212,11 @@ func newReviewHandler(e gitprovider.GenericCommentEvent, gc githubClient, log *l
 
 	return &handler{
 		addFailureResponse: addFailureResponse,
-		remove:             gc.UnrequestReview,
-		add:                gc.RequestReview,
+		remove:             spc.UnrequestReview,
+		add:                spc.RequestReview,
 		event:              &e,
 		regexp:             CCRegexp,
-		gc:                 gc,
+		spc:                spc,
 		log:                log,
 		userType:           "reviewer(s)",
 	}

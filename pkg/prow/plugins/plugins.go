@@ -136,7 +136,7 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
 	ClientFactory      jxfactory.Factory
-	GitHubClient       *gitprovider.Client
+	SCMProviderClient  *gitprovider.Client
 	PlumberClient      plumber.Plumber
 	MetapipelineClient metapipeline.Client
 	GitClient          git2.Client
@@ -163,10 +163,10 @@ type Agent struct {
 func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, metapipelineClient metapipeline.Client, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
-	gitHubClient := gitprovider.ToClient(clientAgent.GitHubClient, clientAgent.BotName)
+	scmClient := gitprovider.ToClient(clientAgent.SCMProviderClient, clientAgent.BotName)
 	return Agent{
 		ClientFactory:      clientFactory,
-		GitHubClient:       gitHubClient,
+		SCMProviderClient:  scmClient,
 		GitClient:          clientAgent.GitClient,
 		PlumberClient:      clientAgent.PlumberClient,
 		MetapipelineClient: metapipelineClient,
@@ -174,7 +174,7 @@ func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, plugin
 			SlackClient:   clientAgent.SlackClient,
 		*/
 		OwnersClient: repoowners.NewClient(
-			clientAgent.GitClient, gitHubClient,
+			clientAgent.GitClient, scmClient,
 			prowConfig, pluginConfig.MDYAMLEnabled,
 			pluginConfig.SkipCollaborators,
 		),
@@ -188,7 +188,7 @@ func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, plugin
 // pruning comments.
 func (a *Agent) InitializeCommentPruner(org, repo string, pr int) {
 	a.commentPruner = commentpruner.NewEventClient(
-		a.GitHubClient, a.Logger.WithField("client", "commentpruner"),
+		a.SCMProviderClient, a.Logger.WithField("client", "commentpruner"),
 		org, repo, pr,
 	)
 }
@@ -204,8 +204,8 @@ func (a *Agent) CommentPruner() (*commentpruner.EventClient, error) {
 
 // ClientAgent contains the various clients that are attached to the Agent.
 type ClientAgent struct {
-	BotName      string
-	GitHubClient *scm.Client
+	BotName           string
+	SCMProviderClient *scm.Client
 
 	KubernetesClient   kubernetes.Interface
 	GitClient          git2.Client

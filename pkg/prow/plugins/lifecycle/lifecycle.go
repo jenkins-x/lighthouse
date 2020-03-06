@@ -72,7 +72,7 @@ type lifecycleClient interface {
 }
 
 func lifecycleHandleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	gc := pc.GitHubClient
+	gc := pc.SCMProviderClient
 	log := pc.Logger
 	if err := handleReopen(gc, log, &e); err != nil {
 		return err

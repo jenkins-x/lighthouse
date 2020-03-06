@@ -93,7 +93,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	AddLabel(org, repo string, number int, label string, pr bool) error
 	BotName() (string, error)
 	IsCollaborator(org, repo, user string) (bool, error)
@@ -118,7 +118,7 @@ type plumberClient interface {
 //
 // TODO(fejta): consider exporting an interface rather than a struct
 type Client struct {
-	GitHubClient       githubClient
+	SCMProviderClient  scmProviderClient
 	PlumberClient      plumberClient
 	Config             *config.Config
 	Logger             *logrus.Entry
@@ -133,7 +133,7 @@ type trustedUserClient interface {
 
 func getClient(pc plugins.Agent) Client {
 	return Client{
-		GitHubClient:       pc.GitHubClient,
+		SCMProviderClient:  pc.SCMProviderClient,
 		Config:             pc.Config,
 		PlumberClient:      pc.PlumberClient,
 		Logger:             pc.Logger,
@@ -158,14 +158,14 @@ func handlePush(pc plugins.Agent, pe scm.PushHook) error {
 //
 // Trusted users are either repo collaborators, org members or trusted org members.
 // Whether repo collaborators and/or a second org is trusted is configured by trigger.
-func TrustedUser(ghc trustedUserClient, trigger *plugins.Trigger, user, org, repo string) (bool, error) {
-	botUser, err := ghc.BotName()
+func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, repo string) (bool, error) {
+	botUser, err := spc.BotName()
 	if err == nil && user == botUser {
 		return true, nil
 	}
 	// First check if user is a collaborator, assuming this is allowed
 	if !trigger.OnlyOrgMembers {
-		if ok, err := ghc.IsCollaborator(org, repo, user); err != nil {
+		if ok, err := spc.IsCollaborator(org, repo, user); err != nil {
 			return false, fmt.Errorf("error in IsCollaborator: %v", err)
 		} else if ok {
 			return true, nil
@@ -175,7 +175,7 @@ func TrustedUser(ghc trustedUserClient, trigger *plugins.Trigger, user, org, rep
 	// TODO(fejta): consider dropping support for org checks in the future.
 
 	// Next see if the user is an org member
-	if member, err := ghc.IsMember(org, user); err != nil {
+	if member, err := spc.IsMember(org, user); err != nil {
 		return false, fmt.Errorf("error in IsMember(%s): %v", org, err)
 	} else if member {
 		return true, nil
@@ -187,7 +187,7 @@ func TrustedUser(ghc trustedUserClient, trigger *plugins.Trigger, user, org, rep
 	}
 
 	// Check the second trusted org.
-	member, err := ghc.IsMember(trigger.TrustedOrg, user)
+	member, err := spc.IsMember(trigger.TrustedOrg, user)
 	if err != nil {
 		return false, fmt.Errorf("error in IsMember(%s): %v", trigger.TrustedOrg, err)
 	}
@@ -245,7 +245,7 @@ func validateContextOverlap(toRun, toSkip []config.Presubmit) error {
 
 // runRequested executes the config.Presubmits that are requested
 func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmit, eventGUID string) error {
-	baseSHA, err := c.GitHubClient.GetRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, "heads/"+pr.Base.Ref)
+	baseSHA, err := c.SCMProviderClient.GetRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, "heads/"+pr.Base.Ref)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient, pr.Repository()); err != nil {
 			c.Logger.WithError(err).Error("Failed to create plumberJob.")
 			errors = append(errors, err)
-			if _, statusErr := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
+			if _, statusErr := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
 				errors = append(errors, statusErr)
 			}
 		}
@@ -274,7 +274,7 @@ func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []config.Presubmit
 			continue
 		}
 		c.Logger.Infof("Skipping %s build.", job.Name)
-		if _, err := c.GitHubClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, skippedStatusFor(job.Context)); err != nil {
+		if _, err := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, skippedStatusFor(job.Context)); err != nil {
 			errors = append(errors, err)
 		}
 	}

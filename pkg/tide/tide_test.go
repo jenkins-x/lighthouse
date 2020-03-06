@@ -716,7 +716,7 @@ func TestDividePool(t *testing.T) {
 		refs: map[string]string{"k/t-i heads/master": "123"},
 	}
 	c := &DefaultController{
-		ghc:    fc,
+		spc:    fc,
 		logger: logrus.WithField("component", "tide"),
 	}
 	pulls := make(map[string]PullRequest)
@@ -1368,7 +1368,7 @@ func TestTakeAction(t *testing.T) {
 				logger:        logrus.WithField("controller", "tide"),
 				gc:            gc,
 				config:        ca.Config,
-				ghc:           &fgc,
+				spc:           &fgc,
 				prowJobClient: fakePlumberClient,
 			}
 			var batchPending []PullRequest
@@ -1660,7 +1660,7 @@ func TestSync(t *testing.T) {
 		}
 		sc := &statusController{
 			logger:         logrus.WithField("controller", "status-update"),
-			ghc:            fgc,
+			spc:            fgc,
 			config:         ca.Config,
 			newPoolPending: make(chan bool, 1),
 			shutDown:       make(chan bool),
@@ -1669,14 +1669,14 @@ func TestSync(t *testing.T) {
 		defer sc.shutdown()
 		c := &DefaultController{
 			config:        ca.Config,
-			ghc:           fgc,
+			spc:           fgc,
 			prowJobClient: fakePlumberClient,
 			tektonClient:  fakeTektonClient,
 			ns:            "jx",
 			logger:        logrus.WithField("controller", "sync"),
 			sc:            sc,
 			changedFiles: &changedFilesAgent{
-				ghc:             fgc,
+				spc:             fgc,
 				nextChangeCache: make(map[changeCacheKey][]string),
 			},
 			History: hist,
@@ -2381,9 +2381,9 @@ func TestPresubmitsByPull(t *testing.T) {
 		}
 		c := &DefaultController{
 			config: cfgAgent.Config,
-			ghc:    &fgc{},
+			spc:    &fgc{},
 			changedFiles: &changedFilesAgent{
-				ghc:             &fgc{},
+				spc:             &fgc{},
 				changeCache:     tc.initialChangeCache,
 				nextChangeCache: make(map[changeCacheKey][]string),
 			},
@@ -2495,7 +2495,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		cfgAgent.Set(cfg)
 		c := &DefaultController{
 			config: cfgAgent.Config,
-			ghc:    &fgc{},
+			spc:    &fgc{},
 			logger: logrus.WithField("component", "tide"),
 		}
 

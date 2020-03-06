@@ -68,7 +68,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
@@ -131,10 +131,10 @@ func (u realPack) readDog(dogURL string) (string, error) {
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	return handle(pc.GitHubClient, pc.Logger, &e, dogURL)
+	return handle(pc.SCMProviderClient, pc.Logger, &e, dogURL)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, p pack) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, p pack) error {
 	// Only consider new comments.
 	if e.Action != scm.ActionCreate {
 		return nil
@@ -167,7 +167,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 			log.WithError(err).Println("Failed to get dog img")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	return errors.New("could not find a valid dog image")

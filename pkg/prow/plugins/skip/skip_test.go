@@ -297,7 +297,7 @@ func TestSkipStatus(t *testing.T) {
 			t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
 		}
 
-		fghc := &fakegitprovider.FakeClient{
+		fspc := &fakegitprovider.FakeClient{
 			IssueComments: make(map[int][]*scm.Comment),
 			PullRequests: map[int]*scm.PullRequest{
 				test.event.Number: {
@@ -319,13 +319,13 @@ func TestSkipStatus(t *testing.T) {
 		}
 		l := logrus.WithField("plugin", pluginName)
 
-		if err := handle(fghc, l, test.event, test.presubmits, true); err != nil {
+		if err := handle(fspc, l, test.event, test.presubmits, true); err != nil {
 			t.Errorf("%s: unexpected error: %v", test.name, err)
 			continue
 		}
 
 		// Check that the correct statuses have been updated.
-		created := fghc.CreatedStatuses[test.sha]
+		created := fspc.CreatedStatuses[test.sha]
 		if len(test.expected) != len(created) {
 			t.Errorf("%s: status mismatch: expected:\n%+v\ngot:\n%+v", test.name, test.expected, created)
 			continue

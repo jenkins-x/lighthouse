@@ -819,10 +819,10 @@ func TestHandleGenericComment(t *testing.T) {
 		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}}
 		fakePlumberClient := fake.NewPlumber()
 		c := Client{
-			GitHubClient:  g,
-			PlumberClient: fakePlumberClient,
-			Config:        fakeConfig,
-			Logger:        logrus.WithField("plugin", PluginName),
+			SCMProviderClient: g,
+			PlumberClient:     fakePlumberClient,
+			Config:            fakeConfig,
+			Logger:            logrus.WithField("plugin", PluginName),
 		}
 		presubmits := tc.Presubmits
 		if presubmits == nil {

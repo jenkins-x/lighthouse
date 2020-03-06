@@ -63,7 +63,7 @@ type stageClient interface {
 }
 
 func stageHandleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	return handle(pc.GitHubClient, pc.Logger, &e)
+	return handle(pc.SCMProviderClient, pc.Logger, &e)
 }
 
 func handle(gc stageClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {

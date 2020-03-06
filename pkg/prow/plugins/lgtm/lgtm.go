@@ -132,7 +132,7 @@ func optionsForRepo(config *plugins.Configuration, org, repo string) *plugins.Lg
 	return &plugins.Lgtm{}
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	AssignIssue(owner, repo string, number int, assignees []string) error
@@ -163,13 +163,13 @@ func handleGenericCommentEvent(pc plugins.Agent, e gitprovider.GenericCommentEve
 	if err != nil {
 		return err
 	}
-	return handleGenericComment(pc.GitHubClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
+	return handleGenericComment(pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
 }
 
 func handlePullRequestEvent(pc plugins.Agent, pre scm.PullRequestHook) error {
 	return handlePullRequest(
 		pc.Logger,
-		pc.GitHubClient,
+		pc.SCMProviderClient,
 		pc.PluginConfig,
 		&pre,
 	)
@@ -185,10 +185,10 @@ func handlePullRequestReviewEvent(pc plugins.Agent, e scm.ReviewHook) error {
 	if err != nil {
 		return err
 	}
-	return handlePullRequestReview(pc.GitHubClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
+	return handlePullRequestReview(pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
 }
 
-func handleGenericComment(gc githubClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(spc scmProviderClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e gitprovider.GenericCommentEvent) error {
 	rc := reviewCtx{
 		author:      e.Author.Login,
 		issueAuthor: e.IssueAuthor.Login,
@@ -216,10 +216,10 @@ func handleGenericComment(gc githubClient, config *plugins.Configuration, owners
 	}
 
 	// use common handler to do the rest
-	return handle(wantLGTM, config, ownersClient, rc, gc, log, cp)
+	return handle(wantLGTM, config, ownersClient, rc, spc, log, cp)
 }
 
-func handlePullRequestReview(gc githubClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e scm.ReviewHook) error {
+func handlePullRequestReview(spc scmProviderClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e scm.ReviewHook) error {
 	rc := reviewCtx{
 		author:      e.Review.Author.Login,
 		issueAuthor: e.PullRequest.Author.Login,
@@ -258,10 +258,10 @@ func handlePullRequestReview(gc githubClient, config *plugins.Configuration, own
 	}
 
 	// use common handler to do the rest
-	return handle(wantLGTM, config, ownersClient, rc, gc, log, cp)
+	return handle(wantLGTM, config, ownersClient, rc, spc, log, cp)
 }
 
-func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowners.Interface, rc reviewCtx, gc githubClient, log *logrus.Entry, cp commentPruner) error {
+func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowners.Interface, rc reviewCtx, spc scmProviderClient, log *logrus.Entry, cp commentPruner) error {
 	author := rc.author
 	issueAuthor := rc.issueAuthor
 	assignees := rc.assignees
@@ -276,7 +276,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if isAuthor && wantLGTM {
 		resp := "you cannot LGTM your own PR."
 		log.Infof("Commenting with \"%s\".", resp)
-		return gc.CreateComment(rc.repo.Namespace, rc.repo.Name, rc.number, true, plugins.FormatResponseRaw(rc.body, rc.htmlURL, rc.author, resp))
+		return spc.CreateComment(rc.repo.Namespace, rc.repo.Name, rc.number, true, plugins.FormatResponseRaw(rc.body, rc.htmlURL, rc.author, resp))
 	}
 
 	// Determine if reviewer is already assigned
@@ -292,7 +292,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	skipCollaborators := skipCollaborators(config, org, repoName)
 
 	// check if the commentor is a collaborator
-	isCollaborator, err := gc.IsCollaborator(org, repoName, author)
+	isCollaborator, err := spc.IsCollaborator(org, repoName, author)
 	if err != nil {
 		log.WithError(err).Error("Failed to check if author is a collaborator.")
 		return err // abort if we can't determine if commentor is a collaborator
@@ -302,7 +302,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if !isAuthor && !skipCollaborators && !isCollaborator {
 		resp := "changing LGTM is restricted to collaborators"
 		log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
-		return gc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
+		return spc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
 	}
 
 	// either ensure that the commentor is a collaborator or an approver/reviwer
@@ -310,25 +310,25 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 		// in this case we need to ensure the commentor is assignable to the PR
 		// by assigning them
 		log.Infof("Assigning %s/%s#%d to %s", org, repoName, number, author)
-		if err := gc.AssignIssue(org, repoName, number, []string{author}); err != nil {
+		if err := spc.AssignIssue(org, repoName, number, []string{author}); err != nil {
 			log.WithError(err).Errorf("Failed to assign %s/%s#%d to %s", org, repoName, number, author)
 		}
 	} else if !isAuthor && skipCollaborators {
 		// in this case we depend on OWNERS files instead to check if the author
 		// is an approver or reviwer of the changed files
 		log.Debugf("Skipping collaborator checks and loading OWNERS for %s/%s#%d", org, repoName, number)
-		ro, err := loadRepoOwners(gc, ownersClient, org, repoName, number)
+		ro, err := loadRepoOwners(spc, ownersClient, org, repoName, number)
 		if err != nil {
 			return err
 		}
-		filenames, err := getChangedFiles(gc, org, repoName, number)
+		filenames, err := getChangedFiles(spc, org, repoName, number)
 		if err != nil {
 			return err
 		}
 		if !loadReviewers(ro, filenames).Has(gitprovider.NormLogin(author)) {
 			resp := "adding LGTM is restricted to approvers and reviewers in OWNERS files."
 			log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
-			return gc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
+			return spc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
 		}
 	}
 
@@ -336,7 +336,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	// LGTM was not allowed for the commentor
 
 	// Only add the label if it doesn't have it, and vice versa.
-	labels, err := gc.GetIssueLabels(org, repoName, number, true)
+	labels, err := spc.GetIssueLabels(org, repoName, number, true)
 	if err != nil {
 		log.WithError(err).Error("Failed to get issue labels.")
 	}
@@ -346,7 +346,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	opts := optionsForRepo(config, rc.repo.Namespace, rc.repo.Name)
 	if hasLGTM && !wantLGTM {
 		log.Info("Removing LGTM label.")
-		if err := gc.RemoveLabel(org, repoName, number, LGTMLabel, true); err != nil {
+		if err := spc.RemoveLabel(org, repoName, number, LGTMLabel, true); err != nil {
 			return err
 		}
 		if opts.StoreTreeHash {
@@ -356,16 +356,16 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 		}
 	} else if !hasLGTM && wantLGTM {
 		log.Info("Adding LGTM label.")
-		if err := gc.AddLabel(org, repoName, number, LGTMLabel, true); err != nil {
+		if err := spc.AddLabel(org, repoName, number, LGTMLabel, true); err != nil {
 			return err
 		}
-		if !stickyLgtm(log, gc, config, opts, issueAuthor, org, repoName) {
+		if !stickyLgtm(log, spc, config, opts, issueAuthor, org, repoName) {
 			if opts.StoreTreeHash {
-				pr, err := gc.GetPullRequest(org, repoName, number)
+				pr, err := spc.GetPullRequest(org, repoName, number)
 				if err != nil {
 					log.WithError(err).Error("Failed to get pull request.")
 				}
-				commit, err := gc.GetSingleCommit(org, repoName, pr.Head.Sha)
+				commit, err := spc.GetSingleCommit(org, repoName, pr.Head.Sha)
 				if err != nil {
 					log.WithField("sha", pr.Head.Sha).WithError(err).Error("Failed to get commit.")
 				}
@@ -374,7 +374,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				}
 				treeHash := commit.Tree.Sha
 				log.WithField("tree", treeHash).Info("Adding comment to store tree-hash.")
-				if err := gc.CreateComment(org, repoName, number, true, fmt.Sprintf(addLGTMLabelNotification, treeHash)); err != nil {
+				if err := spc.CreateComment(org, repoName, number, true, fmt.Sprintf(addLGTMLabelNotification, treeHash)); err != nil {
 					log.WithError(err).Error("Failed to add comment.")
 				}
 			}
@@ -388,13 +388,13 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	return nil
 }
 
-func stickyLgtm(log *logrus.Entry, gc githubClient, config *plugins.Configuration, lgtm *plugins.Lgtm, author, org, repo string) bool {
+func stickyLgtm(log *logrus.Entry, spc scmProviderClient, config *plugins.Configuration, lgtm *plugins.Lgtm, author, org, repo string) bool {
 	if len(lgtm.StickyLgtmTeam) > 0 {
-		if teams, err := gc.ListTeams(org); err == nil {
+		if teams, err := spc.ListTeams(org); err == nil {
 			for _, teamInOrg := range teams {
 				// lgtm.TrustedAuthorTeams is supposed to be a very short list.
 				if strings.Compare(teamInOrg.Name, lgtm.StickyLgtmTeam) == 0 {
-					if members, err := gc.ListTeamMembers(teamInOrg.ID, gitprovider.RoleAll); err == nil {
+					if members, err := spc.ListTeamMembers(teamInOrg.ID, gitprovider.RoleAll); err == nil {
 						for _, member := range members {
 							if strings.Compare(member.Login, author) == 0 {
 								// The author is in a trusted team
@@ -413,7 +413,7 @@ func stickyLgtm(log *logrus.Entry, gc githubClient, config *plugins.Configuratio
 	return false
 }
 
-func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Configuration, pe *scm.PullRequestHook) error {
+func handlePullRequest(log *logrus.Entry, spc scmProviderClient, config *plugins.Configuration, pe *scm.PullRequestHook) error {
 	if pe.PullRequest.Merged {
 		return nil
 	}
@@ -427,13 +427,13 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 	number := pe.PullRequest.Number
 
 	opts := optionsForRepo(config, org, repo)
-	if stickyLgtm(log, gc, config, opts, pe.PullRequest.Author.Login, org, repo) {
+	if stickyLgtm(log, spc, config, opts, pe.PullRequest.Author.Login, org, repo) {
 		// If the author is trusted, skip tree hash verification and LGTM removal.
 		return nil
 	}
 
 	// If we don't have the lgtm label, we don't need to check anything
-	labels, err := gc.GetIssueLabels(org, repo, number, true)
+	labels, err := spc.GetIssueLabels(org, repo, number, true)
 	if err != nil {
 		log.WithError(err).Error("Failed to get labels.")
 	}
@@ -444,11 +444,11 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 	if opts.StoreTreeHash {
 		// Check if we have a tree-hash comment
 		var lastLgtmTreeHash string
-		botname, err := gc.BotName()
+		botname, err := spc.BotName()
 		if err != nil {
 			return err
 		}
-		comments, err := gc.ListPullRequestComments(org, repo, number)
+		comments, err := spc.ListPullRequestComments(org, repo, number)
 		if err != nil {
 			log.WithError(err).Error("Failed to get issue comments.")
 		}
@@ -464,7 +464,7 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 		}
 		if lastLgtmTreeHash != "" {
 			// Get the current tree-hash
-			commit, err := gc.GetSingleCommit(org, repo, pe.PullRequest.Head.Sha)
+			commit, err := spc.GetSingleCommit(org, repo, pe.PullRequest.Head.Sha)
 			if err != nil {
 				log.WithField("sha", pe.PullRequest.Head.Sha).WithError(err).Error("Failed to get commit.")
 			}
@@ -477,14 +477,14 @@ func handlePullRequest(log *logrus.Entry, gc githubClient, config *plugins.Confi
 		}
 	}
 
-	if err := gc.RemoveLabel(org, repo, number, LGTMLabel, true); err != nil {
+	if err := spc.RemoveLabel(org, repo, number, LGTMLabel, true); err != nil {
 		return fmt.Errorf("failed removing lgtm label: %v", err)
 	}
 
 	// Create a comment to inform participants that LGTM label is removed due to new
 	// pull request changes.
 	log.Infof("Commenting with an LGTM removed notification to %s/%s#%d with a message: %s", org, repo, number, removeLGTMLabelNoti)
-	return gc.CreateComment(org, repo, number, true, removeLGTMLabelNoti)
+	return spc.CreateComment(org, repo, number, true, removeLGTMLabelNoti)
 }
 
 func skipCollaborators(config *plugins.Configuration, org, repo string) bool {
@@ -497,8 +497,8 @@ func skipCollaborators(config *plugins.Configuration, org, repo string) bool {
 	return false
 }
 
-func loadRepoOwners(gc githubClient, ownersClient repoowners.Interface, org, repo string, number int) (repoowners.RepoOwner, error) {
-	pr, err := gc.GetPullRequest(org, repo, number)
+func loadRepoOwners(spc scmProviderClient, ownersClient repoowners.Interface, org, repo string, number int) (repoowners.RepoOwner, error) {
+	pr, err := spc.GetPullRequest(org, repo, number)
 	if err != nil {
 		return nil, err
 	}
@@ -506,8 +506,8 @@ func loadRepoOwners(gc githubClient, ownersClient repoowners.Interface, org, rep
 }
 
 // getChangedFiles returns all the changed files for the provided pull request.
-func getChangedFiles(gc githubClient, org, repo string, number int) ([]string, error) {
-	changes, err := gc.GetPullRequestChanges(org, repo, number)
+func getChangedFiles(spc scmProviderClient, org, repo string, number int) ([]string, error) {
+	changes, err := spc.GetPullRequestChanges(org, repo, number)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get PR changes for %s/%s#%d", org, repo, number)
 	}

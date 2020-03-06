@@ -59,7 +59,7 @@ type storedState struct {
 type statusController struct {
 	logger *logrus.Entry
 	config config.Getter
-	ghc    githubClient
+	spc    scmProviderClient
 
 	// newPoolPending is a size 1 chan that signals that the main Tide loop has
 	// updated the 'poolPRs' field with a freshly updated pool.
@@ -286,7 +286,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 	process := func(pr *PullRequest) {
 		processed.Insert(prKey(pr))
 		log := sc.logger.WithFields(pr.logFields())
-		contexts, err := headContexts(log, sc.ghc, pr)
+		contexts, err := headContexts(log, sc.spc, pr)
 		if err != nil {
 			log.WithError(err).Error("Getting head commit status contexts, skipping...")
 			return
@@ -310,7 +310,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 			}
 		}
 		if wantState != strings.ToLower(string(actualState)) || wantDesc != actualDesc {
-			if _, err := sc.ghc.CreateGraphQLStatus(
+			if _, err := sc.spc.CreateGraphQLStatus(
 				string(pr.Repository.Owner.Login),
 				string(pr.Repository.Name),
 				string(pr.HeadRefOID),
@@ -474,7 +474,7 @@ func (sc *statusController) search() []PullRequest {
 		sc.PreviousQuery = query
 	}
 
-	prs, err := search(sc.ghc.Query, sc.logger, query, sc.LatestPR.Time, now)
+	prs, err := search(sc.spc.Query, sc.logger, query, sc.LatestPR.Time, now)
 	log.WithField("duration", time.Since(now).String()).Debugf("Found %d open PRs.", len(prs))
 	if err != nil {
 		log := log.WithError(err)

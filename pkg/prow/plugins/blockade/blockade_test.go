@@ -297,7 +297,7 @@ func TestHandle(t *testing.T) {
 	for _, tc := range tcs {
 		expectAdded := []string{}
 		fakeScmClient, fakeClient := fake.NewDefault()
-		fakeGHClient := gitprovider.ToTestClient(fakeScmClient)
+		fakeSCMProviderClient := gitprovider.ToTestClient(fakeScmClient)
 		fakeClient.RepoLabelsExisting = []string{labels.BlockedPaths, otherLabel}
 
 		if tc.hasLabel {
@@ -325,7 +325,7 @@ func TestHandle(t *testing.T) {
 				Number: 1,
 			},
 		}
-		if err := handle(fakeGHClient, logrus.WithField("plugin", PluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {
+		if err := handle(fakeSCMProviderClient, logrus.WithField("plugin", PluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {
 			t.Errorf("[%s] Unexpected error from handle: %v.", tc.name, err)
 			continue
 		}

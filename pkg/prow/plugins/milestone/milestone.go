@@ -42,7 +42,7 @@ var (
 	clearKeyword     = "clear"
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	ClearMilestone(org, repo string, num int) error
 	SetMilestone(org, repo string, issueNum, milestoneNum int) error
@@ -84,7 +84,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	return handle(pc.GitHubClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
 }
 
 func buildMilestoneMap(milestones []gitprovider.Milestone) map[string]int {
@@ -94,7 +94,7 @@ func buildMilestoneMap(milestones []gitprovider.Milestone) map[string]int {
 	}
 	return m
 }
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	if e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -113,7 +113,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		milestone = repoMilestone[""]
 	}
 
-	milestoneMaintainers, err := gc.ListTeamMembers(milestone.MaintainersID, gitprovider.RoleAll)
+	milestoneMaintainers, err := spc.ListTeamMembers(milestone.MaintainersID, gitprovider.RoleAll)
 	if err != nil {
 		return err
 	}
@@ -128,10 +128,10 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	if !found {
 		// not in the milestone maintainers team
 		msg := fmt.Sprintf(mustBeAuthorized, org, milestone.MaintainersTeam, org, milestone.MaintainersTeam, milestone.MaintainersFriendlyName)
-		return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
-	milestones, err := gc.ListMilestones(org, repo)
+	milestones, err := spc.ListMilestones(org, repo)
 	if err != nil {
 		log.WithError(err).Errorf("Error listing the milestones in the %s/%s repo", org, repo)
 		return err
@@ -140,7 +140,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 
 	// special case, if the clear keyword is used
 	if proposedMilestone == clearKeyword {
-		if err := gc.ClearMilestone(org, repo, e.Number); err != nil {
+		if err := spc.ClearMilestone(org, repo, e.Number); err != nil {
 			log.WithError(err).Errorf("Error clearing the milestone for %s/%s#%d.", org, repo, e.Number)
 		}
 		return nil
@@ -156,10 +156,10 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		sort.Strings(slice)
 
 		msg := fmt.Sprintf(invalidMilestone, strings.Join(slice, ", "), clearKeyword)
-		return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
-	if err := gc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {
+	if err := spc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {
 		log.WithError(err).Errorf("Error adding the milestone %s to %s/%s#%d.", proposedMilestone, org, repo, e.Number)
 	}
 

@@ -98,7 +98,7 @@ func newTestReviewTime(t time.Time, user, body string, state string) *scm.Review
 	return r
 }
 
-func newFakeGitHubClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*gitprovider.Client, *fake.Data) {
+func newFakeSCMProviderClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*gitprovider.Client, *fake.Data) {
 	labels := []string{"org/repo#1:lgtm"}
 	if hasLabel {
 		labels = append(labels, fmt.Sprintf("org/repo#%v:approved", prNumber))
@@ -1041,7 +1041,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 	}
 
 	for _, test := range tests {
-		fakeClient, fghc := newFakeGitHubClient(test.hasLabel, test.humanApproved, test.files, test.comments, test.reviews, testBotName)
+		fakeClient, fspc := newFakeSCMProviderClient(test.hasLabel, test.humanApproved, test.files, test.comments, test.reviews, testBotName)
 		branch := "master"
 		if test.branch != "" {
 			branch = test.branch
@@ -1077,30 +1077,30 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 		}
 
 		if test.expectDelete {
-			if len(fghc.PullRequestCommentsDeleted) != 1 {
+			if len(fspc.PullRequestCommentsDeleted) != 1 {
 				t.Errorf(
 					"[%s] Expected 1 notification to be deleted but %d notifications were deleted.",
 					test.name,
-					len(fghc.PullRequestCommentsDeleted),
+					len(fspc.PullRequestCommentsDeleted),
 				)
 			}
 		} else {
-			if len(fghc.PullRequestCommentsDeleted) != 0 {
+			if len(fspc.PullRequestCommentsDeleted) != 0 {
 				t.Errorf(
 					"[%s] Expected 0 notifications to be deleted but %d notification was deleted.",
 					test.name,
-					len(fghc.PullRequestCommentsDeleted),
+					len(fspc.PullRequestCommentsDeleted),
 				)
 			}
 		}
 		if test.expectComment {
-			if len(fghc.PullRequestCommentsAdded) != 1 {
+			if len(fspc.PullRequestCommentsAdded) != 1 {
 				t.Errorf(
 					"[%s] Expected 1 notification to be added but %d notifications were added.",
 					test.name,
-					len(fghc.PullRequestCommentsAdded),
+					len(fspc.PullRequestCommentsAdded),
 				)
-			} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fghc.PullRequestCommentsAdded[0]; test.expectedComment != "" && got != expect {
+			} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fspc.PullRequestCommentsAdded[0]; test.expectedComment != "" && got != expect {
 				t.Errorf(
 					"[%s] Expected the created notification to be:\n%s\n\nbut got:\n%s\n\n",
 					test.name,
@@ -1109,17 +1109,17 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				)
 			}
 		} else {
-			if len(fghc.PullRequestCommentsAdded) != 0 {
+			if len(fspc.PullRequestCommentsAdded) != 0 {
 				t.Errorf(
 					"[%s] Expected 0 notifications to be added but %d notification was added.",
 					test.name,
-					len(fghc.PullRequestCommentsAdded),
+					len(fspc.PullRequestCommentsAdded),
 				)
 			}
 		}
 
 		labelAdded := false
-		for _, l := range fghc.PullRequestLabelsAdded {
+		for _, l := range fspc.PullRequestLabelsAdded {
 			if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
 				if labelAdded {
 					t.Errorf("[%s] The approved label was applied to a PR that already had it!", test.name)
@@ -1131,7 +1131,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			labelAdded = false
 		}
 		toggled := labelAdded
-		for _, l := range fghc.PullRequestLabelsRemoved {
+		for _, l := range fspc.PullRequestLabelsRemoved {
 			if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
 				if !test.hasLabel {
 					t.Errorf("[%s] The approved label was removed from a PR that doesn't have it!", test.name)
@@ -1302,7 +1302,7 @@ func TestHandleGenericComment(t *testing.T) {
 
 	var handled bool
 	var gotState *state
-	handleFunc = func(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
 		gotState = pr
 		handled = true
 		return nil
@@ -1321,9 +1321,9 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		Number: 1,
 	}
-	fakeScmClient, fghc := fake.NewDefault()
+	fakeScmClient, fspc := fake.NewDefault()
 	fakeClient := gitprovider.ToTestClient(fakeScmClient)
-	fghc.PullRequests[1] = &pr
+	fspc.PullRequests[1] = &pr
 
 	for _, test := range tests {
 		test.commentEvent.Repo = repo
@@ -1515,7 +1515,7 @@ func TestHandleReview(t *testing.T) {
 
 	var handled bool
 	var gotState *state
-	handleFunc = func(log *logrus.Entry, ghc githubClient, repo approvers.Repo, config config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, config config.GitHubOptions, opts *plugins.Approve, pr *state) error {
 		gotState = pr
 		handled = true
 		return nil
@@ -1538,9 +1538,9 @@ func TestHandleReview(t *testing.T) {
 		Number: 1,
 		Body:   "Fix everything",
 	}
-	fakeScmClient, fghc := fake.NewDefault()
+	fakeScmClient, fspc := fake.NewDefault()
 	fakeClient := gitprovider.ToTestClient(fakeScmClient)
-	fghc.PullRequests[1] = &pr
+	fspc.PullRequests[1] = &pr
 
 	for _, test := range tests {
 		test.reviewEvent.Repo = repo
@@ -1678,7 +1678,7 @@ func TestHandlePullRequest(t *testing.T) {
 
 	var handled bool
 	var gotState *state
-	handleFunc = func(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
 		gotState = pr
 		handled = true
 		return nil

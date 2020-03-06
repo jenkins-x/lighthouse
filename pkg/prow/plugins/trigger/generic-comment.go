@@ -57,7 +57,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc gitprovider.Gen
 	}
 
 	// Skip bot comments.
-	botName, err := c.GitHubClient.BotName()
+	botName, err := c.SCMProviderClient.BotName()
 	if err != nil {
 		return err
 	}
@@ -66,27 +66,27 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc gitprovider.Gen
 		return nil
 	}
 
-	pr, err := c.GitHubClient.GetPullRequest(org, repo, number)
+	pr, err := c.SCMProviderClient.GetPullRequest(org, repo, number)
 	if err != nil {
 		return err
 	}
 
 	// Skip untrusted users comments.
-	trusted, err := TrustedUser(c.GitHubClient, trigger, commentAuthor, org, repo)
+	trusted, err := TrustedUser(c.SCMProviderClient, trigger, commentAuthor, org, repo)
 	if err != nil {
 		return fmt.Errorf("error checking trust of %s: %v", commentAuthor, err)
 	}
 	var l []*scm.Label
 	if !trusted {
 		// Skip untrusted PRs.
-		l, trusted, err = TrustedPullRequest(c.GitHubClient, trigger, gc.IssueAuthor.Login, org, repo, number, nil)
+		l, trusted, err = TrustedPullRequest(c.SCMProviderClient, trigger, gc.IssueAuthor.Login, org, repo, number, nil)
 		if err != nil {
 			return err
 		}
 		if !trusted {
 			resp := fmt.Sprintf("Cannot trigger testing until a trusted user reviews the PR and leaves an `/ok-to-test` message.")
 			c.Logger.Infof("Commenting \"%s\".", resp)
-			return c.GitHubClient.CreateComment(org, repo, number, true, plugins.FormatResponseRaw(gc.Body, gc.Link, gc.Author.Login, resp))
+			return c.SCMProviderClient.CreateComment(org, repo, number, true, plugins.FormatResponseRaw(gc.Body, gc.Link, gc.Author.Login, resp))
 		}
 	}
 
@@ -94,24 +94,24 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc gitprovider.Gen
 	// Ensure we have labels before test, because TrustedPullRequest() won't be called
 	// when commentAuthor is trusted.
 	if l == nil {
-		l, err = c.GitHubClient.GetIssueLabels(org, repo, number, gc.IsPR)
+		l, err = c.SCMProviderClient.GetIssueLabels(org, repo, number, gc.IsPR)
 		if err != nil {
 			return err
 		}
 	}
 	isOkToTest := HonorOkToTest(trigger) && pjutil.OkToTestRe.MatchString(gc.Body)
 	if isOkToTest && !gitprovider.HasLabel(labels.OkToTest, l) {
-		if err := c.GitHubClient.AddLabel(org, repo, number, labels.OkToTest, gc.IsPR); err != nil {
+		if err := c.SCMProviderClient.AddLabel(org, repo, number, labels.OkToTest, gc.IsPR); err != nil {
 			return err
 		}
 	}
 	if (isOkToTest || gitprovider.HasLabel(labels.OkToTest, l)) && gitprovider.HasLabel(labels.NeedsOkToTest, l) {
-		if err := c.GitHubClient.RemoveLabel(org, repo, number, labels.NeedsOkToTest, gc.IsPR); err != nil {
+		if err := c.SCMProviderClient.RemoveLabel(org, repo, number, labels.NeedsOkToTest, gc.IsPR); err != nil {
 			return err
 		}
 	}
 
-	toTest, toSkip, err := FilterPresubmits(HonorOkToTest(trigger), c.GitHubClient, gc.Body, pr, c.Config.GetPresubmits(gc.Repo), c.Logger)
+	toTest, toSkip, err := FilterPresubmits(HonorOkToTest(trigger), c.SCMProviderClient, gc.Body, pr, c.Config.GetPresubmits(gc.Repo), c.Logger)
 	if err != nil {
 		return err
 	}
@@ -123,8 +123,8 @@ func HonorOkToTest(trigger *plugins.Trigger) bool {
 	return !trigger.IgnoreOkToTest
 }
 
-// GitHubClient Github client
-type GitHubClient interface {
+// SCMProviderClient Github client
+type SCMProviderClient interface {
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
@@ -144,11 +144,11 @@ type GitHubClient interface {
 // If a comment that we get matches more than one of the above patterns, we
 // consider the set of matching presubmits the union of the results from the
 // matching cases.
-func FilterPresubmits(honorOkToTest bool, gitHubClient GitHubClient, body string, pr *scm.PullRequest, presubmits []config.Presubmit, logger *logrus.Entry) ([]config.Presubmit, []config.Presubmit, error) {
+func FilterPresubmits(honorOkToTest bool, scmClient SCMProviderClient, body string, pr *scm.PullRequest, presubmits []config.Presubmit, logger *logrus.Entry) ([]config.Presubmit, []config.Presubmit, error) {
 	org, repo, sha := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Sha
 
 	contextGetter := func() (sets.String, sets.String, error) {
-		combinedStatus, err := gitHubClient.GetCombinedStatus(org, repo, sha)
+		combinedStatus, err := scmClient.GetCombinedStatus(org, repo, sha)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -162,7 +162,7 @@ func FilterPresubmits(honorOkToTest bool, gitHubClient GitHubClient, body string
 	}
 
 	number, branch := pr.Number, pr.Base.Ref
-	changes := config.NewGitHubDeferredChangedFilesProvider(gitHubClient, org, repo, number)
+	changes := config.NewGitHubDeferredChangedFilesProvider(scmClient, org, repo, number)
 	return pjutil.FilterPresubmits(filter, changes, branch, presubmits, logger)
 }
 

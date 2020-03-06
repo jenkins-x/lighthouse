@@ -45,7 +45,7 @@ var (
 	}
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	IsMember(org, user string) (bool, error)
 	AddLabel(owner, repo string, number int, label string, pr bool) error
@@ -72,12 +72,12 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	return handle(pc.GitHubClient, pc.Logger, &e, pc.PluginConfig.SigMention.Re)
+	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.SigMention.Re)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, re *regexp.Regexp) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, re *regexp.Regexp) error {
 	// Ignore bot comments and comments that aren't new.
-	botName, err := gc.BotName()
+	botName, err := spc.BotName()
 	if err != nil {
 		return err
 	}
@@ -96,11 +96,11 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
-	labels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
+	labels, err := spc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		return err
 	}
-	repoLabels, err := gc.GetRepoLabels(org, repo)
+	repoLabels, err := spc.GetRepoLabels(org, repo)
 	if err != nil {
 		return err
 	}
@@ -118,14 +118,14 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 			continue
 		}
 		if !gitprovider.HasLabel(sigLabel, labels) {
-			if err := gc.AddLabel(org, repo, e.Number, sigLabel, e.IsPR); err != nil {
+			if err := spc.AddLabel(org, repo, e.Number, sigLabel, e.IsPR); err != nil {
 				log.WithError(err).Errorf("GitHub failed to add the following label: %s", sigLabel)
 			}
 		}
 
 		if len(sigMatch) > 2 {
 			if kindLabel, ok := kindMap[sigMatch[2]]; ok && !gitprovider.HasLabel(kindLabel, labels) {
-				if err := gc.AddLabel(org, repo, e.Number, kindLabel, e.IsPR); err != nil {
+				if err := spc.AddLabel(org, repo, e.Number, kindLabel, e.IsPR); err != nil {
 					log.WithError(err).Errorf("GitHub failed to add the following label: %s", kindLabel)
 				}
 			}
@@ -138,7 +138,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		log.Infof("Nonexistent labels: %v", nonexistent)
 	}
 
-	isMember, err := gc.IsMember(org, e.Author.Login)
+	isMember, err := spc.IsMember(org, e.Author.Login)
 	if err != nil {
 		log.WithError(err).Errorf("Error from IsMember(%q of org %q).", e.Author.Login, org)
 	}
@@ -147,5 +147,5 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	}
 
 	msg := fmt.Sprintf(chatBack, strings.Join(toRepeat, ", "))
-	return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+	return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 }

@@ -67,7 +67,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
@@ -75,10 +75,10 @@ type githubClient interface {
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	return handle(pc.GitHubClient, pc.Logger, &e)
+	return handle(pc.SCMProviderClient, pc.Logger, &e)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
 	if e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -97,7 +97,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 
 	// Only add the label if it doesn't have it yet.
 	hasShrug := false
-	issueLabels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
+	issueLabels, err := spc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get the labels on %s/%s#%d.", org, repo, e.Number)
 	}
@@ -111,13 +111,13 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		log.Info("Removing Shrug label.")
 		resp := "¯\\\\\\_(ツ)\\_/¯"
 		log.Infof("Commenting with \"%s\".", resp)
-		if err := gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp)); err != nil {
+		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp)); err != nil {
 			return fmt.Errorf("failed to comment on %s/%s#%d: %v", org, repo, e.Number, err)
 		}
-		return gc.RemoveLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
+		return spc.RemoveLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
 	} else if !hasShrug && wantShrug {
 		log.Info("Adding Shrug label.")
-		return gc.AddLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
+		return spc.AddLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
 	}
 	return nil
 }

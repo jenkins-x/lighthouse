@@ -61,7 +61,7 @@ var (
 	handleFunc = handle
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
@@ -146,7 +146,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 func handleGenericCommentEvent(pc plugins.Agent, ce gitprovider.GenericCommentEvent) error {
 	return handleGenericComment(
 		pc.Logger,
-		pc.GitHubClient,
+		pc.SCMProviderClient,
 		pc.OwnersClient,
 		pc.Config.GitHubOptions,
 		pc.PluginConfig,
@@ -154,12 +154,12 @@ func handleGenericCommentEvent(pc plugins.Agent, ce gitprovider.GenericCommentEv
 	)
 }
 
-func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, ce *gitprovider.GenericCommentEvent) error {
+func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, ce *gitprovider.GenericCommentEvent) error {
 	if ce.Action != scm.ActionCreate || !ce.IsPR || ce.IssueState == "closed" {
 		return nil
 	}
 
-	botName, err := ghc.BotName()
+	botName, err := spc.BotName()
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, 
 		return nil
 	}
 
-	pr, err := ghc.GetPullRequest(ce.Repo.Namespace, ce.Repo.Name, ce.Number)
+	pr, err := spc.GetPullRequest(ce.Repo.Namespace, ce.Repo.Name, ce.Number)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, 
 
 	return handleFunc(
 		log,
-		ghc,
+		spc,
 		repo,
 		githubConfig,
 		opts,
@@ -203,7 +203,7 @@ func handleGenericComment(log *logrus.Entry, ghc githubClient, oc ownersClient, 
 func handleReviewEvent(pc plugins.Agent, re scm.ReviewHook) error {
 	return handleReview(
 		pc.Logger,
-		pc.GitHubClient,
+		pc.SCMProviderClient,
 		pc.OwnersClient,
 		pc.Config.GitHubOptions,
 		pc.PluginConfig,
@@ -211,12 +211,12 @@ func handleReviewEvent(pc plugins.Agent, re scm.ReviewHook) error {
 	)
 }
 
-func handleReview(log *logrus.Entry, ghc githubClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, re *scm.ReviewHook) error {
+func handleReview(log *logrus.Entry, spc scmProviderClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, re *scm.ReviewHook) error {
 	if re.Action != scm.ActionSubmitted && re.Action != scm.ActionDismissed {
 		return nil
 	}
 
-	botName, err := ghc.BotName()
+	botName, err := spc.BotName()
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func handleReview(log *logrus.Entry, ghc githubClient, oc ownersClient, githubCo
 
 	return handleFunc(
 		log,
-		ghc,
+		spc,
 		repo,
 		githubConfig,
 		optionsForRepo(config, re.Repo.Namespace, re.Repo.Name),
@@ -264,7 +264,7 @@ func handleReview(log *logrus.Entry, ghc githubClient, oc ownersClient, githubCo
 func handlePullRequestEvent(pc plugins.Agent, pre scm.PullRequestHook) error {
 	return handlePullRequest(
 		pc.Logger,
-		pc.GitHubClient,
+		pc.SCMProviderClient,
 		pc.OwnersClient,
 		pc.Config.GitHubOptions,
 		pc.PluginConfig,
@@ -272,14 +272,14 @@ func handlePullRequestEvent(pc plugins.Agent, pre scm.PullRequestHook) error {
 	)
 }
 
-func handlePullRequest(log *logrus.Entry, ghc githubClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, pre *scm.PullRequestHook) error {
+func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, pre *scm.PullRequestHook) error {
 	if pre.Action != scm.ActionOpen &&
 		pre.Action != scm.ActionReopen &&
 		pre.Action != scm.ActionSync &&
 		pre.Action != scm.ActionLabel {
 		return nil
 	}
-	botName, err := ghc.BotName()
+	botName, err := spc.BotName()
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func handlePullRequest(log *logrus.Entry, ghc githubClient, oc ownersClient, git
 
 	return handleFunc(
 		log,
-		ghc,
+		spc,
 		repo,
 		githubConfig,
 		optionsForRepo(config, pre.Repo.Namespace, pre.Repo.Name),
@@ -346,12 +346,12 @@ func findAssociatedIssue(body, org string) (int, error) {
 // - Iff all files have been approved, the bot will add the "approved" label.
 // - Iff a cancel command is found, that reviewer will be removed from the approverSet
 // 	and the munger will remove the approved label if it has been applied
-func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
 	fetchErr := func(context string, err error) error {
 		return fmt.Errorf("failed to get %s for %s/%s#%d: %v", context, pr.org, pr.repo, pr.number, err)
 	}
 
-	changes, err := ghc.GetPullRequestChanges(pr.org, pr.repo, pr.number)
+	changes, err := spc.GetPullRequestChanges(pr.org, pr.repo, pr.number)
 	if err != nil {
 		return fetchErr("PR file changes", err)
 	}
@@ -359,7 +359,7 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 	for _, change := range changes {
 		filenames = append(filenames, change.Path)
 	}
-	issueLabels, err := ghc.GetIssueLabels(pr.org, pr.repo, pr.number, true)
+	issueLabels, err := spc.GetIssueLabels(pr.org, pr.repo, pr.number, true)
 	if err != nil {
 		return fetchErr("issue labels", err)
 	}
@@ -370,19 +370,19 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 			break
 		}
 	}
-	botName, err := ghc.BotName()
+	botName, err := spc.BotName()
 	if err != nil {
 		return fetchErr("bot name", err)
 	}
-	issueComments, err := ghc.ListIssueComments(pr.org, pr.repo, pr.number)
+	issueComments, err := spc.ListIssueComments(pr.org, pr.repo, pr.number)
 	if err != nil {
 		return fetchErr("issue comments", err)
 	}
-	reviewComments, err := ghc.ListPullRequestComments(pr.org, pr.repo, pr.number)
+	reviewComments, err := spc.ListPullRequestComments(pr.org, pr.repo, pr.number)
 	if err != nil {
 		return fetchErr("review comments", err)
 	}
-	reviews, err := ghc.ListReviews(pr.org, pr.repo, pr.number)
+	reviews, err := spc.ListReviews(pr.org, pr.repo, pr.number)
 	if err != nil {
 		return fetchErr("reviews", err)
 	}
@@ -400,7 +400,7 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 		log.WithError(err).Errorf("Failed to find associated issue from PR body: %v", err)
 	}
 	approversHandler.RequireIssue = opts.IssueRequired
-	approversHandler.ManuallyApproved = humanAddedApproved(ghc, log, pr.org, pr.repo, pr.number, botName, hasApprovedLabel)
+	approversHandler.ManuallyApproved = humanAddedApproved(spc, log, pr.org, pr.repo, pr.number, botName, hasApprovedLabel)
 
 	// Author implicitly approves their own PR if config allows it
 	if opts.HasSelfApproval() {
@@ -428,35 +428,35 @@ func handle(log *logrus.Entry, ghc githubClient, repo approvers.Repo, githubConf
 	newMessage := updateNotification(githubConfig.LinkURL, pr.org, pr.repo, pr.branch, latestNotification, approversHandler)
 	if newMessage != nil {
 		for _, notif := range notifications {
-			if err := ghc.DeleteComment(pr.org, pr.repo, pr.number, notif.ID, true); err != nil {
+			if err := spc.DeleteComment(pr.org, pr.repo, pr.number, notif.ID, true); err != nil {
 				log.WithError(err).Errorf("Failed to delete comment from %s/%s#%d, ID: %d.", pr.org, pr.repo, pr.number, notif.ID)
 			}
 		}
-		if err := ghc.CreateComment(pr.org, pr.repo, pr.number, true, *newMessage); err != nil {
+		if err := spc.CreateComment(pr.org, pr.repo, pr.number, true, *newMessage); err != nil {
 			log.WithError(err).Errorf("Failed to create comment on %s/%s#%d: %q.", pr.org, pr.repo, pr.number, *newMessage)
 		}
 	}
 
 	if !approversHandler.IsApproved() {
 		if hasApprovedLabel {
-			if err := ghc.RemoveLabel(pr.org, pr.repo, pr.number, labels.Approved, true); err != nil {
+			if err := spc.RemoveLabel(pr.org, pr.repo, pr.number, labels.Approved, true); err != nil {
 				log.WithError(err).Errorf("Failed to remove %q label from %s/%s#%d.", labels.Approved, pr.org, pr.repo, pr.number)
 			}
 		}
 	} else if !hasApprovedLabel {
-		if err := ghc.AddLabel(pr.org, pr.repo, pr.number, labels.Approved, true); err != nil {
+		if err := spc.AddLabel(pr.org, pr.repo, pr.number, labels.Approved, true); err != nil {
 			log.WithError(err).Errorf("Failed to add %q label to %s/%s#%d.", labels.Approved, pr.org, pr.repo, pr.number)
 		}
 	}
 	return nil
 }
 
-func humanAddedApproved(ghc githubClient, log *logrus.Entry, org, repo string, number int, botName string, hasLabel bool) func() bool {
+func humanAddedApproved(spc scmProviderClient, log *logrus.Entry, org, repo string, number int, botName string, hasLabel bool) func() bool {
 	findOut := func() bool {
 		if !hasLabel {
 			return false
 		}
-		events, err := ghc.ListIssueEvents(org, repo, number)
+		events, err := spc.ListIssueEvents(org, repo, number)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to list issue events for %s/%s#%d.", org, repo, number)
 			return false

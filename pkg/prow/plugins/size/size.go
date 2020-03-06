@@ -67,11 +67,11 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
-	return handlePR(pc.GitHubClient, sizesOrDefault(pc.PluginConfig.Size), pc.Logger, pe)
+	return handlePR(pc.SCMProviderClient, sizesOrDefault(pc.PluginConfig.Size), pc.Logger, pe)
 }
 
 // Strict subset of gitprovider.Client methods.
-type githubClient interface {
+type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
@@ -79,7 +79,7 @@ type githubClient interface {
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 }
 
-func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.PullRequestHook) error {
+func handlePR(spc scmProviderClient, sizes plugins.Size, le *logrus.Entry, pe scm.PullRequestHook) error {
 	if !isPRChanged(pe) {
 		return nil
 	}
@@ -91,7 +91,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		sha   = pe.PullRequest.Base.Sha
 	)
 
-	gf, err := genfiles.NewGroup(gc, owner, repo, sha)
+	gf, err := genfiles.NewGroup(spc, owner, repo, sha)
 	if err != nil {
 		switch err.(type) {
 		case *genfiles.ParseError:
@@ -102,12 +102,12 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		}
 	}
 
-	ga, err := gitattributes.NewGroup(func() ([]byte, error) { return gc.GetFile(owner, repo, ".gitattributes", sha) })
+	ga, err := gitattributes.NewGroup(func() ([]byte, error) { return spc.GetFile(owner, repo, ".gitattributes", sha) })
 	if err != nil {
 		return err
 	}
 
-	changes, err := gc.GetPullRequestChanges(owner, repo, num)
+	changes, err := spc.GetPullRequestChanges(owner, repo, num)
 	if err != nil {
 		return fmt.Errorf("can not get PR changes for size plugin: %v", err)
 	}
@@ -122,7 +122,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		count += change.Additions + change.Deletions
 	}
 
-	labels, err := gc.GetIssueLabels(owner, repo, num, true)
+	labels, err := spc.GetIssueLabels(owner, repo, num, true)
 	if err != nil {
 		le.Warnf("while retrieving labels, error: %v", err)
 	}
@@ -137,7 +137,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		}
 
 		if strings.HasPrefix(label.Name, labelPrefix) {
-			if err := gc.RemoveLabel(owner, repo, num, label.Name, true); err != nil {
+			if err := spc.RemoveLabel(owner, repo, num, label.Name, true); err != nil {
 				le.Warnf("error while removing label %q: %v", label.Name, err)
 			}
 		}
@@ -147,7 +147,7 @@ func handlePR(gc githubClient, sizes plugins.Size, le *logrus.Entry, pe scm.Pull
 		return nil
 	}
 
-	if err := gc.AddLabel(owner, repo, num, newLabel, true); err != nil {
+	if err := spc.AddLabel(owner, repo, num, newLabel, true); err != nil {
 		return fmt.Errorf("error adding label to %s/%s PR #%d: %v", owner, repo, num, err)
 	}
 
