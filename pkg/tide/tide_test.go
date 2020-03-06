@@ -81,7 +81,7 @@ func TestAccumulateBatch(t *testing.T) {
 		number int
 		sha    string
 	}
-	type prowjob struct {
+	type activity struct {
 		prs   []pull
 		job   string
 		state plumber.PipelineState
@@ -90,7 +90,7 @@ func TestAccumulateBatch(t *testing.T) {
 		name             string
 		presubmits       map[int][]config.Presubmit
 		pulls            []pull
-		prowJobs         []prowjob
+		activities       []activity
 		combinedContexts map[string]map[string]commitStatus
 
 		merges  []int
@@ -105,21 +105,21 @@ func TestAccumulateBatch(t *testing.T) {
 				1: {{Reporter: config.Reporter{Context: "foo"}}},
 				2: {{Reporter: config.Reporter{Context: "foo"}}},
 			},
-			pulls:    []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
-			pending:  true,
+			pulls:      []pull{{1, "a"}, {2, "b"}},
+			activities: []activity{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
+			pending:    true,
 		},
 		{
 			name:       "pending batch missing presubmits is ignored",
 			presubmits: map[int][]config.Presubmit{1: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs:   []prowjob{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
+			activities: []activity{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
 		},
 		{
 			name:       "batch pending, successful previous run",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}}},
@@ -134,7 +134,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "successful run",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
@@ -145,7 +145,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "successful run, multiple PRs",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
@@ -156,7 +156,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "failure in run but overridden, multiple PRs",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
@@ -175,7 +175,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "successful run, failures in past",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
@@ -189,7 +189,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "failures",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
@@ -200,7 +200,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "missing job required by one PR",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: append(jobSet, config.Presubmit{Reporter: config.Reporter{Context: "boo"}})},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
@@ -210,7 +210,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "successful run with PR that requires additional job",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: append(jobSet, config.Presubmit{Reporter: config.Reporter{Context: "boo"}})},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
@@ -227,7 +227,7 @@ func TestAccumulateBatch(t *testing.T) {
 			name:       "pending batch with PR that left pool, successful previous run",
 			presubmits: map[int][]config.Presubmit{2: jobSet},
 			pulls:      []pull{{2, "b"}},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}},
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
@@ -249,7 +249,7 @@ func TestAccumulateBatch(t *testing.T) {
 				pulls = append(pulls, pr)
 			}
 			var pjs []plumber.PipelineOptions
-			for _, pj := range test.prowJobs {
+			for _, pj := range test.activities {
 				npj := plumber.PipelineOptions{
 					Spec: plumber.PipelineOptionsSpec{
 						Job:     pj.job,
@@ -289,7 +289,7 @@ func TestAccumulate(t *testing.T) {
 			},
 		},
 	}
-	type prowjob struct {
+	type activity struct {
 		prNumber int
 		job      string
 		state    plumber.PipelineState
@@ -299,7 +299,7 @@ func TestAccumulate(t *testing.T) {
 		name             string
 		presubmits       map[int][]config.Presubmit
 		pullRequests     map[int]string
-		prowJobs         []prowjob
+		activities       []activity
 		combinedContexts map[string]map[string]commitStatus
 
 		successes []int
@@ -318,7 +318,7 @@ func TestAccumulate(t *testing.T) {
 				6: jobSet,
 				7: jobSet,
 			},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{2, "job1", plumber.PendingState, "sha2"},
 				{2, "job2", plumber.FailureState, "sha2"},
 				{3, "job1", plumber.PendingState, "sha3"},
@@ -358,7 +358,7 @@ func TestAccumulate(t *testing.T) {
 					{Reporter: config.Reporter{Context: "job4"}},
 				},
 			},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{7, "job1", plumber.SuccessState, ""},
 				{7, "job2", plumber.FailureState, ""},
 				{7, "job3", plumber.FailureState, ""},
@@ -385,7 +385,7 @@ func TestAccumulate(t *testing.T) {
 					{Reporter: config.Reporter{Context: "job4"}},
 				},
 			},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{7, "job1", plumber.FailureState, ""},
 				{7, "job2", plumber.FailureState, ""},
 				{7, "job3", plumber.FailureState, ""},
@@ -412,7 +412,7 @@ func TestAccumulate(t *testing.T) {
 					{Reporter: config.Reporter{Context: "job4"}},
 				},
 			},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{7, "job1", plumber.SuccessState, ""},
 				{7, "job2", plumber.FailureState, ""},
 				{7, "job3", plumber.FailureState, ""},
@@ -440,7 +440,7 @@ func TestAccumulate(t *testing.T) {
 					{Reporter: config.Reporter{Context: "job4"}},
 				},
 			},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{7, "job1", plumber.SuccessState, ""},
 				{7, "job2", plumber.FailureState, ""},
 				{7, "job3", plumber.FailureState, ""},
@@ -465,7 +465,7 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			pullRequests: map[int]string{7: "new", 8: "new"},
-			prowJobs: []prowjob{
+			activities: []activity{
 				{7, "job1", plumber.SuccessState, "old"},
 				{7, "job1", plumber.FailureState, "new"},
 				{8, "job1", plumber.FailureState, "old"},
@@ -479,7 +479,7 @@ func TestAccumulate(t *testing.T) {
 		{
 			name:         "two PRs, no jobs, all success",
 			pullRequests: map[int]string{7: "new", 8: "new"},
-			prowJobs:     []prowjob{},
+			activities:   []activity{},
 
 			successes: []int{8, 7},
 			pendings:  []int{},
@@ -498,7 +498,7 @@ func TestAccumulate(t *testing.T) {
 				)
 			}
 			var pjs []plumber.PipelineOptions
-			for _, pj := range test.prowJobs {
+			for _, pj := range test.activities {
 				pjs = append(pjs, plumber.PipelineOptions{
 					Spec: plumber.PipelineOptionsSpec{
 						Job:     pj.job,
@@ -1369,7 +1369,7 @@ func TestTakeAction(t *testing.T) {
 				gc:            gc,
 				config:        ca.Config,
 				spc:           &fgc,
-				prowJobClient: fakePlumberClient,
+				plumberClient: fakePlumberClient,
 			}
 			var batchPending []PullRequest
 			if tc.batchPending {
@@ -1386,15 +1386,15 @@ func TestTakeAction(t *testing.T) {
 
 			numCreated := 0
 			var batchJobs []*plumber.PipelineOptions
-			for _, prowJob := range fakePlumberClient.Pipelines {
-				pjSha := prowJob.Spec.Refs.Pulls[0].SHA
-				if scm.StatePending.String() != fgc.combinedStatus[pjSha][prowJob.Spec.Context].status {
-					t.Errorf("Status not set to %s for context %s, is %s instead", scm.StatePending.String(), prowJob.Spec.Context,
-						fgc.combinedStatus[pjSha][prowJob.Spec.Context].status)
+			for _, activity := range fakePlumberClient.Pipelines {
+				pjSha := activity.Spec.Refs.Pulls[0].SHA
+				if scm.StatePending.String() != fgc.combinedStatus[pjSha][activity.Spec.Context].status {
+					t.Errorf("Status not set to %s for context %s, is %s instead", scm.StatePending.String(), activity.Spec.Context,
+						fgc.combinedStatus[pjSha][activity.Spec.Context].status)
 				}
 				numCreated++
-				if prowJob.Spec.Type == plumber.BatchJob {
-					batchJobs = append(batchJobs, prowJob)
+				if activity.Spec.Type == plumber.BatchJob {
+					batchJobs = append(batchJobs, activity)
 				}
 			}
 			if tc.triggered != numCreated {
@@ -1670,7 +1670,7 @@ func TestSync(t *testing.T) {
 		c := &DefaultController{
 			config:        ca.Config,
 			spc:           fgc,
-			prowJobClient: fakePlumberClient,
+			plumberClient: fakePlumberClient,
 			tektonClient:  fakeTektonClient,
 			ns:            "jx",
 			logger:        logrus.WithField("controller", "sync"),
