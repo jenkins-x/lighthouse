@@ -199,6 +199,7 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 			Context:        spec.Context,
 			RerunCommand:   "",
 			MaxConcurrency: 0,
+			LastCommitSHA:  spec.LastCommitSHA,
 		},
 		Status: PipelineStatus{State: ToPipelineState(spec.Status)},
 	}

@@ -87,10 +87,11 @@ func TestAccumulateBatch(t *testing.T) {
 		state plumber.PipelineState
 	}
 	tests := []struct {
-		name       string
-		presubmits map[int][]config.Presubmit
-		pulls      []pull
-		prowJobs   []prowjob
+		name             string
+		presubmits       map[int][]config.Presubmit
+		pulls            []pull
+		prowJobs         []prowjob
+		combinedContexts map[string]map[string]commitStatus
 
 		merges  []int
 		pending bool
@@ -148,6 +149,25 @@ func TestAccumulateBatch(t *testing.T) {
 				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+			},
+			merges: []int{1, 2},
+		},
+		{
+			name:       "failure in run but overridden, multiple PRs",
+			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
+			pulls:      []pull{{1, "a"}, {2, "b"}},
+			prowJobs: []prowjob{
+				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+			},
+			combinedContexts: map[string]map[string]commitStatus{
+				"a": {
+					"bar": toCommitStatus("success", "Overridden by someone"),
+				},
+				"b": {
+					"bar": toCommitStatus("success", "Overridden by someone"),
+				},
 			},
 			merges: []int{1, 2},
 		},
@@ -218,38 +238,41 @@ func TestAccumulateBatch(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		var pulls []PullRequest
-		for _, p := range test.pulls {
-			pr := PullRequest{
-				Number:     githubql.Int(p.number),
-				HeadRefOID: githubql.String(p.sha),
+		t.Run(test.name, func(t *testing.T) {
+			fgc := &fgc{ignoreExpected: true, combinedStatus: test.combinedContexts}
+			var pulls []PullRequest
+			for _, p := range test.pulls {
+				pr := PullRequest{
+					Number:     githubql.Int(p.number),
+					HeadRefOID: githubql.String(p.sha),
+				}
+				pulls = append(pulls, pr)
 			}
-			pulls = append(pulls, pr)
-		}
-		var pjs []plumber.PipelineOptions
-		for _, pj := range test.prowJobs {
-			npj := plumber.PipelineOptions{
-				Spec: plumber.PipelineOptionsSpec{
-					Job:     pj.job,
-					Context: pj.job,
-					Type:    plumber.BatchJob,
-					Refs:    new(plumber.Refs),
-				},
-				Status: plumber.PipelineStatus{State: pj.state},
+			var pjs []plumber.PipelineOptions
+			for _, pj := range test.prowJobs {
+				npj := plumber.PipelineOptions{
+					Spec: plumber.PipelineOptionsSpec{
+						Job:     pj.job,
+						Context: pj.job,
+						Type:    plumber.BatchJob,
+						Refs:    new(plumber.Refs),
+					},
+					Status: plumber.PipelineStatus{State: pj.state},
+				}
+				for _, pr := range pj.prs {
+					npj.Spec.Refs.Pulls = append(npj.Spec.Refs.Pulls, plumber.Pull{
+						Number: pr.number,
+						SHA:    pr.sha,
+					})
+				}
+				pjs = append(pjs, npj)
 			}
-			for _, pr := range pj.prs {
-				npj.Spec.Refs.Pulls = append(npj.Spec.Refs.Pulls, plumber.Pull{
-					Number: pr.number,
-					SHA:    pr.sha,
-				})
+			merges, pending := accumulateBatch(test.presubmits, pulls, pjs, fgc, logrus.NewEntry(logrus.New()))
+			if (len(pending) > 0) != test.pending {
+				t.Errorf("For case \"%s\", got wrong pending.", test.name)
 			}
-			pjs = append(pjs, npj)
-		}
-		merges, pending := accumulateBatch(test.presubmits, pulls, pjs, logrus.NewEntry(logrus.New()))
-		if (len(pending) > 0) != test.pending {
-			t.Errorf("For case \"%s\", got wrong pending.", test.name)
-		}
-		testPullsMatchList(t, test.name, merges, test.merges)
+			testPullsMatchList(t, test.name, merges, test.merges)
+		})
 	}
 }
 
@@ -273,16 +296,19 @@ func TestAccumulate(t *testing.T) {
 		sha      string
 	}
 	tests := []struct {
-		presubmits   map[int][]config.Presubmit
-		pullRequests map[int]string
-		prowJobs     []prowjob
+		name             string
+		presubmits       map[int][]config.Presubmit
+		pullRequests     map[int]string
+		prowJobs         []prowjob
+		combinedContexts map[string]map[string]commitStatus
 
 		successes []int
 		pendings  []int
 		none      []int
 	}{
 		{
-			pullRequests: map[int]string{1: "", 2: "", 3: "", 4: "", 5: "", 6: "", 7: ""},
+			name:         "seven PRs, two jobs, with an overridden context and an unrelated success context",
+			pullRequests: map[int]string{1: "sha1", 2: "sha2", 3: "sha3", 4: "sha4", 5: "sha5", 6: "sha6", 7: "sha7"},
 			presubmits: map[int][]config.Presubmit{
 				1: jobSet,
 				2: jobSet,
@@ -293,26 +319,36 @@ func TestAccumulate(t *testing.T) {
 				7: jobSet,
 			},
 			prowJobs: []prowjob{
-				{2, "job1", plumber.PendingState, ""},
-				{3, "job1", plumber.PendingState, ""},
-				{3, "job2", plumber.TriggeredState, ""},
-				{4, "job1", plumber.FailureState, ""},
-				{4, "job2", plumber.PendingState, ""},
-				{5, "job1", plumber.PendingState, ""},
-				{5, "job2", plumber.FailureState, ""},
-				{5, "job2", plumber.PendingState, ""},
-				{6, "job1", plumber.SuccessState, ""},
-				{6, "job2", plumber.PendingState, ""},
-				{7, "job1", plumber.SuccessState, ""},
-				{7, "job2", plumber.SuccessState, ""},
-				{7, "job1", plumber.FailureState, ""},
+				{2, "job1", plumber.PendingState, "sha2"},
+				{2, "job2", plumber.FailureState, "sha2"},
+				{3, "job1", plumber.PendingState, "sha3"},
+				{3, "job2", plumber.TriggeredState, "sha3"},
+				{4, "job1", plumber.FailureState, "sha4"},
+				{4, "job2", plumber.PendingState, "sha4"},
+				{5, "job1", plumber.PendingState, "sha5"},
+				{5, "job2", plumber.FailureState, "sha5"},
+				{5, "job2", plumber.PendingState, "sha5"},
+				{6, "job1", plumber.SuccessState, "sha6"},
+				{6, "job2", plumber.PendingState, "sha6"},
+				{7, "job1", plumber.SuccessState, "sha7"},
+				{7, "job2", plumber.SuccessState, "sha7"},
+				{7, "job1", plumber.FailureState, "sha7"},
+			},
+			combinedContexts: map[string]map[string]commitStatus{
+				"sha2": {
+					"job2": toCommitStatus("success", "Some other message"),
+				},
+				"sha4": {
+					"job1": toCommitStatus("success", "Overridden by someone"),
+				},
 			},
 
 			successes: []int{7},
-			pendings:  []int{3, 5, 6},
-			none:      []int{1, 2, 4},
+			pendings:  []int{3, 4, 5, 6},
+			none:      []int{1, 2},
 		},
 		{
+			name:         "one PR, four jobs, mix of failures and success",
 			pullRequests: map[int]string{7: ""},
 			presubmits: map[int][]config.Presubmit{
 				7: {
@@ -339,6 +375,7 @@ func TestAccumulate(t *testing.T) {
 			none:      []int{7},
 		},
 		{
+			name:         "one PR, four jobs, all failure",
 			pullRequests: map[int]string{7: ""},
 			presubmits: map[int][]config.Presubmit{
 				7: {
@@ -365,6 +402,7 @@ func TestAccumulate(t *testing.T) {
 			none:      []int{7},
 		},
 		{
+			name:         "one PR, four jobs, latest all succeed",
 			pullRequests: map[int]string{7: ""},
 			presubmits: map[int][]config.Presubmit{
 				7: {
@@ -392,6 +430,7 @@ func TestAccumulate(t *testing.T) {
 			none:      []int{},
 		},
 		{
+			name:         "one PR, four jobs, one is pending",
 			pullRequests: map[int]string{7: ""},
 			presubmits: map[int][]config.Presubmit{
 				7: {
@@ -419,6 +458,7 @@ func TestAccumulate(t *testing.T) {
 			none:      []int{},
 		},
 		{
+			name: "two PRs, one job, one success and one failure",
 			presubmits: map[int][]config.Presubmit{
 				7: {
 					{Reporter: config.Reporter{Context: "job1"}},
@@ -437,6 +477,7 @@ func TestAccumulate(t *testing.T) {
 			none:      []int{7},
 		},
 		{
+			name:         "two PRs, no jobs, all success",
 			pullRequests: map[int]string{7: "new", 8: "new"},
 			prowJobs:     []prowjob{},
 
@@ -447,32 +488,35 @@ func TestAccumulate(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		var pulls []PullRequest
-		for num, sha := range test.pullRequests {
-			pulls = append(
-				pulls,
-				PullRequest{Number: githubql.Int(num), HeadRefOID: githubql.String(sha)},
-			)
-		}
-		var pjs []plumber.PipelineOptions
-		for _, pj := range test.prowJobs {
-			pjs = append(pjs, plumber.PipelineOptions{
-				Spec: plumber.PipelineOptionsSpec{
-					Job:     pj.job,
-					Context: pj.job,
-					Type:    plumber.PresubmitJob,
-					Refs:    &plumber.Refs{Pulls: []plumber.Pull{{Number: pj.prNumber, SHA: pj.sha}}},
-				},
-				Status: plumber.PipelineStatus{State: pj.state},
-			})
-		}
+		t.Run(test.name, func(t *testing.T) {
+			fgc := &fgc{ignoreExpected: true, combinedStatus: test.combinedContexts}
+			var pulls []PullRequest
+			for num, sha := range test.pullRequests {
+				pulls = append(
+					pulls,
+					PullRequest{Number: githubql.Int(num), HeadRefOID: githubql.String(sha)},
+				)
+			}
+			var pjs []plumber.PipelineOptions
+			for _, pj := range test.prowJobs {
+				pjs = append(pjs, plumber.PipelineOptions{
+					Spec: plumber.PipelineOptionsSpec{
+						Job:     pj.job,
+						Context: pj.job,
+						Type:    plumber.PresubmitJob,
+						Refs:    &plumber.Refs{Pulls: []plumber.Pull{{Number: pj.prNumber, SHA: pj.sha}}},
+					},
+					Status: plumber.PipelineStatus{State: pj.state},
+				})
+			}
 
-		successes, pendings, nones, _ := accumulate(test.presubmits, pulls, pjs, logrus.NewEntry(logrus.New()))
+			successes, pendings, nones, _ := accumulate(test.presubmits, pulls, pjs, fgc, logrus.NewEntry(logrus.New()))
 
-		t.Logf("test run %d", i)
-		testPullsMatchList(t, "successes", successes, test.successes)
-		testPullsMatchList(t, "pendings", pendings, test.pendings)
-		testPullsMatchList(t, "nones", nones, test.none)
+			t.Logf("test run %d", i)
+			testPullsMatchList(t, "successes", successes, test.successes)
+			testPullsMatchList(t, "pendings", pendings, test.pendings)
+			testPullsMatchList(t, "nones", nones, test.none)
+		})
 	}
 }
 
@@ -484,7 +528,20 @@ type fgc struct {
 	mergeErrs map[int]error
 
 	expectedSHA    string
-	combinedStatus map[string]string
+	ignoreExpected bool
+	combinedStatus map[string]map[string]commitStatus
+}
+
+type commitStatus struct {
+	status      string
+	description string
+}
+
+func toCommitStatus(s string, d string) commitStatus {
+	return commitStatus{
+		status:      s,
+		description: d,
+	}
 }
 
 func (f *fgc) GetRef(o, r, ref string) (string, error) {
@@ -525,12 +582,16 @@ func (f *fgc) CreateGraphQLStatus(org, repo, ref string, s *github.Status) (*scm
 }
 
 func (f *fgc) GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error) {
-	if f.expectedSHA != ref {
+	if !f.ignoreExpected && f.expectedSHA != ref {
 		return nil, errors.New("bad combined status request: incorrect sha")
 	}
 	var statuses []*scm.Status
-	for c, s := range f.combinedStatus {
-		statuses = append(statuses, &scm.Status{Label: c, State: scm.ToState(s)})
+	for c, s := range f.combinedStatus[ref] {
+		statuses = append(statuses, &scm.Status{
+			Label: c,
+			State: scm.ToState(s.status),
+			Desc:  s.description,
+		})
 	}
 	return &scm.CombinedStatus{
 			Statuses: statuses,
@@ -543,9 +604,12 @@ func (f *fgc) CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Stat
 		return nil, errors.New("injected CreateStatus failure")
 	}
 	if f.combinedStatus == nil {
-		f.combinedStatus = make(map[string]string)
+		f.combinedStatus = make(map[string]map[string]commitStatus)
 	}
-	f.combinedStatus[s.Label] = s.State.String()
+	if f.combinedStatus[ref] == nil {
+		f.combinedStatus[ref] = make(map[string]commitStatus)
+	}
+	f.combinedStatus[ref][s.Label] = toCommitStatus(s.State.String(), "")
 	return scm.ConvertStatusInputToStatus(s), nil
 }
 
@@ -1323,9 +1387,10 @@ func TestTakeAction(t *testing.T) {
 			numCreated := 0
 			var batchJobs []*plumber.PipelineOptions
 			for _, prowJob := range fakePlumberClient.Pipelines {
-				if scm.StatePending.String() != fgc.combinedStatus[prowJob.Spec.Context] {
+				pjSha := prowJob.Spec.Refs.Pulls[0].SHA
+				if scm.StatePending.String() != fgc.combinedStatus[pjSha][prowJob.Spec.Context].status {
 					t.Errorf("Status not set to %s for context %s, is %s instead", scm.StatePending.String(), prowJob.Spec.Context,
-						fgc.combinedStatus[prowJob.Spec.Context])
+						fgc.combinedStatus[pjSha][prowJob.Spec.Context].status)
 				}
 				numCreated++
 				if prowJob.Spec.Type == plumber.BatchJob {
@@ -1431,7 +1496,7 @@ func TestHeadContexts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Logf("Running test case %q", tc.name)
-		fgc := &fgc{combinedStatus: map[string]string{win: string(githubql.StatusStateSuccess)}}
+		fgc := &fgc{combinedStatus: map[string]map[string]commitStatus{headSHA: {win: toCommitStatus(string(githubql.StatusStateSuccess), "")}}}
 		if tc.expectAPICall {
 			fgc.expectedSHA = headSHA
 		}
@@ -1978,17 +2043,17 @@ func TestIsPassing(t *testing.T) {
 		name             string
 		passing          bool
 		config           config.TideContextPolicy
-		combinedContexts map[string]string
+		combinedContexts map[string]commitStatus
 	}{
 		{
 			name:             "empty policy - success (trust combined status)",
 			passing:          true,
-			combinedContexts: map[string]string{"c1": success, "c2": success, statusContext: failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), statusContext: toCommitStatus(failure, "")},
 		},
 		{
 			name:             "empty policy - failure because of failed context c4 (trust combined status)",
 			passing:          false,
-			combinedContexts: map[string]string{"c1": success, "c2": success, "c3": failure, statusContext: failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(failure, ""), statusContext: toCommitStatus(failure, "")},
 		},
 		{
 			name:    "passing (trust combined status)",
@@ -1997,7 +2062,7 @@ func TestIsPassing(t *testing.T) {
 				RequiredContexts:    []string{"c1", "c2", "c3"},
 				SkipUnknownContexts: &no,
 			},
-			combinedContexts: map[string]string{"c1": success, "c2": success, "c3": success, statusContext: failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), statusContext: toCommitStatus(failure, "")},
 		},
 		{
 			name:    "failing because of missing required check c3",
@@ -2005,12 +2070,12 @@ func TestIsPassing(t *testing.T) {
 			config: config.TideContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 			},
-			combinedContexts: map[string]string{"c1": success, "c2": success, statusContext: failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), statusContext: toCommitStatus(failure, "")},
 		},
 		{
 			name:             "failing because of failed context c2",
 			passing:          false,
-			combinedContexts: map[string]string{"c1": success, "c2": failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(failure, "")},
 			config: config.TideContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 				OptionalContexts: []string{"c4"},
@@ -2020,7 +2085,7 @@ func TestIsPassing(t *testing.T) {
 			name:    "passing because of failed context c4 is optional",
 			passing: true,
 
-			combinedContexts: map[string]string{"c1": success, "c2": success, "c3": success, "c4": failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, "")},
 			config: config.TideContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 				OptionalContexts: []string{"c4"},
@@ -2033,12 +2098,12 @@ func TestIsPassing(t *testing.T) {
 				RequiredContexts:    []string{"c1", "c2", "c3"},
 				SkipUnknownContexts: &yes,
 			},
-			combinedContexts: map[string]string{"c1": success, "c2": success, statusContext: failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), statusContext: toCommitStatus(failure, "")},
 		},
 		{
 			name:             "skipping unknown contexts - failing because c2 is failing",
 			passing:          false,
-			combinedContexts: map[string]string{"c1": success, "c2": failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(failure, "")},
 			config: config.TideContextPolicy{
 				RequiredContexts:    []string{"c1", "c2"},
 				OptionalContexts:    []string{"c4"},
@@ -2048,7 +2113,7 @@ func TestIsPassing(t *testing.T) {
 		{
 			name:             "skipping unknown contexts - passing because c4 is optional",
 			passing:          true,
-			combinedContexts: map[string]string{"c1": success, "c2": success, "c3": success, "c4": failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, "")},
 			config: config.TideContextPolicy{
 				RequiredContexts:    []string{"c1", "c3"},
 				OptionalContexts:    []string{"c4"},
@@ -2059,7 +2124,7 @@ func TestIsPassing(t *testing.T) {
 			name:    "skipping unknown contexts - passing because c4 is optional and c5 is unknown",
 			passing: true,
 
-			combinedContexts: map[string]string{"c1": success, "c2": success, "c3": success, "c4": failure, "c5": failure},
+			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, ""), "c5": toCommitStatus(failure, "")},
 			config: config.TideContextPolicy{
 				RequiredContexts:    []string{"c1", "c3"},
 				OptionalContexts:    []string{"c4"},
@@ -2070,7 +2135,7 @@ func TestIsPassing(t *testing.T) {
 
 	for _, tc := range testCases {
 		ghc := &fgc{
-			combinedStatus: tc.combinedContexts,
+			combinedStatus: map[string]map[string]commitStatus{headSHA: tc.combinedContexts},
 			expectedSHA:    headSHA}
 		log := logrus.WithField("component", "tide")
 		_, err := log.String()
@@ -2692,7 +2757,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 	log := logrus.NewEntry(logrus.New())
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, _, missingSerialTests := accumulate(tc.presubmits, tc.prs, tc.pjs, log)
+			_, _, _, missingSerialTests := accumulate(tc.presubmits, tc.prs, tc.pjs, &fgc{}, log)
 			// Apiequality treats nil slices/maps equal to a zero length slice/map, keeping us from
 			// the burden of having to always initialize them
 			if !apiequality.Semantic.DeepEqual(tc.expectedPresubmits, missingSerialTests) {

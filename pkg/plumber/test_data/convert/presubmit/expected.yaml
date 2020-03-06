@@ -19,6 +19,7 @@ metadata:
 spec:
   context: pr-build
   job: jstrachan/godemo25/PR-1
+  lastCommitSHA: 49e54b4ab808d780fd86abb25dc725112b6fd9ee
   namespace: jx
   refs:
     base_ref: master
