@@ -114,6 +114,8 @@ type PipelineOptionsSpec struct {
 	// MaxConcurrency restricts the total number of instances
 	// of this job that can run in parallel at once
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
+	// LastCommitSHA is the commit that will be/has been reported to on the SCM provider
+	LastCommitSHA string `json:"lastCommitSHA,omitempty"`
 }
 
 // GetEnvVars gets a map of the environment variables we'll set in the pipeline for this spec.

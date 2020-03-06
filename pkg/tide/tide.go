@@ -572,6 +572,17 @@ const (
 	successState simpleState = "success"
 )
 
+func githubqlStatusStateToSimpleState(gqlState githubql.StatusState) simpleState {
+	switch gqlState {
+	case githubql.StatusStateSuccess:
+		return successState
+	case githubql.StatusStateExpected, githubql.StatusStatePending:
+		return pendingState
+	default:
+		return failureState
+	}
+}
+
 func toSimpleState(s plumber.PipelineState) simpleState {
 	if s == plumber.TriggeredState || s == plumber.PendingState || s == plumber.RunningState {
 		return pendingState
@@ -643,7 +654,7 @@ func pickSmallestPassingNumber(log *logrus.Entry, ghc githubClient, prs []PullRe
 // accumulateBatch returns a list of PRs that can be merged after passing batch
 // testing, if any exist. It also returns a list of PRs currently being batch
 // tested.
-func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []plumber.PipelineOptions, log *logrus.Entry) ([]PullRequest, []PullRequest) {
+func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []plumber.PipelineOptions, ghc githubClient, log *logrus.Entry) ([]PullRequest, []PullRequest) {
 	log.Debug("accumulating PRs for batch testing")
 	if len(presubmits) == 0 {
 		log.Debug("no presubmits configured, no batch can be triggered")
@@ -695,6 +706,23 @@ func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, p
 		// Batch job refs are valid. Now accumulate job states by batch ref.
 		context := pj.Spec.Context
 		jobState := toSimpleState(pj.Status.State)
+
+		// Check for possible override cases by looking for the PR with the PJ's lastCommitSHA and checking its statuses.
+		for _, pr := range states[ref].prs {
+			if prHeadIsInPJPulls(pr, pj) {
+				contextStatuses, err := headContexts(log, ghc, &pr)
+				if err != nil {
+					log.WithError(err).Error("Error getting head contexts, solely using PJs for status")
+				}
+				// Iterate over contexts and reset the job state if the context matches and is overridden.
+				for _, contextInfo := range contextStatuses {
+					if string(contextInfo.Context) == context {
+						jobState = commitStatusOrPJStatusForContext(contextInfo, jobState)
+					}
+				}
+			}
+		}
+
 		// Store the best result for this ref+context.
 		if s, ok := states[ref].jobStates[context]; !ok || s == failureState || jobState == successState {
 			states[ref].jobStates[context] = jobState
@@ -733,12 +761,27 @@ func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, p
 	return successBatch, pendingBatch
 }
 
+// prHeadIsInPJPulls checks to see if the given pull request's head sha is one of the pull shas in the job.
+func prHeadIsInPJPulls(pr PullRequest, pj plumber.PipelineOptions) bool {
+	for _, pull := range pj.Spec.Refs.Pulls {
+		if pull.SHA == string(pr.HeadRefOID) {
+			return true
+		}
+	}
+	return false
+}
+
 // accumulate returns the supplied PRs sorted into three buckets based on their
 // accumulated state across the presubmits.
-func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []plumber.PipelineOptions, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]config.Presubmit) {
+func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []plumber.PipelineOptions, ghc githubClient, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]config.Presubmit) {
 
 	missingTests = map[int][]config.Presubmit{}
 	for _, pr := range prs {
+		// Get the actual contexts for the HEAD of the PR as well, to deal with things like override.
+		contexts, err := headContexts(log, ghc, &pr)
+		if err != nil {
+			log.WithError(err).Error("Error getting head contexts, solely using PJs for status")
+		}
 		// Accumulate the best result for each job (Passing > Pending > Failing/Unknown)
 		// We can ignore the baseSHA here because the subPool only contains ProwJobs with the correct baseSHA
 		psStates := make(map[string]simpleState)
@@ -760,6 +803,13 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 				psStates[name] = newState
 			} else if oldState == pendingState && newState == successState {
 				psStates[name] = successState
+			}
+		}
+		// Iterate over the commit status contexts
+		for _, contextInfo := range contexts {
+			// If there's already a state recorded, see if it needs to be updated due to override.
+			if existingState, ok := psStates[string(contextInfo.Context)]; ok {
+				psStates[string(contextInfo.Context)] = commitStatusOrPJStatusForContext(contextInfo, existingState)
 			}
 		}
 		// The overall result for the PR is the worst of the best of all its
@@ -792,6 +842,17 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 		}
 	}
 	return
+}
+
+func commitStatusOrPJStatusForContext(contextInfo Context, existingStatus simpleState) simpleState {
+	// If the context status is success, the existing status is neither an empty string nor success, and the context
+	// status description starts with util.OverriddenByPrefix, let's overwrite the state for the context.
+	contextState := githubqlStatusStateToSimpleState(contextInfo.State)
+	if existingStatus != "" && contextState == successState && existingStatus != successState &&
+		strings.HasPrefix(string(contextInfo.Description), util.OverriddenByPrefix) {
+		return contextState
+	}
+	return existingStatus
 }
 
 func prNumbers(prs []PullRequest) []int {
@@ -1245,8 +1306,8 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]config.Pres
 
 func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, error) {
 	sp.log.Infof("Syncing subpool: %d PRs, %d PJs.", len(sp.prs), len(sp.pjs))
-	successes, pendings, missings, missingSerialTests := accumulate(sp.presubmits, sp.prs, sp.pjs, sp.log)
-	batchMerge, batchPending := accumulateBatch(sp.presubmits, sp.prs, sp.pjs, sp.log)
+	successes, pendings, missings, missingSerialTests := accumulate(sp.presubmits, sp.prs, sp.pjs, c.ghc, sp.log)
+	batchMerge, batchPending := accumulateBatch(sp.presubmits, sp.prs, sp.pjs, c.ghc, sp.log)
 	sp.log.WithFields(logrus.Fields{
 		"prs-passing":   prNumbers(successes),
 		"prs-pending":   prNumbers(pendings),

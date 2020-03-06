@@ -19,6 +19,7 @@ metadata:
 spec:
   context: promotion-build
   job: Abayer-UpperCase-Org/environment-lh-tide-rerun-dev/PR-6
+  lastCommitSHA: 6cf1b84eefb280171676f26dd43adf95a4a0b679
   namespace: jx
   refs:
     base_ref: master

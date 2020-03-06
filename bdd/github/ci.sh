@@ -85,7 +85,7 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests test-create-spring \
-    --tests test-quickstart-golang-http \
+    --tests test-lighthouse \
     --tests test-app-lifecycle
 
 bdd_result=$?

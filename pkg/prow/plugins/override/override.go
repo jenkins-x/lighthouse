@@ -24,6 +24,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -119,7 +120,7 @@ func authorized(gc githubClient, log *logrus.Entry, org, repo, user string) bool
 }
 
 func description(user string) string {
-	return fmt.Sprintf("Overridden by %s", user)
+	return fmt.Sprintf("%s %s", util.OverriddenByPrefix, user)
 }
 
 func formatList(list []string) string {
