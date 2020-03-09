@@ -9,7 +9,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
-	"github.com/jenkins-x/jx/pkg/util"
+	jxutil "github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/plumber"
@@ -18,6 +18,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/tide"
 	"github.com/jenkins-x/lighthouse/pkg/tide/history"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -77,7 +78,7 @@ func (g *gitHubAppTideController) Sync() error {
 			errs = append(errs, err)
 		}
 	}
-	return util.CombineErrors(errs...)
+	return jxutil.CombineErrors(errs...)
 }
 
 func (g *gitHubAppTideController) Shutdown() {
@@ -150,7 +151,7 @@ func (g *gitHubAppTideController) createOwnerControllers() error {
 			g.controllers = append(g.controllers, c)
 		}
 	}
-	return util.CombineErrors(errs...)
+	return jxutil.CombineErrors(errs...)
 }
 
 func (g *gitHubAppTideController) createOwnerController(owner string, configGetter config.Getter) (tide.Controller, error) {
@@ -171,7 +172,7 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "creating git client")
 	}
-	gitClient.SetCredentials(g.botName, func() []byte {
+	gitClient.SetCredentials(util.GitHubAppGitRemoteUsername, func() []byte {
 		return []byte(token)
 	})
 	tektonClient, jxClient, _, ns, err := clients.GetClientsAndNamespace()
