@@ -135,10 +135,10 @@ func TestHandlePE(t *testing.T) {
 		g := &fakegitprovider.FakeClient{}
 		fakePlumberClient := fake.NewPlumber()
 		c := Client{
-			GitHubClient:  g,
-			PlumberClient: fakePlumberClient,
-			Config:        &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}},
-			Logger:        logrus.WithField("plugin", PluginName),
+			SCMProviderClient: g,
+			PlumberClient:     fakePlumberClient,
+			Config:            &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}},
+			Logger:            logrus.WithField("plugin", PluginName),
 		}
 		postsubmits := map[string][]config.Postsubmit{
 			"org/repo": {

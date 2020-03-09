@@ -328,14 +328,14 @@ func TestRunAndSkipJobs(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fakeGitHubClient := fakegitprovider.FakeClient{}
+			fakeSCMClient := fakegitprovider.FakeClient{}
 			fakePlumberClient := fake.NewPlumber()
 			fakePlumberClient.FailJobs = testCase.jobCreationErrs
 
 			client := Client{
-				GitHubClient:  &fakeGitHubClient,
-				PlumberClient: fakePlumberClient,
-				Logger:        logrus.WithField("testcase", testCase.name),
+				SCMProviderClient: &fakeSCMClient,
+				PlumberClient:     fakePlumberClient,
+				Logger:            logrus.WithField("testcase", testCase.name),
 			}
 
 			err := RunAndSkipJobs(client, pr, testCase.requestedJobs, testCase.skippedJobs, "event-guid", testCase.elideSkippedContexts)
@@ -346,7 +346,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 				t.Errorf("%s: expected no error but got one: %v", testCase.name, err)
 			}
 
-			if actual, expected := fakeGitHubClient.CreatedStatuses[pr.Head.Ref], testCase.expectedStatuses; !reflect.DeepEqual(actual, expected) {
+			if actual, expected := fakeSCMClient.CreatedStatuses[pr.Head.Ref], testCase.expectedStatuses; !reflect.DeepEqual(actual, expected) {
 				t.Errorf("%s: created incorrect statuses: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 			}
 
@@ -428,14 +428,14 @@ func TestRunRequested(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fakeGitHubClient := fakegitprovider.FakeClient{}
+			fakeSCMClient := fakegitprovider.FakeClient{}
 			fakePlumberClient := fake.NewPlumber()
 			fakePlumberClient.FailJobs = testCase.jobCreationErrs
 
 			client := Client{
-				GitHubClient:  &fakeGitHubClient,
-				PlumberClient: fakePlumberClient,
-				Logger:        logrus.WithField("testcase", testCase.name),
+				SCMProviderClient: &fakeSCMClient,
+				PlumberClient:     fakePlumberClient,
+				Logger:            logrus.WithField("testcase", testCase.name),
 			}
 
 			err := runRequested(client, pr, testCase.requestedJobs, "event-guid")

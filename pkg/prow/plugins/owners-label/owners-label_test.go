@@ -176,12 +176,12 @@ func TestHandle(t *testing.T) {
 		for _, name := range tc.filesChanged {
 			changes = append(changes, &scm.Change{Path: name})
 		}
-		fakeScmClient, fghc := fake.NewDefault()
+		fakeScmClient, fspc := fake.NewDefault()
 		fakeClient := gitprovider.ToTestClient(fakeScmClient)
 
-		fghc.PullRequests[basicPR.Number] = &basicPR
-		fghc.PullRequestChanges[basicPR.Number] = changes
-		fghc.RepoLabelsExisting = tc.repoLabels
+		fspc.PullRequests[basicPR.Number] = &basicPR
+		fspc.PullRequestChanges[basicPR.Number] = changes
+		fspc.RepoLabelsExisting = tc.repoLabels
 
 		// Add initial labels
 		for _, label := range tc.prLabels {
@@ -205,9 +205,9 @@ func TestHandle(t *testing.T) {
 			expectLabels = []string{}
 		}
 		sort.Strings(expectLabels)
-		sort.Strings(fghc.PullRequestLabelsAdded)
-		if !reflect.DeepEqual(expectLabels, fghc.PullRequestLabelsAdded) {
-			t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fghc.PullRequestLabelsAdded)
+		sort.Strings(fspc.PullRequestLabelsAdded)
+		if !reflect.DeepEqual(expectLabels, fspc.PullRequestLabelsAdded) {
+			t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fspc.PullRequestLabelsAdded)
 		}
 
 	}

@@ -54,14 +54,14 @@ type fakeRepoOwners struct {
 }
 
 type fakePruner struct {
-	GitHubClient        *fake.Data
+	SCMProviderClient   *fake.Data
 	PullRequestComments []*scm.Comment
 }
 
 func (fp *fakePruner) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool) {
 	for _, comment := range fp.PullRequestComments {
 		if shouldPrune(comment) {
-			fp.GitHubClient.PullRequestCommentsDeleted = append(fp.GitHubClient.PullRequestCommentsDeleted, comment.Body)
+			fp.SCMProviderClient.PullRequestCommentsDeleted = append(fp.SCMProviderClient.PullRequestCommentsDeleted, comment.Body)
 		}
 	}
 }
@@ -301,7 +301,7 @@ func TestLGTMComment(t *testing.T) {
 			StoreTreeHash: true,
 		})
 		fp := &fakePruner{
-			GitHubClient:        fc,
+			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
 		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
@@ -455,7 +455,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 		oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
 		pc := &plugins.Configuration{}
 		fp := &fakePruner{
-			GitHubClient:        fc,
+			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
 		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
@@ -652,7 +652,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 			StoreTreeHash: tc.storeTreeHash,
 		})
 		fp := &fakePruner{
-			GitHubClient:        fc,
+			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
 		if err := handlePullRequestReview(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
@@ -1103,7 +1103,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 
 	fc.PullRequestLabelsAdded = []string{"kubernetes/kubernetes#101:" + LGTMLabel}
 	fp := &fakePruner{
-		GitHubClient:        fc,
+		SCMProviderClient:   fc,
 		PullRequestComments: fc.PullRequestComments[101],
 	}
 	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), fp)

@@ -33,7 +33,7 @@ var (
 	branchRE = regexp.MustCompile(`(?im)\bbranch:[^\w-]*([\w-./]+)\b`)
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	Query(context.Context, interface{}, map[string]interface{}) error
 }
 
@@ -73,10 +73,10 @@ func (b Blockers) GetApplicable(org, repo, branch string) []Blocker {
 }
 
 // FindAll finds issues with label in the specified orgs/repos that should block tide.
-func FindAll(ghc githubClient, log *logrus.Entry, label, orgRepoTokens string) (Blockers, error) {
+func FindAll(spc scmProviderClient, log *logrus.Entry, label, orgRepoTokens string) (Blockers, error) {
 	issues, err := search(
 		context.Background(),
-		ghc,
+		spc,
 		log,
 		blockerQuery(label, orgRepoTokens),
 	)
@@ -138,7 +138,7 @@ func parseBranches(str string) []string {
 	return res
 }
 
-func search(ctx context.Context, ghc githubClient, log *logrus.Entry, q string) ([]Issue, error) {
+func search(ctx context.Context, spc scmProviderClient, log *logrus.Entry, q string) ([]Issue, error) {
 	requestStart := time.Now()
 	var ret []Issue
 	vars := map[string]interface{}{
@@ -149,7 +149,7 @@ func search(ctx context.Context, ghc githubClient, log *logrus.Entry, q string) 
 	var remaining int
 	for {
 		sq := searchQuery{}
-		if err := ghc.Query(ctx, &sq, vars); err != nil {
+		if err := spc.Query(ctx, &sq, vars); err != nil {
 			return nil, err
 		}
 		totalCost += int(sq.RateLimit.Cost)

@@ -41,7 +41,7 @@ var (
 	overrideRe = regexp.MustCompile(`(?mi)^/override( (.+?)\s*)?$`)
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
@@ -51,35 +51,35 @@ type githubClient interface {
 }
 
 type overrideClient interface {
-	githubClient
+	scmProviderClient
 }
 
 type client struct {
-	gc                 githubClient
+	spc                scmProviderClient
 	jc                 config.JobConfig
 	clientFactory      jxfactory.Factory
 	metapipelineClient metapipeline.Client
 }
 
 func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
-	return c.gc.CreateComment(owner, repo, number, pr, comment)
+	return c.spc.CreateComment(owner, repo, number, pr, comment)
 }
 func (c client) CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error) {
-	return c.gc.CreateStatus(org, repo, ref, s)
+	return c.spc.CreateStatus(org, repo, ref, s)
 }
 
 func (c client) GetRef(org, repo, ref string) (string, error) {
-	return c.gc.GetRef(org, repo, ref)
+	return c.spc.GetRef(org, repo, ref)
 }
 
 func (c client) GetPullRequest(org, repo string, number int) (*scm.PullRequest, error) {
-	return c.gc.GetPullRequest(org, repo, number)
+	return c.spc.GetPullRequest(org, repo, number)
 }
 func (c client) ListStatuses(org, repo, ref string) ([]*scm.Status, error) {
-	return c.gc.ListStatuses(org, repo, ref)
+	return c.spc.ListStatuses(org, repo, ref)
 }
 func (c client) HasPermission(org, repo, user string, role ...string) (bool, error) {
-	return c.gc.HasPermission(org, repo, user, role...)
+	return c.spc.HasPermission(org, repo, user, role...)
 }
 
 func init() {
@@ -102,7 +102,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	c := client{
-		gc:                 pc.GitHubClient,
+		spc:                pc.SCMProviderClient,
 		jc:                 pc.Config.JobConfig,
 		clientFactory:      pc.ClientFactory,
 		metapipelineClient: pc.MetapipelineClient,
@@ -110,8 +110,8 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 	return handle(pc.ClientFactory, c, pc.Logger, &e)
 }
 
-func authorized(gc githubClient, log *logrus.Entry, org, repo, user string) bool {
-	ok, err := gc.HasPermission(org, repo, user, gitprovider.RoleAdmin)
+func authorized(spc scmProviderClient, log *logrus.Entry, org, repo, user string) bool {
+	ok, err := spc.HasPermission(org, repo, user, gitprovider.RoleAdmin)
 	if err != nil {
 		log.WithError(err).Warnf("cannot determine whether %s is an admin of %s/%s", user, org, repo)
 		return false

@@ -40,14 +40,14 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
-	return handle(pc.GitHubClient, pc.Logger, pre)
+	return handle(pc.SCMProviderClient, pc.Logger, pre)
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	DeleteRef(owner, repo, ref string) error
 }
 
-func handle(gc githubClient, log *logrus.Entry, pre scm.PullRequestHook) error {
+func handle(spc scmProviderClient, log *logrus.Entry, pre scm.PullRequestHook) error {
 	// Only consider closed PRs that got merged
 	if pre.Action != scm.ActionClose || !pre.PullRequest.Merged {
 		return nil
@@ -60,7 +60,7 @@ func handle(gc githubClient, log *logrus.Entry, pre scm.PullRequestHook) error {
 		return nil
 	}
 
-	if err := gc.DeleteRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, fmt.Sprintf("heads/%s", pr.Head.Ref)); err != nil {
+	if err := spc.DeleteRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, fmt.Sprintf("heads/%s", pr.Head.Ref)); err != nil {
 		return fmt.Errorf("failed to delete branch %s on repo %s/%s after Pull Request #%d got merged: %v",
 			pr.Head.Ref, pr.Base.Repo.Namespace, pr.Base.Repo.Name, pre.PullRequest.Number, err)
 	}

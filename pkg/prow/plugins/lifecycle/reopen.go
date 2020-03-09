@@ -29,14 +29,14 @@ import (
 
 var reopenRe = regexp.MustCompile(`(?mi)^/reopen\s*$`)
 
-type githubClient interface {
+type scmProviderClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	ReopenIssue(owner, repo string, number int) error
 	ReopenPR(owner, repo string, number int) error
 }
 
-func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handleReopen(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
 	// Only consider closed issues and new comments.
 	if e.IssueState != "closed" || e.Action != scm.ActionCreate {
 		return nil
@@ -52,7 +52,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericComm
 	commentAuthor := e.Author.Login
 
 	isAuthor := e.IssueAuthor.Login == commentAuthor
-	isCollaborator, err := gc.IsCollaborator(org, repo, commentAuthor)
+	isCollaborator, err := spc.IsCollaborator(org, repo, commentAuthor)
 	if err != nil {
 		log.WithError(err).Errorf("Failed IsCollaborator(%s, %s, %s)", org, repo, commentAuthor)
 	}
@@ -61,7 +61,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericComm
 	if !isAuthor && !isCollaborator {
 		response := "You can't reopen an issue/PR unless you authored it or you are a collaborator."
 		log.Infof("Commenting \"%s\".", response)
-		return gc.CreateComment(
+		return spc.CreateComment(
 			org,
 			repo,
 			number,
@@ -72,10 +72,10 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericComm
 
 	if e.IsPR {
 		log.Info("/reopen PR")
-		if err := gc.ReopenPR(org, repo, number); err != nil {
+		if err := spc.ReopenPR(org, repo, number); err != nil {
 			if scbc, ok := err.(scm.StateCannotBeChanged); ok {
 				resp := fmt.Sprintf("Failed to re-open PR: %v", scbc)
-				return gc.CreateComment(
+				return spc.CreateComment(
 					org,
 					repo,
 					number,
@@ -87,7 +87,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericComm
 		}
 		// Add a comment after reopening the PR to leave an audit trail of who
 		// asked to reopen it.
-		return gc.CreateComment(
+		return spc.CreateComment(
 			org,
 			repo,
 			number,
@@ -97,10 +97,10 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericComm
 	}
 
 	log.Info("/reopen issue")
-	if err := gc.ReopenIssue(org, repo, number); err != nil {
+	if err := spc.ReopenIssue(org, repo, number); err != nil {
 		if scbc, ok := err.(scm.StateCannotBeChanged); ok {
 			resp := fmt.Sprintf("Failed to re-open Issue: %v", scbc)
-			return gc.CreateComment(
+			return spc.CreateComment(
 				org,
 				repo,
 				number,
@@ -112,7 +112,7 @@ func handleReopen(gc githubClient, log *logrus.Entry, e *gitprovider.GenericComm
 	}
 	// Add a comment after reopening the issue to leave an audit trail of who
 	// asked to reopen it.
-	return gc.CreateComment(
+	return spc.CreateComment(
 		org,
 		repo,
 		number,

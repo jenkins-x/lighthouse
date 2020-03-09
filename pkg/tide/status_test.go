@@ -390,7 +390,7 @@ func TestSetStatuses(t *testing.T) {
 			t.Fatalf("Failed to get log output before testing: %v", err)
 		}
 
-		sc := &statusController{ghc: fc, config: ca.Config, logger: log}
+		sc := &statusController{spc: fc, config: ca.Config, logger: log}
 		sc.setStatuses([]PullRequest{pr}, pool, blockers.Blockers{})
 		if str, err := log.String(); err != nil {
 			t.Fatalf("For case %s: failed to get log output: %v", tc.name, err)

@@ -92,10 +92,10 @@ func (suite *WebhookTestSuite) SetupSuite() {
 			ConfigAgent: configAgent,
 			Plugins:     pluginAgent,
 			ClientAgent: &plugins.ClientAgent{
-				BotName:          options.GetBotName(),
-				GitHubClient:     scmClient,
-				KubernetesClient: kubeClient,
-				GitClient:        gitClient,
+				BotName:           options.GetBotName(),
+				SCMProviderClient: scmClient,
+				KubernetesClient:  kubeClient,
+				GitClient:         gitClient,
 			},
 		},
 	}

@@ -146,7 +146,7 @@ func getTestClient(
 
 	return &Client{
 			git:    git,
-			ghc:    &fakegitprovider.FakeClient{Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"}},
+			spc:    &fakegitprovider.FakeClient{Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"}},
 			logger: logrus.WithField("client", "repoowners"),
 			cache:  make(map[string]cacheEntry),
 

@@ -44,7 +44,7 @@ var (
 	}
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
@@ -84,10 +84,10 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	return handle(pc.GitHubClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	if e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -106,7 +106,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		milestone = repoMilestone[""]
 	}
 
-	milestoneMaintainers, err := gc.ListTeamMembers(milestone.MaintainersID, gitprovider.RoleAll)
+	milestoneMaintainers, err := spc.ListTeamMembers(milestone.MaintainersID, gitprovider.RoleAll)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	if !found {
 		// not in the milestone maintainers team
 		msg := fmt.Sprintf(mustBeAuthorized, org, milestone.MaintainersTeam, org, milestone.MaintainersTeam, milestone.MaintainersFriendlyName)
-		return gc.CreateComment(org, repo, e.Number, e.IsPR, msg)
+		return spc.CreateComment(org, repo, e.Number, e.IsPR, msg)
 	}
 
 	for _, statusMatch := range statusMatches {
@@ -129,7 +129,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 		if !validStatus {
 			continue
 		}
-		if err := gc.AddLabel(org, repo, e.Number, sLabel, e.IsPR); err != nil {
+		if err := spc.AddLabel(org, repo, e.Number, sLabel, e.IsPR); err != nil {
 			log.WithError(err).Errorf("Error adding the label %q to %s/%s#%d.", sLabel, org, repo, e.Number)
 		}
 	}

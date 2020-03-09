@@ -71,7 +71,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
@@ -176,7 +176,7 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
 	return handle(
-		pc.GitHubClient,
+		pc.SCMProviderClient,
 		pc.Logger,
 		&e,
 		meow,
@@ -184,7 +184,7 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 	)
 }
 
-func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, c clowder, setKey func()) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, c clowder, setKey func()) error {
 	// Only consider new comments.
 	if e.Action != scm.ActionCreate {
 		return nil
@@ -213,7 +213,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 			log.WithError(err).Error("Failed to get cat img")
 			continue
 		}
-		return gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
 	}
 
 	var msg string
@@ -222,7 +222,7 @@ func handle(gc githubClient, log *logrus.Entry, e *gitprovider.GenericCommentEve
 	} else {
 		msg = "https://thecatapi.com appears to be down"
 	}
-	if err := gc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
+	if err := spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

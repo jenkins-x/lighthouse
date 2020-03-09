@@ -191,8 +191,8 @@ func TestHandlePR(t *testing.T) {
 	}
 
 	c := client{
-		GitHubClient: fc,
-		Logger:       &logrus.Entry{},
+		SCMProviderClient: fc,
+		Logger:            &logrus.Entry{},
 	}
 	for _, tc := range testCases {
 		// clear out comments from the last test case

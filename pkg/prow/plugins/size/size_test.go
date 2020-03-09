@@ -25,7 +25,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
-type ghc struct {
+type spc struct {
 	*testing.T
 	labels    map[scm.Label]bool
 	files     map[string][]byte
@@ -35,14 +35,14 @@ type ghc struct {
 	getFileErr, getPullRequestChangesErr error
 }
 
-func (c *ghc) AddLabel(_, _ string, _ int, label string, _ bool) error {
+func (c *spc) AddLabel(_, _ string, _ int, label string, _ bool) error {
 	c.T.Logf("AddLabel: %s", label)
 	c.labels[scm.Label{Name: label}] = true
 
 	return c.addLabelErr
 }
 
-func (c *ghc) RemoveLabel(_, _ string, _ int, label string, _ bool) error {
+func (c *spc) RemoveLabel(_, _ string, _ int, label string, _ bool) error {
 	c.T.Logf("RemoveLabel: %s", label)
 	for k := range c.labels {
 		if k.Name == label {
@@ -53,7 +53,7 @@ func (c *ghc) RemoveLabel(_, _ string, _ int, label string, _ bool) error {
 	return c.removeLabelErr
 }
 
-func (c *ghc) GetIssueLabels(_, _ string, _ int, _ bool) (ls []*scm.Label, err error) {
+func (c *spc) GetIssueLabels(_, _ string, _ int, _ bool) (ls []*scm.Label, err error) {
 	c.T.Log("GetIssueLabels")
 	for k, ok := range c.labels {
 		if ok {
@@ -66,12 +66,12 @@ func (c *ghc) GetIssueLabels(_, _ string, _ int, _ bool) (ls []*scm.Label, err e
 	return
 }
 
-func (c *ghc) GetFile(_, _, path, _ string) ([]byte, error) {
+func (c *spc) GetFile(_, _, path, _ string) ([]byte, error) {
 	c.T.Logf("GetFile: %s", path)
 	return c.files[path], c.getFileErr
 }
 
-func (c *ghc) GetPullRequestChanges(_, _ string, _ int) ([]*scm.Change, error) {
+func (c *spc) GetPullRequestChanges(_, _ string, _ int) ([]*scm.Change, error) {
 	c.T.Log("GetPullRequestChanges")
 	return c.prChanges, c.getPullRequestChangesErr
 }
@@ -115,7 +115,7 @@ func TestSizesOrDefault(t *testing.T) {
 func TestHandlePR(t *testing.T) {
 	cases := []struct {
 		name        string
-		client      *ghc
+		client      *spc
 		event       scm.PullRequestHook
 		err         error
 		sizes       plugins.Size
@@ -123,7 +123,7 @@ func TestHandlePR(t *testing.T) {
 	}{
 		{
 			name: "simple size/S, no .generated_files",
-			client: &ghc{
+			client: &spc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{
@@ -163,7 +163,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name: "simple size/M, with .generated_files",
-			client: &ghc{
+			client: &spc{
 				labels: map[scm.Label]bool{},
 				files: map[string][]byte{
 					".generated_files": []byte(`
@@ -223,7 +223,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name: "simple size/M, with .gitattributes",
-			client: &ghc{
+			client: &spc{
 				labels: map[scm.Label]bool{},
 				files: map[string][]byte{
 					".gitattributes": []byte(`
@@ -283,7 +283,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name: "simple size/XS, with .generated_files and paths-from-repo",
-			client: &ghc{
+			client: &spc{
 				labels: map[scm.Label]bool{},
 				files: map[string][]byte{
 					".generated_files": []byte(`
@@ -369,7 +369,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name:   "pr closed event",
-			client: &ghc{},
+			client: &spc{},
 			event: scm.PullRequestHook{
 				Action: scm.ActionClose,
 			},
@@ -378,7 +378,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name: "XS -> S transition",
-			client: &ghc{
+			client: &spc{
 				labels: map[scm.Label]bool{
 					{Name: "irrelevant"}: true,
 					{Name: "size/XS"}:    true,
@@ -468,7 +468,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name: "pull request reopened",
-			client: &ghc{
+			client: &spc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{
@@ -508,7 +508,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name: "pull request edited",
-			client: &ghc{
+			client: &spc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{
@@ -541,7 +541,7 @@ func TestHandlePR(t *testing.T) {
 		},
 		{
 			name: "different label constraints",
-			client: &ghc{
+			client: &spc{
 				labels:     map[scm.Label]bool{},
 				getFileErr: scm.ErrNotFound,
 				prChanges: []*scm.Change{

@@ -24,7 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type githubClient interface {
+type scmProviderClient interface {
 	BotName() (string, error)
 	ListIssueComments(org, repo string, number int) ([]*scm.Comment, error)
 	ListPullRequestComments(org, repo string, number int) ([]*scm.Comment, error)
@@ -42,7 +42,7 @@ type EventClient struct {
 	repo   string
 	number int
 
-	ghc githubClient
+	spc scmProviderClient
 	log *logrus.Entry
 
 	once     sync.Once
@@ -51,13 +51,13 @@ type EventClient struct {
 }
 
 // NewEventClient creates an EventClient struct. This should be used once per webhook event.
-func NewEventClient(ghc githubClient, log *logrus.Entry, org, repo string, number int) *EventClient {
+func NewEventClient(spc scmProviderClient, log *logrus.Entry, org, repo string, number int) *EventClient {
 	return &EventClient{
 		org:    org,
 		repo:   repo,
 		number: number,
 
-		ghc: ghc,
+		spc: spc,
 		log: log,
 	}
 }
@@ -66,15 +66,15 @@ func NewEventClient(ghc githubClient, log *logrus.Entry, org, repo string, numbe
 // and then deletes any bot comments indicated by the func 'shouldPrune'.
 func (c *EventClient) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool) {
 	c.once.Do(func() {
-		botName, err := c.ghc.BotName()
+		botName, err := c.spc.BotName()
 		if err != nil {
 			c.log.WithError(err).Error("failed to get the bot's name. Pruning will consider all comments.")
 		}
 		var comments []*scm.Comment
 		if pr {
-			comments, err = c.ghc.ListPullRequestComments(c.org, c.repo, c.number)
+			comments, err = c.spc.ListPullRequestComments(c.org, c.repo, c.number)
 		} else {
-			comments, err = c.ghc.ListIssueComments(c.org, c.repo, c.number)
+			comments, err = c.spc.ListIssueComments(c.org, c.repo, c.number)
 		}
 		if err != nil {
 			c.log.WithError(err).Errorf("failed to list comments for %s/%s#%d", c.org, c.repo, c.number)
@@ -95,7 +95,7 @@ func (c *EventClient) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool
 	for _, comment := range c.comments {
 		removed := false
 		if shouldPrune(comment) {
-			if err := c.ghc.DeleteComment(c.org, c.repo, c.number, comment.ID, pr); err != nil {
+			if err := c.spc.DeleteComment(c.org, c.repo, c.number, comment.ID, pr); err != nil {
 				c.log.WithError(err).Errorf("failed to delete stale comment with ID '%d'", comment.ID)
 			} else {
 				removed = true

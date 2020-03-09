@@ -64,7 +64,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 // Strict subset of gitprovider.Client methods.
-type githubClient interface {
+type scmProviderClient interface {
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
@@ -88,7 +88,7 @@ func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
 		draft  = pe.PullRequest.Draft
 	)
 
-	currentLabels, err := pc.GitHubClient.GetIssueLabels(org, repo, number, true)
+	currentLabels, err := pc.SCMProviderClient.GetIssueLabels(org, repo, number, true)
 	if err != nil {
 		return fmt.Errorf("could not get labels for PR %s/%s:%d in WIP plugin: %v", org, repo, number, err)
 	}
@@ -106,23 +106,23 @@ func handlePullRequest(pc plugins.Agent, pe scm.PullRequestHook) error {
 		draft:    draft,
 		hasLabel: hasLabel,
 	}
-	return handle(pc.GitHubClient, pc.Logger, e)
+	return handle(pc.SCMProviderClient, pc.Logger, e)
 }
 
 // handle interacts with GitHub to drive the pull request to the
 // proper state by adding and removing comments and labels. If a
 // PR has a WIP prefix, it needs an explanatory comment and label.
 // Otherwise, neither should be present.
-func handle(gc githubClient, le *logrus.Entry, e *event) error {
+func handle(spc scmProviderClient, le *logrus.Entry, e *event) error {
 	needsLabel := e.draft || titleRegex.MatchString(e.title)
 
 	if needsLabel && !e.hasLabel {
-		if err := gc.AddLabel(e.org, e.repo, e.number, labels.WorkInProgress, true); err != nil {
+		if err := spc.AddLabel(e.org, e.repo, e.number, labels.WorkInProgress, true); err != nil {
 			le.Warnf("error while adding Label %q: %v", labels.WorkInProgress, err)
 			return err
 		}
 	} else if !needsLabel && e.hasLabel {
-		if err := gc.RemoveLabel(e.org, e.repo, e.number, labels.WorkInProgress, true); err != nil {
+		if err := spc.RemoveLabel(e.org, e.repo, e.number, labels.WorkInProgress, true); err != nil {
 			le.Warnf("error while removing Label %q: %v", labels.WorkInProgress, err)
 			return err
 		}

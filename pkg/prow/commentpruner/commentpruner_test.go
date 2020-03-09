@@ -25,37 +25,37 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type fakeGHClient struct {
+type fakeSCMProviderClient struct {
 	comments        []*scm.Comment
 	deletedComments []int
 	listCallCount   int
 }
 
-func (f *fakeGHClient) BotName() (string, error) {
+func (f *fakeSCMProviderClient) BotName() (string, error) {
 	return "k8s-ci-robot", nil
 }
 
-func (f *fakeGHClient) ListIssueComments(_, _ string, _ int) ([]*scm.Comment, error) {
+func (f *fakeSCMProviderClient) ListIssueComments(_, _ string, _ int) ([]*scm.Comment, error) {
 	f.listCallCount++
 	return f.comments, nil
 }
 
-func (f *fakeGHClient) ListPullRequestComments(_, _ string, _ int) ([]*scm.Comment, error) {
+func (f *fakeSCMProviderClient) ListPullRequestComments(_, _ string, _ int) ([]*scm.Comment, error) {
 	f.listCallCount++
 	return f.comments, nil
 }
 
-func (f *fakeGHClient) DeleteComment(_, _ string, number, ID int, _ bool) error {
+func (f *fakeSCMProviderClient) DeleteComment(_, _ string, number, ID int, _ bool) error {
 	f.deletedComments = append(f.deletedComments, ID)
 	return nil
 }
 
-func newFakeGHClient(commentsToLogins map[int]string) *fakeGHClient {
+func newFakeSCMProviderClient(commentsToLogins map[int]string) *fakeSCMProviderClient {
 	comments := make([]*scm.Comment, 0, len(commentsToLogins))
 	for num, login := range commentsToLogins {
 		comments = append(comments, &scm.Comment{ID: num, Author: scm.User{Login: login}})
 	}
-	return &fakeGHClient{
+	return &fakeSCMProviderClient{
 		comments:        comments,
 		deletedComments: []int{},
 	}
@@ -131,22 +131,22 @@ func TestPruneComments(t *testing.T) {
 	*/
 	for _, tc := range tcs {
 		errs = &[]int{}
-		fgc := newFakeGHClient(tc.comments)
-		client := NewEventClient(fgc, logrus.WithField("client", "commentpruner"), "org", "repo", 1)
+		fsc := newFakeSCMProviderClient(tc.comments)
+		client := NewEventClient(fsc, logrus.WithField("client", "commentpruner"), "org", "repo", 1)
 		for _, call := range tc.callers {
 			client.PruneComments(true, call)
 		}
 
-		if fgc.listCallCount != 1 {
-			t.Errorf("[%s]: Expected comments to be fetched exactly once, instead got %d.", tc.name, fgc.listCallCount)
+		if fsc.listCallCount != 1 {
+			t.Errorf("[%s]: Expected comments to be fetched exactly once, instead got %d.", tc.name, fsc.listCallCount)
 		}
 		if len(*errs) > 0 {
 			t.Errorf("[%s]: The following comments should not have been seen be subsequent callers: %v.", tc.name, *errs)
 		}
 		sort.Ints(tc.expectedDeleted)
-		sort.Ints(fgc.deletedComments)
-		if !reflect.DeepEqual(tc.expectedDeleted, fgc.deletedComments) {
-			t.Errorf("[%s]: Expected the comments %#v to be deleted, but %#v were deleted instead.", tc.name, tc.expectedDeleted, fgc.deletedComments)
+		sort.Ints(fsc.deletedComments)
+		if !reflect.DeepEqual(tc.expectedDeleted, fsc.deletedComments) {
+			t.Errorf("[%s]: Expected the comments %#v to be deleted, but %#v were deleted instead.", tc.name, tc.expectedDeleted, fsc.deletedComments)
 		}
 	}
 }

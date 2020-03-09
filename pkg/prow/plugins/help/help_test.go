@@ -176,12 +176,12 @@ func TestLabel(t *testing.T) {
 	for _, tc := range testcases {
 		sort.Strings(tc.expectedNewLabels)
 		fakeScmClient, fakeClient := fake.NewDefault()
-		fakeGHClient := gitprovider.ToTestClient(fakeScmClient)
+		fakeSCMProviderClient := gitprovider.ToTestClient(fakeScmClient)
 		fakeClient.RepoLabelsExisting = []string{labels.Help, labels.GoodFirstIssue}
 
 		// Add initial labels
 		for _, label := range tc.issueLabels {
-			fakeGHClient.AddLabel("org", "repo", 1, label, false)
+			fakeSCMProviderClient.AddLabel("org", "repo", 1, label, false)
 		}
 
 		if len(tc.issueState) == 0 {
@@ -200,7 +200,7 @@ func TestLabel(t *testing.T) {
 			Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 			Author:     scm.User{Login: "Alice"},
 		}
-		err := handle(fakeGHClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
+		err := handle(fakeSCMProviderClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
 		if err != nil {
 			t.Errorf("For case %s, didn't expect error from label test: %v", tc.name, err)
 			continue

@@ -47,7 +47,7 @@ type ownersClient interface {
 	FindLabelsForFile(path string) sets.String
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	AddLabel(org, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
@@ -64,16 +64,16 @@ func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
 		return fmt.Errorf("error loading RepoOwners: %v", err)
 	}
 
-	return handle(pc.GitHubClient, oc, pc.Logger, &pre)
+	return handle(pc.SCMProviderClient, oc, pc.Logger, &pre)
 }
 
-func handle(ghc githubClient, oc ownersClient, log *logrus.Entry, pre *scm.PullRequestHook) error {
+func handle(spc scmProviderClient, oc ownersClient, log *logrus.Entry, pre *scm.PullRequestHook) error {
 	org := pre.Repo.Namespace
 	repo := pre.Repo.Name
 	number := pre.PullRequest.Number
 
 	// First see if there are any labels requested based on the files changed.
-	changes, err := ghc.GetPullRequestChanges(org, repo, number)
+	changes, err := spc.GetPullRequestChanges(org, repo, number)
 	if err != nil {
 		return fmt.Errorf("error getting PR changes: %v", err)
 	}
@@ -86,11 +86,11 @@ func handle(ghc githubClient, oc ownersClient, log *logrus.Entry, pre *scm.PullR
 		return nil
 	}
 
-	repoLabels, err := ghc.GetRepoLabels(org, repo)
+	repoLabels, err := spc.GetRepoLabels(org, repo)
 	if err != nil {
 		return err
 	}
-	issuelabels, err := ghc.GetIssueLabels(org, repo, number, true)
+	issuelabels, err := spc.GetIssueLabels(org, repo, number, true)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func handle(ghc githubClient, oc ownersClient, log *logrus.Entry, pre *scm.PullR
 			nonexistent.Insert(labelToAdd)
 			continue
 		}
-		if err := ghc.AddLabel(org, repo, number, labelToAdd, true); err != nil {
+		if err := spc.AddLabel(org, repo, number, labelToAdd, true); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", labelToAdd)
 		}
 	}

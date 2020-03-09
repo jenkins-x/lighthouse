@@ -278,10 +278,10 @@ func TestHandlePullRequest(t *testing.T) {
 		}
 		fakePlumberClient := fake.NewPlumber()
 		c := Client{
-			GitHubClient:  g,
-			PlumberClient: fakePlumberClient,
-			Config:        &config.Config{},
-			Logger:        logrus.WithField("plugin", PluginName),
+			SCMProviderClient: g,
+			PlumberClient:     fakePlumberClient,
+			Config:            &config.Config{},
+			Logger:            logrus.WithField("plugin", PluginName),
 		}
 
 		presubmits := map[string][]config.Presubmit{

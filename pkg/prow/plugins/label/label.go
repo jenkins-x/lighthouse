@@ -73,10 +73,10 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
-	return handle(pc.GitHubClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
+	return handle(pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
 }
 
-type githubClient interface {
+type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
@@ -116,7 +116,7 @@ func getLabelsFromGenericMatches(matches [][]string, additionalLabels []string) 
 	return labels
 }
 
-func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gitprovider.GenericCommentEvent) error {
+func handle(spc scmProviderClient, log *logrus.Entry, additionalLabels []string, e *gitprovider.GenericCommentEvent) error {
 	labelMatches := labelRegex.FindAllStringSubmatch(e.Body, -1)
 	removeLabelMatches := removeLabelRegex.FindAllStringSubmatch(e.Body, -1)
 	customLabelMatches := customLabelRegex.FindAllStringSubmatch(e.Body, -1)
@@ -128,11 +128,11 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
-	repoLabels, err := gc.GetRepoLabels(org, repo)
+	repoLabels, err := spc.GetRepoLabels(org, repo)
 	if err != nil {
 		return err
 	}
-	labels, err := gc.GetIssueLabels(org, repo, e.Number, e.IsPR)
+	labels, err := spc.GetIssueLabels(org, repo, e.Number, e.IsPR)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 			continue
 		}
 
-		if err := gc.AddLabel(org, repo, e.Number, RepoLabelsExisting[labelToAdd], e.IsPR); err != nil {
+		if err := spc.AddLabel(org, repo, e.Number, RepoLabelsExisting[labelToAdd], e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", labelToAdd)
 		}
 	}
@@ -180,7 +180,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 			continue
 		}
 
-		if err := gc.RemoveLabel(org, repo, e.Number, labelToRemove, e.IsPR); err != nil {
+		if err := spc.RemoveLabel(org, repo, e.Number, labelToRemove, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labelToRemove)
 		}
 	}
@@ -193,7 +193,7 @@ func handle(gc githubClient, log *logrus.Entry, additionalLabels []string, e *gi
 	// Tried to remove Labels that were not present on the Issue
 	if len(noSuchLabelsOnIssue) > 0 {
 		msg := fmt.Sprintf(nonExistentLabelOnIssue, strings.Join(noSuchLabelsOnIssue, ", "))
-		return gc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
 	}
 
 	return nil

@@ -214,10 +214,10 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	})
 
 	o.server.ClientAgent = &plugins.ClientAgent{
-		BotName:          o.GetBotName(),
-		GitHubClient:     scmClient,
-		KubernetesClient: kubeClient,
-		GitClient:        gitClient,
+		BotName:           o.GetBotName(),
+		SCMProviderClient: scmClient,
+		KubernetesClient:  kubeClient,
+		GitClient:         gitClient,
 	}
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
