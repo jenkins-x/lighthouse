@@ -54,7 +54,7 @@ import (
 // For mocking out sleep during unit tests.
 var sleep = time.Sleep
 
-type plumberClient interface {
+type prowJobClient interface {
 	Create(*plumber.PipelineOptions, metapipeline.Client, scm.Repository) (*plumber.PipelineOptions, error)
 	List(opts metav1.ListOptions) (*plumber.PipelineOptionsList, error)
 }
@@ -81,7 +81,7 @@ type DefaultController struct {
 	logger        *logrus.Entry
 	config        config.Getter
 	spc           scmProviderClient
-	plumberClient plumberClient
+	prowJobClient prowJobClient
 	gc            git.Client
 	mpClient      metapipeline.Client
 	tektonClient  tektonclient.Interface
@@ -206,7 +206,7 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(spcSync, spcStatus *gitprovider.Client, plumberClient plumberClient, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(spcSync, spcStatus *gitprovider.Client, prowJobClient prowJobClient, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -227,7 +227,7 @@ func NewController(spcSync, spcStatus *gitprovider.Client, plumberClient plumber
 	return &DefaultController{
 		logger:        logger.WithField("controller", "sync"),
 		spc:           spcSync,
-		plumberClient: plumberClient,
+		prowJobClient: prowJobClient,
 		mpClient:      mpClient,
 		tektonClient:  tektonClient,
 		ns:            ns,
@@ -325,12 +325,12 @@ func (c *DefaultController) Sync() error {
 	var err error
 	if len(prs) > 0 {
 		start := time.Now()
-		pjList, err := c.plumberClient.List(metav1.ListOptions{})
+		pjList, err := c.prowJobClient.List(metav1.ListOptions{})
 		if err != nil {
-			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list PipelineActivitys from the cluster.")
+			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list ProwJobs from the cluster.")
 			return err
 		}
-		c.logger.WithField("duration", time.Since(start).String()).Debug("Listed PipelineActivitys from the cluster.")
+		c.logger.WithField("duration", time.Since(start).String()).Debug("Listed ProwJobs from the cluster.")
 		pjs = pjList.Items
 
 		if label := c.config().Tide.BlockerLabel; label != "" {
@@ -481,7 +481,7 @@ func (c *DefaultController) initSubpoolData(sp *subpool) error {
 	var err error
 	sp.presubmits, err = c.presubmitsByPull(sp)
 	if err != nil {
-		return fmt.Errorf("error determining required presubmit PipelineActivitys: %v", err)
+		return fmt.Errorf("error determining required presubmit prowjobs: %v", err)
 	}
 	sp.cc, err = c.config().GetTideContextPolicy(sp.org, sp.repo, sp.branch)
 	if err != nil {
@@ -513,8 +513,8 @@ func filterSubpool(spc scmProviderClient, sp *subpool) *subpool {
 // - Have known merge conflicts.
 // - Have failing or missing status contexts.
 // - Have pending required status contexts that are not associated with a
-//   PipelineActivity. (This ensures that the 'tide' context indicates that the pending
-//   status is preventing merge. Required PipelineActivity statuses are allowed to be
+//   ProwJob. (This ensures that the 'tide' context indicates that the pending
+//   status is preventing merge. Required ProwJob statuses are allowed to be
 //   'pending' because this prevents kicking PRs from the pool when Tide is
 //   retesting them.)
 func filterPR(spc scmProviderClient, sp *subpool, pr *PullRequest) bool {
@@ -525,7 +525,7 @@ func filterPR(spc scmProviderClient, sp *subpool, pr *PullRequest) bool {
 		return true
 	}
 	// Filter out PRs with unsuccessful contexts unless the only unsuccessful
-	// contexts are pending required PipelineActivitys.
+	// contexts are pending required prowjobs.
 	contexts, err := headContexts(log, spc, pr)
 	if err != nil {
 		log.WithError(err).Error("Getting head contexts.")
@@ -783,7 +783,7 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 			log.WithError(err).Error("Error getting head contexts, solely using PJs for status")
 		}
 		// Accumulate the best result for each job (Passing > Pending > Failing/Unknown)
-		// We can ignore the baseSHA here because the subPool only contains PipelineActivitys with the correct baseSHA
+		// We can ignore the baseSHA here because the subPool only contains ProwJobs with the correct baseSHA
 		psStates := make(map[string]simpleState)
 		for _, pj := range pjs {
 			if pj.Spec.Type != plumber.PresubmitJob {
@@ -1147,9 +1147,9 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 				Branch:    string(pr.BaseRef.Name),
 				Clone:     cloneURL,
 			}
-			if _, err := c.plumberClient.Create(&pj, c.mpClient, repo); err != nil {
-				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create pipeline on the cluster.")
-				return fmt.Errorf("failed to create a pipeline for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
+			if _, err := c.prowJobClient.Create(&pj, c.mpClient, repo); err != nil {
+				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create ProwJob on the cluster.")
+				return fmt.Errorf("failed to create a ProwJob for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
 			}
 			sha := refs.BaseSHA
 			if len(refs.Pulls) > 0 {
@@ -1165,7 +1165,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to set pending status on triggered context.")
 				return errors.Wrapf(err, "Cannot update PR status on org %s repo %s sha %s for context %s", refs.Org, refs.Repo, sha, statusInput.Label)
 			}
-			c.logger.WithField("duration", time.Since(start).String()).Debug("Created pipeline on the cluster.")
+			c.logger.WithField("duration", time.Since(start).String()).Debug("Created ProwJob on the cluster.")
 		}
 	}
 	return nil
@@ -1406,7 +1406,7 @@ type subpool struct {
 	// sha is the baseSHA for this subpool
 	sha string
 
-	// pjs contains all PipelineActivitys of type Presubmit or Batch
+	// pjs contains all ProwJobs of type Presubmit or Batch
 	// that have the same baseSHA as the subpool
 	pjs []plumber.PipelineOptions
 	prs []PullRequest
@@ -1422,7 +1422,7 @@ func poolKey(org, repo, branch string) string {
 }
 
 // dividePool splits up the list of pull requests and prow jobs into a group
-// per repo and branch. It only keeps PipelineActivitys that match the latest branch.
+// per repo and branch. It only keeps ProwJobs that match the latest branch.
 func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []plumber.PipelineOptions) (map[string]*subpool, error) {
 	sps := make(map[string]*subpool)
 	for _, pr := range pool {
