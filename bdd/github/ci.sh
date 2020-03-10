@@ -72,6 +72,8 @@ helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
 
+# Just run the node-http import test here
+export BDD_TEST_SINGLE_IMPORT="node-http"
 set +e
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
@@ -84,7 +86,7 @@ jx step bdd \
     --default-admin-password $JENKINS_PASSWORD \
     --no-delete-app \
     --no-delete-repo \
-    --tests test-create-spring \
+    --tests test-single-import \
     --tests test-lighthouse \
     --tests test-app-lifecycle
 
