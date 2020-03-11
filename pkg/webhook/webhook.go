@@ -18,6 +18,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
@@ -109,7 +110,7 @@ func (o *Options) Run() error {
 		return errors.Wrapf(err, "failed to create Hook Server")
 	}
 
-	_, o.gitServerURL, _, err = o.createSCMClient()
+	_, o.gitServerURL, err = o.createSCMClient()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create ScmClient")
 	}
@@ -184,7 +185,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 	logrus.Debug("about to parse webhook")
 
-	scmClient, serverURL, token, err := o.createSCMClient()
+	scmClient, serverURL, err := o.createSCMClient()
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
@@ -205,13 +206,35 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	ghaSecretDir := util.GetGitHubAppSecretDir()
+
+	var gitCloneUser string
+	var token string
+	if ghaSecretDir != "" {
+		gitCloneUser = util.GitHubAppGitRemoteUsername
+		tokenFinder := util.NewOwnerTokensDir(serverURL, ghaSecretDir)
+		token, err = tokenFinder.FindToken(webhook.Repository().Namespace)
+		if err != nil {
+			logrus.Errorf("failed to read owner token: %s", err.Error())
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: failed to read owner token: %s", err.Error()))
+			return
+		}
+	} else {
+		gitCloneUser = o.GetBotName()
+		token, err = o.createSCMToken(o.gitKind())
+		if err != nil {
+			logrus.Errorf("no scm token specified: %s", err.Error())
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: no scm token specified: %s", err.Error()))
+			return
+		}
+	}
 	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
 	gitClient, _ := git.NewClient(serverURL, o.gitKind())
 
-	user := o.GetBotName()
-	gitClient.SetCredentials(user, func() []byte {
+	gitClient.SetCredentials(gitCloneUser, func() []byte {
 		return []byte(token)
 	})
+	util.AddAuthToSCMClient(scmClient, token, ghaSecretDir != "")
 
 	o.server.ClientAgent = &plugins.ClientAgent{
 		BotName:           o.GetBotName(),
@@ -375,16 +398,12 @@ func (o *Options) secretFn(webhook scm.Webhook) (string, error) {
 	return os.Getenv("HMAC_TOKEN"), nil
 }
 
-func (o *Options) createSCMClient() (*scm.Client, string, string, error) {
+func (o *Options) createSCMClient() (*scm.Client, string, error) {
 	kind := o.gitKind()
 	serverURL := os.Getenv("GIT_SERVER")
 
-	token, err := o.createSCMToken(kind)
-	if err != nil {
-		return nil, serverURL, token, err
-	}
-	client, err := factory.NewClient(kind, serverURL, token)
-	return client, serverURL, token, err
+	client, err := factory.NewClient(kind, serverURL, "")
+	return client, serverURL, err
 }
 
 func (o *Options) gitKind() string {
@@ -397,6 +416,13 @@ func (o *Options) gitKind() string {
 
 // GetBotName returns the bot name
 func (o *Options) GetBotName() string {
+	if util.GetGitHubAppSecretDir() != "" {
+		ghaBotName, err := util.GetGitHubAppAPIUser()
+		// TODO: Probably should handle error cases here better, but for now, just fall through.
+		if err == nil && ghaBotName != "" {
+			return ghaBotName
+		}
+	}
 	o.botName = os.Getenv("GIT_USER")
 	if o.botName == "" {
 		o.botName = "jenkins-x-bot"
