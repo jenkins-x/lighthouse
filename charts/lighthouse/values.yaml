@@ -3,6 +3,10 @@ git:
   name: github
   server: ""
 
+githubApp:
+  enabled: false
+  username:  "jenkins-x[bot]"
+
 # the secret used for webhooks
 hmacToken: ""
 
@@ -46,9 +50,6 @@ readinessProbe:
 
 tide:
   replicaCount: 1
-  githubApp:
-    enabled: false
-    username:  "jenkins-x[bot]"
   livenessProbe:
     initialDelaySeconds: 120
     periodSeconds: 10

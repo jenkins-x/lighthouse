@@ -31,24 +31,29 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
-          - name: "GIT_KIND"
-            value: "{{ .Values.git.kind }}"
-          - name: "GIT_SERVER"
-            value: "{{ .Values.git.server }}"
-          - name: "GIT_USER"
-            value: {{ .Values.user }}
-          - name: "GIT_TOKEN"
-            valueFrom:
-              secretKeyRef:
-                name: lighthouse-oauth-token
-                key: oauth
-          - name: "HMAC_TOKEN"
-            valueFrom:
-              secretKeyRef:
-                name: "hmac-token"
-                key: hmac
-          - name: "JX_LOG_FORMAT"
-            value: "json"
+        - name: "GIT_KIND"
+          value: "{{ .Values.git.kind }}"
+        - name: "GIT_SERVER"
+          value: "{{ .Values.git.server }}"
+{{- if .Values.githubApp.enabled }}
+        - name: "GITHUB_APP_SECRET_DIR"
+          value: "/secrets/githubapp/tokens"
+{{- else }}
+        - name: "GIT_USER"
+          value: {{ .Values.user }}
+        - name: "GIT_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-oauth-token
+              key: oauth
+{{- end }}
+        - name: "HMAC_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "hmac-token"
+              key: hmac
+        - name: "JX_LOG_FORMAT"
+          value: "json"
 {{- range $pkey, $pval := .Values.env }}
         - name: {{ $pkey }}
           value: {{ quote $pval }}
@@ -72,5 +77,17 @@ spec:
           timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
+{{- if .Values.githubApp.enabled }}
+        volumeMounts:
+          - name: githubapp-tokens
+            mountPath: /secrets/githubapp/tokens
+            readOnly: true
+{{- end }}
+{{- if .Values.githubApp.enabled }}
+      volumes:
+      - name: githubapp-tokens
+        secret:
+          secretName: tide-githubapp-tokens
+{{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
 {{- end }}
