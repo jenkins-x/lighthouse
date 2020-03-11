@@ -40,7 +40,7 @@ pipelineConfig:
           - name: GH_ACCESS_TOKEN
             valueFrom:
               secretKeyRef:
-                name: jenkins-x-versions-bot-test-github
+                name: lighthouse-bot-test-github
                 key: password
           - name: JENKINS_PASSWORD
             valueFrom:
