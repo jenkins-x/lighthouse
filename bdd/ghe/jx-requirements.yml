@@ -1,5 +1,7 @@
 cluster:
   clusterName: lh-bdd-ghe
+  devEnvApprovers:
+    - dev2
   project: jenkins-x-bdd3
   provider: gke
   zone: europe-west1-c
