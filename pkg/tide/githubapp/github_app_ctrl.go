@@ -5,9 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/go-scm/scm/transport"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	jxutil "github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
@@ -30,7 +28,7 @@ const (
 
 type gitHubAppTideController struct {
 	controllers        []tide.Controller
-	ownerTokenFinder   *OwnerTokensDir
+	ownerTokenFinder   *util.OwnerTokensDir
 	gitServer          string
 	githubAppSecretDir string
 	configAgent        *config.Agent
@@ -50,7 +48,7 @@ func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.A
 
 	gitServer := GithubServer
 	return &gitHubAppTideController{
-		ownerTokenFinder:  NewOwnerTokensDir(gitServer, githubAppSecretDir),
+		ownerTokenFinder:  util.NewOwnerTokensDir(gitServer, githubAppSecretDir),
 		gitServer:         gitServer,
 		configAgent:       configAgent,
 		botName:           botName,
@@ -163,10 +161,11 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 		return nil, errors.Errorf("no GitHub App token for %s", owner)
 	}
 
-	scmClient, err := createTideGitHubAppScmClient(g.gitServer, token)
+	scmClient, err := factory.NewClient("github", g.gitServer, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
+	util.AddAuthToSCMClient(scmClient, token, true)
 	gitproviderClient := gitprovider.ToClient(scmClient, g.botName)
 	gitClient, err := git.NewClient(g.gitServer, g.gitKind)
 	if err != nil {
@@ -190,31 +189,4 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	}
 	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
 	return c, err
-}
-
-func createTideGitHubAppScmClient(gitServer string, token string) (*scm.Client, error) {
-	client, err := factory.NewClient("github", gitServer, "")
-	defaultScmTransport(client)
-	auth := &transport.Authorization{
-		Base:        http.DefaultTransport,
-		Scheme:      "token",
-		Credentials: token,
-	}
-	tr := &transport.Custom{Base: auth,
-		Before: func(r *http.Request) {
-			r.Header.Set("Accept", "application/vnd.github.machine-man-preview+json")
-		},
-	}
-	client.Client.Transport = tr
-
-	return client, err
-}
-
-func defaultScmTransport(scmClient *scm.Client) {
-	if scmClient.Client == nil {
-		scmClient.Client = http.DefaultClient
-	}
-	if scmClient.Client.Transport == nil {
-		scmClient.Client.Transport = http.DefaultTransport
-	}
 }

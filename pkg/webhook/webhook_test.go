@@ -11,6 +11,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -78,15 +79,16 @@ func (suite *WebhookTestSuite) SetupSuite() {
 
 	var objs []runtime.Object
 	kubeClient := fake.NewSimpleClientset(objs...)
-	scmClient, serverURL, token, err := options.createSCMClient()
+	scmClient, serverURL, err := options.createSCMClient()
 	assert.NoError(t, err)
 	gitClient, err := git.NewClient(serverURL, options.gitKind())
 	assert.NoError(t, err)
 	user := options.GetBotName()
+	token, err := options.createSCMToken(options.gitKind())
 	gitClient.SetCredentials(user, func() []byte {
 		return []byte(token)
 	})
-
+	util.AddAuthToSCMClient(scmClient, token, false)
 	suite.WebhookOptions = &Options{
 		server: &hook.Server{
 			ConfigAgent: configAgent,
