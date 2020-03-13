@@ -9,7 +9,6 @@ import (
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	jxutil "github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
-	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
@@ -35,7 +34,6 @@ type gitHubAppTideController struct {
 	botName            string
 	gitKind            string
 	maxRecordsPerPool  int
-	opener             io.Opener
 	historyURI         string
 	statusURI          string
 	logger             *logrus.Entry
@@ -44,7 +42,7 @@ type gitHubAppTideController struct {
 
 // NewGitHubAppTideController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
+func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string) (tide.Controller, error) {
 
 	gitServer := GithubServer
 	return &gitHubAppTideController{
@@ -54,7 +52,6 @@ func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.A
 		botName:           botName,
 		gitKind:           gitKind,
 		maxRecordsPerPool: maxRecordsPerPool,
-		opener:            opener,
 		historyURI:        historyURI,
 		statusURI:         statusURI,
 		logger:            logrus.NewEntry(logrus.StandardLogger()),
@@ -110,7 +107,7 @@ func (g *gitHubAppTideController) ServeHTTP(w http.ResponseWriter, r *http.Reque
 }
 
 func (g *gitHubAppTideController) GetHistory() *history.History {
-	answer, err := history.New(g.maxRecordsPerPool, g.opener, g.historyURI)
+	answer, err := history.New(g.maxRecordsPerPool, g.historyURI)
 	if err != nil {
 		return answer
 	}
@@ -187,6 +184,6 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
 	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
+	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
 	return c, err
 }

@@ -33,7 +33,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
@@ -206,11 +205,11 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
-	hist, err := history.New(maxRecordsPerPool, opener, historyURI)
+	hist, err := history.New(maxRecordsPerPool, historyURI)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing history client from %q: %v", historyURI, err)
 	}
@@ -220,7 +219,6 @@ func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launch
 		config:         cfg,
 		newPoolPending: make(chan bool, 1),
 		shutDown:       make(chan bool),
-		opener:         opener,
 		path:           statusURI,
 	}
 	go sc.run()

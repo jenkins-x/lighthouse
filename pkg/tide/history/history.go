@@ -19,10 +19,7 @@ limitations under the License.
 package history
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"sort"
 	"sync"
@@ -30,8 +27,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/io"
 )
 
 // Mock out time for unit testing.
@@ -45,59 +40,16 @@ type History struct {
 	sync.Mutex
 	logSizeLimit int
 
-	opener io.Opener
 	path   string
 }
 
-func readHistory(maxRecordsPerKey int, opener io.Opener, path string) (map[string]*recordLog, error) {
-	reader, err := opener.Reader(context.Background(), path)
-	if io.IsNotExist(err) { // No history exists yet. This is not an error.
-		return map[string]*recordLog{}, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("open: %v", err)
-	}
-	defer io.LogClose(reader)
-	raw, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("read: %v", err)
-	}
-	var recordsByPool map[string][]*Record
-	if err := json.Unmarshal(raw, &recordsByPool); err != nil {
-		return nil, fmt.Errorf("unmarshal: %v", err)
-	}
-
-	// Load records into a new recordLog map.
-	logsByPool := make(map[string]*recordLog, len(recordsByPool))
-	for poolKey, records := range recordsByPool {
-		logsByPool[poolKey] = newRecordLog(maxRecordsPerKey)
-		limit := maxRecordsPerKey
-		if len(records) < limit {
-			limit = len(records)
-		}
-		for i := limit - 1; i >= 0; i-- {
-			logsByPool[poolKey].add(records[i])
-		}
-	}
-	return logsByPool, nil
+func readHistory(maxRecordsPerKey int, path string) (map[string]*recordLog, error) {
+	// TODO: This all needs to be removed eventually but for the moment, we're just going to make history no-op. (apb)
+	return map[string]*recordLog{}, nil
 }
 
-func writeHistory(opener io.Opener, path string, hist map[string][]*Record) error {
-	writer, err := opener.Writer(context.Background(), path)
-	if err != nil {
-		return fmt.Errorf("open: %v", err)
-	}
-	b, err := json.Marshal(hist)
-	if err != nil {
-		return fmt.Errorf("marshal: %v", err)
-	}
-	if _, err := fmt.Fprint(writer, string(b)); err != nil {
-		io.LogClose(writer)
-		return fmt.Errorf("write: %v", err)
-	}
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("close: %v", err)
-	}
+func writeHistory(path string, hist map[string][]*Record) error {
+	// TODO: This all needs to be removed eventually but for the moment, we're just going to make history no-op. (apb)
 	return nil
 }
 
@@ -111,11 +63,10 @@ type Record struct {
 }
 
 // New creates a new History struct with the specificed recordLog size limit.
-func New(maxRecordsPerKey int, opener io.Opener, path string) (*History, error) {
+func New(maxRecordsPerKey int, path string) (*History, error) {
 	hist := &History{
 		logs:         map[string]*recordLog{},
 		logSizeLimit: maxRecordsPerKey,
-		opener:       opener,
 		path:         path,
 	}
 
@@ -123,7 +74,7 @@ func New(maxRecordsPerKey int, opener io.Opener, path string) (*History, error) 
 		// Load existing history from GCS.
 		var err error
 		start := time.Now()
-		hist.logs, err = readHistory(maxRecordsPerKey, hist.opener, hist.path)
+		hist.logs, err = readHistory(maxRecordsPerKey, hist.path)
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +131,7 @@ func (h *History) Flush() {
 	}
 	records := h.AllRecords()
 	start := time.Now()
-	err := writeHistory(h.opener, h.path, records)
+	err := writeHistory(h.path, records)
 	log := logrus.WithFields(logrus.Fields{
 		"duration": time.Since(start).String(),
 		"path":     h.path,

@@ -41,8 +41,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
+)
 
-	"k8s.io/test-infra/prow/pod-utils/decorate"
+const(
+	logMountName            = "logs"
+	logMountPath            = "/logs"
+	codeMountName           = "code"
+	codeMountPath           = "/home/prow/go"
+	toolsMountName          = "tools"
+	toolsMountPath          = "/tools"
+	gcsCredentialsMountName = "gcs-credentials"
+	gcsCredentialsMountPath = "/secrets/gcs"
 )
 
 // Config is a read-only snapshot of the config.
@@ -1026,7 +1035,7 @@ func (c *JobConfig) decorationRequested() bool {
 
 func validateLabels(labels map[string]string) error {
 	for label, value := range labels {
-		for _, prowLabel := range decorate.Labels() {
+		for _, prowLabel := range Labels() {
 			if label == prowLabel {
 				return fmt.Errorf("label %s is reserved for decoration", label)
 			}
@@ -1120,12 +1129,12 @@ func validatePodSpec(jobType v1alpha1.PipelineKind, spec *v1.PodSpec) error {
 	*/
 
 	for _, mount := range spec.Containers[0].VolumeMounts {
-		for _, prowMount := range decorate.VolumeMounts() {
+		for _, prowMount := range VolumeMounts() {
 			if mount.Name == prowMount {
 				return fmt.Errorf("volumeMount name %s is reserved for decoration", prowMount)
 			}
 		}
-		for _, prowMountPath := range decorate.VolumeMountPaths() {
+		for _, prowMountPath := range VolumeMountPaths() {
 			if strings.HasPrefix(mount.MountPath, prowMountPath) || strings.HasPrefix(prowMountPath, mount.MountPath) {
 				return fmt.Errorf("mount %s at %s conflicts with decoration mount at %s", mount.Name, mount.MountPath, prowMountPath)
 			}
@@ -1133,7 +1142,7 @@ func validatePodSpec(jobType v1alpha1.PipelineKind, spec *v1.PodSpec) error {
 	}
 
 	for _, volume := range spec.Volumes {
-		for _, prowVolume := range decorate.VolumeMounts() {
+		for _, prowVolume := range VolumeMounts() {
 			if volume.Name == prowVolume {
 				return fmt.Errorf("volume %s is a reserved for decoration", volume.Name)
 			}
@@ -1311,4 +1320,19 @@ func SetPostsubmitRegexes(ps []Postsubmit) error {
 		ps[i].RegexpChangeMatcher = c
 	}
 	return nil
+}
+
+// Labels returns a string slice with label consts from kube.
+func Labels() []string {
+	return []string{launcher.LighthouseJobTypeLabel, launcher.CreatedByLighthouse, launcher.LighthouseJobIDLabel}
+}
+
+// VolumeMounts returns a string slice with *MountName consts in it.
+func VolumeMounts() []string {
+	return []string{logMountName, codeMountName, toolsMountName, gcsCredentialsMountName}
+}
+
+// VolumeMountPaths returns a string slice with *MountPath consts in it.
+func VolumeMountPaths() []string {
+	return []string{logMountPath, codeMountPath, toolsMountPath, gcsCredentialsMountPath}
 }

@@ -17,9 +17,7 @@ limitations under the License.
 package tide
 
 import (
-	"context"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"sort"
 	"strconv"
@@ -27,17 +25,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 	"github.com/pkg/errors"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"sigs.k8s.io/yaml"
-
-	"github.com/jenkins-x/lighthouse/pkg/io"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
-	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 )
 
 const (
@@ -77,7 +72,6 @@ type statusController struct {
 	blocks  blockers.Blockers
 
 	storedState
-	opener io.Opener
 	path   string
 }
 
@@ -350,58 +344,14 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 }
 
 func (sc *statusController) load() {
-	if sc.path == "" {
-		sc.logger.Debug("No stored state configured")
-		return
-	}
-	entry := sc.logger.WithField("path", sc.path)
-	reader, err := sc.opener.Reader(context.Background(), sc.path)
-	if err != nil {
-		entry.WithError(err).Warn("Cannot open stored state")
-		return
-	}
-	defer io.LogClose(reader)
-
-	buf, err := ioutil.ReadAll(reader)
-	if err != nil {
-		entry.WithError(err).Warn("Cannot read stored state")
-		return
-	}
-
-	var stored storedState
-	if err := yaml.Unmarshal(buf, &stored); err != nil {
-		entry.WithError(err).Warn("Cannot unmarshal stored state")
-		return
-	}
-	sc.storedState = stored
+	// TODO: We need to do a new solution for stored state some day, but for now, no state, so this is a no-op. (apb)
+	return
 }
 
 func (sc *statusController) save(ticker *time.Ticker) {
 	for range ticker.C {
-		if sc.path == "" {
-			return
-		}
-		entry := sc.logger.WithField("path", sc.path)
-		current := sc.storedState
-		buf, err := yaml.Marshal(current)
-		if err != nil {
-			entry.WithError(err).Warn("Cannot marshal state")
-			continue
-		}
-		writer, err := sc.opener.Writer(context.Background(), sc.path)
-		if err != nil {
-			entry.WithError(err).Warn("Cannot open state writer")
-			continue
-		}
-		if _, err = writer.Write(buf); err != nil {
-			entry.WithError(err).Warn("Cannot write state")
-			io.LogClose(writer)
-			continue
-		}
-		if err := writer.Close(); err != nil {
-			entry.WithError(err).Warn("Failed to close written state")
-		}
-		entry.Debug("Saved status state")
+		// TODO: We need to do a new solution for stored state some day, but for now, no state, so this is a no-op. (apb)
+		return
 	}
 }
 
