@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
@@ -40,7 +40,7 @@ import (
 
 	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 
-	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
+	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git/localgit"
 	"github.com/jenkins-x/lighthouse/pkg/tide/history"
@@ -84,7 +84,7 @@ func TestAccumulateBatch(t *testing.T) {
 	type activity struct {
 		prs   []pull
 		job   string
-		state plumber.PipelineState
+		state v1alpha1.PipelineState
 	}
 	tests := []struct {
 		name             string
@@ -106,26 +106,26 @@ func TestAccumulateBatch(t *testing.T) {
 				2: {{Reporter: config.Reporter{Context: "foo"}}},
 			},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			activities: []activity{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
+			activities: []activity{{job: "foo", state: v1alpha1.PendingState, prs: []pull{{1, "a"}}}},
 			pending:    true,
 		},
 		{
 			name:       "pending batch missing presubmits is ignored",
 			presubmits: map[int][]config.Presubmit{1: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
-			activities: []activity{{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}}},
+			activities: []activity{{job: "foo", state: v1alpha1.PendingState, prs: []pull{{1, "a"}}}},
 		},
 		{
 			name:       "batch pending, successful previous run",
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}}},
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "foo", state: v1alpha1.PendingState, prs: []pull{{1, "a"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
 			},
 			pending: true,
 			merges:  []int{2},
@@ -135,9 +135,9 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
 			},
 			merges: []int{2},
 		},
@@ -146,9 +146,9 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 			},
 			merges: []int{1, 2},
 		},
@@ -157,9 +157,9 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: v1alpha1.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 			},
 			combinedContexts: map[string]map[string]commitStatus{
 				"a": {
@@ -176,12 +176,12 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: v1alpha1.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
 			},
 			merges: []int{1, 2},
 		},
@@ -190,10 +190,10 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: plumber.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "foo", state: plumber.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: v1alpha1.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.FailureState, prs: []pull{{1, "c"}, {2, "b"}}},
 			},
 		},
 		{
@@ -201,9 +201,9 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: append(jobSet, config.Presubmit{Reporter: config.Reporter{Context: "boo"}})},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 			},
 		},
 		{
@@ -211,10 +211,10 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{1: jobSet, 2: append(jobSet, config.Presubmit{Reporter: config.Reporter{Context: "boo"}})},
 			pulls:      []pull{{1, "a"}, {2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "boo", state: plumber.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
+				{job: "boo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 			},
 			merges: []int{1, 2},
 		},
@@ -228,10 +228,10 @@ func TestAccumulateBatch(t *testing.T) {
 			presubmits: map[int][]config.Presubmit{2: jobSet},
 			pulls:      []pull{{2, "b"}},
 			activities: []activity{
-				{job: "foo", state: plumber.PendingState, prs: []pull{{1, "a"}}},
-				{job: "foo", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "bar", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
-				{job: "baz", state: plumber.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "foo", state: v1alpha1.PendingState, prs: []pull{{1, "a"}}},
+				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
+				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{2, "b"}}},
 			},
 			pending: false,
 			merges:  []int{2},
@@ -248,19 +248,19 @@ func TestAccumulateBatch(t *testing.T) {
 				}
 				pulls = append(pulls, pr)
 			}
-			var pjs []plumber.PipelineOptions
+			var pjs []v1alpha1.LighthouseJob
 			for _, pj := range test.activities {
-				npj := plumber.PipelineOptions{
-					Spec: plumber.PipelineOptionsSpec{
+				npj := v1alpha1.LighthouseJob{
+					Spec: v1alpha1.LighthouseJobSpec{
 						Job:     pj.job,
 						Context: pj.job,
-						Type:    plumber.BatchJob,
-						Refs:    new(plumber.Refs),
+						Type:    v1alpha1.BatchJob,
+						Refs:    new(v1alpha1.Refs),
 					},
-					Status: plumber.PipelineStatus{State: pj.state},
+					Status: v1alpha1.LighthouseJobStatus{State: pj.state},
 				}
 				for _, pr := range pj.prs {
-					npj.Spec.Refs.Pulls = append(npj.Spec.Refs.Pulls, plumber.Pull{
+					npj.Spec.Refs.Pulls = append(npj.Spec.Refs.Pulls, v1alpha1.Pull{
 						Number: pr.number,
 						SHA:    pr.sha,
 					})
@@ -292,7 +292,7 @@ func TestAccumulate(t *testing.T) {
 	type activity struct {
 		prNumber int
 		job      string
-		state    plumber.PipelineState
+		state    v1alpha1.PipelineState
 		sha      string
 	}
 	tests := []struct {
@@ -319,20 +319,20 @@ func TestAccumulate(t *testing.T) {
 				7: jobSet,
 			},
 			activities: []activity{
-				{2, "job1", plumber.PendingState, "sha2"},
-				{2, "job2", plumber.FailureState, "sha2"},
-				{3, "job1", plumber.PendingState, "sha3"},
-				{3, "job2", plumber.TriggeredState, "sha3"},
-				{4, "job1", plumber.FailureState, "sha4"},
-				{4, "job2", plumber.PendingState, "sha4"},
-				{5, "job1", plumber.PendingState, "sha5"},
-				{5, "job2", plumber.FailureState, "sha5"},
-				{5, "job2", plumber.PendingState, "sha5"},
-				{6, "job1", plumber.SuccessState, "sha6"},
-				{6, "job2", plumber.PendingState, "sha6"},
-				{7, "job1", plumber.SuccessState, "sha7"},
-				{7, "job2", plumber.SuccessState, "sha7"},
-				{7, "job1", plumber.FailureState, "sha7"},
+				{2, "job1", v1alpha1.PendingState, "sha2"},
+				{2, "job2", v1alpha1.FailureState, "sha2"},
+				{3, "job1", v1alpha1.PendingState, "sha3"},
+				{3, "job2", v1alpha1.TriggeredState, "sha3"},
+				{4, "job1", v1alpha1.FailureState, "sha4"},
+				{4, "job2", v1alpha1.PendingState, "sha4"},
+				{5, "job1", v1alpha1.PendingState, "sha5"},
+				{5, "job2", v1alpha1.FailureState, "sha5"},
+				{5, "job2", v1alpha1.PendingState, "sha5"},
+				{6, "job1", v1alpha1.SuccessState, "sha6"},
+				{6, "job2", v1alpha1.PendingState, "sha6"},
+				{7, "job1", v1alpha1.SuccessState, "sha7"},
+				{7, "job2", v1alpha1.SuccessState, "sha7"},
+				{7, "job1", v1alpha1.FailureState, "sha7"},
 			},
 			combinedContexts: map[string]map[string]commitStatus{
 				"sha2": {
@@ -359,15 +359,15 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			activities: []activity{
-				{7, "job1", plumber.SuccessState, ""},
-				{7, "job2", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job2", plumber.SuccessState, ""},
-				{7, "job3", plumber.SuccessState, ""},
-				{7, "job4", plumber.FailureState, ""},
+				{7, "job1", v1alpha1.SuccessState, ""},
+				{7, "job2", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job2", v1alpha1.SuccessState, ""},
+				{7, "job3", v1alpha1.SuccessState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
 			},
 
 			successes: []int{},
@@ -386,15 +386,15 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			activities: []activity{
-				{7, "job1", plumber.FailureState, ""},
-				{7, "job2", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job2", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
+				{7, "job1", v1alpha1.FailureState, ""},
+				{7, "job2", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job2", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
 			},
 
 			successes: []int{},
@@ -413,16 +413,16 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			activities: []activity{
-				{7, "job1", plumber.SuccessState, ""},
-				{7, "job2", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job2", plumber.SuccessState, ""},
-				{7, "job3", plumber.SuccessState, ""},
-				{7, "job4", plumber.SuccessState, ""},
-				{7, "job1", plumber.FailureState, ""},
+				{7, "job1", v1alpha1.SuccessState, ""},
+				{7, "job2", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job2", v1alpha1.SuccessState, ""},
+				{7, "job3", v1alpha1.SuccessState, ""},
+				{7, "job4", v1alpha1.SuccessState, ""},
+				{7, "job1", v1alpha1.FailureState, ""},
 			},
 
 			successes: []int{7},
@@ -441,16 +441,16 @@ func TestAccumulate(t *testing.T) {
 				},
 			},
 			activities: []activity{
-				{7, "job1", plumber.SuccessState, ""},
-				{7, "job2", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job3", plumber.FailureState, ""},
-				{7, "job4", plumber.FailureState, ""},
-				{7, "job2", plumber.SuccessState, ""},
-				{7, "job3", plumber.SuccessState, ""},
-				{7, "job4", plumber.PendingState, ""},
-				{7, "job1", plumber.FailureState, ""},
+				{7, "job1", v1alpha1.SuccessState, ""},
+				{7, "job2", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job3", v1alpha1.FailureState, ""},
+				{7, "job4", v1alpha1.FailureState, ""},
+				{7, "job2", v1alpha1.SuccessState, ""},
+				{7, "job3", v1alpha1.SuccessState, ""},
+				{7, "job4", v1alpha1.PendingState, ""},
+				{7, "job1", v1alpha1.FailureState, ""},
 			},
 
 			successes: []int{},
@@ -466,10 +466,10 @@ func TestAccumulate(t *testing.T) {
 			},
 			pullRequests: map[int]string{7: "new", 8: "new"},
 			activities: []activity{
-				{7, "job1", plumber.SuccessState, "old"},
-				{7, "job1", plumber.FailureState, "new"},
-				{8, "job1", plumber.FailureState, "old"},
-				{8, "job1", plumber.SuccessState, "new"},
+				{7, "job1", v1alpha1.SuccessState, "old"},
+				{7, "job1", v1alpha1.FailureState, "new"},
+				{8, "job1", v1alpha1.FailureState, "old"},
+				{8, "job1", v1alpha1.SuccessState, "new"},
 			},
 
 			successes: []int{8},
@@ -497,16 +497,16 @@ func TestAccumulate(t *testing.T) {
 					PullRequest{Number: githubql.Int(num), HeadRefOID: githubql.String(sha)},
 				)
 			}
-			var pjs []plumber.PipelineOptions
+			var pjs []v1alpha1.LighthouseJob
 			for _, pj := range test.activities {
-				pjs = append(pjs, plumber.PipelineOptions{
-					Spec: plumber.PipelineOptionsSpec{
+				pjs = append(pjs, v1alpha1.LighthouseJob{
+					Spec: v1alpha1.LighthouseJobSpec{
 						Job:     pj.job,
 						Context: pj.job,
-						Type:    plumber.PresubmitJob,
-						Refs:    &plumber.Refs{Pulls: []plumber.Pull{{Number: pj.prNumber, SHA: pj.sha}}},
+						Type:    v1alpha1.PresubmitJob,
+						Refs:    &v1alpha1.Refs{Pulls: []v1alpha1.Pull{{Number: pj.prNumber, SHA: pj.sha}}},
 					},
-					Status: plumber.PipelineStatus{State: pj.state},
+					Status: v1alpha1.LighthouseJobStatus{State: pj.state},
 				})
 			}
 
@@ -660,52 +660,52 @@ func TestDividePool(t *testing.T) {
 		},
 	}
 	testPJs := []struct {
-		jobType plumber.PipelineKind
+		jobType v1alpha1.PipelineKind
 		org     string
 		repo    string
 		baseRef string
 		baseSHA string
 	}{
 		{
-			jobType: plumber.PresubmitJob,
+			jobType: v1alpha1.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: plumber.BatchJob,
+			jobType: v1alpha1.BatchJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: plumber.PeriodicJob,
+			jobType: v1alpha1.PeriodicJob,
 		},
 		{
-			jobType: plumber.PresubmitJob,
+			jobType: v1alpha1.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "patch",
 			baseSHA: "123",
 		},
 		{
-			jobType: plumber.PresubmitJob,
+			jobType: v1alpha1.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "abc",
 		},
 		{
-			jobType: plumber.PresubmitJob,
+			jobType: v1alpha1.PresubmitJob,
 			org:     "o",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: plumber.PresubmitJob,
+			jobType: v1alpha1.PresubmitJob,
 			org:     "k",
 			repo:    "other",
 			baseRef: "master",
@@ -728,12 +728,12 @@ func TestDividePool(t *testing.T) {
 		npr.Repository.Owner.Login = githubql.String(p.org)
 		pulls[prKey(&npr)] = npr
 	}
-	var pjs []plumber.PipelineOptions
+	var pjs []v1alpha1.LighthouseJob
 	for _, pj := range testPJs {
-		pjs = append(pjs, plumber.PipelineOptions{
-			Spec: plumber.PipelineOptionsSpec{
+		pjs = append(pjs, v1alpha1.LighthouseJob{
+			Spec: v1alpha1.LighthouseJobSpec{
 				Type: pj.jobType,
-				Refs: &plumber.Refs{
+				Refs: &v1alpha1.Refs{
 					Org:     pj.org,
 					Repo:    pj.repo,
 					BaseRef: pj.baseRef,
@@ -764,7 +764,7 @@ func TestDividePool(t *testing.T) {
 			}
 		}
 		for _, pj := range sp.pjs {
-			if pj.Spec.Type != plumber.PresubmitJob && pj.Spec.Type != plumber.BatchJob {
+			if pj.Spec.Type != v1alpha1.PresubmitJob && pj.Spec.Type != v1alpha1.BatchJob {
 				t.Errorf("PJ with bad type in subpool %s: %+v", name, pj)
 			}
 			if pj.Spec.Refs.Org != sp.org || pj.Spec.Refs.Repo != sp.repo || pj.Spec.Refs.BaseRef != sp.branch || pj.Spec.Refs.BaseSHA != sp.sha {
@@ -1363,13 +1363,13 @@ func TestTakeAction(t *testing.T) {
 				return prs
 			}
 			fgc := fgc{mergeErrs: tc.mergeErrs}
-			fakePlumberClient := fake.NewPlumber()
+			fakeLauncher := fake.NewLauncher()
 			c := &DefaultController{
-				logger:        logrus.WithField("controller", "tide"),
-				gc:            gc,
-				config:        ca.Config,
-				spc:           &fgc,
-				plumberClient: fakePlumberClient,
+				logger:         logrus.WithField("controller", "tide"),
+				gc:             gc,
+				config:         ca.Config,
+				spc:            &fgc,
+				launcherClient: fakeLauncher,
 			}
 			var batchPending []PullRequest
 			if tc.batchPending {
@@ -1385,15 +1385,15 @@ func TestTakeAction(t *testing.T) {
 			}
 
 			numCreated := 0
-			var batchJobs []*plumber.PipelineOptions
-			for _, activity := range fakePlumberClient.Pipelines {
+			var batchJobs []*v1alpha1.LighthouseJob
+			for _, activity := range fakeLauncher.Pipelines {
 				pjSha := activity.Spec.Refs.Pulls[0].SHA
 				if scm.StatePending.String() != fgc.combinedStatus[pjSha][activity.Spec.Context].status {
 					t.Errorf("Status not set to %s for context %s, is %s instead", scm.StatePending.String(), activity.Spec.Context,
 						fgc.combinedStatus[pjSha][activity.Spec.Context].status)
 				}
 				numCreated++
-				if activity.Spec.Type == plumber.BatchJob {
+				if activity.Spec.Type == v1alpha1.BatchJob {
 					batchJobs = append(batchJobs, activity)
 				}
 			}
@@ -1642,7 +1642,7 @@ func TestSync(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Starting case %q...", tc.name)
 		fgc := &fgc{prs: tc.prs}
-		fakePlumberClient := fake.NewPlumber()
+		fakeLauncher := fake.NewLauncher()
 		fakeTektonClient := tektonfake.NewSimpleClientset()
 		ca := &config.Agent{}
 		ca.Set(&config.Config{
@@ -1668,13 +1668,13 @@ func TestSync(t *testing.T) {
 		go sc.run()
 		defer sc.shutdown()
 		c := &DefaultController{
-			config:        ca.Config,
-			spc:           fgc,
-			plumberClient: fakePlumberClient,
-			tektonClient:  fakeTektonClient,
-			ns:            "jx",
-			logger:        logrus.WithField("controller", "sync"),
-			sc:            sc,
+			config:         ca.Config,
+			spc:            fgc,
+			launcherClient: fakeLauncher,
+			tektonClient:   fakeTektonClient,
+			ns:             "jx",
+			logger:         logrus.WithField("controller", "sync"),
+			sc:             sc,
 			changedFiles: &changedFilesAgent{
 				spc:             fgc,
 				nextChangeCache: make(map[changeCacheKey][]string),
@@ -2512,7 +2512,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 		name               string
 		presubmits         map[int][]config.Presubmit
 		prs                []PullRequest
-		pjs                []plumber.PipelineOptions
+		pjs                []v1alpha1.LighthouseJob
 		expectedPresubmits map[int][]config.Presubmit
 	}{
 		{
@@ -2536,18 +2536,18 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				Number:     githubql.Int(1),
 				HeadRefOID: githubql.String("sha"),
 			}},
-			pjs: []plumber.PipelineOptions{{
-				Spec: plumber.PipelineOptionsSpec{
-					Type: plumber.PresubmitJob,
-					Refs: &plumber.Refs{
-						Pulls: []plumber.Pull{{
+			pjs: []v1alpha1.LighthouseJob{{
+				Spec: v1alpha1.LighthouseJobSpec{
+					Type: v1alpha1.PresubmitJob,
+					Refs: &v1alpha1.Refs{
+						Pulls: []v1alpha1.Pull{{
 							Number: 1,
 							SHA:    "sha",
 						}},
 					},
 					Context: "my-presubmit",
 				},
-				Status: plumber.PipelineStatus{State: plumber.SuccessState},
+				Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.SuccessState},
 			}},
 			presubmits: map[int][]config.Presubmit{
 				1: {{Reporter: config.Reporter{Context: "my-presubmit"}}},
@@ -2559,18 +2559,18 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				Number:     githubql.Int(1),
 				HeadRefOID: githubql.String("sha"),
 			}},
-			pjs: []plumber.PipelineOptions{{
-				Spec: plumber.PipelineOptionsSpec{
-					Type: plumber.PresubmitJob,
-					Refs: &plumber.Refs{
-						Pulls: []plumber.Pull{{
+			pjs: []v1alpha1.LighthouseJob{{
+				Spec: v1alpha1.LighthouseJobSpec{
+					Type: v1alpha1.PresubmitJob,
+					Refs: &v1alpha1.Refs{
+						Pulls: []v1alpha1.Pull{{
 							Number: 1,
 							SHA:    "sha",
 						}},
 					},
 					Context: "my-presubmit",
 				},
-				Status: plumber.PipelineStatus{State: plumber.PendingState},
+				Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.PendingState},
 			}},
 			presubmits: map[int][]config.Presubmit{
 				1: {{Reporter: config.Reporter{Context: "my-presubmit"}}}},
@@ -2581,45 +2581,45 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				Number:     githubql.Int(1),
 				HeadRefOID: githubql.String("sha"),
 			}},
-			pjs: []plumber.PipelineOptions{
+			pjs: []v1alpha1.LighthouseJob{
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-successful-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.SuccessState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.SuccessState},
 				},
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-pending-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.PendingState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.PendingState},
 				},
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-failing-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.FailureState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.FailureState},
 				},
 			},
 			presubmits: map[int][]config.Presubmit{
@@ -2647,84 +2647,84 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 					HeadRefOID: githubql.String("sha"),
 				},
 			},
-			pjs: []plumber.PipelineOptions{
+			pjs: []v1alpha1.LighthouseJob{
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-successful-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.SuccessState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.SuccessState},
 				},
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-pending-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.PendingState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.PendingState},
 				},
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 1,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-failing-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.FailureState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.FailureState},
 				},
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 2,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-successful-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.SuccessState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.SuccessState},
 				},
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 2,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-pending-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.PendingState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.PendingState},
 				},
 				{
-					Spec: plumber.PipelineOptionsSpec{
-						Type: plumber.PresubmitJob,
-						Refs: &plumber.Refs{
-							Pulls: []plumber.Pull{{
+					Spec: v1alpha1.LighthouseJobSpec{
+						Type: v1alpha1.PresubmitJob,
+						Refs: &v1alpha1.Refs{
+							Pulls: []v1alpha1.Pull{{
 								Number: 2,
 								SHA:    "sha",
 							}},
 						},
 						Context: "my-failing-presubmit",
 					},
-					Status: plumber.PipelineStatus{State: plumber.FailureState},
+					Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.FailureState},
 				},
 			},
 			presubmits: map[int][]config.Presubmit{

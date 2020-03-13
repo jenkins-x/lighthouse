@@ -22,7 +22,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
@@ -110,8 +110,8 @@ type scmProviderClient interface {
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-type plumberClient interface {
-	Create(*plumber.PipelineOptions, metapipeline.Client, scm.Repository) (*plumber.PipelineOptions, error)
+type launcher interface {
+	Launch(*v1alpha1.LighthouseJob, metapipeline.Client, scm.Repository) (*v1alpha1.LighthouseJob, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.
@@ -119,7 +119,7 @@ type plumberClient interface {
 // TODO(fejta): consider exporting an interface rather than a struct
 type Client struct {
 	SCMProviderClient  scmProviderClient
-	PlumberClient      plumberClient
+	LauncherClient     launcher
 	Config             *config.Config
 	Logger             *logrus.Entry
 	MetapipelineClient metapipeline.Client
@@ -135,7 +135,7 @@ func getClient(pc plugins.Agent) Client {
 	return Client{
 		SCMProviderClient:  pc.SCMProviderClient,
 		Config:             pc.Config,
-		PlumberClient:      pc.PlumberClient,
+		LauncherClient:     pc.LauncherClient,
 		Logger:             pc.Logger,
 		MetapipelineClient: pc.MetapipelineClient,
 	}
@@ -254,9 +254,9 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 	for _, job := range requestedJobs {
 		c.Logger.Infof("Starting %s build.", job.Name)
 		pj := pjutil.NewPresubmit(pr, baseSHA, job, eventGUID)
-		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient, pr.Repository()); err != nil {
-			c.Logger.WithError(err).Error("Failed to create plumberJob.")
+		c.Logger.WithFields(pjutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
+		if _, err := c.LauncherClient.Launch(&pj, c.MetapipelineClient, pr.Repository()); err != nil {
+			c.Logger.WithError(err).Error("Failed to create LighthouseJob.")
 			errors = append(errors, err)
 			if _, statusErr := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
 				errors = append(errors, statusErr)

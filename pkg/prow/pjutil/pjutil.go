@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package pjutil contains helpers for working with PlumberJobs.
+// Package pjutil contains helpers for working with LighthouseJobs.
 package pjutil
 
 import (
@@ -25,7 +25,8 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,12 +37,12 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
-// NewPlumberJob initializes a PipelineOptions out of a PipelineOptionsSpec.
-func NewPlumberJob(spec plumber.PipelineOptionsSpec, extraLabels, extraAnnotations map[string]string) plumber.PipelineOptions {
+// NewLighthouseJob initializes a LighthouseJob out of a LighthouseJobSpec.
+func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotations map[string]string) v1alpha1.LighthouseJob {
 	labels, annotations := LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
 	newID, _ := uuid.NewV1()
 
-	return plumber.PipelineOptions{
+	return v1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "prow.k8s.io/v1",
 			Kind:       "PipelineOptions",
@@ -55,12 +56,12 @@ func NewPlumberJob(spec plumber.PipelineOptionsSpec, extraLabels, extraAnnotatio
 	}
 }
 
-func createRefs(pr *scm.PullRequest, baseSHA string) plumber.Refs {
+func createRefs(pr *scm.PullRequest, baseSHA string) v1alpha1.Refs {
 	org := pr.Base.Repo.Namespace
 	repo := pr.Base.Repo.Name
 	number := pr.Number
 	repoLink := pr.Base.Repo.Link
-	return plumber.Refs{
+	return v1alpha1.Refs{
 		Org:      org,
 		Repo:     repo,
 		RepoLink: repoLink,
@@ -68,7 +69,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string) plumber.Refs {
 
 		BaseRef: pr.Base.Ref,
 		BaseSHA: baseSHA,
-		Pulls: []plumber.Pull{
+		Pulls: []v1alpha1.Pull{
 			{
 				Number:     number,
 				Author:     pr.Author.Login,
@@ -84,7 +85,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string) plumber.Refs {
 // NewPresubmit converts a config.Presubmit into a builder.PipelineOptions.
 // The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a gitprovider.EventGUID label.
-func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) plumber.PipelineOptions {
+func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) v1alpha1.LighthouseJob {
 	refs := createRefs(pr, baseSHA)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
@@ -95,13 +96,13 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eve
 		annotations[k] = v
 	}
 	labels[gitprovider.EventGUID] = eventGUID
-	return NewPlumberJob(PresubmitSpec(job, refs), labels, annotations)
+	return NewLighthouseJob(PresubmitSpec(job, refs), labels, annotations)
 }
 
 // PresubmitSpec initializes a PipelineOptionsSpec for a given presubmit job.
-func PresubmitSpec(p config.Presubmit, refs plumber.Refs) plumber.PipelineOptionsSpec {
+func PresubmitSpec(p config.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = plumber.PresubmitJob
+	pjs.Type = v1alpha1.PresubmitJob
 	pjs.Context = p.Context
 	pjs.RerunCommand = p.RerunCommand
 	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
@@ -110,9 +111,9 @@ func PresubmitSpec(p config.Presubmit, refs plumber.Refs) plumber.PipelineOption
 }
 
 // PostsubmitSpec initializes a PipelineOptionsSpec for a given postsubmit job.
-func PostsubmitSpec(p config.Postsubmit, refs plumber.Refs) plumber.PipelineOptionsSpec {
+func PostsubmitSpec(p config.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = plumber.PostsubmitJob
+	pjs.Type = v1alpha1.PostsubmitJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
 
@@ -120,36 +121,36 @@ func PostsubmitSpec(p config.Postsubmit, refs plumber.Refs) plumber.PipelineOpti
 }
 
 // PeriodicSpec initializes a PipelineOptionsSpec for a given periodic job.
-func PeriodicSpec(p config.Periodic) plumber.PipelineOptionsSpec {
+func PeriodicSpec(p config.Periodic) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = plumber.PeriodicJob
+	pjs.Type = v1alpha1.PeriodicJob
 
 	return pjs
 }
 
 // BatchSpec initializes a PipelineOptionsSpec for a given batch job and ref spec.
-func BatchSpec(p config.Presubmit, refs plumber.Refs) plumber.PipelineOptionsSpec {
+func BatchSpec(p config.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.JobBase)
-	pjs.Type = plumber.BatchJob
+	pjs.Type = v1alpha1.BatchJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
 
 	return pjs
 }
 
-func specFromJobBase(jb config.JobBase) plumber.PipelineOptionsSpec {
+func specFromJobBase(jb config.JobBase) v1alpha1.LighthouseJobSpec {
 	var namespace string
 	if jb.Namespace != nil {
 		namespace = *jb.Namespace
 	}
-	return plumber.PipelineOptionsSpec{
+	return v1alpha1.LighthouseJobSpec{
 		Job:            jb.Name,
 		Namespace:      namespace,
 		MaxConcurrency: jb.MaxConcurrency,
 	}
 }
 
-func completePrimaryRefs(refs plumber.Refs, jb config.JobBase) *plumber.Refs {
+func completePrimaryRefs(refs v1alpha1.Refs, jb config.JobBase) *v1alpha1.Refs {
 	if jb.PathAlias != "" {
 		refs.PathAlias = jb.PathAlias
 	}
@@ -162,8 +163,8 @@ func completePrimaryRefs(refs plumber.Refs, jb config.JobBase) *plumber.Refs {
 	return &refs
 }
 
-// PlumberJobFields extracts logrus fields from a plumberJob useful for logging.
-func PlumberJobFields(pj *plumber.PipelineOptions) logrus.Fields {
+// LighthouseJobFields extracts logrus fields from a LighthouseJob useful for logging.
+func LighthouseJobFields(pj *v1alpha1.LighthouseJob) logrus.Fields {
 	fields := make(logrus.Fields)
 	fields["name"] = pj.ObjectMeta.Name
 	fields["job"] = pj.Spec.Job
@@ -179,10 +180,10 @@ func PlumberJobFields(pj *plumber.PipelineOptions) logrus.Fields {
 	return fields
 }
 
-// JobURL returns the expected URL for PlumberJobStatus.
+// JobURL returns the expected URL for LighthouseJobStatus.
 //
 // TODO(fejta): consider moving default JobURLTemplate and JobURLPrefix out of plank
-func JobURL(plank config.Plank, pj plumber.PipelineOptions, log *logrus.Entry) string {
+func JobURL(plank config.Plank, pj v1alpha1.LighthouseJob, log *logrus.Entry) string {
 	/*	if pj.Spec.DecorationConfig != nil && plank.GetJobURLPrefix(pj.Spec.Refs) != "" {
 			spec := downwardapi.NewJobSpec(pj.Spec, pj.Status.BuildID, pj.Name)
 			gcsConfig := pj.Spec.DecorationConfig.GCSConfiguration
@@ -195,34 +196,34 @@ func JobURL(plank config.Plank, pj plumber.PipelineOptions, log *logrus.Entry) s
 	*/
 	var b bytes.Buffer
 	if err := plank.JobURLTemplate.Execute(&b, &pj); err != nil {
-		log.WithFields(PlumberJobFields(&pj)).Errorf("error executing URL template: %v", err)
+		log.WithFields(LighthouseJobFields(&pj)).Errorf("error executing URL template: %v", err)
 	} else {
 		return b.String()
 	}
 	return ""
 }
 
-// LabelsAndAnnotationsForSpec returns a minimal set of labels to add to plumberJobs or its owned resources.
+// LabelsAndAnnotationsForSpec returns a minimal set of labels to add to LighthouseJobs or its owned resources.
 //
 // User-provided extraLabels and extraAnnotations values will take precedence over auto-provided values.
-func LabelsAndAnnotationsForSpec(spec plumber.PipelineOptionsSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
 	jobNameForLabel := spec.Job
 	if len(jobNameForLabel) > validation.LabelValueMaxLength {
 		// TODO(fejta): consider truncating middle rather than end.
 		jobNameForLabel = strings.TrimRight(spec.Job[:validation.LabelValueMaxLength], ".-")
 		logrus.WithFields(logrus.Fields{
 			"job":       spec.Job,
-			"key":       plumber.PlumberJobAnnotation,
+			"key":       launcher.LighthouseJobAnnotation,
 			"value":     spec.Job,
 			"truncated": jobNameForLabel,
 		}).Info("Cannot use full job name, will truncate.")
 	}
 	labels := map[string]string{
-		kube.CreatedByProw:           "true",
-		plumber.PlumberJobTypeLabel:  string(spec.Type),
-		plumber.PlumberJobAnnotation: jobNameForLabel,
+		kube.CreatedByProw:               "true",
+		launcher.LighthouseJobTypeLabel:  string(spec.Type),
+		launcher.LighthouseJobAnnotation: jobNameForLabel,
 	}
-	if spec.Type != plumber.PeriodicJob && spec.Refs != nil {
+	if spec.Type != v1alpha1.PeriodicJob && spec.Refs != nil {
 		labels[kube.OrgLabel] = spec.Refs.Org
 		labels[kube.RepoLabel] = spec.Refs.Repo
 		if len(spec.Refs.Pulls) > 0 {
@@ -253,7 +254,7 @@ func LabelsAndAnnotationsForSpec(spec plumber.PipelineOptionsSpec, extraLabels, 
 	}
 
 	annotations := map[string]string{
-		plumber.PlumberJobAnnotation: spec.Job,
+		launcher.LighthouseJobAnnotation: spec.Job,
 	}
 	for k, v := range extraAnnotations {
 		annotations[k] = v
@@ -263,11 +264,11 @@ func LabelsAndAnnotationsForSpec(spec plumber.PipelineOptionsSpec, extraLabels, 
 }
 
 // LabelsAndAnnotationsForJob returns a standard set of labels to add to pod/build/etc resources.
-func LabelsAndAnnotationsForJob(pj plumber.PipelineOptions) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForJob(pj v1alpha1.LighthouseJob) (map[string]string, map[string]string) {
 	var extraLabels map[string]string
 	if extraLabels = pj.ObjectMeta.Labels; extraLabels == nil {
 		extraLabels = map[string]string{}
 	}
-	extraLabels[plumber.PlumberJobIDLabel] = pj.ObjectMeta.Name
+	extraLabels[launcher.LighthouseJobIDLabel] = pj.ObjectMeta.Name
 	return LabelsAndAnnotationsForSpec(pj.Spec, extraLabels, nil)
 }

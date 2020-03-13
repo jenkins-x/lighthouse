@@ -28,7 +28,7 @@ type Client interface {
 }
 
 // client can clone repos. It keeps a local cache, so successive clones of the
-// same repo should be quick. Create with NewClient. Be sure to clean it up.
+// same repo should be quick. Launch with NewClient. Be sure to clean it up.
 type client struct {
 	// logger will be used to log git operations and must be set.
 	logger *logrus.Entry
@@ -196,7 +196,7 @@ func gitHost(s string) string {
 	return strings.TrimPrefix(s, "https://")
 }
 
-// Repo is a clone of a git repository. Create with Client.Clone, and don't
+// Repo is a clone of a git repository. Launch with Client.Clone, and don't
 // forget to clean it up after.
 type Repo struct {
 	// Dir is the location of the git repo.
@@ -249,7 +249,7 @@ func (r *Repo) RevParse(commitlike string) (string, error) {
 
 // CheckoutNewBranch creates a new branch and checks it out.
 func (r *Repo) CheckoutNewBranch(branch string) error {
-	r.logger.Infof("Create and checkout %s.", branch)
+	r.logger.Infof("Launch and checkout %s.", branch)
 	co := r.gitCommand("checkout", "-b", branch)
 	if b, err := co.CombinedOutput(); err != nil {
 		return fmt.Errorf("error checking out %s: %v. output: %s", branch, err, string(b))

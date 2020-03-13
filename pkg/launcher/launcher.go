@@ -1,4 +1,4 @@
-package plumber
+package launcher
 
 import (
 	"fmt"
@@ -10,26 +10,27 @@ import (
 	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
 	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PipelineBuilder default builder
-type PipelineBuilder struct {
+// launcher default launcher
+type launcher struct {
 	jxClient  jxclient.Interface
 	namespace string
 }
 
-// NewPlumber creates a new builder
-func NewPlumber(jxClient jxclient.Interface, namespace string) (Plumber, error) {
-	b := &PipelineBuilder{jxClient, namespace}
+// NewLauncher creates a new builder
+func NewLauncher(jxClient jxclient.Interface, namespace string) (PipelineLauncher, error) {
+	b := &launcher{jxClient, namespace}
 	return b, nil
 }
 
-// Create creates a pipeline
-func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*PipelineOptions, error) {
+// Launch creates a pipeline
+func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient metapipeline.Client, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
 	spec := &request.Spec
 
 	name := repository.Name
@@ -101,12 +102,12 @@ func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient me
 	return request, nil
 }
 
-func (b *PipelineBuilder) getBranch(spec *PipelineOptionsSpec) string {
+func (b *launcher) getBranch(spec *v1alpha1.LighthouseJobSpec) string {
 	branch := spec.Refs.BaseRef
-	if spec.Type == PostsubmitJob {
+	if spec.Type == v1alpha1.PostsubmitJob {
 		return branch
 	}
-	if spec.Type == BatchJob {
+	if spec.Type == v1alpha1.BatchJob {
 		return "batch"
 	}
 	if len(spec.Refs.Pulls) > 0 {
@@ -115,7 +116,7 @@ func (b *PipelineBuilder) getBranch(spec *PipelineOptionsSpec) string {
 	return branch
 }
 
-func (b *PipelineBuilder) getPullRefs(sourceURL string, spec *PipelineOptionsSpec) metapipeline.PullRef {
+func (b *launcher) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobSpec) metapipeline.PullRef {
 	var pullRef metapipeline.PullRef
 	if len(spec.Refs.Pulls) > 0 {
 		var prs []metapipeline.PullRequestRef
@@ -132,7 +133,7 @@ func (b *PipelineBuilder) getPullRefs(sourceURL string, spec *PipelineOptionsSpe
 }
 
 // List list current pipelines
-func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, error) {
+func (b *launcher) List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, error) {
 	list, err := b.jxClient.JenkinsV1().PipelineActivities(b.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -140,7 +141,7 @@ func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, e
 		}
 		return nil, err
 	}
-	answer := &PipelineOptionsList{}
+	answer := &v1alpha1.LighthouseJobList{}
 	for _, pa := range list.Items {
 		item := ToPipelineOptions(&pa)
 		answer.Items = append(answer.Items, item)
@@ -149,11 +150,11 @@ func (b *PipelineBuilder) List(opts metav1.ListOptions) (*PipelineOptionsList, e
 }
 
 // ToPipelineOptions converts the PipelineActivity to a PipelineOptions object
-func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
+func ToPipelineOptions(activity *v1.PipelineActivity) v1alpha1.LighthouseJob {
 	spec := activity.Spec
 	baseRef := "master"
 
-	ref := &Refs{
+	ref := &v1alpha1.Refs{
 		Org:      spec.GitOwner,
 		Repo:     spec.GitRepository,
 		RepoLink: spec.GitURL,
@@ -161,13 +162,13 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 		BaseSHA:  spec.BaseSHA,
 	}
 
-	kind := PresubmitJob
+	kind := v1alpha1.PresubmitJob
 
 	// TODO: Something for periodic.
 	if spec.GitBranch == "master" {
-		kind = PostsubmitJob
+		kind = v1alpha1.PostsubmitJob
 	} else if len(spec.BatchPipelineActivity.ComprisingPulLRequests) > 0 {
-		kind = BatchJob
+		kind = v1alpha1.BatchJob
 	}
 
 	if strings.HasPrefix(spec.GitBranch, "PR-") {
@@ -175,7 +176,7 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 		if nt != "" {
 			n, err := strconv.Atoi(nt)
 			if err == nil {
-				ref.Pulls = append(ref.Pulls, Pull{
+				ref.Pulls = append(ref.Pulls, v1alpha1.Pull{
 					Number: n,
 					SHA:    spec.LastCommitSHA,
 					Title:  spec.PullTitle,
@@ -189,9 +190,9 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 		}
 	}
 
-	return PipelineOptions{
+	return v1alpha1.LighthouseJob{
 		ObjectMeta: activity.ObjectMeta,
-		Spec: PipelineOptionsSpec{
+		Spec: v1alpha1.LighthouseJobSpec{
 			Type:           kind,
 			Namespace:      activity.Namespace,
 			Job:            spec.Pipeline,
@@ -201,24 +202,6 @@ func ToPipelineOptions(activity *v1.PipelineActivity) PipelineOptions {
 			MaxConcurrency: 0,
 			LastCommitSHA:  spec.LastCommitSHA,
 		},
-		Status: PipelineStatus{State: ToPipelineState(spec.Status)},
-	}
-}
-
-// ToPipelineState converts the PipelineActivity state to plumber state
-func ToPipelineState(status v1.ActivityStatusType) PipelineState {
-	switch status {
-	case v1.ActivityStatusTypePending:
-		return PendingState
-	case v1.ActivityStatusTypeAborted:
-		return AbortedState
-	case v1.ActivityStatusTypeRunning:
-		return RunningState
-	case v1.ActivityStatusTypeSucceeded:
-		return SuccessState
-	case v1.ActivityStatusTypeFailed, v1.ActivityStatusTypeError:
-		return FailureState
-	default:
-		return FailureState
+		Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.ToPipelineState(spec.Status)},
 	}
 }

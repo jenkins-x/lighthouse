@@ -1,4 +1,4 @@
-package plumber_test
+package launcher_test
 
 import (
 	"io/ioutil"
@@ -8,7 +8,8 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/google/go-cmp/cmp"
 	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,11 +42,11 @@ func TestPipelineActivityConvert(t *testing.T) {
 			data, err = ioutil.ReadFile(expectedFile)
 			require.NoError(t, err, "cannot read file %s", expectedFile)
 
-			expected := plumber.PipelineOptions{}
+			expected := v1alpha1.LighthouseJob{}
 			err = yaml.Unmarshal(data, &expected)
 			require.NoError(t, err, "cannot unmarshal YAML in file %s", expectedFile)
 
-			actual := plumber.ToPipelineOptions(&activity)
+			actual := launcher.ToPipelineOptions(&activity)
 
 			data, err = yaml.Marshal(&actual)
 			require.NoError(t, err, "failed to marshal PipelineOption")

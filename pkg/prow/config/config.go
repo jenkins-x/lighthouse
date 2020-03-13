@@ -30,7 +30,8 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/org"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/sirupsen/logrus"
@@ -75,13 +76,13 @@ type ProwConfig struct {
 	// TODO: Move this out of the main config.
 	JenkinsOperators []JenkinsOperator `json:"jenkins_operators,omitempty"`
 
-	// PlumberJobNamespace is the namespace in the cluster that prow
-	// components will use for looking up PlumberJobs. The namespace
+	// LighthouseJobNamespace is the namespace in the cluster that prow
+	// components will use for looking up LighthouseJobs. The namespace
 	// needs to exist and will not be created by prow.
 	// Defaults to "default".
-	PlumberJobNamespace string `json:"plumberJob_namespace,omitempty"`
+	LighthouseJobNamespace string `json:"lighthouseJob_namespace,omitempty"`
 	// PodNamespace is the namespace in the cluster that prow
-	// components will use for looking up Pods owned by PlumberJobs.
+	// components will use for looking up Pods owned by LighthouseJobs.
 	// The namespace needs to exist and will not be created by prow.
 	// Defaults to "default".
 	PodNamespace string `json:"pod_namespace,omitempty"`
@@ -173,7 +174,7 @@ type Plank struct {
 	// PodPendingTimeout is after how long the controller will perform a garbage
 	// collection on pending pods. Defaults to one day.
 	PodPendingTimeout time.Duration `json:"-"`
-	/*	// DefaultDecorationConfig are defaults for shared fields for PlumberJobs
+	/*	// DefaultDecorationConfig are defaults for shared fields for LighthouseJobs
 		// that request to have their PodSpecs decorated
 		DefaultDecorationConfig *builder.DecorationConfig `json:"default_decoration_config,omitempty"`
 	*/
@@ -215,11 +216,11 @@ type Sinker struct {
 	// ResyncPeriod is how often the controller will perform a garbage
 	// collection. Defaults to one hour.
 	ResyncPeriod time.Duration `json:"-"`
-	// MaxPlumberJobAgeString compiles into MaxPlumberJobAge at load time.
-	MaxPlumberJobAgeString string `json:"max_plumberJob_age,omitempty"`
-	// MaxPlumberJobAge is how old a PipelineOptions can be before it is garbage-collected.
+	// MaxLighthouseJobAgeString compiles into MaxLighthouseJobAge at load time.
+	MaxLighthouseJobAgeString string `json:"max_lighthouseJob_age,omitempty"`
+	// MaxLighthouseJobAge is how old a LighthouseJob can be before it is garbage-collected.
 	// Defaults to one week.
-	MaxPlumberJobAge time.Duration `json:"-"`
+	MaxLighthouseJobAge time.Duration `json:"-"`
 	// MaxPodAgeString compiles into MaxPodAge at load time.
 	MaxPodAgeString string `json:"max_pod_age,omitempty"`
 	// MaxPodAge is how old a Pod can be before it is garbage-collected.
@@ -624,7 +625,7 @@ func (c *Config) validateComponentConfig() error {
 
 var jobNameRegex = regexp.MustCompile(`^[A-Za-z0-9-._]+$`)
 
-func validateJobBase(v JobBase, jobType plumber.PipelineKind, podNamespace string) error {
+func validateJobBase(v JobBase, jobType v1alpha1.PipelineKind, podNamespace string) error {
 	if !jobNameRegex.MatchString(v.Name) {
 		return fmt.Errorf("name: must match regex %q", jobNameRegex.String())
 	}
@@ -670,7 +671,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, v := range c.AllPresubmits(nil) {
-		if err := validateJobBase(v.JobBase, plumber.PresubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(v.JobBase, v1alpha1.PresubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid presubmit job %s: %v", v.Name, err)
 		}
 		if err := validateTriggering(v); err != nil {
@@ -694,7 +695,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, j := range c.AllPostsubmits(nil) {
-		if err := validateJobBase(j.JobBase, plumber.PostsubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(j.JobBase, v1alpha1.PostsubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid postsubmit job %s: %v", j.Name, err)
 		}
 	}
@@ -707,7 +708,7 @@ func (c *Config) validateJobConfig() error {
 			return fmt.Errorf("duplicated periodic job : %s", p.Name)
 		}
 		validPeriodics.Insert(p.Name)
-		if err := validateJobBase(p.JobBase, plumber.PeriodicJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(p.JobBase, v1alpha1.PeriodicJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid periodic job %s: %v", p.Name, err)
 		}
 	}
@@ -905,14 +906,14 @@ func parseProwConfig(c *Config) error {
 		c.Sinker.ResyncPeriod = resyncPeriod
 	}
 
-	if c.Sinker.MaxPlumberJobAgeString == "" {
-		c.Sinker.MaxPlumberJobAge = 7 * 24 * time.Hour
+	if c.Sinker.MaxLighthouseJobAgeString == "" {
+		c.Sinker.MaxLighthouseJobAge = 7 * 24 * time.Hour
 	} else {
-		maxPlumberJobAge, err := time.ParseDuration(c.Sinker.MaxPlumberJobAgeString)
+		maxLighthouseJobAge, err := time.ParseDuration(c.Sinker.MaxLighthouseJobAgeString)
 		if err != nil {
-			return fmt.Errorf("cannot parse duration for max_plumberJob_age: %v", err)
+			return fmt.Errorf("cannot parse duration for max_lighthouseJob_age: %v", err)
 		}
-		c.Sinker.MaxPlumberJobAge = maxPlumberJobAge
+		c.Sinker.MaxLighthouseJobAge = maxLighthouseJobAge
 	}
 
 	if c.Sinker.MaxPodAgeString == "" {
@@ -965,8 +966,8 @@ func parseProwConfig(c *Config) error {
 		}
 	}
 
-	if c.PlumberJobNamespace == "" {
-		c.PlumberJobNamespace = "default"
+	if c.LighthouseJobNamespace == "" {
+		c.LighthouseJobNamespace = "default"
 	}
 	if c.PodNamespace == "" {
 		c.PodNamespace = "default"
@@ -1041,7 +1042,7 @@ func validateLabels(labels map[string]string) error {
 }
 
 func validateAgent(v JobBase, podNamespace string) error {
-	agents := sets.NewString(plumber.TektonAgent)
+	agents := sets.NewString(launcher.TektonAgent)
 	agent := v.Agent
 	switch {
 	case !agents.Has(agent):
@@ -1069,7 +1070,7 @@ func validateAgent(v JobBase, podNamespace string) error {
 	return nil
 }
 
-func validateDecoration(container v1.Container, config *plumber.DecorationConfig) error {
+func validateDecoration(container v1.Container, config *v1alpha1.DecorationConfig) error {
 	if config == nil {
 		return nil
 	}
@@ -1095,7 +1096,7 @@ func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, pre
 	return nil
 }
 
-func validatePodSpec(jobType plumber.PipelineKind, spec *v1.PodSpec) error {
+func validatePodSpec(jobType v1alpha1.PipelineKind, spec *v1.PodSpec) error {
 	if spec == nil {
 		return nil
 	}
@@ -1194,7 +1195,7 @@ func DefaultRerunCommandFor(name string) string {
 // defaultJobBase configures common parameters, currently Agent and Namespace.
 func (c *ProwConfig) defaultJobBase(base *JobBase) {
 	if base.Agent == "" { // Use tekton by default
-		base.Agent = plumber.TektonAgent
+		base.Agent = launcher.TektonAgent
 	}
 	if base.Namespace == nil || *base.Namespace == "" {
 		s := c.PodNamespace

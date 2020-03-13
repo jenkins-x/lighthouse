@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
+	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
@@ -816,11 +816,11 @@ func TestHandleGenericComment(t *testing.T) {
 		} else {
 			g.IssueLabelsExisting = tc.IssueLabels
 		}
-		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}}
-		fakePlumberClient := fake.NewPlumber()
+		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}}
+		fakeLauncher := fake.NewLauncher()
 		c := Client{
 			SCMProviderClient: g,
-			PlumberClient:     fakePlumberClient,
+			LauncherClient:    fakeLauncher,
 			Config:            fakeConfig,
 			Logger:            logrus.WithField("plugin", PluginName),
 		}
@@ -884,17 +884,17 @@ func TestHandleGenericComment(t *testing.T) {
 		if err := handleGenericComment(c, trigger, event); err != nil {
 			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 		}
-		validate(tc.name, fakePlumberClient, g, tc, t)
+		validate(tc.name, fakeLauncher, g, tc, t)
 		if err := handleGenericComment(c, trigger, event); err != nil {
 			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 		}
-		validate(tc.name, fakePlumberClient, g, tc, t)
+		validate(tc.name, fakeLauncher, g, tc, t)
 	}
 }
 
-func validate(name string, fakePlumberClient *fake.Plumber, g *fakegitprovider.FakeClient, tc testcase, t *testing.T) {
+func validate(name string, fakeLauncher *fake.Launcher, g *fakegitprovider.FakeClient, tc testcase, t *testing.T) {
 	startedContexts := sets.NewString()
-	for _, job := range fakePlumberClient.Pipelines {
+	for _, job := range fakeLauncher.Pipelines {
 		startedContexts.Insert(job.Spec.Context)
 	}
 	if len(startedContexts) > 0 && !tc.ShouldBuild {

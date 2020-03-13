@@ -28,7 +28,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	git2 "github.com/jenkins-x/lighthouse/pkg/prow/git"
@@ -137,7 +137,7 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 type Agent struct {
 	ClientFactory      jxfactory.Factory
 	SCMProviderClient  *gitprovider.Client
-	PlumberClient      plumber.Plumber
+	LauncherClient     launcher.PipelineLauncher
 	MetapipelineClient metapipeline.Client
 	GitClient          git2.Client
 	KubernetesClient   kubernetes.Interface
@@ -168,7 +168,7 @@ func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, plugin
 		ClientFactory:      clientFactory,
 		SCMProviderClient:  scmClient,
 		GitClient:          clientAgent.GitClient,
-		PlumberClient:      clientAgent.PlumberClient,
+		LauncherClient:     clientAgent.LauncherClient,
 		MetapipelineClient: metapipelineClient,
 		/*
 			SlackClient:   clientAgent.SlackClient,
@@ -209,7 +209,7 @@ type ClientAgent struct {
 
 	KubernetesClient   kubernetes.Interface
 	GitClient          git2.Client
-	PlumberClient      plumber.Plumber
+	LauncherClient     launcher.PipelineLauncher
 	MetapipelineClient metapipeline.Client
 
 	/*	SlackClient      *slack.Client

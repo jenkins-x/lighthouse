@@ -32,8 +32,8 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/io"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
@@ -54,9 +54,9 @@ import (
 // For mocking out sleep during unit tests.
 var sleep = time.Sleep
 
-type plumberClient interface {
-	Create(*plumber.PipelineOptions, metapipeline.Client, scm.Repository) (*plumber.PipelineOptions, error)
-	List(opts metav1.ListOptions) (*plumber.PipelineOptionsList, error)
+type launcher interface {
+	Launch(*v1alpha1.LighthouseJob, metapipeline.Client, scm.Repository) (*v1alpha1.LighthouseJob, error)
+	List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, error)
 }
 
 type scmProviderClient interface {
@@ -78,14 +78,14 @@ type contextChecker interface {
 
 // DefaultController knows how to sync PRs and PJs.
 type DefaultController struct {
-	logger        *logrus.Entry
-	config        config.Getter
-	spc           scmProviderClient
-	plumberClient plumberClient
-	gc            git.Client
-	mpClient      metapipeline.Client
-	tektonClient  tektonclient.Interface
-	ns            string
+	logger         *logrus.Entry
+	config         config.Getter
+	spc            scmProviderClient
+	launcherClient launcher
+	gc             git.Client
+	mpClient       metapipeline.Client
+	tektonClient   tektonclient.Interface
+	ns             string
 
 	sc *statusController
 
@@ -206,7 +206,7 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(spcSync, spcStatus *gitprovider.Client, plumberClient plumberClient, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, opener io.Opener, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -225,15 +225,15 @@ func NewController(spcSync, spcStatus *gitprovider.Client, plumberClient plumber
 	}
 	go sc.run()
 	return &DefaultController{
-		logger:        logger.WithField("controller", "sync"),
-		spc:           spcSync,
-		plumberClient: plumberClient,
-		mpClient:      mpClient,
-		tektonClient:  tektonClient,
-		ns:            ns,
-		config:        cfg,
-		gc:            gc,
-		sc:            sc,
+		logger:         logger.WithField("controller", "sync"),
+		spc:            spcSync,
+		launcherClient: launcherClient,
+		mpClient:       mpClient,
+		tektonClient:   tektonClient,
+		ns:             ns,
+		config:         cfg,
+		gc:             gc,
+		sc:             sc,
 		changedFiles: &changedFilesAgent{
 			spc:             spcSync,
 			nextChangeCache: make(map[changeCacheKey][]string),
@@ -320,12 +320,12 @@ func (c *DefaultController) Sync() error {
 		"duration", time.Since(start).String(),
 	).Debugf("Found %d (unfiltered) pool PRs.", len(prs))
 
-	var pjs []plumber.PipelineOptions
+	var pjs []v1alpha1.LighthouseJob
 	var blocks blockers.Blockers
 	var err error
 	if len(prs) > 0 {
 		start := time.Now()
-		pjList, err := c.plumberClient.List(metav1.ListOptions{})
+		pjList, err := c.launcherClient.List(metav1.ListOptions{})
 		if err != nil {
 			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list PipelineActivitys from the cluster.")
 			return err
@@ -583,10 +583,10 @@ func githubqlStatusStateToSimpleState(gqlState githubql.StatusState) simpleState
 	}
 }
 
-func toSimpleState(s plumber.PipelineState) simpleState {
-	if s == plumber.TriggeredState || s == plumber.PendingState || s == plumber.RunningState {
+func toSimpleState(s v1alpha1.PipelineState) simpleState {
+	if s == v1alpha1.TriggeredState || s == v1alpha1.PendingState || s == v1alpha1.RunningState {
 		return pendingState
-	} else if s == plumber.SuccessState {
+	} else if s == v1alpha1.SuccessState {
 		return successState
 	}
 	return failureState
@@ -654,7 +654,7 @@ func pickSmallestPassingNumber(log *logrus.Entry, spc scmProviderClient, prs []P
 // accumulateBatch returns a list of PRs that can be merged after passing batch
 // testing, if any exist. It also returns a list of PRs currently being batch
 // tested.
-func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []plumber.PipelineOptions, spc scmProviderClient, log *logrus.Entry) ([]PullRequest, []PullRequest) {
+func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, spc scmProviderClient, log *logrus.Entry) ([]PullRequest, []PullRequest) {
 	log.Debug("accumulating PRs for batch testing")
 	if len(presubmits) == 0 {
 		log.Debug("no presubmits configured, no batch can be triggered")
@@ -673,7 +673,7 @@ func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, p
 	}
 	states := make(map[string]*accState)
 	for _, pj := range pjs {
-		if pj.Spec.Type != plumber.BatchJob {
+		if pj.Spec.Type != v1alpha1.BatchJob {
 			continue
 		}
 		// First validate the batch job's refs.
@@ -762,7 +762,7 @@ func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, p
 }
 
 // prHeadIsInPJPulls checks to see if the given pull request's head sha is one of the pull shas in the job.
-func prHeadIsInPJPulls(pr PullRequest, pj plumber.PipelineOptions) bool {
+func prHeadIsInPJPulls(pr PullRequest, pj v1alpha1.LighthouseJob) bool {
 	for _, pull := range pj.Spec.Refs.Pulls {
 		if pull.SHA == string(pr.HeadRefOID) {
 			return true
@@ -773,7 +773,7 @@ func prHeadIsInPJPulls(pr PullRequest, pj plumber.PipelineOptions) bool {
 
 // accumulate returns the supplied PRs sorted into three buckets based on their
 // accumulated state across the presubmits.
-func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []plumber.PipelineOptions, spc scmProviderClient, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]config.Presubmit) {
+func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, spc scmProviderClient, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]config.Presubmit) {
 
 	missingTests = map[int][]config.Presubmit{}
 	for _, pr := range prs {
@@ -786,7 +786,7 @@ func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []
 		// We can ignore the baseSHA here because the subPool only contains PipelineActivitys with the correct baseSHA
 		psStates := make(map[string]simpleState)
 		for _, pj := range pjs {
-			if pj.Spec.Type != plumber.PresubmitJob {
+			if pj.Spec.Type != v1alpha1.PresubmitJob {
 				continue
 			}
 			if len(pj.Spec.Refs.Pulls) == 0 || pj.Spec.Refs.Pulls[0].Number != int(pr.Number) {
@@ -1098,7 +1098,7 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 }
 
 func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Presubmit, prs []PullRequest) error {
-	refs := plumber.Refs{
+	refs := v1alpha1.Refs{
 		Org:     sp.org,
 		Repo:    sp.repo,
 		BaseRef: sp.branch,
@@ -1107,7 +1107,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 	for _, pr := range prs {
 		refs.Pulls = append(
 			refs.Pulls,
-			plumber.Pull{
+			v1alpha1.Pull{
 				Number: int(pr.Number),
 				Author: string(pr.Author.Login),
 				SHA:    string(pr.HeadRefOID),
@@ -1125,13 +1125,13 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 				continue
 			}
 			triggeredContexts.Insert(string(ps.Context))
-			var spec plumber.PipelineOptionsSpec
+			var spec v1alpha1.LighthouseJobSpec
 			if len(prs) == 1 {
 				spec = pjutil.PresubmitSpec(ps, refs)
 			} else {
 				spec = pjutil.BatchSpec(ps, refs)
 			}
-			pj := pjutil.NewPlumberJob(spec, ps.Labels, ps.Annotations)
+			pj := pjutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
 			cloneURL := string(pr.Repository.URL)
 			if cloneURL == "" {
@@ -1147,7 +1147,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 				Branch:    string(pr.BaseRef.Name),
 				Clone:     cloneURL,
 			}
-			if _, err := c.plumberClient.Create(&pj, c.mpClient, repo); err != nil {
+			if _, err := c.launcherClient.Launch(&pj, c.mpClient, repo); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create pipeline on the cluster.")
 				return fmt.Errorf("failed to create a pipeline for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
 			}
@@ -1363,10 +1363,10 @@ func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (
 		err
 }
 
-func prMeta(prs ...PullRequest) []plumber.Pull {
-	var res []plumber.Pull
+func prMeta(prs ...PullRequest) []v1alpha1.Pull {
+	var res []v1alpha1.Pull
 	for _, pr := range prs {
-		res = append(res, plumber.Pull{
+		res = append(res, v1alpha1.Pull{
 			Number: int(pr.Number),
 			Author: string(pr.Author.Login),
 			Title:  string(pr.Title),
@@ -1408,7 +1408,7 @@ type subpool struct {
 
 	// pjs contains all PipelineActivitys of type Presubmit or Batch
 	// that have the same baseSHA as the subpool
-	pjs []plumber.PipelineOptions
+	pjs []v1alpha1.LighthouseJob
 	prs []PullRequest
 
 	cc contextChecker
@@ -1423,7 +1423,7 @@ func poolKey(org, repo, branch string) string {
 
 // dividePool splits up the list of pull requests and prow jobs into a group
 // per repo and branch. It only keeps PipelineActivitys that match the latest branch.
-func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []plumber.PipelineOptions) (map[string]*subpool, error) {
+func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alpha1.LighthouseJob) (map[string]*subpool, error) {
 	sps := make(map[string]*subpool)
 	for _, pr := range pool {
 		org := string(pr.Repository.Owner.Login)
@@ -1452,7 +1452,7 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []plumbe
 		sps[fn].prs = append(sps[fn].prs, pr)
 	}
 	for _, pj := range pjs {
-		if pj.Spec.Type != plumber.PresubmitJob && pj.Spec.Type != plumber.BatchJob {
+		if pj.Spec.Type != v1alpha1.PresubmitJob && pj.Spec.Type != v1alpha1.BatchJob {
 			continue
 		}
 		fn := poolKey(pj.Spec.Refs.Org, pj.Spec.Refs.Repo, pj.Spec.Refs.BaseRef)
