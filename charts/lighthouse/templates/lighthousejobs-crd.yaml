@@ -1,0 +1,52 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: lighthousejobs.lighthouse.jenkins.io
+spec:
+  group: lighthouse.jenkins.io
+  version: v1
+  names:
+    kind: LighthouseJob
+    singular: lighthousejob
+    plural: lighthousejobs
+    shortNames:
+      - lhjob
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          properties:
+            max_concurrency:
+              type: integer
+              minimum: 0
+            type:
+              type: string
+              enum:
+              - "presubmit"
+              - "postsubmit"
+              - "periodic"
+              - "batch"
+        status:
+          properties:
+            state:
+              type: string
+              enum:
+              - "triggered"
+              - "pending"
+              - "success"
+              - "failure"
+              - "aborted"
+              - "error"
+          anyOf:
+          - not:
+              properties:
+                state:
+                  type: string
+                  enum:
+                  - "success"
+                  - "failure"
+                  - "error"
+                  - "aborted"
+          - required:
+            - completionTime
