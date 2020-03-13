@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
+	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -329,12 +329,12 @@ func TestRunAndSkipJobs(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			fakeSCMClient := fakegitprovider.FakeClient{}
-			fakePlumberClient := fake.NewPlumber()
-			fakePlumberClient.FailJobs = testCase.jobCreationErrs
+			fakeLauncher := fake.NewLauncher()
+			fakeLauncher.FailJobs = testCase.jobCreationErrs
 
 			client := Client{
 				SCMProviderClient: &fakeSCMClient,
-				PlumberClient:     fakePlumberClient,
+				LauncherClient:    fakeLauncher,
 				Logger:            logrus.WithField("testcase", testCase.name),
 			}
 
@@ -350,17 +350,17 @@ func TestRunAndSkipJobs(t *testing.T) {
 				t.Errorf("%s: created incorrect statuses: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 			}
 
-			observedCreatedPlumberJobs := sets.NewString()
-			existingPlumberJobs := fakePlumberClient.Pipelines
-			for _, job := range existingPlumberJobs {
-				observedCreatedPlumberJobs.Insert(job.Spec.Job)
+			observedCreatedLighthouseJobs := sets.NewString()
+			existingLighthouseJobs := fakeLauncher.Pipelines
+			for _, job := range existingLighthouseJobs {
+				observedCreatedLighthouseJobs.Insert(job.Spec.Job)
 			}
 
-			if missing := testCase.expectedJobs.Difference(observedCreatedPlumberJobs); missing.Len() > 0 {
-				t.Errorf("%s: didn't create all expected PlumberJobs, missing: %s", testCase.name, missing.List())
+			if missing := testCase.expectedJobs.Difference(observedCreatedLighthouseJobs); missing.Len() > 0 {
+				t.Errorf("%s: didn't create all expected LighthouseJobs, missing: %s", testCase.name, missing.List())
 			}
-			if extra := observedCreatedPlumberJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
-				t.Errorf("%s: created unexpected PlumberJobs: %s", testCase.name, extra.List())
+			if extra := observedCreatedLighthouseJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
+				t.Errorf("%s: created unexpected LighthouseJobs: %s", testCase.name, extra.List())
 			}
 		})
 	}
@@ -429,12 +429,12 @@ func TestRunRequested(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			fakeSCMClient := fakegitprovider.FakeClient{}
-			fakePlumberClient := fake.NewPlumber()
-			fakePlumberClient.FailJobs = testCase.jobCreationErrs
+			fakeLauncher := fake.NewLauncher()
+			fakeLauncher.FailJobs = testCase.jobCreationErrs
 
 			client := Client{
 				SCMProviderClient: &fakeSCMClient,
-				PlumberClient:     fakePlumberClient,
+				LauncherClient:    fakeLauncher,
 				Logger:            logrus.WithField("testcase", testCase.name),
 			}
 
@@ -446,17 +446,17 @@ func TestRunRequested(t *testing.T) {
 				t.Errorf("%s: expected no error but got one: %v", testCase.name, err)
 			}
 
-			observedCreatedPlumberJobs := sets.NewString()
-			existingPlumberJobs := fakePlumberClient.Pipelines
-			for _, job := range existingPlumberJobs {
-				observedCreatedPlumberJobs.Insert(job.Spec.Job)
+			observedCreatedLighthouseJobs := sets.NewString()
+			existingLighthouseJobs := fakeLauncher.Pipelines
+			for _, job := range existingLighthouseJobs {
+				observedCreatedLighthouseJobs.Insert(job.Spec.Job)
 			}
 
-			if missing := testCase.expectedJobs.Difference(observedCreatedPlumberJobs); missing.Len() > 0 {
-				t.Errorf("%s: didn't create all expected PlumberJobs, missing: %s", testCase.name, missing.List())
+			if missing := testCase.expectedJobs.Difference(observedCreatedLighthouseJobs); missing.Len() > 0 {
+				t.Errorf("%s: didn't create all expected LighthouseJobs, missing: %s", testCase.name, missing.List())
 			}
-			if extra := observedCreatedPlumberJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
-				t.Errorf("%s: created unexpected PlumberJobs: %s", testCase.name, extra.List())
+			if extra := observedCreatedLighthouseJobs.Difference(testCase.expectedJobs); extra.Len() > 0 {
+				t.Errorf("%s: created unexpected LighthouseJobs: %s", testCase.name, extra.List())
 			}
 		})
 	}

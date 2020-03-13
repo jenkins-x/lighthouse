@@ -18,7 +18,7 @@ package trigger
 
 import (
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
@@ -46,9 +46,9 @@ func listPushEventChanges(pe scm.PushHook) config.ChangedFilesProvider {
 	}
 }
 
-func createRefs(pe *scm.PushHook) plumber.Refs {
+func createRefs(pe *scm.PushHook) v1alpha1.Refs {
 	branch := gitprovider.PushHookBranch(pe)
-	return plumber.Refs{
+	return v1alpha1.Refs{
 		Org:      pe.Repo.Namespace,
 		Repo:     pe.Repo.Name,
 		BaseRef:  branch,
@@ -75,9 +75,9 @@ func handlePE(c Client, pe scm.PushHook) error {
 			labels[k] = v
 		}
 		labels[gitprovider.EventGUID] = pe.GUID
-		pj := pjutil.NewPlumberJob(pjutil.PostsubmitSpec(j, refs), labels, j.Annotations)
-		c.Logger.WithFields(pjutil.PlumberJobFields(&pj)).Info("Creating a new plumberJob.")
-		if _, err := c.PlumberClient.Create(&pj, c.MetapipelineClient, pe.Repository()); err != nil {
+		pj := pjutil.NewLighthouseJob(pjutil.PostsubmitSpec(j, refs), labels, j.Annotations)
+		c.Logger.WithFields(pjutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
+		if _, err := c.LauncherClient.Launch(&pj, c.MetapipelineClient, pe.Repository()); err != nil {
 			return err
 		}
 	}

@@ -25,7 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/secret"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/test-infra/prow/kube"
@@ -54,14 +55,14 @@ func TestDefaultJobBase(t *testing.T) {
 				j.Agent = ""
 			},
 			expected: func(j *JobBase) {
-				j.Agent = string(plumber.TektonAgent)
+				j.Agent = string(launcher.TektonAgent)
 			},
 		},
 		{
 			name: "nil namespace becomes PodNamespace",
 			config: ProwConfig{
-				PodNamespace:        "pod-namespace",
-				PlumberJobNamespace: "wrong",
+				PodNamespace:           "pod-namespace",
+				LighthouseJobNamespace: "wrong",
 			},
 			base: func(j *JobBase) {
 				j.Namespace = nil
@@ -74,8 +75,8 @@ func TestDefaultJobBase(t *testing.T) {
 		{
 			name: "empty namespace becomes PodNamespace",
 			config: ProwConfig{
-				PodNamespace:        "new-pod-namespace",
-				PlumberJobNamespace: "still-wrong",
+				PodNamespace:           "new-pod-namespace",
+				LighthouseJobNamespace: "still-wrong",
 			},
 			base: func(j *JobBase) {
 				var empty string
@@ -274,7 +275,7 @@ func TestDecorationRawYaml(t *testing.T) {
 		name        string
 		expectError bool
 		rawConfig   string
-		expected    *plumber.DecorationConfig
+		expected    *v1alpha1.DecorationConfig
 	}{
 		{
 			name:        "no default",
@@ -320,24 +321,24 @@ periodics:
       args:
       - "test"
       - "./..."`,
-			expected: &plumber.DecorationConfig{
-				Timeout: &plumber.Duration{
+			expected: &v1alpha1.DecorationConfig{
+				Timeout: &v1alpha1.Duration{
 					Duration: time.Duration(2 * time.Hour),
 				},
-				GracePeriod: &plumber.Duration{
+				GracePeriod: &v1alpha1.Duration{
 					Duration: time.Duration(15 * time.Second),
 				},
 				GCSCredentialsSecret: "default-service-account",
 				/*
-					UtilityImages: &plumber.UtilityImages{
+					UtilityImages: &v1alpha1.UtilityImages{
 						CloneRefs:  "clonerefs:default",
 						InitUpload: "initupload:default",
 						Entrypoint: "entrypoint:default",
 						Sidecar:    "sidecar:default",
 					},
-					GCSConfiguration: &plumber.GCSConfiguration{
+					GCSConfiguration: &v1alpha1.GCSConfiguration{
 						Bucket:       "default-bucket",
-						PathStrategy: plumber.PathStrategyLegacy,
+						PathStrategy: v1alpha1.PathStrategyLegacy,
 						DefaultOrg:   "kubernetes",
 						DefaultRepo:  "kubernetes",
 					},
@@ -385,24 +386,24 @@ periodics:
       args:
       - "test"
       - "./..."`,
-			expected: &plumber.DecorationConfig{
-				Timeout: &plumber.Duration{
+			expected: &v1alpha1.DecorationConfig{
+				Timeout: &v1alpha1.Duration{
 					Duration: time.Duration(1 * time.Nanosecond),
 				},
-				GracePeriod: &plumber.Duration{
+				GracePeriod: &v1alpha1.Duration{
 					Duration: time.Duration(1 * time.Nanosecond),
 				},
 				GCSCredentialsSecret: "explicit-service-account",
 				/*
-					UtilityImages: &plumber.UtilityImages{
+					UtilityImages: &v1alpha1.UtilityImages{
 						CloneRefs:  "clonerefs:explicit",
 						InitUpload: "initupload:explicit",
 						Entrypoint: "entrypoint:explicit",
 						Sidecar:    "sidecar:explicit",
 					},
-					GCSConfiguration: &plumber.GCSConfiguration{
+					GCSConfiguration: &v1alpha1.GCSConfiguration{
 						Bucket:       "explicit-bucket",
-						PathStrategy: plumber.PathStrategyExplicit,
+						PathStrategy: v1alpha1.PathStrategyExplicit,
 						DefaultOrg:   "kubernetes",
 						DefaultRepo:  "kubernetes",
 					},
@@ -446,14 +447,14 @@ periodics:
 }
 
 func TestValidateAgent(t *testing.T) {
-	k := string(plumber.TektonAgent)
+	k := string(launcher.TektonAgent)
 	ns := "default"
 	base := JobBase{
 		Agent:     k,
 		Namespace: &ns,
 		Spec:      &v1.PodSpec{},
 		UtilityConfig: UtilityConfig{
-			DecorationConfig: &plumber.DecorationConfig{},
+			DecorationConfig: &v1alpha1.DecorationConfig{},
 		},
 	}
 
@@ -490,17 +491,17 @@ func TestValidateDecoration(t *testing.T) {
 	// TODO
 	t.SkipNow()
 
-	defCfg := plumber.DecorationConfig{
+	defCfg := v1alpha1.DecorationConfig{
 		GCSCredentialsSecret: "upload-secret",
 		/*
-			UtilityImages: &plumber.UtilityImages{
+			UtilityImages: &v1alpha1.UtilityImages{
 				CloneRefs:  "clone-me",
 				InitUpload: "upload-me",
 				Entrypoint: "enter-me",
 				Sidecar:    "official-drink-of-the-org",
 			},
-			GCSConfiguration: &plumber.GCSConfiguration{
-				PathStrategy: plumber.PathStrategyExplicit,
+			GCSConfiguration: &v1alpha1.GCSConfiguration{
+				PathStrategy: v1alpha1.PathStrategyExplicit,
 				DefaultOrg:   "so-org",
 				DefaultRepo:  "very-repo",
 			},
@@ -509,7 +510,7 @@ func TestValidateDecoration(t *testing.T) {
 	cases := []struct {
 		name      string
 		container v1.Container
-		config    *plumber.DecorationConfig
+		config    *v1alpha1.DecorationConfig
 		pass      bool
 	}{
 		{
@@ -534,7 +535,7 @@ func TestValidateDecoration(t *testing.T) {
 		},
 		{
 			name:   "reject invalid decoration config",
-			config: &plumber.DecorationConfig{},
+			config: &v1alpha1.DecorationConfig{},
 			container: v1.Container{
 				Command: []string{"hello", "world"},
 			},
@@ -599,7 +600,7 @@ func TestValidateLabels(t *testing.T) {
 }
 
 func TestValidateJobBase(t *testing.T) {
-	ka := string(plumber.TektonAgent)
+	ka := string(launcher.TektonAgent)
 	goodSpec := v1.PodSpec{
 		Containers: []v1.Container{
 			{},
@@ -635,7 +636,7 @@ func TestValidateJobBase(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			switch err := validateJobBase(tc.base, plumber.PresubmitJob, ns); {
+			switch err := validateJobBase(tc.base, v1alpha1.PresubmitJob, ns); {
 			case err == nil && !tc.pass:
 				t.Error("validation failed to raise an error")
 			case err != nil && tc.pass:
@@ -1394,13 +1395,13 @@ func TestSecretAgentLoading(t *testing.T) {
 	}
 	defer os.RemoveAll(secretDir)
 
-	// Create the first temporary secret.
+	// Launch the first temporary secret.
 	firstTempSecret := filepath.Join(secretDir, "firstTempSecret")
 	if err := ioutil.WriteFile(firstTempSecret, []byte(tempTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
 
-	// Create the second temporary secret.
+	// Launch the second temporary secret.
 	secondTempSecret := filepath.Join(secretDir, "secondTempSecret")
 	if err := ioutil.WriteFile(secondTempSecret, []byte(tempTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)

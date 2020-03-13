@@ -13,6 +13,8 @@ GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 
 GOTEST := $(GO) test
 
+CLIENTSET_GENERATOR_VERSION := kubernetes-1.12.9
+
 all: check test build
 
 .PHONY: test
@@ -87,3 +89,14 @@ production-container:
 .PHONY: push-container
 push-container: production-container
 	docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME)
+
+CODEGEN_BIN := $(GOPATH)/bin/codegen
+$(CODEGEN_BIN):
+	$(GO_NOMOD) get github.com/jenkins-x/jx/cmd/codegen
+
+generate-client: codegen-clientset fmt ## Generate the client
+
+codegen-clientset: $(CODEGEN_BIN) ## Generate the k8s types and clients
+	@echo "Generating Kubernetes Clients for pkg/apis/lighthouse/v1alpha1 in pkg/client for lighthouse.jenkins.io:v1alpha1"
+	$(CODEGEN_BIN) --generator-version $(CLIENTSET_GENERATOR_VERSION) clientset --output-package=pkg/client --input-package=pkg/apis --group-with-version=lighthouse:v1alpha1
+

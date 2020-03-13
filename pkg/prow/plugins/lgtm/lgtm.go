@@ -481,7 +481,7 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, config *plugins
 		return fmt.Errorf("failed removing lgtm label: %v", err)
 	}
 
-	// Create a comment to inform participants that LGTM label is removed due to new
+	// Launch a comment to inform participants that LGTM label is removed due to new
 	// pull request changes.
 	log.Infof("Commenting with an LGTM removed notification to %s/%s#%d with a message: %s", org, repo, number, removeLGTMLabelNoti)
 	return spc.CreateComment(org, repo, number, true, removeLGTMLabelNoti)

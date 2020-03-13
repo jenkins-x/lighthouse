@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/io"
@@ -103,11 +103,11 @@ func writeHistory(opener io.Opener, path string, hist map[string][]*Record) erro
 
 // Record is an entry describing one action that Tide has taken (e.g. TRIGGER or MERGE).
 type Record struct {
-	Time    time.Time      `json:"time"`
-	Action  string         `json:"action"`
-	BaseSHA string         `json:"baseSHA,omitempty"`
-	Target  []plumber.Pull `json:"target,omitempty"`
-	Err     string         `json:"err,omitempty"`
+	Time    time.Time       `json:"time"`
+	Action  string          `json:"action"`
+	BaseSHA string          `json:"baseSHA,omitempty"`
+	Target  []v1alpha1.Pull `json:"target,omitempty"`
+	Err     string          `json:"err,omitempty"`
 }
 
 // New creates a new History struct with the specificed recordLog size limit.
@@ -137,9 +137,9 @@ func New(maxRecordsPerKey int, opener io.Opener, path string) (*History, error) 
 }
 
 // Record appends an entry to the recordlog specified by the poolKey.
-func (h *History) Record(poolKey, action, baseSHA, err string, targets []plumber.Pull) {
+func (h *History) Record(poolKey, action, baseSHA, err string, targets []v1alpha1.Pull) {
 	t := now()
-	sort.Sort(plumber.ByNum(targets))
+	sort.Sort(v1alpha1.ByNum(targets))
 	h.addRecord(
 		poolKey,
 		&Record{

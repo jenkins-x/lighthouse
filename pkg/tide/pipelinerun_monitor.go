@@ -68,7 +68,7 @@ func rerunPipelineRunsWithRaceConditionFailure(tektonClient tektonclient.Interfa
 					return errors.Wrapf(err, "removing existing labels from failed PipelineRun %s", run.Name)
 				}
 
-				// Create a new otherwise identical PipelineRun to replace the failing one.
+				// Launch a new otherwise identical PipelineRun to replace the failing one.
 				newRun := createReplacementPipelineRun(&run)
 				_, err := tektonClient.TektonV1alpha1().PipelineRuns(ns).Create(newRun)
 				if err != nil {

@@ -12,7 +12,7 @@ import (
 	jxutil "github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/io"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
@@ -179,16 +179,16 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	plumberClient, err := plumber.NewPlumber(jxClient, ns)
+	launcherClient, err := launcher.NewLauncher(jxClient, ns)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting Plumber client.")
+		return nil, errors.Wrap(err, "Error getting PipelineLauncher client.")
 	}
 	clientFactory := jxfactory.NewFactory()
-	mpClient, err := plumber.NewMetaPipelineClient(clientFactory)
+	mpClient, err := launcher.NewMetaPipelineClient(clientFactory)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
 	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
+	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
 	return c, err
 }
 

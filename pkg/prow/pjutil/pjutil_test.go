@@ -22,7 +22,8 @@ import (
 	"text/template"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -35,8 +36,8 @@ func TestPostsubmitSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		p        config.Postsubmit
-		refs     plumber.Refs
-		expected plumber.PipelineOptionsSpec
+		refs     v1alpha1.Refs
+		expected v1alpha1.LighthouseJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -48,9 +49,9 @@ func TestPostsubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.PostsubmitJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.PostsubmitJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -58,13 +59,13 @@ func TestPostsubmitSpec(t *testing.T) {
 		},
 		{
 			name: "controller can default path alias and cloneuri",
-			refs: plumber.Refs{
+			refs: v1alpha1.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.PostsubmitJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.PostsubmitJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
@@ -80,13 +81,13 @@ func TestPostsubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			refs: plumber.Refs{
+			refs: v1alpha1.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.PostsubmitJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.PostsubmitJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -106,8 +107,8 @@ func TestPresubmitSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		p        config.Presubmit
-		refs     plumber.Refs
-		expected plumber.PipelineOptionsSpec
+		refs     v1alpha1.Refs
+		expected v1alpha1.LighthouseJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -119,9 +120,9 @@ func TestPresubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.PresubmitJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.PresubmitJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -129,13 +130,13 @@ func TestPresubmitSpec(t *testing.T) {
 		},
 		{
 			name: "controller can default path alias and cloneuri",
-			refs: plumber.Refs{
+			refs: v1alpha1.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.PresubmitJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.PresubmitJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
@@ -151,13 +152,13 @@ func TestPresubmitSpec(t *testing.T) {
 					},
 				},
 			},
-			refs: plumber.Refs{
+			refs: v1alpha1.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.PresubmitJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.PresubmitJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -177,8 +178,8 @@ func TestBatchSpec(t *testing.T) {
 	tests := []struct {
 		name     string
 		p        config.Presubmit
-		refs     plumber.Refs
-		expected plumber.PipelineOptionsSpec
+		refs     v1alpha1.Refs
+		expected v1alpha1.LighthouseJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
@@ -190,9 +191,9 @@ func TestBatchSpec(t *testing.T) {
 					},
 				},
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.BatchJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.BatchJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -200,13 +201,13 @@ func TestBatchSpec(t *testing.T) {
 		},
 		{
 			name: "controller can default path alias and cloneuri",
-			refs: plumber.Refs{
+			refs: v1alpha1.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.BatchJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.BatchJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
 				},
@@ -222,13 +223,13 @@ func TestBatchSpec(t *testing.T) {
 					},
 				},
 			},
-			refs: plumber.Refs{
+			refs: v1alpha1.Refs{
 				PathAlias: "fancy",
 				CloneURI:  "cats",
 			},
-			expected: plumber.PipelineOptionsSpec{
-				Type: plumber.BatchJob,
-				Refs: &plumber.Refs{
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: v1alpha1.BatchJob,
+				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
 				},
@@ -244,10 +245,10 @@ func TestBatchSpec(t *testing.T) {
 	}
 }
 
-func TestNewPlumberJob(t *testing.T) {
+func TestNewLighthouseJob(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                plumber.PipelineOptionsSpec
+		spec                v1alpha1.LighthouseJobSpec
 		labels              map[string]string
 		expectedLabels      map[string]string
 		annotations         map[string]string
@@ -255,121 +256,121 @@ func TestNewPlumberJob(t *testing.T) {
 	}{
 		{
 			name: "periodic job, no extra labels",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: plumber.PeriodicJob,
+				Type: v1alpha1.PeriodicJob,
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:           "true",
-				plumber.PlumberJobAnnotation: "job",
-				plumber.PlumberJobTypeLabel:  "periodic",
+				kube.CreatedByProw:               "true",
+				launcher.LighthouseJobAnnotation: "job",
+				launcher.LighthouseJobTypeLabel:  "periodic",
 			},
 			expectedAnnotations: map[string]string{
-				plumber.PlumberJobAnnotation: "job",
+				launcher.LighthouseJobAnnotation: "job",
 			},
 		},
 		{
 			name: "periodic job, extra labels",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: plumber.PeriodicJob,
+				Type: v1alpha1.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
 			},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:           "true",
-				plumber.PlumberJobAnnotation: "job",
-				plumber.PlumberJobTypeLabel:  "periodic",
-				"extra":                      "stuff",
+				kube.CreatedByProw:               "true",
+				launcher.LighthouseJobAnnotation: "job",
+				launcher.LighthouseJobTypeLabel:  "periodic",
+				"extra":                          "stuff",
 			},
 			expectedAnnotations: map[string]string{
-				plumber.PlumberJobAnnotation: "job",
+				launcher.LighthouseJobAnnotation: "job",
 			},
 		},
 		{
 			name: "presubmit job",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: plumber.PresubmitJob,
-				Refs: &plumber.Refs{
+				Type: v1alpha1.PresubmitJob,
+				Refs: &v1alpha1.Refs{
 					Org:  "org",
 					Repo: "repo",
-					Pulls: []plumber.Pull{
+					Pulls: []v1alpha1.Pull{
 						{Number: 1},
 					},
 				},
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:           "true",
-				plumber.PlumberJobAnnotation: "job",
-				plumber.PlumberJobTypeLabel:  "presubmit",
-				kube.OrgLabel:                "org",
-				kube.RepoLabel:               "repo",
-				kube.PullLabel:               "1",
+				kube.CreatedByProw:               "true",
+				launcher.LighthouseJobAnnotation: "job",
+				launcher.LighthouseJobTypeLabel:  "presubmit",
+				kube.OrgLabel:                    "org",
+				kube.RepoLabel:                   "repo",
+				kube.PullLabel:                   "1",
 			},
 			expectedAnnotations: map[string]string{
-				plumber.PlumberJobAnnotation: "job",
+				launcher.LighthouseJobAnnotation: "job",
 			},
 		},
 		{
 			name: "non-github presubmit job",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: plumber.PresubmitJob,
-				Refs: &plumber.Refs{
+				Type: v1alpha1.PresubmitJob,
+				Refs: &v1alpha1.Refs{
 					Org:  "https://some-gerrit-instance.foo.com",
 					Repo: "some/invalid/repo",
-					Pulls: []plumber.Pull{
+					Pulls: []v1alpha1.Pull{
 						{Number: 1},
 					},
 				},
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:           "true",
-				plumber.PlumberJobAnnotation: "job",
-				plumber.PlumberJobTypeLabel:  "presubmit",
-				kube.OrgLabel:                "some-gerrit-instance.foo.com",
-				kube.RepoLabel:               "repo",
-				kube.PullLabel:               "1",
+				kube.CreatedByProw:               "true",
+				launcher.LighthouseJobAnnotation: "job",
+				launcher.LighthouseJobTypeLabel:  "presubmit",
+				kube.OrgLabel:                    "some-gerrit-instance.foo.com",
+				kube.RepoLabel:                   "repo",
+				kube.PullLabel:                   "1",
 			},
 			expectedAnnotations: map[string]string{
-				plumber.PlumberJobAnnotation: "job",
+				launcher.LighthouseJobAnnotation: "job",
 			},
 		}, {
 			name: "job with name too long to fit in a label",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
-				Type: plumber.PresubmitJob,
-				Refs: &plumber.Refs{
+				Type: v1alpha1.PresubmitJob,
+				Refs: &v1alpha1.Refs{
 					Org:  "org",
 					Repo: "repo",
-					Pulls: []plumber.Pull{
+					Pulls: []v1alpha1.Pull{
 						{Number: 1},
 					},
 				},
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:           "true",
-				plumber.PlumberJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
-				plumber.PlumberJobTypeLabel:  "presubmit",
-				kube.OrgLabel:                "org",
-				kube.RepoLabel:               "repo",
-				kube.PullLabel:               "1",
+				kube.CreatedByProw:               "true",
+				launcher.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
+				launcher.LighthouseJobTypeLabel:  "presubmit",
+				kube.OrgLabel:                    "org",
+				kube.RepoLabel:                   "repo",
+				kube.PullLabel:                   "1",
 			},
 			expectedAnnotations: map[string]string{
-				plumber.PlumberJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
+				launcher.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
 			},
 		},
 		{
 			name: "periodic job, extra labels, extra annotations",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: plumber.PeriodicJob,
+				Type: v1alpha1.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
@@ -378,19 +379,19 @@ func TestNewPlumberJob(t *testing.T) {
 				"extraannotation": "foo",
 			},
 			expectedLabels: map[string]string{
-				kube.CreatedByProw:           "true",
-				plumber.PlumberJobAnnotation: "job",
-				plumber.PlumberJobTypeLabel:  "periodic",
-				"extra":                      "stuff",
+				kube.CreatedByProw:               "true",
+				launcher.LighthouseJobAnnotation: "job",
+				launcher.LighthouseJobTypeLabel:  "periodic",
+				"extra":                          "stuff",
 			},
 			expectedAnnotations: map[string]string{
-				plumber.PlumberJobAnnotation: "job",
-				"extraannotation":            "foo",
+				launcher.LighthouseJobAnnotation: "job",
+				"extraannotation":                "foo",
 			},
 		},
 	}
 	for _, testCase := range testCases {
-		pj := NewPlumberJob(testCase.spec, testCase.labels, testCase.annotations)
+		pj := NewLighthouseJob(testCase.spec, testCase.labels, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
 			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
@@ -403,42 +404,42 @@ func TestNewPlumberJob(t *testing.T) {
 	}
 }
 
-func TestNewPlumberJobWithAnnotations(t *testing.T) {
+func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 	var testCases = []struct {
 		name                string
-		spec                plumber.PipelineOptionsSpec
+		spec                v1alpha1.LighthouseJobSpec
 		annotations         map[string]string
 		expectedAnnotations map[string]string
 	}{
 		{
 			name: "job without annotation",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: plumber.PeriodicJob,
+				Type: v1alpha1.PeriodicJob,
 			},
 			annotations: nil,
 			expectedAnnotations: map[string]string{
-				plumber.PlumberJobAnnotation: "job",
+				launcher.LighthouseJobAnnotation: "job",
 			},
 		},
 		{
 			name: "job with annotation",
-			spec: plumber.PipelineOptionsSpec{
+			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: plumber.PeriodicJob,
+				Type: v1alpha1.PeriodicJob,
 			},
 			annotations: map[string]string{
 				"annotation": "foo",
 			},
 			expectedAnnotations: map[string]string{
-				"annotation":                 "foo",
-				plumber.PlumberJobAnnotation: "job",
+				"annotation":                     "foo",
+				launcher.LighthouseJobAnnotation: "job",
 			},
 		},
 	}
 
 	for _, testCase := range testCases {
-		pj := NewPlumberJob(testCase.spec, nil, testCase.annotations)
+		pj := NewLighthouseJob(testCase.spec, nil, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
 			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
@@ -452,7 +453,7 @@ func TestJobURL(t *testing.T) {
 	var testCases = []struct {
 		name     string
 		plank    config.Plank
-		pj       plumber.PipelineOptions
+		pj       v1alpha1.LighthouseJob
 		expected string
 	}{
 		{
@@ -462,7 +463,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       plumber.PipelineOptions{Spec: plumber.PipelineOptionsSpec{Type: plumber.PeriodicJob}},
+			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: v1alpha1.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -472,7 +473,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Garbage}}")),
 				},
 			},
-			pj:       plumber.PipelineOptions{},
+			pj:       v1alpha1.LighthouseJob{},
 			expected: "",
 		},
 		{
@@ -482,7 +483,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       plumber.PipelineOptions{Spec: plumber.PipelineOptionsSpec{Type: plumber.PeriodicJob}},
+			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: v1alpha1.PeriodicJob}},
 			expected: "periodic",
 		},
 	}
@@ -517,14 +518,14 @@ func TestCreateRefs(t *testing.T) {
 			Link:  "https://github.example.com/ibzib",
 		},
 	}
-	expected := plumber.Refs{
+	expected := v1alpha1.Refs{
 		Org:      "kubernetes",
 		Repo:     "Hello-World",
 		RepoLink: "https://github.example.com/kubernetes/Hello-World",
 		BaseRef:  "master",
 		BaseSHA:  "abcdef",
 		BaseLink: "https://github.example.com/kubernetes/Hello-World/commit/abcdef",
-		Pulls: []plumber.Pull{
+		Pulls: []v1alpha1.Pull{
 			{
 				Number:     42,
 				Author:     "ibzib",
@@ -544,19 +545,19 @@ func TestSpecFromJobBase(t *testing.T) {
 	testCases := []struct {
 		name    string
 		jobBase config.JobBase
-		verify  func(plumber.PipelineOptionsSpec) error
+		verify  func(v1alpha1.LighthouseJobSpec) error
 	}{
 		{
 			name:    "Verify reporter config gets copied",
 			jobBase: config.JobBase{
-				/*				ReporterConfig: &plumber.ReporterConfig{
-									Slack: &plumber.SlackReporterConfig{
+				/*				ReporterConfig: &v1alpha1.ReporterConfig{
+									Slack: &v1alpha1.SlackReporterConfig{
 										Channel: "my-channel",
 									},
 								},
 				*/
 			},
-			verify: func(pj plumber.PipelineOptionsSpec) error {
+			verify: func(pj v1alpha1.LighthouseJobSpec) error {
 				/*				if pj.ReporterConfig == nil {
 									return errors.New("Expected ReporterConfig to be non-nil")
 								}

@@ -1,4 +1,4 @@
-package plumber
+package v1alpha1
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -74,27 +75,35 @@ const (
 	PullPullShaEnv = "PULL_PULL_SHA"
 )
 
-// PipelineOptions contains the arguments to pass to the Plumber to create a Tekton Pipeline
-type PipelineOptions struct {
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// LighthouseJob contains the arguments to create a Jenkins X Pipeline and to report on it
+type LighthouseJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PipelineOptionsSpec `json:"spec,omitempty"`
-	Status PipelineStatus      `json:"status,omitempty"`
+	Spec   LighthouseJobSpec   `json:"spec,omitempty"`
+	Status LighthouseJobStatus `json:"status,omitempty"`
 }
 
-// PipelineStatus represents the status of a pipeline
-type PipelineStatus struct {
+// LighthouseJobStatus represents the status of a pipeline
+type LighthouseJobStatus struct {
 	State PipelineState `json:"state,omitempty"`
 }
 
-// PipelineOptionsList represents a list of pipeline options
-type PipelineOptionsList struct {
-	Items []PipelineOptions
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// LighthouseJobList represents a list of pipeline options
+type LighthouseJobList struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []LighthouseJob `json:"items"`
 }
 
-// PipelineOptionsSpec the spec of a pipeline request
-type PipelineOptionsSpec struct {
+// LighthouseJobSpec the spec of a pipeline request
+type LighthouseJobSpec struct {
 	// Type is the type of job and informs how
 	// the jobs is triggered
 	Type PipelineKind `json:"type,omitempty"`
@@ -119,7 +128,7 @@ type PipelineOptionsSpec struct {
 }
 
 // GetEnvVars gets a map of the environment variables we'll set in the pipeline for this spec.
-func (s *PipelineOptionsSpec) GetEnvVars() map[string]string {
+func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 	env := map[string]string{
 		JobNameEnv: s.Job,
 		JobTypeEnv: string(s.Type),
@@ -215,7 +224,7 @@ type DecorationConfig struct {
 	SSHKeySecrets []string `json:"ssh_key_secrets,omitempty"`
 	// SSHHostFingerprints are the fingerprints of known SSH hosts
 	// that the cloning process can trust.
-	// Create with ssh-keyscan [-t rsa] host
+	// Launch with ssh-keyscan [-t rsa] host
 	SSHHostFingerprints []string `json:"ssh_host_fingerprints,omitempty"`
 	// SkipCloning determines if we should clone source code in the
 	// initcontainers for jobs that specify refs
@@ -309,3 +318,21 @@ type ByNum []Pull
 func (prs ByNum) Len() int           { return len(prs) }
 func (prs ByNum) Swap(i, j int)      { prs[i], prs[j] = prs[j], prs[i] }
 func (prs ByNum) Less(i, j int) bool { return prs[i].Number < prs[j].Number }
+
+// ToPipelineState converts the PipelineActivity state to LighthouseJob state
+func ToPipelineState(status v1.ActivityStatusType) PipelineState {
+	switch status {
+	case v1.ActivityStatusTypePending:
+		return PendingState
+	case v1.ActivityStatusTypeAborted:
+		return AbortedState
+	case v1.ActivityStatusTypeRunning:
+		return RunningState
+	case v1.ActivityStatusTypeSucceeded:
+		return SuccessState
+	case v1.ActivityStatusTypeFailed, v1.ActivityStatusTypeError:
+		return FailureState
+	default:
+		return FailureState
+	}
+}

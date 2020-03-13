@@ -11,7 +11,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
@@ -259,7 +259,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Push handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, pushHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, pushHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -280,7 +280,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking PR handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, prHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, prHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -299,7 +299,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking branch handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, branchHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, branchHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -324,7 +324,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, issueCommentHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, issueCommentHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -352,7 +352,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, prCommentHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, prCommentHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -491,7 +491,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		logrus.Warn("no configAgent configuration")
 	}
 
-	metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
+	metapipelineClient, err := launcher.NewMetaPipelineClient(clientFactory)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create metapipeline client")
 	}
@@ -507,20 +507,20 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	return server, nil
 }
 
-func (o *Options) updatePlumberClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository) error {
+func (o *Options) updateLauncherClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository) error {
 	jxClient, _, err := o.GetFactory().CreateJXClient()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create JX client")
 		l.Errorf("%s", err.Error())
 		return err
 	}
-	plumberClient, err := plumber.NewPlumber(jxClient, o.namespace)
+	launcherClient, err := launcher.NewLauncher(jxClient, o.namespace)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to create Plumber client")
+		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
 		l.Errorf("%s", err.Error())
 		return err
 	}
-	server.ClientAgent.PlumberClient = plumberClient
+	server.ClientAgent.LauncherClient = launcherClient
 	return nil
 }
 

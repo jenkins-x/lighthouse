@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
+	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
@@ -276,10 +276,10 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 		}
-		fakePlumberClient := fake.NewPlumber()
+		fakeLauncher := fake.NewLauncher()
 		c := Client{
 			SCMProviderClient: g,
-			PlumberClient:     fakePlumberClient,
+			LauncherClient:    fakeLauncher,
 			Config:            &config.Config{},
 			Logger:            logrus.WithField("plugin", PluginName),
 		}
@@ -337,7 +337,7 @@ func TestHandlePullRequest(t *testing.T) {
 			t.Fatalf("Didn't expect error: %s", err)
 		}
 		var numStarted int
-		for _, job := range fakePlumberClient.Pipelines {
+		for _, job := range fakeLauncher.Pipelines {
 			t.Logf("created job with context %s", job.Spec.Context)
 			numStarted++
 		}

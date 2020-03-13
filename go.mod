@@ -2,8 +2,10 @@ module github.com/jenkins-x/lighthouse
 
 require (
 	cloud.google.com/go v0.37.4
+	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-openapi/spec v0.19.3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.1
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
@@ -28,6 +30,7 @@ require (
 	k8s.io/api v0.0.0-20190816222004-e3a6b8045b0b
 	k8s.io/apimachinery v0.0.0-20190816221834-a9f1d8a9c101
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
+	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 	k8s.io/metrics v0.0.0-20190704050707-780c337c9cbd // indirect
 	k8s.io/test-infra v0.0.0-20190830205203-56bd52b0eb20
 	knative.dev/pkg v0.0.0-20191217184203-cf220a867b3d
