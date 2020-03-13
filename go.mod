@@ -32,7 +32,6 @@ require (
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 	k8s.io/metrics v0.0.0-20190704050707-780c337c9cbd // indirect
-	k8s.io/test-infra v0.0.0-20190830205203-56bd52b0eb20
 	knative.dev/pkg v0.0.0-20191217184203-cf220a867b3d
 	sigs.k8s.io/yaml v1.1.0
 	vbom.ml/util v0.0.0-20170409195630-256737ac55c4

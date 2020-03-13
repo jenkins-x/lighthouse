@@ -29,8 +29,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/secret"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/test-infra/prow/kube"
-	"k8s.io/test-infra/prow/pod-utils/decorate"
 )
 
 func TestDefaultJobBase(t *testing.T) {
@@ -93,7 +91,7 @@ func TestDefaultJobBase(t *testing.T) {
 				j.Cluster = ""
 			},
 			expected: func(j *JobBase) {
-				j.Cluster = kube.DefaultClusterAlias
+				j.Cluster = launcher.DefaultClusterAlias
 			},
 		},
 	}
@@ -570,7 +568,7 @@ func TestValidateLabels(t *testing.T) {
 		{
 			name: "reject reserved label",
 			labels: map[string]string{
-				decorate.Labels()[0]: "anything",
+				Labels()[0]: "anything",
 			},
 		},
 		{

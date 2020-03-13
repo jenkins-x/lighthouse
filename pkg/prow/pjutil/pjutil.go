@@ -27,14 +27,12 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
+	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/test-infra/prow/kube"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 // NewLighthouseJob initializes a LighthouseJob out of a LighthouseJobSpec.
@@ -219,15 +217,15 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 		}).Info("Cannot use full job name, will truncate.")
 	}
 	labels := map[string]string{
-		kube.CreatedByProw:               "true",
+		launcher.CreatedByLighthouse:               "true",
 		launcher.LighthouseJobTypeLabel:  string(spec.Type),
 		launcher.LighthouseJobAnnotation: jobNameForLabel,
 	}
 	if spec.Type != v1alpha1.PeriodicJob && spec.Refs != nil {
-		labels[kube.OrgLabel] = spec.Refs.Org
-		labels[kube.RepoLabel] = spec.Refs.Repo
+		labels[launcher.OrgLabel] = spec.Refs.Org
+		labels[launcher.RepoLabel] = spec.Refs.Repo
 		if len(spec.Refs.Pulls) > 0 {
-			labels[kube.PullLabel] = strconv.Itoa(spec.Refs.Pulls[0].Number)
+			labels[launcher.PullLabel] = strconv.Itoa(spec.Refs.Pulls[0].Number)
 		}
 	}
 

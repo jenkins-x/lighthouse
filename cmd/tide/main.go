@@ -17,14 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"flag"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/io"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
@@ -51,8 +49,6 @@ type options struct {
 	runOnce bool
 
 	maxRecordsPerPool int
-	// The following are used for reading/writing to GCS.
-	gcsCredentialsFile string
 	// historyURI where Tide should store its action history.
 	// Can be a /local/path or gs://path/to/object.
 	// GCS writes will use the bucket's default acl for new objects. Ensure both that
@@ -86,7 +82,6 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.IntVar(&o.statusThrottle, "status-hourly-tokens", 400, "The maximum number of tokens per hour to be used by the status controller.")
 
 	fs.IntVar(&o.maxRecordsPerPool, "max-records-per-pool", 1000, "The maximum number of history records stored for an individual Tide pool.")
-	fs.StringVar(&o.gcsCredentialsFile, "gcs-credentials-file", "", "File where Google Cloud authentication credentials are stored. Required for GCS writes.")
 	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store tide action history. GCS writes will use the default object ACL for the bucket")
 	fs.StringVar(&o.statusURI, "status-path", "", "The /local/path or gs://path/to/object to store status controller state. GCS writes will use the default object ACL for the bucket.")
 
@@ -108,15 +103,6 @@ func main() {
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 	if err := o.Validate(); err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
-	}
-
-	opener, err := io.NewOpener(context.Background(), o.gcsCredentialsFile)
-	if err != nil {
-		entry := logrus.WithError(err)
-		if p := o.gcsCredentialsFile; p != "" {
-			entry = entry.WithField("gcs-credentials-file", p)
-		}
-		entry.Fatal("Cannot create opener")
 	}
 
 	configAgent := &config.Agent{}
@@ -148,7 +134,7 @@ func main() {
 	gitToken := os.Getenv("GIT_TOKEN")
 
 	cfg := configAgent.Config
-	c, err := githubapp.NewTideController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, opener, o.historyURI, o.statusURI)
+	c, err := githubapp.NewTideController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Tide controller.")
 	}
