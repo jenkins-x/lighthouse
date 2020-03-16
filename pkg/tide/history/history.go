@@ -40,7 +40,7 @@ type History struct {
 	sync.Mutex
 	logSizeLimit int
 
-	path   string
+	path string
 }
 
 func readHistory(maxRecordsPerKey int, path string) (map[string]*recordLog, error) {

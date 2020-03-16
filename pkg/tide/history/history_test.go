@@ -122,4 +122,3 @@ func TestHistory(t *testing.T) {
 		t.Logf("strs equal: %v.", string(es) == string(gs))
 	}
 }
-
