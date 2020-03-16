@@ -48,3 +48,14 @@ rules:
   - list
   - get
   - update
+- apiGroups:
+    - lighthouse.jenkins.io
+  resources:
+    - lighthousejobs
+  verbs:
+    - create
+    - list
+    - update
+    - get
+    - watch
+    - patch
