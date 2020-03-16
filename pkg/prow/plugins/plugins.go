@@ -28,6 +28,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
+	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -141,6 +142,7 @@ type Agent struct {
 	MetapipelineClient metapipeline.Client
 	GitClient          git2.Client
 	KubernetesClient   kubernetes.Interface
+	LighthouseClient   clientset.Interface
 	/*
 		SlackClient      *slack.Client
 	*/
@@ -170,6 +172,8 @@ func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, plugin
 		GitClient:          clientAgent.GitClient,
 		LauncherClient:     clientAgent.LauncherClient,
 		MetapipelineClient: metapipelineClient,
+		LighthouseClient:   clientAgent.LighthouseClient,
+
 		/*
 			SlackClient:   clientAgent.SlackClient,
 		*/
@@ -211,6 +215,7 @@ type ClientAgent struct {
 	GitClient          git2.Client
 	LauncherClient     launcher.PipelineLauncher
 	MetapipelineClient metapipeline.Client
+	LighthouseClient   clientset.Interface
 
 	/*	SlackClient      *slack.Client
 	 */

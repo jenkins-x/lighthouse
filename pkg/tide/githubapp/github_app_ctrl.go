@@ -171,11 +171,11 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	gitClient.SetCredentials(util.GitHubAppGitRemoteUsername, func() []byte {
 		return []byte(token)
 	})
-	tektonClient, jxClient, _, ns, err := clients.GetClientsAndNamespace()
+	tektonClient, jxClient, _, lhClient, ns, err := clients.GetClientsAndNamespace()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient, err := launcher.NewLauncher(jxClient, ns)
+	launcherClient, err := launcher.NewLauncher(jxClient, lhClient, ns)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting PipelineLauncher client.")
 	}
@@ -184,6 +184,6 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
 	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
+	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, lhClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
 	return c, err
 }

@@ -33,6 +33,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
@@ -84,6 +85,7 @@ type DefaultController struct {
 	gc             git.Client
 	mpClient       metapipeline.Client
 	tektonClient   tektonclient.Interface
+	lhClient       clientset.Interface
 	ns             string
 
 	sc *statusController
@@ -205,7 +207,7 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, lighthouseClient clientset.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -228,6 +230,7 @@ func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launch
 		launcherClient: launcherClient,
 		mpClient:       mpClient,
 		tektonClient:   tektonClient,
+		lhClient:       lighthouseClient,
 		ns:             ns,
 		config:         cfg,
 		gc:             gc,

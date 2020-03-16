@@ -10,6 +10,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -228,7 +229,10 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
+	_, _, kubeClient, lhClient, _, err := clients.GetClientsAndNamespace()
+	if err != nil {
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+	}
 	gitClient, _ := git.NewClient(serverURL, o.gitKind())
 
 	gitClient.SetCredentials(gitCloneUser, func() []byte {
@@ -241,6 +245,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		SCMProviderClient: scmClient,
 		KubernetesClient:  kubeClient,
 		GitClient:         gitClient,
+		LighthouseClient:  lhClient,
 	}
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
@@ -534,13 +539,13 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 }
 
 func (o *Options) updateLauncherClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository) error {
-	jxClient, _, err := o.GetFactory().CreateJXClient()
+	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create JX client")
 		l.Errorf("%s", err.Error())
 		return err
 	}
-	launcherClient, err := launcher.NewLauncher(jxClient, o.namespace)
+	launcherClient, err := launcher.NewLauncher(jxClient, lhClient, o.namespace)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
 		l.Errorf("%s", err.Error())
