@@ -35,11 +35,11 @@ func NewTideController(configAgent *config.Agent, botName string, gitKind string
 		return []byte(gitToken)
 	})
 
-	tektonClient, jxClient, _, ns, err := clients.GetClientsAndNamespace()
+	tektonClient, jxClient, _, lhClient, ns, err := clients.GetClientsAndNamespace()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient, err := launcher.NewLauncher(jxClient, ns)
+	launcherClient, err := launcher.NewLauncher(jxClient, lhClient, ns)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting PipelineLauncher client.")
 	}
@@ -48,6 +48,6 @@ func NewTideController(configAgent *config.Agent, botName string, gitKind string
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
 	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, ns, configAgent.Config, gitClient, maxRecordsPerPool, historyURI, statusURI, nil)
+	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, lhClient, ns, configAgent.Config, gitClient, maxRecordsPerPool, historyURI, statusURI, nil)
 	return c, err
 }

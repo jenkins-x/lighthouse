@@ -11,6 +11,7 @@ import (
 	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,12 +21,17 @@ import (
 // launcher default launcher
 type launcher struct {
 	jxClient  jxclient.Interface
+	lhClient  clientset.Interface
 	namespace string
 }
 
 // NewLauncher creates a new builder
-func NewLauncher(jxClient jxclient.Interface, namespace string) (PipelineLauncher, error) {
-	b := &launcher{jxClient, namespace}
+func NewLauncher(jxClient jxclient.Interface, lhClient clientset.Interface, namespace string) (PipelineLauncher, error) {
+	b := &launcher{
+		jxClient:  jxClient,
+		lhClient:  lhClient,
+		namespace: namespace,
+	}
 	return b, nil
 }
 
@@ -92,14 +98,23 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 
 	pipelineActivity, tektonCRDs, err := metapipelineClient.Create(pipelineCreateParam)
 	if err != nil {
-		return request, errors.Wrap(err, "unable to create Tekton CRDs")
+		return nil, errors.Wrap(err, "unable to create Tekton CRDs")
 	}
 
+	request.Status = v1alpha1.LighthouseJobStatus{
+		State:        v1alpha1.PendingState,
+		ActivityName: pipelineActivity.Name,
+		StartTime:    metav1.Now(),
+	}
+	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to apply LighthouseJob")
+	}
 	err = metapipelineClient.Apply(pipelineActivity, tektonCRDs)
 	if err != nil {
-		return request, errors.Wrap(err, "unable to apply Tekton CRDs")
+		return nil, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}
-	return request, nil
+	return appliedJob, nil
 }
 
 func (b *launcher) getBranch(spec *v1alpha1.LighthouseJobSpec) string {

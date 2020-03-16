@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
@@ -16,7 +17,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
 type WebhookTestSuite struct {
@@ -77,7 +78,8 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	assert.NoError(t, err)
 
 	var objs []runtime.Object
-	kubeClient := fake.NewSimpleClientset(objs...)
+	kubeClient := kubefake.NewSimpleClientset(objs...)
+	lhClient := fake.NewSimpleClientset()
 	scmClient, serverURL, token, err := options.createSCMClient()
 	assert.NoError(t, err)
 	gitClient, err := git.NewClient(serverURL, options.gitKind())
@@ -96,6 +98,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 				SCMProviderClient: scmClient,
 				KubernetesClient:  kubeClient,
 				GitClient:         gitClient,
+				LighthouseClient:  lhClient,
 			},
 		},
 	}
