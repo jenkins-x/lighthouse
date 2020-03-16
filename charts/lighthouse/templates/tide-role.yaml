@@ -43,3 +43,11 @@ rules:
       - watch
       - patch
       - delete
+  - apiGroups:
+      - lighthouse.jenkins.io
+    resources:
+      - lighthousejobs
+    verbs:
+      - get
+      - list
+      - watch
