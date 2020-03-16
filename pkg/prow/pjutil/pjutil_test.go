@@ -261,7 +261,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				launcher.CreatedByLighthouse:               "true",
+				launcher.CreatedByLighthouse:     "true",
 				launcher.LighthouseJobAnnotation: "job",
 				launcher.LighthouseJobTypeLabel:  "periodic",
 			},
@@ -279,7 +279,7 @@ func TestNewLighthouseJob(t *testing.T) {
 				"extra": "stuff",
 			},
 			expectedLabels: map[string]string{
-				launcher.CreatedByLighthouse:               "true",
+				launcher.CreatedByLighthouse:     "true",
 				launcher.LighthouseJobAnnotation: "job",
 				launcher.LighthouseJobTypeLabel:  "periodic",
 				"extra":                          "stuff",
@@ -303,12 +303,12 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				launcher.CreatedByLighthouse:               "true",
+				launcher.CreatedByLighthouse:     "true",
 				launcher.LighthouseJobAnnotation: "job",
 				launcher.LighthouseJobTypeLabel:  "presubmit",
-				launcher.OrgLabel:                    "org",
-				launcher.RepoLabel:                   "repo",
-				launcher.PullLabel:                   "1",
+				launcher.OrgLabel:                "org",
+				launcher.RepoLabel:               "repo",
+				launcher.PullLabel:               "1",
 			},
 			expectedAnnotations: map[string]string{
 				launcher.LighthouseJobAnnotation: "job",
@@ -329,12 +329,12 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				launcher.CreatedByLighthouse:               "true",
+				launcher.CreatedByLighthouse:     "true",
 				launcher.LighthouseJobAnnotation: "job",
 				launcher.LighthouseJobTypeLabel:  "presubmit",
-				launcher.OrgLabel:                    "some-gerrit-instance.foo.com",
-				launcher.RepoLabel:                   "repo",
-				launcher.PullLabel:                   "1",
+				launcher.OrgLabel:                "some-gerrit-instance.foo.com",
+				launcher.RepoLabel:               "repo",
+				launcher.PullLabel:               "1",
 			},
 			expectedAnnotations: map[string]string{
 				launcher.LighthouseJobAnnotation: "job",
@@ -354,12 +354,12 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				launcher.CreatedByLighthouse:               "true",
+				launcher.CreatedByLighthouse:     "true",
 				launcher.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
 				launcher.LighthouseJobTypeLabel:  "presubmit",
-				launcher.OrgLabel:                    "org",
-				launcher.RepoLabel:                   "repo",
-				launcher.PullLabel:                   "1",
+				launcher.OrgLabel:                "org",
+				launcher.RepoLabel:               "repo",
+				launcher.PullLabel:               "1",
 			},
 			expectedAnnotations: map[string]string{
 				launcher.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
@@ -378,7 +378,7 @@ func TestNewLighthouseJob(t *testing.T) {
 				"extraannotation": "foo",
 			},
 			expectedLabels: map[string]string{
-				launcher.CreatedByLighthouse:               "true",
+				launcher.CreatedByLighthouse:     "true",
 				launcher.LighthouseJobAnnotation: "job",
 				launcher.LighthouseJobTypeLabel:  "periodic",
 				"extra":                          "stuff",

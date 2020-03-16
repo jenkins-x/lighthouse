@@ -217,7 +217,7 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 		}).Info("Cannot use full job name, will truncate.")
 	}
 	labels := map[string]string{
-		launcher.CreatedByLighthouse:               "true",
+		launcher.CreatedByLighthouse:     "true",
 		launcher.LighthouseJobTypeLabel:  string(spec.Type),
 		launcher.LighthouseJobAnnotation: jobNameForLabel,
 	}

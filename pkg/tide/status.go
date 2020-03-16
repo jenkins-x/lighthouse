@@ -72,7 +72,7 @@ type statusController struct {
 	blocks  blockers.Blockers
 
 	storedState
-	path   string
+	path string
 }
 
 func (sc *statusController) shutdown() {
