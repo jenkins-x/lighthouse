@@ -1,0 +1,40 @@
+{{- if .Values.knativeDeploy }}
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+{{- if .Values.webhooks.service.name }}
+  name: {{ .Values.webhooks.service.name }}
+{{- else }}
+  name: {{ template "webhooks.name" . }}
+{{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  runLatest:
+    configuration:
+      revisionTemplate:
+        spec:
+          container:
+            image: {{ tpl .Values.webhooks.image.repository . }}:{{ tpl .Values.webhooks.image.tag . }}
+            imagePullPolicy: {{ .Values.webhooks.image.pullPolicy }}
+            env:
+{{- range $pkey, $pval := .Values.env }}
+            - name: {{ $pkey }}
+              value: {{ quote $pval }}
+{{- end }}
+            livenessProbe:
+              httpGet:
+                path: {{ .Values.webhooks.probe.path }}
+              initialDelaySeconds: {{ .Values.webhooks.livenessProbe.initialDelaySeconds }}
+              periodSeconds: {{ .Values.webhooks.livenessProbe.periodSeconds }}
+              successThreshold: {{ .Values.webhooks.livenessProbe.successThreshold }}
+              timeoutSeconds: {{ .Values.webhooks.livenessProbe.timeoutSeconds }}
+            readinessProbe:
+              httpGet:
+                path: {{ .Values.webhooks.probe.path }}
+              periodSeconds: {{ .Values.webhooks.readinessProbe.periodSeconds }}
+              successThreshold: {{ .Values.webhooks.readinessProbe.successThreshold }}
+              timeoutSeconds: {{ .Values.webhooks.readinessProbe.timeoutSeconds }}
+            resources:
+{{ toYaml .Values.webhooks.resources | indent 14 }}
+{{- end }}
