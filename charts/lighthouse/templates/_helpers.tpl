@@ -2,8 +2,9 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- define "webhooks.name" -}}
+{{- $name := default "webhooks" .Values.webhooks.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -16,5 +17,6 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- end -}}
 
 {{- define "tide.name" -}}
-{{- default "tide" .Values.tide.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- $name := default "tide" .Values.tide.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

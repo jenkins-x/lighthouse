@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: {{ template "tide.name" . }}
   labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     app: {{ template "tide.name" . }}
 spec:
   replicas: {{ .Values.tide.replicaCount }}
@@ -13,6 +15,7 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
+      draft: {{ default "draft-app" .Values.draft }}
       app: {{ template "tide.name" . }}
   template:
     metadata:
@@ -21,6 +24,7 @@ spec:
         ad.datadoghq.com/tide.logs: '[{"source":"prow","service":"tide"}]'
 {{- end }}
       labels:
+        draft: {{ default "draft-app" .Values.draft }}
         app: {{ template "tide.name" . }}
     spec:
       serviceAccountName: {{ template "tide.name" . }}

@@ -13,9 +13,8 @@ hmacToken: ""
 # Default values for Go projects.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-replicaCount: 1
 image:
-  repository: gcr.io/jenkinsxio/lighthouse
+  repository: gcr.io/jenkinsxio
   tag: 0.0.64
   pullPolicy: IfNotPresent
 
@@ -25,28 +24,36 @@ env:
 # enable this flag to use knative serve to deploy the app
 knativeDeploy: false
 
-service:
-  name: hook
-  type: ClusterIP
-  externalPort: 80
-  internalPort: 8080
-resources:
-  limits:
-    cpu: 100m
-    memory: 256Mi
-  requests:
-    cpu: 80m
-    memory: 128Mi
-probePath: /
-livenessProbe:
-  initialDelaySeconds: 60
-  periodSeconds: 10
-  successThreshold: 1
-  timeoutSeconds: 1
-readinessProbe:
-  periodSeconds: 10
-  successThreshold: 1
-  timeoutSeconds: 1
+webhooks:
+  replicaCount: 2
+  image:
+    repository: "{{ .Values.image.repository }}/lighthouse-webhooks"
+    tag: "{{ .Values.image.tag }}"
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+  service:
+    name: hook
+    type: ClusterIP
+    externalPort: 80
+    internalPort: 8080
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 80m
+      memory: 128Mi
+  probe:
+    path: /
+  livenessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readinessProbe:
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  terminationGracePeriodSeconds: 180
 
 tide:
   replicaCount: 1
@@ -62,7 +69,7 @@ tide:
   probe:
     path: /
   image:
-    repository: gcr.io/jenkinsxio/lh-tide
+    repository: "{{ .Values.image.repository }}/lighthouse-tide"
     tag: "{{ .Values.image.tag }}"
   imagePullPolicy: IfNotPresent
   terminationGracePeriodSeconds: 30

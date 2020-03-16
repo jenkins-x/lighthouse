@@ -1,13 +1,11 @@
 # Override the lighthouse image tag
 image:
-  repository: gcr.io/jenkinsxio/lighthouse
   tag: $VERSION
   pullPolicy: IfNotPresent
 
 # Override the tide image tag
 tide:
   image:
-    repository: gcr.io/jenkinsxio/lh-tide
     tag: $VERSION
     pullPolicy: IfNotPresent
 

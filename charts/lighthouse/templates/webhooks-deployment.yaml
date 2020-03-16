@@ -1,0 +1,77 @@
+{{- if .Values.knativeDeploy }}
+{{- else }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "webhooks.name" . }}
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app: {{ template "webhooks.name" . }}
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/hmacsecret.yaml") . | sha256sum }}
+spec:
+  replicas: {{ .Values.webhooks.replicaCount }}
+  selector:
+    matchLabels:
+      draft: {{ default "draft-app" .Values.draft }}
+      app: {{ template "webhooks.name" . }}
+  template:
+    metadata:
+      labels:
+        draft: {{ default "draft-app" .Values.draft }}
+        app: {{ template "webhooks.name" . }}
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ template "webhooks.name" . }}
+      containers:
+      - name: {{ template "webhooks.name" . }}
+        image: {{ tpl .Values.webhooks.image.repository . }}:{{ tpl .Values.webhooks.image.tag . }}
+        imagePullPolicy: {{ tpl .Values.webhooks.image.pullPolicy . }}
+        env:
+          - name: "GIT_KIND"
+            value: "{{ .Values.git.kind }}"
+          - name: "GIT_SERVER"
+            value: "{{ .Values.git.server }}"
+          - name: "GIT_USER"
+            value: {{ .Values.user }}
+          - name: "GIT_TOKEN"
+            valueFrom:
+              secretKeyRef:
+                name: lighthouse-oauth-token
+                key: oauth
+          - name: "HMAC_TOKEN"
+            valueFrom:
+              secretKeyRef:
+                name: "hmac-token"
+                key: hmac
+          - name: "JX_LOG_FORMAT"
+            value: "json"
+{{- range $pkey, $pval := .Values.env }}
+        - name: {{ $pkey }}
+          value: {{ quote $pval }}
+{{- end }}
+        ports:
+        - containerPort: {{ .Values.webhooks.service.internalPort }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.webhooks.probe.path }}
+            port: {{ .Values.webhooks.service.internalPort }}
+          initialDelaySeconds: {{ .Values.webhooks.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.webhooks.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.webhooks.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.webhooks.livenessProbe.timeoutSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.webhooks.probe.path }}
+            port: {{ .Values.webhooks.service.internalPort }}
+          periodSeconds: {{ .Values.webhooks.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.webhooks.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.webhooks.readinessProbe.timeoutSeconds }}
+        resources:
+{{ toYaml .Values.webhooks.resources | indent 12 }}
+      terminationGracePeriodSeconds: {{ .Values.webhooks.terminationGracePeriodSeconds }}
+{{- end }}

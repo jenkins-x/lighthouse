@@ -85,7 +85,7 @@ pipelineConfig:
                 command: /kaniko/executor
                 args:
                   - --dockerfile=/workspace/source/Dockerfile
-                  - --destination=gcr.io/jenkinsxio/lighthouse:${inputs.params.version}
+                  - --destination=gcr.io/jenkinsxio/lighthouse-webhooks:${inputs.params.version}
                   - --context=/workspace/source
                   - --cache-dir=/workspace
 
@@ -94,7 +94,7 @@ pipelineConfig:
                 command: /kaniko/executor
                 args:
                   - --dockerfile=/workspace/source/Dockerfile.tide
-                  - --destination=gcr.io/jenkinsxio/lh-tide:${inputs.params.version}
+                  - --destination=gcr.io/jenkinsxio/lighthouse-tide:${inputs.params.version}
                   - --context=/workspace/source
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=${inputs.params.version}
