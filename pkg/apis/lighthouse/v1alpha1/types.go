@@ -89,7 +89,18 @@ type LighthouseJob struct {
 
 // LighthouseJobStatus represents the status of a pipeline
 type LighthouseJobStatus struct {
+	// State is the full state of the job
 	State PipelineState `json:"state,omitempty"`
+	// ActivityName is the name of the PipelineActivity associated with this job, if any.
+	ActivityName string `json:"activityName,omitempty"`
+	// Description is used for the description of the commit status we report.
+	Description string `json:"description,omitempty"`
+	// ReportURL is the link that will be used in the commit status.
+	ReportURL string `json:"reportURL,omitempty"`
+	// StartTime is when the job was created.
+	StartTime metav1.Time `json:"startTime,omitempty"`
+	// CompletionTime is when the job finished reconciling and entered a terminal state.
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
