@@ -103,7 +103,7 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 	}
 
 	paName := util.ToValidName(pipelineActivity.Name)
-	request.Labels[util.LighthousePipelineActivityNameLabel] = paName
+//	request.Labels[util.LighthousePipelineActivityNameLabel] = paName
 
 	request.Status = v1alpha1.LighthouseJobStatus{
 		State:        v1alpha1.PendingState,

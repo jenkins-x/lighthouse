@@ -13,6 +13,12 @@ func ToValidName(name string) string {
 	return toValidName(name, false, math.MaxInt32)
 }
 
+// ToValidNameTruncated converts the given string into a valid Kubernetes resource name,
+// truncating the result if it is more than maxLength characters.
+func ToValidNameTruncated(name string, maxLength int) string {
+	return toValidName(name, false, maxLength)
+}
+
 func toValidName(name string, allowDots bool, maxLength int) string {
 	if name == "" {
 		return ""
