@@ -62,6 +62,9 @@ const (
 	// carries the PR number associated with the job, eg 321.
 	PullLabel = "lighthouse.jenkins-x.io/refs.pull"
 
+	// ContextLabel is added in resources created by Lighthouse and contains the job context.
+	ContextLabel = "lighthouse.jenkins-x.io/context"
+
 	// DefaultClusterAlias specifies the default context for resources owned by jobs (pods/builds).
 	DefaultClusterAlias = "default"
 )

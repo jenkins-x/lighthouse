@@ -206,6 +206,7 @@ func JobURL(plank config.Plank, pj v1alpha1.LighthouseJob, log *logrus.Entry) st
 // User-provided extraLabels and extraAnnotations values will take precedence over auto-provided values.
 func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotations map[string]string) (map[string]string, map[string]string) {
 	jobNameForLabel := spec.Job
+	contextNameForLabel := spec.Context
 	if len(jobNameForLabel) > validation.LabelValueMaxLength {
 		// TODO(fejta): consider truncating middle rather than end.
 		jobNameForLabel = strings.TrimRight(spec.Job[:validation.LabelValueMaxLength], ".-")
@@ -216,10 +217,23 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 			"truncated": jobNameForLabel,
 		}).Info("Cannot use full job name, will truncate.")
 	}
+	if len(contextNameForLabel) > validation.LabelValueMaxLength {
+		// TODO(fejta): consider truncating middle rather than end.
+		contextNameForLabel = strings.TrimRight(spec.Context[:validation.LabelValueMaxLength], ".-")
+		logrus.WithFields(logrus.Fields{
+			"context":   spec.Context,
+			"key":       util.ContextLabel,
+			"value":     spec.Context,
+			"truncated": contextNameForLabel,
+		}).Info("Cannot use full context name, will truncate.")
+	}
 	labels := map[string]string{
 		util.CreatedByLighthouse:     "true",
 		util.LighthouseJobTypeLabel:  string(spec.Type),
 		util.LighthouseJobAnnotation: jobNameForLabel,
+	}
+	if contextNameForLabel != "" {
+		labels[util.ContextLabel] = contextNameForLabel
 	}
 	if spec.Type != v1alpha1.PeriodicJob && spec.Refs != nil {
 		labels[util.OrgLabel] = spec.Refs.Org
