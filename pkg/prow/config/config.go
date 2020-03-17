@@ -31,9 +31,9 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/org"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/robfig/cron.v2"
 	v1 "k8s.io/api/core/v1"
@@ -962,9 +962,9 @@ func parseProwConfig(c *Config) error {
 	}
 
 	for name, method := range c.Tide.MergeType {
-		if method != gitprovider.MergeMerge &&
-			method != gitprovider.MergeRebase &&
-			method != gitprovider.MergeSquash {
+		if method != scmprovider.MergeMerge &&
+			method != scmprovider.MergeRebase &&
+			method != scmprovider.MergeSquash {
 			return fmt.Errorf("merge type %q for %s is not a valid type", method, name)
 		}
 	}
@@ -1051,7 +1051,7 @@ func validateLabels(labels map[string]string) error {
 }
 
 func validateAgent(v JobBase, podNamespace string) error {
-	agents := sets.NewString(launcher.TektonAgent)
+	agents := sets.NewString(util.TektonAgent)
 	agent := v.Agent
 	switch {
 	case !agents.Has(agent):
@@ -1204,7 +1204,7 @@ func DefaultRerunCommandFor(name string) string {
 // defaultJobBase configures common parameters, currently Agent and Namespace.
 func (c *ProwConfig) defaultJobBase(base *JobBase) {
 	if base.Agent == "" { // Use tekton by default
-		base.Agent = launcher.TektonAgent
+		base.Agent = util.TektonAgent
 	}
 	if base.Namespace == nil || *base.Namespace == "" {
 		s := c.PodNamespace
@@ -1324,7 +1324,7 @@ func SetPostsubmitRegexes(ps []Postsubmit) error {
 
 // Labels returns a string slice with label consts from kube.
 func Labels() []string {
-	return []string{launcher.LighthouseJobTypeLabel, launcher.CreatedByLighthouse, launcher.LighthouseJobIDLabel}
+	return []string{util.LighthouseJobTypeLabel, util.CreatedByLighthouse, util.LighthouseJobIDLabel}
 }
 
 // VolumeMounts returns a string slice with *MountName consts in it.

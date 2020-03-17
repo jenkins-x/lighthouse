@@ -21,8 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
-
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 )
@@ -34,8 +33,8 @@ func datedQuery(q string, start, end time.Time) string {
 }
 
 func floor(t time.Time) time.Time {
-	if t.Before(github.FoundingYear) {
-		return github.FoundingYear
+	if t.Before(scmprovider.FoundingYear) {
+		return scmprovider.FoundingYear
 	}
 	return t
 }
@@ -91,10 +90,10 @@ func dateToken(start, end time.Time) string {
 	// Dates before 1970 (unix epoch) are considered invalid.
 	startString, endString := "*", "*"
 	if start.Year() >= 1970 {
-		startString = start.Format(github.SearchTimeFormat)
+		startString = start.Format(scmprovider.SearchTimeFormat)
 	}
 	if end.Year() >= 1970 {
-		endString = end.Format(github.SearchTimeFormat)
+		endString = end.Format(scmprovider.SearchTimeFormat)
 	}
 	return fmt.Sprintf("updated:%s..%s", startString, endString)
 }

@@ -24,7 +24,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -89,7 +89,7 @@ type Tide struct {
 
 	// A key/value pair of an org/repo as the key and merge method to override
 	// the default method of merge. Valid options are squash, rebase, and merge.
-	MergeType map[string]gitprovider.PullRequestMergeType `json:"merge_method,omitempty"`
+	MergeType map[string]scmprovider.PullRequestMergeType `json:"merge_method,omitempty"`
 
 	// A key/value pair of an org/repo as the key and Go template to override
 	// the default merge commit title and/or message. Template is passed the
@@ -148,7 +148,7 @@ type Tide struct {
 
 // MergeMethod returns the merge method to use for a repo. The default of merge is
 // returned when not overridden.
-func (t *Tide) MergeMethod(org, repo string) gitprovider.PullRequestMergeType {
+func (t *Tide) MergeMethod(org, repo string) scmprovider.PullRequestMergeType {
 	name := org + "/" + repo
 
 	v, ok := t.MergeType[name]
@@ -157,7 +157,7 @@ func (t *Tide) MergeMethod(org, repo string) gitprovider.PullRequestMergeType {
 			return ov
 		}
 
-		return gitprovider.MergeMerge
+		return scmprovider.MergeMerge
 	}
 
 	return v

@@ -37,8 +37,8 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -60,12 +60,12 @@ type launcher interface {
 }
 
 type scmProviderClient interface {
-	CreateGraphQLStatus(string, string, string, *gitprovider.Status) (*scm.Status, error)
+	CreateGraphQLStatus(string, string, string, *scmprovider.Status) (*scm.Status, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetRef(string, string, string) (string, error)
-	Merge(string, string, int, gitprovider.MergeDetails) error
+	Merge(string, string, int, scmprovider.MergeDetails) error
 	Query(context.Context, interface{}, map[string]interface{}) error
 }
 
@@ -207,7 +207,7 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(spcSync, spcStatus *gitprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, lighthouseClient clientset.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(spcSync, spcStatus *scmprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, lighthouseClient clientset.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -921,18 +921,18 @@ func (c *DefaultController) pickBatch(sp subpool, cc contextChecker) ([]PullRequ
 	return res, nil
 }
 
-func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method gitprovider.PullRequestMergeType) (gitprovider.PullRequestMergeType, error) {
+func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method scmprovider.PullRequestMergeType) (scmprovider.PullRequestMergeType, error) {
 	labelCount := 0
 	for _, prlabel := range pr.Labels.Nodes {
 		switch string(prlabel.Name) {
 		case squash:
-			method = gitprovider.MergeSquash
+			method = scmprovider.MergeSquash
 			labelCount++
 		case rebase:
-			method = gitprovider.MergeRebase
+			method = scmprovider.MergeRebase
 			labelCount++
 		case merge:
-			method = gitprovider.MergeMerge
+			method = scmprovider.MergeMerge
 			labelCount++
 		}
 		if labelCount > 1 {
@@ -942,8 +942,8 @@ func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method gitpr
 	return method, nil
 }
 
-func (c *DefaultController) prepareMergeDetails(commitTemplates config.TideMergeCommitTemplate, pr PullRequest, mergeMethod gitprovider.PullRequestMergeType) gitprovider.MergeDetails {
-	ghMergeDetails := gitprovider.MergeDetails{
+func (c *DefaultController) prepareMergeDetails(commitTemplates config.TideMergeCommitTemplate, pr PullRequest, mergeMethod scmprovider.PullRequestMergeType) scmprovider.MergeDetails {
+	ghMergeDetails := scmprovider.MergeDetails{
 		SHA:         string(pr.HeadRefOID),
 		MergeMethod: string(mergeMethod),
 	}
@@ -1056,13 +1056,13 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 		// Note: We would also need to be able to roll back any merges for the
 		// batch that were already successfully completed before the failure.
 		// Ref: https://github.com/kubernetes/test-infra/issues/10621
-		if _, ok := err.(gitprovider.ModifiedHeadError); ok {
+		if _, ok := err.(scmprovider.ModifiedHeadError); ok {
 			// This is a possible source of incorrect behavior. If someone
 			// modifies their PR as we try to merge it in a batch then we
 			// end up in an untested state. This is unlikely to cause any
 			// real problems.
 			return true, fmt.Errorf("PR was modified: %v", err)
-		} else if _, ok = err.(gitprovider.UnmergablePRBaseChangedError); ok {
+		} else if _, ok = err.(scmprovider.UnmergablePRBaseChangedError); ok {
 			//  complained that the base branch was modified. This is a
 			// strange error because the API doesn't even allow the request to
 			// specify the base branch sha, only the head sha.
@@ -1076,20 +1076,20 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 				sleep(backoff)
 				backoff *= 2
 			}
-		} else if _, ok = err.(gitprovider.UnauthorizedToPushError); ok {
+		} else if _, ok = err.(scmprovider.UnauthorizedToPushError); ok {
 			// GitHub let us know that the token used cannot push to the branch.
 			// Even if the robot is set up to have write access to the repo, an
 			// overzealous branch protection setting will not allow the robot to
 			// push to a specific branch.
 			// We won't be able to merge the other PRs.
 			return false, fmt.Errorf("branch needs to be configured to allow this robot to push: %v", err)
-		} else if _, ok = err.(gitprovider.MergeCommitsForbiddenError); ok {
+		} else if _, ok = err.(scmprovider.MergeCommitsForbiddenError); ok {
 			// GitHub let us know that the merge method configured for this repo
 			// is not allowed by other repo settings, so we should let the admins
 			// know that the configuration needs to be updated.
 			// We won't be able to merge the other PRs.
 			return false, fmt.Errorf("Tide needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", err)
-		} else if _, ok = err.(gitprovider.UnmergablePRError); ok {
+		} else if _, ok = err.(scmprovider.UnmergablePRError); ok {
 			return true, fmt.Errorf("PR is unmergable. Do the Tide merge requirements match the GitHub settings for the repo? %v", err)
 		}
 		return true, err

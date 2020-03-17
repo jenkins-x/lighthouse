@@ -22,9 +22,9 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -73,7 +73,7 @@ type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 }
 
-func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	if e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -147,7 +147,7 @@ func handle(h *handler) error {
 	if len(toAdd) > 0 {
 		h.log.Printf("Adding %s to %s/%s#%d: %v", h.userType, org, repo, e.Number, toAdd)
 		if err := h.add(org, repo, e.Number, toAdd); err != nil {
-			if mu, ok := err.(gitprovider.MissingUsers); ok {
+			if mu, ok := err.(scmprovider.MissingUsers); ok {
 				msg := h.addFailureResponse(mu)
 				if len(msg) == 0 {
 					return nil
@@ -166,14 +166,14 @@ func handle(h *handler) error {
 // handler is a struct that contains data about a github event and provides functions to help handle it.
 type handler struct {
 	// addFailureResponse generates the body of a response comment in the event that the add function fails.
-	addFailureResponse func(mu gitprovider.MissingUsers) string
+	addFailureResponse func(mu scmprovider.MissingUsers) string
 	// remove is the function that is called on the affected logins for a command prefixed with 'un'.
 	remove func(org, repo string, number int, users []string) error
 	// add is the function that is called on the affected logins for a command with no 'un' prefix.
 	add func(org, repo string, number int, users []string) error
 
 	// event is a pointer to the gitprovider.GenericCommentEvent struct that triggered the handler.
-	event *gitprovider.GenericCommentEvent
+	event *scmprovider.GenericCommentEvent
 	// regexp is the regular expression describing the command. It must have an optional 'un' prefix
 	// as the first subgroup and the arguments to the command as the second subgroup.
 	regexp *regexp.Regexp
@@ -186,9 +186,9 @@ type handler struct {
 	userType string
 }
 
-func newAssignHandler(e gitprovider.GenericCommentEvent, spc scmProviderClient, log *logrus.Entry) *handler {
+func newAssignHandler(e scmprovider.GenericCommentEvent, spc scmProviderClient, log *logrus.Entry) *handler {
 	org := e.Repo.Namespace
-	addFailureResponse := func(mu gitprovider.MissingUsers) string {
+	addFailureResponse := func(mu scmprovider.MissingUsers) string {
 		return fmt.Sprintf("GitHub didn't allow me to assign the following users: %s.\n\nNote that only [%s members](https://github.com/orgs/%s/people), repo collaborators and people who have commented on this issue/PR can be assigned. Additionally, issues/PRs can only have 10 assignees at the same time.\nFor more information please see [the contributor guide](https://git.k8s.io/community/contributors/guide/#issue-assignment-in-github)", strings.Join(mu.Users, ", "), org, org)
 	}
 
@@ -204,9 +204,9 @@ func newAssignHandler(e gitprovider.GenericCommentEvent, spc scmProviderClient, 
 	}
 }
 
-func newReviewHandler(e gitprovider.GenericCommentEvent, spc scmProviderClient, log *logrus.Entry) *handler {
+func newReviewHandler(e scmprovider.GenericCommentEvent, spc scmProviderClient, log *logrus.Entry) *handler {
 	org := e.Repo.Namespace
-	addFailureResponse := func(mu gitprovider.MissingUsers) string {
+	addFailureResponse := func(mu scmprovider.MissingUsers) string {
 		return fmt.Sprintf("GitHub didn't allow me to request PR reviews from the following users: %s.\n\nNote that only [%s members](https://github.com/orgs/%s/people) and repo collaborators can review this PR, and authors cannot review their own PRs.", strings.Join(mu.Users, ", "), org, org)
 	}
 

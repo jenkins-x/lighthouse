@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fakegitprovider
+package fake
 
 import (
 	"fmt"
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -34,8 +34,8 @@ const (
 	TestRef = "abcde"
 )
 
-// FakeClient is like client, but fake.
-type FakeClient struct {
+// SCMClient is like client, but fake.
+type SCMClient struct {
 	Issues              map[int][]*scm.Issue
 	OrgMembers          map[string][]string
 	Collaborators       []string
@@ -92,12 +92,12 @@ type FakeClient struct {
 }
 
 // BotName returns authenticated login.
-func (f *FakeClient) BotName() (string, error) {
+func (f *SCMClient) BotName() (string, error) {
 	return botName, nil
 }
 
 // IsMember returns true if user is in org.
-func (f *FakeClient) IsMember(org, user string) (bool, error) {
+func (f *SCMClient) IsMember(org, user string) (bool, error) {
 	for _, m := range f.OrgMembers[org] {
 		if m == user {
 			return true, nil
@@ -107,27 +107,27 @@ func (f *FakeClient) IsMember(org, user string) (bool, error) {
 }
 
 // ListIssueComments returns comments.
-func (f *FakeClient) ListIssueComments(owner, repo string, number int) ([]*scm.Comment, error) {
+func (f *SCMClient) ListIssueComments(owner, repo string, number int) ([]*scm.Comment, error) {
 	return append([]*scm.Comment{}, f.IssueComments[number]...), nil
 }
 
 // ListPullRequestComments returns review comments.
-func (f *FakeClient) ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error) {
+func (f *SCMClient) ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error) {
 	return append([]*scm.Comment{}, f.PullRequestComments[number]...), nil
 }
 
 // ListReviews returns reviews.
-func (f *FakeClient) ListReviews(owner, repo string, number int) ([]*scm.Review, error) {
+func (f *SCMClient) ListReviews(owner, repo string, number int) ([]*scm.Review, error) {
 	return append([]*scm.Review{}, f.Reviews[number]...), nil
 }
 
 // ListIssueEvents returns issue events
-func (f *FakeClient) ListIssueEvents(owner, repo string, number int) ([]*scm.ListedIssueEvent, error) {
+func (f *SCMClient) ListIssueEvents(owner, repo string, number int) ([]*scm.ListedIssueEvent, error) {
 	return append([]*scm.ListedIssueEvent{}, f.IssueEvents[number]...), nil
 }
 
 // CreateComment adds a comment to a PR
-func (f *FakeClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
+func (f *SCMClient) CreateComment(owner, repo string, number int, pr bool, comment string) error {
 	if pr {
 		f.PullRequestCommentsAdded = append(f.PullRequestCommentsAdded, fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, comment))
 		f.PullRequestComments[number] = append(f.PullRequestComments[number], &scm.Comment{
@@ -148,7 +148,7 @@ func (f *FakeClient) CreateComment(owner, repo string, number int, pr bool, comm
 }
 
 // CreateReview adds a review to a PR
-func (f *FakeClient) CreateReview(org, repo string, number int, r gitprovider.DraftReview) error {
+func (f *SCMClient) CreateReview(org, repo string, number int, r scmprovider.DraftReview) error {
 	f.Reviews[number] = append(f.Reviews[number], &scm.Review{
 		ID:     f.ReviewID,
 		Author: scm.User{Login: botName},
@@ -159,19 +159,19 @@ func (f *FakeClient) CreateReview(org, repo string, number int, r gitprovider.Dr
 }
 
 // CreateCommentReaction adds emoji to a comment.
-func (f *FakeClient) CreateCommentReaction(org, repo string, ID int, reaction string) error {
+func (f *SCMClient) CreateCommentReaction(org, repo string, ID int, reaction string) error {
 	f.CommentReactionsAdded = append(f.CommentReactionsAdded, fmt.Sprintf("%s/%s#%d:%s", org, repo, ID, reaction))
 	return nil
 }
 
 // CreateIssueReaction adds an emoji to an issue.
-func (f *FakeClient) CreateIssueReaction(org, repo string, ID int, reaction string) error {
+func (f *SCMClient) CreateIssueReaction(org, repo string, ID int, reaction string) error {
 	f.IssueReactionsAdded = append(f.IssueReactionsAdded, fmt.Sprintf("%s/%s#%d:%s", org, repo, ID, reaction))
 	return nil
 }
 
 // DeleteComment deletes a comment.
-func (f *FakeClient) DeleteComment(owner, repo string, number, ID int, pr bool) error {
+func (f *SCMClient) DeleteComment(owner, repo string, number, ID int, pr bool) error {
 	if pr {
 		f.PullRequestCommentsDeleted = append(f.PullRequestCommentsDeleted, fmt.Sprintf("%s/%s#%d", owner, repo, ID))
 		for num, ics := range f.PullRequestComments {
@@ -198,7 +198,7 @@ func (f *FakeClient) DeleteComment(owner, repo string, number, ID int, pr bool) 
 }
 
 // DeleteStaleComments deletes comments flagged by isStale.
-func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error {
+func (f *SCMClient) DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error {
 	if comments == nil {
 		if pr {
 			comments, _ = f.ListPullRequestComments(org, repo, number)
@@ -217,7 +217,7 @@ func (f *FakeClient) DeleteStaleComments(org, repo string, number int, comments 
 }
 
 // GetPullRequest returns details about the PR.
-func (f *FakeClient) GetPullRequest(owner, repo string, number int) (*scm.PullRequest, error) {
+func (f *SCMClient) GetPullRequest(owner, repo string, number int) (*scm.PullRequest, error) {
 	val, exists := f.PullRequests[number]
 	if !exists {
 		return nil, fmt.Errorf("Pull request number %d does not exit", number)
@@ -226,28 +226,28 @@ func (f *FakeClient) GetPullRequest(owner, repo string, number int) (*scm.PullRe
 }
 
 // GetPullRequestChanges returns the file modifications in a PR.
-func (f *FakeClient) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
+func (f *SCMClient) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
 	return f.PullRequestChanges[number], nil
 }
 
 // GetRef returns the hash of a ref.
-func (f *FakeClient) GetRef(owner, repo, ref string) (string, error) {
+func (f *SCMClient) GetRef(owner, repo, ref string) (string, error) {
 	return TestRef, nil
 }
 
 // DeleteRef returns an error indicating if deletion of the given ref was successful
-func (f *FakeClient) DeleteRef(owner, repo, ref string) error {
+func (f *SCMClient) DeleteRef(owner, repo, ref string) error {
 	f.RefsDeleted = append(f.RefsDeleted, struct{ Org, Repo, Ref string }{Org: owner, Repo: repo, Ref: ref})
 	return nil
 }
 
 // GetSingleCommit returns a single commit.
-func (f *FakeClient) GetSingleCommit(org, repo, SHA string) (*scm.Commit, error) {
+func (f *SCMClient) GetSingleCommit(org, repo, SHA string) (*scm.Commit, error) {
 	return f.Commits[SHA], nil
 }
 
 // CreateStatus adds a status context to a commit.
-func (f *FakeClient) CreateStatus(owner, repo, SHA string, s *scm.StatusInput) (*scm.Status, error) {
+func (f *SCMClient) CreateStatus(owner, repo, SHA string, s *scm.StatusInput) (*scm.Status, error) {
 	if f.CreatedStatuses == nil {
 		f.CreatedStatuses = make(map[string][]*scm.StatusInput)
 	}
@@ -267,17 +267,17 @@ func (f *FakeClient) CreateStatus(owner, repo, SHA string, s *scm.StatusInput) (
 }
 
 // ListStatuses returns individual status contexts on a commit.
-func (f *FakeClient) ListStatuses(org, repo, ref string) ([]*scm.Status, error) {
+func (f *SCMClient) ListStatuses(org, repo, ref string) ([]*scm.Status, error) {
 	return scm.ConvertStatusInputsToStatuses(f.CreatedStatuses[ref]), nil
 }
 
 // GetCombinedStatus returns the overall status for a commit.
-func (f *FakeClient) GetCombinedStatus(owner, repo, ref string) (*scm.CombinedStatus, error) {
+func (f *SCMClient) GetCombinedStatus(owner, repo, ref string) (*scm.CombinedStatus, error) {
 	return f.CombinedStatuses[ref], nil
 }
 
 // GetRepoLabels gets labels in a repo.
-func (f *FakeClient) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
+func (f *SCMClient) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
 	la := []*scm.Label{}
 	for _, l := range f.RepoLabelsExisting {
 		la = append(la, &scm.Label{Name: l})
@@ -286,7 +286,7 @@ func (f *FakeClient) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
 }
 
 // GetIssueLabels gets labels on an issue
-func (f *FakeClient) GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error) {
+func (f *SCMClient) GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error) {
 	re := regexp.MustCompile(fmt.Sprintf(`^%s/%s#%d:(.*)$`, owner, repo, number))
 	la := []*scm.Label{}
 	var allLabels sets.String
@@ -309,7 +309,7 @@ func (f *FakeClient) GetIssueLabels(owner, repo string, number int, pr bool) ([]
 }
 
 // AddLabel adds a label
-func (f *FakeClient) AddLabel(owner, repo string, number int, label string, pr bool) error {
+func (f *SCMClient) AddLabel(owner, repo string, number int, label string, pr bool) error {
 	labelString := fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, label)
 	if pr {
 		if sets.NewString(f.PullRequestLabelsAdded...).Has(labelString) {
@@ -344,7 +344,7 @@ func (f *FakeClient) AddLabel(owner, repo string, number int, label string, pr b
 }
 
 // RemoveLabel removes a label
-func (f *FakeClient) RemoveLabel(owner, repo string, number int, label string, pr bool) error {
+func (f *SCMClient) RemoveLabel(owner, repo string, number int, label string, pr bool) error {
 	labelString := fmt.Sprintf("%s/%s#%d:%s", owner, repo, number, label)
 	if pr {
 		if !sets.NewString(f.PullRequestLabelsRemoved...).Has(labelString) {
@@ -361,7 +361,7 @@ func (f *FakeClient) RemoveLabel(owner, repo string, number int, label string, p
 }
 
 // FindIssues returns f.Issues
-func (f *FakeClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
+func (f *SCMClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
 	var issues []scm.Issue
 	for _, slice := range f.Issues {
 		for _, issue := range slice {
@@ -372,8 +372,8 @@ func (f *FakeClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, erro
 }
 
 // AssignIssue adds assignees.
-func (f *FakeClient) AssignIssue(owner, repo string, number int, assignees []string) error {
-	var m gitprovider.MissingUsers
+func (f *SCMClient) AssignIssue(owner, repo string, number int, assignees []string) error {
+	var m scmprovider.MissingUsers
 	for _, a := range assignees {
 		if a == "not-in-the-org" {
 			m.Users = append(m.Users, a)
@@ -388,7 +388,7 @@ func (f *FakeClient) AssignIssue(owner, repo string, number int, assignees []str
 }
 
 // GetFile returns the bytes of the file.
-func (f *FakeClient) GetFile(org, repo, file, commit string) ([]byte, error) {
+func (f *SCMClient) GetFile(org, repo, file, commit string) ([]byte, error) {
 	contents, ok := f.RemoteFiles[file]
 	if !ok {
 		return nil, fmt.Errorf("could not find file %s", file)
@@ -409,7 +409,7 @@ func (f *FakeClient) GetFile(org, repo, file, commit string) ([]byte, error) {
 }
 
 // ListTeams return a list of fake teams that correspond to the fake team members returned by ListTeamMembers
-func (f *FakeClient) ListTeams(org string) ([]*scm.Team, error) {
+func (f *SCMClient) ListTeams(org string) ([]*scm.Team, error) {
 	return []*scm.Team{
 		{
 			ID:   0,
@@ -423,8 +423,8 @@ func (f *FakeClient) ListTeams(org string) ([]*scm.Team, error) {
 }
 
 // ListTeamMembers return a fake team with a single "sig-lead" Github teammember
-func (f *FakeClient) ListTeamMembers(teamID int, role string) ([]*scm.TeamMember, error) {
-	if role != gitprovider.RoleAll {
+func (f *SCMClient) ListTeamMembers(teamID int, role string) ([]*scm.TeamMember, error) {
+	if role != scmprovider.RoleAll {
 		return nil, fmt.Errorf("unsupported role %v (only all supported)", role)
 	}
 	teams := map[int][]*scm.TeamMember{
@@ -439,10 +439,10 @@ func (f *FakeClient) ListTeamMembers(teamID int, role string) ([]*scm.TeamMember
 }
 
 // IsCollaborator returns true if the user is a collaborator of the repo.
-func (f *FakeClient) IsCollaborator(org, repo, login string) (bool, error) {
-	normed := gitprovider.NormLogin(login)
+func (f *SCMClient) IsCollaborator(org, repo, login string) (bool, error) {
+	normed := scmprovider.NormLogin(login)
 	for _, collab := range f.Collaborators {
-		if gitprovider.NormLogin(collab) == normed {
+		if scmprovider.NormLogin(collab) == normed {
 			return true, nil
 		}
 	}
@@ -450,7 +450,7 @@ func (f *FakeClient) IsCollaborator(org, repo, login string) (bool, error) {
 }
 
 // ListCollaborators lists the collaborators.
-func (f *FakeClient) ListCollaborators(org, repo string) ([]scm.User, error) {
+func (f *SCMClient) ListCollaborators(org, repo string) ([]scm.User, error) {
 	result := make([]scm.User, 0, len(f.Collaborators))
 	for _, login := range f.Collaborators {
 		result = append(result, scm.User{Login: login})
@@ -459,13 +459,13 @@ func (f *FakeClient) ListCollaborators(org, repo string) ([]scm.User, error) {
 }
 
 // ClearMilestone removes the milestone
-func (f *FakeClient) ClearMilestone(org, repo string, issueNum int) error {
+func (f *SCMClient) ClearMilestone(org, repo string, issueNum int) error {
 	f.Milestone = 0
 	return nil
 }
 
 // SetMilestone sets the milestone.
-func (f *FakeClient) SetMilestone(org, repo string, issueNum, milestoneNum int) error {
+func (f *SCMClient) SetMilestone(org, repo string, issueNum, milestoneNum int) error {
 	if milestoneNum < 0 {
 		return fmt.Errorf("Milestone Numbers Cannot Be Negative")
 	}
@@ -474,16 +474,16 @@ func (f *FakeClient) SetMilestone(org, repo string, issueNum, milestoneNum int) 
 }
 
 // ListMilestones lists milestones.
-func (f *FakeClient) ListMilestones(org, repo string) ([]gitprovider.Milestone, error) {
-	milestones := []gitprovider.Milestone{}
+func (f *SCMClient) ListMilestones(org, repo string) ([]scmprovider.Milestone, error) {
+	milestones := []scmprovider.Milestone{}
 	for k, v := range f.MilestoneMap {
-		milestones = append(milestones, gitprovider.Milestone{Title: k, Number: v})
+		milestones = append(milestones, scmprovider.Milestone{Title: k, Number: v})
 	}
 	return milestones, nil
 }
 
 // ListPRCommits lists commits for a given PR.
-func (f *FakeClient) ListPRCommits(org, repo string, prNumber int) ([]scm.Commit, error) {
+func (f *SCMClient) ListPRCommits(org, repo string, prNumber int) ([]scm.Commit, error) {
 	k := fmt.Sprintf("%s/%s#%d", org, repo, prNumber)
 	return f.CommitMap[k], nil
 }

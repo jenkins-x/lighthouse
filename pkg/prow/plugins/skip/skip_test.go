@@ -21,11 +21,11 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 func TestSkipStatus(t *testing.T) {
@@ -34,7 +34,7 @@ func TestSkipStatus(t *testing.T) {
 
 		presubmits     []config.Presubmit
 		sha            string
-		event          *gitprovider.GenericCommentEvent
+		event          *scmprovider.GenericCommentEvent
 		prChanges      map[int][]*scm.Change
 		existing       []*scm.StatusInput
 		combinedStatus scm.State
@@ -61,7 +61,7 @@ func TestSkipStatus(t *testing.T) {
 				},
 			},
 			sha: "shalala",
-			event: &gitprovider.GenericCommentEvent{
+			event: &scmprovider.GenericCommentEvent{
 				IsPR:       true,
 				IssueState: "open",
 				Action:     scm.ActionCreate,
@@ -117,7 +117,7 @@ func TestSkipStatus(t *testing.T) {
 				},
 			},
 			sha: "shalala",
-			event: &gitprovider.GenericCommentEvent{
+			event: &scmprovider.GenericCommentEvent{
 				IsPR:       true,
 				IssueState: "open",
 				Action:     scm.ActionCreate,
@@ -161,7 +161,7 @@ func TestSkipStatus(t *testing.T) {
 				},
 			},
 			sha: "shalala",
-			event: &gitprovider.GenericCommentEvent{
+			event: &scmprovider.GenericCommentEvent{
 				IsPR:       true,
 				IssueState: "open",
 				Action:     scm.ActionCreate,
@@ -185,7 +185,7 @@ func TestSkipStatus(t *testing.T) {
 				},
 			},
 			sha: "shalala",
-			event: &gitprovider.GenericCommentEvent{
+			event: &scmprovider.GenericCommentEvent{
 				IsPR:       true,
 				IssueState: "open",
 				Action:     scm.ActionCreate,
@@ -221,7 +221,7 @@ func TestSkipStatus(t *testing.T) {
 				},
 			},
 			sha: "shalala",
-			event: &gitprovider.GenericCommentEvent{
+			event: &scmprovider.GenericCommentEvent{
 				IsPR:       true,
 				IssueState: "open",
 				Action:     scm.ActionCreate,
@@ -262,7 +262,7 @@ func TestSkipStatus(t *testing.T) {
 			},
 			sha:            "shalala",
 			combinedStatus: scm.StateSuccess,
-			event: &gitprovider.GenericCommentEvent{
+			event: &scmprovider.GenericCommentEvent{
 				IsPR:       true,
 				IssueState: "open",
 				Action:     scm.ActionCreate,
@@ -297,7 +297,7 @@ func TestSkipStatus(t *testing.T) {
 			t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
 		}
 
-		fspc := &fakegitprovider.FakeClient{
+		fspc := &fake.SCMClient{
 			IssueComments: make(map[int][]*scm.Comment),
 			PullRequests: map[int]*scm.PullRequest{
 				test.event.Number: {

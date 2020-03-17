@@ -31,14 +31,13 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
-
-	github "github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
@@ -564,7 +563,7 @@ func (f *fgc) Query(ctx context.Context, q interface{}, vars map[string]interfac
 	return nil
 }
 
-func (f *fgc) Merge(org, repo string, number int, details github.MergeDetails) error {
+func (f *fgc) Merge(org, repo string, number int, details scmprovider.MergeDetails) error {
 	if err, ok := f.mergeErrs[number]; ok {
 		return err
 	}
@@ -572,9 +571,9 @@ func (f *fgc) Merge(org, repo string, number int, details github.MergeDetails) e
 	return nil
 }
 
-func (f *fgc) CreateGraphQLStatus(org, repo, ref string, s *github.Status) (*scm.Status, error) {
+func (f *fgc) CreateGraphQLStatus(org, repo, ref string, s *scmprovider.Status) (*scm.Status, error) {
 	switch s.State {
-	case github.StatusSuccess, github.StatusError, github.StatusPending, github.StatusFailure:
+	case scmprovider.StatusSuccess, scmprovider.StatusError, scmprovider.StatusPending, scmprovider.StatusFailure:
 		f.setStatus = true
 		return nil, nil
 	}
@@ -917,15 +916,15 @@ func TestCheckMergeLabels(t *testing.T) {
 		name string
 
 		pr        PullRequest
-		method    github.PullRequestMergeType
-		expected  github.PullRequestMergeType
+		method    scmprovider.PullRequestMergeType
+		expected  scmprovider.PullRequestMergeType
 		expectErr bool
 	}{
 		{
 			name:      "default method without PR label override",
 			pr:        PullRequest{},
-			method:    github.MergeMerge,
-			expected:  github.MergeMerge,
+			method:    scmprovider.MergeMerge,
+			expected:  scmprovider.MergeMerge,
 			expectErr: false,
 		},
 		{
@@ -935,8 +934,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					Nodes []struct{ Name githubql.String }
 				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String("sig/testing")}}},
 			},
-			method:    github.MergeMerge,
-			expected:  github.MergeMerge,
+			method:    scmprovider.MergeMerge,
+			expected:  scmprovider.MergeMerge,
 			expectErr: false,
 		},
 		{
@@ -946,8 +945,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					Nodes []struct{ Name githubql.String }
 				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String(squashLabel)}}},
 			},
-			method:    github.MergeMerge,
-			expected:  github.MergeSquash,
+			method:    scmprovider.MergeMerge,
+			expected:  scmprovider.MergeSquash,
 			expectErr: false,
 		},
 		{
@@ -960,8 +959,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					{Name: githubql.String(rebaseLabel)}},
 				},
 			},
-			method:    github.MergeMerge,
-			expected:  github.MergeSquash,
+			method:    scmprovider.MergeMerge,
+			expected:  scmprovider.MergeSquash,
 			expectErr: true,
 		},
 	}
@@ -1232,7 +1231,7 @@ func TestTakeAction(t *testing.T) {
 			name: "batch merge errors but continues if a PR is unmergeable",
 
 			batchMerges: []int{1, 2, 3},
-			mergeErrs:   map[int]error{2: github.UnmergablePRError("test error")},
+			mergeErrs:   map[int]error{2: scmprovider.UnmergablePRError("test error")},
 			merged:      2,
 			triggered:   0,
 			action:      MergeBatch,
@@ -1242,7 +1241,7 @@ func TestTakeAction(t *testing.T) {
 			name: "batch merge errors but continues if a PR has changed",
 
 			batchMerges: []int{1, 2, 3},
-			mergeErrs:   map[int]error{2: github.ModifiedHeadError("test error")},
+			mergeErrs:   map[int]error{2: scmprovider.ModifiedHeadError("test error")},
 			merged:      2,
 			triggered:   0,
 			action:      MergeBatch,
@@ -1262,7 +1261,7 @@ func TestTakeAction(t *testing.T) {
 			name: "batch merge stops on auth error",
 
 			batchMerges: []int{1, 2, 3},
-			mergeErrs:   map[int]error{2: github.UnauthorizedToPushError("test error")},
+			mergeErrs:   map[int]error{2: scmprovider.UnauthorizedToPushError("test error")},
 			merged:      1,
 			triggered:   0,
 			action:      MergeBatch,
@@ -1272,7 +1271,7 @@ func TestTakeAction(t *testing.T) {
 			name: "batch merge stops on invalid merge method error",
 
 			batchMerges: []int{1, 2, 3},
-			mergeErrs:   map[int]error{2: github.MergeCommitsForbiddenError("test error")},
+			mergeErrs:   map[int]error{2: scmprovider.MergeCommitsForbiddenError("test error")},
 			merged:      1,
 			triggered:   0,
 			action:      MergeBatch,
@@ -2424,14 +2423,14 @@ func TestPrepareMergeDetails(t *testing.T) {
 		name        string
 		tpl         config.TideMergeCommitTemplate
 		pr          PullRequest
-		mergeMethod github.PullRequestMergeType
-		expected    github.MergeDetails
+		mergeMethod scmprovider.PullRequestMergeType
+		expected    scmprovider.MergeDetails
 	}{{
 		name:        "No commit template",
 		tpl:         config.TideMergeCommitTemplate{},
 		pr:          pr,
 		mergeMethod: "merge",
-		expected: github.MergeDetails{
+		expected: scmprovider.MergeDetails{
 			SHA:         "SHA",
 			MergeMethod: "merge",
 		},
@@ -2443,7 +2442,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 		pr:          pr,
 		mergeMethod: "merge",
-		expected: github.MergeDetails{
+		expected: scmprovider.MergeDetails{
 			SHA:         "SHA",
 			MergeMethod: "merge",
 		},
@@ -2455,7 +2454,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 		pr:          pr,
 		mergeMethod: "merge",
-		expected: github.MergeDetails{
+		expected: scmprovider.MergeDetails{
 			SHA:           "SHA",
 			MergeMethod:   "merge",
 			CommitTitle:   "static title",
@@ -2469,7 +2468,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 		pr:          pr,
 		mergeMethod: "merge",
-		expected: github.MergeDetails{
+		expected: scmprovider.MergeDetails{
 			SHA:           "SHA",
 			MergeMethod:   "merge",
 			CommitTitle:   "1: my commit title",
@@ -2483,7 +2482,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 		pr:          pr,
 		mergeMethod: "merge",
-		expected: github.MergeDetails{
+		expected: scmprovider.MergeDetails{
 			SHA:         "SHA",
 			MergeMethod: "merge",
 		},

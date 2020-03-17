@@ -1,4 +1,4 @@
-package gitprovider
+package scmprovider
 
 import (
 	"github.com/jenkins-x/go-scm/scm"

@@ -25,11 +25,11 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -779,7 +779,7 @@ func TestHandleGenericComment(t *testing.T) {
 		if tc.Branch == "" {
 			tc.Branch = "master"
 		}
-		g := &fakegitprovider.FakeClient{
+		g := &fake2.SCMClient{
 			CreatedStatuses:     map[string][]*scm.StatusInput{},
 			IssueComments:       map[int][]*scm.Comment{},
 			PullRequestComments: map[int][]*scm.Comment{},
@@ -858,7 +858,7 @@ func TestHandleGenericComment(t *testing.T) {
 			t.Fatalf("%s: failed to set presubmits: %v", tc.name, err)
 		}
 
-		event := gitprovider.GenericCommentEvent{
+		event := scmprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Repo: scm.Repository{
 				Namespace: "org",
@@ -892,7 +892,7 @@ func TestHandleGenericComment(t *testing.T) {
 	}
 }
 
-func validate(name string, fakeLauncher *fake.Launcher, g *fakegitprovider.FakeClient, tc testcase, t *testing.T) {
+func validate(name string, fakeLauncher *fake.Launcher, g *fake2.SCMClient, tc testcase, t *testing.T) {
 	startedContexts := sets.NewString()
 	for _, job := range fakeLauncher.Pipelines {
 		startedContexts.Insert(job.Spec.Context)

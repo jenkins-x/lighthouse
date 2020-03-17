@@ -24,11 +24,11 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/prow/repoowners"
 )
@@ -260,7 +260,7 @@ func TestLGTMComment(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Running scenario %q", tc.name)
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := gitprovider.ToTestClient(fakeScmClient)
+		fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
 		fc.PullRequests[5] = &scm.PullRequest{
 			Number: 5,
@@ -276,7 +276,7 @@ func TestLGTMComment(t *testing.T) {
 		}
 		fc.Collaborators = []string{"collab1", "collab2"}
 
-		e := &gitprovider.GenericCommentEvent{
+		e := &scmprovider.GenericCommentEvent{
 			Action:      scm.ActionCreate,
 			IssueState:  "open",
 			IsPR:        true,
@@ -420,7 +420,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := gitprovider.ToTestClient(fakeScmClient)
+		fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
 		fc.PullRequests[5] = &scm.PullRequest{
 			Number: 5,
@@ -429,7 +429,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			},
 		}
 		fc.Collaborators = []string{"collab1", "collab2"}
-		e := &gitprovider.GenericCommentEvent{
+		e := &scmprovider.GenericCommentEvent{
 			Action:      scm.ActionCreate,
 			IssueState:  "open",
 			IsPR:        true,
@@ -626,7 +626,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := gitprovider.ToTestClient(fakeScmClient)
+		fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
 		fc.PullRequests[5] = &scm.PullRequest{
 			Number: 5,
@@ -926,7 +926,7 @@ func TestHandlePullRequest(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			fakeScmClient, fakeGitHub := fake.NewDefault()
-			fakeClient := gitprovider.ToClient(fakeScmClient, fakeBotName)
+			fakeClient := scmprovider.ToClient(fakeScmClient, fakeBotName)
 
 			fakeGitHub.PullRequestComments = c.PullRequestComments
 			fakeGitHub.PullRequests[101] = &scm.PullRequest{
@@ -1035,7 +1035,7 @@ func TestAddTreeHashComment(t *testing.T) {
 				body:   "/lgtm",
 			}
 			fakeScmClient, fc := fake.NewDefault()
-			fakeClient := gitprovider.ToTestClient(fakeScmClient)
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
 			fc.PullRequests[101] = &scm.PullRequest{
 				Number: 101,
@@ -1092,7 +1092,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 	}
 	fakeBotName := "k8s-ci-robot"
 	fakeScmClient, fc := fake.NewDefault()
-	fakeClient := gitprovider.ToClient(fakeScmClient, fakeBotName)
+	fakeClient := scmprovider.ToClient(fakeScmClient, fakeBotName)
 
 	fc.PullRequestComments[101] = []*scm.Comment{&scm.Comment{
 		Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),

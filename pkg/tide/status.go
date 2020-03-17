@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 	"github.com/pkg/errors"
 	githubql "github.com/shurcooL/githubv4"
@@ -233,7 +233,7 @@ func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]
 			if len(numbers) > 1 {
 				s = "s"
 			}
-			return gitprovider.StatusError, fmt.Sprintf(statusNotInPool, fmt.Sprintf(" Merging is blocked by issue%s %s.", s, strings.Join(numbers, ", ")))
+			return scmprovider.StatusError, fmt.Sprintf(statusNotInPool, fmt.Sprintf(" Merging is blocked by issue%s %s.", s, strings.Join(numbers, ", ")))
 		}
 		minDiffCount := -1
 		var minDiff string
@@ -244,9 +244,9 @@ func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]
 				minDiff = diff
 			}
 		}
-		return gitprovider.StatusPending, fmt.Sprintf(statusNotInPool, minDiff)
+		return scmprovider.StatusPending, fmt.Sprintf(statusNotInPool, minDiff)
 	}
-	return gitprovider.StatusSuccess, statusInPool
+	return scmprovider.StatusSuccess, statusInPool
 }
 
 // targetURL determines the URL used for more details in the status
@@ -308,7 +308,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 				string(pr.Repository.Owner.Login),
 				string(pr.Repository.Name),
 				string(pr.HeadRefOID),
-				&gitprovider.Status{
+				&scmprovider.Status{
 					Context:     statusContext,
 					State:       wantState,
 					Description: wantDesc,

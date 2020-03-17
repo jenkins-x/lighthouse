@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/secret"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -53,7 +53,7 @@ func TestDefaultJobBase(t *testing.T) {
 				j.Agent = ""
 			},
 			expected: func(j *JobBase) {
-				j.Agent = string(launcher.TektonAgent)
+				j.Agent = string(util.TektonAgent)
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func TestDefaultJobBase(t *testing.T) {
 				j.Cluster = ""
 			},
 			expected: func(j *JobBase) {
-				j.Cluster = launcher.DefaultClusterAlias
+				j.Cluster = util.DefaultClusterAlias
 			},
 		},
 	}
@@ -445,7 +445,7 @@ periodics:
 }
 
 func TestValidateAgent(t *testing.T) {
-	k := string(launcher.TektonAgent)
+	k := string(util.TektonAgent)
 	ns := "default"
 	base := JobBase{
 		Agent:     k,
@@ -598,7 +598,7 @@ func TestValidateLabels(t *testing.T) {
 }
 
 func TestValidateJobBase(t *testing.T) {
-	ka := string(launcher.TektonAgent)
+	ka := string(util.TektonAgent)
 	goodSpec := v1.PodSpec{
 		Containers: []v1.Container{
 			{},

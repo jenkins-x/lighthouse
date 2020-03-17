@@ -21,9 +21,9 @@ import (
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
@@ -36,7 +36,7 @@ type scmProviderClient interface {
 	ReopenPR(owner, repo string, number int) error
 }
 
-func handleReopen(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
 	// Only consider closed issues and new comments.
 	if e.IssueState != "closed" || e.Action != scm.ActionCreate {
 		return nil

@@ -1,4 +1,4 @@
-package gitprovider
+package scmprovider
 
 import (
 	"context"

@@ -21,9 +21,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 type fakeClientClose struct {
@@ -173,7 +172,7 @@ func TestCloseComment(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fc := &fakeClientClose{labels: tc.labels}
-		e := &gitprovider.GenericCommentEvent{
+		e := &scmprovider.GenericCommentEvent{
 			Action:      tc.action,
 			IssueState:  tc.state,
 			Body:        tc.body,

@@ -23,8 +23,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -328,7 +328,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fakeSCMClient := fakegitprovider.FakeClient{}
+			fakeSCMClient := fake2.SCMClient{}
 			fakeLauncher := fake.NewLauncher()
 			fakeLauncher.FailJobs = testCase.jobCreationErrs
 
@@ -428,7 +428,7 @@ func TestRunRequested(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			fakeSCMClient := fakegitprovider.FakeClient{}
+			fakeSCMClient := fake2.SCMClient{}
 			fakeLauncher := fake.NewLauncher()
 			fakeLauncher.FailJobs = testCase.jobCreationErrs
 

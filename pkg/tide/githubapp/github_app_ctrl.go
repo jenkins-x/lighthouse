@@ -14,7 +14,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/tide"
 	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -164,7 +164,7 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
-	gitproviderClient := gitprovider.ToClient(scmClient, g.botName)
+	gitproviderClient := scmprovider.ToClient(scmClient, g.botName)
 	gitClient, err := git.NewClient(g.gitServer, g.gitKind)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating git client")

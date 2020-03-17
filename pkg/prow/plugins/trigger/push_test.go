@@ -23,11 +23,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 )
 
 func TestCreateRefs(t *testing.T) {
@@ -132,7 +131,7 @@ func TestHandlePE(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		g := &fakegitprovider.FakeClient{}
+		g := &fake2.SCMClient{}
 		fakeLauncher := fake.NewLauncher()
 		c := Client{
 			SCMProviderClient: g,

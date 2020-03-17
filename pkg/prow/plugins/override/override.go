@@ -24,13 +24,13 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -100,7 +100,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	c := client{
 		spc:                pc.SCMProviderClient,
 		jc:                 pc.Config.JobConfig,
@@ -111,7 +111,7 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 }
 
 func authorized(spc scmProviderClient, log *logrus.Entry, org, repo, user string) bool {
-	ok, err := spc.HasPermission(org, repo, user, gitprovider.RoleAdmin)
+	ok, err := spc.HasPermission(org, repo, user, scmprovider.RoleAdmin)
 	if err != nil {
 		log.WithError(err).Warnf("cannot determine whether %s is an admin of %s/%s", user, org, repo)
 		return false
@@ -131,7 +131,7 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
 
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil

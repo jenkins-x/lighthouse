@@ -26,12 +26,12 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 const (
@@ -121,7 +121,7 @@ func (c *fakeClient) HasPermission(org, repo, user string, roles ...string) (boo
 		return false, fmt.Errorf("bad org: %s", org)
 	case repo != fakeRepo:
 		return false, fmt.Errorf("bad repo: %s", repo)
-	case roles[0] != gitprovider.RoleAdmin:
+	case roles[0] != scmprovider.RoleAdmin:
 		return false, fmt.Errorf("bad roles: %s", roles)
 	case user == "fail":
 		return true, errors.New("injected HasPermission error")
@@ -454,7 +454,7 @@ func TestHandle(t *testing.T) {
 	log := logrus.WithField("plugin", pluginName)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var event gitprovider.GenericCommentEvent
+			var event scmprovider.GenericCommentEvent
 			event.Repo.Namespace = fakeOrg
 			event.Repo.Name = fakeRepo
 			event.Body = tc.comment

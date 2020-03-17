@@ -24,9 +24,9 @@ import (
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
@@ -49,9 +49,9 @@ const failedCommentCoerceFmt = "Could not coerce %s event to a GenericCommentEve
 // HandleIssueCommentEvent handle comment events
 func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHook) {
 	l = l.WithFields(logrus.Fields{
-		gitprovider.OrgLogField:  ic.Repo.Namespace,
-		gitprovider.RepoLogField: ic.Repo.Name,
-		gitprovider.PrLogField:   ic.Issue.Number,
+		scmprovider.OrgLogField:  ic.Repo.Namespace,
+		scmprovider.RepoLogField: ic.Repo.Name,
+		scmprovider.PrLogField:   ic.Issue.Number,
 		"author":                 ic.Comment.Author.Login,
 		"url":                    ic.Comment.Link,
 	})
@@ -74,7 +74,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 
 	s.handleGenericComment(
 		l,
-		&gitprovider.GenericCommentEvent{
+		&scmprovider.GenericCommentEvent{
 			GUID:        strconv.Itoa(ic.Comment.ID),
 			IsPR:        ic.Issue.PullRequest,
 			Action:      ic.Action,
@@ -95,9 +95,9 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 // HandlePullRequestCommentEvent handles pull request comments events
 func (s *Server) HandlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullRequestCommentHook) {
 	l = l.WithFields(logrus.Fields{
-		gitprovider.OrgLogField:  pc.Repo.Namespace,
-		gitprovider.RepoLogField: pc.Repo.Name,
-		gitprovider.PrLogField:   pc.PullRequest.Number,
+		scmprovider.OrgLogField:  pc.Repo.Namespace,
+		scmprovider.RepoLogField: pc.Repo.Name,
+		scmprovider.PrLogField:   pc.PullRequest.Number,
 		"author":                 pc.Comment.Author.Login,
 		"url":                    pc.Comment.Link,
 	})
@@ -105,7 +105,7 @@ func (s *Server) HandlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 
 	s.handleGenericComment(
 		l,
-		&gitprovider.GenericCommentEvent{
+		&scmprovider.GenericCommentEvent{
 			GUID:        strconv.Itoa(pc.Comment.ID),
 			IsPR:        true,
 			Action:      pc.Action,
@@ -123,7 +123,7 @@ func (s *Server) HandlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 	)
 }
 
-func (s *Server) handleGenericComment(l *logrus.Entry, ce *gitprovider.GenericCommentEvent) {
+func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCommentEvent) {
 	for p, h := range s.Plugins.GenericCommentHandlers(ce.Repo.Namespace, ce.Repo.Name) {
 		s.wg.Add(1)
 		go func(p string, h plugins.GenericCommentHandler) {
@@ -145,8 +145,8 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *gitprovider.GenericCo
 func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	repo := pe.Repository()
 	l = l.WithFields(logrus.Fields{
-		gitprovider.OrgLogField:  repo.Namespace,
-		gitprovider.RepoLogField: repo.Name,
+		scmprovider.OrgLogField:  repo.Namespace,
+		scmprovider.RepoLogField: repo.Name,
 		"ref":                    pe.Ref,
 		"head":                   pe.After,
 	})
@@ -169,9 +169,9 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 // HandlePullRequestEvent handles a pull request event
 func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook) {
 	l = l.WithFields(logrus.Fields{
-		gitprovider.OrgLogField:  pr.Repo.Namespace,
-		gitprovider.RepoLogField: pr.Repo.Name,
-		gitprovider.PrLogField:   pr.PullRequest.Number,
+		scmprovider.OrgLogField:  pr.Repo.Namespace,
+		scmprovider.RepoLogField: pr.Repo.Name,
+		scmprovider.PrLogField:   pr.PullRequest.Number,
 		"author":                 pr.PullRequest.Author.Login,
 		"url":                    pr.PullRequest.Link,
 	})
@@ -205,7 +205,7 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	}
 	s.handleGenericComment(
 		l,
-		&gitprovider.GenericCommentEvent{
+		&scmprovider.GenericCommentEvent{
 			GUID:        pr.GUID,
 			IsPR:        true,
 			Action:      action,
