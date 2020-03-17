@@ -210,7 +210,7 @@ func ToPipelineOptions(activity *jxv1.PipelineActivity) v1alpha1.LighthouseJob {
 		Spec: v1alpha1.LighthouseJobSpec{
 			Type:           kind,
 			Namespace:      activity.Namespace,
-			Job:            spec.Pipeline,
+			Job:            spec.Pipeline, // TODO: this will end up being the config job name going forward so don't stress about it (apb)
 			Refs:           ref,
 			Context:        spec.Context,
 			RerunCommand:   "",
