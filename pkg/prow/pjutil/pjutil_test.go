@@ -300,6 +300,7 @@ func TestNewLighthouseJob(t *testing.T) {
 						{Number: 1},
 					},
 				},
+				Context: "pr-build",
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
@@ -309,6 +310,8 @@ func TestNewLighthouseJob(t *testing.T) {
 				util.OrgLabel:                "org",
 				util.RepoLabel:               "repo",
 				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
+				util.ContextLabel:            "pr-build",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -335,6 +338,7 @@ func TestNewLighthouseJob(t *testing.T) {
 				util.OrgLabel:                "some-gerrit-instance.foo.com",
 				util.RepoLabel:               "repo",
 				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -360,6 +364,7 @@ func TestNewLighthouseJob(t *testing.T) {
 				util.OrgLabel:                "org",
 				util.RepoLabel:               "repo",
 				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",

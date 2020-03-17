@@ -65,6 +65,23 @@ const (
 	// ContextLabel is added in resources created by Lighthouse and contains the job context.
 	ContextLabel = "lighthouse.jenkins-x.io/context"
 
+	// BranchLabel is added in resources created by Lighthouse and contains the branch name for the job.
+	BranchLabel = "lighthouse.jenkins-x.io/branch"
+
+	// BuildNumLabel is added in resources created by Lighthouse and contains the build number for the job.
+	BuildNumLabel = "lighthouse.jenkins-x.io/buildNum"
+
 	// DefaultClusterAlias specifies the default context for resources owned by jobs (pods/builds).
 	DefaultClusterAlias = "default"
+
+	// ActivityOwnerLabel is the label for the org/owner on the PipelineActivity
+	ActivityOwnerLabel = "owner"
+	// ActivityRepositoryLabel is the label for the repo name on the PipelineActivity
+	ActivityRepositoryLabel = "repository"
+	// ActivityBranchLabel is the label for the branch name on the PipelineActivity
+	ActivityBranchLabel = "branch"
+	// ActivityBuildLabel is the label for the build number on the PipelineActivity
+	ActivityBuildLabel = "build"
+	// ActivityContextLabel is the label for the (optional) pipeline context on the PipelineActivity
+	ActivityContextLabel = "context"
 )

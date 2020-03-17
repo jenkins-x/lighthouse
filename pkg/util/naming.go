@@ -72,4 +72,3 @@ func toValidName(name string, allowDots bool, maxLength int) string {
 	}
 	return answer
 }
-

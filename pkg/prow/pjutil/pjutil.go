@@ -238,6 +238,7 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 	if spec.Type != v1alpha1.PeriodicJob && spec.Refs != nil {
 		labels[util.OrgLabel] = spec.Refs.Org
 		labels[util.RepoLabel] = spec.Refs.Repo
+		labels[util.BranchLabel] = spec.GetBranch()
 		if len(spec.Refs.Pulls) > 0 {
 			labels[util.PullLabel] = strconv.Itoa(spec.Refs.Pulls[0].Number)
 		}
