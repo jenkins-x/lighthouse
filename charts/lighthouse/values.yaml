@@ -57,12 +57,6 @@ status:
     repository: "{{ .Values.image.repository }}/lighthouse-status"
     tag: "{{ .Values.image.tag }}"
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-  args:
-    - "--namespace={{ .Release.Namespace }}"
-  service:
-    type: ClusterIP
-    externalPort: 80
-    internalPort: 8080
   resources:
     limits:
       cpu: 100m
@@ -70,17 +64,6 @@ status:
     requests:
       cpu: 80m
       memory: 128Mi
-  probe:
-    path: /
-  livenessProbe:
-    initialDelaySeconds: 60
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 1
-  readinessProbe:
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 1
   terminationGracePeriodSeconds: 180
   reportURLBase: ""
 

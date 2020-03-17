@@ -27,10 +27,8 @@ spec:
       - name: {{ template "status.name" . }}
         image: {{ tpl .Values.status.image.repository . }}:{{ tpl .Values.status.image.tag . }}
         imagePullPolicy: {{ tpl .Values.status.image.pullPolicy . }}
-{{ if .Values.status.args }}
         args:
-{{ toYaml .Values.status.args | indent 10 }}
-{{- end }}
+          - "--namespace={{ .Release.Namespace }}"
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"
@@ -49,23 +47,6 @@ spec:
         - name: {{ $pkey }}
           value: {{ quote $pval }}
 {{- end }}
-        ports:
-        - containerPort: {{ .Values.status.service.internalPort }}
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.status.probe.path }}
-            port: {{ .Values.status.service.internalPort }}
-          initialDelaySeconds: {{ .Values.status.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.status.livenessProbe.periodSeconds }}
-          successThreshold: {{ .Values.status.livenessProbe.successThreshold }}
-          timeoutSeconds: {{ .Values.status.livenessProbe.timeoutSeconds }}
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.status.probe.path }}
-            port: {{ .Values.status.service.internalPort }}
-          periodSeconds: {{ .Values.status.readinessProbe.periodSeconds }}
-          successThreshold: {{ .Values.status.readinessProbe.successThreshold }}
-          timeoutSeconds: {{ .Values.status.readinessProbe.timeoutSeconds }}
         resources:
 {{ toYaml .Values.status.resources | indent 12 }}
       terminationGracePeriodSeconds: {{ .Values.status.terminationGracePeriodSeconds }}
