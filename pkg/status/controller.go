@@ -39,9 +39,8 @@ const (
 
 // Controller listens for changes to PipelineActivitys and updates the corresponding LighthouseJobs and provider commit statuses.
 type Controller struct {
-	jxClient          jxclient.Interface
-	lhClient          clientset.Interface
-	scmProviderClient scmprovider.SCMClient
+	jxClient jxclient.Interface
+	lhClient clientset.Interface
 
 	activityLister   jxlisters.PipelineActivityLister
 	activityInformer cache.SharedIndexInformer
@@ -59,22 +58,21 @@ type Controller struct {
 }
 
 // NewController returns a new controller for syncing PipelineActivity updates to LighthouseJobs and commit statuses
-func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, scmProviderClient scmprovider.SCMClient,
-	activityInformer jxinformers.PipelineActivityInformer, lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) *Controller {
+func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, activityInformer jxinformers.PipelineActivityInformer,
+	lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) *Controller {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
 
 	controller := &Controller{
-		jxClient:          jxClient,
-		lhClient:          lhClient,
-		scmProviderClient: scmProviderClient,
-		activityLister:    activityInformer.Lister(),
-		activityInformer:  activityInformer.Informer(),
-		lhLister:          lhInformer.Lister(),
-		logger:            logger,
-		ns:                ns,
-		queue:             RateLimiter(),
+		jxClient:         jxClient,
+		lhClient:         lhClient,
+		activityLister:   activityInformer.Lister(),
+		activityInformer: activityInformer.Informer(),
+		lhLister:         lhInformer.Lister(),
+		logger:           logger,
+		ns:               ns,
+		queue:            RateLimiter(),
 	}
 
 	activityInformer.Informer()
@@ -118,7 +116,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	}
 
 	c.logger.Info("Starting workers")
-	// Launch two workers to process Foo resources
+	// Launch the appropriate number of workers to process PipelineActivity resources
 	for i := 0; i < threadiness; i++ {
 		go wait.Until(c.runWorker, time.Second, stopCh)
 	}

@@ -1,0 +1,34 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: {{ template "status.name" . }}
+rules:
+- apiGroups:
+  - jenkins.io
+  resources:
+  - pipelineactivities
+  verbs:
+  - list
+  - get
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - configmaps
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs
+  verbs:
+  - create
+  - list
+  - update
+  - get
+  - watch
+  - patch
