@@ -12,6 +12,7 @@ import (
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -96,21 +97,24 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		EnvVariables: spec.GetEnvVars(),
 	}
 
-	pipelineActivity, tektonCRDs, err := metapipelineClient.Create(pipelineCreateParam)
+	activityKey, tektonCRDs, err := metapipelineClient.Create(pipelineCreateParam)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create Tekton CRDs")
 	}
 
+	// Add the build number from the activity key to the labels on the job
+	request.Labels[util.BuildNumLabel] = activityKey.Build
+
 	request.Status = v1alpha1.LighthouseJobStatus{
 		State:        v1alpha1.PendingState,
-		ActivityName: pipelineActivity.Name,
+		ActivityName: activityKey.Name,
 		StartTime:    metav1.Now(),
 	}
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply LighthouseJob")
 	}
-	err = metapipelineClient.Apply(pipelineActivity, tektonCRDs)
+	err = metapipelineClient.Apply(activityKey, tektonCRDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}
@@ -215,7 +219,6 @@ func ToPipelineOptions(activity *jxv1.PipelineActivity) v1alpha1.LighthouseJob {
 			Context:        spec.Context,
 			RerunCommand:   "",
 			MaxConcurrency: 0,
-			LastCommitSHA:  spec.LastCommitSHA,
 		},
 		Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.ToPipelineState(spec.Status)},
 	}

@@ -101,6 +101,10 @@ type LighthouseJobStatus struct {
 	StartTime metav1.Time `json:"startTime,omitempty"`
 	// CompletionTime is when the job finished reconciling and entered a terminal state.
 	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+	// LastReportState is the state from the last time we reported commit status for this job.
+	LastReportState string `json:"lastReportState,omitempty"`
+	// LastCommitSHA is the commit that will be/has been reported to on the SCM provider
+	LastCommitSHA string `json:"lastCommitSHA,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -134,8 +138,21 @@ type LighthouseJobSpec struct {
 	// MaxConcurrency restricts the total number of instances
 	// of this job that can run in parallel at once
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
-	// LastCommitSHA is the commit that will be/has been reported to on the SCM provider
-	LastCommitSHA string `json:"lastCommitSHA,omitempty"`
+}
+
+// GetBranch returns the branch name corresponding to the refs on this spec.
+func (s *LighthouseJobSpec) GetBranch() string {
+	branch := s.Refs.BaseRef
+	if s.Type == PostsubmitJob {
+		return branch
+	}
+	if s.Type == BatchJob {
+		return "batch"
+	}
+	if len(s.Refs.Pulls) > 0 {
+		branch = fmt.Sprintf("PR-%v", s.Refs.Pulls[0].Number)
+	}
+	return branch
 }
 
 // GetEnvVars gets a map of the environment variables we'll set in the pipeline for this spec.
