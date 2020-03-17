@@ -75,6 +75,7 @@ pipelineConfig:
             - test
             - build-linux
             - build-tide-linux
+            - build-status-linux
             dir: /workspace/source
 
           - name: init-helm
@@ -139,6 +140,7 @@ pipelineConfig:
                 - test
                 - build-linux
                 - build-tide-linux
+                - build-status-linux
                 dir: /workspace/source
 
               - name: init-helm
@@ -181,7 +183,7 @@ pipelineConfig:
                   - -f
                   - /builder/home/git-token
 
-              - name: build-and-push-image
+              - name: build-and-push-webhooks
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args: 
@@ -190,7 +192,7 @@ pipelineConfig:
                 - --context=/workspace/source
                 - --cache-dir=/workspace
 
-              - name: build-and-push-image2
+              - name: build-and-push-tide
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
@@ -199,6 +201,16 @@ pipelineConfig:
                 - --context=/workspace/source
                 - --cache-dir=/workspace
                 - --build-arg=VERSION=${inputs.params.version}
+
+              - name: build-and-push-status
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.status
+                  - --destination=gcr.io/jenkinsxio/lighthouse-status:${inputs.params.version}
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=${inputs.params.version}
 
               - name: release
                 image: gcr.io/jenkinsxio/builder-go

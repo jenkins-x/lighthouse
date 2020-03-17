@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "status.name" . }}
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app: {{ template "status.name" . }}
+spec:
+  replicas: {{ .Values.status.replicaCount }}
+  selector:
+    matchLabels:
+      draft: {{ default "draft-app" .Values.draft }}
+      app: {{ template "status.name" . }}
+  template:
+    metadata:
+      labels:
+        draft: {{ default "draft-app" .Values.draft }}
+        app: {{ template "status.name" . }}
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ template "status.name" . }}
+      containers:
+      - name: {{ template "status.name" . }}
+        image: {{ tpl .Values.status.image.repository . }}:{{ tpl .Values.status.image.tag . }}
+        imagePullPolicy: {{ tpl .Values.status.image.pullPolicy . }}
+{{ if .Values.status.args }}
+        args:
+{{ toYaml .Values.status.args | indent 10 }}
+{{- end }}
+        env:
+          - name: "GIT_KIND"
+            value: "{{ .Values.git.kind }}"
+          - name: "GIT_SERVER"
+            value: "{{ .Values.git.server }}"
+          - name: "GIT_USER"
+            value: {{ .Values.user }}
+          - name: "GIT_TOKEN"
+            valueFrom:
+              secretKeyRef:
+                name: lighthouse-oauth-token
+                key: oauth
+          - name: "JX_LOG_FORMAT"
+            value: "json"
+{{- range $pkey, $pval := .Values.env }}
+        - name: {{ $pkey }}
+          value: {{ quote $pval }}
+{{- end }}
+        ports:
+        - containerPort: {{ .Values.status.service.internalPort }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.status.probe.path }}
+            port: {{ .Values.status.service.internalPort }}
+          initialDelaySeconds: {{ .Values.status.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.status.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.status.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.status.livenessProbe.timeoutSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.status.probe.path }}
+            port: {{ .Values.status.service.internalPort }}
+          periodSeconds: {{ .Values.status.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.status.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.status.readinessProbe.timeoutSeconds }}
+        resources:
+{{ toYaml .Values.status.resources | indent 12 }}
+      terminationGracePeriodSeconds: {{ .Values.status.terminationGracePeriodSeconds }}

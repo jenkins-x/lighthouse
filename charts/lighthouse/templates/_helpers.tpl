@@ -20,3 +20,8 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- $name := default "tide" .Values.tide.nameOverride -}}
 {{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{- define "status.name" -}}
+{{- $name := default "status" .Values.status.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
