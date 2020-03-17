@@ -107,7 +107,7 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 
 	request.Status = v1alpha1.LighthouseJobStatus{
 		State:        v1alpha1.PendingState,
-		ActivityName: activityKey.Name,
+		ActivityName: util.ToValidName(activityKey.Name),
 		StartTime:    metav1.Now(),
 	}
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
