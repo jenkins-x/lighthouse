@@ -25,10 +25,10 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
 
@@ -71,11 +71,11 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		nil
 }
 
-func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.SigMention.Re)
 }
 
-func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, re *regexp.Regexp) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, re *regexp.Regexp) error {
 	// Ignore bot comments and comments that aren't new.
 	botName, err := spc.BotName()
 	if err != nil {
@@ -117,14 +117,14 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericComm
 			nonexistent = append(nonexistent, "sig/"+sigMatch[1])
 			continue
 		}
-		if !gitprovider.HasLabel(sigLabel, labels) {
+		if !scmprovider.HasLabel(sigLabel, labels) {
 			if err := spc.AddLabel(org, repo, e.Number, sigLabel, e.IsPR); err != nil {
 				log.WithError(err).Errorf("GitHub failed to add the following label: %s", sigLabel)
 			}
 		}
 
 		if len(sigMatch) > 2 {
-			if kindLabel, ok := kindMap[sigMatch[2]]; ok && !gitprovider.HasLabel(kindLabel, labels) {
+			if kindLabel, ok := kindMap[sigMatch[2]]; ok && !scmprovider.HasLabel(kindLabel, labels) {
 				if err := spc.AddLabel(org, repo, e.Number, kindLabel, e.IsPR); err != nil {
 					log.WithError(err).Errorf("GitHub failed to add the following label: %s", kindLabel)
 				}

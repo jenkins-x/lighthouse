@@ -21,9 +21,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 type fakeClient struct {
@@ -46,7 +45,7 @@ func (c *fakeClient) UnassignIssue(owner, repo string, number int, assignees []s
 }
 
 func (c *fakeClient) AssignIssue(owner, repo string, number int, assignees []string) error {
-	var missing gitprovider.MissingUsers
+	var missing scmprovider.MissingUsers
 	sort.Strings(assignees)
 	if len(assignees) > 10 {
 		for _, who := range assignees[10:] {
@@ -72,7 +71,7 @@ func (c *fakeClient) AssignIssue(owner, repo string, number int, assignees []str
 }
 
 func (c *fakeClient) RequestReview(org, repo string, number int, logins []string) error {
-	var missing gitprovider.MissingUsers
+	var missing scmprovider.MissingUsers
 	for _, user := range logins {
 		if c.contributors[user] {
 			c.requested[user]++
@@ -392,7 +391,7 @@ func TestAssignAndReview(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fc := newFakeClient([]string{"hello-world", "allow_underscore", "cjwagner", "merlin", "kubernetes/sig-testing-misc"})
-		e := gitprovider.GenericCommentEvent{
+		e := scmprovider.GenericCommentEvent{
 			Body:   tc.body,
 			Author: scm.User{Login: tc.commenter},
 			Repo:   scm.Repository{Name: "repo", Namespace: "org"},

@@ -21,9 +21,9 @@ import (
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
 
@@ -43,14 +43,14 @@ func isActive(gc closeClient, org, repo string, number int, pr bool) (bool, erro
 		return true, fmt.Errorf("list issue labels error: %v", err)
 	}
 	for _, label := range []string{"lifecycle/stale", "lifecycle/rotten"} {
-		if gitprovider.HasLabel(label, labels) {
+		if scmprovider.HasLabel(label, labels) {
 			return false, nil
 		}
 	}
 	return true, nil
 }
 
-func handleClose(gc closeClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handleClose(gc closeClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
 	// Only consider open issues and new comments.
 	if e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil

@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	v1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
+	jxv1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
 	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -101,9 +102,12 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		return nil, errors.Wrap(err, "unable to create Tekton CRDs")
 	}
 
+	paName := util.ToValidName(pipelineActivity.Name)
+	request.Labels[util.LighthousePipelineActivityNameLabel] = paName
+
 	request.Status = v1alpha1.LighthouseJobStatus{
 		State:        v1alpha1.PendingState,
-		ActivityName: pipelineActivity.Name,
+		ActivityName: paName,
 		StartTime:    metav1.Now(),
 	}
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
@@ -165,7 +169,7 @@ func (b *launcher) List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, e
 }
 
 // ToPipelineOptions converts the PipelineActivity to a PipelineOptions object
-func ToPipelineOptions(activity *v1.PipelineActivity) v1alpha1.LighthouseJob {
+func ToPipelineOptions(activity *jxv1.PipelineActivity) v1alpha1.LighthouseJob {
 	spec := activity.Spec
 	baseRef := "master"
 

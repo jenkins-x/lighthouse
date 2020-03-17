@@ -25,9 +25,9 @@ import (
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -70,9 +70,9 @@ type scmProviderClient interface {
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	hasLabel := func(label string, labels []*scm.Label) bool {
-		return gitprovider.HasLabel(label, labels)
+		return scmprovider.HasLabel(label, labels)
 	}
 	return handle(pc.SCMProviderClient, pc.Logger, &e, hasLabel)
 }
@@ -80,7 +80,7 @@ func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) e
 // handle drives the pull request to the desired state. If any user adds
 // a /hold directive, we want to add a label if one does not already exist.
 // If they add /hold cancel, we want to remove the label if it exists.
-func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, f hasLabelFunc) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, f hasLabelFunc) error {
 	if e.Action != scm.ActionCreate {
 		return nil
 	}

@@ -24,7 +24,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
@@ -177,7 +177,7 @@ func TestHandle(t *testing.T) {
 			changes = append(changes, &scm.Change{Path: name})
 		}
 		fakeScmClient, fspc := fake.NewDefault()
-		fakeClient := gitprovider.ToTestClient(fakeScmClient)
+		fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
 		fspc.PullRequests[basicPR.Number] = &basicPR
 		fspc.PullRequestChanges[basicPR.Number] = changes

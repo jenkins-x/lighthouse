@@ -21,9 +21,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 type fakeClient struct {
@@ -204,7 +203,7 @@ func TestStageLabels(t *testing.T) {
 			added:   []string{},
 			removed: []string{},
 		}
-		e := &gitprovider.GenericCommentEvent{
+		e := &scmprovider.GenericCommentEvent{
 			Body:   tc.body,
 			Action: scm.ActionCreate,
 		}

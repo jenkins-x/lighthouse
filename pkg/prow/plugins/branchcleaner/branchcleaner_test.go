@@ -22,7 +22,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
 
@@ -99,7 +99,7 @@ func TestBranchCleaner(t *testing.T) {
 			}
 
 			fakeScmClient, fgc := fake.NewDefault()
-			fakeClient := gitprovider.ToTestClient(fakeScmClient)
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
 			fgc.PullRequests[prNumber] = &scm.PullRequest{
 				Number: prNumber,

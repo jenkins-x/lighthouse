@@ -7,7 +7,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/tide"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
@@ -26,7 +26,7 @@ func NewTideController(configAgent *config.Agent, botName string, gitKind string
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
 	util.AddAuthToSCMClient(scmClient, gitToken, false)
-	gitproviderClient := gitprovider.ToClient(scmClient, botName)
+	gitproviderClient := scmprovider.ToClient(scmClient, botName)
 	gitClient, err := git.NewClient(serverURL, botName)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating git client")

@@ -26,9 +26,9 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,7 +93,7 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eve
 	for k, v := range job.Annotations {
 		annotations[k] = v
 	}
-	labels[gitprovider.EventGUID] = eventGUID
+	labels[scmprovider.EventGUID] = eventGUID
 	return NewLighthouseJob(PresubmitSpec(job, refs), labels, annotations)
 }
 
@@ -167,13 +167,13 @@ func LighthouseJobFields(pj *v1alpha1.LighthouseJob) logrus.Fields {
 	fields["name"] = pj.ObjectMeta.Name
 	fields["job"] = pj.Spec.Job
 	fields["type"] = pj.Spec.Type
-	if len(pj.ObjectMeta.Labels[gitprovider.EventGUID]) > 0 {
-		fields[gitprovider.EventGUID] = pj.ObjectMeta.Labels[gitprovider.EventGUID]
+	if len(pj.ObjectMeta.Labels[scmprovider.EventGUID]) > 0 {
+		fields[scmprovider.EventGUID] = pj.ObjectMeta.Labels[scmprovider.EventGUID]
 	}
 	if pj.Spec.Refs != nil && len(pj.Spec.Refs.Pulls) == 1 {
-		fields[gitprovider.PrLogField] = pj.Spec.Refs.Pulls[0].Number
-		fields[gitprovider.RepoLogField] = pj.Spec.Refs.Repo
-		fields[gitprovider.OrgLogField] = pj.Spec.Refs.Org
+		fields[scmprovider.PrLogField] = pj.Spec.Refs.Pulls[0].Number
+		fields[scmprovider.RepoLogField] = pj.Spec.Refs.Repo
+		fields[scmprovider.OrgLogField] = pj.Spec.Refs.Org
 	}
 	return fields
 }
@@ -211,21 +211,21 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 		jobNameForLabel = strings.TrimRight(spec.Job[:validation.LabelValueMaxLength], ".-")
 		logrus.WithFields(logrus.Fields{
 			"job":       spec.Job,
-			"key":       launcher.LighthouseJobAnnotation,
+			"key":       util.LighthouseJobAnnotation,
 			"value":     spec.Job,
 			"truncated": jobNameForLabel,
 		}).Info("Cannot use full job name, will truncate.")
 	}
 	labels := map[string]string{
-		launcher.CreatedByLighthouse:     "true",
-		launcher.LighthouseJobTypeLabel:  string(spec.Type),
-		launcher.LighthouseJobAnnotation: jobNameForLabel,
+		util.CreatedByLighthouse:     "true",
+		util.LighthouseJobTypeLabel:  string(spec.Type),
+		util.LighthouseJobAnnotation: jobNameForLabel,
 	}
 	if spec.Type != v1alpha1.PeriodicJob && spec.Refs != nil {
-		labels[launcher.OrgLabel] = spec.Refs.Org
-		labels[launcher.RepoLabel] = spec.Refs.Repo
+		labels[util.OrgLabel] = spec.Refs.Org
+		labels[util.RepoLabel] = spec.Refs.Repo
 		if len(spec.Refs.Pulls) > 0 {
-			labels[launcher.PullLabel] = strconv.Itoa(spec.Refs.Pulls[0].Number)
+			labels[util.PullLabel] = strconv.Itoa(spec.Refs.Pulls[0].Number)
 		}
 	}
 
@@ -252,7 +252,7 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 	}
 
 	annotations := map[string]string{
-		launcher.LighthouseJobAnnotation: spec.Job,
+		util.LighthouseJobAnnotation: spec.Job,
 	}
 	for k, v := range extraAnnotations {
 		annotations[k] = v
@@ -267,6 +267,6 @@ func LabelsAndAnnotationsForJob(pj v1alpha1.LighthouseJob) (map[string]string, m
 	if extraLabels = pj.ObjectMeta.Labels; extraLabels == nil {
 		extraLabels = map[string]string{}
 	}
-	extraLabels[launcher.LighthouseJobIDLabel] = pj.ObjectMeta.Name
+	extraLabels[util.LighthouseJobIDLabel] = pj.ObjectMeta.Name
 	return LabelsAndAnnotationsForSpec(pj.Spec, extraLabels, nil)
 }
