@@ -76,7 +76,7 @@ pipelineConfig:
                 image: gcr.io/jenkinsxio/builder-go
                 command: make
                 args:
-                  - build-linux
+                  - build-webhooks-linux
                   - build-keeper-linux
                   - build-status-linux
                 dir: /workspace/source

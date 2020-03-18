@@ -73,8 +73,8 @@ pipelineConfig:
             command: make
             args:
             - test
-            - build-linux
-            - build-tide-linux
+            - build-webhooks-linux
+            - build-keeper-linux
             - build-status-linux
             dir: /workspace/source
 
@@ -138,8 +138,8 @@ pipelineConfig:
                 command: make
                 args:
                 - test
-                - build-linux
-                - build-tide-linux
+                - build-webhooks-linux
+                - build-keeper-linux
                 - build-status-linux
                 dir: /workspace/source
 
@@ -187,17 +187,17 @@ pipelineConfig:
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args: 
-                - --dockerfile=/workspace/source/Dockerfile
+                - --dockerfile=/workspace/source/Dockerfile.webhooks
                 - --destination=gcr.io/jenkinsxio/lighthouse-webhooks:${inputs.params.version}
                 - --context=/workspace/source
                 - --cache-dir=/workspace
 
-              - name: build-and-push-tide
+              - name: build-and-push-keeper
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
-                - --dockerfile=/workspace/source/Dockerfile.tide
-                - --destination=gcr.io/jenkinsxio/lighthouse-tide:${inputs.params.version}
+                - --dockerfile=/workspace/source/Dockerfile.keeper
+                - --destination=gcr.io/jenkinsxio/lighthouse-keeper:${inputs.params.version}
                 - --context=/workspace/source
                 - --cache-dir=/workspace
                 - --build-arg=VERSION=${inputs.params.version}

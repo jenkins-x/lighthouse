@@ -1,11 +1,11 @@
 SHELL := /bin/bash
 PROJECT := github.com/jenkins-x/lighthouse
-EXECUTABLE := lighthouse
+WEBHOOKS_EXECUTABLE := lighthouse
 KEEPER_EXECUTABLE := keeper
 STATUS_EXECUTABLE := lighthouse-status
 DOCKER_REGISTRY := jenkinsxio
 DOCKER_IMAGE_NAME := lighthouse
-MAIN_SRC_FILE=pkg/main/main.go
+WEBHOOKS_MAIN_SRC_FILE=pkg/main/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 STATUS_MAIN_SRC_FILE=cmd/status/main.go
 GO := GO111MODULE=on go
@@ -57,8 +57,11 @@ clean:
 	rm -rf bin build release
 
 .PHONY: build
-build:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE) 
+build: webhooks keeper status
+
+.PHONY: webhooks
+webhooks:
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
 
 .PHONY: keeper
 keeper:
@@ -68,17 +71,14 @@ keeper:
 status:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(STATUS_EXECUTABLE) $(STATUS_MAIN_SRC_FILE)
 
-.PHONY: build-all
-build-all: build keeper status
-
 .PHONY: mod
 mod: build
 	echo "tidying the go module"
 	$(GO) mod tidy
 
-.PHONY: build-linux
-build-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
+.PHONY: build-webhooks-linux
+build-webhooks-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
 
 .PHONY: build-keeper-linux
 build-keeper-linux:
