@@ -44,10 +44,11 @@ type Controller struct {
 	jxClient jxclient.Interface
 	lhClient clientset.Interface
 
-	activityLister   jxlisters.PipelineActivityLister
-	activityInformer cache.SharedIndexInformer
+	activityLister jxlisters.PipelineActivityLister
+	activitySynced cache.InformerSynced
 
 	lhLister lhlisters.LighthouseJobLister
+	lhSynced cache.InformerSynced
 	// queue is a rate limited work queue. This is used to queue work to be
 	// processed instead of performing it as soon as a change happens. This
 	// means we can ensure we only process a fixed amount of resources at a
@@ -70,8 +71,9 @@ func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, ac
 		jxClient:         jxClient,
 		lhClient:         lhClient,
 		activityLister:   activityInformer.Lister(),
-		activityInformer: activityInformer.Informer(),
+		activitySynced:   activityInformer.Informer().HasSynced,
 		lhLister:         lhInformer.Lister(),
+		lhSynced:         lhInformer.Informer().HasSynced,
 		logger:           logger,
 		ns:               ns,
 		queue:            RateLimiter(),
@@ -83,18 +85,24 @@ func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, ac
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
+				// TODO: REMOVE
+				logger.Warnf("ADD FUNC FOR %s", key)
 				controller.queue.AddRateLimited(key)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
 			if err == nil {
+				// TODO: REMOVE
+				logger.Warnf("UPDATE FUNC FOR %s", key)
 				controller.queue.AddRateLimited(key)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
+				// TODO: REMOVE
+				logger.Warnf("DELETE FUNC FOR %s", key)
 				controller.queue.AddRateLimited(key)
 			}
 		},
@@ -113,7 +121,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 
 	// Wait for the caches to be synced before starting workers
 	c.logger.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.activityInformer.HasSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.activitySynced, c.lhSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -172,7 +180,7 @@ func (c *Controller) processNextWorkItem() bool {
 			return nil
 		}
 		// Run the syncHandler, passing it the namespace/name string of the
-		// Foo resource to be synced.
+		// PipelineActivity resource to be synced.
 		if err := c.syncHandler(key); err != nil {
 			// Put the item back on the workqueue to handle any transient errors.
 			c.queue.AddRateLimited(key)
@@ -226,28 +234,24 @@ func (c *Controller) syncHandler(key string) error {
 	}
 	if len(possibleJobs) == 0 {
 		// Let's try to guess and create a LH job if this is a postsubmit, since that could have been created via
-		// jx start pipeline. We're not going to assume that if it's building master, it has to be postsubmit etc.
-		if activity.Spec.PullTitle == "" && len(activity.Spec.BatchPipelineActivity.ComprisingPulLRequests) == 0 {
+		// jx start pipeline. We're going to assume that we should only do this if it's on master.
+		// TODO: this probably is not good per se and needs work or removing (apb)
+		if activity.Spec.GitBranch == "master" {
 			convertedJob := launcher.ToLighthouseJob(activity)
 			newLabels, newAnnotations := pjutil.LabelsAndAnnotationsForJob(convertedJob)
 			newJob := pjutil.NewLighthouseJob(convertedJob.Spec, newLabels, newAnnotations)
-			createdJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).Create(&newJob)
-			if err != nil {
-				c.logger.WithError(err).Warnf("could not create LighthouseJob for postsubmit PipelineActivity %s", activity.Name)
-				return nil
-			}
-			createdJob.Status = v1alpha1.LighthouseJobStatus{
+			newJob.Status = v1alpha1.LighthouseJobStatus{
 				State:           v1alpha1.TriggeredState,
 				ActivityName:    util.ToValidName(activity.Name),
 				StartTime:       *activity.Spec.StartedTimestamp,
 				LastReportState: string(scm.StateUnknown),
 			}
-			fullyCreatedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).UpdateStatus(createdJob)
+			createdJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).Create(&newJob)
 			if err != nil {
-				c.logger.WithError(err).Warnf("could not set status for newly created LighthouseJob %s", createdJob.Name)
+				c.logger.WithError(err).Warnf("could not create LighthouseJob for postsubmit PipelineActivity %s", activity.Name)
 				return nil
 			}
-			possibleJobs = append(possibleJobs, fullyCreatedJob)
+			possibleJobs = append(possibleJobs, createdJob)
 		} else {
 			c.logger.Warnf("no LighthouseJobs found matching label selector %s", labelSelector.String())
 			return nil
