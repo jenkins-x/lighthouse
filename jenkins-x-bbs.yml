@@ -78,7 +78,7 @@ pipelineConfig:
                 args:
                   - build-webhooks-linux
                   - build-keeper-linux
-                  - build-status-linux
+                  - build-foghorn-linux
                 dir: /workspace/source
 
               - name: build-and-push-webhooks
@@ -100,12 +100,12 @@ pipelineConfig:
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=${inputs.params.version}
 
-              - name: build-and-push-status
+              - name: build-and-push-foghorn
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
-                  - --dockerfile=/workspace/source/Dockerfile.status
-                  - --destination=gcr.io/jenkinsxio/lighthouse-status:${inputs.params.version}
+                  - --dockerfile=/workspace/source/Dockerfile.foghorn
+                  - --destination=gcr.io/jenkinsxio/lighthouse-foghorn:${inputs.params.version}
                   - --context=/workspace/source
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=${inputs.params.version}

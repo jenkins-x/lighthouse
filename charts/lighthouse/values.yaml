@@ -56,10 +56,10 @@ webhooks:
     timeoutSeconds: 1
   terminationGracePeriodSeconds: 180
 
-status:
+foghorn:
   replicaCount: 1
   image:
-    repository: "{{ .Values.image.repository }}/lighthouse-status"
+    repository: "{{ .Values.image.repository }}/foghorn"
     tag: "{{ .Values.image.tag }}"
     pullPolicy: "{{ .Values.image.pullPolicy }}"
   resources:

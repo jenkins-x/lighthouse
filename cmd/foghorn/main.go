@@ -14,17 +14,14 @@ import (
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
 	"github.com/jenkins-x/lighthouse/pkg/prow/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
-	"github.com/jenkins-x/lighthouse/pkg/status"
+	"github.com/jenkins-x/lighthouse/pkg/foghorn"
 	"github.com/sirupsen/logrus"
 )
 
 type options struct {
 	namespace      string
-	syncThrottle   int
-	statusThrottle int
 
 	dryRun  bool
-	runOnce bool
 }
 
 func (o *options) Validate() error {
@@ -34,9 +31,6 @@ func (o *options) Validate() error {
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to mutate any real-world state.")
-	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
-	fs.IntVar(&o.syncThrottle, "sync-hourly-tokens", 800, "The maximum number of tokens per hour to be used by the sync controller.")
-	fs.IntVar(&o.statusThrottle, "status-hourly-tokens", 400, "The maximum number of tokens per hour to be used by the status controller.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
 
 	err := fs.Parse(args)
@@ -92,7 +86,7 @@ func main() {
 	jxInformerFactory := jxinformers.NewSharedInformerFactoryWithOptions(jxClient, time.Second*30, jxinformers.WithNamespace(o.namespace))
 	lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Second*30, lhinformers.WithNamespace(o.namespace))
 
-	controller := status.NewController(jxClient,
+	controller := foghorn.NewController(jxClient,
 		lhClient,
 		jxInformerFactory.Jenkins().V1().PipelineActivities(),
 		lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs(),

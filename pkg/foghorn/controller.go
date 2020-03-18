@@ -1,4 +1,4 @@
-package status
+package foghorn
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	controllerName           = "lighthouse-status"
+	controllerName           = "foghorn"
 	defaultTargetURLTemplate = "{{ .BaseURL }}/teams/{{ .Namespace }}/projects/{{ .Owner }}/{{ .Repository }}/{{ .Branch }}/{{ .Build }}"
 )
 
@@ -279,7 +279,7 @@ func (c *Controller) updateJobStatusForActivity(activity *jxv1.PipelineActivity,
 	}
 }
 
-// RateLimiter creates a ratelimiting queue for the status controller.
+// RateLimiter creates a ratelimiting queue for the foghorn controller.
 func RateLimiter() workqueue.RateLimitingInterface {
 	rl := workqueue.NewMaxOfRateLimiter(
 		workqueue.NewItemExponentialFailureRateLimiter(5*time.Millisecond, 120*time.Second),

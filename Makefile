@@ -2,12 +2,12 @@ SHELL := /bin/bash
 PROJECT := github.com/jenkins-x/lighthouse
 WEBHOOKS_EXECUTABLE := lighthouse
 KEEPER_EXECUTABLE := keeper
-STATUS_EXECUTABLE := lighthouse-status
+FOGHORN_EXECUTABLE := foghorn
 DOCKER_REGISTRY := jenkinsxio
 DOCKER_IMAGE_NAME := lighthouse
 WEBHOOKS_MAIN_SRC_FILE=pkg/main/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
-STATUS_MAIN_SRC_FILE=cmd/status/main.go
+FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
 VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
@@ -57,7 +57,7 @@ clean:
 	rm -rf bin build release
 
 .PHONY: build
-build: webhooks keeper status
+build: webhooks keeper foghorn
 
 .PHONY: webhooks
 webhooks:
@@ -67,9 +67,9 @@ webhooks:
 keeper:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
 
-.PHONY: status
-status:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(STATUS_EXECUTABLE) $(STATUS_MAIN_SRC_FILE)
+.PHONY: foghorn
+foghorn:
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
 
 .PHONY: mod
 mod: build
@@ -84,9 +84,9 @@ build-webhooks-linux:
 build-keeper-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
 
-.PHONY: build-status-linux
-build-status-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(STATUS_EXECUTABLE) $(STATUS_MAIN_SRC_FILE)
+.PHONY: build-foghorn-linux
+build-foghorn-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
 
 .PHONY: container
 container: 

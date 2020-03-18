@@ -1,32 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "status.name" . }}
+  name: {{ template "foghorn.name" . }}
   labels:
     draft: {{ default "draft-app" .Values.draft }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    app: {{ template "status.name" . }}
+    app: {{ template "foghorn.name" . }}
 spec:
-  replicas: {{ .Values.status.replicaCount }}
+  replicas: {{ .Values.foghorn.replicaCount }}
   selector:
     matchLabels:
       draft: {{ default "draft-app" .Values.draft }}
-      app: {{ template "status.name" . }}
+      app: {{ template "foghorn.name" . }}
   template:
     metadata:
       labels:
         draft: {{ default "draft-app" .Values.draft }}
-        app: {{ template "status.name" . }}
+        app: {{ template "foghorn.name" . }}
 {{- if .Values.podAnnotations }}
       annotations:
 {{ toYaml .Values.podAnnotations | indent 8 }}
 {{- end }}
     spec:
-      serviceAccountName: {{ template "status.name" . }}
+      serviceAccountName: {{ template "foghorn.name" . }}
       containers:
-      - name: {{ template "status.name" . }}
-        image: {{ tpl .Values.status.image.repository . }}:{{ tpl .Values.status.image.tag . }}
-        imagePullPolicy: {{ tpl .Values.status.image.pullPolicy . }}
+      - name: {{ template "foghorn.name" . }}
+        image: {{ tpl .Values.foghorn.image.repository . }}:{{ tpl .Values.foghorn.image.tag . }}
+        imagePullPolicy: {{ tpl .Values.foghorn.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
         env:
@@ -48,17 +48,17 @@ spec:
           value: {{ quote $pval }}
 {{- end }}
         resources:
-{{ toYaml .Values.status.resources | indent 12 }}
-      terminationGracePeriodSeconds: {{ .Values.status.terminationGracePeriodSeconds }}
-{{- with .Values.tide.nodeSelector }}
+{{ toYaml .Values.foghorn.resources | indent 12 }}
+      terminationGracePeriodSeconds: {{ .Values.foghorn.terminationGracePeriodSeconds }}
+{{- with .Values.foghorn.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.tide.affinity }}
+{{- with .Values.foghorn.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.tide.tolerations }}
+{{- with .Values.foghorn.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
