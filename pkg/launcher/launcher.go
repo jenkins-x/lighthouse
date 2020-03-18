@@ -174,8 +174,8 @@ func (b *launcher) List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, e
 	return answer, nil
 }
 
-// TODO: Rename/rework this to be about the spec at some point
 // ToLighthouseJob converts the PipelineActivity to a LighthouseJob object
+// TODO: Rename/rework this to be about the spec at some point
 func ToLighthouseJob(activity *jxv1.PipelineActivity) v1alpha1.LighthouseJob {
 	spec := activity.Spec
 	baseRef := "master"
