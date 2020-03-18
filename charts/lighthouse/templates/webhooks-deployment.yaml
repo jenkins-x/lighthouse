@@ -1,5 +1,3 @@
-{{- if .Values.knativeDeploy }}
-{{- else }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -74,4 +72,3 @@ spec:
         resources:
 {{ toYaml .Values.webhooks.resources | indent 12 }}
       terminationGracePeriodSeconds: {{ .Values.webhooks.terminationGracePeriodSeconds }}
-{{- end }}

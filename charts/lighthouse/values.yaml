@@ -21,9 +21,6 @@ image:
 # define environment variables here as a map of key: value
 env:
 
-# enable this flag to use knative serve to deploy the app
-knativeDeploy: false
-
 webhooks:
   replicaCount: 2
   image:

@@ -4,7 +4,7 @@ metadata:
   name: lighthousejobs.lighthouse.jenkins.io
 spec:
   group: lighthouse.jenkins.io
-  version: v1
+  version: v1alpha1
   names:
     kind: LighthouseJob
     singular: lighthousejob
@@ -12,6 +12,8 @@ spec:
     shortNames:
       - lhjob
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       properties:
