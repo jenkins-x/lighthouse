@@ -49,13 +49,26 @@ rules:
   - get
   - update
 - apiGroups:
-    - lighthouse.jenkins.io
+  - lighthouse.jenkins.io
   resources:
-    - lighthousejobs
+  - lighthousejobs
   verbs:
-    - create
-    - list
-    - update
-    - get
-    - watch
-    - patch
+  - create
+  - delete
+  - list
+  - update
+  - get
+  - watch
+  - patch
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs/status
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - get
+  - watch
+  - patch
