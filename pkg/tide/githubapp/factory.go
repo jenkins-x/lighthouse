@@ -35,7 +35,7 @@ func NewTideController(configAgent *config.Agent, botName string, gitKind string
 		return []byte(gitToken)
 	})
 
-	tektonClient, jxClient, _, lhClient, ns, err := clients.GetClientsAndNamespace()
+	tektonClient, jxClient, _, lhClient, ns, err := clients.GetClientsAndNamespace(nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}

@@ -171,7 +171,7 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	gitClient.SetCredentials(util.GitHubAppGitRemoteUsername, func() []byte {
 		return []byte(token)
 	})
-	tektonClient, jxClient, _, lhClient, ns, err := clients.GetClientsAndNamespace()
+	tektonClient, jxClient, _, lhClient, ns, err := clients.GetClientsAndNamespace(nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}

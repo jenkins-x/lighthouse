@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	jxv1 "github.com/jenkins-x/jx/pkg/apis/jenkins.io/v1"
 	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -36,6 +34,7 @@ func NewLauncher(jxClient jxclient.Interface, lhClient clientset.Interface, name
 }
 
 // Launch creates a pipeline
+// TODO: This should be moved somewhere else, probably, and needs some kind of unit testing (apb)
 func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient metapipeline.Client, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
 	spec := &request.Spec
 
@@ -155,66 +154,4 @@ func (b *launcher) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobSpe
 	}
 
 	return pullRef
-}
-
-// List list current pipelines
-func (b *launcher) List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, error) {
-	return b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).List(opts)
-}
-
-// ToLighthouseJob converts the PipelineActivity to a LighthouseJob object
-// TODO: Rename/rework this to be about the spec at some point
-func ToLighthouseJob(activity *jxv1.PipelineActivity) v1alpha1.LighthouseJob {
-	spec := activity.Spec
-	baseRef := "master"
-
-	ref := &v1alpha1.Refs{
-		Org:      spec.GitOwner,
-		Repo:     spec.GitRepository,
-		RepoLink: spec.GitURL,
-		BaseRef:  baseRef,
-		BaseSHA:  spec.BaseSHA,
-	}
-
-	kind := v1alpha1.PresubmitJob
-
-	// TODO: Something for periodic.
-	if spec.GitBranch == "master" {
-		kind = v1alpha1.PostsubmitJob
-	} else if len(spec.BatchPipelineActivity.ComprisingPulLRequests) > 0 {
-		kind = v1alpha1.BatchJob
-	}
-
-	if strings.HasPrefix(spec.GitBranch, "PR-") {
-		nt := strings.TrimPrefix(spec.GitBranch, "PR-")
-		if nt != "" {
-			n, err := strconv.Atoi(nt)
-			if err == nil {
-				ref.Pulls = append(ref.Pulls, v1alpha1.Pull{
-					Number: n,
-					SHA:    spec.LastCommitSHA,
-					Title:  spec.PullTitle,
-					Ref:    "pull/" + nt + "/head",
-
-					// TODO
-					// Link: spec.LastCommitURL,
-					CommitLink: spec.LastCommitURL,
-				})
-			}
-		}
-	}
-
-	return v1alpha1.LighthouseJob{
-		ObjectMeta: activity.ObjectMeta,
-		Spec: v1alpha1.LighthouseJobSpec{
-			Type:           kind,
-			Namespace:      activity.Namespace,
-			Job:            spec.Pipeline, // TODO: this will end up being the config job name going forward so don't stress about it (apb)
-			Refs:           ref,
-			Context:        spec.Context,
-			RerunCommand:   "",
-			MaxConcurrency: 0,
-		},
-		Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.ToPipelineState(spec.Status)},
-	}
 }

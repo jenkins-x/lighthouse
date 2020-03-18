@@ -12,8 +12,10 @@ import (
 )
 
 // GetClientsAndNamespace returns the tekton, jx, kube, and Lighthouse clients and the dev namespace
-func GetClientsAndNamespace() (tektonclient.Interface, jxclient.Interface, kubeclient.Interface, clientset.Interface, string, error) {
-	factory := jxfactory.NewFactory()
+func GetClientsAndNamespace(factory jxfactory.Factory) (tektonclient.Interface, jxclient.Interface, kubeclient.Interface, clientset.Interface, string, error) {
+	if factory == nil {
+		factory = jxfactory.NewFactory()
+	}
 
 	tektonClient, _, err := factory.CreateTektonClient()
 	if err != nil {

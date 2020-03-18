@@ -31,6 +31,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
@@ -39,7 +40,7 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
+	launcherfake "github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git/localgit"
 	"github.com/jenkins-x/lighthouse/pkg/tide/history"
@@ -1362,13 +1363,15 @@ func TestTakeAction(t *testing.T) {
 				return prs
 			}
 			fgc := fgc{mergeErrs: tc.mergeErrs}
-			fakeLauncher := fake.NewLauncher()
+			fakeLauncher := launcherfake.NewLauncher()
+			fakeLighthouseClient := fake.NewSimpleClientset()
 			c := &DefaultController{
 				logger:         logrus.WithField("controller", "tide"),
 				gc:             gc,
 				config:         ca.Config,
 				spc:            &fgc,
 				launcherClient: fakeLauncher,
+				lhClient:       fakeLighthouseClient,
 			}
 			var batchPending []PullRequest
 			if tc.batchPending {
@@ -1641,7 +1644,8 @@ func TestSync(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("Starting case %q...", tc.name)
 		fgc := &fgc{prs: tc.prs}
-		fakeLauncher := fake.NewLauncher()
+		fakeLauncher := launcherfake.NewLauncher()
+		fakeLighthouseClient := fake.NewSimpleClientset()
 		fakeTektonClient := tektonfake.NewSimpleClientset()
 		ca := &config.Agent{}
 		ca.Set(&config.Config{
@@ -1671,6 +1675,7 @@ func TestSync(t *testing.T) {
 			spc:            fgc,
 			launcherClient: fakeLauncher,
 			tektonClient:   fakeTektonClient,
+			lhClient:       fakeLighthouseClient,
 			ns:             "jx",
 			logger:         logrus.WithField("controller", "sync"),
 			sc:             sc,

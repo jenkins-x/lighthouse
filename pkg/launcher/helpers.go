@@ -5,15 +5,12 @@ import (
 	"os"
 	"runtime/debug"
 
-	jxclient "github.com/jenkins-x/jx/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
-	"github.com/jenkins-x/jx/pkg/kube"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/jx/pkg/util"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	kubeclient "k8s.io/client-go/kubernetes"
 )
 
 // NewMetaPipelineClient creates a new client for the creation and application of meta pipelines.
@@ -32,7 +29,7 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 		return nil, errors.Wrapf(err, "failed to create jx home dir %s", cfgHome)
 	}
 
-	tektonClient, jxClient, kubeClient, ns, err := getClientsAndNamespace(factory)
+	tektonClient, jxClient, kubeClient, _, ns, err := clients.GetClientsAndNamespace(factory)
 	if err != nil {
 		return nil, err
 	}
@@ -49,26 +46,4 @@ func NewMetaPipelineClient(factory jxfactory.Factory) (metapipeline.Client, erro
 		return nil, fmt.Errorf("no metapipeline client created")
 	}
 	return client, err
-}
-
-func getClientsAndNamespace(factory jxfactory.Factory) (tektonclient.Interface, jxclient.Interface, kubeclient.Interface, string, error) {
-	tektonClient, _, err := factory.CreateTektonClient()
-	if err != nil {
-		return nil, nil, nil, "", errors.Wrap(err, "unable to create Tekton client")
-	}
-
-	jxClient, _, err := factory.CreateJXClient()
-	if err != nil {
-		return nil, nil, nil, "", errors.Wrap(err, "unable to create JX client")
-	}
-
-	kubeClient, ns, err := factory.CreateKubeClient()
-	if err != nil {
-		return nil, nil, nil, "", errors.Wrap(err, "unable to create Kube client")
-	}
-	ns, _, err = kube.GetDevNamespace(kubeClient, ns)
-	if err != nil {
-		return nil, nil, nil, "", errors.Wrap(err, "unable to find the dev namespace")
-	}
-	return tektonClient, jxClient, kubeClient, ns, nil
 }

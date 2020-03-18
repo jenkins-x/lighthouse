@@ -229,7 +229,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	_, _, kubeClient, lhClient, _, err := clients.GetClientsAndNamespace()
+	_, _, kubeClient, lhClient, _, err := clients.GetClientsAndNamespace(nil)
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
@@ -539,7 +539,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 }
 
 func (o *Options) updateLauncherClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository) error {
-	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace()
+	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace(nil)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create JX client")
 		l.Errorf("%s", err.Error())

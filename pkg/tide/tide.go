@@ -56,7 +56,6 @@ var sleep = time.Sleep
 
 type launcher interface {
 	Launch(*v1alpha1.LighthouseJob, metapipeline.Client, scm.Repository) (*v1alpha1.LighthouseJob, error)
-	List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, error)
 }
 
 type scmProviderClient interface {
@@ -321,18 +320,18 @@ func (c *DefaultController) Sync() error {
 		"duration", time.Since(start).String(),
 	).Debugf("Found %d (unfiltered) pool PRs.", len(prs))
 
-	var pjs []v1alpha1.LighthouseJob
+	var lhjs []v1alpha1.LighthouseJob
 	var blocks blockers.Blockers
 	var err error
 	if len(prs) > 0 {
 		start := time.Now()
-		pjList, err := c.launcherClient.List(metav1.ListOptions{})
+		lhjList, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).List(metav1.ListOptions{})
 		if err != nil {
-			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list PipelineActivitys from the cluster.")
+			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list LighthouseJobs from the cluster.")
 			return err
 		}
-		c.logger.WithField("duration", time.Since(start).String()).Debug("Listed PipelineActivitys from the cluster.")
-		pjs = pjList.Items
+		c.logger.WithField("duration", time.Since(start).String()).Debug("Listed LighthouseJobs from the cluster.")
+		lhjs = lhjList.Items
 
 		if label := c.config().Tide.BlockerLabel; label != "" {
 			c.logger.Debugf("Searching for blocking issues (label %q).", label)
@@ -349,7 +348,7 @@ func (c *DefaultController) Sync() error {
 		}
 	}
 	// Partition PRs into subpools and filter out non-pool PRs.
-	rawPools, err := c.dividePool(prs, pjs)
+	rawPools, err := c.dividePool(prs, lhjs)
 	if err != nil {
 		return err
 	}
