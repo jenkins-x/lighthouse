@@ -222,7 +222,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		SCMProviderClient: scmClient,
 		KubernetesClient:  kubeClient,
 		GitClient:         gitClient,
-		LighthouseClient:  lhClient,
+		LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(o.namespace),
 	}
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {

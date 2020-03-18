@@ -144,6 +144,25 @@ func (c *fakeClient) Launch(pj *v1alpha1.LighthouseJob, metapipelineClient metap
 	return pj, nil
 }
 
+func (c *fakeClient) presubmitForContext(org, repo, context string) *config.Presubmit {
+	p, ok := c.presubmits[context]
+	if !ok {
+		return nil
+	}
+	return &p
+}
+
+func (c *fakeClient) createOverrideJob(pj *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
+	if s := pj.Status.State; s != v1alpha1.SuccessState {
+		return pj, fmt.Errorf("bad status state: %s", s)
+	}
+	if pj.Spec.Context == "fail-create" {
+		return pj, errors.New("injected CreateProwJob error")
+	}
+	c.jobs.Insert(pj.Spec.Context)
+	return pj, nil
+}
+
 func TestAuthorized(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -428,6 +447,32 @@ func TestHandle(t *testing.T) {
 					Label: "passing-test",
 					State: scm.StateSuccess,
 					Desc:  "preserve description",
+				},
+			},
+		},
+		{
+			name:    "create successful prow job",
+			comment: "/override prow-job",
+			contexts: map[string]*scm.StatusInput{
+				"prow-job": {
+					Label: "prow-job",
+					Desc:  "failed",
+					State: scm.StateFailure,
+				},
+			},
+			presubmits: map[string]config.Presubmit{
+				"prow-job": {
+					Reporter: config.Reporter{
+						Context: "prow-job",
+					},
+				},
+			},
+			jobs: sets.NewString("prow-job"),
+			expected: map[string]*scm.StatusInput{
+				"prow-job": {
+					Label: "prow-job",
+					State: scm.StateSuccess,
+					Desc:  description(adminUser),
 				},
 			},
 		},
