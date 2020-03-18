@@ -51,3 +51,11 @@ rules:
       - get
       - list
       - watch
+  - apiGroups:
+      - lighthouse.jenkins.io
+    resources:
+      - lighthousejobs/status
+    verbs:
+      - get
+      - list
+      - watch

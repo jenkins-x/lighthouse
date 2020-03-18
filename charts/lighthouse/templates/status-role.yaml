@@ -27,6 +27,7 @@ rules:
   - lighthousejobs
   verbs:
   - create
+  - delete
   - list
   - update
   - get
@@ -38,6 +39,7 @@ rules:
   - lighthousejobs/status
   verbs:
   - create
+  - delete
   - list
   - update
   - get
