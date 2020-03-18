@@ -18,6 +18,8 @@ import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
+	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
@@ -166,7 +168,7 @@ func (c *Controller) processNextWorkItem() bool {
 			// Forget here else we'd go into a loop of attempting to
 			// process a work item that is invalid.
 			c.queue.Forget(obj)
-			utilruntime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
+			c.logger.Warnf("expected string in workqueue but got %#v", obj)
 			return nil
 		}
 		// Run the syncHandler, passing it the namespace/name string of the
@@ -184,7 +186,7 @@ func (c *Controller) processNextWorkItem() bool {
 	}(obj)
 
 	if err != nil {
-		utilruntime.HandleError(err)
+		c.logger.WithError(err).Error("failure reconciling")
 		return true
 	}
 
@@ -197,7 +199,7 @@ func (c *Controller) syncHandler(key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		c.logger.Warnf("invalid resource key: %s", key)
 		return nil
 	}
 
@@ -207,12 +209,14 @@ func (c *Controller) syncHandler(key string) error {
 		// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
 		// TODO: Actually delete.
 		if errors.IsNotFound(err) {
-			utilruntime.HandleError(fmt.Errorf("foo '%s' in work queue no longer exists", key))
+			c.logger.Warnf("activity '%s' in work queue no longer exists", key)
 			return nil
 		}
 
 		return err
 	}
+
+	var job *v1alpha1.LighthouseJob
 
 	// Get all LighthouseJobs with the same owner/repo/branch/build/context
 	labelSelector, err := createLabelSelectorFromActivity(activity)
@@ -221,11 +225,36 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 	if len(possibleJobs) == 0 {
-		return fmt.Errorf("no LighthouseJobs found matching label selector %s", labelSelector.String())
+		// Let's try to guess and create a LH job if this is a postsubmit, since that could have been created via
+		// jx start pipeline. We're not going to assume that if it's building master, it has to be postsubmit etc.
+		if activity.Spec.PullTitle == "" && len(activity.Spec.BatchPipelineActivity.ComprisingPulLRequests) == 0 {
+			convertedJob := launcher.ToLighthouseJob(activity)
+			newLabels, newAnnotations := pjutil.LabelsAndAnnotationsForJob(convertedJob)
+			newJob := pjutil.NewLighthouseJob(convertedJob.Spec, newLabels, newAnnotations)
+			createdJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).Create(&newJob)
+			if err != nil {
+				c.logger.WithError(err).Warnf("could not create LighthouseJob for postsubmit PipelineActivity %s", activity.Name)
+				return nil
+			}
+			createdJob.Status = v1alpha1.LighthouseJobStatus{
+				State:           v1alpha1.TriggeredState,
+				ActivityName:    util.ToValidName(activity.Name),
+				StartTime:       *activity.Spec.StartedTimestamp,
+				LastReportState: string(scm.StateUnknown),
+			}
+			fullyCreatedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).UpdateStatus(createdJob)
+			if err != nil {
+				c.logger.WithError(err).Warnf("could not set status for newly created LighthouseJob %s", createdJob.Name)
+				return nil
+			}
+			possibleJobs = append(possibleJobs, fullyCreatedJob)
+		} else {
+			c.logger.Warnf("no LighthouseJobs found matching label selector %s", labelSelector.String())
+			return nil
+		}
 	}
 
 	// To be safe, find the job with the activity's name in its status.
-	var job *v1alpha1.LighthouseJob
 	for _, j := range possibleJobs {
 		if j.Status.ActivityName == activity.Name {
 			job = j

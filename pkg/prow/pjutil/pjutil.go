@@ -42,8 +42,8 @@ func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotat
 
 	return v1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "prow.k8s.io/v1",
-			Kind:       "PipelineOptions",
+			APIVersion: "lighthouse.jenkins.io/v1alpha1",
+			Kind:       "LighthouseJob",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        newID.String(),
