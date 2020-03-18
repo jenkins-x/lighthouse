@@ -61,7 +61,7 @@ type Controller struct {
 func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, activityInformer jxinformers.PipelineActivityInformer,
 	lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) *Controller {
 	if logger == nil {
-		logger = logrus.NewEntry(logrus.StandardLogger())
+		logger = logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName)
 	}
 
 	controller := &Controller{
@@ -241,9 +241,16 @@ func (c *Controller) syncHandler(key string) error {
 	c.updateJobStatusForActivity(activity, jobCopy)
 	c.reportStatus(namespace, activity, jobCopy)
 
-	if !reflect.DeepEqual(job.Status, jobCopy.Status) {
-		_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).UpdateStatus(jobCopy)
+	currentJob, err := c.lhLister.LighthouseJobs(namespace).Get(jobCopy.Name)
+	if err != nil {
+		c.logger.WithError(err).Errorf("couldn't get the orig of job %s", jobCopy.Name)
+		return err
+	}
+	if !reflect.DeepEqual(currentJob.Status, jobCopy.Status) {
+		currentJob.Status = jobCopy.Status
+		_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).UpdateStatus(currentJob)
 		if err != nil {
+			c.logger.WithError(err).Errorf("error updating status for job %s", currentJob.Name)
 			return err
 		}
 	}

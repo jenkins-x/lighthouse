@@ -99,15 +99,15 @@ spec:
         secret:
           secretName: tide-githubapp-tokens
 {{- end }}
-    {{- with .Values.tide.nodeSelector }}
+{{- with .Values.tide.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.tide.affinity }}
+{{- end }}
+{{- with .Values.tide.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.tide.tolerations }}
+{{- end }}
+{{- with .Values.tide.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
-    {{- end }}
+{{- end }}
