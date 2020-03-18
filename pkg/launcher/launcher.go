@@ -105,20 +105,26 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 	// Add the build number from the activity key to the labels on the job
 	request.Labels[util.BuildNumLabel] = activityKey.Build
 
-	request.Status = v1alpha1.LighthouseJobStatus{
+	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to apply LighthouseJob")
+	}
+
+	// Set status on the job
+	appliedJob.Status = v1alpha1.LighthouseJobStatus{
 		State:        v1alpha1.PendingState,
 		ActivityName: util.ToValidName(activityKey.Name),
 		StartTime:    metav1.Now(),
 	}
-	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
+	fullyAppliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).UpdateStatus(appliedJob)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to apply LighthouseJob")
+		return nil, errors.Wrapf(err, "unable to apply status for LighthouseJob %s", appliedJob.Name)
 	}
 	err = metapipelineClient.Apply(activityKey, tektonCRDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}
-	return appliedJob, nil
+	return fullyAppliedJob, nil
 }
 
 func (b *launcher) getBranch(spec *v1alpha1.LighthouseJobSpec) string {
@@ -162,14 +168,15 @@ func (b *launcher) List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, e
 	}
 	answer := &v1alpha1.LighthouseJobList{}
 	for _, pa := range list.Items {
-		item := ToPipelineOptions(&pa)
+		item := ToLighthouseJob(&pa)
 		answer.Items = append(answer.Items, item)
 	}
 	return answer, nil
 }
 
-// ToPipelineOptions converts the PipelineActivity to a PipelineOptions object
-func ToPipelineOptions(activity *jxv1.PipelineActivity) v1alpha1.LighthouseJob {
+// TODO: Rename/rework this to be about the spec at some point
+// ToLighthouseJob converts the PipelineActivity to a LighthouseJob object
+func ToLighthouseJob(activity *jxv1.PipelineActivity) v1alpha1.LighthouseJob {
 	spec := activity.Spec
 	baseRef := "master"
 

@@ -46,7 +46,7 @@ func TestPipelineActivityConvert(t *testing.T) {
 			err = yaml.Unmarshal(data, &expected)
 			require.NoError(t, err, "cannot unmarshal YAML in file %s", expectedFile)
 
-			actual := launcher.ToPipelineOptions(&activity)
+			actual := launcher.ToLighthouseJob(&activity)
 
 			data, err = yaml.Marshal(&actual)
 			require.NoError(t, err, "failed to marshal PipelineOption")
