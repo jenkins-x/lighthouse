@@ -20,9 +20,10 @@ import (
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -209,7 +210,7 @@ func (c *Controller) syncHandler(key string) error {
 	if err != nil {
 		// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
 		// TODO: Actually delete.
-		if errors.IsNotFound(err) {
+		if kubeerrors.IsNotFound(err) {
 			c.logger.Warnf("activity '%s' in work queue no longer exists", key)
 			return nil
 		}
@@ -398,7 +399,7 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 			gitRepoStatus.Target = targetURL
 		}
 	}
-	scmClient, _, _, err := c.createSCMClient()
+	scmClient, _, _, err := c.createSCMClient(owner)
 	if err != nil {
 		c.logger.WithFields(fields).WithError(err).Warnf("failed to create SCM client")
 		return
@@ -512,14 +513,27 @@ func durationString(start *metav1.Time, end *metav1.Time) string {
 	return end.Sub(start.Time).Round(time.Second).String()
 }
 
-func (c *Controller) createSCMClient() (scmprovider.SCMClient, string, string, error) {
+func (c *Controller) createSCMClient(owner string) (scmprovider.SCMClient, string, string, error) {
 	kind := c.gitKind()
 	serverURL := os.Getenv("GIT_SERVER")
+	ghaSecretDir := util.GetGitHubAppSecretDir()
 
-	token, err := c.createSCMToken(kind)
-	if err != nil {
-		return nil, serverURL, token, err
+	var token string
+	var err error
+	if ghaSecretDir != "" {
+		tokenFinder := util.NewOwnerTokensDir(serverURL, ghaSecretDir)
+		token, err = tokenFinder.FindToken(owner)
+		if err != nil {
+			logrus.Errorf("failed to read owner token: %s", err.Error())
+			return nil, "", "", errors.Wrapf(err, "failed to read owner token for owner %s", owner)
+		}
+	} else {
+		token, err = c.createSCMToken(kind)
+		if err != nil {
+			return nil, serverURL, token, err
+		}
 	}
+
 	client, err := factory.NewClient(kind, serverURL, token)
 	scmClient := scmprovider.ToClient(client, c.GetBotName())
 	return scmClient, serverURL, token, err
