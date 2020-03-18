@@ -92,16 +92,12 @@ func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, ac
 			}
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
 			if err == nil {
-				// TODO: REMOVE
-				logger.Warnf("UPDATE FUNC FOR %s", key)
 				controller.queue.AddRateLimited(key)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
-				// TODO: REMOVE
-				logger.Warnf("DELETE FUNC FOR %s", key)
 				controller.queue.AddRateLimited(key)
 			}
 		},
@@ -220,6 +216,7 @@ func (c *Controller) syncHandler(key string) error {
 			return nil
 		}
 
+		// Return an error here so that we requeue and retry.
 		return err
 	}
 
@@ -276,6 +273,7 @@ func (c *Controller) syncHandler(key string) error {
 	currentJob, err := c.lhLister.LighthouseJobs(namespace).Get(jobCopy.Name)
 	if err != nil {
 		c.logger.WithError(err).Errorf("couldn't get the orig of job %s", jobCopy.Name)
+		// Return an error here so we requeue and retry.
 		return err
 	}
 	if !reflect.DeepEqual(currentJob.Status, jobCopy.Status) {
@@ -283,6 +281,7 @@ func (c *Controller) syncHandler(key string) error {
 		_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).UpdateStatus(currentJob)
 		if err != nil {
 			c.logger.WithError(err).Errorf("error updating status for job %s", currentJob.Name)
+			// Return an error here so we requeue and retry.
 			return err
 		}
 	}
