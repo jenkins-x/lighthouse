@@ -61,7 +61,7 @@ spec:
           value: "{{ .Values.git.kind }}"
         - name: "GIT_SERVER"
           value: "{{ .Values.git.server }}"
-{{- if .Values.keeper.githubApp.enabled }}
+{{- if .Values.githubApp.enabled }}
         - name: "GITHUB_APP_SECRET_DIR"
           value: "/secrets/githubapp/tokens"
 {{- else }}
@@ -85,7 +85,7 @@ spec:
         - name: config
           mountPath: /etc/config
           readOnly: true
-{{- if .Values.keeper.githubApp.enabled }}
+{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
           mountPath: /secrets/githubapp/tokens
           readOnly: true
@@ -94,7 +94,7 @@ spec:
       - name: config
         configMap:
           name: config
-{{- if .Values.keeper.githubApp.enabled }}
+{{- if .Values.githubApp.enabled }}
       - name: githubapp-tokens
         secret:
           secretName: lighthouse-githubapp-tokens

@@ -34,6 +34,10 @@ spec:
             value: "{{ .Values.git.kind }}"
           - name: "GIT_SERVER"
             value: "{{ .Values.git.server }}"
+{{- if .Values.githubApp.enabled }}
+          - name: "GITHUB_APP_SECRET_DIR"
+            value: "/secrets/githubapp/tokens"
+{{- else }}
           - name: "GIT_USER"
             value: {{ .Values.user }}
           - name: "GIT_TOKEN"
@@ -41,6 +45,7 @@ spec:
               secretKeyRef:
                 name: lighthouse-oauth-token
                 key: oauth
+{{- end }}
           - name: "JX_LOG_FORMAT"
             value: "json"
 {{- range $pkey, $pval := .Values.env }}
@@ -49,6 +54,16 @@ spec:
 {{- end }}
         resources:
 {{ toYaml .Values.foghorn.resources | indent 12 }}
+{{- if .Values.githubApp.enabled }}
+        volumeMounts:
+          - name: githubapp-tokens
+            mountPath: /secrets/githubapp/tokens
+            readOnly: true
+      volumes:
+        - name: githubapp-tokens
+          secret:
+            secretName: lighthouse-githubapp-tokens
+{{- end }}
       terminationGracePeriodSeconds: {{ .Values.foghorn.terminationGracePeriodSeconds }}
 {{- with .Values.foghorn.nodeSelector }}
       nodeSelector:
