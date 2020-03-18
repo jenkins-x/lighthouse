@@ -88,6 +88,7 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("Could not create Lighthouse API client")
 	}
+
 	jxInformerFactory := jxinformers.NewSharedInformerFactoryWithOptions(jxClient, time.Second*30, jxinformers.WithNamespace(o.namespace))
 	lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Second*30, lhinformers.WithNamespace(o.namespace))
 

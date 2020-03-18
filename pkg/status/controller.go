@@ -68,29 +68,28 @@ func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, ac
 	}
 
 	controller := &Controller{
-		jxClient:         jxClient,
-		lhClient:         lhClient,
-		activityLister:   activityInformer.Lister(),
-		activitySynced:   activityInformer.Informer().HasSynced,
-		lhLister:         lhInformer.Lister(),
-		lhSynced:         lhInformer.Informer().HasSynced,
-		logger:           logger,
-		ns:               ns,
-		queue:            RateLimiter(),
+		jxClient:       jxClient,
+		lhClient:       lhClient,
+		activityLister: activityInformer.Lister(),
+		activitySynced: activityInformer.Informer().HasSynced,
+		lhLister:       lhInformer.Lister(),
+		lhSynced:       lhInformer.Informer().HasSynced,
+		logger:         logger,
+		ns:             ns,
+		queue:          RateLimiter(),
 	}
 
 	activityInformer.Informer()
 	logger.Info("Setting up event handlers")
 	activityInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
-			if err == nil {
-				// TODO: REMOVE
-				logger.Warnf("ADD FUNC FOR %s", key)
-				controller.queue.AddRateLimited(key)
-			}
-		},
+		AddFunc: func(obj interface{}) {},
 		UpdateFunc: func(oldObj, newObj interface{}) {
+			newAct := newObj.(*jxv1.PipelineActivity)
+			oldAct := oldObj.(*jxv1.PipelineActivity)
+			// Skip updates solely triggered by resyncs. We only care if they're actually different.
+			if oldAct.ResourceVersion == newAct.ResourceVersion {
+				return
+			}
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
 			if err == nil {
 				// TODO: REMOVE
@@ -117,7 +116,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 	defer c.queue.ShutDown()
 
 	// Start the informer factories to begin populating the informer caches
-	c.logger.Info("Starting Foo controller")
+	c.logger.Info("Starting controller")
 
 	// Wait for the caches to be synced before starting workers
 	c.logger.Info("Waiting for informer caches to sync")
@@ -266,7 +265,7 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	if job == nil {
-		return fmt.Errorf("no LighthouseJob for PipelineActivity %s", activity.Name)
+		return nil
 	}
 
 	// Update the job's status for the activity.

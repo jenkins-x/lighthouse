@@ -113,6 +113,7 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		StartTime:    metav1.Now(),
 	}
 
+	// TODO: REMOVE
 	jy, _ := yaml.Marshal(request)
 	_ = ioutil.WriteFile(fmt.Sprintf("/tmp/lhj-%s-no-status.yaml", request.Name), jy, 0644)
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
