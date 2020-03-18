@@ -5,28 +5,26 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
+	"github.com/jenkins-x/go-scm/scm/transport"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	jxutil "github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
+	"github.com/jenkins-x/lighthouse/pkg/keeper"
+	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/tide"
-	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	// GithubServer the default github server URL
-	GithubServer = "https://github.com"
-)
 
-type gitHubAppTideController struct {
-	controllers        []tide.Controller
+type gitHubAppKeeperController struct {
+	controllers        []keeper.Controller
 	ownerTokenFinder   *util.OwnerTokensDir
 	gitServer          string
 	githubAppSecretDir string
@@ -40,12 +38,12 @@ type gitHubAppTideController struct {
 	m                  sync.Mutex
 }
 
-// NewGitHubAppTideController creates a GitHub App style controller which needs to process each github owner
+// NewGitHubAppKeeperController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string) (tide.Controller, error) {
+func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string) (keeper.Controller, error) {
 
-	gitServer := GithubServer
-	return &gitHubAppTideController{
+	gitServer := util.GithubServer
+	return &gitHubAppKeeperController{
 		ownerTokenFinder:  util.NewOwnerTokensDir(gitServer, githubAppSecretDir),
 		gitServer:         gitServer,
 		configAgent:       configAgent,
@@ -59,7 +57,7 @@ func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.A
 
 }
 
-func (g *gitHubAppTideController) Sync() error {
+func (g *gitHubAppKeeperController) Sync() error {
 	// lets iterate through the config and create a controller for each
 	err := g.createOwnerControllers()
 	if err != nil {
@@ -76,17 +74,17 @@ func (g *gitHubAppTideController) Sync() error {
 	return jxutil.CombineErrors(errs...)
 }
 
-func (g *gitHubAppTideController) Shutdown() {
+func (g *gitHubAppKeeperController) Shutdown() {
 	for _, c := range g.controllers {
 		c.Shutdown()
 	}
 	g.controllers = nil
 }
 
-func (g *gitHubAppTideController) GetPools() []tide.Pool {
+func (g *gitHubAppKeeperController) GetPools() []keeper.Pool {
 	g.m.Lock()
 	defer g.m.Unlock()
-	pools := []tide.Pool{}
+	pools := []keeper.Pool{}
 	for _, c := range g.controllers {
 		cp := c.GetPools()
 		pools = append(pools, cp...)
@@ -94,7 +92,7 @@ func (g *gitHubAppTideController) GetPools() []tide.Pool {
 	return pools
 }
 
-func (g *gitHubAppTideController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (g *gitHubAppKeeperController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	pools := g.GetPools()
 	b, err := json.Marshal(pools)
 	if err != nil {
@@ -106,7 +104,7 @@ func (g *gitHubAppTideController) ServeHTTP(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (g *gitHubAppTideController) GetHistory() *history.History {
+func (g *gitHubAppKeeperController) GetHistory() *history.History {
 	answer, err := history.New(g.maxRecordsPerPool, g.historyURI)
 	if err != nil {
 		return answer
@@ -118,7 +116,7 @@ func (g *gitHubAppTideController) GetHistory() *history.History {
 	return answer
 }
 
-func (g *gitHubAppTideController) createOwnerControllers() error {
+func (g *gitHubAppKeeperController) createOwnerControllers() error {
 	// lets zap any old controllers
 	g.Shutdown()
 	g.controllers = nil
@@ -130,11 +128,11 @@ func (g *gitHubAppTideController) createOwnerControllers() error {
 		return errors.New("no config")
 	}
 
-	oqs := SplitTideQueries(cfg.Tide.Queries)
+	oqs := SplitKeeperQueries(cfg.Keeper.Queries)
 	for owner, queries := range oqs {
 		// create copy of config with different queries
 		ocfg := *cfg
-		ocfg.Tide.Queries = queries
+		ocfg.Keeper.Queries = queries
 		configGetter := func() *config.Config {
 			return &ocfg
 		}
@@ -149,7 +147,7 @@ func (g *gitHubAppTideController) createOwnerControllers() error {
 	return jxutil.CombineErrors(errs...)
 }
 
-func (g *gitHubAppTideController) createOwnerController(owner string, configGetter config.Getter) (tide.Controller, error) {
+func (g *gitHubAppKeeperController) createOwnerController(owner string, configGetter config.Getter) (keeper.Controller, error) {
 	token, err := g.ownerTokenFinder.FindToken(owner)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find GitHub App token for %s", owner)
@@ -158,7 +156,7 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 		return nil, errors.Errorf("no GitHub App token for %s", owner)
 	}
 
-	scmClient, err := factory.NewClient("github", g.gitServer, "")
+	scmClient, err := createKeeperGitHubAppScmClient(g.gitServer, token)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
@@ -184,6 +182,33 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
 	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, lhClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
+	c, err := keeper.NewController(gitproviderClient, gitproviderClient, launcherClient, mpClient, tektonClient, lhClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
 	return c, err
+}
+
+func createKeeperGitHubAppScmClient(gitServer string, token string) (*scm.Client, error) {
+	client, err := factory.NewClient("github", gitServer, "")
+	defaultScmTransport(client)
+	auth := &transport.Authorization{
+		Base:        http.DefaultTransport,
+		Scheme:      "token",
+		Credentials: token,
+	}
+	tr := &transport.Custom{Base: auth,
+		Before: func(r *http.Request) {
+			r.Header.Set("Accept", "application/vnd.github.machine-man-preview+json")
+		},
+	}
+	client.Client.Transport = tr
+
+	return client, err
+}
+
+func defaultScmTransport(scmClient *scm.Client) {
+	if scmClient.Client == nil {
+		scmClient.Client = http.DefaultClient
+	}
+	if scmClient.Client.Transport == nil {
+		scmClient.Client.Transport = http.DefaultTransport
+	}
 }

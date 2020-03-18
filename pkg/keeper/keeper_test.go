@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tide
+package keeper
 
 import (
 	"context"
@@ -40,10 +40,10 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
 
+	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
 	launcherfake "github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git/localgit"
-	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 )
 
 func testPullsMatchList(t *testing.T, test string, actual []PullRequest, expected []int) {
@@ -717,7 +717,7 @@ func TestDividePool(t *testing.T) {
 	}
 	c := &DefaultController{
 		spc:    fc,
-		logger: logrus.WithField("component", "tide"),
+		logger: logrus.WithField("component", "keeper"),
 	}
 	pulls := make(map[string]PullRequest)
 	for _, p := range testPulls {
@@ -846,7 +846,7 @@ func TestPickBatch(t *testing.T) {
 		},
 	}
 	sp := subpool{
-		log:    logrus.WithField("component", "tide"),
+		log:    logrus.WithField("component", "keeper"),
 		org:    "o",
 		repo:   "r",
 		branch: "master",
@@ -878,17 +878,17 @@ func TestPickBatch(t *testing.T) {
 	ca := &config.Agent{}
 	ca.Set(&config.Config{
 		ProwConfig: config.ProwConfig{
-			Tide: config.Tide{
+			Keeper: config.Keeper{
 				BatchSizeLimitMap: map[string]int{"*": 5},
 			},
 		},
 	})
 	c := &DefaultController{
-		logger: logrus.WithField("component", "tide"),
+		logger: logrus.WithField("component", "keeper"),
 		gc:     gc,
 		config: ca.Config,
 	}
-	prs, err := c.pickBatch(sp, &config.TideContextPolicy{})
+	prs, err := c.pickBatch(sp, &config.KeeperContextPolicy{})
 	if err != nil {
 		t.Fatalf("Error from pickBatch: %v", err)
 	}
@@ -909,9 +909,9 @@ func TestPickBatch(t *testing.T) {
 }
 
 func TestCheckMergeLabels(t *testing.T) {
-	squashLabel := "tide/squash"
-	mergeLabel := "tide/merge"
-	rebaseLabel := "tide/rebase"
+	squashLabel := "keeper/squash"
+	mergeLabel := "keeper/merge"
+	rebaseLabel := "keeper/rebase"
 
 	testcases := []struct {
 		name string
@@ -1330,9 +1330,9 @@ func TestTakeAction(t *testing.T) {
 			}
 
 			sp := subpool{
-				log:        logrus.WithField("component", "tide"),
+				log:        logrus.WithField("component", "keeper"),
 				presubmits: tc.presubmits,
-				cc:         &config.TideContextPolicy{},
+				cc:         &config.KeeperContextPolicy{},
 				org:        "o",
 				repo:       "r",
 				branch:     "master",
@@ -1366,7 +1366,7 @@ func TestTakeAction(t *testing.T) {
 			fakeLauncher := launcherfake.NewLauncher()
 			fakeLighthouseClient := fake.NewSimpleClientset()
 			c := &DefaultController{
-				logger:         logrus.WithField("controller", "tide"),
+				logger:         logrus.WithField("controller", "keeper"),
 				gc:             gc,
 				config:         ca.Config,
 				spc:            &fgc,
@@ -1517,7 +1517,7 @@ func TestHeadContexts(t *testing.T) {
 			pr.Commits.Nodes = append(pr.Commits.Nodes, struct{ Commit Commit }{commit})
 		}
 
-		contexts, err := headContexts(logrus.WithField("component", "tide"), fgc, pr)
+		contexts, err := headContexts(logrus.WithField("component", "keeper"), fgc, pr)
 		if err != nil {
 			t.Fatalf("Unexpected error from headContexts: %v", err)
 		}
@@ -1650,8 +1650,8 @@ func TestSync(t *testing.T) {
 		ca := &config.Agent{}
 		ca.Set(&config.Config{
 			ProwConfig: config.ProwConfig{
-				Tide: config.Tide{
-					Queries:            []config.TideQuery{{}},
+				Keeper: config.Keeper{
+					Queries:            []config.KeeperQuery{{}},
 					MaxGoroutines:      4,
 					StatusUpdatePeriod: time.Second * 0,
 				},
@@ -1691,7 +1691,7 @@ func TestSync(t *testing.T) {
 			continue
 		}
 		if len(tc.expectedPools) != len(c.pools) {
-			t.Errorf("Tide pools did not match expected. Got %#v, expected %#v.", c.pools, tc.expectedPools)
+			t.Errorf("Keeper pools did not match expected. Got %#v, expected %#v.", c.pools, tc.expectedPools)
 			continue
 		}
 		for _, expected := range tc.expectedPools {
@@ -1717,9 +1717,9 @@ func TestFilterSubpool(t *testing.T) {
 	}
 
 	trueVar := true
-	cc := &config.TideContextPolicy{
+	cc := &config.KeeperContextPolicy{
 		RequiredContexts:    []string{"pj-a", "pj-b", "other-a"},
-		OptionalContexts:    []string{"tide", "pj-c"},
+		OptionalContexts:    []string{"keeper", "pj-c"},
 		SkipUnknownContexts: &trueVar,
 	}
 
@@ -2046,7 +2046,7 @@ func TestIsPassing(t *testing.T) {
 	testCases := []struct {
 		name             string
 		passing          bool
-		config           config.TideContextPolicy
+		config           config.KeeperContextPolicy
 		combinedContexts map[string]commitStatus
 	}{
 		{
@@ -2062,7 +2062,7 @@ func TestIsPassing(t *testing.T) {
 		{
 			name:    "passing (trust combined status)",
 			passing: true,
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts:    []string{"c1", "c2", "c3"},
 				SkipUnknownContexts: &no,
 			},
@@ -2071,7 +2071,7 @@ func TestIsPassing(t *testing.T) {
 		{
 			name:    "failing because of missing required check c3",
 			passing: false,
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 			},
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), statusContext: toCommitStatus(failure, "")},
@@ -2080,7 +2080,7 @@ func TestIsPassing(t *testing.T) {
 			name:             "failing because of failed context c2",
 			passing:          false,
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(failure, "")},
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 				OptionalContexts: []string{"c4"},
 			},
@@ -2090,7 +2090,7 @@ func TestIsPassing(t *testing.T) {
 			passing: true,
 
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, "")},
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 				OptionalContexts: []string{"c4"},
 			},
@@ -2098,7 +2098,7 @@ func TestIsPassing(t *testing.T) {
 		{
 			name:    "skipping unknown contexts - failing because of missing required context c3",
 			passing: false,
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts:    []string{"c1", "c2", "c3"},
 				SkipUnknownContexts: &yes,
 			},
@@ -2108,7 +2108,7 @@ func TestIsPassing(t *testing.T) {
 			name:             "skipping unknown contexts - failing because c2 is failing",
 			passing:          false,
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(failure, "")},
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts:    []string{"c1", "c2"},
 				OptionalContexts:    []string{"c4"},
 				SkipUnknownContexts: &yes,
@@ -2118,7 +2118,7 @@ func TestIsPassing(t *testing.T) {
 			name:             "skipping unknown contexts - passing because c4 is optional",
 			passing:          true,
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, "")},
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts:    []string{"c1", "c3"},
 				OptionalContexts:    []string{"c4"},
 				SkipUnknownContexts: &yes,
@@ -2129,7 +2129,7 @@ func TestIsPassing(t *testing.T) {
 			passing: true,
 
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, ""), "c5": toCommitStatus(failure, "")},
-			config: config.TideContextPolicy{
+			config: config.KeeperContextPolicy{
 				RequiredContexts:    []string{"c1", "c3"},
 				OptionalContexts:    []string{"c4"},
 				SkipUnknownContexts: &yes,
@@ -2141,7 +2141,7 @@ func TestIsPassing(t *testing.T) {
 		ghc := &fgc{
 			combinedStatus: map[string]map[string]commitStatus{headSHA: tc.combinedContexts},
 			expectedSHA:    headSHA}
-		log := logrus.WithField("component", "tide")
+		log := logrus.WithField("component", "keeper")
 		_, err := log.String()
 		if err != nil {
 			t.Errorf("Failed to get log output before testing: %v", err)
@@ -2426,13 +2426,13 @@ func TestPrepareMergeDetails(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		tpl         config.TideMergeCommitTemplate
+		tpl         config.KeeperMergeCommitTemplate
 		pr          PullRequest
 		mergeMethod scmprovider.PullRequestMergeType
 		expected    scmprovider.MergeDetails
 	}{{
 		name:        "No commit template",
-		tpl:         config.TideMergeCommitTemplate{},
+		tpl:         config.KeeperMergeCommitTemplate{},
 		pr:          pr,
 		mergeMethod: "merge",
 		expected: scmprovider.MergeDetails{
@@ -2441,7 +2441,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "No commit template fields",
-		tpl: config.TideMergeCommitTemplate{
+		tpl: config.KeeperMergeCommitTemplate{
 			Title: nil,
 			Body:  nil,
 		},
@@ -2453,7 +2453,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "Static commit template",
-		tpl: config.TideMergeCommitTemplate{
+		tpl: config.KeeperMergeCommitTemplate{
 			Title: getTemplate("CommitTitle", "static title"),
 			Body:  getTemplate("CommitBody", "static body"),
 		},
@@ -2467,7 +2467,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "Commit template uses PullRequest fields",
-		tpl: config.TideMergeCommitTemplate{
+		tpl: config.KeeperMergeCommitTemplate{
 			Title: getTemplate("CommitTitle", "{{ .Number }}: {{ .Title }}"),
 			Body:  getTemplate("CommitBody", "{{ .HeadRefOID }} - {{ .Body }}"),
 		},
@@ -2481,7 +2481,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "Commit template uses nonexistent fields",
-		tpl: config.TideMergeCommitTemplate{
+		tpl: config.KeeperMergeCommitTemplate{
 			Title: getTemplate("CommitTitle", "{{ .Hello }}"),
 			Body:  getTemplate("CommitBody", "{{ .World }}"),
 		},
@@ -2500,7 +2500,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		c := &DefaultController{
 			config: cfgAgent.Config,
 			spc:    &fgc{},
-			logger: logrus.WithField("component", "tide"),
+			logger: logrus.WithField("component", "keeper"),
 		}
 
 		actual := c.prepareMergeDetails(test.tpl, test.pr, test.mergeMethod)

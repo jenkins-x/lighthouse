@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // Package history provides an append only, size limited log of recent actions
-// that Tide has taken for each subpool.
+// that Keeper has taken for each subpool.
 package history
 
 import (
@@ -33,7 +33,7 @@ import (
 var now = time.Now
 
 // History uses a `*recordLog` per pool to store a record of recent actions that
-// Tide has taken. Using a log per pool ensure that history is retained
+// Keeper has taken. Using a log per pool ensure that history is retained
 // for inactive pools even if other pools are very active.
 type History struct {
 	logs map[string]*recordLog
@@ -53,7 +53,7 @@ func writeHistory(path string, hist map[string][]*Record) error {
 	return nil
 }
 
-// Record is an entry describing one action that Tide has taken (e.g. TRIGGER or MERGE).
+// Record is an entry describing one action that Keeper has taken (e.g. TRIGGER or MERGE).
 type Record struct {
 	Time    time.Time       `json:"time"`
 	Action  string          `json:"action"`

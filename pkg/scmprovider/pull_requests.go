@@ -66,7 +66,7 @@ type UnauthorizedToPushError string
 
 func (e UnauthorizedToPushError) Error() string { return string(e) }
 
-// MergeCommitsForbiddenError happens when the repo disallows the merge strategy configured for the repo in Tide.
+// MergeCommitsForbiddenError happens when the repo disallows the merge strategy configured for the repo in Keeper.
 type MergeCommitsForbiddenError string
 
 func (e MergeCommitsForbiddenError) Error() string { return string(e) }

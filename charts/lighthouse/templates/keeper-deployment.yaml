@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "keeper.name" . }}
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app: {{ template "keeper.name" . }}
+spec:
+  replicas: {{ .Values.keeper.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      draft: {{ default "draft-app" .Values.draft }}
+      app: {{ template "keeper.name" . }}
+  template:
+    metadata:
+{{- if .Values.keeper.datadog.enabled }}
+      annotations:
+        ad.datadoghq.com/keeper.logs: '[{"source":"prow","service":"tide"}]'
+{{- end }}
+      labels:
+        draft: {{ default "draft-app" .Values.draft }}
+        app: {{ template "keeper.name" . }}
+    spec:
+      serviceAccountName: {{ template "keeper.name" . }}
+      terminationGracePeriodSeconds: {{ .Values.keeper.terminationGracePeriodSeconds }}
+      containers:
+      - name: {{ template "keeper.name" . }}
+        image: {{ tpl .Values.keeper.image.repository . }}:{{ tpl .Values.keeper.image.tag . }}
+        imagePullPolicy: {{ .Values.keeper.imagePullPolicy }}
+{{ if .Values.keeper.args }}
+        args:
+{{ toYaml .Values.keeper.args | indent 10 }}
+{{- end }}
+        ports:
+          - name: http
+            containerPort: {{ .Values.keeper.service.internalPort }}
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.keeper.probe.path }}
+            port: http
+          initialDelaySeconds: {{ .Values.keeper.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.keeper.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.keeper.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.keeper.livenessProbe.timeoutSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.keeper.probe.path }}
+            port: http
+          periodSeconds: {{ .Values.keeper.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.keeper.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.keeper.readinessProbe.timeoutSeconds }}
+        env:
+        - name: "GIT_KIND"
+          value: "{{ .Values.git.kind }}"
+        - name: "GIT_SERVER"
+          value: "{{ .Values.git.server }}"
+{{- if .Values.keeper.githubApp.enabled }}
+        - name: "GITHUB_APP_SECRET_DIR"
+          value: "/secrets/githubapp/tokens"
+{{- else }}
+        - name: "GIT_USER"
+          value: {{ .Values.user }}
+        - name: "GIT_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-oauth-token
+              key: oauth
+{{- end }}
+{{- if .Values.keeper.env }}
+{{- range $pkey, $pval := .Values.keeper.env }}
+        - name: {{ $pkey }}
+          value: {{ $pval }}
+{{- end }}
+{{- end }}
+        resources:
+{{ toYaml .Values.keeper.resources | indent 10 }}
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+          readOnly: true
+{{- if .Values.keeper.githubApp.enabled }}
+        - name: githubapp-tokens
+          mountPath: /secrets/githubapp/tokens
+          readOnly: true
+{{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: config
+{{- if .Values.keeper.githubApp.enabled }}
+      - name: githubapp-tokens
+        secret:
+          secretName: lighthouse-githubapp-tokens
+{{- end }}
+{{- with .Values.keeper.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.keeper.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.keeper.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}

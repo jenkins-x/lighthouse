@@ -7,15 +7,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// OwnerQueries separates tide queries by the owner
+// OwnerQueries separates keeper queries by the owner
 type OwnerQueries struct {
 	Owner   string
-	Queries config.TideQueries
+	Queries config.KeeperQueries
 }
 
-// SplitTideQueries splits the tide queries into a sequence of owner queries
-func SplitTideQueries(queries config.TideQueries) map[string]config.TideQueries {
-	answer := map[string]config.TideQueries{}
+// SplitKeeperQueries splits the keeper queries into a sequence of owner queries
+func SplitKeeperQueries(queries config.KeeperQueries) map[string]config.KeeperQueries {
+	answer := map[string]config.KeeperQueries{}
 	for _, q1 := range queries {
 		for org, repos := range SplitRepositories(q1.Repos) {
 			q := q1

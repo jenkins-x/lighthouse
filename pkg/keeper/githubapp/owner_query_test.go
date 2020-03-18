@@ -6,25 +6,25 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/tide/githubapp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestSplitTideQueries(t *testing.T) {
+func TestSplitKeeperQueries(t *testing.T) {
 	prowConfig := filepath.Join("test_data", "config.yaml")
 
 	cfg, err := config.Load(prowConfig, "")
 	require.NoError(t, err, "could not load file %s", prowConfig)
 
-	results := githubapp.SplitTideQueries(cfg.Tide.Queries)
+	results := githubapp.SplitKeeperQueries(cfg.Keeper.Queries)
 	require.Equal(t, 2, len(results), "wrong number of OwnerQueries for file %s", prowConfig)
 	assertOwnerQueries(t, results["jstrachan"], "jstrachan", 2, 3, "for file %s", prowConfig)
 	assertOwnerQueries(t, results["rawlingsj"], "rawlingj", 2, 1, " for file %s", prowConfig)
 }
 
-func assertOwnerQueries(t *testing.T, ownerQueries config.TideQueries, owner string, expectedQueryCount int, expectedRepoCount int, format string, args ...interface{}) {
+func assertOwnerQueries(t *testing.T, ownerQueries config.KeeperQueries, owner string, expectedQueryCount int, expectedRepoCount int, format string, args ...interface{}) {
 	message := fmt.Sprintf(format, args...)
 	require.NotNil(t, ownerQueries, "ownerQueries should not be nil for owner %s %s", owner, message)
 	assert.Equal(t, len(ownerQueries), expectedQueryCount, "query count for owner %s %s", owner, message)

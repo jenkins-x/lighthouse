@@ -84,4 +84,7 @@ const (
 	ActivityBuildLabel = "build"
 	// ActivityContextLabel is the label for the (optional) pipeline context on the PipelineActivity
 	ActivityContextLabel = "context"
+
+	// GithubServer the default github server URL
+	GithubServer = "https://github.com"
 )

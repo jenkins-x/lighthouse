@@ -1,4 +1,4 @@
-package tide
+package keeper
 
 import (
 	"strings"

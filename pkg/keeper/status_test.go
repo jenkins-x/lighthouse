@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tide
+package keeper
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 
@@ -134,7 +134,7 @@ func TestExpectedStatus(t *testing.T) {
 			desc:  fmt.Sprintf(statusNotInPool, " Needs 1, 2, 3, 4, 5, 6, 7 labels."),
 		},
 		{
-			name:      "only failed tide context",
+			name:      "only failed keeper context",
 			labels:    neededLabels,
 			milestone: "v1.0",
 			contexts:  []Context{{Context: githubql.String(statusContext), State: githubql.StatusStateError}},
@@ -209,7 +209,7 @@ func TestExpectedStatus(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Logf("Test Case: %q\n", tc.name)
-		secondQuery := config.TideQuery{
+		secondQuery := config.KeeperQuery{
 			Orgs:      []string{""},
 			Labels:    []string{"1", "2", "3", "4", "5", "6", "7"}, // lots of requirements
 			Milestone: "v1.0",
@@ -218,8 +218,8 @@ func TestExpectedStatus(t *testing.T) {
 			secondQuery.ExcludedBranches = tc.branchBlacklist
 			secondQuery.IncludedBranches = tc.branchWhitelist
 		}
-		queriesByRepo := config.TideQueries{
-			config.TideQuery{
+		queriesByRepo := config.KeeperQueries{
+			config.KeeperQuery{
 				Orgs:             []string{""},
 				ExcludedBranches: tc.branchBlacklist,
 				IncludedBranches: tc.branchWhitelist,
@@ -274,7 +274,7 @@ func TestExpectedStatus(t *testing.T) {
 		}
 		blocks.Repo[blockers.OrgRepo{Org: "", Repo: ""}] = items
 
-		state, desc := expectedStatus(queriesByRepo, &pr, pool, &config.TideContextPolicy{}, blocks)
+		state, desc := expectedStatus(queriesByRepo, &pr, pool, &config.KeeperContextPolicy{}, blocks)
 		if state != tc.state {
 			t.Errorf("Expected status state %q, but got %q.", string(tc.state), string(state))
 		}
@@ -384,7 +384,7 @@ func TestSetStatuses(t *testing.T) {
 		ca.Set(&config.Config{})
 		// setStatuses logs instead of returning errors.
 		// Construct a logger to watch for errors to be printed.
-		log := logrus.WithField("component", "tide")
+		log := logrus.WithField("component", "keeper")
 		initialLog, err := log.String()
 		if err != nil {
 			t.Fatalf("Failed to get log output before testing: %v", err)
@@ -409,26 +409,26 @@ func TestTargetUrl(t *testing.T) {
 	testcases := []struct {
 		name   string
 		pr     *PullRequest
-		config config.Tide
+		config config.Keeper
 
 		expectedURL string
 	}{
 		{
 			name:        "no config",
 			pr:          &PullRequest{},
-			config:      config.Tide{},
+			config:      config.Keeper{},
 			expectedURL: "",
 		},
 		{
-			name:        "tide overview config",
+			name:        "keeper overview config",
 			pr:          &PullRequest{},
-			config:      config.Tide{TargetURL: "tide.com"},
+			config:      config.Keeper{TargetURL: "tide.com"},
 			expectedURL: "tide.com",
 		},
 		{
 			name:        "PR dashboard config and overview config",
 			pr:          &PullRequest{},
-			config:      config.Tide{TargetURL: "tide.com", PRStatusBaseURL: "pr.status.com"},
+			config:      config.Keeper{TargetURL: "tide.com", PRStatusBaseURL: "pr.status.com"},
 			expectedURL: "tide.com",
 		},
 		{
@@ -447,14 +447,14 @@ func TestTargetUrl(t *testing.T) {
 				}{NameWithOwner: githubql.String("org/repo")},
 				HeadRefName: "head",
 			},
-			config:      config.Tide{PRStatusBaseURL: "pr.status.com"},
+			config:      config.Keeper{PRStatusBaseURL: "pr.status.com"},
 			expectedURL: "pr.status.com?query=is%3Apr+repo%3Aorg%2Frepo+author%3Aauthor+head%3Ahead",
 		},
 	}
 
 	for _, tc := range testcases {
 		ca := &config.Agent{}
-		ca.Set(&config.Config{ProwConfig: config.ProwConfig{Tide: tc.config}})
+		ca.Set(&config.Config{ProwConfig: config.ProwConfig{Keeper: tc.config}})
 		log := logrus.WithField("controller", "status-update")
 		if actual, expected := targetURL(ca.Config, tc.pr, log), tc.expectedURL; actual != expected {
 			t.Errorf("%s: expected target URL %s but got %s", tc.name, expected, actual)

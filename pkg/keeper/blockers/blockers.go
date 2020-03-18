@@ -37,7 +37,7 @@ type scmProviderClient interface {
 	Query(context.Context, interface{}, map[string]interface{}) error
 }
 
-// Blocker specifies an issue number that should block tide from merging.
+// Blocker specifies an issue number that should block keeper from merging.
 type Blocker struct {
 	Number     int
 	Title, URL string
@@ -72,7 +72,7 @@ func (b Blockers) GetApplicable(org, repo, branch string) []Blocker {
 	return res
 }
 
-// FindAll finds issues with label in the specified orgs/repos that should block tide.
+// FindAll finds issues with label in the specified orgs/repos that should block keeper.
 func FindAll(spc scmProviderClient, log *logrus.Entry, label, orgRepoTokens string) (Blockers, error) {
 	issues, err := search(
 		context.Background(),

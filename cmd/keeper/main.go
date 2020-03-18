@@ -23,13 +23,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/keeper"
+	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
-	"github.com/jenkins-x/lighthouse/pkg/tide"
-	"github.com/jenkins-x/lighthouse/pkg/tide/githubapp"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 )
@@ -50,14 +50,14 @@ type options struct {
 	runOnce bool
 
 	maxRecordsPerPool int
-	// historyURI where Tide should store its action history.
+	// historyURI where Keeper should store its action history.
 	// Can be a /local/path or gs://path/to/object.
 	// GCS writes will use the bucket's default acl for new objects. Ensure both that
 	// a) the gcs credentials can write to this bucket
 	// b) the default acls do not expose any private info
 	historyURI string
 
-	// statusURI where Tide store status update state.
+	// statusURI where Keeper store status update state.
 	// Can be a /local/path or gs://path/to/object.
 	// GCS writes will use the bucket's default acl for new objects. Ensure both that
 	// a) the gcs credentials can write to this bucket
@@ -82,8 +82,8 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.IntVar(&o.syncThrottle, "sync-hourly-tokens", 800, "The maximum number of tokens per hour to be used by the sync controller.")
 	fs.IntVar(&o.statusThrottle, "status-hourly-tokens", 400, "The maximum number of tokens per hour to be used by the status controller.")
 
-	fs.IntVar(&o.maxRecordsPerPool, "max-records-per-pool", 1000, "The maximum number of history records stored for an individual Tide pool.")
-	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store tide action history. GCS writes will use the default object ACL for the bucket")
+	fs.IntVar(&o.maxRecordsPerPool, "max-records-per-pool", 1000, "The maximum number of history records stored for an individual Keeper pool.")
+	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store keeper action history. GCS writes will use the default object ACL for the bucket")
 	fs.StringVar(&o.statusURI, "status-path", "", "The /local/path or gs://path/to/object to store status controller state. GCS writes will use the default object ACL for the bucket.")
 
 	err := fs.Parse(args)
@@ -95,7 +95,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 }
 
 func main() {
-	logrusutil.ComponentInit("tide")
+	logrusutil.ComponentInit("keeper")
 
 	defer interrupts.WaitForGracefulShutdown()
 
@@ -111,6 +111,7 @@ func main() {
 		logrus.WithError(err).Fatal("Error starting config agent.")
 	}
 
+	var err error
 	botName := o.botName
 	if botName == "" {
 		botName = os.Getenv("GIT_USER")
@@ -141,9 +142,9 @@ func main() {
 	gitToken := os.Getenv("GIT_TOKEN")
 
 	cfg := configAgent.Config
-	c, err := githubapp.NewTideController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI)
+	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI)
 	if err != nil {
-		logrus.WithError(err).Fatal("Error creating Tide controller.")
+		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}
 	defer c.Shutdown()
 	http.Handle("/", c)
@@ -157,18 +158,18 @@ func main() {
 	}
 
 	// run the controller, but only after one sync period expires after our first run
-	time.Sleep(time.Until(start.Add(cfg().Tide.SyncPeriod)))
+	time.Sleep(time.Until(start.Add(cfg().Keeper.SyncPeriod)))
 	interrupts.Tick(func() {
 		sync(c)
 	}, func() time.Duration {
-		return cfg().Tide.SyncPeriod
+		return cfg().Keeper.SyncPeriod
 	})
 
 	// Push metrics to the configured prometheus pushgateway endpoint or serve them
 	gateway := cfg().PushGateway
 	if gateway.Endpoint != "" {
 		logrus.WithField("gateway", gateway.Endpoint).Infof("using push gateway")
-		go metrics.ExposeMetrics("tide", gateway)
+		go metrics.ExposeMetrics("keeper", gateway)
 
 		// serve data
 		interrupts.ListenAndServe(server, 10*time.Second)
@@ -181,7 +182,7 @@ func main() {
 	}
 }
 
-func sync(c tide.Controller) {
+func sync(c keeper.Controller) {
 	if err := c.Sync(); err != nil {
 		logrus.WithError(err).Error("Error syncing.")
 	}

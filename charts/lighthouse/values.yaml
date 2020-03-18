@@ -21,6 +21,10 @@ image:
 # define environment variables here as a map of key: value
 env:
 
+githubApp:
+  enabled: false
+  username:  "jenkins-x[bot]"
+
 webhooks:
   replicaCount: 2
   image:
@@ -68,7 +72,7 @@ status:
   terminationGracePeriodSeconds: 180
   reportURLBase: ""
 
-tide:
+keeper:
   replicaCount: 1
   livenessProbe:
     initialDelaySeconds: 120
@@ -82,7 +86,7 @@ tide:
   probe:
     path: /
   image:
-    repository: "{{ .Values.image.repository }}/lighthouse-tide"
+    repository: "{{ .Values.image.repository }}/lighthouse-keeper"
     tag: "{{ .Values.image.tag }}"
   imagePullPolicy: IfNotPresent
   terminationGracePeriodSeconds: 30

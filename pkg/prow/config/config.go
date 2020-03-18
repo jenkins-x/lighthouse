@@ -74,7 +74,7 @@ type JobConfig struct {
 
 // ProwConfig is config for all prow controllers
 type ProwConfig struct {
-	Tide             Tide                  `json:"tide,omitempty"`
+	Keeper           Keeper                `json:"tide,omitempty"`
 	Plank            Plank                 `json:"plank,omitempty"`
 	Sinker           Sinker                `json:"sinker,omitempty"`
 	Deck             Deck                  `json:"deck,omitempty"`
@@ -257,10 +257,10 @@ type Spyglass struct {
 type Deck struct {
 	// Spyglass specifies which viewers will be used for which artifacts when viewing a job in Deck
 	Spyglass Spyglass `json:"spyglass,omitempty"`
-	// TideUpdatePeriodString compiles into TideUpdatePeriod at load time.
-	TideUpdatePeriodString string `json:"tide_update_period,omitempty"`
-	// TideUpdatePeriod specifies how often Deck will fetch status from Tide. Defaults to 10s.
-	TideUpdatePeriod time.Duration `json:"-"`
+	// KeeperUpdatePeriodString compiles into KeeperUpdatePeriod at load time.
+	KeeperUpdatePeriodString string `json:"tide_update_period,omitempty"`
+	// KeeperUpdatePeriod specifies how often Deck will fetch status from Keeper. Defaults to 10s.
+	KeeperUpdatePeriod time.Duration `json:"-"`
 	// HiddenRepos is a list of orgs and/or repos that should not be displayed by Deck.
 	HiddenRepos []string `json:"hidden_repos,omitempty"`
 	// ExternalAgentLogs ensures external agents can expose
@@ -854,14 +854,14 @@ func parseProwConfig(c *Config) error {
 		c.Deck.ExternalAgentLogs[i].Selector = s
 	}
 
-	if c.Deck.TideUpdatePeriodString == "" {
-		c.Deck.TideUpdatePeriod = time.Second * 10
+	if c.Deck.KeeperUpdatePeriodString == "" {
+		c.Deck.KeeperUpdatePeriod = time.Second * 10
 	} else {
-		period, err := time.ParseDuration(c.Deck.TideUpdatePeriodString)
+		period, err := time.ParseDuration(c.Deck.KeeperUpdatePeriodString)
 		if err != nil {
 			return fmt.Errorf("cannot parse duration for deck.tide_update_period: %v", err)
 		}
-		c.Deck.TideUpdatePeriod = period
+		c.Deck.KeeperUpdatePeriod = period
 	}
 
 	if c.Deck.Spyglass.SizeLimit == 0 {
@@ -935,33 +935,33 @@ func parseProwConfig(c *Config) error {
 		c.Sinker.MaxPodAge = maxPodAge
 	}
 
-	if c.Tide.SyncPeriodString == "" {
-		c.Tide.SyncPeriod = time.Minute
+	if c.Keeper.SyncPeriodString == "" {
+		c.Keeper.SyncPeriod = time.Minute
 	} else {
-		period, err := time.ParseDuration(c.Tide.SyncPeriodString)
+		period, err := time.ParseDuration(c.Keeper.SyncPeriodString)
 		if err != nil {
 			return fmt.Errorf("cannot parse duration for tide.sync_period: %v", err)
 		}
-		c.Tide.SyncPeriod = period
+		c.Keeper.SyncPeriod = period
 	}
-	if c.Tide.StatusUpdatePeriodString == "" {
-		c.Tide.StatusUpdatePeriod = c.Tide.SyncPeriod
+	if c.Keeper.StatusUpdatePeriodString == "" {
+		c.Keeper.StatusUpdatePeriod = c.Keeper.SyncPeriod
 	} else {
-		period, err := time.ParseDuration(c.Tide.StatusUpdatePeriodString)
+		period, err := time.ParseDuration(c.Keeper.StatusUpdatePeriodString)
 		if err != nil {
 			return fmt.Errorf("cannot parse duration for tide.status_update_period: %v", err)
 		}
-		c.Tide.StatusUpdatePeriod = period
+		c.Keeper.StatusUpdatePeriod = period
 	}
 
-	if c.Tide.MaxGoroutines == 0 {
-		c.Tide.MaxGoroutines = 20
+	if c.Keeper.MaxGoroutines == 0 {
+		c.Keeper.MaxGoroutines = 20
 	}
-	if c.Tide.MaxGoroutines <= 0 {
-		return fmt.Errorf("tide has invalid max_goroutines (%d), it needs to be a positive number", c.Tide.MaxGoroutines)
+	if c.Keeper.MaxGoroutines <= 0 {
+		return fmt.Errorf("keeper has invalid max_goroutines (%d), it needs to be a positive number", c.Keeper.MaxGoroutines)
 	}
 
-	for name, method := range c.Tide.MergeType {
+	for name, method := range c.Keeper.MergeType {
 		if method != scmprovider.MergeMerge &&
 			method != scmprovider.MergeRebase &&
 			method != scmprovider.MergeSquash {
@@ -969,9 +969,9 @@ func parseProwConfig(c *Config) error {
 		}
 	}
 
-	for i, tq := range c.Tide.Queries {
+	for i, tq := range c.Keeper.Queries {
 		if err := tq.Validate(); err != nil {
-			return fmt.Errorf("tide query (index %d) is invalid: %v", i, err)
+			return fmt.Errorf("keeper query (index %d) is invalid: %v", i, err)
 		}
 	}
 

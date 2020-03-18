@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tide
+package keeper
 
 import (
 	"fmt"
@@ -25,9 +25,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
 	"github.com/pkg/errors"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
@@ -36,11 +36,11 @@ import (
 )
 
 const (
-	statusContext string = "tide"
+	statusContext string = "keeper"
 	statusInPool         = "In merge pool."
-	// statusNotInPool is a format string used when a PR is not in a tide pool.
+	// statusNotInPool is a format string used when a PR is not in a keeper pool.
 	// The '%s' field is populated with the reason why the PR is not in a
-	// tide pool or the empty string if the reason is unknown. See requirementDiff.
+	// keeper pool or the empty string if the reason is unknown. See requirementDiff.
 	statusNotInPool = "Not mergeable.%s"
 )
 
@@ -56,7 +56,7 @@ type statusController struct {
 	config config.Getter
 	spc    scmProviderClient
 
-	// newPoolPending is a size 1 chan that signals that the main Tide loop has
+	// newPoolPending is a size 1 chan that signals that the main Keeper loop has
 	// updated the 'poolPRs' field with a freshly updated pool.
 	newPoolPending chan bool
 	// shutDown is used to signal to the main controller that the statusController
@@ -82,7 +82,7 @@ func (sc *statusController) shutdown() {
 	<-sc.shutDown
 }
 
-// requirementDiff calculates the diff between a PR and a TideQuery.
+// requirementDiff calculates the diff between a PR and a KeeperQuery.
 // This diff is defined with a string that describes some subset of the
 // differences and an integer counting the total number of differences.
 // The diff count should always reflect the scale of the differences between
@@ -92,9 +92,9 @@ func (sc *statusController) shutdown() {
 // more than we need to detail which status contexts are failed against the PR.
 // To this end, some differences are given a higher diff weight than others.
 // Note: an empty diff can be returned if the reason that the PR does not match
-// the TideQuery is unknown. This can happen if this function's logic
+// the KeeperQuery is unknown. This can happen if this function's logic
 // does not match GitHub's and does not indicate that the PR matches the query.
-func requirementDiff(pr *PullRequest, q *config.TideQuery, cc contextChecker) (string, int) {
+func requirementDiff(pr *PullRequest, q *config.KeeperQuery, cc contextChecker) (string, int) {
 	const maxLabelChars = 50
 	var desc string
 	var diff int
@@ -216,7 +216,7 @@ func requirementDiff(pr *PullRequest, q *config.TideQuery, cc contextChecker) (s
 }
 
 // Returns expected status state and description.
-// If a PR is not mergeable, we have to select a TideQuery to compare it against
+// If a PR is not mergeable, we have to select a KeeperQuery to compare it against
 // in order to generate a diff for the status description. We choose the query
 // for the repo that the PR is closest to meeting (as determined by the number
 // of unmet/violated requirements).
@@ -254,9 +254,9 @@ func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]
 // the administrative Prow overview.
 func targetURL(c config.Getter, pr *PullRequest, log *logrus.Entry) string {
 	var link string
-	if tideURL := c().Tide.TargetURL; tideURL != "" {
-		link = tideURL
-	} else if baseURL := c().Tide.PRStatusBaseURL; baseURL != "" {
+	if keeperURL := c().Keeper.TargetURL; keeperURL != "" {
+		link = keeperURL
+	} else if baseURL := c().Keeper.PRStatusBaseURL; baseURL != "" {
 		parseURL, err := url.Parse(baseURL)
 		if err != nil {
 			log.WithError(err).Error("Failed to parse PR status base URL")
@@ -274,7 +274,7 @@ func targetURL(c config.Getter, pr *PullRequest, log *logrus.Entry) string {
 func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullRequest, blocks blockers.Blockers) {
 	// queryMap caches which queries match a repo.
 	// Make a new one each sync loop as queries will change.
-	queryMap := sc.config().Tide.Queries.QueryMap()
+	queryMap := sc.config().Keeper.Queries.QueryMap()
 	processed := sets.NewString()
 
 	process := func(pr *PullRequest) {
@@ -285,7 +285,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 			log.WithError(err).Error("Getting head commit status contexts, skipping...")
 			return
 		}
-		cr, err := sc.config().GetTideContextPolicy(
+		cr, err := sc.config().GetKeeperContextPolicy(
 			string(pr.Repository.Owner.Login),
 			string(pr.Repository.Name),
 			string(pr.BaseRef.Name))
@@ -328,14 +328,14 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 	}
 	// The list of all open PRs may not contain a PR if it was merged before we
 	// listed all open PRs. To prevent a new PR that starts in the pool and
-	// immediately merges from missing a tide status context we need to ensure that
+	// immediately merges from missing a keeper status context we need to ensure that
 	// every PR in the pool is processed even if it doesn't appear in all.
 	//
 	// Note: We could still fail to update a status context if the statusController
-	// falls behind the main Tide sync loop by multiple loops (if we are lapped).
+	// falls behind the main Keeper sync loop by multiple loops (if we are lapped).
 	// This would be unlikely to occur, could only occur if the status update sync
 	// period is longer than the main sync period, and would only result in a
-	// missing tide status context on a successfully merged PR.
+	// missing keeper status context on a successfully merged PR.
 	for key, poolPR := range pool {
 		if !processed.Has(key) {
 			process(&poolPR)
@@ -377,7 +377,7 @@ func (sc *statusController) run() {
 // this function returns immediately without syncing.
 func (sc *statusController) waitSync() {
 	// wait for the min sync period time to elapse if needed.
-	wait := time.After(time.Until(sc.lastSyncStart.Add(sc.config().Tide.StatusUpdatePeriod)))
+	wait := time.After(time.Until(sc.lastSyncStart.Add(sc.config().Keeper.StatusUpdatePeriod)))
 	for {
 		select {
 		case <-wait:
@@ -400,14 +400,14 @@ func (sc *statusController) sync(pool map[string]PullRequest, blocks blockers.Bl
 	defer func() {
 		duration := time.Since(sc.lastSyncStart)
 		sc.logger.WithField("duration", duration.String()).Info("Statuses synced.")
-		tideMetrics.statusUpdateDuration.Set(duration.Seconds())
+		keeperMetrics.statusUpdateDuration.Set(duration.Seconds())
 	}()
 
 	sc.setStatuses(sc.search(), pool, blocks)
 }
 
 func (sc *statusController) search() []PullRequest {
-	queries := sc.config().Tide.Queries
+	queries := sc.config().Keeper.Queries
 	if len(queries) == 0 {
 		return nil
 	}
@@ -418,7 +418,7 @@ func (sc *statusController) search() []PullRequest {
 	now := time.Now()
 	log := sc.logger.WithField("query", query)
 	if query != sc.PreviousQuery {
-		// Query changed and/or tide restarted, recompute everything
+		// Query changed and/or keeper restarted, recompute everything
 		log.WithField("previously", sc.PreviousQuery).Info("Query changed, resetting start time to zero")
 		sc.LatestPR = metav1.Time{}
 		sc.PreviousQuery = query

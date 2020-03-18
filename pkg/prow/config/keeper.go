@@ -30,11 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-// TideQueries is a TideQuery slice.
-type TideQueries []TideQuery
+// KeeperQueries is a KeeperQuery slice.
+type KeeperQueries []KeeperQuery
 
-// TideContextPolicy configures options about how to handle various contexts.
-type TideContextPolicy struct {
+// KeeperContextPolicy configures options about how to handle various contexts.
+type KeeperContextPolicy struct {
 	// whether to consider unknown contexts optional (skip) or required.
 	SkipUnknownContexts       *bool    `json:"skip-unknown-contexts,omitempty"`
 	RequiredContexts          []string `json:"required-contexts,omitempty"`
@@ -44,27 +44,27 @@ type TideContextPolicy struct {
 	FromBranchProtection *bool `json:"from-branch-protection,omitempty"`
 }
 
-// TideOrgContextPolicy overrides the policy for an org, and any repo overrides.
-type TideOrgContextPolicy struct {
-	TideContextPolicy
-	Repos map[string]TideRepoContextPolicy `json:"repos,omitempty"`
+// KeeperOrgContextPolicy overrides the policy for an org, and any repo overrides.
+type KeeperOrgContextPolicy struct {
+	KeeperContextPolicy
+	Repos map[string]KeeperRepoContextPolicy `json:"repos,omitempty"`
 }
 
-// TideRepoContextPolicy overrides the policy for repo, and any branch overrides.
-type TideRepoContextPolicy struct {
-	TideContextPolicy
-	Branches map[string]TideContextPolicy `json:"branches,omitempty"`
+// KeeperRepoContextPolicy overrides the policy for repo, and any branch overrides.
+type KeeperRepoContextPolicy struct {
+	KeeperContextPolicy
+	Branches map[string]KeeperContextPolicy `json:"branches,omitempty"`
 }
 
-// TideContextPolicyOptions holds the default policy, and any org overrides.
-type TideContextPolicyOptions struct {
-	TideContextPolicy
+// KeeperContextPolicyOptions holds the default policy, and any org overrides.
+type KeeperContextPolicyOptions struct {
+	KeeperContextPolicy
 	// Github Orgs
-	Orgs map[string]TideOrgContextPolicy `json:"orgs,omitempty"`
+	Orgs map[string]KeeperOrgContextPolicy `json:"orgs,omitempty"`
 }
 
-// TideMergeCommitTemplate holds templates to use for merge commits.
-type TideMergeCommitTemplate struct {
+// KeeperMergeCommitTemplate holds templates to use for merge commits.
+type KeeperMergeCommitTemplate struct {
 	TitleTemplate string `json:"title,omitempty"`
 	BodyTemplate  string `json:"body,omitempty"`
 
@@ -72,20 +72,20 @@ type TideMergeCommitTemplate struct {
 	Body  *template.Template `json:"-"`
 }
 
-// Tide is config for the tide pool.
-type Tide struct {
+// Keeper is config for the keeper pool.
+type Keeper struct {
 	// SyncPeriodString compiles into SyncPeriod at load time.
 	SyncPeriodString string `json:"sync_period,omitempty"`
-	// SyncPeriod specifies how often Tide will sync jobs with Github. Defaults to 1m.
+	// SyncPeriod specifies how often Keeper will sync jobs with Github. Defaults to 1m.
 	SyncPeriod time.Duration `json:"-"`
 	// StatusUpdatePeriodString compiles into StatusUpdatePeriod at load time.
 	StatusUpdatePeriodString string `json:"status_update_period,omitempty"`
-	// StatusUpdatePeriod specifies how often Tide will update Github status contexts.
+	// StatusUpdatePeriod specifies how often Keeper will update Github status contexts.
 	// Defaults to the value of SyncPeriod.
 	StatusUpdatePeriod time.Duration `json:"-"`
 	// Queries represents a list of GitHub search queries that collectively
 	// specify the set of PRs that meet merge requirements.
-	Queries TideQueries `json:"queries,omitempty"`
+	Queries KeeperQueries `json:"queries,omitempty"`
 
 	// A key/value pair of an org/repo as the key and merge method to override
 	// the default method of merge. Valid options are squash, rebase, and merge.
@@ -94,16 +94,16 @@ type Tide struct {
 	// A key/value pair of an org/repo as the key and Go template to override
 	// the default merge commit title and/or message. Template is passed the
 	// PullRequest struct (prow/github/types.go#PullRequest)
-	MergeTemplate map[string]TideMergeCommitTemplate `json:"merge_commit_template,omitempty"`
+	MergeTemplate map[string]KeeperMergeCommitTemplate `json:"merge_commit_template,omitempty"`
 
-	// URL for tide status contexts.
+	// URL for keeper status contexts.
 	// We can consider allowing this to be set separately for separate repos, or
 	// allowing it to be a template.
 	TargetURL string `json:"target_url,omitempty"`
 
 	// PRStatusBaseURL is the base URL for the PR status page.
 	// This is used to link to a merge requirements overview
-	// in the tide status context.
+	// in the keeper status context.
 	PRStatusBaseURL string `json:"pr_status_base_url,omitempty"`
 
 	// BlockerLabel is an optional label that is used to identify merge blocking
@@ -131,11 +131,11 @@ type Tide struct {
 	// positive number.
 	MaxGoroutines int `json:"max_goroutines,omitempty"`
 
-	// TideContextPolicyOptions defines merge options for context. If not set it will infer
+	// KeeperContextPolicyOptions defines merge options for context. If not set it will infer
 	// the required and optional contexts from the prow jobs configured and use the github
 	// combined status; otherwise it may apply the branch protection setting or let user
 	// define their own options in case branch protection is not used.
-	ContextOptions TideContextPolicyOptions `json:"context_options,omitempty"`
+	ContextOptions KeeperContextPolicyOptions `json:"context_options,omitempty"`
 
 	// BatchSizeLimitMap is a key/value pair of an org or org/repo as the key and
 	// integer batch size limit as the value. The empty string key can be used as
@@ -148,7 +148,7 @@ type Tide struct {
 
 // MergeMethod returns the merge method to use for a repo. The default of merge is
 // returned when not overridden.
-func (t *Tide) MergeMethod(org, repo string) scmprovider.PullRequestMergeType {
+func (t *Keeper) MergeMethod(org, repo string) scmprovider.PullRequestMergeType {
 	name := org + "/" + repo
 
 	v, ok := t.MergeType[name]
@@ -164,7 +164,7 @@ func (t *Tide) MergeMethod(org, repo string) scmprovider.PullRequestMergeType {
 }
 
 // BatchSizeLimit return the batch size limit for the given repo
-func (t *Tide) BatchSizeLimit(org, repo string) int {
+func (t *Keeper) BatchSizeLimit(org, repo string) int {
 	// TODO: Remove once #564 is fixed and batch builds can work again. (APB)
 	return -1
 	//if limit, ok := t.BatchSizeLimitMap[fmt.Sprintf("%s/%s", org, repo)]; ok {
@@ -177,7 +177,7 @@ func (t *Tide) BatchSizeLimit(org, repo string) int {
 }
 
 // MergeCommitTemplate returns a struct with Go template string(s) or nil
-func (t *Tide) MergeCommitTemplate(org, repo string) TideMergeCommitTemplate {
+func (t *Keeper) MergeCommitTemplate(org, repo string) KeeperMergeCommitTemplate {
 	name := org + "/" + repo
 
 	v, ok := t.MergeTemplate[name]
@@ -188,9 +188,9 @@ func (t *Tide) MergeCommitTemplate(org, repo string) TideMergeCommitTemplate {
 	return v
 }
 
-// TideQuery is turned into a GitHub search query. See the docs for details:
+// KeeperQuery is turned into a GitHub search query. See the docs for details:
 // https://help.github.com/articles/searching-issues-and-pull-requests/
-type TideQuery struct {
+type KeeperQuery struct {
 	Orgs          []string `json:"orgs,omitempty"`
 	Repos         []string `json:"repos,omitempty"`
 	ExcludedRepos []string `json:"excludedRepos,omitempty"`
@@ -206,8 +206,8 @@ type TideQuery struct {
 	ReviewApprovedRequired bool `json:"reviewApprovedRequired,omitempty"`
 }
 
-// Query returns the corresponding github search string for the tide query.
-func (tq *TideQuery) Query() string {
+// Query returns the corresponding github search string for the keeper query.
+func (tq *KeeperQuery) Query() string {
 	toks := []string{"is:pr", "state:open"}
 	for _, o := range tq.Orgs {
 		toks = append(toks, fmt.Sprintf("org:\"%s\"", o))
@@ -239,8 +239,8 @@ func (tq *TideQuery) Query() string {
 	return strings.Join(toks, " ")
 }
 
-// ForRepo indicates if the tide query applies to the specified repo.
-func (tq TideQuery) ForRepo(org, repo string) bool {
+// ForRepo indicates if the keeper query applies to the specified repo.
+func (tq KeeperQuery) ForRepo(org, repo string) bool {
 	fullName := fmt.Sprintf("%s/%s", org, repo)
 	for _, queryOrg := range tq.Orgs {
 		if queryOrg != org {
@@ -276,7 +276,7 @@ func reposInOrg(org string, repos []string) []string {
 // OrgExceptionsAndRepos determines which orgs and repos a set of queries cover.
 // Output is returned as a mapping from 'included org'->'repos excluded in the org'
 // and a set of included repos.
-func (tqs TideQueries) OrgExceptionsAndRepos() (map[string]sets.String, sets.String) {
+func (tqs KeeperQueries) OrgExceptionsAndRepos() (map[string]sets.String, sets.String) {
 	orgs := make(map[string]sets.String)
 	for i := range tqs {
 		for _, org := range tqs[i].Orgs {
@@ -304,26 +304,26 @@ func (tqs TideQueries) OrgExceptionsAndRepos() (map[string]sets.String, sets.Str
 	return orgs, repos
 }
 
-// QueryMap is a struct mapping from "org/repo" -> TideQueries that
+// QueryMap is a struct mapping from "org/repo" -> KeeperQueries that
 // apply to that org or repo. It is lazily populated, but threadsafe.
 type QueryMap struct {
-	queries TideQueries
+	queries KeeperQueries
 
-	cache map[string]TideQueries
+	cache map[string]KeeperQueries
 	sync.Mutex
 }
 
-// QueryMap creates a QueryMap from TideQueries
-func (tqs TideQueries) QueryMap() *QueryMap {
+// QueryMap creates a QueryMap from KeeperQueries
+func (tqs KeeperQueries) QueryMap() *QueryMap {
 	return &QueryMap{
 		queries: tqs,
-		cache:   make(map[string]TideQueries),
+		cache:   make(map[string]KeeperQueries),
 	}
 }
 
-// ForRepo returns the tide queries that apply to a repo.
-func (qm *QueryMap) ForRepo(org, repo string) TideQueries {
-	res := TideQueries(nil)
+// ForRepo returns the keeper queries that apply to a repo.
+func (qm *QueryMap) ForRepo(org, repo string) KeeperQueries {
+	res := KeeperQueries(nil)
 	fullName := fmt.Sprintf("%s/%s", org, repo)
 
 	qm.Lock()
@@ -350,7 +350,7 @@ func (qm *QueryMap) ForRepo(org, repo string) TideQueries {
 // * repos that are not org/repo
 // * a label that is in both the labels and missing_labels section
 // * a branch that is in both included and excluded branch set.
-func (tq *TideQuery) Validate() error {
+func (tq *KeeperQuery) Validate() error {
 	duplicates := func(field string, list []string) error {
 		dups := sets.NewString()
 		seen := sets.NewString()
@@ -437,7 +437,7 @@ func (tq *TideQuery) Validate() error {
 }
 
 // Validate returns an error if any contexts are listed more than once in the config.
-func (cp *TideContextPolicy) Validate() error {
+func (cp *KeeperContextPolicy) Validate() error {
 	if inter := sets.NewString(cp.RequiredContexts...).Intersection(sets.NewString(cp.OptionalContexts...)); inter.Len() > 0 {
 		return fmt.Errorf("contexts %s are defined as required and optional", strings.Join(inter.List(), ", "))
 	}
@@ -450,14 +450,14 @@ func (cp *TideContextPolicy) Validate() error {
 	return nil
 }
 
-func mergeTideContextPolicy(a, b TideContextPolicy) TideContextPolicy {
+func mergeKeeperContextPolicy(a, b KeeperContextPolicy) KeeperContextPolicy {
 	mergeBool := func(a, b *bool) *bool {
 		if b == nil {
 			return a
 		}
 		return b
 	}
-	c := TideContextPolicy{}
+	c := KeeperContextPolicy{}
 	c.FromBranchProtection = mergeBool(a.FromBranchProtection, b.FromBranchProtection)
 	c.SkipUnknownContexts = mergeBool(a.SkipUnknownContexts, b.SkipUnknownContexts)
 	required := sets.NewString(a.RequiredContexts...)
@@ -478,25 +478,25 @@ func mergeTideContextPolicy(a, b TideContextPolicy) TideContextPolicy {
 	return c
 }
 
-func parseTideContextPolicyOptions(org, repo, branch string, options TideContextPolicyOptions) TideContextPolicy {
-	option := options.TideContextPolicy
+func parseKeeperContextPolicyOptions(org, repo, branch string, options KeeperContextPolicyOptions) KeeperContextPolicy {
+	option := options.KeeperContextPolicy
 	if o, ok := options.Orgs[org]; ok {
-		option = mergeTideContextPolicy(option, o.TideContextPolicy)
+		option = mergeKeeperContextPolicy(option, o.KeeperContextPolicy)
 		if r, ok := o.Repos[repo]; ok {
-			option = mergeTideContextPolicy(option, r.TideContextPolicy)
+			option = mergeKeeperContextPolicy(option, r.KeeperContextPolicy)
 			if b, ok := r.Branches[branch]; ok {
-				option = mergeTideContextPolicy(option, b)
+				option = mergeKeeperContextPolicy(option, b)
 			}
 		}
 	}
 	return option
 }
 
-// GetTideContextPolicy parses the prow config to find context merge options.
+// GetKeeperContextPolicy parses the prow config to find context merge options.
 // If none are set, it will use the prow jobs configured and use the default github combined status.
 // Otherwise if set it will use the branch protection setting, or the listed jobs.
-func (c Config) GetTideContextPolicy(org, repo, branch string) (*TideContextPolicy, error) {
-	options := parseTideContextPolicyOptions(org, repo, branch, c.Tide.ContextOptions)
+func (c Config) GetKeeperContextPolicy(org, repo, branch string) (*KeeperContextPolicy, error) {
+	options := parseKeeperContextPolicyOptions(org, repo, branch, c.Keeper.ContextOptions)
 	// Adding required and optional contexts from options
 	required := sets.NewString(options.RequiredContexts...)
 	requiredIfPresent := sets.NewString(options.RequiredIfPresentContexts...)
@@ -518,7 +518,7 @@ func (c Config) GetTideContextPolicy(org, repo, branch string) (*TideContextPoli
 		}
 	}
 
-	t := &TideContextPolicy{
+	t := &KeeperContextPolicy{
 		RequiredContexts:          required.List(),
 		RequiredIfPresentContexts: requiredIfPresent.List(),
 		OptionalContexts:          optional.List(),
@@ -535,7 +535,7 @@ func (c Config) GetTideContextPolicy(org, repo, branch string) (*TideContextPoli
 // - context is registered as optional
 // - required contexts are registered and the context provided is not required
 // Will return false otherwise. Every context is required.
-func (cp *TideContextPolicy) IsOptional(c string) bool {
+func (cp *KeeperContextPolicy) IsOptional(c string) bool {
 	if sets.NewString(cp.OptionalContexts...).Has(c) {
 		return true
 	}
@@ -553,7 +553,7 @@ func (cp *TideContextPolicy) IsOptional(c string) bool {
 }
 
 // MissingRequiredContexts discard the optional contexts and only look of extra required contexts that are not provided.
-func (cp *TideContextPolicy) MissingRequiredContexts(contexts []string) []string {
+func (cp *KeeperContextPolicy) MissingRequiredContexts(contexts []string) []string {
 	if len(cp.RequiredContexts) == 0 {
 		return nil
 	}

@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tide contains a controller for managing a tide pool of PRs. The
+// Package keeper contains a controller for managing a keeper pool of PRs. The
 // controller will automatically retest PRs in the pool and merge them if they
 // pass tests.
-package tide
+package keeper
 
 import (
 	"bytes"
@@ -34,13 +34,13 @@ import (
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
+	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
+	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/tide/blockers"
-	"github.com/jenkins-x/lighthouse/pkg/tide/history"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -122,7 +122,7 @@ var recordableActions = map[Action]bool{
 	MergeBatch:   true,
 }
 
-// Pool represents information about a tide pool. There is one for every
+// Pool represents information about a keeper pool. There is one for every
 // org/repo/branch combination that has PRs in the pool.
 type Pool struct {
 	Org    string
@@ -148,7 +148,7 @@ type Pool struct {
 
 // Prometheus Metrics
 var (
-	tideMetrics = struct {
+	keeperMetrics = struct {
 		// Per pool
 		pooledPRs  *prometheus.GaugeVec
 		updateTime *prometheus.GaugeVec
@@ -160,7 +160,7 @@ var (
 	}{
 		pooledPRs: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "pooledprs",
-			Help: "Number of PRs in each Tide pool.",
+			Help: "Number of PRs in each Keeper pool.",
 		}, []string{
 			"org",
 			"repo",
@@ -198,11 +198,11 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(tideMetrics.pooledPRs)
-	prometheus.MustRegister(tideMetrics.updateTime)
-	prometheus.MustRegister(tideMetrics.merges)
-	prometheus.MustRegister(tideMetrics.syncDuration)
-	prometheus.MustRegister(tideMetrics.statusUpdateDuration)
+	prometheus.MustRegister(keeperMetrics.pooledPRs)
+	prometheus.MustRegister(keeperMetrics.updateTime)
+	prometheus.MustRegister(keeperMetrics.merges)
+	prometheus.MustRegister(keeperMetrics.syncDuration)
+	prometheus.MustRegister(keeperMetrics.statusUpdateDuration)
 }
 
 // NewController makes a DefaultController out of the given clients.
@@ -297,13 +297,13 @@ func (c *DefaultController) Sync() error {
 	defer func() {
 		duration := time.Since(start)
 		c.logger.WithField("duration", duration.String()).Info("Synced")
-		tideMetrics.syncDuration.Set(duration.Seconds())
+		keeperMetrics.syncDuration.Set(duration.Seconds())
 	}()
 	defer c.changedFiles.prune()
 
-	c.logger.Debug("Building tide pool.")
+	c.logger.Debug("Building keeper pool.")
 	prs := make(map[string]PullRequest)
-	for _, query := range c.config().Tide.Queries {
+	for _, query := range c.config().Keeper.Queries {
 		q := query.Query()
 		results, err := search(c.spc.Query, c.logger, q, time.Time{}, time.Now())
 		if err != nil && len(results) == 0 {
@@ -333,9 +333,9 @@ func (c *DefaultController) Sync() error {
 		c.logger.WithField("duration", time.Since(start).String()).Debug("Listed LighthouseJobs from the cluster.")
 		lhjs = lhjList.Items
 
-		if label := c.config().Tide.BlockerLabel; label != "" {
+		if label := c.config().Keeper.BlockerLabel; label != "" {
 			c.logger.Debugf("Searching for blocking issues (label %q).", label)
-			orgExcepts, repos := c.config().Tide.Queries.OrgExceptionsAndRepos()
+			orgExcepts, repos := c.config().Keeper.Queries.OrgExceptionsAndRepos()
 			orgs := make([]string, 0, len(orgExcepts))
 			for org := range orgExcepts {
 				orgs = append(orgs, org)
@@ -352,7 +352,7 @@ func (c *DefaultController) Sync() error {
 	if err != nil {
 		return err
 	}
-	filteredPools := c.filterSubpools(c.config().Tide.MaxGoroutines, rawPools)
+	filteredPools := c.filterSubpools(c.config().Keeper.MaxGoroutines, rawPools)
 
 	// Notify statusController about the new pool.
 	c.sc.Lock()
@@ -367,7 +367,7 @@ func (c *DefaultController) Sync() error {
 	// Sync subpools in parallel.
 	poolChan := make(chan Pool, len(filteredPools))
 	subpoolsInParallel(
-		c.config().Tide.MaxGoroutines,
+		c.config().Keeper.MaxGoroutines,
 		filteredPools,
 		func(sp *subpool) {
 			pool, err := c.syncSubpool(*sp, blocks.GetApplicable(sp.org, sp.repo, sp.branch))
@@ -483,7 +483,7 @@ func (c *DefaultController) initSubpoolData(sp *subpool) error {
 	if err != nil {
 		return fmt.Errorf("error determining required presubmit PipelineActivitys: %v", err)
 	}
-	sp.cc, err = c.config().GetTideContextPolicy(sp.org, sp.repo, sp.branch)
+	sp.cc, err = c.config().GetKeeperContextPolicy(sp.org, sp.repo, sp.branch)
 	if err != nil {
 		return fmt.Errorf("error setting up context checker: %v", err)
 	}
@@ -513,9 +513,9 @@ func filterSubpool(spc scmProviderClient, sp *subpool) *subpool {
 // - Have known merge conflicts.
 // - Have failing or missing status contexts.
 // - Have pending required status contexts that are not associated with a
-//   PipelineActivity. (This ensures that the 'tide' context indicates that the pending
+//   PipelineActivity. (This ensures that the 'keeper' context indicates that the pending
 //   status is preventing merge. Required PipelineActivity statuses are allowed to be
-//   'pending' because this prevents kicking PRs from the pool when Tide is
+//   'pending' because this prevents kicking PRs from the pool when Keeper is
 //   retesting them.)
 func filterPR(spc scmProviderClient, sp *subpool, pr *PullRequest) bool {
 	log := sp.log.WithFields(pr.logFields())
@@ -593,7 +593,7 @@ func toSimpleState(s v1alpha1.PipelineState) simpleState {
 }
 
 // isPassingTests returns whether or not all contexts set on the PR except for
-// the tide pool context are passing.
+// the keeper pool context are passing.
 func isPassingTests(log *logrus.Entry, spc scmProviderClient, pr PullRequest, cc contextChecker) bool {
 	log = log.WithFields(pr.logFields())
 	contexts, err := headContexts(log, spc, &pr)
@@ -864,7 +864,7 @@ func prNumbers(prs []PullRequest) []int {
 }
 
 func (c *DefaultController) pickBatch(sp subpool, cc contextChecker) ([]PullRequest, error) {
-	batchLimit := c.config().Tide.BatchSizeLimit(sp.org, sp.repo)
+	batchLimit := c.config().Keeper.BatchSizeLimit(sp.org, sp.repo)
 	if batchLimit < 0 {
 		sp.log.Debug("Batch merges disabled by configuration in this repo.")
 		return nil, nil
@@ -941,7 +941,7 @@ func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method scmpr
 	return method, nil
 }
 
-func (c *DefaultController) prepareMergeDetails(commitTemplates config.TideMergeCommitTemplate, pr PullRequest, mergeMethod scmprovider.PullRequestMergeType) scmprovider.MergeDetails {
+func (c *DefaultController) prepareMergeDetails(commitTemplates config.KeeperMergeCommitTemplate, pr PullRequest, mergeMethod scmprovider.PullRequestMergeType) scmprovider.MergeDetails {
 	ghMergeDetails := scmprovider.MergeDetails{
 		SHA:         string(pr.HeadRefOID),
 		MergeMethod: string(mergeMethod),
@@ -976,18 +976,18 @@ func (c *DefaultController) mergePRs(sp subpool, prs []PullRequest) error {
 		if len(merged) == 0 {
 			return
 		}
-		tideMetrics.merges.WithLabelValues(sp.org, sp.repo, sp.branch).Observe(float64(len(merged)))
+		keeperMetrics.merges.WithLabelValues(sp.org, sp.repo, sp.branch).Observe(float64(len(merged)))
 	}()
 
 	var errs []error
 	log := sp.log.WithField("merge-targets", prNumbers(prs))
 	for i, pr := range prs {
 		log := log.WithFields(pr.logFields())
-		mergeMethod := c.config().Tide.MergeMethod(sp.org, sp.repo)
-		commitTemplates := c.config().Tide.MergeCommitTemplate(sp.org, sp.repo)
-		squashLabel := c.config().Tide.SquashLabel
-		rebaseLabel := c.config().Tide.RebaseLabel
-		mergeLabel := c.config().Tide.MergeLabel
+		mergeMethod := c.config().Keeper.MergeMethod(sp.org, sp.repo)
+		commitTemplates := c.config().Keeper.MergeCommitTemplate(sp.org, sp.repo)
+		squashLabel := c.config().Keeper.SquashLabel
+		rebaseLabel := c.config().Keeper.RebaseLabel
+		mergeLabel := c.config().Keeper.MergeLabel
 		if squashLabel != "" || rebaseLabel != "" || mergeLabel != "" {
 			var err error
 			mergeMethod, err = checkMergeLabels(pr, squashLabel, rebaseLabel, mergeLabel, mergeMethod)
@@ -1087,9 +1087,9 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 			// is not allowed by other repo settings, so we should let the admins
 			// know that the configuration needs to be updated.
 			// We won't be able to merge the other PRs.
-			return false, fmt.Errorf("Tide needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", err)
+			return false, fmt.Errorf("Keeper needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", err)
 		} else if _, ok = err.(scmprovider.UnmergablePRError); ok {
-			return true, fmt.Errorf("PR is unmergable. Do the Tide merge requirements match the GitHub settings for the repo? %v", err)
+			return true, fmt.Errorf("PR is unmergable. Do the Keeper merge requirements match the GitHub settings for the repo? %v", err)
 		}
 		return true, err
 	}
@@ -1342,8 +1342,8 @@ func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (
 		"action":  string(act),
 		"targets": prNumbers(targets),
 	}).Info("Subpool synced.")
-	tideMetrics.pooledPRs.WithLabelValues(sp.org, sp.repo, sp.branch).Set(float64(len(sp.prs)))
-	tideMetrics.updateTime.WithLabelValues(sp.org, sp.repo, sp.branch).Set(float64(time.Now().Unix()))
+	keeperMetrics.pooledPRs.WithLabelValues(sp.org, sp.repo, sp.branch).Set(float64(len(sp.prs)))
+	keeperMetrics.updateTime.WithLabelValues(sp.org, sp.repo, sp.branch).Set(float64(time.Now().Unix()))
 	return Pool{
 			Org:    sp.org,
 			Repo:   sp.repo,

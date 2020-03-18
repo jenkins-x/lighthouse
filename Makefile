@@ -1,12 +1,12 @@
 SHELL := /bin/bash
 PROJECT := github.com/jenkins-x/lighthouse
 EXECUTABLE := lighthouse
-TIDE_EXECUTABLE := tide
+KEEPER_EXECUTABLE := keeper
 STATUS_EXECUTABLE := lighthouse-status
 DOCKER_REGISTRY := jenkinsxio
 DOCKER_IMAGE_NAME := lighthouse
 MAIN_SRC_FILE=pkg/main/main.go
-TIDE_MAIN_SRC_FILE=cmd/tide/main.go
+KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 STATUS_MAIN_SRC_FILE=cmd/status/main.go
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
@@ -60,16 +60,16 @@ clean:
 build:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE) 
 
-.PHONY: tide
-tide:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TIDE_EXECUTABLE) $(TIDE_MAIN_SRC_FILE)
+.PHONY: keeper
+keeper:
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
 
 .PHONY: status
 status:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(STATUS_EXECUTABLE) $(STATUS_MAIN_SRC_FILE)
 
 .PHONY: build-all
-build-all: build tide status
+build-all: build keeper status
 
 .PHONY: mod
 mod: build
@@ -80,9 +80,9 @@ mod: build
 build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(EXECUTABLE) $(MAIN_SRC_FILE)
 
-.PHONY: build-tide-linux
-build-tide-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TIDE_EXECUTABLE) $(TIDE_MAIN_SRC_FILE)
+.PHONY: build-keeper-linux
+build-keeper-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
 
 .PHONY: build-status-linux
 build-status-linux:

@@ -1,12 +1,12 @@
-package tide
+package keeper
 
 import (
 	"net/http"
 
-	"github.com/jenkins-x/lighthouse/pkg/tide/history"
+	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
 )
 
-// Controller the interface for all tide controllers
+// Controller the interface for all keeper controllers
 // whether regular or the GitHub App flavour which has to handle tokens differently
 type Controller interface {
 	Sync() error
