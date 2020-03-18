@@ -18,8 +18,6 @@ import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/launcher"
-	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
@@ -229,34 +227,9 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 	if len(possibleJobs) == 0 {
-		// Let's try to guess and create a LH job if this is a postsubmit, since that could have been created via
-		// jx start pipeline. We're going to assume that we should only do this if it's on master.
-		// TODO: this probably is not good per se and needs work or removing (apb)
-		if activity.Spec.GitBranch == "master" {
-			convertedJob := launcher.ToLighthouseJob(activity)
-			newLabels, newAnnotations := pjutil.LabelsAndAnnotationsForJob(convertedJob)
-			newJob := pjutil.NewLighthouseJob(convertedJob.Spec, newLabels, newAnnotations)
-			createdJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).Create(&newJob)
-			if err != nil {
-				c.logger.WithError(err).Warnf("could not create LighthouseJob for postsubmit PipelineActivity %s", activity.Name)
-				return nil
-			}
-			createdJob.Status = v1alpha1.LighthouseJobStatus{
-				State:           v1alpha1.TriggeredState,
-				ActivityName:    util.ToValidName(activity.Name),
-				StartTime:       *activity.Spec.StartedTimestamp,
-				LastReportState: string(scm.StateUnknown),
-			}
-			fullyCreatedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).UpdateStatus(createdJob)
-			if err != nil {
-				c.logger.WithError(err).Warnf("could not set status on LighthouseJob for postsubmit PipelineActivity %s", activity.Name)
-				return nil
-			}
-			possibleJobs = append(possibleJobs, fullyCreatedJob)
-		} else {
-			c.logger.Warnf("no LighthouseJobs found matching label selector %s", labelSelector.String())
-			return nil
-		}
+		// TODO: Something to handle jx start pipeline cases - my previous approach resulted in infinite creations of new jobs, which was...wrong. (apb)
+		c.logger.Warnf("no LighthouseJobs found matching label selector %s", labelSelector.String())
+		return nil
 	}
 
 	// To be safe, find the job with the activity's name in its status.
@@ -357,7 +330,7 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 		"gitSHA":      sha,
 		"gitURL":      gitURL,
 		"gitBranch":   activity.Spec.GitBranch,
-		"gitStatus":   statusInfo.scmStatus,
+		"gitStatus":   statusInfo.scmStatus.String(),
 		"buildNumber": activity.Spec.Build,
 		"duration":    durationString(activity.Spec.StartedTimestamp, activity.Spec.CompletedTimestamp),
 	}
@@ -383,14 +356,17 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 		return
 	}
 
-	switch job.Status.LastReportState {
+	switch scm.ToState(job.Status.LastReportState) {
 	// already completed - avoid reporting again if a promotion happens after a PR has merged and the pipeline updates status
-	case string(jxv1.ActivityStatusTypeSucceeded), string(jxv1.ActivityStatusTypeAborted), string(jxv1.ActivityStatusTypeFailed):
+	case scm.StateFailure, scm.StateError, scm.StateSuccess, scm.StateCanceled:
 		return
 	}
 
+	c.logger.WithFields(fields).Warnf("last report: %s, current: %s, last desc: %s, current: %s", job.Status.LastReportState, statusInfo.scmStatus.String(),
+		job.Status.Description, statusInfo.description)
+
 	// Check if state and running stages haven't changed and return if they haven't
-	if job.Status.LastReportState == string(activityStatus) &&
+	if scm.ToState(job.Status.LastReportState) == statusInfo.scmStatus &&
 		job.Status.Description == statusInfo.description {
 		return
 	}
@@ -437,7 +413,7 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 
 	c.logger.WithFields(fields).Info("reported git status")
 	job.Status.Description = statusInfo.description
-	job.Status.LastReportState = string(statusInfo.scmStatus)
+	job.Status.LastReportState = statusInfo.scmStatus.String()
 }
 
 // getReportURLBase gets the base report URL from the environment
@@ -490,14 +466,20 @@ func toScmStatusDescriptionRunningStages(activity *jxv1.PipelineActivity) report
 		info.scmStatus = scm.StateSuccess
 		info.description = "Pipeline successful"
 	case jxv1.ActivityStatusTypeRunning, jxv1.ActivityStatusTypePending:
-		info.scmStatus = scm.StatePending
+		info.scmStatus = scm.StateRunning
 		info.description = "Pipeline running"
 	case jxv1.ActivityStatusTypeError:
 		info.scmStatus = scm.StateError
 		info.description = "Error executing pipeline"
-	default:
+	case jxv1.ActivityStatusTypeNone:
+		info.scmStatus = scm.StatePending
+		info.description = "Pipeline triggered"
+	case jxv1.ActivityStatusTypeFailed:
 		info.scmStatus = scm.StateFailure
 		info.description = "Pipeline failed"
+	default:
+		info.scmStatus = scm.StateUnknown
+		info.description = "Pipeline in unknown state"
 	}
 	stagesByStatus := activity.StagesByStatus()
 
