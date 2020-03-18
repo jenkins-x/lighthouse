@@ -104,23 +104,28 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 
 	// Add the build number from the activity key to the labels on the job
 	request.Labels[util.BuildNumLabel] = activityKey.Build
-	// Set status on the job
-	request.Status = v1alpha1.LighthouseJobStatus{
-		State:        v1alpha1.PendingState,
-		ActivityName: util.ToValidName(activityKey.Name),
-		StartTime:    metav1.Now(),
-	}
 
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply LighthouseJob")
 	}
 
+	// Set status on the job
+	appliedJob.Status = v1alpha1.LighthouseJobStatus{
+		State:        v1alpha1.PendingState,
+		ActivityName: util.ToValidName(activityKey.Name),
+		StartTime:    metav1.Now(),
+	}
+	fullyCreatedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).UpdateStatus(appliedJob)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to set status on LighthouseJob %s", appliedJob.Name)
+	}
+
 	err = metapipelineClient.Apply(activityKey, tektonCRDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}
-	return appliedJob, nil
+	return fullyCreatedJob, nil
 }
 
 func (b *launcher) getBranch(spec *v1alpha1.LighthouseJobSpec) string {
