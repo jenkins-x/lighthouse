@@ -100,7 +100,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 				SCMProviderClient: scmClient,
 				KubernetesClient:  kubeClient,
 				GitClient:         gitClient,
-				LighthouseClient:  lhClient,
+				LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(""),
 			},
 		},
 	}
