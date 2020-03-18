@@ -15,7 +15,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -160,19 +159,7 @@ func (b *launcher) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobSpe
 
 // List list current pipelines
 func (b *launcher) List(opts metav1.ListOptions) (*v1alpha1.LighthouseJobList, error) {
-	list, err := b.jxClient.JenkinsV1().PipelineActivities(b.namespace).List(metav1.ListOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	answer := &v1alpha1.LighthouseJobList{}
-	for _, pa := range list.Items {
-		item := ToLighthouseJob(&pa)
-		answer.Items = append(answer.Items, item)
-	}
-	return answer, nil
+	return b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).List(opts)
 }
 
 // ToLighthouseJob converts the PipelineActivity to a LighthouseJob object
