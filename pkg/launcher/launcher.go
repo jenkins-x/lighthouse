@@ -2,7 +2,6 @@ package launcher
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -18,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 )
 
 // launcher default launcher
@@ -113,9 +111,6 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		StartTime:    metav1.Now(),
 	}
 
-	// TODO: REMOVE
-	jy, _ := yaml.Marshal(request)
-	_ = ioutil.WriteFile(fmt.Sprintf("/tmp/lhj-%s-no-status.yaml", request.Name), jy, 0644)
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply LighthouseJob")
