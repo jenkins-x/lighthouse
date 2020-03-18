@@ -50,3 +50,15 @@ spec:
         resources:
 {{ toYaml .Values.status.resources | indent 12 }}
       terminationGracePeriodSeconds: {{ .Values.status.terminationGracePeriodSeconds }}
+{{- with .Values.tide.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tide.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tide.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
