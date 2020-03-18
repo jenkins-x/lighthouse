@@ -236,18 +236,23 @@ func (c *Controller) syncHandler(key string) error {
 			convertedJob := launcher.ToLighthouseJob(activity)
 			newLabels, newAnnotations := pjutil.LabelsAndAnnotationsForJob(convertedJob)
 			newJob := pjutil.NewLighthouseJob(convertedJob.Spec, newLabels, newAnnotations)
-			newJob.Status = v1alpha1.LighthouseJobStatus{
-				State:           v1alpha1.TriggeredState,
-				ActivityName:    util.ToValidName(activity.Name),
-				StartTime:       *activity.Spec.StartedTimestamp,
-				LastReportState: string(scm.StateUnknown),
-			}
 			createdJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).Create(&newJob)
 			if err != nil {
 				c.logger.WithError(err).Warnf("could not create LighthouseJob for postsubmit PipelineActivity %s", activity.Name)
 				return nil
 			}
-			possibleJobs = append(possibleJobs, createdJob)
+			createdJob.Status = v1alpha1.LighthouseJobStatus{
+				State:           v1alpha1.TriggeredState,
+				ActivityName:    util.ToValidName(activity.Name),
+				StartTime:       *activity.Spec.StartedTimestamp,
+				LastReportState: string(scm.StateUnknown),
+			}
+			fullyCreatedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(namespace).UpdateStatus(createdJob)
+			if err != nil {
+				c.logger.WithError(err).Warnf("could not set status on LighthouseJob for postsubmit PipelineActivity %s", activity.Name)
+				return nil
+			}
+			possibleJobs = append(possibleJobs, fullyCreatedJob)
 		} else {
 			c.logger.Warnf("no LighthouseJobs found matching label selector %s", labelSelector.String())
 			return nil
