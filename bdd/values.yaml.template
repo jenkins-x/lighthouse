@@ -11,6 +11,9 @@ tide:
     tag: $VERSION
     pullPolicy: IfNotPresent
 
+env:
+  JX_DEFAULT_IMAGE: ""
+
 vault:
 {{- if eq .Requirements.secretStorage "vault" }}
   enabled: true
