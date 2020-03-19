@@ -54,9 +54,11 @@ spec:
               key: hmac
         - name: "JX_LOG_FORMAT"
           value: "json"
+{{- if hasKey .Values "env"}}
 {{- range $pkey, $pval := .Values.env }}
         - name: {{ $pkey }}
           value: {{ quote $pval }}
+{{- end }}
 {{- end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
