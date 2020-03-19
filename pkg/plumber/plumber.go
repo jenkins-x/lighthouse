@@ -85,7 +85,7 @@ func (b *PipelineBuilder) Create(request *PipelineOptions, metapipelineClient me
 		// Also not finding an equivalent to labels from the PipelineRunRequest
 		ServiceAccount: sa,
 		// I believe we can use an empty string default image?
-		DefaultImage: "",
+		DefaultImage: os.Getenv("JX_DEFAULT_IMAGE"),
 		EnvVariables: spec.GetEnvVars(),
 	}
 

@@ -55,8 +55,8 @@ spec:
         - name: "JX_LOG_FORMAT"
           value: "json"
 {{- range $pkey, $pval := .Values.env }}
-        - name: {{ $pkey }}
-          value: {{ quote $pval }}
+          - name: {{ $pkey }}
+            value: {{ quote $pval }}
 {{- end }}
         ports:
         - containerPort: {{ .Values.service.internalPort }}
