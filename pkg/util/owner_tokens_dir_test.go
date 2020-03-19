@@ -1,10 +1,11 @@
-package githubapp_test
+package util_test
 
 import (
 	"path/filepath"
 	"testing"
 
 	"github.com/jenkins-x/lighthouse/pkg/tide/githubapp"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +13,7 @@ import (
 func TestOwnerTokensDir(t *testing.T) {
 	dir := filepath.Join("test_data", "secret_dir")
 
-	tokenFinder := githubapp.NewOwnerTokensDir(githubapp.GithubServer, dir)
+	tokenFinder := util.NewOwnerTokensDir(githubapp.GithubServer, dir)
 
 	owner := "arcalos-environments"
 	token, err := tokenFinder.FindToken(owner)

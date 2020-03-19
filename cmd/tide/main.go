@@ -32,6 +32,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/tide"
 	"github.com/jenkins-x/lighthouse/pkg/tide/githubapp"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -127,6 +128,12 @@ func main() {
 	botName := o.botName
 	if botName == "" {
 		botName = os.Getenv("GIT_USER")
+	}
+	if util.GetGitHubAppSecretDir() != "" {
+		botName, err = util.GetGitHubAppAPIUser()
+		if err != nil {
+			logrus.WithError(err).Fatal("unable to read API user for GitHub App integration")
+		}
 	}
 	if botName == "" {
 		logrus.Fatal("no $GIT_USER defined")

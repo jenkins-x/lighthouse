@@ -1,4 +1,4 @@
-package githubapp
+package util
 
 import (
 	"io/ioutil"
