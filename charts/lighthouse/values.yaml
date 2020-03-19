@@ -59,7 +59,7 @@ webhooks:
 foghorn:
   replicaCount: 1
   image:
-    repository: "{{ .Values.image.repository }}/foghorn"
+    repository: "{{ .Values.image.repository }}/lighthouse-foghorn"
     tag: "{{ .Values.image.tag }}"
     pullPolicy: "{{ .Values.image.pullPolicy }}"
   resources:
