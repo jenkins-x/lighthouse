@@ -218,6 +218,8 @@ github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMo
 github.com/fsouza/fake-gcs-server v0.0.0-20180612165233-e85be23bdaa8/go.mod h1:1/HufuJ+eaDf4KTnYdS6HJMGvMRU8d4cYTuu/1QaBbI=
 github.com/gfleury/go-bitbucket-v1 v0.0.0-20190216152406-3a732135aa4d h1:aE3u10gkuR/X7ibh9PkbHFdtkBWGwpekBUT/O7lgbOs=
 github.com/gfleury/go-bitbucket-v1 v0.0.0-20190216152406-3a732135aa4d/go.mod h1:Se0U4YUmRkRAOh8kD7KXz+3VCUBmvTFcdWP2QYYRjjc=
+github.com/gfleury/go-bitbucket-v1 v0.0.0-20200320173742-022f4bab9090 h1:XUXvoGw0eKFZ8iGneOQ1tgYKzggPcCsLYCueLlJqiP8=
+github.com/gfleury/go-bitbucket-v1 v0.0.0-20200320173742-022f4bab9090/go.mod h1:LB3osS9X2JMYmTzcCArHHLrndBAfcVLQAvUddfs+ONs=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7/go.mod h1:VJ0WA2NBN22VlZ2dKZQPAPnyWw5XTlK1KymzLKsr59s=
@@ -449,6 +451,8 @@ github.com/jenkins-x/jx v0.0.0-20200319181526-b05ff956b88e h1:HadTES7gWVhYux2KBp
 github.com/jenkins-x/jx v0.0.0-20200319181526-b05ff956b88e/go.mod h1:qfWmQDRAhxxQoyKtFN3O3RLttBg3dGEBywIr7i/EqII=
 github.com/jenkins-x/jx v0.0.0-20200320171935-589dbb26c650 h1:u/f0BqdvgJt+7ImNo3ciYcMgh/rXt/E8Rwjm2taS7rk=
 github.com/jenkins-x/jx v0.0.0-20200320171935-589dbb26c650/go.mod h1:qfWmQDRAhxxQoyKtFN3O3RLttBg3dGEBywIr7i/EqII=
+github.com/jenkins-x/jx v0.0.0-20200323180605-1734f1562453 h1:sDxpiuyVgLWQ+5BJokT9tuWaQZgYrTH57D20hX6MCbo=
+github.com/jenkins-x/jx v0.0.0-20200323180605-1734f1562453/go.mod h1:TZYv99UxEdmG8l6Qr6OJmshskpTB9y7b+NlgjqddHKs=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767/go.mod h1:UR3AoCKJHHKi2AoOWeFbZcMKyd5LqQkdCRgwqZkX/io=
 github.com/jetstack/cert-manager v0.5.2 h1:qs74mdAprZ5kcCYF3arzmEAZtbt+9HneldSJrk21tKs=
