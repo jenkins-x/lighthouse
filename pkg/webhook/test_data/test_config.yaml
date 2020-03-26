@@ -1,304 +1,314 @@
-apiVersion: v1
-data:
-  config.yaml: |
-    branch-protection:
-      orgs:
-        jenkins-x:
-          repos:
-            dummy:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-        test-org:
-          repos:
-            bdd-gh-1571896320:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1571896790:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1571897282:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1571897827:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1571949995:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1573228621:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1573747562:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1573763379:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1573765794:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1573768320:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            bdd-gh-1573768902:
-              required_status_checks:
-                contexts:
-                - serverless-jenkins
-            environment-braidsalt-production:
-              required_status_checks:
-                contexts:
-                - promotion-build
-            environment-braidsalt-staging:
-              required_status_checks:
-                contexts:
-                - promotion-build
-      protect-tested-repos: true
-    deck:
-      spyglass: {}
-    gerrit: {}
-    owners_dir_blacklist:
-      default: null
-      repos: null
-    plank: {}
-    pod_namespace: jx
-    postsubmits:
-      jenkins-x/dummy:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1571896320:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1571896790:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1571897282:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1571897827:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1571949995:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1573228621:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1573747562:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1573763379:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1573765794:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1573768320:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/bdd-gh-1573768902:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: release
-      test-org/environment-braidsalt-production:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: promotion
-      test-org/environment-braidsalt-staging:
-      - agent: tekton
-        branches:
-        - master
-        context: ""
-        name: promotion
-    presubmits:
-      jenkins-x/dummy:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1571896320:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1571896790:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1571897282:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1571897827:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1571949995:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1573228621:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1573747562:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1573763379:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1573765794:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1573768320:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/bdd-gh-1573768902:
-      - agent: tekton
-        always_run: true
-        context: serverless-jenkins
-        name: serverless-jenkins
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/environment-braidsalt-production:
-      - agent: tekton
-        always_run: true
-        context: promotion-build
-        name: promotion-build
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-      test-org/environment-braidsalt-staging:
-      - agent: tekton
-        always_run: true
-        context: promotion-build
-        name: promotion-build
-        rerun_command: /test this
-        trigger: (?m)^/test( all| this),?(\s+|$)
-    prowjob_namespace: jx
-    push_gateway: {}
-    sinker: {}
-    tide:
-      context_options:
-        from-branch-protection: true
-        required-if-present-contexts: null
-        skip-unknown-contexts: false
-      queries:
-      - labels:
-        - approved
-        missingLabels:
-        - do-not-merge
-        - do-not-merge/hold
-        - do-not-merge/work-in-progress
-        - needs-ok-to-test
-        - needs-rebase
-        repos:
-        - jenkins-x/dummy
-        - test-org/bdd-gh-1571896320
-        - test-org/bdd-gh-1571896790
-        - test-org/bdd-gh-1571897282
-        - test-org/bdd-gh-1571897827
-        - test-org/bdd-gh-1571949995
-        - test-org/bdd-gh-1573228621
-        - test-org/bdd-gh-1573747562
-        - test-org/bdd-gh-1573763379
-        - test-org/bdd-gh-1573765794
-        - test-org/bdd-gh-1573768320
-        - test-org/bdd-gh-1573768902
-      - missingLabels:
-        - do-not-merge
-        - do-not-merge/hold
-        - do-not-merge/work-in-progress
-        - needs-ok-to-test
-        - needs-rebase
-        repos:
-        - jenkins-x/dummy-environment
-        - test-org/environment-braidsalt-staging
-        - test-org/environment-braidsalt-production
-      target_url: http://deck.jx.test.example.com
-kind: ConfigMap
-metadata:
-  name: config
-  namespace: jx
-
+branch-protection:
+  orgs:
+    jenkins-x:
+      repos:
+        dummy:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+    test-org:
+      repos:
+        bdd-gh-1571896320:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1571896790:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1571897282:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1571897827:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1571949995:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1573228621:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1573747562:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1573763379:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1573765794:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1573768320:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        bdd-gh-1573768902:
+          required_status_checks:
+            contexts:
+            - serverless-jenkins
+        environment-braidsalt-production:
+          required_status_checks:
+            contexts:
+            - promotion-build
+        environment-braidsalt-staging:
+          required_status_checks:
+            contexts:
+            - promotion-build
+        test-repo:
+          required_status_checks:
+            contexts:
+            - pr-build
+  protect-tested-repos: true
+deck:
+  spyglass: {}
+gerrit: {}
+owners_dir_blacklist:
+  default: null
+  repos: null
+plank: {}
+pod_namespace: jx
+postsubmits:
+  jenkins-x/dummy:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1571896320:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1571896790:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1571897282:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1571897827:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1571949995:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1573228621:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1573747562:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1573763379:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1573765794:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1573768320:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/bdd-gh-1573768902:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+  test-org/environment-braidsalt-production:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: promotion
+  test-org/environment-braidsalt-staging:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: promotion
+  test-org/test-repo:
+  - agent: tekton
+    branches:
+    - master
+    context: ""
+    name: release
+presubmits:
+  jenkins-x/dummy:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1571896320:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1571896790:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1571897282:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1571897827:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1571949995:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1573228621:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1573747562:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1573763379:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1573765794:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1573768320:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/bdd-gh-1573768902:
+  - agent: tekton
+    always_run: true
+    context: serverless-jenkins
+    name: serverless-jenkins
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/environment-braidsalt-production:
+  - agent: tekton
+    always_run: true
+    context: promotion-build
+    name: promotion-build
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/environment-braidsalt-staging:
+  - agent: tekton
+    always_run: true
+    context: promotion-build
+    name: promotion-build
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+  test-org/test-repo:
+  - agent: tekton
+    always_run: true
+    context: pr-build
+    name: pr-build
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+prowjob_namespace: jx
+push_gateway: {}
+sinker: {}
+tide:
+  context_options:
+    from-branch-protection: true
+    required-if-present-contexts: null
+    skip-unknown-contexts: false
+  queries:
+  - labels:
+    - approved
+    missingLabels:
+    - do-not-merge
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - needs-ok-to-test
+    - needs-rebase
+    repos:
+    - jenkins-x/dummy
+    - test-org/bdd-gh-1571896320
+    - test-org/bdd-gh-1571896790
+    - test-org/bdd-gh-1571897282
+    - test-org/bdd-gh-1571897827
+    - test-org/bdd-gh-1571949995
+    - test-org/bdd-gh-1573228621
+    - test-org/bdd-gh-1573747562
+    - test-org/bdd-gh-1573763379
+    - test-org/bdd-gh-1573765794
+    - test-org/bdd-gh-1573768320
+    - test-org/bdd-gh-1573768902
+    - test-org/test-repo
+  - missingLabels:
+    - do-not-merge
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - needs-ok-to-test
+    - needs-rebase
+    repos:
+    - jenkins-x/dummy-environment
+    - test-org/environment-braidsalt-staging
+    - test-org/environment-braidsalt-production
+  target_url: http://deck.jx.test.example.com
