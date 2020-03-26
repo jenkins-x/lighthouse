@@ -270,6 +270,17 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 		l.Info("received ping")
 		return l, fmt.Sprintf("pong from lighthouse %s", version.Version), nil
 	}
+	// If we are in GitHub App mode and have a populated config, check if the repository for this webhook is one we actually
+	// know about and error out if not.
+	if util.GetGitHubAppSecretDir() != "" && o.server.ConfigAgent != nil {
+		cfg := o.server.ConfigAgent.Config()
+		if cfg != nil {
+			if len(cfg.GetPostsubmits(repository)) == 0 && len(cfg.GetPresubmits(repository)) == 0 {
+				l.Infof("webhook from unconfigured repository %s, returning error", repository.Link)
+				return l, "", fmt.Errorf("repository not configured: %s", repository.Link)
+			}
+		}
+	}
 	pushHook, ok := webhook.(*scm.PushHook)
 	if ok {
 		fields["Ref"] = pushHook.Ref

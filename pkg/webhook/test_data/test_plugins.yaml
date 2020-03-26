@@ -1,714 +1,705 @@
-apiVersion: v1
-data:
-  external-plugins.yaml: |
-    Items: null
-  plugins.yaml: |
-    approve:
-    - lgtm_acts_as_approve: true
-      repos:
-      - jenkins-x/dummy
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/environment-braidsalt-staging
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/environment-braidsalt-production
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571894662
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571895246
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571895891
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571896320
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571896790
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571897282
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571897827
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571898660
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571949995
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1571950767
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1572887193
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1572984770
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1572986766
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573012037
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573140190
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573228621
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573229082
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573747562
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573750315
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573755780
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573763379
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573765794
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573766355
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573767637
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573768320
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573768902
-      require_self_approval: true
-    - lgtm_acts_as_approve: true
-      repos:
-      - test-org/bdd-gh-1573770044
-      require_self_approval: true
-    blunderbuss: {}
-    cat: {}
-    cherry_pick_unapproved: {}
-    config_updater: {}
-    external_plugins:
-      jenkins-x/dummy: null
-      test-org/bdd-gh-1571894662: null
-      test-org/bdd-gh-1571895246: null
-      test-org/bdd-gh-1571895891: null
-      test-org/bdd-gh-1571896320: null
-      test-org/bdd-gh-1571896790: null
-      test-org/bdd-gh-1571897282: null
-      test-org/bdd-gh-1571897827: null
-      test-org/bdd-gh-1571898660: null
-      test-org/bdd-gh-1571949995: null
-      test-org/bdd-gh-1571950767: null
-      test-org/bdd-gh-1572887193: null
-      test-org/bdd-gh-1572984770: null
-      test-org/bdd-gh-1572986766: null
-      test-org/bdd-gh-1573012037: null
-      test-org/bdd-gh-1573140190: null
-      test-org/bdd-gh-1573228621: null
-      test-org/bdd-gh-1573229082: null
-      test-org/bdd-gh-1573747562: null
-      test-org/bdd-gh-1573750315: null
-      test-org/bdd-gh-1573755780: null
-      test-org/bdd-gh-1573763379: null
-      test-org/bdd-gh-1573765794: null
-      test-org/bdd-gh-1573766355: null
-      test-org/bdd-gh-1573767637: null
-      test-org/bdd-gh-1573768320: null
-      test-org/bdd-gh-1573768902: null
-      test-org/bdd-gh-1573770044: null
-      test-org/environment-braidsalt-production: null
-      test-org/environment-braidsalt-staging: null
-    heart: {}
-    owners: {}
-    plugins:
-      jenkins-x/dummy:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571894662:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571895246:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571895891:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571896320:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571896790:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571897282:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571897827:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571898660:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571949995:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1571950767:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1572887193:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1572984770:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1572986766:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573012037:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573140190:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573228621:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573229082:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573747562:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573750315:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573755780:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573763379:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573765794:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573766355:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573767637:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573768320:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573768902:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/bdd-gh-1573770044:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/environment-braidsalt-production:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-      test-org/environment-braidsalt-staging:
-      - config-updater
-      - approve
-      - assign
-      - blunderbuss
-      - help
-      - hold
-      - lgtm
-      - lifecycle
-      - size
-      - trigger
-      - wip
-      - heart
-      - cat
-      - override
-    requiresig: {}
-    sigmention: {}
-    slack: {}
-    triggers:
-    - repos:
-      - jenkins-x/dummy
-      trusted_org: jenkins-x
-    - repos:
-      - test-org/environment-braidsalt-staging
-      trusted_org: test-org
-    - repos:
-      - test-org/environment-braidsalt-production
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571894662
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571895246
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571895891
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571896320
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571896790
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571897282
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571897827
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571898660
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571949995
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1571950767
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1572887193
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1572984770
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1572986766
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573012037
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573140190
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573228621
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573229082
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573747562
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573750315
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573755780
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573763379
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573765794
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573766355
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573767637
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573768320
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573768902
-      trusted_org: test-org
-    - repos:
-      - test-org/bdd-gh-1573770044
-      trusted_org: test-org
-    welcome:
-    - message_template: Welcome
-kind: ConfigMap
-metadata:
-  name: plugins
-  namespace: jx
+approve:
+- lgtm_acts_as_approve: true
+  repos:
+  - jenkins-x/dummy
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/environment-braidsalt-staging
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/environment-braidsalt-production
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571894662
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571895246
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571895891
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571896320
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571896790
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571897282
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571897827
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571898660
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571949995
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1571950767
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1572887193
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1572984770
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1572986766
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573012037
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573140190
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573228621
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573229082
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573747562
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573750315
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573755780
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573763379
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573765794
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573766355
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573767637
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573768320
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573768902
+  require_self_approval: true
+- lgtm_acts_as_approve: true
+  repos:
+  - test-org/bdd-gh-1573770044
+  require_self_approval: true
+blunderbuss: {}
+cat: {}
+cherry_pick_unapproved: {}
+config_updater: {}
+external_plugins:
+  jenkins-x/dummy: null
+  test-org/bdd-gh-1571894662: null
+  test-org/bdd-gh-1571895246: null
+  test-org/bdd-gh-1571895891: null
+  test-org/bdd-gh-1571896320: null
+  test-org/bdd-gh-1571896790: null
+  test-org/bdd-gh-1571897282: null
+  test-org/bdd-gh-1571897827: null
+  test-org/bdd-gh-1571898660: null
+  test-org/bdd-gh-1571949995: null
+  test-org/bdd-gh-1571950767: null
+  test-org/bdd-gh-1572887193: null
+  test-org/bdd-gh-1572984770: null
+  test-org/bdd-gh-1572986766: null
+  test-org/bdd-gh-1573012037: null
+  test-org/bdd-gh-1573140190: null
+  test-org/bdd-gh-1573228621: null
+  test-org/bdd-gh-1573229082: null
+  test-org/bdd-gh-1573747562: null
+  test-org/bdd-gh-1573750315: null
+  test-org/bdd-gh-1573755780: null
+  test-org/bdd-gh-1573763379: null
+  test-org/bdd-gh-1573765794: null
+  test-org/bdd-gh-1573766355: null
+  test-org/bdd-gh-1573767637: null
+  test-org/bdd-gh-1573768320: null
+  test-org/bdd-gh-1573768902: null
+  test-org/bdd-gh-1573770044: null
+  test-org/environment-braidsalt-production: null
+  test-org/environment-braidsalt-staging: null
+heart: {}
+owners: {}
+plugins:
+  jenkins-x/dummy:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571894662:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571895246:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571895891:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571896320:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571896790:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571897282:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571897827:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571898660:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571949995:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1571950767:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1572887193:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1572984770:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1572986766:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573012037:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573140190:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573228621:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573229082:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573747562:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573750315:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573755780:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573763379:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573765794:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573766355:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573767637:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573768320:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573768902:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/bdd-gh-1573770044:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/environment-braidsalt-production:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  test-org/environment-braidsalt-staging:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+requiresig: {}
+sigmention: {}
+slack: {}
+triggers:
+- repos:
+  - jenkins-x/dummy
+  trusted_org: jenkins-x
+- repos:
+  - test-org/environment-braidsalt-staging
+  trusted_org: test-org
+- repos:
+  - test-org/environment-braidsalt-production
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571894662
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571895246
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571895891
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571896320
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571896790
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571897282
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571897827
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571898660
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571949995
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1571950767
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1572887193
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1572984770
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1572986766
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573012037
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573140190
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573228621
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573229082
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573747562
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573750315
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573755780
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573763379
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573765794
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573766355
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573767637
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573768320
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573768902
+  trusted_org: test-org
+- repos:
+  - test-org/bdd-gh-1573770044
+  trusted_org: test-org
+welcome:
+- message_template: Welcome
