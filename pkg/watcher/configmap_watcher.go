@@ -5,8 +5,11 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+	watchtools "k8s.io/client-go/tools/watch"
 )
 
 // ConfigMapWatcher callbacks for changes to a config map
@@ -130,10 +133,14 @@ func (w *ConfigMapWatcher) createWatcher() error {
 	if w.watch != nil {
 		w.watch.Stop()
 	}
-	var err error
-	w.watch, err = w.kubeClient.CoreV1().ConfigMaps(w.namespace).Watch(metav1.ListOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to watch ConfigMaps in namespace %s", w.namespace)
+	lw := &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).List(metav1.ListOptions{})
+		},
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).Watch(metav1.ListOptions{})
+		},
 	}
+	_, _, w.watch = watchtools.NewIndexerInformerWatcher(lw, &v1.ConfigMap{})
 	return nil
 }
