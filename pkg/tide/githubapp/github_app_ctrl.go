@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/jx/pkg/jxfactory"
+	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	jxutil "github.com/jenkins-x/jx/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/io"
@@ -32,6 +32,7 @@ type gitHubAppTideController struct {
 	gitServer          string
 	githubAppSecretDir string
 	configAgent        *config.Agent
+	mpClient           metapipeline.Client
 	botName            string
 	gitKind            string
 	maxRecordsPerPool  int
@@ -44,13 +45,14 @@ type gitHubAppTideController struct {
 
 // NewGitHubAppTideController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
+func NewGitHubAppTideController(githubAppSecretDir string, configAgent *config.Agent, mpClient metapipeline.Client, botName string, gitKind string, maxRecordsPerPool int, opener io.Opener, historyURI string, statusURI string) (tide.Controller, error) {
 
 	gitServer := GithubServer
 	return &gitHubAppTideController{
 		ownerTokenFinder:  util.NewOwnerTokensDir(gitServer, githubAppSecretDir),
 		gitServer:         gitServer,
 		configAgent:       configAgent,
+		mpClient:          mpClient,
 		botName:           botName,
 		gitKind:           gitKind,
 		maxRecordsPerPool: maxRecordsPerPool,
@@ -182,11 +184,6 @@ func (g *gitHubAppTideController) createOwnerController(owner string, configGett
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting Plumber client.")
 	}
-	clientFactory := jxfactory.NewFactory()
-	mpClient, err := plumber.NewMetaPipelineClient(clientFactory)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error getting Kubernetes client.")
-	}
-	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
+	c, err := tide.NewController(gitproviderClient, gitproviderClient, plumberClient, g.mpClient, tektonClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.opener, g.historyURI, g.statusURI, nil)
 	return c, err
 }
