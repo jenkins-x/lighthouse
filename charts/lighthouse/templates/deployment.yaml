@@ -53,7 +53,7 @@ spec:
               name: "hmac-token"
               key: hmac
         - name: "JX_LOG_FORMAT"
-          value: "json"
+          value: "{{ .Values.logFormat }}"
 {{- if hasKey .Values "env"}}
 {{- range $pkey, $pval := .Values.env }}
         - name: {{ $pkey }}
