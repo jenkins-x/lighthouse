@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
@@ -109,6 +111,7 @@ func (o *Options) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to create Hook Server")
 	}
+	defer o.configMapWatcher.Stop()
 
 	_, o.gitServerURL, err = o.createSCMClient()
 	if err != nil {
@@ -496,7 +499,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 			Callback: onPluginsYamlChange,
 		},
 	}
-	o.configMapWatcher, err = watcher.NewConfigMapWatcher(kubeClient, o.namespace, callbacks)
+	o.configMapWatcher, err = watcher.NewConfigMapWatcher(kubeClient, o.namespace, callbacks, stopper())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
@@ -567,4 +570,20 @@ func responseHTTPError(w http.ResponseWriter, statusCode int, response string) {
 		"status-code": statusCode,
 	}).Info(response)
 	http.Error(w, response, statusCode)
+}
+
+// stopper returns a channel that remains open until an interrupt is received.
+func stopper() chan struct{} {
+	stop := make(chan struct{})
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		logrus.Warn("Interrupt received, attempting clean shutdown...")
+		close(stop)
+		<-c
+		logrus.Error("Second interrupt received, force exiting...")
+		os.Exit(1)
+	}()
+	return stop
 }
