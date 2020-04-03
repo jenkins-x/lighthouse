@@ -24,13 +24,17 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -52,6 +56,8 @@ type scmProviderClient interface {
 
 type overrideClient interface {
 	scmProviderClient
+	presubmitForContext(org, repo, context string) *config.Presubmit
+	createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
 }
 
 type client struct {
@@ -59,6 +65,11 @@ type client struct {
 	jc                 config.JobConfig
 	clientFactory      jxfactory.Factory
 	metapipelineClient metapipeline.Client
+	lhClient           lighthouseclient.LighthouseJobInterface
+}
+
+func (c client) createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
+	return c.lhClient.Create(job)
 }
 
 func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
@@ -82,6 +93,15 @@ func (c client) HasPermission(org, repo, user string, role ...string) (bool, err
 	return c.spc.HasPermission(org, repo, user, role...)
 }
 
+func (c client) presubmitForContext(org, repo, context string) *config.Presubmit {
+	for _, p := range c.jc.AllPresubmits([]string{org + "/" + repo}) {
+		if p.Context == context {
+			return &p
+		}
+	}
+	return nil
+}
+
 func init() {
 	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
 }
@@ -100,18 +120,19 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	c := client{
 		spc:                pc.SCMProviderClient,
 		jc:                 pc.Config.JobConfig,
 		clientFactory:      pc.ClientFactory,
 		metapipelineClient: pc.MetapipelineClient,
+		lhClient:           pc.LighthouseClient,
 	}
 	return handle(pc.ClientFactory, c, pc.Logger, &e)
 }
 
 func authorized(spc scmProviderClient, log *logrus.Entry, org, repo, user string) bool {
-	ok, err := spc.HasPermission(org, repo, user, gitprovider.RoleAdmin)
+	ok, err := spc.HasPermission(org, repo, user, scmprovider.RoleAdmin)
 	if err != nil {
 		log.WithError(err).Warnf("cannot determine whether %s is an admin of %s/%s", user, org, repo)
 		return false
@@ -131,7 +152,7 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
 
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil
@@ -213,6 +234,30 @@ Only the following contexts were expected:
 	for _, status := range statuses {
 		if status.State == scm.StateSuccess || !overrides.Has(status.Label) {
 			continue
+		}
+		// First create the overridden prow result if necessary
+		if pre := oc.presubmitForContext(org, repo, status.Label); pre != nil {
+			baseSHA, err := oc.GetRef(org, repo, "heads/"+pr.Base.Ref)
+			if err != nil {
+				resp := fmt.Sprintf("Cannot get base ref of PR")
+				log.WithError(err).Warn(resp)
+				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+			}
+
+			pj := pjutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
+			now := metav1.Now()
+			pj.Status = v1alpha1.LighthouseJobStatus{
+				State:          v1alpha1.SuccessState,
+				Description:    description(user),
+				StartTime:      now,
+				CompletionTime: &now,
+			}
+			log.WithFields(pjutil.LighthouseJobFields(&pj)).Info("Creating a new override LighthouseJob.")
+			if _, err := oc.createOverrideJob(&pj); err != nil {
+				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
+				log.WithError(err).Warn(resp)
+				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+			}
 		}
 		statusInput := &scm.StatusInput{
 			State:  scm.StateSuccess,

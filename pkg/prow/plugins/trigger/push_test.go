@@ -20,14 +20,13 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
-	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 )
 
 func TestCreateRefs(t *testing.T) {
@@ -41,7 +40,7 @@ func TestCreateRefs(t *testing.T) {
 		After:   "abcdef",
 		Compare: "https://example.com/kubernetes/repo/compare/abcdee...abcdef",
 	}
-	expected := plumber.Refs{
+	expected := v1alpha1.Refs{
 		Org:      "kubernetes",
 		Repo:     "repo",
 		BaseRef:  "master",
@@ -132,12 +131,12 @@ func TestHandlePE(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		g := &fakegitprovider.FakeClient{}
-		fakePlumberClient := fake.NewPlumber()
+		g := &fake2.SCMClient{}
+		fakeLauncher := fake.NewLauncher()
 		c := Client{
 			SCMProviderClient: g,
-			PlumberClient:     fakePlumberClient,
-			Config:            &config.Config{ProwConfig: config.ProwConfig{PlumberJobNamespace: "plumberJobs"}},
+			LauncherClient:    fakeLauncher,
+			Config:            &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}},
 			Logger:            logrus.WithField("plugin", PluginName),
 		}
 		postsubmits := map[string][]config.Postsubmit{
@@ -177,7 +176,7 @@ func TestHandlePE(t *testing.T) {
 			t.Errorf("test %q: handlePE returned unexpected error %v", tc.name, err)
 		}
 		var numStarted int
-		for _, job := range fakePlumberClient.Pipelines {
+		for _, job := range fakeLauncher.Pipelines {
 			t.Logf("created job with context %s", job.Spec.Context)
 			numStarted++
 		}

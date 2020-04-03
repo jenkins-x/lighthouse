@@ -25,9 +25,9 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -47,7 +47,7 @@ type scmProviderClient interface {
 	ClearMilestone(org, repo string, num int) error
 	SetMilestone(org, repo string, issueNum, milestoneNum int) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
-	ListMilestones(org, repo string) ([]gitprovider.Milestone, error)
+	ListMilestones(org, repo string) ([]scmprovider.Milestone, error)
 }
 
 func init() {
@@ -83,18 +83,18 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
 }
 
-func buildMilestoneMap(milestones []gitprovider.Milestone) map[string]int {
+func buildMilestoneMap(milestones []scmprovider.Milestone) map[string]int {
 	m := make(map[string]int)
 	for _, ms := range milestones {
 		m[ms.Title] = ms.Number
 	}
 	return m
 }
-func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	if e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -113,14 +113,14 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericComm
 		milestone = repoMilestone[""]
 	}
 
-	milestoneMaintainers, err := spc.ListTeamMembers(milestone.MaintainersID, gitprovider.RoleAll)
+	milestoneMaintainers, err := spc.ListTeamMembers(milestone.MaintainersID, scmprovider.RoleAll)
 	if err != nil {
 		return err
 	}
 	found := false
 	for _, person := range milestoneMaintainers {
-		login := gitprovider.NormLogin(e.Author.Login)
-		if gitprovider.NormLogin(person.Login) == login {
+		login := scmprovider.NormLogin(e.Author.Login)
+		if scmprovider.NormLogin(person.Login) == login {
 			found = true
 			break
 		}

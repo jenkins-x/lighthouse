@@ -20,9 +20,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 type fakeClientReopen struct {
@@ -128,7 +127,7 @@ func TestReopenComment(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fc := &fakeClientReopen{}
-		e := &gitprovider.GenericCommentEvent{
+		e := &scmprovider.GenericCommentEvent{
 			Action:      tc.action,
 			IssueState:  tc.state,
 			Body:        tc.body,

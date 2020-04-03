@@ -64,6 +64,9 @@ cat env/lighthouse/values.tmpl.yaml
 rm values.tmpl.yaml.tmp
 sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/requirements.yaml
 
+# append to the existing jenkins-x-platform values.tmpl.yaml to disable build controller status reporting
+cat ../bdd/platform-values.yaml.template >> env/jenkins-x-platform/values.tmpl.yaml
+
 # TODO: Disable chatops tests until issue creation and labeling on BBS is ready
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
 
@@ -99,9 +102,10 @@ if [[ $bdd_result != 0 ]]; then
   pushd ..
   mkdir -p extra-logs
   kubectl logs --tail=-1 "$(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}')" > extra-logs/controllerbuild.log
-  kubectl logs --tail=-1 "$(kubectl get pod -l app=tide -o jsonpath='{.items[*].metadata.name}')" > extra-logs/tide.log
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=lighthouse-keeper -o jsonpath='{.items[*].metadata.name}')" > extra-logs/keeper.log
+  kubectl logs --tail=-1 "$(kubectl get pod -l app=lighthouse-foghorn -o jsonpath='{.items[*].metadata.name}')" > extra-logs/foghorn.log
   lh_cnt=0
-  for lh_pod in $(kubectl get pod -l app=jenkins-x-lighthouse -o jsonpath='{.items[*].metadata.name}'); do
+  for lh_pod in $(kubectl get pod -l app=lighthouse-webhooks -o jsonpath='{.items[*].metadata.name}'); do
     ((lh_cnt=lh_cnt+1))
     kubectl logs --tail=-1 "${lh_pod}" > extra-logs/lh.${lh_cnt}.log
   done

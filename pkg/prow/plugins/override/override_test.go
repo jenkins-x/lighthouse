@@ -25,13 +25,13 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 const (
@@ -121,7 +121,7 @@ func (c *fakeClient) HasPermission(org, repo, user string, roles ...string) (boo
 		return false, fmt.Errorf("bad org: %s", org)
 	case repo != fakeRepo:
 		return false, fmt.Errorf("bad repo: %s", repo)
-	case roles[0] != gitprovider.RoleAdmin:
+	case roles[0] != scmprovider.RoleAdmin:
 		return false, fmt.Errorf("bad roles: %s", roles)
 	case user == "fail":
 		return true, errors.New("injected HasPermission error")
@@ -136,9 +136,28 @@ func (c *fakeClient) GetRef(org, repo, ref string) (string, error) {
 	return fakeBaseSHA, nil
 }
 
-func (c *fakeClient) Create(pj *plumber.PipelineOptions, metapipelineClient metapipeline.Client, repository scm.Repository) (*plumber.PipelineOptions, error) {
+func (c *fakeClient) Launch(pj *v1alpha1.LighthouseJob, metapipelineClient metapipeline.Client, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
 	if pj.Spec.Context == "fail-create" {
-		return pj, errors.New("injected CreatePlumberJob error")
+		return pj, errors.New("injected Launch error")
+	}
+	c.jobs.Insert(pj.Spec.Context)
+	return pj, nil
+}
+
+func (c *fakeClient) presubmitForContext(org, repo, context string) *config.Presubmit {
+	p, ok := c.presubmits[context]
+	if !ok {
+		return nil
+	}
+	return &p
+}
+
+func (c *fakeClient) createOverrideJob(pj *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
+	if s := pj.Status.State; s != v1alpha1.SuccessState {
+		return pj, fmt.Errorf("bad status state: %s", s)
+	}
+	if pj.Spec.Context == "fail-create" {
+		return pj, errors.New("injected CreateProwJob error")
 	}
 	c.jobs.Insert(pj.Spec.Context)
 	return pj, nil
@@ -432,6 +451,32 @@ func TestHandle(t *testing.T) {
 			},
 		},
 		{
+			name:    "create successful prow job",
+			comment: "/override prow-job",
+			contexts: map[string]*scm.StatusInput{
+				"prow-job": {
+					Label: "prow-job",
+					Desc:  "failed",
+					State: scm.StateFailure,
+				},
+			},
+			presubmits: map[string]config.Presubmit{
+				"prow-job": {
+					Reporter: config.Reporter{
+						Context: "prow-job",
+					},
+				},
+			},
+			jobs: sets.NewString("prow-job"),
+			expected: map[string]*scm.StatusInput{
+				"prow-job": {
+					Label: "prow-job",
+					State: scm.StateSuccess,
+					Desc:  description(adminUser),
+				},
+			},
+		},
+		{
 			name:    "override with explanation works",
 			comment: "/override job\r\nobnoxious flake", // github ends lines with \r\n
 			contexts: map[string]*scm.StatusInput{
@@ -454,7 +499,7 @@ func TestHandle(t *testing.T) {
 	log := logrus.WithField("plugin", pluginName)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var event gitprovider.GenericCommentEvent
+			var event scmprovider.GenericCommentEvent
 			event.Repo.Namespace = fakeOrg
 			event.Repo.Name = fakeRepo
 			event.Body = tc.comment

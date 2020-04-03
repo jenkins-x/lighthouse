@@ -23,10 +23,10 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
@@ -158,7 +158,7 @@ type reviewCtx struct {
 	number                             int
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	cp, err := pc.CommentPruner()
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func handlePullRequestReviewEvent(pc plugins.Agent, e scm.ReviewHook) error {
 	return handlePullRequestReview(pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
 }
 
-func handleGenericComment(spc scmProviderClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(spc scmProviderClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e scmprovider.GenericCommentEvent) error {
 	rc := reviewCtx{
 		author:      e.Author.Login,
 		issueAuthor: e.IssueAuthor.Login,
@@ -325,7 +325,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 		if err != nil {
 			return err
 		}
-		if !loadReviewers(ro, filenames).Has(gitprovider.NormLogin(author)) {
+		if !loadReviewers(ro, filenames).Has(scmprovider.NormLogin(author)) {
 			resp := "adding LGTM is restricted to approvers and reviewers in OWNERS files."
 			log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
 			return spc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
@@ -340,7 +340,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if err != nil {
 		log.WithError(err).Error("Failed to get issue labels.")
 	}
-	hasLGTM := gitprovider.HasLabel(LGTMLabel, labels)
+	hasLGTM := scmprovider.HasLabel(LGTMLabel, labels)
 
 	// remove the label if necessary, we're done after this
 	opts := optionsForRepo(config, rc.repo.Namespace, rc.repo.Name)
@@ -394,7 +394,7 @@ func stickyLgtm(log *logrus.Entry, spc scmProviderClient, config *plugins.Config
 			for _, teamInOrg := range teams {
 				// lgtm.TrustedAuthorTeams is supposed to be a very short list.
 				if strings.Compare(teamInOrg.Name, lgtm.StickyLgtmTeam) == 0 {
-					if members, err := spc.ListTeamMembers(teamInOrg.ID, gitprovider.RoleAll); err == nil {
+					if members, err := spc.ListTeamMembers(teamInOrg.ID, scmprovider.RoleAll); err == nil {
 						for _, member := range members {
 							if strings.Compare(member.Login, author) == 0 {
 								// The author is in a trusted team
@@ -437,7 +437,7 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, config *plugins
 	if err != nil {
 		log.WithError(err).Error("Failed to get labels.")
 	}
-	if !gitprovider.HasLabel(LGTMLabel, labels) {
+	if !scmprovider.HasLabel(LGTMLabel, labels) {
 		return nil
 	}
 
@@ -481,7 +481,7 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, config *plugins
 		return fmt.Errorf("failed removing lgtm label: %v", err)
 	}
 
-	// Create a comment to inform participants that LGTM label is removed due to new
+	// Launch a comment to inform participants that LGTM label is removed due to new
 	// pull request changes.
 	log.Infof("Commenting with an LGTM removed notification to %s/%s#%d with a message: %s", org, repo, number, removeLGTMLabelNoti)
 	return spc.CreateComment(org, repo, number, true, removeLGTMLabelNoti)

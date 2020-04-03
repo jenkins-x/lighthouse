@@ -29,9 +29,8 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 )
 
 type fakeClowder string
@@ -340,7 +339,7 @@ Available variants:
 
 	// github fake client
 	fakeScmClient, fc := fake.NewDefault()
-	fakeClient := gitprovider.ToTestClient(fakeScmClient)
+	fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
 	// run test for each case
 	for _, testcase := range testcases {
@@ -358,7 +357,7 @@ Available variants:
 	// fully test handling a comment
 	comment := "/meowvie space"
 
-	e := &gitprovider.GenericCommentEvent{
+	e := &scmprovider.GenericCommentEvent{
 		Action:     scm.ActionCreate,
 		Body:       comment,
 		Number:     5,
@@ -457,9 +456,9 @@ func TestCats(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := gitprovider.ToTestClient(fakeScmClient)
+		fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
-		e := &gitprovider.GenericCommentEvent{
+		e := &scmprovider.GenericCommentEvent{
 			Action:     tc.action,
 			Body:       tc.body,
 			Number:     5,

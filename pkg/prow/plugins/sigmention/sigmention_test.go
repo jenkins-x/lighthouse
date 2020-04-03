@@ -25,10 +25,10 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 )
 
@@ -152,7 +152,7 @@ func TestSigMention(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fakeClient := &fakegitprovider.FakeClient{
+		fakeClient := &fake.SCMClient{
 			OrgMembers:         map[string][]string{"org": {orgMember, bot}},
 			RepoLabelsExisting: tc.repoLabels,
 			IssueComments:      make(map[int][]*scm.Comment),
@@ -161,7 +161,7 @@ func TestSigMention(t *testing.T) {
 		for _, label := range tc.issueLabels {
 			fakeClient.AddLabel("org", "repo", 1, label, false)
 		}
-		e := &gitprovider.GenericCommentEvent{
+		e := &scmprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,
 			Body:   tc.body,
 			Number: 1,

@@ -30,9 +30,10 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config/org"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/robfig/cron.v2"
 	v1 "k8s.io/api/core/v1"
@@ -40,8 +41,17 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
+)
 
-	"k8s.io/test-infra/prow/pod-utils/decorate"
+const (
+	logMountName            = "logs"
+	logMountPath            = "/logs"
+	codeMountName           = "code"
+	codeMountPath           = "/home/prow/go"
+	toolsMountName          = "tools"
+	toolsMountPath          = "/tools"
+	gcsCredentialsMountName = "gcs-credentials"
+	gcsCredentialsMountPath = "/secrets/gcs"
 )
 
 // Config is a read-only snapshot of the config.
@@ -64,7 +74,7 @@ type JobConfig struct {
 
 // ProwConfig is config for all prow controllers
 type ProwConfig struct {
-	Tide             Tide                  `json:"tide,omitempty"`
+	Keeper           Keeper                `json:"tide,omitempty"`
 	Plank            Plank                 `json:"plank,omitempty"`
 	Sinker           Sinker                `json:"sinker,omitempty"`
 	Deck             Deck                  `json:"deck,omitempty"`
@@ -75,13 +85,13 @@ type ProwConfig struct {
 	// TODO: Move this out of the main config.
 	JenkinsOperators []JenkinsOperator `json:"jenkins_operators,omitempty"`
 
-	// PlumberJobNamespace is the namespace in the cluster that prow
-	// components will use for looking up PlumberJobs. The namespace
+	// LighthouseJobNamespace is the namespace in the cluster that prow
+	// components will use for looking up LighthouseJobs. The namespace
 	// needs to exist and will not be created by prow.
 	// Defaults to "default".
-	PlumberJobNamespace string `json:"plumberJob_namespace,omitempty"`
+	LighthouseJobNamespace string `json:"lighthouseJob_namespace,omitempty"`
 	// PodNamespace is the namespace in the cluster that prow
-	// components will use for looking up Pods owned by PlumberJobs.
+	// components will use for looking up Pods owned by LighthouseJobs.
 	// The namespace needs to exist and will not be created by prow.
 	// Defaults to "default".
 	PodNamespace string `json:"pod_namespace,omitempty"`
@@ -173,7 +183,7 @@ type Plank struct {
 	// PodPendingTimeout is after how long the controller will perform a garbage
 	// collection on pending pods. Defaults to one day.
 	PodPendingTimeout time.Duration `json:"-"`
-	/*	// DefaultDecorationConfig are defaults for shared fields for PlumberJobs
+	/*	// DefaultDecorationConfig are defaults for shared fields for LighthouseJobs
 		// that request to have their PodSpecs decorated
 		DefaultDecorationConfig *builder.DecorationConfig `json:"default_decoration_config,omitempty"`
 	*/
@@ -215,11 +225,11 @@ type Sinker struct {
 	// ResyncPeriod is how often the controller will perform a garbage
 	// collection. Defaults to one hour.
 	ResyncPeriod time.Duration `json:"-"`
-	// MaxPlumberJobAgeString compiles into MaxPlumberJobAge at load time.
-	MaxPlumberJobAgeString string `json:"max_plumberJob_age,omitempty"`
-	// MaxPlumberJobAge is how old a PipelineOptions can be before it is garbage-collected.
+	// MaxLighthouseJobAgeString compiles into MaxLighthouseJobAge at load time.
+	MaxLighthouseJobAgeString string `json:"max_lighthouseJob_age,omitempty"`
+	// MaxLighthouseJobAge is how old a LighthouseJob can be before it is garbage-collected.
 	// Defaults to one week.
-	MaxPlumberJobAge time.Duration `json:"-"`
+	MaxLighthouseJobAge time.Duration `json:"-"`
 	// MaxPodAgeString compiles into MaxPodAge at load time.
 	MaxPodAgeString string `json:"max_pod_age,omitempty"`
 	// MaxPodAge is how old a Pod can be before it is garbage-collected.
@@ -247,10 +257,10 @@ type Spyglass struct {
 type Deck struct {
 	// Spyglass specifies which viewers will be used for which artifacts when viewing a job in Deck
 	Spyglass Spyglass `json:"spyglass,omitempty"`
-	// TideUpdatePeriodString compiles into TideUpdatePeriod at load time.
-	TideUpdatePeriodString string `json:"tide_update_period,omitempty"`
-	// TideUpdatePeriod specifies how often Deck will fetch status from Tide. Defaults to 10s.
-	TideUpdatePeriod time.Duration `json:"-"`
+	// KeeperUpdatePeriodString compiles into KeeperUpdatePeriod at load time.
+	KeeperUpdatePeriodString string `json:"tide_update_period,omitempty"`
+	// KeeperUpdatePeriod specifies how often Deck will fetch status from Keeper. Defaults to 10s.
+	KeeperUpdatePeriod time.Duration `json:"-"`
 	// HiddenRepos is a list of orgs and/or repos that should not be displayed by Deck.
 	HiddenRepos []string `json:"hidden_repos,omitempty"`
 	// ExternalAgentLogs ensures external agents can expose
@@ -624,7 +634,7 @@ func (c *Config) validateComponentConfig() error {
 
 var jobNameRegex = regexp.MustCompile(`^[A-Za-z0-9-._]+$`)
 
-func validateJobBase(v JobBase, jobType plumber.PipelineKind, podNamespace string) error {
+func validateJobBase(v JobBase, jobType v1alpha1.PipelineKind, podNamespace string) error {
 	if !jobNameRegex.MatchString(v.Name) {
 		return fmt.Errorf("name: must match regex %q", jobNameRegex.String())
 	}
@@ -670,7 +680,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, v := range c.AllPresubmits(nil) {
-		if err := validateJobBase(v.JobBase, plumber.PresubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(v.JobBase, v1alpha1.PresubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid presubmit job %s: %v", v.Name, err)
 		}
 		if err := validateTriggering(v); err != nil {
@@ -694,7 +704,7 @@ func (c *Config) validateJobConfig() error {
 	}
 
 	for _, j := range c.AllPostsubmits(nil) {
-		if err := validateJobBase(j.JobBase, plumber.PostsubmitJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(j.JobBase, v1alpha1.PostsubmitJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid postsubmit job %s: %v", j.Name, err)
 		}
 	}
@@ -707,7 +717,7 @@ func (c *Config) validateJobConfig() error {
 			return fmt.Errorf("duplicated periodic job : %s", p.Name)
 		}
 		validPeriodics.Insert(p.Name)
-		if err := validateJobBase(p.JobBase, plumber.PeriodicJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(p.JobBase, v1alpha1.PeriodicJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid periodic job %s: %v", p.Name, err)
 		}
 	}
@@ -844,14 +854,14 @@ func parseProwConfig(c *Config) error {
 		c.Deck.ExternalAgentLogs[i].Selector = s
 	}
 
-	if c.Deck.TideUpdatePeriodString == "" {
-		c.Deck.TideUpdatePeriod = time.Second * 10
+	if c.Deck.KeeperUpdatePeriodString == "" {
+		c.Deck.KeeperUpdatePeriod = time.Second * 10
 	} else {
-		period, err := time.ParseDuration(c.Deck.TideUpdatePeriodString)
+		period, err := time.ParseDuration(c.Deck.KeeperUpdatePeriodString)
 		if err != nil {
 			return fmt.Errorf("cannot parse duration for deck.tide_update_period: %v", err)
 		}
-		c.Deck.TideUpdatePeriod = period
+		c.Deck.KeeperUpdatePeriod = period
 	}
 
 	if c.Deck.Spyglass.SizeLimit == 0 {
@@ -905,14 +915,14 @@ func parseProwConfig(c *Config) error {
 		c.Sinker.ResyncPeriod = resyncPeriod
 	}
 
-	if c.Sinker.MaxPlumberJobAgeString == "" {
-		c.Sinker.MaxPlumberJobAge = 7 * 24 * time.Hour
+	if c.Sinker.MaxLighthouseJobAgeString == "" {
+		c.Sinker.MaxLighthouseJobAge = 7 * 24 * time.Hour
 	} else {
-		maxPlumberJobAge, err := time.ParseDuration(c.Sinker.MaxPlumberJobAgeString)
+		maxLighthouseJobAge, err := time.ParseDuration(c.Sinker.MaxLighthouseJobAgeString)
 		if err != nil {
-			return fmt.Errorf("cannot parse duration for max_plumberJob_age: %v", err)
+			return fmt.Errorf("cannot parse duration for max_lighthouseJob_age: %v", err)
 		}
-		c.Sinker.MaxPlumberJobAge = maxPlumberJobAge
+		c.Sinker.MaxLighthouseJobAge = maxLighthouseJobAge
 	}
 
 	if c.Sinker.MaxPodAgeString == "" {
@@ -925,48 +935,48 @@ func parseProwConfig(c *Config) error {
 		c.Sinker.MaxPodAge = maxPodAge
 	}
 
-	if c.Tide.SyncPeriodString == "" {
-		c.Tide.SyncPeriod = time.Minute
+	if c.Keeper.SyncPeriodString == "" {
+		c.Keeper.SyncPeriod = time.Minute
 	} else {
-		period, err := time.ParseDuration(c.Tide.SyncPeriodString)
+		period, err := time.ParseDuration(c.Keeper.SyncPeriodString)
 		if err != nil {
 			return fmt.Errorf("cannot parse duration for tide.sync_period: %v", err)
 		}
-		c.Tide.SyncPeriod = period
+		c.Keeper.SyncPeriod = period
 	}
-	if c.Tide.StatusUpdatePeriodString == "" {
-		c.Tide.StatusUpdatePeriod = c.Tide.SyncPeriod
+	if c.Keeper.StatusUpdatePeriodString == "" {
+		c.Keeper.StatusUpdatePeriod = c.Keeper.SyncPeriod
 	} else {
-		period, err := time.ParseDuration(c.Tide.StatusUpdatePeriodString)
+		period, err := time.ParseDuration(c.Keeper.StatusUpdatePeriodString)
 		if err != nil {
 			return fmt.Errorf("cannot parse duration for tide.status_update_period: %v", err)
 		}
-		c.Tide.StatusUpdatePeriod = period
+		c.Keeper.StatusUpdatePeriod = period
 	}
 
-	if c.Tide.MaxGoroutines == 0 {
-		c.Tide.MaxGoroutines = 20
+	if c.Keeper.MaxGoroutines == 0 {
+		c.Keeper.MaxGoroutines = 20
 	}
-	if c.Tide.MaxGoroutines <= 0 {
-		return fmt.Errorf("tide has invalid max_goroutines (%d), it needs to be a positive number", c.Tide.MaxGoroutines)
+	if c.Keeper.MaxGoroutines <= 0 {
+		return fmt.Errorf("keeper has invalid max_goroutines (%d), it needs to be a positive number", c.Keeper.MaxGoroutines)
 	}
 
-	for name, method := range c.Tide.MergeType {
-		if method != gitprovider.MergeMerge &&
-			method != gitprovider.MergeRebase &&
-			method != gitprovider.MergeSquash {
+	for name, method := range c.Keeper.MergeType {
+		if method != scmprovider.MergeMerge &&
+			method != scmprovider.MergeRebase &&
+			method != scmprovider.MergeSquash {
 			return fmt.Errorf("merge type %q for %s is not a valid type", method, name)
 		}
 	}
 
-	for i, tq := range c.Tide.Queries {
+	for i, tq := range c.Keeper.Queries {
 		if err := tq.Validate(); err != nil {
-			return fmt.Errorf("tide query (index %d) is invalid: %v", i, err)
+			return fmt.Errorf("keeper query (index %d) is invalid: %v", i, err)
 		}
 	}
 
-	if c.PlumberJobNamespace == "" {
-		c.PlumberJobNamespace = "default"
+	if c.LighthouseJobNamespace == "" {
+		c.LighthouseJobNamespace = "default"
 	}
 	if c.PodNamespace == "" {
 		c.PodNamespace = "default"
@@ -1025,7 +1035,7 @@ func (c *JobConfig) decorationRequested() bool {
 
 func validateLabels(labels map[string]string) error {
 	for label, value := range labels {
-		for _, prowLabel := range decorate.Labels() {
+		for _, prowLabel := range Labels() {
 			if label == prowLabel {
 				return fmt.Errorf("label %s is reserved for decoration", label)
 			}
@@ -1041,7 +1051,7 @@ func validateLabels(labels map[string]string) error {
 }
 
 func validateAgent(v JobBase, podNamespace string) error {
-	agents := sets.NewString(plumber.TektonAgent)
+	agents := sets.NewString(util.TektonAgent)
 	agent := v.Agent
 	switch {
 	case !agents.Has(agent):
@@ -1069,7 +1079,7 @@ func validateAgent(v JobBase, podNamespace string) error {
 	return nil
 }
 
-func validateDecoration(container v1.Container, config *plumber.DecorationConfig) error {
+func validateDecoration(container v1.Container, config *v1alpha1.DecorationConfig) error {
 	if config == nil {
 		return nil
 	}
@@ -1095,7 +1105,7 @@ func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, pre
 	return nil
 }
 
-func validatePodSpec(jobType plumber.PipelineKind, spec *v1.PodSpec) error {
+func validatePodSpec(jobType v1alpha1.PipelineKind, spec *v1.PodSpec) error {
 	if spec == nil {
 		return nil
 	}
@@ -1119,12 +1129,12 @@ func validatePodSpec(jobType plumber.PipelineKind, spec *v1.PodSpec) error {
 	*/
 
 	for _, mount := range spec.Containers[0].VolumeMounts {
-		for _, prowMount := range decorate.VolumeMounts() {
+		for _, prowMount := range VolumeMounts() {
 			if mount.Name == prowMount {
 				return fmt.Errorf("volumeMount name %s is reserved for decoration", prowMount)
 			}
 		}
-		for _, prowMountPath := range decorate.VolumeMountPaths() {
+		for _, prowMountPath := range VolumeMountPaths() {
 			if strings.HasPrefix(mount.MountPath, prowMountPath) || strings.HasPrefix(prowMountPath, mount.MountPath) {
 				return fmt.Errorf("mount %s at %s conflicts with decoration mount at %s", mount.Name, mount.MountPath, prowMountPath)
 			}
@@ -1132,7 +1142,7 @@ func validatePodSpec(jobType plumber.PipelineKind, spec *v1.PodSpec) error {
 	}
 
 	for _, volume := range spec.Volumes {
-		for _, prowVolume := range decorate.VolumeMounts() {
+		for _, prowVolume := range VolumeMounts() {
 			if volume.Name == prowVolume {
 				return fmt.Errorf("volume %s is a reserved for decoration", volume.Name)
 			}
@@ -1194,7 +1204,7 @@ func DefaultRerunCommandFor(name string) string {
 // defaultJobBase configures common parameters, currently Agent and Namespace.
 func (c *ProwConfig) defaultJobBase(base *JobBase) {
 	if base.Agent == "" { // Use tekton by default
-		base.Agent = plumber.TektonAgent
+		base.Agent = util.TektonAgent
 	}
 	if base.Namespace == nil || *base.Namespace == "" {
 		s := c.PodNamespace
@@ -1310,4 +1320,19 @@ func SetPostsubmitRegexes(ps []Postsubmit) error {
 		ps[i].RegexpChangeMatcher = c
 	}
 	return nil
+}
+
+// Labels returns a string slice with label consts from kube.
+func Labels() []string {
+	return []string{util.LighthouseJobTypeLabel, util.CreatedByLighthouse, util.LighthouseJobIDLabel}
+}
+
+// VolumeMounts returns a string slice with *MountName consts in it.
+func VolumeMounts() []string {
+	return []string{logMountName, codeMountName, toolsMountName, gcsCredentialsMountName}
+}
+
+// VolumeMountPaths returns a string slice with *MountPath consts in it.
+func VolumeMountPaths() []string {
+	return []string{logMountPath, codeMountPath, toolsMountPath, gcsCredentialsMountPath}
 }

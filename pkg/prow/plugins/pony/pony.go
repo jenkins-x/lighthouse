@@ -26,9 +26,9 @@ import (
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
 
@@ -106,7 +106,7 @@ func (h realHerd) readPony(tags string) (string, error) {
 	}
 
 	embedded := a.Pony.Representations.Small
-	tooBig, err := gitprovider.ImageTooBig(embedded)
+	tooBig, err := scmprovider.ImageTooBig(embedded)
 	if err != nil {
 		return "", fmt.Errorf("couldn't fetch pony for size check: %v", err)
 	}
@@ -116,11 +116,11 @@ func (h realHerd) readPony(tags string) (string, error) {
 	return formatURLs(a.Pony.Representations.Small, a.Pony.Representations.Full), nil
 }
 
-func handleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e, ponyURL)
 }
 
-func handle(spc scmProviderClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, p herd) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, p herd) error {
 	// Only consider new comments.
 	if e.Action != scm.ActionCreate {
 		return nil

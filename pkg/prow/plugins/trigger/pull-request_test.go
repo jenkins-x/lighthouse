@@ -20,11 +20,11 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/plumber/fake"
+	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/labels"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 )
 
@@ -80,8 +80,8 @@ func TestTrusted(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := &fakegitprovider.FakeClient{
-				OrgMembers:    map[string][]string{"kubernetes": {sister}, "kubernetes-incubator": {member, fakegitprovider.Bot}},
+			g := &fake2.SCMClient{
+				OrgMembers:    map[string][]string{"kubernetes": {sister}, "kubernetes-incubator": {member, fake2.Bot}},
 				Collaborators: []string{friend},
 				IssueComments: map[int][]*scm.Comment{},
 			}
@@ -259,7 +259,7 @@ func TestHandlePullRequest(t *testing.T) {
 	for _, tc := range testcases {
 		t.Logf("running scenario %q", tc.name)
 
-		g := &fakegitprovider.FakeClient{
+		g := &fake2.SCMClient{
 			PullRequestComments: map[int][]*scm.Comment{},
 			OrgMembers:          map[string][]string{"org": {"t"}},
 			PullRequests: map[int]*scm.PullRequest{
@@ -276,10 +276,10 @@ func TestHandlePullRequest(t *testing.T) {
 				},
 			},
 		}
-		fakePlumberClient := fake.NewPlumber()
+		fakeLauncher := fake.NewLauncher()
 		c := Client{
 			SCMProviderClient: g,
-			PlumberClient:     fakePlumberClient,
+			LauncherClient:    fakeLauncher,
 			Config:            &config.Config{},
 			Logger:            logrus.WithField("plugin", PluginName),
 		}
@@ -337,7 +337,7 @@ func TestHandlePullRequest(t *testing.T) {
 			t.Fatalf("Didn't expect error: %s", err)
 		}
 		var numStarted int
-		for _, job := range fakePlumberClient.Pipelines {
+		for _, job := range fakeLauncher.Pipelines {
 			t.Logf("created job with context %s", job.Spec.Context)
 			numStarted++
 		}

@@ -22,9 +22,9 @@ import (
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
 )
@@ -62,11 +62,11 @@ type stageClient interface {
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-func stageHandleGenericComment(pc plugins.Agent, e gitprovider.GenericCommentEvent) error {
+func stageHandleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e)
 }
 
-func handle(gc stageClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent) error {
+func handle(gc stageClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
 	// Only consider new comments.
 	if e.Action != scm.ActionCreate {
 		return nil
@@ -80,7 +80,7 @@ func handle(gc stageClient, log *logrus.Entry, e *gitprovider.GenericCommentEven
 	return nil
 }
 
-func handleOne(gc stageClient, log *logrus.Entry, e *gitprovider.GenericCommentEvent, mat []string) error {
+func handleOne(gc stageClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, mat []string) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number
@@ -97,15 +97,15 @@ func handleOne(gc stageClient, log *logrus.Entry, e *gitprovider.GenericCommentE
 	}
 
 	// If the label exists and we asked for it to be removed, remove it.
-	if gitprovider.HasLabel(lbl, labels) && remove {
+	if scmprovider.HasLabel(lbl, labels) && remove {
 		return gc.RemoveLabel(org, repo, number, lbl, e.IsPR)
 	}
 
 	// If the label does not exist and we asked for it to be added,
 	// remove other existing stage labels and add it.
-	if !gitprovider.HasLabel(lbl, labels) && !remove {
+	if !scmprovider.HasLabel(lbl, labels) && !remove {
 		for _, label := range stageLabels {
-			if label != lbl && gitprovider.HasLabel(label, labels) {
+			if label != lbl && scmprovider.HasLabel(label, labels) {
 				if err := gc.RemoveLabel(org, repo, number, label, e.IsPR); err != nil {
 					log.WithError(err).Errorf("GitHub failed to remove the following label: %s", label)
 				}

@@ -29,7 +29,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/prow/git"
 )
 
-// LocalGit stores the repos in a temp dir. Create with New and delete with
+// LocalGit stores the repos in a temp dir. Launch with New and delete with
 // Clean.
 type LocalGit struct {
 	// Dir is the path to the base temp dir. Repos are at Dir/org/repo.

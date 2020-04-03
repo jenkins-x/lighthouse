@@ -1,0 +1,61 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "keeper.name" . }}
+rules:
+  - apiGroups:
+      - jenkins.io
+    resources:
+      - apps
+      - environments
+      - pipelineactivities
+      - sourcerepositories
+      - pipelinestructures
+    verbs:
+      - create
+      - get
+      - edit
+      - update
+      - patch
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - pipelineresources
+      - tasks
+      - pipelines
+      - pipelineruns
+    verbs:
+      - create
+      - list
+      - get
+      - update
+      - watch
+      - patch
+      - delete
+  - apiGroups:
+      - lighthouse.jenkins.io
+    resources:
+      - lighthousejobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - lighthouse.jenkins.io
+    resources:
+      - lighthousejobs/status
+    verbs:
+      - get
+      - list
+      - watch

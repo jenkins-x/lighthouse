@@ -24,8 +24,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/fakegitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/git/localgit"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -146,7 +146,7 @@ func getTestClient(
 
 	return &Client{
 			git:    git,
-			spc:    &fakegitprovider.FakeClient{Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"}},
+			spc:    &fake.SCMClient{Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"}},
 			logger: logrus.WithField("client", "repoowners"),
 			cache:  make(map[string]cacheEntry),
 

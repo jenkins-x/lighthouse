@@ -28,13 +28,14 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
+	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/prow/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	git2 "github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/gitprovider"
 	"github.com/jenkins-x/lighthouse/pkg/prow/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/prow/repoowners"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -125,7 +126,7 @@ func RegisterReviewCommentEventHandler(name string, fn ReviewCommentEventHandler
 }
 
 // GenericCommentHandler defines the function contract for a scm.Comment handler.
-type GenericCommentHandler func(Agent, gitprovider.GenericCommentEvent) error
+type GenericCommentHandler func(Agent, scmprovider.GenericCommentEvent) error
 
 // RegisterGenericCommentHandler registers a plugin's scm.Comment handler.
 func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help HelpProvider) {
@@ -136,11 +137,12 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
 	ClientFactory      jxfactory.Factory
-	SCMProviderClient  *gitprovider.Client
-	PlumberClient      plumber.Plumber
+	SCMProviderClient  *scmprovider.Client
+	LauncherClient     launcher.PipelineLauncher
 	MetapipelineClient metapipeline.Client
 	GitClient          git2.Client
 	KubernetesClient   kubernetes.Interface
+	LighthouseClient   lighthouseclient.LighthouseJobInterface
 	/*
 		SlackClient      *slack.Client
 	*/
@@ -163,13 +165,15 @@ type Agent struct {
 func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, metapipelineClient metapipeline.Client, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
-	scmClient := gitprovider.ToClient(clientAgent.SCMProviderClient, clientAgent.BotName)
+	scmClient := scmprovider.ToClient(clientAgent.SCMProviderClient, clientAgent.BotName)
 	return Agent{
 		ClientFactory:      clientFactory,
 		SCMProviderClient:  scmClient,
 		GitClient:          clientAgent.GitClient,
-		PlumberClient:      clientAgent.PlumberClient,
+		LauncherClient:     clientAgent.LauncherClient,
 		MetapipelineClient: metapipelineClient,
+		LighthouseClient:   clientAgent.LighthouseClient,
+
 		/*
 			SlackClient:   clientAgent.SlackClient,
 		*/
@@ -209,8 +213,9 @@ type ClientAgent struct {
 
 	KubernetesClient   kubernetes.Interface
 	GitClient          git2.Client
-	PlumberClient      plumber.Plumber
+	LauncherClient     launcher.PipelineLauncher
 	MetapipelineClient metapipeline.Client
+	LighthouseClient   lighthouseclient.LighthouseJobInterface
 
 	/*	SlackClient      *slack.Client
 	 */
