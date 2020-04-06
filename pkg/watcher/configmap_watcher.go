@@ -1,6 +1,8 @@
 package watcher
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -19,6 +21,7 @@ type ConfigMapWatcher struct {
 	callbacks  []ConfigMapCallback
 	watch      watch.Interface
 	stopped    bool
+	stopCh     <-chan struct{}
 }
 
 // ConfigMapCallback represents a callback
@@ -52,12 +55,13 @@ func (cb *ConfigMapEntryCallback) OnChange(configMap *v1.ConfigMap) {
 
 // NewConfigMapWatcher creates a new watcher of ConfigMap resources which lists them all synchronously then
 // asynchronously processes watch events
-func NewConfigMapWatcher(kubeClient kubernetes.Interface, ns string, callbacks []ConfigMapCallback) (*ConfigMapWatcher, error) {
+func NewConfigMapWatcher(kubeClient kubernetes.Interface, ns string, callbacks []ConfigMapCallback, stopCh <-chan struct{}) (*ConfigMapWatcher, error) {
 	w := &ConfigMapWatcher{
 		kubeClient: kubeClient,
 		namespace:  ns,
 		// lets take a copy of the slice
 		callbacks: append([]ConfigMapCallback{}, callbacks...),
+		stopCh:    stopCh,
 	}
 
 	configMaps := kubeClient.CoreV1().ConfigMaps(ns)
@@ -118,14 +122,6 @@ func (w *ConfigMapWatcher) watchChannel() {
 				l.Errorf("failed with event %#v", event.Object)
 			}
 		}
-
-		// lets recreate the watcher
-		err := w.createWatcher()
-		if err != nil {
-			l.WithError(err).Error("failed to create watcher")
-			// TODO should we terminate or retry?
-			return
-		}
 	}
 }
 
@@ -141,6 +137,11 @@ func (w *ConfigMapWatcher) createWatcher() error {
 			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).Watch(metav1.ListOptions{})
 		},
 	}
-	_, _, w.watch = watchtools.NewIndexerInformerWatcher(lw, &v1.ConfigMap{})
+	var informer cache.Controller
+	_, informer, w.watch = watchtools.NewIndexerInformerWatcher(lw, &v1.ConfigMap{})
+	if ok := cache.WaitForCacheSync(w.stopCh, informer.HasSynced); !ok {
+		return fmt.Errorf("failed to wait for caches to sync")
+	}
+
 	return nil
 }
