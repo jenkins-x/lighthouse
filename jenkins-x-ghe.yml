@@ -86,9 +86,7 @@ pipelineConfig:
                 image: gcr.io/jenkinsxio/builder-go
                 command: make
                 args:
-                  - build-webhooks-linux
-                  - build-keeper-linux
-                  - build-foghorn-linux
+                  - build-linux
                 dir: /workspace/source
 
               - name: build-and-push-webhooks
@@ -116,6 +114,16 @@ pipelineConfig:
                 args:
                   - --dockerfile=/workspace/source/Dockerfile.foghorn
                   - --destination=gcr.io/jenkinsxio/lighthouse-foghorn:${inputs.params.version}
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=${inputs.params.version}
+
+              - name: build-and-push-gc-jobs
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.gcJobs
+                  - --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:${inputs.params.version}
                   - --context=/workspace/source
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=${inputs.params.version}

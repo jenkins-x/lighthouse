@@ -22,6 +22,17 @@ image:
 env:
   JX_DEFAULT_IMAGE: ""
 
+gcJobs:
+  maxAge: 168h
+  image:
+    repository: "{{ .Values.image.repository }}/lighthouse-gc-jobs"
+    tag: "{{ .Values.image.tag }}"
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+  schedule: "*/30 * * * *"
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+
 webhooks:
   replicaCount: 2
   image:

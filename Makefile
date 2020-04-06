@@ -3,11 +3,13 @@ PROJECT := github.com/jenkins-x/lighthouse
 WEBHOOKS_EXECUTABLE := lighthouse
 KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
+GCJOBS_EXECUTABLE := gc-jobs
 DOCKER_REGISTRY := jenkinsxio
 DOCKER_IMAGE_NAME := lighthouse
 WEBHOOKS_MAIN_SRC_FILE=pkg/main/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
+GCJOBS_MAIN_SRC_FILE=cmd/gc/main.go
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
 VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
@@ -57,7 +59,7 @@ clean:
 	rm -rf bin build release
 
 .PHONY: build
-build: webhooks keeper foghorn
+build: webhooks keeper foghorn gc-jobs
 
 .PHONY: webhooks
 webhooks:
@@ -71,10 +73,17 @@ keeper:
 foghorn:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
 
+.PHONY: gc-jobs
+gc-jobs:
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(GCJOBS_EXECUTABLE) $(GCJOBS_MAIN_SRC_FILE)
+
 .PHONY: mod
 mod: build
 	echo "tidying the go module"
 	$(GO) mod tidy
+
+.PHONY: build-linux
+build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux
 
 .PHONY: build-webhooks-linux
 build-webhooks-linux:
@@ -87,6 +96,10 @@ build-keeper-linux:
 .PHONY: build-foghorn-linux
 build-foghorn-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
+
+.PHONY: build-gc-jobs-linux
+build-gc-jobs-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(GCJOBS_EXECUTABLE) $(GCJOBS_MAIN_SRC_FILE)
 
 .PHONY: container
 container: 

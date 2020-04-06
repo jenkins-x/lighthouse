@@ -58,7 +58,7 @@ func stopper() chan struct{} {
 }
 
 func main() {
-	logrusutil.ComponentInit("lighthouse-status")
+	logrusutil.ComponentInit("lighthouse-foghorn")
 
 	defer interrupts.WaitForGracefulShutdown()
 
