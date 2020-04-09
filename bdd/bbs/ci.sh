@@ -64,9 +64,6 @@ cat env/lighthouse/values.tmpl.yaml
 rm values.tmpl.yaml.tmp
 sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/requirements.yaml
 
-# append to the existing jenkins-x-platform values.tmpl.yaml to disable build controller status reporting
-cat ../bdd/platform-values.yaml.template >> env/jenkins-x-platform/values.tmpl.yaml
-
 # TODO: Disable chatops tests until issue creation and labeling on BBS is ready
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
 

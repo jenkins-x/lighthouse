@@ -3,7 +3,7 @@ package githubapp
 import (
 	"strings"
 
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/sirupsen/logrus"
 )
 

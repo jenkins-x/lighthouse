@@ -13,8 +13,8 @@ import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
 	"github.com/jenkins-x/lighthouse/pkg/foghorn"
-	"github.com/jenkins-x/lighthouse/pkg/prow/interrupts"
-	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
+	"github.com/jenkins-x/lighthouse/pkg/interrupts"
+	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
 )
 

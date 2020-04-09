@@ -1,7 +1,6 @@
 package launcher
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
@@ -48,7 +47,7 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		pullRefs = pullRefData.String()
 	}
 
-	branch := b.getBranch(spec)
+	branch := spec.GetBranch()
 	if branch == "" {
 		branch = repository.Branch
 	}
@@ -124,20 +123,6 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		return nil, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}
 	return fullyCreatedJob, nil
-}
-
-func (b *launcher) getBranch(spec *v1alpha1.LighthouseJobSpec) string {
-	branch := spec.Refs.BaseRef
-	if spec.Type == v1alpha1.PostsubmitJob {
-		return branch
-	}
-	if spec.Type == v1alpha1.BatchJob {
-		return "batch"
-	}
-	if len(spec.Refs.Pulls) > 0 {
-		branch = fmt.Sprintf("PR-%v", spec.Refs.Pulls[0].Number)
-	}
-	return branch
 }
 
 func (b *launcher) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobSpec) metapipeline.PullRef {

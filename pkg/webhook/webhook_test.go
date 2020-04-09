@@ -8,10 +8,9 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
-	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -131,7 +130,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	})
 	util.AddAuthToSCMClient(scmClient, token, false)
 	suite.WebhookOptions = &Options{
-		server: &hook.Server{
+		server: &Server{
 			ConfigAgent: configAgent,
 			Plugins:     pluginAgent,
 			ClientAgent: &plugins.ClientAgent{

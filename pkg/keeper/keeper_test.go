@@ -40,10 +40,10 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
 
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/git/localgit"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
 	launcherfake "github.com/jenkins-x/lighthouse/pkg/launcher/fake"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/git/localgit"
 )
 
 func testPullsMatchList(t *testing.T, test string, actual []PullRequest, expected []int) {

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

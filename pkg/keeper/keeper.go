@@ -34,12 +34,12 @@ import (
 	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/errorutil"
+	"github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/errorutil"
-	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
@@ -1127,11 +1127,11 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 			triggeredContexts.Insert(string(ps.Context))
 			var spec v1alpha1.LighthouseJobSpec
 			if len(prs) == 1 {
-				spec = pjutil.PresubmitSpec(ps, refs)
+				spec = jobutil.PresubmitSpec(ps, refs)
 			} else {
-				spec = pjutil.BatchSpec(ps, refs)
+				spec = jobutil.BatchSpec(ps, refs)
 			}
-			pj := pjutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
+			pj := jobutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
 			cloneURL := string(pr.Repository.URL)
 			if cloneURL == "" {

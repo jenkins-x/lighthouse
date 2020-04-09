@@ -23,13 +23,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/interrupts"
+	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/interrupts"
-	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
-	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
-	"github.com/jenkins-x/lighthouse/pkg/prow/pjutil"
+	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
+	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 )
@@ -99,7 +99,7 @@ func main() {
 
 	defer interrupts.WaitForGracefulShutdown()
 
-	pjutil.ServePProf()
+	jobutil.ServePProf()
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 	if err := o.Validate(); err != nil {

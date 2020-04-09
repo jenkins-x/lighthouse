@@ -14,13 +14,12 @@ import (
 	"github.com/jenkins-x/jx/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
-	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
-	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
-	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
+	"github.com/jenkins-x/lighthouse/pkg/metrics"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
@@ -57,7 +56,7 @@ type Options struct {
 	namespace        string
 	pluginFilename   string
 	configFilename   string
-	server           *hook.Server
+	server           *Server
 	botName          string
 	gitServerURL     string
 	configMapWatcher *watcher.ConfigMapWatcher
@@ -90,7 +89,7 @@ func NewCmdWebhook() *cobra.Command {
 }
 
 // NewWebhook creates a new webhook handler
-func NewWebhook(factory jxfactory.Factory, server *hook.Server) *Options {
+func NewWebhook(factory jxfactory.Factory, server *Server) *Options {
 	return &Options{
 		factory: factory,
 		server:  server,
@@ -458,7 +457,7 @@ func (o *Options) createSCMToken(gitKind string) (string, error) {
 	return value, nil
 }
 
-func (o *Options) createHookServer() (*hook.Server, error) {
+func (o *Options) createHookServer() (*Server, error) {
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
 
@@ -520,7 +519,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		}
 	}()
 
-	promMetrics := hook.NewMetrics()
+	promMetrics := NewMetrics()
 
 	// Push metrics to the configured prometheus pushgateway endpoint.
 	agentConfig := configAgent.Config()
@@ -541,7 +540,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		return nil, errors.Wrap(err, "failed to create metapipeline client")
 	}
 
-	server := &hook.Server{
+	server := &Server{
 		ClientFactory:      clientFactory,
 		ConfigAgent:        configAgent,
 		Plugins:            pluginAgent,
@@ -552,7 +551,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	return server, nil
 }
 
-func (o *Options) updateLauncherClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository) error {
+func (o *Options) updateLauncherClientAndReturnError(l *logrus.Entry, server *Server, repository scm.Repository) error {
 	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace(nil)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create JX client")
