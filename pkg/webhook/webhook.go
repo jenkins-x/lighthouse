@@ -12,14 +12,14 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/jx/pkg/jxfactory"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
-	"github.com/jenkins-x/lighthouse/pkg/plumber"
-	"github.com/jenkins-x/lighthouse/pkg/prow/config"
-	"github.com/jenkins-x/lighthouse/pkg/prow/git"
-	"github.com/jenkins-x/lighthouse/pkg/prow/hook"
-	"github.com/jenkins-x/lighthouse/pkg/prow/logrusutil"
-	"github.com/jenkins-x/lighthouse/pkg/prow/metrics"
-	"github.com/jenkins-x/lighthouse/pkg/prow/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
+	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
+	"github.com/jenkins-x/lighthouse/pkg/metrics"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
@@ -56,7 +56,7 @@ type Options struct {
 	namespace        string
 	pluginFilename   string
 	configFilename   string
-	server           *hook.Server
+	server           *Server
 	botName          string
 	gitServerURL     string
 	configMapWatcher *watcher.ConfigMapWatcher
@@ -89,7 +89,7 @@ func NewCmdWebhook() *cobra.Command {
 }
 
 // NewWebhook creates a new webhook handler
-func NewWebhook(factory jxfactory.Factory, server *hook.Server) *Options {
+func NewWebhook(factory jxfactory.Factory, server *Server) *Options {
 	return &Options{
 		factory: factory,
 		server:  server,
@@ -231,7 +231,10 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	kubeClient, _, _ := o.GetFactory().CreateKubeClient()
+	_, _, kubeClient, lhClient, _, err := clients.GetClientsAndNamespace(nil)
+	if err != nil {
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+	}
 	gitClient, _ := git.NewClient(serverURL, o.gitKind())
 
 	gitClient.SetCredentials(gitCloneUser, func() []byte {
@@ -244,6 +247,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		SCMProviderClient: scmClient,
 		KubernetesClient:  kubeClient,
 		GitClient:         gitClient,
+		LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(o.namespace),
 	}
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
@@ -296,7 +300,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Push handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, pushHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, pushHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -317,7 +321,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking PR handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, prHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, prHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -336,7 +340,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking branch handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, branchHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, branchHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -361,7 +365,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, issueCommentHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, issueCommentHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -389,7 +393,7 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updatePlumberClientAndReturnError(l, o.server, prCommentHook.Repository())
+		err := o.updateLauncherClientAndReturnError(l, o.server, prCommentHook.Repository())
 		if err != nil {
 			return l, "", err
 		}
@@ -453,7 +457,7 @@ func (o *Options) createSCMToken(gitKind string) (string, error) {
 	return value, nil
 }
 
-func (o *Options) createHookServer() (*hook.Server, error) {
+func (o *Options) createHookServer() (*Server, error) {
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
 
@@ -515,7 +519,7 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		}
 	}()
 
-	promMetrics := hook.NewMetrics()
+	promMetrics := NewMetrics()
 
 	// Push metrics to the configured prometheus pushgateway endpoint.
 	agentConfig := configAgent.Config()
@@ -531,12 +535,12 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 		logrus.Warn("no configAgent configuration")
 	}
 
-	metapipelineClient, err := plumber.NewMetaPipelineClient(clientFactory)
+	metapipelineClient, err := launcher.NewMetaPipelineClient(clientFactory)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create metapipeline client")
 	}
 
-	server := &hook.Server{
+	server := &Server{
 		ClientFactory:      clientFactory,
 		ConfigAgent:        configAgent,
 		Plugins:            pluginAgent,
@@ -547,20 +551,20 @@ func (o *Options) createHookServer() (*hook.Server, error) {
 	return server, nil
 }
 
-func (o *Options) updatePlumberClientAndReturnError(l *logrus.Entry, server *hook.Server, repository scm.Repository) error {
-	jxClient, _, err := o.GetFactory().CreateJXClient()
+func (o *Options) updateLauncherClientAndReturnError(l *logrus.Entry, server *Server, repository scm.Repository) error {
+	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace(nil)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create JX client")
 		l.Errorf("%s", err.Error())
 		return err
 	}
-	plumberClient, err := plumber.NewPlumber(jxClient, o.namespace)
+	launcherClient, err := launcher.NewLauncher(jxClient, lhClient, o.namespace)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to create Plumber client")
+		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
 		l.Errorf("%s", err.Error())
 		return err
 	}
-	server.ClientAgent.PlumberClient = plumberClient
+	server.ClientAgent.LauncherClient = launcherClient
 	return nil
 }
 

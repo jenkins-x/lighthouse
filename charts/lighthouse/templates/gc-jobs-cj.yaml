@@ -1,0 +1,39 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "gcJobs.name" . }}
+spec:
+  concurrencyPolicy: {{ .Values.gcJobs.concurrencyPolicy }}
+  failedJobsHistoryLimit: {{ .Values.gcJobs.failedJobsHistoryLimit }}
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+          labels:
+            app: {{ template "gcJobs.name" . }}
+            release: {{ .Release.Name }}
+        spec:
+          containers:
+            - command:
+                - gc-jobs
+              image: {{ tpl .Values.gcJobs.image.repository . }}:{{ tpl .Values.gcJobs.image.tag . }}
+              imagePullPolicy: {{ tpl .Values.gcJobs.image.pullPolicy . }}
+              args:
+                - "--namespace={{ .Release.Namespace }}"
+                - "--max-age={{ .Values.gcJobs.maxAge }}"
+              name: {{ template "gcJobs.name" . }}
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          serviceAccountName: {{ template "gcJobs.name" . }}
+  successfulJobsHistoryLimit: {{ .Values.gcJobs.successfulJobsHistoryLimit }}
+  schedule: {{ .Values.gcJobs.schedule | quote }}
+  suspend: false

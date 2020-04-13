@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+{{- if .Values.webhooks.service.name }}
+  name: {{ .Values.webhooks.service.name }}
+{{- else }}
+  name: {{ template "webhooks.name" . }}
+{{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+{{- if .Values.webhooks.service.annotations }}
+  annotations:
+{{ toYaml .Values.webhooks.service.annotations | indent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.webhooks.service.type }}
+  ports:
+  - port: {{ .Values.webhooks.service.externalPort }}
+    targetPort: {{ .Values.webhooks.service.internalPort }}
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ template "webhooks.name" . }}

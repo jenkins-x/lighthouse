@@ -2,8 +2,9 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- define "webhooks.name" -}}
+{{- $name := default "webhooks" .Values.webhooks.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -15,6 +16,17 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "tide.name" -}}
-{{- default "tide" .Values.tide.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- define "keeper.name" -}}
+{{- $name := default "keeper" .Values.keeper.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "foghorn.name" -}}
+{{- $name := default "foghorn" .Values.foghorn.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "gcJobs.name" -}}
+{{- $name := default "gc-jobs" .Values.gcJobs.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
