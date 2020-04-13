@@ -427,6 +427,8 @@ github.com/jenkins-x/jx v0.0.0-20200409135308-56d02a74bfb5 h1:Kr3Y2wpAkYTave/YWt
 github.com/jenkins-x/jx v0.0.0-20200409135308-56d02a74bfb5/go.mod h1:ya4RZcD95Z9PDuXsDkdaUBaPvnF3HygNahkhPppjY68=
 github.com/jenkins-x/jx v0.0.0-20200413171101-cdedc2d44c76 h1:/bDkTrXwR7SakSXfvuKN/gZPMViSFTEsUVozbX4NZOI=
 github.com/jenkins-x/jx v0.0.0-20200413171101-cdedc2d44c76/go.mod h1:1rj7aDeo0CG4Wg6vzFsslR843L692yr5F6Bg+wW5Njs=
+github.com/jenkins-x/jx v0.0.0-20200413182250-109f0011927c h1:T/0yDxfeerBv2btNrIFTtlJdgdr9al/UNgvEaeRhqtw=
+github.com/jenkins-x/jx v0.0.0-20200413182250-109f0011927c/go.mod h1:1rj7aDeo0CG4Wg6vzFsslR843L692yr5F6Bg+wW5Njs=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767/go.mod h1:UR3AoCKJHHKi2AoOWeFbZcMKyd5LqQkdCRgwqZkX/io=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
