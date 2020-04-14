@@ -14,7 +14,7 @@ hmacToken: ""
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 image:
-  repository: gcr.io/jenkinsxio
+  parentRepository: gcr.io/jenkinsxio
   tag: 0.0.64
   pullPolicy: IfNotPresent
 
@@ -25,7 +25,7 @@ env:
 gcJobs:
   maxAge: 168h
   image:
-    repository: "{{ .Values.image.repository }}/lighthouse-gc-jobs"
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
     tag: "{{ .Values.image.tag }}"
     pullPolicy: "{{ .Values.image.pullPolicy }}"
   schedule: "*/30 * * * *"
@@ -36,7 +36,7 @@ gcJobs:
 webhooks:
   replicaCount: 2
   image:
-    repository: "{{ .Values.image.repository }}/lighthouse-webhooks"
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-webhooks"
     tag: "{{ .Values.image.tag }}"
     pullPolicy: "{{ .Values.image.pullPolicy }}"
   service:
@@ -67,7 +67,7 @@ webhooks:
 foghorn:
   replicaCount: 1
   image:
-    repository: "{{ .Values.image.repository }}/lighthouse-foghorn"
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-foghorn"
     tag: "{{ .Values.image.tag }}"
     pullPolicy: "{{ .Values.image.pullPolicy }}"
   resources:
@@ -94,7 +94,7 @@ keeper:
   probe:
     path: /
   image:
-    repository: "{{ .Values.image.repository }}/lighthouse-keeper"
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-keeper"
     tag: "{{ .Values.image.tag }}"
   imagePullPolicy: IfNotPresent
   terminationGracePeriodSeconds: 30
