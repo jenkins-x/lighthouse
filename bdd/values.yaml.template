@@ -9,9 +9,6 @@ tide:
     tag: $VERSION
     pullPolicy: IfNotPresent
 
-env:
-  JX_DEFAULT_IMAGE: ""
-
 vault:
 {{- if eq .Requirements.secretStorage "vault" }}
   enabled: true
@@ -24,3 +21,8 @@ clusterName: {{ .Requirements.cluster.clusterName }}
 user: "{{ .Parameters.pipelineUser.username }}"
 
 oauthToken: "{{ .Parameters.pipelineUser.token }}"
+
+# Specifying environment variable for link to build reports
+env:
+  JX_DEFAULT_IMAGE: ""
+  LIGHTHOUSE_REPORT_URL_BASE: "https://example.com"

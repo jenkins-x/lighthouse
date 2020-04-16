@@ -407,7 +407,7 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 
 	_, err = scmClient.CreateStatus(owner, repo, sha, gitRepoStatus)
 	if err != nil {
-		c.logger.WithFields(fields).WithError(err).Warnf("failed to report git status")
+		c.logger.WithFields(fields).WithError(err).Warnf("failed to report git status with target URL '%s'", gitRepoStatus.Target)
 		// TODO: Need something here to prevent infinite attempts to create status from just bombing us. (apb)
 		return
 	}
