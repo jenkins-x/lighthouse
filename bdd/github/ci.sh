@@ -72,6 +72,9 @@ helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
 
+# Enable checking the commit status reporting URL
+export BDD_LIGHTHOUSE_BASE_REPORT_URL=https://example.com
+
 set +e
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \

@@ -73,6 +73,9 @@ helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 # TODO: Figure out why chatops doesn't work for gitlab!
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
 
+# Enable checking the commit status reporting URL
+export BDD_LIGHTHOUSE_BASE_REPORT_URL=https://example.com
+
 set +e
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \

@@ -76,6 +76,9 @@ helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 # TODO: Re-enable checking whether build controller has updated PipelineActivity once BBS is actually being worked on again.
 export BDD_DISABLE_PIPELINEACTIVITY_CHECK=true
 
+# Enable checking the commit status reporting URL
+export BDD_LIGHTHOUSE_BASE_REPORT_URL=https://example.com
+
 set +e
 jx step bdd \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
