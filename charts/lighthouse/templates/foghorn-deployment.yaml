@@ -47,7 +47,7 @@ spec:
                 key: oauth
 {{- end }}
           - name: "JX_LOG_FORMAT"
-            value: "json"
+            value: "{{ .Values.logFormat }}"
 {{- if hasKey .Values "env" }}
 {{- range $pkey, $pval := .Values.env }}
           - name: {{ $pkey }}
