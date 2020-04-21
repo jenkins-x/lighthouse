@@ -29,6 +29,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -261,6 +262,20 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 			if _, statusErr := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
 				errors = append(errors, statusErr)
 			}
+		}
+		refs := pj.Spec.Refs
+		sha := refs.BaseSHA
+		if len(refs.Pulls) > 0 {
+			sha = refs.Pulls[0].SHA
+		}
+
+		statusInput := &scm.StatusInput{
+			State: scm.StatePending,
+			Label: job.Context,
+			Desc:  util.CommitStatusPendingDescription,
+		}
+		if _, err := c.SCMProviderClient.CreateStatus(refs.Org, refs.Repo, sha, statusInput); err != nil {
+			errors = append(errors, err)
 		}
 	}
 	return errorutil.NewAggregate(errors...)
