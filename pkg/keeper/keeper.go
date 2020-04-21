@@ -614,7 +614,7 @@ func isPassingTests(log *logrus.Entry, spc scmProviderClient, pr PullRequest, cc
 func unsuccessfulContexts(contexts []Context, cc contextChecker, log *logrus.Entry) []Context {
 	var failed []Context
 	for _, ctx := range contexts {
-		if string(ctx.Context) == statusContext {
+		if string(ctx.Context) == GetStatusContextLabel() {
 			continue
 		}
 		if cc.IsOptional(string(ctx.Context)) {

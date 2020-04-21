@@ -19,6 +19,7 @@ package keeper
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -42,7 +43,19 @@ const (
 	// The '%s' field is populated with the reason why the PR is not in a
 	// keeper pool or the empty string if the reason is unknown. See requirementDiff.
 	statusNotInPool = "Not mergeable.%s"
+
+	// StatusContextLabelEnvVar is the environment variable we look to for the overriding status context label.
+	StatusContextLabelEnvVar = "LIGHTHOUSE_KEEPER_STATUS_CONTEXT_LABEL"
 )
+
+// GetStatusContextLabel gets the label used for the keeper status context, defaulting to "keeper" if the env var
+// above isn't set.
+func GetStatusContextLabel() string {
+	if value, ok := os.LookupEnv(StatusContextLabelEnvVar); ok {
+		return value
+	}
+	return statusContext
+}
 
 type storedState struct {
 	// LatestPR is the update time of the most recent result
@@ -298,7 +311,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 		var actualState githubql.StatusState
 		var actualDesc string
 		for _, ctx := range contexts {
-			if string(ctx.Context) == statusContext {
+			if string(ctx.Context) == GetStatusContextLabel() {
 				actualState = ctx.State
 				actualDesc = string(ctx.Description)
 			}
@@ -309,7 +322,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 				string(pr.Repository.Name),
 				string(pr.HeadRefOID),
 				&scmprovider.Status{
-					Context:     statusContext,
+					Context:     GetStatusContextLabel(),
 					State:       wantState,
 					Description: wantDesc,
 					TargetURL:   targetURL(sc.config, pr, log),
