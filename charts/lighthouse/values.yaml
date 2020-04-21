@@ -81,6 +81,7 @@ foghorn:
   reportURLBase: ""
 
 keeper:
+  statusContextLabel: "Lighthouse Merge Status"
   replicaCount: 1
   livenessProbe:
     initialDelaySeconds: 120

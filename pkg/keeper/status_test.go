@@ -137,7 +137,7 @@ func TestExpectedStatus(t *testing.T) {
 			name:      "only failed keeper context",
 			labels:    neededLabels,
 			milestone: "v1.0",
-			contexts:  []Context{{Context: githubql.String(statusContext), State: githubql.StatusStateError}},
+			contexts:  []Context{{Context: githubql.String(GetStatusContextLabel()), State: githubql.StatusStateError}},
 			inPool:    false,
 
 			state: scmprovider.StatusPending,
@@ -369,7 +369,7 @@ func TestSetStatuses(t *testing.T) {
 		if tc.hasContext {
 			pr.Commits.Nodes[0].Commit.Status.Contexts = []Context{
 				{
-					Context:     githubql.String(statusContext),
+					Context:     githubql.String(GetStatusContextLabel()),
 					State:       tc.state,
 					Description: githubql.String(tc.desc),
 				},
