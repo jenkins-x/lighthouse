@@ -144,6 +144,7 @@ func (c *client) Clone(repo string) (*Repo, error) {
 		base = fmt.Sprintf("https://%s:%s@%s", user, pass, host)
 	}
 	cache := filepath.Join(c.dir, repo) + ".git"
+	c.logger.Infof("Using %s as repo dir", cache)
 	if _, err := os.Stat(cache); os.IsNotExist(err) {
 		// Cache miss, clone it now.
 		c.logger.Infof("Cloning %s for the first time.", repo)
