@@ -249,7 +249,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	}
 
 	if c.skipCollaborators(org, repo) {
-		log.Debugf("Skipping collaborator checks for %s/%s", org, repo)
+		log.Warnf("Skipping collaborator checks for %s/%s", org, repo)
 		return entry.owners, nil
 	}
 
@@ -262,6 +262,11 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 		owners = entry.owners
 	} else {
 		owners = entry.owners.filterCollaborators(collaborators)
+	}
+	for k, v := range owners.approvers {
+		for k1, v1 := range v {
+			log.Warnf("approver %s : %s : %s", k, k1.String(), strings.Join(v1.List(), ", "))
+		}
 	}
 	return owners, nil
 }
