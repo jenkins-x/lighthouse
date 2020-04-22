@@ -66,17 +66,22 @@ func (c *client) Clean() error {
 // NewClient returns a client that talks to GitHub. It will fail if git is not
 // in the PATH.
 func NewClient(serverURL string, gitKind string) (Client, error) {
-	g, err := exec.LookPath("git")
+	t, err := ioutil.TempDir("", "git")
 	if err != nil {
 		return nil, err
 	}
-	t, err := ioutil.TempDir("", "git")
+	return NewClientWithDir(serverURL, gitKind, t)
+}
+
+// NewClientWithDir uses an existing directory for creating the client.
+func NewClientWithDir(serverURL string, gitKind string, dir string) (Client, error) {
+	g, err := exec.LookPath("git")
 	if err != nil {
 		return nil, err
 	}
 	return &client{
 		logger:    logrus.WithField("client", "git"),
-		dir:       t,
+		dir:       dir,
 		git:       g,
 		base:      serverURL,
 		gitKind:   gitKind,
