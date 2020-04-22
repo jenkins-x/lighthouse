@@ -617,6 +617,10 @@ func unsuccessfulContexts(contexts []Context, cc contextChecker, log *logrus.Ent
 		if string(ctx.Context) == GetStatusContextLabel() {
 			continue
 		}
+		// Ignore legacy "tide" and "keeper" contexts
+		if string(ctx.Context) == "keeper" || string(ctx.Context) == "tide" {
+			continue
+		}
 		if cc.IsOptional(string(ctx.Context)) {
 			continue
 		}
