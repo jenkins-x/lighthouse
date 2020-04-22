@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -60,6 +61,7 @@ type Options struct {
 	botName          string
 	gitServerURL     string
 	configMapWatcher *watcher.ConfigMapWatcher
+	localGitDir      string
 }
 
 // NewCmdWebhook creates the command
@@ -116,6 +118,11 @@ func (o *Options) Run() error {
 	_, o.gitServerURL, err = o.createSCMClient()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create ScmClient")
+	}
+
+	o.localGitDir, err = ioutil.TempDir("", "git")
+	if err != nil {
+		return errors.Wrapf(err, "failed to create git temp directory")
 	}
 
 	mux := http.NewServeMux()
@@ -235,7 +242,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
-	gitClient, _ := git.NewClient(serverURL, o.gitKind())
+	gitClient, _ := git.NewClientWithDir(serverURL, o.gitKind(), o.localGitDir)
 
 	gitClient.SetCredentials(gitCloneUser, func() []byte {
 		return []byte(token)
