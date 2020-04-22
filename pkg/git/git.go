@@ -184,7 +184,10 @@ func (c *client) Clone(repo string) (*Repo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("git repo clone error: %v. output: %s", err, string(b))
 	}
-	b2, err := exec.Command(c.git, "rev-parse", "HEAD", t).CombinedOutput() // #nosec
+	c.logger.Warnf("temp dir: %s", t)
+	cmd := exec.Command(c.git, "rev-parse", "HEAD")
+	cmd.Dir = t
+	b2, err := cmd.CombinedOutput() // #nosec
 	if err != nil {
 		return nil, fmt.Errorf("git rev-parse error: %v. output: %s", err, string(b2))
 	}

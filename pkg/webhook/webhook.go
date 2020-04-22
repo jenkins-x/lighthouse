@@ -119,6 +119,7 @@ func (o *Options) Run() error {
 		return errors.Wrapf(err, "failed to create ScmClient")
 	}
 
+	logrus.Warnf("git server URL: %s", o.gitServerURL)
 	gitClient, err := git.NewClient(o.gitServerURL, o.gitKind())
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
