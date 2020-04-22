@@ -87,11 +87,10 @@ func TestAccumulateBatch(t *testing.T) {
 		state v1alpha1.PipelineState
 	}
 	tests := []struct {
-		name             string
-		presubmits       map[int][]config.Presubmit
-		pulls            []pull
-		activities       []activity
-		combinedContexts map[string]map[string]commitStatus
+		name       string
+		presubmits map[int][]config.Presubmit
+		pulls      []pull
+		activities []activity
 
 		merges  []int
 		pending bool
@@ -149,25 +148,6 @@ func TestAccumulateBatch(t *testing.T) {
 				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "bar", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
 				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-			},
-			merges: []int{1, 2},
-		},
-		{
-			name:       "failure in run but overridden, multiple PRs",
-			presubmits: map[int][]config.Presubmit{1: jobSet, 2: jobSet},
-			pulls:      []pull{{1, "a"}, {2, "b"}},
-			activities: []activity{
-				{job: "foo", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "bar", state: v1alpha1.FailureState, prs: []pull{{1, "a"}, {2, "b"}}},
-				{job: "baz", state: v1alpha1.SuccessState, prs: []pull{{1, "a"}, {2, "b"}}},
-			},
-			combinedContexts: map[string]map[string]commitStatus{
-				"a": {
-					"bar": toCommitStatus("success", "Overridden by someone"),
-				},
-				"b": {
-					"bar": toCommitStatus("success", "Overridden by someone"),
-				},
 			},
 			merges: []int{1, 2},
 		},
@@ -239,7 +219,6 @@ func TestAccumulateBatch(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fgc := &fgc{ignoreExpected: true, combinedStatus: test.combinedContexts}
 			var pulls []PullRequest
 			for _, p := range test.pulls {
 				pr := PullRequest{
@@ -267,7 +246,7 @@ func TestAccumulateBatch(t *testing.T) {
 				}
 				pjs = append(pjs, npj)
 			}
-			merges, pending := accumulateBatch(test.presubmits, pulls, pjs, fgc, logrus.NewEntry(logrus.New()))
+			merges, pending := accumulateBatch(test.presubmits, pulls, pjs, logrus.NewEntry(logrus.New()))
 			if (len(pending) > 0) != test.pending {
 				t.Errorf("For case \"%s\", got wrong pending.", test.name)
 			}
@@ -296,11 +275,10 @@ func TestAccumulate(t *testing.T) {
 		sha      string
 	}
 	tests := []struct {
-		name             string
-		presubmits       map[int][]config.Presubmit
-		pullRequests     map[int]string
-		activities       []activity
-		combinedContexts map[string]map[string]commitStatus
+		name         string
+		presubmits   map[int][]config.Presubmit
+		pullRequests map[int]string
+		activities   []activity
 
 		successes []int
 		pendings  []int
@@ -334,18 +312,10 @@ func TestAccumulate(t *testing.T) {
 				{7, "job2", v1alpha1.SuccessState, "sha7"},
 				{7, "job1", v1alpha1.FailureState, "sha7"},
 			},
-			combinedContexts: map[string]map[string]commitStatus{
-				"sha2": {
-					"job2": toCommitStatus("success", "Some other message"),
-				},
-				"sha4": {
-					"job1": toCommitStatus("success", "Overridden by someone"),
-				},
-			},
 
 			successes: []int{7},
-			pendings:  []int{3, 4, 5, 6},
-			none:      []int{1, 2},
+			pendings:  []int{3, 5, 6},
+			none:      []int{1, 2, 4},
 		},
 		{
 			name:         "one PR, four jobs, mix of failures and success",
@@ -489,7 +459,6 @@ func TestAccumulate(t *testing.T) {
 
 	for i, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fgc := &fgc{ignoreExpected: true, combinedStatus: test.combinedContexts}
 			var pulls []PullRequest
 			for num, sha := range test.pullRequests {
 				pulls = append(
@@ -510,7 +479,7 @@ func TestAccumulate(t *testing.T) {
 				})
 			}
 
-			successes, pendings, nones, _ := accumulate(test.presubmits, pulls, pjs, fgc, logrus.NewEntry(logrus.New()))
+			successes, pendings, nones, _ := accumulate(test.presubmits, pulls, pjs, logrus.NewEntry(logrus.New()))
 
 			t.Logf("test run %d", i)
 			testPullsMatchList(t, "successes", successes, test.successes)
@@ -2761,7 +2730,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 	log := logrus.NewEntry(logrus.New())
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, _, _, missingSerialTests := accumulate(tc.presubmits, tc.prs, tc.pjs, &fgc{}, log)
+			_, _, _, missingSerialTests := accumulate(tc.presubmits, tc.prs, tc.pjs, log)
 			// Apiequality treats nil slices/maps equal to a zero length slice/map, keeping us from
 			// the burden of having to always initialize them
 			if !apiequality.Semantic.DeepEqual(tc.expectedPresubmits, missingSerialTests) {
