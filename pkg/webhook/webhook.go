@@ -61,6 +61,7 @@ type Options struct {
 	gitServerURL     string
 	configMapWatcher *watcher.ConfigMapWatcher
 	gitClient        git.Client
+	launcher         launcher.PipelineLauncher
 }
 
 // NewCmdWebhook creates the command
@@ -132,6 +133,18 @@ func (o *Options) Run() error {
 
 	o.gitClient = gitClient
 
+	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace(nil)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to create JX client")
+		logrus.Errorf("%s", err.Error())
+		return err
+	}
+	o.launcher, err = launcher.NewLauncher(jxClient, lhClient, o.namespace)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
+		logrus.Errorf("%s", err.Error())
+		return err
+	}
 	mux := http.NewServeMux()
 	mux.Handle(HealthPath, http.HandlerFunc(o.health))
 	mux.Handle(ReadyPath, http.HandlerFunc(o.ready))
@@ -261,6 +274,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		KubernetesClient:  kubeClient,
 		GitClient:         o.gitClient,
 		LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(o.namespace),
+		LauncherClient:    o.launcher,
 	}
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
@@ -313,11 +327,6 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Push handler")
 
-		err := o.updateLauncherClientAndReturnError(l, o.server, pushHook.Repository())
-		if err != nil {
-			return l, "", err
-		}
-
 		o.server.HandlePushEvent(l, pushHook)
 		return l, "processed push hook", nil
 	}
@@ -334,11 +343,6 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking PR handler")
 
-		err := o.updateLauncherClientAndReturnError(l, o.server, prHook.Repository())
-		if err != nil {
-			return l, "", err
-		}
-
 		o.server.HandlePullRequestEvent(l, prHook)
 		return l, "processed PR hook", nil
 	}
@@ -352,11 +356,6 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 		fields["Sender.Name"] = sender.Name
 
 		l.Info("invoking branch handler")
-
-		err := o.updateLauncherClientAndReturnError(l, o.server, branchHook.Repository())
-		if err != nil {
-			return l, "", err
-		}
 
 		o.server.HandleBranchEvent(l, branchHook)
 		return l, "processed branch hook", nil
@@ -378,10 +377,6 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updateLauncherClientAndReturnError(l, o.server, issueCommentHook.Repository())
-		if err != nil {
-			return l, "", err
-		}
 		o.server.HandleIssueCommentEvent(l, *issueCommentHook)
 		return l, "processed issue comment hook", nil
 	}
@@ -406,10 +401,6 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 
 		l.Info("invoking Issue Comment handler")
 
-		err := o.updateLauncherClientAndReturnError(l, o.server, prCommentHook.Repository())
-		if err != nil {
-			return l, "", err
-		}
 		o.server.HandlePullRequestCommentEvent(l, *prCommentHook)
 		return l, "processed PR comment hook", nil
 	}
@@ -551,23 +542,6 @@ func (o *Options) createHookServer() (*Server, error) {
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil
-}
-
-func (o *Options) updateLauncherClientAndReturnError(l *logrus.Entry, server *Server, repository scm.Repository) error {
-	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace(nil)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to create JX client")
-		l.Errorf("%s", err.Error())
-		return err
-	}
-	launcherClient, err := launcher.NewLauncher(jxClient, lhClient, o.namespace)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
-		l.Errorf("%s", err.Error())
-		return err
-	}
-	server.ClientAgent.LauncherClient = launcherClient
-	return nil
 }
 
 func responseHTTPError(w http.ResponseWriter, statusCode int, response string) {
