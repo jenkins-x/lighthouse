@@ -35,7 +35,7 @@ import (
 
 const (
 	controllerName           = "foghorn"
-	defaultTargetURLTemplate = "{{ .BaseURL }}/teams/{{ .Namespace }}/projects/{{ .Owner }}/{{ .Repository }}/{{ .Branch }}/{{ .Build }}"
+	defaultTargetURLTemplate = "{{ .BaseURL }}/teams/{{ .Team }}/projects/{{ .Owner }}/{{ .Repository }}/{{ .Branch }}/{{ .Build }}"
 )
 
 // Controller listens for changes to PipelineActivitys and updates the corresponding LighthouseJobs and provider commit statuses.
@@ -384,6 +384,13 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 	}
 	urlBase := c.getReportURLBase()
 	if urlBase != "" {
+		urlTeam := c.getReportURLTeam()
+		team := ns
+		// override with env var if set
+		if urlTeam != "" {
+			team = urlTeam
+		}
+
 		targetURL := c.createReportTargetURL(defaultTargetURLTemplate, ReportParams{
 			Owner:      owner,
 			Repository: repo,
@@ -392,7 +399,7 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 			Context:    pipelineContext,
 			// TODO: Need to get the job URL base in here somehow. (apb)
 			BaseURL:   strings.TrimRight(urlBase, "/"),
-			Namespace: ns,
+			Team:      team,
 		})
 
 		if strings.HasPrefix(targetURL, "http://") || strings.HasPrefix(targetURL, "https://") {
@@ -422,9 +429,14 @@ func (c *Controller) getReportURLBase() string {
 	return os.Getenv("LIGHTHOUSE_REPORT_URL_BASE")
 }
 
+// getReportURLTeam gets the team to construct the report url
+func (c *Controller) getReportURLTeam() string {
+	return os.Getenv("LIGHTHOUSE_REPORT_URL_TEAM")
+}
+
 // ReportParams contains the parameters for target URL templates
 type ReportParams struct {
-	BaseURL, Owner, Repository, Branch, Build, Context, Namespace string
+	BaseURL, Owner, Repository, Branch, Build, Context, Team string
 }
 
 // createReportTargetURL creates the target URL for pipeline results/logs from a template
