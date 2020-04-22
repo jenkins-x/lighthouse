@@ -4,11 +4,12 @@ require (
 	cloud.google.com/go v0.37.4 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/go-cmp v0.3.1
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
 	github.com/jenkins-x/go-scm v1.5.100
-	github.com/jenkins-x/jx v0.0.0-20200422185619-b02a6f83fc15
+	github.com/jenkins-x/jx v0.0.0-20200422130737-877bc4f04855
 	github.com/knative/build v0.7.0
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.4
