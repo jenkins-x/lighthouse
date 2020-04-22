@@ -32,6 +32,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/yaml"
 )
 
 type options struct {
@@ -110,6 +111,8 @@ func main() {
 	if err := configAgent.Start(o.configPath, o.jobConfigPath); err != nil {
 		logrus.WithError(err).Fatal("Error starting config agent.")
 	}
+	cy, _ := yaml.Marshal(configAgent.Config())
+	logrus.Warnf("CONFIG: %s", string(cy))
 
 	var err error
 	botName := o.botName
