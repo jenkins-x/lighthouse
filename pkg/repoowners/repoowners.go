@@ -341,6 +341,14 @@ func loadOwnersFrom(baseDir string, mdYaml bool, aliases RepoAliases, dirBlackli
 		dirBlacklist: dirBlacklist,
 	}
 
+	path := filepath.Join(baseDir, "OWNERS")
+	b, err := ioutil.ReadFile(path) // #nosec
+	if err != nil {
+		log.WithError(err).Errorf("Failed to read the OWNERS file.")
+		return nil, err
+	}
+	log.Warnf("OWNERS: %s", string(b))
+
 	return o, filepath.Walk(o.baseDir, o.walkFunc)
 }
 
