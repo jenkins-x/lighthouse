@@ -47,6 +47,7 @@ type SCMClient interface {
 	// Functions implemented in organizations.go
 	ListTeams(string) ([]*scm.Team, error)
 	ListTeamMembers(int, string) ([]*scm.TeamMember, error)
+	ListOrgMembers(string) ([]*scm.TeamMember, error)
 
 	// Functions implemented in pull_requests.go
 	GetPullRequest(string, string, int) (*scm.PullRequest, error)

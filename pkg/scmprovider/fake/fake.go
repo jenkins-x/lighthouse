@@ -422,6 +422,11 @@ func (f *SCMClient) ListTeams(org string) ([]*scm.Team, error) {
 	}, nil
 }
 
+// ListOrgMembers returns an empty list for now
+func (f *SCMClient) ListOrgMembers(org string) ([]*scm.TeamMember, error) {
+	return nil, nil
+}
+
 // ListTeamMembers return a fake team with a single "sig-lead" Github teammember
 func (f *SCMClient) ListTeamMembers(teamID int, role string) ([]*scm.TeamMember, error) {
 	if role != scmprovider.RoleAll {

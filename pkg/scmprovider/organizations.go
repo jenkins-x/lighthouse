@@ -19,3 +19,10 @@ func (c *Client) ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 	members, _, err := c.client.Organizations.ListTeamMembers(ctx, id, role, c.createListOptions())
 	return members, err
 }
+
+// ListOrgMembers list the org members
+func (c *Client) ListOrgMembers(org string) ([]*scm.TeamMember, error) {
+	ctx := context.Background()
+	members, _, err := c.client.Organizations.ListOrgMembers(ctx, org, c.createListOptions())
+	return members, err
+}
