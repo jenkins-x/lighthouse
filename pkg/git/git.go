@@ -163,6 +163,7 @@ func (c *client) Clone(repo string) (*Repo, error) {
 			}
 		}
 		remote := fmt.Sprintf("%s/%s%s", base, prefix, repoText)
+		c.logger.Infof("remote is %s", remote)
 		if b, err := retryCmd(c.logger, "", c.git, "clone", "--mirror", remote, cache); err != nil {
 			return nil, fmt.Errorf("git cache clone error: %v. output: %s", err, string(b))
 		}
