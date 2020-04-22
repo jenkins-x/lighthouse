@@ -2,7 +2,6 @@ package webhook
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -61,7 +60,7 @@ type Options struct {
 	botName          string
 	gitServerURL     string
 	configMapWatcher *watcher.ConfigMapWatcher
-	localGitDir      string
+	gitClient        git.Client
 }
 
 // NewCmdWebhook creates the command
@@ -120,10 +119,18 @@ func (o *Options) Run() error {
 		return errors.Wrapf(err, "failed to create ScmClient")
 	}
 
-	o.localGitDir, err = ioutil.TempDir("", "git")
+	gitClient, err := git.NewClient(o.gitServerURL, o.gitKind())
 	if err != nil {
-		return errors.Wrapf(err, "failed to create git temp directory")
+		logrus.WithError(err).Fatal("Error getting git client.")
 	}
+	defer func() {
+		err := gitClient.Clean()
+		if err != nil {
+			logrus.WithError(err).Fatal("Error cleaning the git client.")
+		}
+	}()
+
+	o.gitClient = gitClient
 
 	mux := http.NewServeMux()
 	mux.Handle(HealthPath, http.HandlerFunc(o.health))
@@ -242,9 +249,8 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
-	gitClient, _ := git.NewClientWithDir(serverURL, o.gitKind(), o.localGitDir)
 
-	gitClient.SetCredentials(gitCloneUser, func() []byte {
+	o.gitClient.SetCredentials(gitCloneUser, func() []byte {
 		return []byte(token)
 	})
 	util.AddAuthToSCMClient(scmClient, token, ghaSecretDir != "")
@@ -253,7 +259,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		BotName:           o.GetBotName(),
 		SCMProviderClient: scmClient,
 		KubernetesClient:  kubeClient,
-		GitClient:         gitClient,
+		GitClient:         o.gitClient,
 		LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(o.namespace),
 	}
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
@@ -514,17 +520,6 @@ func (o *Options) createHookServer() (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
-
-	gitClient, err := git.NewClient(o.gitServerURL, o.gitKind())
-	if err != nil {
-		logrus.WithError(err).Fatal("Error getting git client.")
-	}
-	defer func() {
-		err := gitClient.Clean()
-		if err != nil {
-			logrus.WithError(err).Fatal("Error cleaning the git client.")
-		}
-	}()
 
 	promMetrics := NewMetrics()
 
