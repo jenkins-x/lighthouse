@@ -69,7 +69,13 @@ type client struct {
 }
 
 func (c client) createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
-	return c.lhClient.Create(job)
+	overrideStatus := job.Status
+	createdJob, err := c.lhClient.Create(job)
+	if err != nil {
+		return nil, err
+	}
+	createdJob.Status = overrideStatus
+	return c.lhClient.UpdateStatus(createdJob)
 }
 
 func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
