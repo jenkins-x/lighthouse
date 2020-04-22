@@ -42,7 +42,12 @@ func (c *Client) GetPullRequestChanges(org, repo string, number int) ([]*scm.Cha
 func (c *Client) Merge(owner, repo string, number int, details MergeDetails) error {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
-	_, err := c.client.PullRequests.Merge(ctx, fullName, number)
+	mergeOptions := &scm.PullRequestMergeOptions{
+		CommitTitle: details.CommitTitle,
+		SHA:         details.SHA,
+		MergeMethod: details.MergeMethod,
+	}
+	_, err := c.client.PullRequests.Merge(ctx, fullName, number, mergeOptions)
 	return err
 }
 
