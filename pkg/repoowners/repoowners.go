@@ -265,7 +265,11 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	}
 	for k, v := range owners.approvers {
 		for k1, v1 := range v {
-			log.Warnf("approver %s : %s : %s", k, k1.String(), strings.Join(v1.List(), ", "))
+			reStr := "nil"
+			if k1 != nil {
+				reStr = k1.String()
+			}
+			log.Warnf("approver %s : %s : %s", k, reStr, strings.Join(v1.List(), ", "))
 		}
 	}
 	return owners, nil
