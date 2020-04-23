@@ -197,6 +197,38 @@ func (c *Client) CreateComment(owner, repo string, number int, pr bool, comment 
 	return nil
 }
 
+// EditComment edit a comment
+func (c *Client) EditComment(owner, repo string, number int, id int, comment string, pr bool) error {
+	fullName := c.repositoryName(owner, repo)
+	commentInput := scm.CommentInput{
+		Body: comment,
+	}
+	ctx := context.Background()
+	if pr {
+		_, response, err := c.client.PullRequests.EditComment(ctx, fullName, number, id, &commentInput)
+		if err != nil {
+			var b bytes.Buffer
+			_, cperr := io.Copy(&b, response.Body)
+			if cperr != nil {
+				return errors.Wrapf(cperr, "response: %s", b.String())
+			}
+			return errors.Wrapf(err, "response: %s", b.String())
+		}
+
+	} else {
+		_, response, err := c.client.Issues.EditComment(ctx, fullName, number, id, &commentInput)
+		if err != nil {
+			var b bytes.Buffer
+			_, cperr := io.Copy(&b, response.Body)
+			if cperr != nil {
+				return errors.Wrapf(cperr, "reponse: %s", b.String())
+			}
+			return errors.Wrapf(err, "response: %s", b.String())
+		}
+	}
+	return nil
+}
+
 // ReopenIssue reopen an issue
 func (c *Client) ReopenIssue(owner, repo string, number int) error {
 	panic("implement me")

@@ -16,6 +16,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 )
 
 type options struct {
@@ -82,11 +83,15 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("Could not create Lighthouse API client")
 	}
-
+	kubeClient, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		logrus.WithError(err).Fatal("Could not create Kubernetes API client")
+	}
 	jxInformerFactory := jxinformers.NewSharedInformerFactoryWithOptions(jxClient, time.Minute*30, jxinformers.WithNamespace(o.namespace))
 	lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Minute*30, lhinformers.WithNamespace(o.namespace))
 
-	controller := foghorn.NewController(jxClient,
+	controller, err := foghorn.NewController(kubeClient,
+		jxClient,
 		lhClient,
 		jxInformerFactory.Jenkins().V1().PipelineActivities(),
 		lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs(),

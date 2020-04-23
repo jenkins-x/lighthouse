@@ -34,15 +34,6 @@ const (
 	HealthPath = "/health"
 	// ReadyPath URL path for the HTTP endpoint that returns ready status.
 	ReadyPath = "/ready"
-
-	// ProwConfigMapName name of the ConfgMap holding the config
-	ProwConfigMapName = "config"
-	// ProwPluginsConfigMapName name of the ConfigMap holding the plugins config
-	ProwPluginsConfigMapName = "plugins"
-	// ProwConfigFilename config file name
-	ProwConfigFilename = "config.yaml"
-	// ProwPluginsFilename plugins file name
-	ProwPluginsFilename = "plugins.yaml"
 )
 
 // Options holds the command line arguments
@@ -497,13 +488,13 @@ func (o *Options) createHookServer() (*Server, error) {
 
 	callbacks := []watcher.ConfigMapCallback{
 		&watcher.ConfigMapEntryCallback{
-			Name:     ProwConfigMapName,
-			Key:      ProwConfigFilename,
+			Name:     util.ProwConfigMapName,
+			Key:      util.ProwConfigFilename,
 			Callback: onConfigYamlChange,
 		},
 		&watcher.ConfigMapEntryCallback{
-			Name:     ProwPluginsConfigMapName,
-			Key:      ProwPluginsFilename,
+			Name:     util.ProwPluginsConfigMapName,
+			Key:      util.ProwPluginsFilename,
 			Callback: onPluginsYamlChange,
 		},
 	}

@@ -43,6 +43,7 @@ type SCMClient interface {
 	ReopenIssue(string, string, int) error
 	FindIssues(string, string, bool) ([]scm.Issue, error)
 	CloseIssue(string, string, int) error
+	EditComment(owner, repo string, number int, id int, comment string, pr bool) error
 
 	// Functions implemented in organizations.go
 	ListTeams(string) ([]*scm.Team, error)
