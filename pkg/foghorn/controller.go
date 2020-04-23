@@ -398,8 +398,8 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 			Build:      activity.Spec.Build,
 			Context:    pipelineContext,
 			// TODO: Need to get the job URL base in here somehow. (apb)
-			BaseURL:   strings.TrimRight(urlBase, "/"),
-			Team:      team,
+			BaseURL: strings.TrimRight(urlBase, "/"),
+			Team:    team,
 		})
 
 		if strings.HasPrefix(targetURL, "http://") || strings.HasPrefix(targetURL, "https://") {

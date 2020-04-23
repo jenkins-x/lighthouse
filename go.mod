@@ -4,6 +4,7 @@ require (
 	cloud.google.com/go v0.37.4 // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	github.com/google/go-cmp v0.3.1
 	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/sessions v1.1.3
