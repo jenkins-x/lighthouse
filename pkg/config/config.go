@@ -325,20 +325,12 @@ func Load(prowConfig, jobConfig string) (c *Config, err error) {
 			c, err = nil, fmt.Errorf("panic loading config: %v", r)
 		}
 	}()
-	c, err = loadConfig(prowConfig, jobConfig)
+	c, err = loadConfigFromFiles(prowConfig, jobConfig)
 	if err != nil {
 		return nil, err
 	}
-	if err := c.finalizeJobConfig(); err != nil {
-		return nil, err
-	}
-	if err := c.validateComponentConfig(); err != nil {
-		return nil, err
-	}
-	if err := c.validateJobConfig(); err != nil {
-		return nil, err
-	}
-	return c, nil
+
+	return c.finalizeAndValidate()
 }
 
 // LoadYAMLConfig loads the configuration from the given data
@@ -350,11 +342,12 @@ func LoadYAMLConfig(data []byte) (*Config, error) {
 	if err := parseProwConfig(c); err != nil {
 		return c, err
 	}
-	return c, nil
+
+	return c.finalizeAndValidate()
 }
 
-// loadConfig loads one or multiple config files and returns a config object.
-func loadConfig(prowConfig, jobConfig string) (*Config, error) {
+// loadConfigFromFiles loads one or multiple config files and returns a config object.
+func loadConfigFromFiles(prowConfig, jobConfig string) (*Config, error) {
 	stat, err := os.Stat(prowConfig)
 	if err != nil {
 		return nil, err
@@ -552,6 +545,20 @@ func setPeriodicDecorationDefaults(c *Config, ps *Periodic) {
 			ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
 		}
 	*/
+}
+
+// finalizeAndValidate sets default configurations, validates the configuration, etc
+func (c *Config) finalizeAndValidate() (*Config, error) {
+	if err := c.finalizeJobConfig(); err != nil {
+		return nil, err
+	}
+	if err := c.validateComponentConfig(); err != nil {
+		return nil, err
+	}
+	if err := c.validateJobConfig(); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // finalizeJobConfig mutates and fixes entries for jobspecs
