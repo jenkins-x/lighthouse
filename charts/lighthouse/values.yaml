@@ -125,3 +125,7 @@ clusterName: ""
 user: ""
 
 logFormat: "json"
+
+cluster:
+  crds:
+    create: true
