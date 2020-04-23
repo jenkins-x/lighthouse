@@ -87,4 +87,13 @@ const (
 
 	// GithubServer the default github server URL
 	GithubServer = "https://github.com"
+
+	// ProwConfigMapName name of the ConfgMap holding the config
+	ProwConfigMapName = "config"
+	// ProwPluginsConfigMapName name of the ConfigMap holding the plugins config
+	ProwPluginsConfigMapName = "plugins"
+	// ProwConfigFilename config file name
+	ProwConfigFilename = "config.yaml"
+	// ProwPluginsFilename plugins file name
+	ProwPluginsFilename = "plugins.yaml"
 )

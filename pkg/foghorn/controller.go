@@ -3,8 +3,10 @@ package foghorn
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"reflect"
 	"strings"
+	"syscall"
 	"text/template"
 	"time"
 
@@ -18,8 +20,12 @@ import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
@@ -28,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
@@ -40,8 +47,9 @@ const (
 
 // Controller listens for changes to PipelineActivitys and updates the corresponding LighthouseJobs and provider commit statuses.
 type Controller struct {
-	jxClient jxclient.Interface
-	lhClient clientset.Interface
+	jxClient   jxclient.Interface
+	lhClient   clientset.Interface
+	kubeClient kubernetes.Interface
 
 	activityLister jxlisters.PipelineActivityLister
 	activitySynced cache.InformerSynced
@@ -55,27 +63,80 @@ type Controller struct {
 	// simultaneously in two different workers.
 	queue workqueue.RateLimitingInterface
 
+	configMapWatcher *watcher.ConfigMapWatcher
+
+	jobConfig    *config.Agent
+	pluginConfig *plugins.ConfigAgent
+
 	logger *logrus.Entry
 	ns     string
 }
 
 // NewController returns a new controller for syncing PipelineActivity updates to LighthouseJobs and commit statuses
-func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, activityInformer jxinformers.PipelineActivityInformer,
-	lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) *Controller {
+func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface, lhClient clientset.Interface, activityInformer jxinformers.PipelineActivityInformer,
+	lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) (*Controller, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName)
 	}
 
+	configAgent := &config.Agent{}
+	pluginAgent := &plugins.ConfigAgent{}
+
+	onConfigYamlChange := func(text string) {
+		if text != "" {
+			cfg, err := config.LoadYAMLConfig([]byte(text))
+			if err != nil {
+				logrus.WithError(err).Error("Error processing the prow Config YAML")
+			} else {
+				logrus.Info("updating the prow core configuration")
+				configAgent.Set(cfg)
+			}
+		}
+	}
+
+	onPluginsYamlChange := func(text string) {
+		if text != "" {
+			cfg, err := pluginAgent.LoadYAMLConfig([]byte(text))
+			if err != nil {
+				logrus.WithError(err).Error("Error processing the prow Plugins YAML")
+			} else {
+				logrus.Info("updating the prow plugins configuration")
+				pluginAgent.Set(cfg)
+			}
+		}
+	}
+
+	callbacks := []watcher.ConfigMapCallback{
+		&watcher.ConfigMapEntryCallback{
+			Name:     util.ProwConfigMapName,
+			Key:      util.ProwConfigFilename,
+			Callback: onConfigYamlChange,
+		},
+		&watcher.ConfigMapEntryCallback{
+			Name:     util.ProwPluginsConfigMapName,
+			Key:      util.ProwPluginsFilename,
+			Callback: onPluginsYamlChange,
+		},
+	}
+	configMapWatcher, err := watcher.NewConfigMapWatcher(kubeClient, ns, callbacks, stopper())
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
+	}
+
 	controller := &Controller{
-		jxClient:       jxClient,
-		lhClient:       lhClient,
-		activityLister: activityInformer.Lister(),
-		activitySynced: activityInformer.Informer().HasSynced,
-		lhLister:       lhInformer.Lister(),
-		lhSynced:       lhInformer.Informer().HasSynced,
-		logger:         logger,
-		ns:             ns,
-		queue:          RateLimiter(),
+		jxClient:         jxClient,
+		lhClient:         lhClient,
+		activityLister:   activityInformer.Lister(),
+		activitySynced:   activityInformer.Informer().HasSynced,
+		lhLister:         lhInformer.Lister(),
+		lhSynced:         lhInformer.Informer().HasSynced,
+		logger:           logger,
+		ns:               ns,
+		queue:            RateLimiter(),
+		jobConfig:        configAgent,
+		pluginConfig:     pluginAgent,
+		configMapWatcher: configMapWatcher,
+		kubeClient:       kubeClient,
 	}
 
 	activityInformer.Informer()
@@ -102,7 +163,7 @@ func NewController(jxClient jxclient.Interface, lhClient clientset.Interface, ac
 		},
 	})
 
-	return controller
+	return controller, nil
 }
 
 // Run actually runs the controller
@@ -112,6 +173,8 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 
 	// Start the informer factories to begin populating the informer caches
 	c.logger.Info("Starting controller")
+
+	defer c.configMapWatcher.Stop()
 
 	// Wait for the caches to be synced before starting workers
 	c.logger.Info("Waiting for informer caches to sync")
@@ -398,8 +461,8 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 			Build:      activity.Spec.Build,
 			Context:    pipelineContext,
 			// TODO: Need to get the job URL base in here somehow. (apb)
-			BaseURL:   strings.TrimRight(urlBase, "/"),
-			Team:      team,
+			BaseURL: strings.TrimRight(urlBase, "/"),
+			Team:    team,
 		})
 
 		if strings.HasPrefix(targetURL, "http://") || strings.HasPrefix(targetURL, "https://") {
@@ -419,7 +482,15 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 		return
 	}
 
+	err = reporter.Report(scmClient, c.jobConfig.Config().Plank.ReportTemplate, job, []v1alpha1.PipelineKind{v1alpha1.PresubmitJob})
+	if err != nil {
+		// For now, we're just going to ignore failures here.
+		c.logger.WithFields(fields).WithError(err).Warnf("failed to update comments on the PR")
+	}
 	c.logger.WithFields(fields).Info("reported git status")
+	if gitRepoStatus.Target != "" {
+		job.Status.ReportURL = gitRepoStatus.Target
+	}
 	job.Status.Description = statusInfo.description
 	job.Status.LastReportState = statusInfo.scmStatus.String()
 }
@@ -575,4 +646,20 @@ func (c *Controller) createSCMToken(gitKind string) (string, error) {
 		return value, fmt.Errorf("No token available for git kind %s at environment variable $%s", gitKind, envName)
 	}
 	return value, nil
+}
+
+// stopper returns a channel that remains open until an interrupt is received.
+func stopper() chan struct{} {
+	stop := make(chan struct{})
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		logrus.Warn("Interrupt received, attempting clean shutdown...")
+		close(stop)
+		<-c
+		logrus.Error("Second interrupt received, force exiting...")
+		os.Exit(1)
+	}()
+	return stop
 }
