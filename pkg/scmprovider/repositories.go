@@ -6,6 +6,13 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 )
 
+// GetRepositoryByFullName returns the repository details
+func (c *Client) GetRepositoryByFullName(fullName string) (*scm.Repository, error) {
+	ctx := context.Background()
+	r, _, err := c.client.Repositories.Find(ctx, fullName)
+	return r, err
+}
+
 // GetRepoLabels returns the repository labels
 func (c *Client) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
 	ctx := context.Background()

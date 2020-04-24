@@ -453,45 +453,61 @@ func TestCats(t *testing.T) {
 			shouldComment: true,
 			shouldError:   false,
 		},
+		{
+			name:          "leave cat on issue with prefix",
+			state:         "open",
+			action:        scm.ActionCreate,
+			body:          "/lh-meow",
+			shouldComment: true,
+			shouldError:   false,
+		},
+		{
+			name:          "movie cat with prefix",
+			state:         "open",
+			action:        scm.ActionCreate,
+			body:          "/lh-meowvie",
+			shouldComment: true,
+			shouldError:   false,
+		},
 	}
 	for _, tc := range testcases {
-		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := scmprovider.ToTestClient(fakeScmClient)
+		t.Run(tc.name, func(t *testing.T) {
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
-		e := &scmprovider.GenericCommentEvent{
-			Action:     tc.action,
-			Body:       tc.body,
-			Number:     5,
-			IssueState: tc.state,
-			IsPR:       tc.pr,
-		}
-		err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakeClowder("tubbs"), func() {})
-		if !tc.shouldError && err != nil {
-			t.Errorf("%s: didn't expect error: %v", tc.name, err)
-			continue
-		} else if tc.shouldError && err == nil {
-			t.Errorf("%s: expected an error to occur", tc.name)
-			continue
-		}
-		var comments map[int][]*scm.Comment
-		if tc.pr {
-			comments = fc.PullRequestComments
-		} else {
-			comments = fc.IssueComments
-		}
-		if tc.shouldComment && len(comments[5]) != 1 {
-			t.Errorf("%s: should have commented.", tc.name)
-		} else if tc.shouldComment {
-			shouldImage := !tc.shouldError
-			body := comments[5][0].Body
-			hasImage := strings.Contains(body, "![")
-			if hasImage && !shouldImage {
-				t.Errorf("%s: unexpected image in %s", tc.name, body)
-			} else if !hasImage && shouldImage {
-				t.Errorf("%s: no image in %s", tc.name, body)
+			e := &scmprovider.GenericCommentEvent{
+				Action:     tc.action,
+				Body:       tc.body,
+				Number:     5,
+				IssueState: tc.state,
+				IsPR:       tc.pr,
 			}
-		} else if !tc.shouldComment && len(comments[5]) != 0 {
-			t.Errorf("%s: should not have commented.", tc.name)
-		}
+			err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakeClowder("tubbs"), func() {})
+			if !tc.shouldError && err != nil {
+				t.Fatalf("%s: didn't expect error: %v", tc.name, err)
+			} else if tc.shouldError && err == nil {
+				t.Fatalf("%s: expected an error to occur", tc.name)
+			}
+			var comments map[int][]*scm.Comment
+			if tc.pr {
+				comments = fc.PullRequestComments
+			} else {
+				comments = fc.IssueComments
+			}
+			if tc.shouldComment && len(comments[5]) != 1 {
+				t.Errorf("%s: should have commented.", tc.name)
+			} else if tc.shouldComment {
+				shouldImage := !tc.shouldError
+				body := comments[5][0].Body
+				hasImage := strings.Contains(body, "![")
+				if hasImage && !shouldImage {
+					t.Errorf("%s: unexpected image in %s", tc.name, body)
+				} else if !hasImage && shouldImage {
+					t.Errorf("%s: no image in %s", tc.name, body)
+				}
+			} else if !tc.shouldComment && len(comments[5]) != 0 {
+				t.Errorf("%s: should not have commented.", tc.name)
+			}
+		})
 	}
 }

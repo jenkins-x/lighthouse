@@ -129,6 +129,13 @@ func TestAddLifecycleLabels(t *testing.T) {
 			labels:  []string{},
 		},
 		{
+			name:    "add frozen with prefix, don't have it -> frozen added",
+			body:    "/lh-lifecycle frozen",
+			added:   []string{labels.LifecycleFrozen},
+			removed: []string{},
+			labels:  []string{},
+		},
+		{
 			name:    "add stale, don't have it -> stale added",
 			body:    "/lifecycle stale",
 			added:   []string{labels.LifecycleStale},
@@ -145,6 +152,13 @@ func TestAddLifecycleLabels(t *testing.T) {
 		{
 			name:    "remove frozen, have it -> frozen removed",
 			body:    "/remove-lifecycle frozen",
+			added:   []string{},
+			removed: []string{labels.LifecycleFrozen},
+			labels:  []string{labels.LifecycleFrozen},
+		},
+		{
+			name:    "remove frozen with prefix, have it -> frozen removed",
+			body:    "/lh-remove-lifecycle frozen",
 			added:   []string{},
 			removed: []string{labels.LifecycleFrozen},
 			labels:  []string{labels.LifecycleFrozen},
@@ -207,23 +221,25 @@ func TestAddLifecycleLabels(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		fc := &fakeClient{
-			labels:  tc.labels,
-			added:   []string{},
-			removed: []string{},
-		}
-		e := &scmprovider.GenericCommentEvent{
-			Body:   tc.body,
-			Action: scm.ActionCreate,
-		}
-		err := handle(fc, logrus.WithField("plugin", "fake-lifecyle"), e)
-		switch {
-		case err != nil:
-			t.Errorf("%s: unexpected error: %v", tc.name, err)
-		case !reflect.DeepEqual(tc.added, fc.added):
-			t.Errorf("%s: added %v != actual %v", tc.name, tc.added, fc.added)
-		case !reflect.DeepEqual(tc.removed, fc.removed):
-			t.Errorf("%s: removed %v != actual %v", tc.name, tc.removed, fc.removed)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			fc := &fakeClient{
+				labels:  tc.labels,
+				added:   []string{},
+				removed: []string{},
+			}
+			e := &scmprovider.GenericCommentEvent{
+				Body:   tc.body,
+				Action: scm.ActionCreate,
+			}
+			err := handle(fc, logrus.WithField("plugin", "fake-lifecyle"), e)
+			switch {
+			case err != nil:
+				t.Errorf("%s: unexpected error: %v", tc.name, err)
+			case !reflect.DeepEqual(tc.added, fc.added):
+				t.Errorf("%s: added %v != actual %v", tc.name, tc.added, fc.added)
+			case !reflect.DeepEqual(tc.removed, fc.removed):
+				t.Errorf("%s: removed %v != actual %v", tc.name, tc.removed, fc.removed)
+			}
+		})
 	}
 }

@@ -35,7 +35,7 @@ import (
 const pluginName = "milestone"
 
 var (
-	milestoneRegex   = regexp.MustCompile(`(?m)^/milestone\s+(.+?)\s*$`)
+	milestoneRegex   = regexp.MustCompile(`(?m)^/(?:lh-)?milestone\s+(.+?)\s*$`)
 	mustBeAuthorized = "You must be a member of the [%s/%s](https://github.com/orgs/%s/teams/%s/members) GitHub team to set the milestone. If you believe you should be able to issue the /milestone command, please contact your %s and have them propose you as an additional delegate for this responsibility."
 	invalidMilestone = "The provided milestone is not valid for this repository. Milestones in this repository: [%s]\n\nUse `/milestone %s` to clear the milestone."
 	milestoneTeamMsg = "The milestone maintainers team is the GitHub team %q with ID: %d."
@@ -78,7 +78,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Updates the milestone for an issue or PR",
 		Featured:    false,
 		WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/milestone' command.",
-		Examples:    []string{"/milestone v1.10", "/milestone v1.9", "/milestone clear"},
+		Examples:    []string{"/milestone v1.10", "/milestone v1.9", "/milestone clear", "/lh-milestone clear"},
 	})
 	return pluginHelp, nil
 }

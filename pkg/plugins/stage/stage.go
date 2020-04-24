@@ -34,7 +34,7 @@ var (
 	stageBeta   = "stage/beta"
 	stageStable = "stage/stable"
 	stageLabels = []string{stageAlpha, stageBeta, stageStable}
-	stageRe     = regexp.MustCompile(`(?mi)^/(remove-)?stage (alpha|beta|stable)\s*$`)
+	stageRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?(remove-)?stage (alpha|beta|stable)\s*$`)
 )
 
 func init() {

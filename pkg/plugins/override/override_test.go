@@ -230,6 +230,24 @@ func TestHandle(t *testing.T) {
 			checkComments: []string{"on behalf of " + adminUser},
 		},
 		{
+			name:    "successfully override failure with prefix",
+			comment: "/lh-override broken-test",
+			contexts: map[string]*scm.StatusInput{
+				"broken-test": {
+					Label: "broken-test",
+					State: scm.StateFailure,
+				},
+			},
+			expected: map[string]*scm.StatusInput{
+				"broken-test": {
+					Label: "broken-test",
+					Desc:  description(adminUser),
+					State: scm.StateSuccess,
+				},
+			},
+			checkComments: []string{"on behalf of " + adminUser},
+		},
+		{
 			name:    "successfully override pending",
 			comment: "/override hung-test",
 			contexts: map[string]*scm.StatusInput{

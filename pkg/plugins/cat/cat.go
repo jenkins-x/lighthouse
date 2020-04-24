@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	match          = regexp.MustCompile(`(?mi)^/meow(vie)?(?: (.+))?\s*$`)
+	match          = regexp.MustCompile(`(?mi)^/(?:lh-)?meow(vie)?(?: (.+))?\s*$`)
 	grumpyKeywords = regexp.MustCompile(`(?mi)^(no|grumpy)\s*$`)
 	meow           = &realClowder{
 		url: "https://api.thecatapi.com/v1/images/search?format=json&results_per_page=1",
@@ -66,7 +66,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Add a cat image to the issue or PR",
 		Featured:    false,
 		WhoCanUse:   "Anyone",
-		Examples:    []string{"/meow", "/meow caturday", "/meowvie clothes"},
+		Examples:    []string{"/meow", "/meow caturday", "/meowvie clothes", "/lh-meow"},
 	})
 	return pluginHelp, nil
 }

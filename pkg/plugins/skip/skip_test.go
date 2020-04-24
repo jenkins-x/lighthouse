@@ -150,6 +150,56 @@ func TestSkipStatus(t *testing.T) {
 			},
 		},
 		{
+			name: "optional contexts that have failed or are pending should be skipped, with prefix",
+
+			presubmits: []config.Presubmit{
+				{
+					Optional: true,
+					Reporter: config.Reporter{
+						Context: "failed-tests",
+					},
+				},
+				{
+					Optional: true,
+					Reporter: config.Reporter{
+						Context: "pending-tests",
+					},
+				},
+			},
+			sha: "shalala",
+			event: &scmprovider.GenericCommentEvent{
+				IsPR:       true,
+				IssueState: "open",
+				Action:     scm.ActionCreate,
+				Body:       "/lh-skip",
+				Number:     1,
+				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
+			},
+			existing: []*scm.StatusInput{
+				{
+					State: scm.StateFailure,
+					Label: "failed-tests",
+				},
+				{
+					State: scm.StatePending,
+					Label: "pending-tests",
+				},
+			},
+
+			expected: []*scm.StatusInput{
+				{
+					State: scm.StateSuccess,
+					Desc:  "Skipped",
+					Label: "failed-tests",
+				},
+				{
+					State: scm.StateSuccess,
+					Desc:  "Skipped",
+					Label: "pending-tests",
+				},
+			},
+		},
+		{
 			name: "optional contexts that have not posted a context should not be skipped",
 
 			presubmits: []config.Presubmit{
@@ -293,57 +343,57 @@ func TestSkipStatus(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		if err := config.SetPresubmitRegexes(test.presubmits); err != nil {
-			t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			if err := config.SetPresubmitRegexes(test.presubmits); err != nil {
+				t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
+			}
 
-		fspc := &fake.SCMClient{
-			IssueComments: make(map[int][]*scm.Comment),
-			PullRequests: map[int]*scm.PullRequest{
-				test.event.Number: {
-					Head: scm.PullRequestBranch{
-						Sha: test.sha,
+			fspc := &fake.SCMClient{
+				IssueComments: make(map[int][]*scm.Comment),
+				PullRequests: map[int]*scm.PullRequest{
+					test.event.Number: {
+						Head: scm.PullRequestBranch{
+							Sha: test.sha,
+						},
 					},
 				},
-			},
-			PullRequestChanges: test.prChanges,
-			CreatedStatuses: map[string][]*scm.StatusInput{
-				test.sha: test.existing,
-			},
-			CombinedStatuses: map[string]*scm.CombinedStatus{
-				test.sha: {
-					State:    test.combinedStatus,
-					Statuses: scm.ConvertStatusInputsToStatuses(test.existing),
+				PullRequestChanges: test.prChanges,
+				CreatedStatuses: map[string][]*scm.StatusInput{
+					test.sha: test.existing,
 				},
-			},
-		}
-		l := logrus.WithField("plugin", pluginName)
+				CombinedStatuses: map[string]*scm.CombinedStatus{
+					test.sha: {
+						State:    test.combinedStatus,
+						Statuses: scm.ConvertStatusInputsToStatuses(test.existing),
+					},
+				},
+			}
+			l := logrus.WithField("plugin", pluginName)
 
-		if err := handle(fspc, l, test.event, test.presubmits, true); err != nil {
-			t.Errorf("%s: unexpected error: %v", test.name, err)
-			continue
-		}
+			if err := handle(fspc, l, test.event, test.presubmits, true); err != nil {
+				t.Fatalf("%s: unexpected error: %v", test.name, err)
+			}
 
-		// Check that the correct statuses have been updated.
-		created := fspc.CreatedStatuses[test.sha]
-		if len(test.expected) != len(created) {
-			t.Errorf("%s: status mismatch: expected:\n%+v\ngot:\n%+v", test.name, test.expected, created)
-			continue
-		}
-		for _, got := range created {
-			var found bool
-			for _, exp := range test.expected {
-				if exp.Label == got.Label {
-					found = true
-					if !reflect.DeepEqual(exp, got) {
-						t.Errorf("%s: expected status: %v, got: %v", test.name, exp, got)
+			// Check that the correct statuses have been updated.
+			created := fspc.CreatedStatuses[test.sha]
+			if len(test.expected) != len(created) {
+				t.Fatalf("%s: status mismatch: expected:\n%+v\ngot:\n%+v", test.name, test.expected, created)
+			}
+			for _, got := range created {
+				var found bool
+				for _, exp := range test.expected {
+					if exp.Label == got.Label {
+						found = true
+						if !reflect.DeepEqual(exp, got) {
+							t.Errorf("%s: expected status: %v, got: %v", test.name, exp, got)
+						}
 					}
 				}
+				if !found {
+					t.Errorf("%s: expected context %q in the results: %v", test.name, got.Label, created)
+					break
+				}
 			}
-			if !found {
-				t.Errorf("%s: expected context %q in the results: %v", test.name, got.Label, created)
-				break
-			}
-		}
+		})
 	}
 }

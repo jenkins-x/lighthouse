@@ -26,13 +26,13 @@ import (
 )
 
 // TestAllRe provides the regex for `/test all`
-var TestAllRe = regexp.MustCompile(`(?m)^/test all,?($|\s.*)`)
+var TestAllRe = regexp.MustCompile(`(?m)^/(?:lh-)?test all,?($|\s.*)`)
 
 // RetestRe provides the regex for `/retest`
-var RetestRe = regexp.MustCompile(`(?m)^/retest\s*$`)
+var RetestRe = regexp.MustCompile(`(?m)^/(?:lh-)?retest\s*$`)
 
 // OkToTestRe provies the regex for `/ok-to-test`
-var OkToTestRe = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
+var OkToTestRe = regexp.MustCompile(`(?m)^/(?:lh-)?ok-to-test\s*$`)
 
 // Filter digests a presubmit config to determine if:
 //  - we the presubmit matched the filter

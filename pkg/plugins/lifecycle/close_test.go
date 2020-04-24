@@ -169,30 +169,40 @@ func TestCloseComment(t *testing.T) {
 			shouldClose:   false,
 			shouldComment: true,
 		},
+		{
+			name:          "close by author with prefix",
+			action:        scm.ActionCreate,
+			state:         "open",
+			body:          "/lh-close",
+			commenter:     "author",
+			shouldClose:   true,
+			shouldComment: true,
+		},
 	}
 	for _, tc := range testcases {
-		fc := &fakeClientClose{labels: tc.labels}
-		e := &scmprovider.GenericCommentEvent{
-			Action:      tc.action,
-			IssueState:  tc.state,
-			Body:        tc.body,
-			Author:      scm.User{Login: tc.commenter},
-			Number:      5,
-			IssueAuthor: scm.User{Login: "author"},
-		}
-		if err := handleClose(fc, logrus.WithField("plugin", "fake-close"), e); err != nil {
-			t.Errorf("For case %s, didn't expect error from handle: %v", tc.name, err)
-			continue
-		}
-		if tc.shouldClose && !fc.closed {
-			t.Errorf("For case %s, should have closed but didn't.", tc.name)
-		} else if !tc.shouldClose && fc.closed {
-			t.Errorf("For case %s, should not have closed but did.", tc.name)
-		}
-		if tc.shouldComment && !fc.commented {
-			t.Errorf("For case %s, should have commented but didn't.", tc.name)
-		} else if !tc.shouldComment && fc.commented {
-			t.Errorf("For case %s, should not have commented but did.", tc.name)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			fc := &fakeClientClose{labels: tc.labels}
+			e := &scmprovider.GenericCommentEvent{
+				Action:      tc.action,
+				IssueState:  tc.state,
+				Body:        tc.body,
+				Author:      scm.User{Login: tc.commenter},
+				Number:      5,
+				IssueAuthor: scm.User{Login: "author"},
+			}
+			if err := handleClose(fc, logrus.WithField("plugin", "fake-close"), e); err != nil {
+				t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+			}
+			if tc.shouldClose && !fc.closed {
+				t.Errorf("For case %s, should have closed but didn't.", tc.name)
+			} else if !tc.shouldClose && fc.closed {
+				t.Errorf("For case %s, should not have closed but did.", tc.name)
+			}
+			if tc.shouldComment && !fc.commented {
+				t.Errorf("For case %s, should have commented but didn't.", tc.name)
+			} else if !tc.shouldComment && fc.commented {
+				t.Errorf("For case %s, should not have commented but did.", tc.name)
+			}
+		})
 	}
 }

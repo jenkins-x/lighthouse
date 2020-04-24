@@ -96,4 +96,7 @@ const (
 	ProwConfigFilename = "config.yaml"
 	// ProwPluginsFilename plugins file name
 	ProwPluginsFilename = "plugins.yaml"
+
+	// LighthouseCommandPrefix is an optional prefix for commands to deal with things like GitLab hijacking /approve
+	LighthouseCommandPrefix = "lh-"
 )

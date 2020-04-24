@@ -32,7 +32,6 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/approve/approvers"
@@ -1019,6 +1018,45 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 </details>
 <!-- META={"approvers":[]} -->`,
 		},
+		{
+			name:     "remove approval with /lh-approve cancel with prefix",
+			hasLabel: true,
+			files:    []string{"a/a.go"},
+			comments: []*scm.Comment{
+				newTestComment("Alice", "/lh-approve no-issue"),
+				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
+				newTestComment("Alice", "stuff\n/lh-approve cancel \nmore stuff"),
+			},
+			reviews:             []*scm.Review{},
+			selfApprove:         true, // no-op test
+			needsIssue:          true,
+			lgtmActsAsApprove:   false,
+			reviewActsAsApprove: false,
+			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+
+			expectDelete:  true,
+			expectToggle:  true,
+			expectComment: true,
+			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
+
+This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
+
+*No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
+
+The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+
+<details open>
+Needs approval from an approver in each of these files:
+
+- **[a/OWNERS](https://github.com/org/repo/blob/master/a/OWNERS)**
+
+Approvers can indicate their approval by writing ` + "`/approve`" + ` in a comment
+Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a comment
+</details>
+<!-- META={"approvers":["alice"]} -->`,
+		},
 	}
 
 	fr := fakeRepo{
@@ -1041,112 +1079,112 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 	}
 
 	for _, test := range tests {
-		fakeClient, fspc := newFakeSCMProviderClient(test.hasLabel, test.humanApproved, test.files, test.comments, test.reviews, testBotName)
-		branch := "master"
-		if test.branch != "" {
-			branch = test.branch
-		}
+		t.Run(test.name, func(t *testing.T) {
+			fakeClient, fspc := newFakeSCMProviderClient(test.hasLabel, test.humanApproved, test.files, test.comments, test.reviews, testBotName)
+			branch := "master"
+			if test.branch != "" {
+				branch = test.branch
+			}
 
-		rsa := !test.selfApprove
-		irs := !test.reviewActsAsApprove
-		if err := handle(
-			logrus.WithField("plugin", "approve"),
-			fakeClient,
-			fr,
-			config.GitHubOptions{
-				LinkURL: test.githubLinkURL,
-			},
-			&plugins.Approve{
-				Repos:               []string{"org/repo"},
-				RequireSelfApproval: &rsa,
-				IssueRequired:       test.needsIssue,
-				LgtmActsAsApprove:   test.lgtmActsAsApprove,
-				IgnoreReviewState:   &irs,
-			},
-			&state{
-				org:       "org",
-				repo:      "repo",
-				branch:    branch,
-				number:    prNumber,
-				body:      test.prBody,
-				author:    "cjwagner",
-				assignees: []scm.User{{Login: "spxtr"}},
-			},
-		); err != nil {
-			t.Errorf("[%s] Unexpected error handling event: %v.", test.name, err)
-		}
+			rsa := !test.selfApprove
+			irs := !test.reviewActsAsApprove
+			if err := handle(
+				logrus.WithField("plugin", "approve"),
+				fakeClient,
+				fr,
+				test.githubLinkURL,
+				&plugins.Approve{
+					Repos:               []string{"org/repo"},
+					RequireSelfApproval: &rsa,
+					IssueRequired:       test.needsIssue,
+					LgtmActsAsApprove:   test.lgtmActsAsApprove,
+					IgnoreReviewState:   &irs,
+				},
+				&state{
+					org:       "org",
+					repo:      "repo",
+					branch:    branch,
+					number:    prNumber,
+					body:      test.prBody,
+					author:    "cjwagner",
+					assignees: []scm.User{{Login: "spxtr"}},
+				},
+			); err != nil {
+				t.Errorf("[%s] Unexpected error handling event: %v.", test.name, err)
+			}
 
-		if test.expectDelete {
-			if len(fspc.PullRequestCommentsDeleted) != 1 {
-				t.Errorf(
-					"[%s] Expected 1 notification to be deleted but %d notifications were deleted.",
-					test.name,
-					len(fspc.PullRequestCommentsDeleted),
-				)
-			}
-		} else {
-			if len(fspc.PullRequestCommentsDeleted) != 0 {
-				t.Errorf(
-					"[%s] Expected 0 notifications to be deleted but %d notification was deleted.",
-					test.name,
-					len(fspc.PullRequestCommentsDeleted),
-				)
-			}
-		}
-		if test.expectComment {
-			if len(fspc.PullRequestCommentsAdded) != 1 {
-				t.Errorf(
-					"[%s] Expected 1 notification to be added but %d notifications were added.",
-					test.name,
-					len(fspc.PullRequestCommentsAdded),
-				)
-			} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fspc.PullRequestCommentsAdded[0]; test.expectedComment != "" && got != expect {
-				t.Errorf(
-					"[%s] Expected the created notification to be:\n%s\n\nbut got:\n%s\n\n",
-					test.name,
-					expect,
-					got,
-				)
-			}
-		} else {
-			if len(fspc.PullRequestCommentsAdded) != 0 {
-				t.Errorf(
-					"[%s] Expected 0 notifications to be added but %d notification was added.",
-					test.name,
-					len(fspc.PullRequestCommentsAdded),
-				)
-			}
-		}
-
-		labelAdded := false
-		for _, l := range fspc.PullRequestLabelsAdded {
-			if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
-				if labelAdded {
-					t.Errorf("[%s] The approved label was applied to a PR that already had it!", test.name)
+			if test.expectDelete {
+				if len(fspc.PullRequestCommentsDeleted) != 1 {
+					t.Errorf(
+						"[%s] Expected 1 notification to be deleted but %d notifications were deleted.",
+						test.name,
+						len(fspc.PullRequestCommentsDeleted),
+					)
 				}
-				labelAdded = true
-			}
-		}
-		if test.hasLabel {
-			labelAdded = false
-		}
-		toggled := labelAdded
-		for _, l := range fspc.PullRequestLabelsRemoved {
-			if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
-				if !test.hasLabel {
-					t.Errorf("[%s] The approved label was removed from a PR that doesn't have it!", test.name)
+			} else {
+				if len(fspc.PullRequestCommentsDeleted) != 0 {
+					t.Errorf(
+						"[%s] Expected 0 notifications to be deleted but %d notification was deleted.",
+						test.name,
+						len(fspc.PullRequestCommentsDeleted),
+					)
 				}
-				toggled = true
 			}
-		}
-		if test.expectToggle != toggled {
-			t.Errorf(
-				"[%s] Expected 'approved' label toggled: %t, but got %t.",
-				test.name,
-				test.expectToggle,
-				toggled,
-			)
-		}
+			if test.expectComment {
+				if len(fspc.PullRequestCommentsAdded) != 1 {
+					t.Errorf(
+						"[%s] Expected 1 notification to be added but %d notifications were added.",
+						test.name,
+						len(fspc.PullRequestCommentsAdded),
+					)
+				} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fspc.PullRequestCommentsAdded[0]; test.expectedComment != "" && got != expect {
+					t.Errorf(
+						"[%s] Expected the created notification to be:\n%s\n\nbut got:\n%s\n\n",
+						test.name,
+						expect,
+						got,
+					)
+				}
+			} else {
+				if len(fspc.PullRequestCommentsAdded) != 0 {
+					t.Errorf(
+						"[%s] Expected 0 notifications to be added but %d notification was added.",
+						test.name,
+						len(fspc.PullRequestCommentsAdded),
+					)
+				}
+			}
+
+			labelAdded := false
+			for _, l := range fspc.PullRequestLabelsAdded {
+				if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
+					if labelAdded {
+						t.Errorf("[%s] The approved label was applied to a PR that already had it!", test.name)
+					}
+					labelAdded = true
+				}
+			}
+			if test.hasLabel {
+				labelAdded = false
+			}
+			toggled := labelAdded
+			for _, l := range fspc.PullRequestLabelsRemoved {
+				if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
+					if !test.hasLabel {
+						t.Errorf("[%s] The approved label was removed from a PR that doesn't have it!", test.name)
+					}
+					toggled = true
+				}
+			}
+			if test.expectToggle != toggled {
+				t.Errorf(
+					"[%s] Expected 'approved' label toggled: %t, but got %t.",
+					test.name,
+					test.expectToggle,
+					toggled,
+				)
+			}
+		})
 	}
 }
 
@@ -1298,11 +1336,38 @@ func TestHandleGenericComment(t *testing.T) {
 			lgtmActsAsApprove: true,
 			expectHandle:      true,
 		},
+		{
+			name: "valid approve command with prefix",
+			commentEvent: scmprovider.GenericCommentEvent{
+				Action: scm.ActionCreate,
+				IsPR:   true,
+				Body:   "/lh-approve",
+				Number: 1,
+				Author: scm.User{
+					Login: "author",
+				},
+				IssueBody: "Fix everything",
+				IssueAuthor: scm.User{
+					Login: "P.R. Author",
+				},
+			},
+			expectHandle: true,
+			expectState: &state{
+				org:       "org",
+				repo:      "repo",
+				branch:    "branch",
+				number:    1,
+				body:      "Fix everything",
+				author:    "P.R. Author",
+				assignees: nil,
+				htmlURL:   "",
+			},
+		},
 	}
 
 	var handled bool
 	var gotState *state
-	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, serverURL *url.URL, opts *plugins.Approve, pr *state) error {
 		gotState = pr
 		handled = true
 		return nil
@@ -1326,43 +1391,42 @@ func TestHandleGenericComment(t *testing.T) {
 	fspc.PullRequests[1] = &pr
 
 	for _, test := range tests {
-		test.commentEvent.Repo = repo
-		githubConfig := config.GitHubOptions{
-			LinkURL: &url.URL{
-				Scheme: "https",
-				Host:   "github.com",
-			},
-		}
-		config := &plugins.Configuration{}
-		config.Approve = append(config.Approve, plugins.Approve{
-			Repos:             []string{test.commentEvent.Repo.Namespace},
-			LgtmActsAsApprove: test.lgtmActsAsApprove,
+		t.Run(test.name, func(t *testing.T) {
+			test.commentEvent.Repo = repo
+			config := &plugins.Configuration{}
+			config.Approve = append(config.Approve, plugins.Approve{
+				Repos:             []string{test.commentEvent.Repo.Namespace},
+				LgtmActsAsApprove: test.lgtmActsAsApprove,
+			})
+			err := handleGenericComment(
+				logrus.WithField("plugin", "approve"),
+				fakeClient,
+				fakeOwnersClient{},
+				&url.URL{
+					Scheme: "https",
+					Host:   "github.com",
+				},
+				config,
+				&test.commentEvent,
+			)
+
+			if test.expectHandle && !handled {
+				t.Errorf("%s: expected call to handleFunc, but it wasn't called", test.name)
+			}
+
+			if !test.expectHandle && handled {
+				t.Errorf("%s: expected no call to handleFunc, but it was called", test.name)
+			}
+
+			if test.expectState != nil && !reflect.DeepEqual(test.expectState, gotState) {
+				t.Errorf("%s: expected PR state to equal: %#v, but got: %#v", test.name, test.expectState, gotState)
+			}
+
+			if err != nil {
+				t.Errorf("%s: error calling handleGenericComment: %v", test.name, err)
+			}
+			handled = false
 		})
-		err := handleGenericComment(
-			logrus.WithField("plugin", "approve"),
-			fakeClient,
-			fakeOwnersClient{},
-			githubConfig,
-			config,
-			&test.commentEvent,
-		)
-
-		if test.expectHandle && !handled {
-			t.Errorf("%s: expected call to handleFunc, but it wasn't called", test.name)
-		}
-
-		if !test.expectHandle && handled {
-			t.Errorf("%s: expected no call to handleFunc, but it was called", test.name)
-		}
-
-		if test.expectState != nil && !reflect.DeepEqual(test.expectState, gotState) {
-			t.Errorf("%s: expected PR state to equal: %#v, but got: %#v", test.name, test.expectState, gotState)
-		}
-
-		if err != nil {
-			t.Errorf("%s: error calling handleGenericComment: %v", test.name, err)
-		}
-		handled = false
 	}
 }
 
@@ -1515,7 +1579,7 @@ func TestHandleReview(t *testing.T) {
 
 	var handled bool
 	var gotState *state
-	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, config config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, serverURL *url.URL, opts *plugins.Approve, pr *state) error {
 		gotState = pr
 		handled = true
 		return nil
@@ -1545,12 +1609,6 @@ func TestHandleReview(t *testing.T) {
 	for _, test := range tests {
 		test.reviewEvent.Repo = repo
 		test.reviewEvent.PullRequest = pr
-		githubConfig := config.GitHubOptions{
-			LinkURL: &url.URL{
-				Scheme: "https",
-				Host:   "github.com",
-			},
-		}
 		config := &plugins.Configuration{}
 		irs := !test.reviewActsAsApprove
 		config.Approve = append(config.Approve, plugins.Approve{
@@ -1562,7 +1620,10 @@ func TestHandleReview(t *testing.T) {
 			logrus.WithField("plugin", "approve"),
 			fakeClient,
 			fakeOwnersClient{},
-			githubConfig,
+			&url.URL{
+				Scheme: "https",
+				Host:   "github.com",
+			},
 			config,
 			&test.reviewEvent,
 		)
@@ -1678,7 +1739,7 @@ func TestHandlePullRequest(t *testing.T) {
 
 	var handled bool
 	var gotState *state
-	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+	handleFunc = func(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, serverURL *url.URL, opts *plugins.Approve, pr *state) error {
 		gotState = pr
 		handled = true
 		return nil
@@ -1700,11 +1761,9 @@ func TestHandlePullRequest(t *testing.T) {
 			logrus.WithField("plugin", "approve"),
 			fakeClient,
 			fakeOwnersClient{},
-			config.GitHubOptions{
-				LinkURL: &url.URL{
-					Scheme: "https",
-					Host:   "github.com",
-				},
+			&url.URL{
+				Scheme: "https",
+				Host:   "github.com",
 			},
 			&plugins.Configuration{},
 			&test.prEvent,

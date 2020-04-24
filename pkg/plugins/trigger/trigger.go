@@ -74,21 +74,21 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Marks a PR as 'trusted' and starts tests.",
 		Featured:    false,
 		WhoCanUse:   "Members of the trusted organization for the repo.",
-		Examples:    []string{"/ok-to-test"},
+		Examples:    []string{"/ok-to-test", "/lh-ok-to-test"},
 	})
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/test (<job name>|all)",
 		Description: "Manually starts a/all test job(s).",
 		Featured:    true,
 		WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-		Examples:    []string{"/test all", "/test pull-bazel-test"},
+		Examples:    []string{"/test all", "/test pull-bazel-test", "/lh-test all"},
 	})
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/retest",
 		Description: "Rerun test jobs that have failed.",
 		Featured:    true,
 		WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-		Examples:    []string{"/retest"},
+		Examples:    []string{"/retest", "/lh-retest"},
 	})
 	return pluginHelp, nil
 }

@@ -27,7 +27,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
-var reopenRe = regexp.MustCompile(`(?mi)^/reopen\s*$`)
+var reopenRe = regexp.MustCompile(`(?mi)^/(?:lh-)?reopen\s*$`)
 
 type scmProviderClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)

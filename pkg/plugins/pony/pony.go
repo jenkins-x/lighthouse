@@ -52,7 +52,7 @@ const (
 )
 
 var (
-	match = regexp.MustCompile(`(?mi)^/(?:pony)(?: +(.+?))?\s*$`)
+	match = regexp.MustCompile(`(?mi)^/(?:lh-)?(?:pony)(?: +(.+?))?\s*$`)
 )
 
 func init() {
@@ -69,7 +69,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
 		Featured:    false,
 		WhoCanUse:   "Anyone",
-		Examples:    []string{"/pony", "/pony Twilight Sparkle"},
+		Examples:    []string{"/pony", "/pony Twilight Sparkle", "/lh-pony"},
 	})
 	return pluginHelp, nil
 }

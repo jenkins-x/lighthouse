@@ -32,9 +32,9 @@ import (
 const pluginName = "assign"
 
 var (
-	assignRe = regexp.MustCompile(`(?mi)^/(un)?assign(( @?[-\w]+?)*)\s*$`)
+	assignRe = regexp.MustCompile(`(?mi)^/(?:lh-)?(un)?assign(( @?[-\w]+?)*)\s*$`)
 	// CCRegexp parses and validates /cc commands, also used by blunderbuss
-	CCRegexp = regexp.MustCompile(`(?mi)^/(un)?cc(( +@?[-/\w]+?)*)\s*$`)
+	CCRegexp = regexp.MustCompile(`(?mi)^/(?:lh-)?(un)?cc(( +@?[-/\w]+?)*)\s*$`)
 )
 
 func init() {
@@ -51,14 +51,14 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Assigns an assignee to the PR",
 		Featured:    true,
 		WhoCanUse:   "Anyone can use the command, but the target user must be an org member, a repo collaborator, or should have previously commented on the issue or PR.",
-		Examples:    []string{"/assign", "/unassign", "/assign @k8s-ci-robot"},
+		Examples:    []string{"/assign", "/unassign", "/assign @k8s-ci-robot", "/lh-assign"},
 	})
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/[un]cc [[@]<username>...]",
 		Description: "Requests a review from the user(s).",
 		Featured:    true,
 		WhoCanUse:   "Anyone can use the command, but the target user must be a member of the org that owns the repository.",
-		Examples:    []string{"/cc", "/uncc", "/cc @k8s-ci-robot"},
+		Examples:    []string{"/cc", "/uncc", "/cc @k8s-ci-robot", "/lh-cc"},
 	})
 	return pluginHelp, nil
 }

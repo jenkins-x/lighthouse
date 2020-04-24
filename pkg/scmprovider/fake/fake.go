@@ -32,6 +32,8 @@ const (
 	Bot = botName
 	// TestRef is the ref returned when calling GetRef
 	TestRef = "abcde"
+	// providerType is the fake provider name
+	providerType = "fake"
 )
 
 // SCMClient is like client, but fake.
@@ -89,6 +91,16 @@ type SCMClient struct {
 
 	// A list of refs that got deleted via DeleteRef
 	RefsDeleted []struct{ Org, Repo, Ref string }
+}
+
+// ProviderType returns the provider type
+func (f *SCMClient) ProviderType() string {
+	return providerType
+}
+
+// SupportsGraphQL returns whether the provider supports GraphQL
+func (f *SCMClient) SupportsGraphQL() bool {
+	return false
 }
 
 // BotName returns authenticated login.

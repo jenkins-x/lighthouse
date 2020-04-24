@@ -51,6 +51,13 @@ func TestHandle(t *testing.T) {
 			shouldUnlabel: false,
 		},
 		{
+			name:          "requested hold with prefix",
+			body:          "/lh-hold",
+			hasLabel:      false,
+			shouldLabel:   true,
+			shouldUnlabel: false,
+		},
+		{
 			name:          "requested hold, Label already exists",
 			body:          "/hold",
 			hasLabel:      true,
@@ -65,6 +72,13 @@ func TestHandle(t *testing.T) {
 			shouldUnlabel: true,
 		},
 		{
+			name:          "requested hold cancel with prefix",
+			body:          "/lh-hold cancel",
+			hasLabel:      true,
+			shouldLabel:   false,
+			shouldUnlabel: true,
+		},
+		{
 			name:          "requested hold cancel, Label already gone",
 			body:          "/hold cancel",
 			hasLabel:      false,
@@ -74,37 +88,38 @@ func TestHandle(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		client, fc := fake.NewDefault()
+		t.Run(tc.name, func(t *testing.T) {
+			client, fc := fake.NewDefault()
 
-		e := &scmprovider.GenericCommentEvent{
-			Action: scm.ActionCreate,
-			Body:   tc.body,
-			Number: 1,
-			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
-		}
-		hasLabel := func(label string, issueLabels []*scm.Label) bool {
-			return tc.hasLabel
-		}
-
-		if err := handle(scmprovider.ToTestClient(client), logrus.WithField("plugin", PluginName), e, hasLabel); err != nil {
-			t.Errorf("For case %s, didn't expect error from hold: %v", tc.name, err)
-			continue
-		}
-
-		fakeLabel := fmt.Sprintf("org/repo#1:%s", labels.Hold)
-		if tc.shouldLabel {
-			if len(fc.IssueLabelsAdded) != 1 || fc.IssueLabelsAdded[0] != fakeLabel {
-				t.Errorf("For case %s: expected to add %q Label but instead added: %v", tc.name, labels.Hold, fc.IssueLabelsAdded)
+			e := &scmprovider.GenericCommentEvent{
+				Action: scm.ActionCreate,
+				Body:   tc.body,
+				Number: 1,
+				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 			}
-		} else if len(fc.IssueLabelsAdded) > 0 {
-			t.Errorf("For case %s, expected to not add %q Label but added: %v", tc.name, labels.Hold, fc.IssueLabelsAdded)
-		}
-		if tc.shouldUnlabel {
-			if len(fc.IssueLabelsRemoved) != 1 || fc.IssueLabelsRemoved[0] != fakeLabel {
-				t.Errorf("For case %s: expected to remove %q Label but instead removed: %v", tc.name, labels.Hold, fc.IssueLabelsRemoved)
+			hasLabel := func(label string, issueLabels []*scm.Label) bool {
+				return tc.hasLabel
 			}
-		} else if len(fc.IssueLabelsRemoved) > 0 {
-			t.Errorf("For case %s, expected to not remove %q Label but removed: %v", tc.name, labels.Hold, fc.IssueLabelsRemoved)
-		}
+
+			if err := handle(scmprovider.ToTestClient(client), logrus.WithField("plugin", PluginName), e, hasLabel); err != nil {
+				t.Fatalf("For case %s, didn't expect error from hold: %v", tc.name, err)
+			}
+
+			fakeLabel := fmt.Sprintf("org/repo#1:%s", labels.Hold)
+			if tc.shouldLabel {
+				if len(fc.IssueLabelsAdded) != 1 || fc.IssueLabelsAdded[0] != fakeLabel {
+					t.Errorf("For case %s: expected to add %q Label but instead added: %v", tc.name, labels.Hold, fc.IssueLabelsAdded)
+				}
+			} else if len(fc.IssueLabelsAdded) > 0 {
+				t.Errorf("For case %s, expected to not add %q Label but added: %v", tc.name, labels.Hold, fc.IssueLabelsAdded)
+			}
+			if tc.shouldUnlabel {
+				if len(fc.IssueLabelsRemoved) != 1 || fc.IssueLabelsRemoved[0] != fakeLabel {
+					t.Errorf("For case %s: expected to remove %q Label but instead removed: %v", tc.name, labels.Hold, fc.IssueLabelsRemoved)
+				}
+			} else if len(fc.IssueLabelsRemoved) > 0 {
+				t.Errorf("For case %s, expected to not remove %q Label but removed: %v", tc.name, labels.Hold, fc.IssueLabelsRemoved)
+			}
+		})
 	}
 }

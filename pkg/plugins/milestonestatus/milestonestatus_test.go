@@ -94,6 +94,13 @@ func TestMilestoneStatus(t *testing.T) {
 			shouldComment:     false,
 		},
 		{
+			name:              "Label when sig-lead user marks in review with prefix",
+			body:              "/lh-status in-review",
+			expectedNewLabels: []string{"status/in-review"},
+			commenter:         "sig-lead",
+			shouldComment:     false,
+		},
+		{
 			name:              "Don't label when sig-lead user marks invalid status",
 			body:              "/status in-valid",
 			expectedNewLabels: []string{},
@@ -126,40 +133,41 @@ func TestMilestoneStatus(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fakeClient := &fake.SCMClient{IssueComments: make(map[int][]*scm.Comment)}
-		e := &scmprovider.GenericCommentEvent{
-			Action: scm.ActionCreate,
-			Body:   tc.body,
-			Number: 1,
-			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
-			Author: scm.User{Login: tc.commenter},
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			fakeClient := &fake.SCMClient{IssueComments: make(map[int][]*scm.Comment)}
+			e := &scmprovider.GenericCommentEvent{
+				Action: scm.ActionCreate,
+				Body:   tc.body,
+				Number: 1,
+				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
+				Author: scm.User{Login: tc.commenter},
+			}
 
-		repoMilestone := map[string]plugins.Milestone{"": {MaintainersID: 0}}
+			repoMilestone := map[string]plugins.Milestone{"": {MaintainersID: 0}}
 
-		if !tc.noRepoMaintainer {
-			repoMilestone["org/repo"] = plugins.Milestone{MaintainersID: 42}
-		}
+			if !tc.noRepoMaintainer {
+				repoMilestone["org/repo"] = plugins.Milestone{MaintainersID: 42}
+			}
 
-		if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
-			t.Errorf("(%s): Unexpected error from handle: %v.", tc.name, err)
-			continue
-		}
+			if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
 
-		// Check that the correct labels were added.
-		expectLabels := formatLabels(tc.expectedNewLabels...)
-		sort.Strings(expectLabels)
-		sort.Strings(fakeClient.IssueLabelsAdded)
-		if !reflect.DeepEqual(expectLabels, fakeClient.IssueLabelsAdded) {
-			t.Errorf("(%s): Expected issue to end with labels %q, but ended with %q.", tc.name, expectLabels, fakeClient.IssueLabelsAdded)
-		}
+			// Check that the correct labels were added.
+			expectLabels := formatLabels(tc.expectedNewLabels...)
+			sort.Strings(expectLabels)
+			sort.Strings(fakeClient.IssueLabelsAdded)
+			if !reflect.DeepEqual(expectLabels, fakeClient.IssueLabelsAdded) {
+				t.Errorf("(%s): Expected issue to end with labels %q, but ended with %q.", tc.name, expectLabels, fakeClient.IssueLabelsAdded)
+			}
 
-		// Check that a comment was left iff one should have been left.
-		comments := len(fakeClient.IssueComments[1])
-		if tc.shouldComment && comments != 1 {
-			t.Errorf("(%s): 1 comment should have been made, but %d comments were made.", tc.name, comments)
-		} else if !tc.shouldComment && comments != 0 {
-			t.Errorf("(%s): No comment should have been made, but %d comments were made.", tc.name, comments)
-		}
+			// Check that a comment was left iff one should have been left.
+			comments := len(fakeClient.IssueComments[1])
+			if tc.shouldComment && comments != 1 {
+				t.Errorf("(%s): 1 comment should have been made, but %d comments were made.", tc.name, comments)
+			} else if !tc.shouldComment && comments != 0 {
+				t.Errorf("(%s): No comment should have been made, but %d comments were made.", tc.name, comments)
+			}
+		})
 	}
 }

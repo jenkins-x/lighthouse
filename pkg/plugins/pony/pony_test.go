@@ -163,6 +163,14 @@ func TestHttpResponse(t *testing.T) {
 			expectNoTag: true,
 			response:    validResponse,
 		},
+		{
+			name:     "valid with prefix",
+			comment:  "/lh-pony",
+			path:     "/valid",
+			response: validResponse,
+			expected: url,
+			isValid:  true,
+		},
 	}
 
 	// fake server for image urls
@@ -193,39 +201,41 @@ func TestHttpResponse(t *testing.T) {
 
 	// run test for each case
 	for _, testcase := range testcases {
-		pony, err := realHerd(ts.URL + testcase.path).readPony(testcase.expectTag)
-		if testcase.isValid && err != nil {
-			t.Errorf("For case %s, didn't expect error: %v", testcase.name, err)
-		} else if !testcase.isValid && err == nil {
-			t.Errorf("For case %s, expected error, received pony: %s", testcase.name, pony)
-		}
+		t.Run(testcase.name, func(t *testing.T) {
+			pony, err := realHerd(ts.URL + testcase.path).readPony(testcase.expectTag)
+			if testcase.isValid && err != nil {
+				t.Errorf("For case %s, didn't expect error: %v", testcase.name, err)
+			} else if !testcase.isValid && err == nil {
+				t.Errorf("For case %s, expected error, received pony: %s", testcase.name, pony)
+			}
 
-		if !testcase.isValid {
-			continue
-		}
+			if !testcase.isValid {
+				return
+			}
 
-		// github fake client
-		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := scmprovider.ToTestClient(fakeScmClient)
+			// github fake client
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
-		// fully test handling a comment
-		e := &scmprovider.GenericCommentEvent{
-			Action:     scm.ActionCreate,
-			Body:       testcase.comment,
-			Number:     5,
-			IssueState: "open",
-		}
-		err = handle(fakeClient, logrus.WithField("plugin", pluginName), e, realHerd(ts.URL+testcase.path))
-		if err != nil {
-			t.Errorf("tc %s: For comment %s, didn't expect error: %v", testcase.name, testcase.comment, err)
-		}
+			// fully test handling a comment
+			e := &scmprovider.GenericCommentEvent{
+				Action:     scm.ActionCreate,
+				Body:       testcase.comment,
+				Number:     5,
+				IssueState: "open",
+			}
+			err = handle(fakeClient, logrus.WithField("plugin", pluginName), e, realHerd(ts.URL+testcase.path))
+			if err != nil {
+				t.Errorf("tc %s: For comment %s, didn't expect error: %v", testcase.name, testcase.comment, err)
+			}
 
-		if len(fc.IssueComments[5]) != 1 {
-			t.Errorf("tc %s: should have commented", testcase.name)
-		}
-		if c := fc.IssueComments[5][0]; !strings.Contains(c.Body, testcase.expected) {
-			t.Errorf("tc %s: missing image url: %s from comment: %v", testcase.name, testcase.expected, c.Body)
-		}
+			if len(fc.IssueComments[5]) != 1 {
+				t.Errorf("tc %s: should have commented", testcase.name)
+			}
+			if c := fc.IssueComments[5][0]; !strings.Contains(c.Body, testcase.expected) {
+				t.Errorf("tc %s: missing image url: %s from comment: %v", testcase.name, testcase.expected, c.Body)
+			}
+		})
 	}
 }
 

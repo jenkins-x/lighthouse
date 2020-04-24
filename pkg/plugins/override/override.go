@@ -42,7 +42,7 @@ import (
 const pluginName = "override"
 
 var (
-	overrideRe = regexp.MustCompile(`(?mi)^/override( (.+?)\s*)?$`)
+	overrideRe = regexp.MustCompile(`(?mi)^/(?:lh-)?override( (.+?)\s*)?$`)
 )
 
 type scmProviderClient interface {
@@ -121,7 +121,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Forces a github status context to green (one per line).",
 		Featured:    false,
 		WhoCanUse:   "Repo administrators",
-		Examples:    []string{"/override pull-repo-whatever", "/override ci/circleci", "/override deleted-job"},
+		Examples:    []string{"/override pull-repo-whatever", "/override ci/circleci", "/override deleted-job", "/lh-override some-job"},
 	})
 	return pluginHelp, nil
 }

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -143,6 +144,7 @@ type Agent struct {
 	GitClient          git2.Client
 	KubernetesClient   kubernetes.Interface
 	LighthouseClient   lighthouseclient.LighthouseJobInterface
+	ServerURL          *url.URL
 	/*
 		SlackClient      *slack.Client
 	*/
@@ -162,7 +164,7 @@ type Agent struct {
 }
 
 // NewAgent bootstraps a new Agent struct from the passed dependencies.
-func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, metapipelineClient metapipeline.Client, logger *logrus.Entry) Agent {
+func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, metapipelineClient metapipeline.Client, serverURL *url.URL, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
 	scmClient := scmprovider.ToClient(clientAgent.SCMProviderClient, clientAgent.BotName)
@@ -173,6 +175,7 @@ func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, plugin
 		LauncherClient:     clientAgent.LauncherClient,
 		MetapipelineClient: metapipelineClient,
 		LighthouseClient:   clientAgent.LighthouseClient,
+		ServerURL:          serverURL,
 
 		/*
 			SlackClient:   clientAgent.SlackClient,

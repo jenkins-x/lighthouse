@@ -93,13 +93,8 @@ func handlePR(spc scmProviderClient, sizes plugins.Size, le *logrus.Entry, pe sc
 
 	gf, err := genfiles.NewGroup(spc, owner, repo, sha)
 	if err != nil {
-		switch err.(type) {
-		case *genfiles.ParseError:
-			// Continue on parse errors, but warn that something is wrong.
-			le.Warnf("error while parsing .generated_files: %v", err)
-		default:
-			return err
-		}
+		// Continue on parse errors, but warn that something is wrong.
+		le.Warnf("error while parsing .generated_files: %v", err)
 	}
 
 	ga, err := gitattributes.NewGroup(func() ([]byte, error) { return spc.GetFile(owner, repo, ".gitattributes", sha) })

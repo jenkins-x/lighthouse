@@ -34,7 +34,7 @@ import (
 const pluginName = "milestonestatus"
 
 var (
-	statusRegex      = regexp.MustCompile(`(?m)^/status\s+(.+)$`)
+	statusRegex      = regexp.MustCompile(`(?m)^/(?:lh-)?status\s+(.+)$`)
 	mustBeAuthorized = "You must be a member of the [%s/%s](https://github.com/orgs/%s/teams/%s/members) GitHub team to add status labels. If you believe you should be able to issue the /status command, please contact your %s and have them propose you as an additional delegate for this responsibility."
 	milestoneTeamMsg = "The milestone maintainers team is the GitHub team %q with ID: %d."
 	statusMap        = map[string]string{
@@ -78,7 +78,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Applies the 'status/' label to a PR.",
 		Featured:    false,
 		WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/status' command. This team is specified in the config by providing the GitHub team's ID.",
-		Examples:    []string{"/status approved-for-milestone", "/status in-progress", "/status in-review"},
+		Examples:    []string{"/status approved-for-milestone", "/status in-progress", "/status in-review", "/lh-status in-review"},
 	})
 	return pluginHelp, nil
 }
