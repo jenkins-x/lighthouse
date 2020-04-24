@@ -418,6 +418,8 @@ github.com/jenkins-x/jx v0.0.0-20200422130737-877bc4f04855 h1:76PBOzKP59jcM4/EZf
 github.com/jenkins-x/jx v0.0.0-20200422130737-877bc4f04855/go.mod h1:AJ/IR1nGGbDLePNIxD0X9yiGGmlIJDB7+OuiBcT+KHo=
 github.com/jenkins-x/jx v0.0.0-20200422185619-b02a6f83fc15 h1:iISq9INwZaSji7ZLH5ijStCqZdUrMkkbSUkkBwSuoY4=
 github.com/jenkins-x/jx v0.0.0-20200422185619-b02a6f83fc15/go.mod h1:AJ/IR1nGGbDLePNIxD0X9yiGGmlIJDB7+OuiBcT+KHo=
+github.com/jenkins-x/jx v0.0.0-20200424082209-6efd3458e2e1 h1:HBmfsyBsjodAWomaiyl2DMZSKJi7T555M7Mfo2yN43g=
+github.com/jenkins-x/jx v0.0.0-20200424082209-6efd3458e2e1/go.mod h1:AJ/IR1nGGbDLePNIxD0X9yiGGmlIJDB7+OuiBcT+KHo=
 github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb h1:woC0LbYpL9rgwZn13Z0KQBEGAmi9ugpWgWtQezHqsBM=
 github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb/go.mod h1:Erk5rrGYkvFlFAoVbz/7obMDEIUFCEbhK1odoR0Msqo=
 github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767 h1:lKtC9uHyWi8wd+EUch3Pfzk3/8XSJvYRJhvk9dK4YKY=
