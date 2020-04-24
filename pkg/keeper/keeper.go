@@ -267,7 +267,8 @@ func prKey(pr *PullRequest) string {
 func byRepoAndNumber(prs []PullRequest) map[string]PullRequest {
 	m := make(map[string]PullRequest)
 	for _, pr := range prs {
-		key := prKey(&pr)
+		p := pr
+		key := prKey(&p)
 		m[key] = pr
 	}
 	return m
@@ -313,7 +314,8 @@ func (c *DefaultController) Sync() error {
 			c.logger.WithError(err).WithField("query", q).Warning("found partial results")
 		}
 		for _, pr := range results {
-			prs[prKey(&pr)] = pr
+			p := pr
+			prs[prKey(&p)] = pr
 		}
 	}
 	c.logger.WithField(
@@ -497,7 +499,8 @@ func (c *DefaultController) initSubpoolData(sp *subpool) error {
 func filterSubpool(spc scmProviderClient, sp *subpool) *subpool {
 	var toKeep []PullRequest
 	for _, pr := range sp.prs {
-		if !filterPR(spc, sp, &pr) {
+		p := pr
+		if !filterPR(spc, sp, &p) {
 			toKeep = append(toKeep, pr)
 		}
 	}
@@ -558,7 +561,8 @@ func poolPRMap(subpoolMap map[string]*subpool) map[string]PullRequest {
 	prs := make(map[string]PullRequest)
 	for _, sp := range subpoolMap {
 		for _, pr := range sp.prs {
-			prs[prKey(&pr)] = pr
+			p := pr
+			prs[prKey(&p)] = pr
 		}
 	}
 	return prs
@@ -1238,7 +1242,8 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]config.Pres
 		}
 
 		for _, pr := range sp.prs {
-			if shouldRun, err := ps.ShouldRun(sp.branch, c.changedFiles.prChanges(&pr), false, false); err != nil {
+			p := pr
+			if shouldRun, err := ps.ShouldRun(sp.branch, c.changedFiles.prChanges(&p), false, false); err != nil {
 				return nil, err
 			} else if shouldRun {
 				record(int(pr.Number), ps)

@@ -410,7 +410,8 @@ func (o *RepoOwners) walkFunc(path string, info os.FileInfo, err error) error {
 			log.WithError(err).Errorf("Failed to unmarshal %s into either Simple or FullConfig.", path)
 		} else {
 			// it's a FullConfig
-			for pattern, config := range c.Filters {
+			for pattern, cfg := range c.Filters {
+				config := cfg
 				var re *regexp.Regexp
 				if pattern != ".*" {
 					if re, err = regexp.Compile(pattern); err != nil {

@@ -69,7 +69,8 @@ func rerunPipelineRunsWithRaceConditionFailure(tektonClient tektonclient.Interfa
 				}
 
 				// Launch a new otherwise identical PipelineRun to replace the failing one.
-				newRun := createReplacementPipelineRun(&run)
+				r := run
+				newRun := createReplacementPipelineRun(&r)
 				_, err := tektonClient.TektonV1alpha1().PipelineRuns(ns).Create(newRun)
 				if err != nil {
 					return errors.Wrapf(err, "creating new PipelineRun %s to replace failed PipelineRun %s", newRun.Name, run.Name)

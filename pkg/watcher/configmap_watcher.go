@@ -77,7 +77,8 @@ func NewConfigMapWatcher(kubeClient kubernetes.Interface, ns string, callbacks [
 	}
 
 	for _, cm := range list.Items {
-		w.invokeCallbacks(&cm)
+		c := cm
+		w.invokeCallbacks(&c)
 	}
 
 	// now lets asynchronously watch the events in the background
