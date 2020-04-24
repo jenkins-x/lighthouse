@@ -66,7 +66,8 @@ func main() {
 
 	now := time.Now()
 
-	for _, j := range jobList.Items {
+	for _, job := range jobList.Items {
+		j := job
 		completionTime := j.Status.CompletionTime
 		if completionTime != nil && completionTime.Add(o.maxAge).Before(now) {
 			// The job completed at least maxAge ago, so delete it.

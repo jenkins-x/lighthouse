@@ -251,7 +251,8 @@ func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]
 		minDiffCount := -1
 		var minDiff string
 		for _, q := range queryMap.ForRepo(string(pr.Repository.Owner.Login), string(pr.Repository.Name)) {
-			diff, diffCount := requirementDiff(pr, &q, cc)
+			qry := q
+			diff, diffCount := requirementDiff(pr, &qry, cc)
 			if minDiffCount == -1 || diffCount < minDiffCount {
 				minDiffCount = diffCount
 				minDiff = diff
@@ -337,7 +338,8 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 	}
 
 	for _, pr := range all {
-		process(&pr)
+		p := pr
+		process(&p)
 	}
 	// The list of all open PRs may not contain a PR if it was merged before we
 	// listed all open PRs. To prevent a new PR that starts in the pool and
@@ -351,7 +353,8 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 	// missing keeper status context on a successfully merged PR.
 	for key, poolPR := range pool {
 		if !processed.Has(key) {
-			process(&poolPR)
+			p := poolPR
+			process(&p)
 		}
 	}
 }
