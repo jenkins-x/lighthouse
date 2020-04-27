@@ -410,14 +410,10 @@ github.com/jbrukh/bayesian v0.0.0-20161210175230-bf3f261f9a9c h1:jqLMOnuwp+ac6nI
 github.com/jbrukh/bayesian v0.0.0-20161210175230-bf3f261f9a9c/go.mod h1:SELxwZQq/mPnfPCR2mchLmT4TQaPJvYtLcCtDWSM7vM=
 github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135 h1:3zy/Nvdi9V95Jfu6+W4NAJrHDeypB58FSLyzI3XfO/4=
 github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135/go.mod h1:K/L25ViEpDx196rOZyjn433tAM5zr2F/IouK+3g+DkE=
-github.com/jenkins-x/go-scm v1.5.101 h1:jZuAJLIXhrq/Ui06KAIg/lD+hg/WnW9ZTuedD4NscUs=
-github.com/jenkins-x/go-scm v1.5.101/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
-github.com/jenkins-x/go-scm v1.5.102 h1:8YLsZwWyFFTxdEonnETAawhpyhePfzsBX9/lOEXpmHg=
-github.com/jenkins-x/go-scm v1.5.102/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
+github.com/jenkins-x/go-scm v1.5.103 h1:/k2LL36D6L6jfw3l3eY1q+JPVdt3BMORzOiEvP76TVY=
+github.com/jenkins-x/go-scm v1.5.103/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
-github.com/jenkins-x/jx v0.0.0-20200424082209-6efd3458e2e1 h1:HBmfsyBsjodAWomaiyl2DMZSKJi7T555M7Mfo2yN43g=
-github.com/jenkins-x/jx v0.0.0-20200424082209-6efd3458e2e1/go.mod h1:AJ/IR1nGGbDLePNIxD0X9yiGGmlIJDB7+OuiBcT+KHo=
 github.com/jenkins-x/jx v0.0.0-20200427083041-fd4a0a1418c7 h1:FBYazcYCX1hB41ghT9rpQgs0tJL5O04/9/Wdta5xPh0=
 github.com/jenkins-x/jx v0.0.0-20200427083041-fd4a0a1418c7/go.mod h1:AJ/IR1nGGbDLePNIxD0X9yiGGmlIJDB7+OuiBcT+KHo=
 github.com/jenkins-x/jx v0.0.0-20200427124139-263c0e9005e1 h1:+VZdDSxVD/N30y+WOECzagD1UGD/xC0cwZWG5rLPQd0=
