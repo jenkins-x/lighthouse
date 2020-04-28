@@ -326,7 +326,6 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 					Context:     GetStatusContextLabel(),
 					State:       wantState,
 					Description: wantDesc,
-					TargetURL:   targetURL(sc.config, pr, log),
 				}); err != nil {
 				log.WithError(err).Errorf(
 					"Failed to set status context from %q to %q.",
