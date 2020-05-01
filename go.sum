@@ -412,6 +412,8 @@ github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135 h1:3zy/Nvdi9V
 github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135/go.mod h1:K/L25ViEpDx196rOZyjn433tAM5zr2F/IouK+3g+DkE=
 github.com/jenkins-x/go-scm v1.5.110 h1:/sdvYPbRZVpbdxxGejaNag2XIq8obdjq1EbETfQGISE=
 github.com/jenkins-x/go-scm v1.5.110/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
+github.com/jenkins-x/go-scm v1.5.112 h1:rhatUvGNieXH2afRIj3zf5aTUB/VsEg8NNHaTxo9ENk=
+github.com/jenkins-x/go-scm v1.5.112/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
 github.com/jenkins-x/jx v0.0.0-20200429072337-ecafbe2d3ce6 h1:SIQWyvWo0UNqEHo6VrwDQFdlzi7l0Ymm7xlSGWul2uI=
