@@ -26,16 +26,48 @@ func (c *Client) GetPullRequest(owner, repo string, number int) (*scm.PullReques
 func (c *Client) ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
-	pr, _, err := c.client.PullRequests.ListComments(ctx, fullName, number, c.createListOptions())
-	return pr, err
+	var allComments []*scm.Comment
+	var resp *scm.Response
+	var comments []*scm.Comment
+	var err error
+	firstRun := false
+	opts := scm.ListOptions{
+		Page: 1,
+	}
+	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+		comments, resp, err = c.client.PullRequests.ListComments(ctx, fullName, number, opts)
+		if err != nil {
+			return nil, err
+		}
+		firstRun = true
+		allComments = append(allComments, comments...)
+		opts.Page++
+	}
+	return allComments, nil
 }
 
 // GetPullRequestChanges returns the changes in a pull request
 func (c *Client) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
-	changes, _, err := c.client.PullRequests.ListChanges(ctx, fullName, number, c.createListOptions())
-	return changes, err
+	var allChanges []*scm.Change
+	var resp *scm.Response
+	var changes []*scm.Change
+	var err error
+	firstRun := false
+	opts := scm.ListOptions{
+		Page: 1,
+	}
+	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+		changes, resp, err = c.client.PullRequests.ListChanges(ctx, fullName, number, opts)
+		if err != nil {
+			return nil, err
+		}
+		firstRun = true
+		allChanges = append(allChanges, changes...)
+		opts.Page++
+	}
+	return allChanges, nil
 }
 
 // Merge reopens a pull request

@@ -65,8 +65,24 @@ func (c *Client) Search(opts scm.SearchOptions) ([]*scm.SearchIssue, *RateLimits
 func (c *Client) ListIssueEvents(org, repo string, number int) ([]*scm.ListedIssueEvent, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
-	events, _, err := c.client.Issues.ListEvents(ctx, fullName, number, c.createListOptions())
-	return events, err
+	var allEvents []*scm.ListedIssueEvent
+	var resp *scm.Response
+	var events []*scm.ListedIssueEvent
+	var err error
+	firstRun := false
+	opts := scm.ListOptions{
+		Page: 1,
+	}
+	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+		events, resp, err = c.client.Issues.ListEvents(ctx, fullName, number, opts)
+		if err != nil {
+			return nil, err
+		}
+		firstRun = true
+		allEvents = append(allEvents, events...)
+		opts.Page++
+	}
+	return allEvents, nil
 }
 
 // AssignIssue assigns issue
@@ -149,19 +165,58 @@ func (c *Client) DeleteStaleComments(org, repo string, number int, comments []*s
 func (c *Client) ListIssueComments(org, repo string, number int) ([]*scm.Comment, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
-	comments, _, err := c.client.Issues.ListComments(ctx, fullName, number, c.createListOptions())
-	return comments, err
+	var allComments []*scm.Comment
+	var resp *scm.Response
+	var comments []*scm.Comment
+	var err error
+	firstRun := false
+	opts := scm.ListOptions{
+		Page: 1,
+	}
+	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+		comments, resp, err = c.client.Issues.ListComments(ctx, fullName, number, opts)
+		if err != nil {
+			return nil, err
+		}
+		firstRun = true
+		allComments = append(allComments, comments...)
+		opts.Page++
+	}
+	return allComments, nil
 }
 
 // GetIssueLabels returns the issue labels
 func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
-	if pr {
-		labels, _, err := c.client.PullRequests.ListLabels(ctx, fullName, number, c.createListOptions())
-		return labels, err
+	var allLabels []*scm.Label
+	var resp *scm.Response
+	var labels []*scm.Label
+	var err error
+	firstRun := false
+	opts := scm.ListOptions{
+		Page: 1,
 	}
-	labels, _, err := c.client.Issues.ListLabels(ctx, fullName, number, c.createListOptions())
+	if pr {
+		for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+			labels, resp, err = c.client.PullRequests.ListLabels(ctx, fullName, number, opts)
+			if err != nil {
+				return nil, err
+			}
+			firstRun = true
+			allLabels = append(allLabels, labels...)
+			opts.Page++
+		}
+	}
+	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+		labels, resp, err = c.client.Issues.ListLabels(ctx, fullName, number, opts)
+		if err != nil {
+			return nil, err
+		}
+		firstRun = true
+		allLabels = append(allLabels, labels...)
+		opts.Page++
+	}
 	return labels, err
 }
 

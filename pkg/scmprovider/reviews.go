@@ -10,8 +10,24 @@ import (
 func (c *Client) ListReviews(owner, repo string, number int) ([]*scm.Review, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
-	reviews, _, err := c.client.Reviews.List(ctx, fullName, number, c.createListOptions())
-	return reviews, err
+	var allReviews []*scm.Review
+	var resp *scm.Response
+	var reviews []*scm.Review
+	var err error
+	firstRun := false
+	opts := scm.ListOptions{
+		Page: 1,
+	}
+	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+		reviews, resp, err = c.client.Reviews.List(ctx, fullName, number, opts)
+		if err != nil {
+			return nil, err
+		}
+		firstRun = true
+		allReviews = append(allReviews, reviews...)
+		opts.Page++
+	}
+	return allReviews, nil
 }
 
 // RequestReview requests a review
