@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/pkg/errors"
 )
 
 // ListReviews list the reviews
@@ -32,10 +33,16 @@ func (c *Client) ListReviews(owner, repo string, number int) ([]*scm.Review, err
 
 // RequestReview requests a review
 func (c *Client) RequestReview(org, repo string, number int, logins []string) error {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(org, repo)
+	_, err := c.client.PullRequests.RequestReview(ctx, fullName, number, logins)
+	return errors.Wrapf(err, "requesting review from %s", logins)
 }
 
 // UnrequestReview unrequest a review
 func (c *Client) UnrequestReview(org, repo string, number int, logins []string) error {
-	panic("implement me")
+	ctx := context.Background()
+	fullName := c.repositoryName(org, repo)
+	_, err := c.client.PullRequests.UnrequestReview(ctx, fullName, number, logins)
+	return errors.Wrapf(err, "unrequesting review from %s", logins)
 }
