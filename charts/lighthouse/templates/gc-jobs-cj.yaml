@@ -2,6 +2,8 @@ apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: {{ template "gcJobs.name" . }}
+  labels:
+    app: jenkins-x-lighthouse-gcjobs
 spec:
   concurrencyPolicy: {{ .Values.gcJobs.concurrencyPolicy }}
   failedJobsHistoryLimit: {{ .Values.gcJobs.failedJobsHistoryLimit }}
