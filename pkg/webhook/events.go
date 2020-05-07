@@ -17,6 +17,7 @@ limitations under the License.
 package webhook
 
 import (
+	"net/url"
 	"strconv"
 	"sync"
 
@@ -37,6 +38,7 @@ type Server struct {
 	ClientAgent        *plugins.ClientAgent
 	Plugins            *plugins.ConfigAgent
 	ConfigAgent        *config.Agent
+	ServerURL          *url.URL
 	TokenGenerator     func() []byte
 	Metrics            *Metrics
 
@@ -60,7 +62,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		s.wg.Add(1)
 		go func(p string, h plugins.IssueCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ic.Repo.Namespace,
 				ic.Repo.Name,
@@ -128,7 +130,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 		s.wg.Add(1)
 		go func(p string, h plugins.GenericCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ce.Repo.Namespace,
 				ce.Repo.Name,
@@ -157,7 +159,7 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		c++
 		go func(p string, h plugins.PushEventHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
 			if err := h(agent, *pe); err != nil {
 				agent.Logger.WithError(err).Error("Error handling PushEvent.")
 			}
@@ -187,7 +189,7 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 		c++
 		go func(p string, h plugins.PullRequestHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				pr.Repo.Namespace,
 				pr.Repo.Name,

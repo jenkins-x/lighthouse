@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	match  = regexp.MustCompile(`(?mi)^/joke\s*$`)
+	match  = regexp.MustCompile(`(?mi)^/(?:lh-)?joke\s*$`)
 	simple = regexp.MustCompile(`^[\w?'!., ]+$`)
 )
 
@@ -56,7 +56,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Tells a joke.",
 		Featured:    false,
 		WhoCanUse:   "Anyone can use the `/joke` command.",
-		Examples:    []string{"/joke"},
+		Examples:    []string{"/joke", "/lh-joke"},
 	})
 	return pluginHelp, nil
 }

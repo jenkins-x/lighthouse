@@ -35,6 +35,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -511,6 +512,22 @@ func toCommitStatus(s string, d string) commitStatus {
 		status:      s,
 		description: d,
 	}
+}
+
+func (f *fgc) SupportsGraphQL() bool {
+	return true
+}
+
+func (f *fgc) ProviderType() string {
+	return "fake"
+}
+
+func (f *fgc) GetRepositoryByFullName(string) (*scm.Repository, error) {
+	return nil, scm.ErrNotSupported
+}
+
+func (f *fgc) ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error) {
+	return nil, scm.ErrNotSupported
 }
 
 func (f *fgc) GetRef(o, r, ref string) (string, error) {
@@ -2738,4 +2755,30 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReposToQueries(t *testing.T) {
+	firstQuery := config.KeeperQuery{
+		Repos:  []string{"a", "b"},
+		Labels: []string{"first-label"},
+	}
+	secondQuery := config.KeeperQuery{
+		Repos:  []string{"b", "c"},
+		Labels: []string{"second-label"},
+	}
+
+	queries := config.KeeperQueries{
+		firstQuery,
+		secondQuery,
+	}
+
+	queryMap := reposToQueries(queries)
+
+	assert.Equal(t, 1, len(queryMap["a"]))
+	assert.Equal(t, firstQuery, queryMap["a"][0])
+	assert.Equal(t, 2, len(queryMap["b"]))
+	assert.Contains(t, queryMap["b"], firstQuery)
+	assert.Contains(t, queryMap["b"], secondQuery)
+	assert.Equal(t, 1, len(queryMap["c"]))
+	assert.Equal(t, secondQuery, queryMap["c"][0])
 }

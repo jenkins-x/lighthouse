@@ -255,97 +255,112 @@ func TestLGTMComment(t *testing.T) {
 			shouldComment: true,
 			shouldAssign:  false,
 		},
+		{
+			name:          "lgtm comment by reviewer, no lgtm on pr, with prefix",
+			body:          "/lh-lgtm",
+			commenter:     "collab1",
+			hasLGTM:       false,
+			shouldToggle:  true,
+			shouldComment: true,
+		},
+		{
+			name:         "lgtm cancel comment by reviewer, with prefix",
+			body:         "/lh-lgtm cancel",
+			commenter:    "collab1",
+			hasLGTM:      true,
+			shouldToggle: true,
+		},
 	}
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
-		t.Logf("Running scenario %q", tc.name)
-		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := scmprovider.ToTestClient(fakeScmClient)
+		t.Run(tc.name, func(t *testing.T) {
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
-		fc.PullRequests[5] = &scm.PullRequest{
-			Number: 5,
-			Base: scm.PullRequestBranch{
-				Ref: "master",
-			},
-			Head: scm.PullRequestBranch{
-				Sha: SHA,
-			},
-		}
-		fc.PullRequestChanges[5] = []*scm.Change{
-			{Path: "doc/README.md"},
-		}
-		fc.Collaborators = []string{"collab1", "collab2"}
+			fc.PullRequests[5] = &scm.PullRequest{
+				Number: 5,
+				Base: scm.PullRequestBranch{
+					Ref: "master",
+				},
+				Head: scm.PullRequestBranch{
+					Sha: SHA,
+				},
+			}
+			fc.PullRequestChanges[5] = []*scm.Change{
+				{Path: "doc/README.md"},
+			}
+			fc.Collaborators = []string{"collab1", "collab2"}
 
-		e := &scmprovider.GenericCommentEvent{
-			Action:      scm.ActionCreate,
-			IssueState:  "open",
-			IsPR:        true,
-			Body:        tc.body,
-			Author:      scm.User{Login: tc.commenter},
-			IssueAuthor: scm.User{Login: "author"},
-			Number:      5,
-			Assignees:   []scm.User{{Login: "collab1"}, {Login: "assignee1"}},
-			Repo:        scm.Repository{Namespace: "org", Name: "repo"},
-			Link:        "<url>",
-		}
-		if tc.hasLGTM {
-			fc.PullRequestLabelsAdded = []string{"org/repo#5:" + LGTMLabel}
-		}
-		oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
-		pc := &plugins.Configuration{}
-		if tc.skipCollab {
-			pc.Owners.SkipCollaborators = []string{"org/repo"}
-		}
-		pc.Lgtm = append(pc.Lgtm, plugins.Lgtm{
-			Repos:         []string{"org/repo"},
-			StoreTreeHash: true,
-		})
-		fp := &fakePruner{
-			SCMProviderClient:   fc,
-			PullRequestComments: fc.PullRequestComments[5],
-		}
-		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
-			t.Errorf("didn't expect error from lgtmComment: %v", err)
-			continue
-		}
-		if tc.shouldAssign {
-			found := false
-			for _, a := range fc.AssigneesAdded {
-				if a == fmt.Sprintf("%s/%s#%d:%s", "org", "repo", 5, tc.commenter) {
-					found = true
-					break
-				}
+			e := &scmprovider.GenericCommentEvent{
+				Action:      scm.ActionCreate,
+				IssueState:  "open",
+				IsPR:        true,
+				Body:        tc.body,
+				Author:      scm.User{Login: tc.commenter},
+				IssueAuthor: scm.User{Login: "author"},
+				Number:      5,
+				Assignees:   []scm.User{{Login: "collab1"}, {Login: "assignee1"}},
+				Repo:        scm.Repository{Namespace: "org", Name: "repo"},
+				Link:        "<url>",
 			}
-			if !found || len(fc.AssigneesAdded) != 1 {
-				t.Errorf("should have assigned %s but added assignees are %s", tc.commenter, fc.AssigneesAdded)
-			}
-		} else if len(fc.AssigneesAdded) != 0 {
-			t.Errorf("should not have assigned anyone but assigned %s", fc.AssigneesAdded)
-		}
-		if tc.shouldToggle {
 			if tc.hasLGTM {
-				if len(fc.PullRequestLabelsRemoved) == 0 {
-					t.Error("should have removed LGTM.")
-				} else if len(fc.PullRequestLabelsAdded) > 1 {
-					t.Error("should not have added LGTM.")
-				}
-			} else {
-				if len(fc.PullRequestLabelsAdded) == 0 {
-					t.Error("should have added LGTM.")
-				} else if len(fc.PullRequestLabelsRemoved) > 0 {
-					t.Error("should not have removed LGTM.")
-				}
+				fc.PullRequestLabelsAdded = []string{"org/repo#5:" + LGTMLabel}
 			}
-		} else if len(fc.PullRequestLabelsRemoved) > 0 {
-			t.Error("should not have removed LGTM.")
-		} else if (tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 1) || (!tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 0) {
-			t.Error("should not have added LGTM.")
-		}
-		if tc.shouldComment && len(fc.PullRequestComments[5]) != 1 {
-			t.Error("should have commented.")
-		} else if !tc.shouldComment && len(fc.PullRequestComments[5]) != 0 {
-			t.Error("should not have commented.")
-		}
+			oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
+			pc := &plugins.Configuration{}
+			if tc.skipCollab {
+				pc.Owners.SkipCollaborators = []string{"org/repo"}
+			}
+			pc.Lgtm = append(pc.Lgtm, plugins.Lgtm{
+				Repos:         []string{"org/repo"},
+				StoreTreeHash: true,
+			})
+			fp := &fakePruner{
+				SCMProviderClient:   fc,
+				PullRequestComments: fc.PullRequestComments[5],
+			}
+			if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+				t.Fatalf("didn't expect error from lgtmComment: %v", err)
+			}
+			if tc.shouldAssign {
+				found := false
+				for _, a := range fc.AssigneesAdded {
+					if a == fmt.Sprintf("%s/%s#%d:%s", "org", "repo", 5, tc.commenter) {
+						found = true
+						break
+					}
+				}
+				if !found || len(fc.AssigneesAdded) != 1 {
+					t.Errorf("should have assigned %s but added assignees are %s", tc.commenter, fc.AssigneesAdded)
+				}
+			} else if len(fc.AssigneesAdded) != 0 {
+				t.Errorf("should not have assigned anyone but assigned %s", fc.AssigneesAdded)
+			}
+			if tc.shouldToggle {
+				if tc.hasLGTM {
+					if len(fc.PullRequestLabelsRemoved) == 0 {
+						t.Error("should have removed LGTM.")
+					} else if len(fc.PullRequestLabelsAdded) > 1 {
+						t.Error("should not have added LGTM.")
+					}
+				} else {
+					if len(fc.PullRequestLabelsAdded) == 0 {
+						t.Error("should have added LGTM.")
+					} else if len(fc.PullRequestLabelsRemoved) > 0 {
+						t.Error("should not have removed LGTM.")
+					}
+				}
+			} else if len(fc.PullRequestLabelsRemoved) > 0 {
+				t.Error("should not have removed LGTM.")
+			} else if (tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 1) || (!tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 0) {
+				t.Error("should not have added LGTM.")
+			}
+			if tc.shouldComment && len(fc.PullRequestComments[5]) != 1 {
+				t.Error("should have commented.")
+			} else if !tc.shouldComment && len(fc.PullRequestComments[5]) != 0 {
+				t.Error("should not have commented.")
+			}
+		})
 	}
 }
 

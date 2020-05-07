@@ -27,7 +27,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
-var closeRe = regexp.MustCompile(`(?mi)^/close\s*$`)
+var closeRe = regexp.MustCompile(`(?mi)^/(?:lh-)?close\s*$`)
 
 type closeClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)

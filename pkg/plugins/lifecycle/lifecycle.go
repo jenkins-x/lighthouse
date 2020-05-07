@@ -30,7 +30,7 @@ import (
 
 var (
 	lifecycleLabels = []string{labels.LifecycleActive, labels.LifecycleFrozen, labels.LifecycleStale, labels.LifecycleRotten}
-	lifecycleRe     = regexp.MustCompile(`(?mi)^/(remove-)?lifecycle (active|frozen|stale|rotten)\s*$`)
+	lifecycleRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?(remove-)?lifecycle (active|frozen|stale|rotten)\s*$`)
 )
 
 func init() {
@@ -46,21 +46,21 @@ func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.Plu
 		Description: "Closes an issue or PR.",
 		Featured:    false,
 		WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-		Examples:    []string{"/close"},
+		Examples:    []string{"/close", "/lh-close"},
 	})
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/reopen",
 		Description: "Reopens an issue or PR",
 		Featured:    false,
 		WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-		Examples:    []string{"/reopen"},
+		Examples:    []string{"/reopen", "/lh-reopen"},
 	})
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/[remove-]lifecycle <frozen|stale|rotten>",
 		Description: "Flags an issue or PR as frozen/stale/rotten",
 		Featured:    false,
 		WhoCanUse:   "Anyone can trigger this command.",
-		Examples:    []string{"/lifecycle frozen", "/remove-lifecycle stale"},
+		Examples:    []string{"/lifecycle frozen", "/remove-lifecycle stale", "/lh-lifecyle rotten"},
 	})
 	return pluginHelp, nil
 }

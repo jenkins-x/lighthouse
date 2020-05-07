@@ -388,68 +388,77 @@ func TestAssignAndReview(t *testing.T) {
 			commenter:   "rando",
 			unrequested: []string{"kubernetes/sig-testing-misc"},
 		},
+		{
+			name:        "multi command types with prefix",
+			body:        "/lh-assign @fejta\n/lh-unassign @spxtr @cjwagner\n/lh-uncc @merlin \n/lh-cc @cjwagner",
+			commenter:   "rando",
+			assigned:    []string{"fejta"},
+			unassigned:  []string{"spxtr", "cjwagner"},
+			requested:   []string{"cjwagner"},
+			unrequested: []string{"merlin"},
+		},
 	}
 	for _, tc := range testcases {
-		fc := newFakeClient([]string{"hello-world", "allow_underscore", "cjwagner", "merlin", "kubernetes/sig-testing-misc"})
-		e := scmprovider.GenericCommentEvent{
-			Body:   tc.body,
-			Author: scm.User{Login: tc.commenter},
-			Repo:   scm.Repository{Name: "repo", Namespace: "org"},
-			Number: 5,
-		}
-		if err := handle(newAssignHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
-			t.Errorf("For case %s, didn't expect error from handle: %v", tc.name, err)
-			continue
-		}
-		if err := handle(newReviewHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
-			t.Errorf("For case %s, didn't expect error from handle: %v", tc.name, err)
-			continue
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			fc := newFakeClient([]string{"hello-world", "allow_underscore", "cjwagner", "merlin", "kubernetes/sig-testing-misc"})
+			e := scmprovider.GenericCommentEvent{
+				Body:   tc.body,
+				Author: scm.User{Login: tc.commenter},
+				Repo:   scm.Repository{Name: "repo", Namespace: "org"},
+				Number: 5,
+			}
+			if err := handle(newAssignHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
+				t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+			}
+			if err := handle(newReviewHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
+				t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+			}
 
-		if tc.commented != fc.commented {
-			t.Errorf("For case %s, expect commented: %v, got commented %v", tc.name, tc.commented, fc.commented)
-		}
+			if tc.commented != fc.commented {
+				t.Errorf("For case %s, expect commented: %v, got commented %v", tc.name, tc.commented, fc.commented)
+			}
 
-		if len(fc.assigned) != len(tc.assigned) {
-			t.Errorf("For case %s, assigned actual %v != expected %s", tc.name, fc.assigned, tc.assigned)
-		} else {
-			for _, who := range tc.assigned {
-				if n, ok := fc.assigned[who]; !ok || n < 1 {
-					t.Errorf("For case %s, assigned actual %v != expected %s", tc.name, fc.assigned, tc.assigned)
-					break
+			if len(fc.assigned) != len(tc.assigned) {
+				t.Errorf("For case %s, assigned actual %v != expected %s", tc.name, fc.assigned, tc.assigned)
+			} else {
+				for _, who := range tc.assigned {
+					if n, ok := fc.assigned[who]; !ok || n < 1 {
+						t.Errorf("For case %s, assigned actual %v != expected %s", tc.name, fc.assigned, tc.assigned)
+						break
+					}
 				}
 			}
-		}
-		if len(fc.unassigned) != len(tc.unassigned) {
-			t.Errorf("For case %s, unassigned %v != %s", tc.name, fc.unassigned, tc.unassigned)
-		} else {
-			for _, who := range tc.unassigned {
-				if n, ok := fc.unassigned[who]; !ok || n < 1 {
-					t.Errorf("For case %s, unassigned %v != %s", tc.name, fc.unassigned, tc.unassigned)
-					break
+			if len(fc.unassigned) != len(tc.unassigned) {
+				t.Errorf("For case %s, unassigned %v != %s", tc.name, fc.unassigned, tc.unassigned)
+			} else {
+				for _, who := range tc.unassigned {
+					if n, ok := fc.unassigned[who]; !ok || n < 1 {
+						t.Errorf("For case %s, unassigned %v != %s", tc.name, fc.unassigned, tc.unassigned)
+						break
+					}
 				}
 			}
-		}
 
-		if len(fc.requested) != len(tc.requested) {
-			t.Errorf("For case %s, requested actual %v != expected %s", tc.name, fc.requested, tc.requested)
-		} else {
-			for _, who := range tc.requested {
-				if n, ok := fc.requested[who]; !ok || n < 1 {
-					t.Errorf("For case %s, requested actual %v != expected %s", tc.name, fc.requested, tc.requested)
-					break
+			if len(fc.requested) != len(tc.requested) {
+				t.Errorf("For case %s, requested actual %v != expected %s", tc.name, fc.requested, tc.requested)
+			} else {
+				for _, who := range tc.requested {
+					if n, ok := fc.requested[who]; !ok || n < 1 {
+						t.Errorf("For case %s, requested actual %v != expected %s", tc.name, fc.requested, tc.requested)
+						break
+					}
 				}
 			}
-		}
-		if len(fc.unrequested) != len(tc.unrequested) {
-			t.Errorf("For case %s, unrequested %v != %s", tc.name, fc.unrequested, tc.unrequested)
-		} else {
-			for _, who := range tc.unrequested {
-				if n, ok := fc.unrequested[who]; !ok || n < 1 {
-					t.Errorf("For case %s, unrequested %v != %s", tc.name, fc.unrequested, tc.unrequested)
-					break
+			if len(fc.unrequested) != len(tc.unrequested) {
+				t.Errorf("For case %s, unrequested %v != %s", tc.name, fc.unrequested, tc.unrequested)
+			} else {
+				for _, who := range tc.unrequested {
+					if n, ok := fc.unrequested[who]; !ok || n < 1 {
+						t.Errorf("For case %s, unrequested %v != %s", tc.name, fc.unrequested, tc.unrequested)
+						break
+					}
 				}
 			}
-		}
+		})
 	}
 }

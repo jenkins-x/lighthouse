@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/pkg/errors"
 )
 
 // MergeDetails optional extra parameters
@@ -19,7 +20,52 @@ func (c *Client) GetPullRequest(owner, repo string, number int) (*scm.PullReques
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	pr, _, err := c.client.PullRequests.Find(ctx, fullName, number)
-	return pr, err
+	if err != nil {
+		return nil, err
+	}
+	return c.populateBaseAndHeadRepos(ctx, pr)
+}
+
+func (c *Client) populateBaseAndHeadRepos(ctx context.Context, pr *scm.PullRequest) (*scm.PullRequest, error) {
+	// If we have an ID but no name, we've probably got a GitLab PR so go get its base information
+	if pr != nil && pr.Base.Repo.ID != "" && pr.Base.Repo.Name == "" {
+		baseRepo, _, err := c.client.Repositories.Find(ctx, pr.Base.Repo.ID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting base repository for PR")
+		}
+		pr.Base.Repo = *baseRepo
+	}
+	if pr != nil && pr.Head.Repo.ID != "" && pr.Head.Repo.Name == "" {
+		if pr.Head.Repo.ID == pr.Base.Repo.ID {
+			pr.Head.Repo = pr.Base.Repo
+			return pr, nil
+		}
+		headRepo, _, err := c.client.Repositories.Find(ctx, pr.Head.Repo.ID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting head repository for PR")
+		}
+		pr.Head.Repo = *headRepo
+	}
+	return pr, nil
+}
+
+// ListAllPullRequestsForFullNameRepo lists all pull requests in a full-name repository
+func (c *Client) ListAllPullRequestsForFullNameRepo(fullName string, opts scm.PullRequestListOptions) ([]*scm.PullRequest, error) {
+	ctx := context.Background()
+	var allPRs []*scm.PullRequest
+	var resp *scm.Response
+	var pagePRs []*scm.PullRequest
+	var err error
+	for resp == nil || opts.Page <= resp.Page.Last {
+		pagePRs, resp, err = c.client.PullRequests.List(ctx, fullName, opts)
+		if err != nil {
+			return nil, err
+		}
+		// TODO: Switch to getting repo info here - right now that's done in keeper
+		allPRs = append(allPRs, pagePRs...)
+		opts.Page++
+	}
+	return allPRs, nil
 }
 
 // ListPullRequestComments list pull request comments

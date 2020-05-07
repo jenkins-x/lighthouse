@@ -34,7 +34,7 @@ import (
 const pluginName = "skip"
 
 var (
-	skipRe = regexp.MustCompile(`(?mi)^/skip\s*$`)
+	skipRe = regexp.MustCompile(`(?mi)^/(?:lh-)?skip\s*$`)
 )
 
 type scmProviderClient interface {
@@ -58,7 +58,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Cleans up GitHub stale commit statuses for non-blocking jobs on a PR.",
 		Featured:    false,
 		WhoCanUse:   "Anyone can trigger this command on a PR.",
-		Examples:    []string{"/skip"},
+		Examples:    []string{"/skip", "/lh-skip"},
 	})
 	return pluginHelp, nil
 }

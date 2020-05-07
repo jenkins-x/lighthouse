@@ -58,6 +58,13 @@ func TestMilestoneStatus(t *testing.T) {
 			expectedMilestone: 1,
 		},
 		{
+			name:              "Update the milestone when a sig-lead uses the command with prefix",
+			body:              "/lh-milestone v1.0",
+			commenter:         "sig-lead",
+			previousMilestone: 0,
+			expectedMilestone: 1,
+		},
+		{
 			name:              "Don't update the milestone if a sig-lead enters an invalid milestone",
 			body:              "/milestone v2.0",
 			commenter:         "sig-lead",
@@ -118,33 +125,34 @@ func TestMilestoneStatus(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		fakeClient := &fake.SCMClient{IssueComments: make(map[int][]*scm.Comment), MilestoneMap: milestonesMap}
-		fakeClient.Milestone = tc.previousMilestone
+		t.Run(tc.name, func(t *testing.T) {
+			fakeClient := &fake.SCMClient{IssueComments: make(map[int][]*scm.Comment), MilestoneMap: milestonesMap}
+			fakeClient.Milestone = tc.previousMilestone
 
-		maintainersID := 42
-		maintainersName := "fake-maintainers-team"
-		e := &scmprovider.GenericCommentEvent{
-			Action: scm.ActionCreate,
-			Body:   tc.body,
-			Number: 1,
-			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
-			Author: scm.User{Login: tc.commenter},
-		}
+			maintainersID := 42
+			maintainersName := "fake-maintainers-team"
+			e := &scmprovider.GenericCommentEvent{
+				Action: scm.ActionCreate,
+				Body:   tc.body,
+				Number: 1,
+				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
+				Author: scm.User{Login: tc.commenter},
+			}
 
-		repoMilestone := map[string]plugins.Milestone{"": {MaintainersID: 0, MaintainersTeam: maintainersName}}
+			repoMilestone := map[string]plugins.Milestone{"": {MaintainersID: 0, MaintainersTeam: maintainersName}}
 
-		if !tc.noRepoMaintainer {
-			repoMilestone["org/repo"] = plugins.Milestone{MaintainersID: maintainersID, MaintainersTeam: maintainersName}
-		}
+			if !tc.noRepoMaintainer {
+				repoMilestone["org/repo"] = plugins.Milestone{MaintainersID: maintainersID, MaintainersTeam: maintainersName}
+			}
 
-		if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
-			t.Errorf("(%s): Unexpected error from handle: %v.", tc.name, err)
-			continue
-		}
+			if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
 
-		// Check that the milestone was set if it was supposed to be set
-		if fakeClient.Milestone != tc.expectedMilestone {
-			t.Errorf("Expected the milestone to be updated for the issue for %s.  Expected Milestone %v, Actual Milestone %v.", tc.name, tc.expectedMilestone, fakeClient.Milestone)
-		}
+			// Check that the milestone was set if it was supposed to be set
+			if fakeClient.Milestone != tc.expectedMilestone {
+				t.Errorf("Expected the milestone to be updated for the issue for %s.  Expected Milestone %v, Actual Milestone %v.", tc.name, tc.expectedMilestone, fakeClient.Milestone)
+			}
+		})
 	}
 }

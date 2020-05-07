@@ -30,7 +30,7 @@ import (
 )
 
 func TestSearch(t *testing.T) {
-	const q = "random search string"
+	const q = "random graphQLSearch string"
 	now := time.Now()
 	earlier := now.Add(-5 * time.Hour)
 	makePRs := func(numbers ...int) []PullRequest {
@@ -155,7 +155,7 @@ func TestSearch(t *testing.T) {
 				*ret = sq
 				return nil
 			}
-			prs, err := search(querier, logrus.WithField("test", tc.name), q, tc.start, tc.end)
+			prs, err := graphQLSearch(querier, logrus.WithField("test", tc.name), q, tc.start, tc.end)
 			switch {
 			case err != nil:
 				if !tc.err {

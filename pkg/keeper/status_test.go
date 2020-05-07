@@ -274,7 +274,7 @@ func TestExpectedStatus(t *testing.T) {
 		}
 		blocks.Repo[blockers.OrgRepo{Org: "", Repo: ""}] = items
 
-		state, desc := expectedStatus(queriesByRepo, &pr, pool, &config.KeeperContextPolicy{}, blocks)
+		state, desc := expectedStatus(queriesByRepo, &pr, pool, &config.KeeperContextPolicy{}, blocks, "fake")
 		if state != tc.state {
 			t.Errorf("Expected status state %q, but got %q.", string(tc.state), string(state))
 		}
@@ -437,14 +437,9 @@ func TestTargetUrl(t *testing.T) {
 				Author: struct {
 					Login githubql.String
 				}{Login: githubql.String("author")},
-				Repository: struct {
-					Name          githubql.String
-					NameWithOwner githubql.String
-					URL           githubql.String
-					Owner         struct {
-						Login githubql.String
-					}
-				}{NameWithOwner: githubql.String("org/repo")},
+				Repository: Repository{
+					NameWithOwner: githubql.String("org/repo"),
+				},
 				HeadRefName: "head",
 			},
 			config:      config.Keeper{PRStatusBaseURL: "pr.status.com"},

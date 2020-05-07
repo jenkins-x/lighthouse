@@ -76,7 +76,6 @@ type FullConfig struct {
 
 type scmProviderClient interface {
 	ListCollaborators(org, repo string) ([]scm.User, error)
-	ListOrgMembers(org string) ([]*scm.TeamMember, error)
 	GetRef(org, repo, ref string) (string, error)
 }
 
@@ -262,11 +261,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 		log.WithError(err).Errorf("Failed to list collaborators while loading RepoOwners. Skipping collaborator filtering.")
 		owners = entry.owners
 	} else {
-		orgMembers, err := c.spc.ListOrgMembers(org)
-		if err != nil && err.Error() != scm.ErrNotFound.Error() {
-			log.WithError(err).Errorf("Failed to list org members while loading RepoOwners, skipping filtering based on org members")
-		}
-		owners = entry.owners.filterCollaborators(collaborators, orgMembers)
+		owners = entry.owners.filterCollaborators(collaborators)
 	}
 	return owners, nil
 }
@@ -507,13 +502,10 @@ func (o *RepoOwners) applyOptionsToPath(path string, opts dirOptions) {
 	}
 }
 
-func (o *RepoOwners) filterCollaborators(toKeep []scm.User, orgMembers []*scm.TeamMember) *RepoOwners {
+func (o *RepoOwners) filterCollaborators(toKeep []scm.User) *RepoOwners {
 	collabs := sets.NewString()
 	for _, keeper := range toKeep {
 		collabs.Insert(scmprovider.NormLogin(keeper.Login))
-	}
-	for _, om := range orgMembers {
-		collabs.Insert(scmprovider.NormLogin(om.Login))
 	}
 
 	filter := func(ownerMap map[string]map[*regexp.Regexp]sets.String) map[string]map[*regexp.Regexp]sets.String {

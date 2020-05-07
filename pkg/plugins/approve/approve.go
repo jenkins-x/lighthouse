@@ -27,9 +27,9 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -74,6 +74,7 @@ type scmProviderClient interface {
 	AddLabel(org, repo string, number int, label string, pr bool) error
 	RemoveLabel(org, repo string, number int, label string, pr bool) error
 	ListIssueEvents(org, repo string, num int) ([]*scm.ListedIssueEvent, error)
+	ProviderType() string
 }
 
 type ownersClient interface {
@@ -138,7 +139,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "Approves a pull request",
 		Featured:    true,
 		WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
-		Examples:    []string{"/approve", "/approve no-issue"},
+		Examples:    []string{"/approve", "/approve no-issue", "/lh-approve"},
 	})
 	return pluginHelp, nil
 }
@@ -148,13 +149,13 @@ func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEv
 		pc.Logger,
 		pc.SCMProviderClient,
 		pc.OwnersClient,
-		pc.Config.GitHubOptions,
+		pc.ServerURL,
 		pc.PluginConfig,
 		&ce,
 	)
 }
 
-func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, ce *scmprovider.GenericCommentEvent) error {
+func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersClient, serverURL *url.URL, config *plugins.Configuration, ce *scmprovider.GenericCommentEvent) error {
 	if ce.Action != scm.ActionCreate || !ce.IsPR || ce.IssueState == "closed" {
 		return nil
 	}
@@ -183,7 +184,7 @@ func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersCli
 		log,
 		spc,
 		repo,
-		githubConfig,
+		serverURL,
 		opts,
 		&state{
 			org:       ce.Repo.Namespace,
@@ -205,13 +206,13 @@ func handleReviewEvent(pc plugins.Agent, re scm.ReviewHook) error {
 		pc.Logger,
 		pc.SCMProviderClient,
 		pc.OwnersClient,
-		pc.Config.GitHubOptions,
+		pc.ServerURL,
 		pc.PluginConfig,
 		&re,
 	)
 }
 
-func handleReview(log *logrus.Entry, spc scmProviderClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, re *scm.ReviewHook) error {
+func handleReview(log *logrus.Entry, spc scmProviderClient, oc ownersClient, serverURL *url.URL, config *plugins.Configuration, re *scm.ReviewHook) error {
 	if re.Action != scm.ActionSubmitted && re.Action != scm.ActionDismissed {
 		return nil
 	}
@@ -245,7 +246,7 @@ func handleReview(log *logrus.Entry, spc scmProviderClient, oc ownersClient, git
 		log,
 		spc,
 		repo,
-		githubConfig,
+		serverURL,
 		optionsForRepo(config, re.Repo.Namespace, re.Repo.Name),
 		&state{
 			org:       re.Repo.Namespace,
@@ -266,13 +267,13 @@ func handlePullRequestEvent(pc plugins.Agent, pre scm.PullRequestHook) error {
 		pc.Logger,
 		pc.SCMProviderClient,
 		pc.OwnersClient,
-		pc.Config.GitHubOptions,
+		pc.ServerURL,
 		pc.PluginConfig,
 		&pre,
 	)
 }
 
-func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient, githubConfig config.GitHubOptions, config *plugins.Configuration, pre *scm.PullRequestHook) error {
+func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient, serverURL *url.URL, config *plugins.Configuration, pre *scm.PullRequestHook) error {
 	if pre.Action != scm.ActionOpen &&
 		pre.Action != scm.ActionReopen &&
 		pre.Action != scm.ActionSync &&
@@ -298,7 +299,7 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient
 		log,
 		spc,
 		repo,
-		githubConfig,
+		serverURL,
 		optionsForRepo(config, pre.Repo.Namespace, pre.Repo.Name),
 		&state{
 			org:       pre.Repo.Namespace,
@@ -346,7 +347,7 @@ func findAssociatedIssue(body, org string) (int, error) {
 // - Iff all files have been approved, the bot will add the "approved" label.
 // - Iff a cancel command is found, that reviewer will be removed from the approverSet
 // 	and the munger will remove the approved label if it has been applied
-func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githubConfig config.GitHubOptions, opts *plugins.Approve, pr *state) error {
+func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, serverURL *url.URL, opts *plugins.Approve, pr *state) error {
 	fetchErr := func(context string, err error) error {
 		return fmt.Errorf("failed to get %s for %s/%s#%d: %v", context, pr.org, pr.repo, pr.number, err)
 	}
@@ -374,16 +375,20 @@ func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githu
 	if err != nil {
 		return fetchErr("bot name", err)
 	}
-	issueComments, err := spc.ListIssueComments(pr.org, pr.repo, pr.number)
-	if err != nil {
-		return fetchErr("issue comments", err)
+	var issueComments []*scm.Comment
+	// Get issue comments _only_ if this is GitHub. Otherwise just get PR comments.
+	if spc.ProviderType() == "github" {
+		issueComments, err = spc.ListIssueComments(pr.org, pr.repo, pr.number)
+		if err != nil {
+			return fetchErr("issue comments", err)
+		}
 	}
 	reviewComments, err := spc.ListPullRequestComments(pr.org, pr.repo, pr.number)
 	if err != nil {
 		return fetchErr("review comments", err)
 	}
 	reviews, err := spc.ListReviews(pr.org, pr.repo, pr.number)
-	if err != nil {
+	if err != nil && err.Error() != scm.ErrNotSupported.Error() {
 		return fetchErr("reviews", err)
 	}
 
@@ -425,7 +430,8 @@ func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, githu
 
 	notifications := filterComments(comments, notificationMatcher(botName))
 	latestNotification := getLast(notifications)
-	newMessage := updateNotification(githubConfig.LinkURL, pr.org, pr.repo, pr.branch, latestNotification, approversHandler)
+	usePrefix := spc.ProviderType() == "gitlab"
+	newMessage := updateNotification(serverURL, pr.org, pr.repo, pr.branch, latestNotification, approversHandler, usePrefix)
 	if newMessage != nil {
 		for _, notif := range notifications {
 			if err := spc.DeleteComment(pr.org, pr.repo, pr.number, notif.ID, true); err != nil {
@@ -498,12 +504,20 @@ func isApprovalCommand(botName string, lgtmActsAsApprove bool, c *comment) bool 
 	}
 
 	for _, match := range commandRegex.FindAllStringSubmatch(c.Body, -1) {
-		cmd := strings.ToUpper(match[1])
+		cmd := removeLighthouseCommandPrefix(match[1])
 		if (cmd == lgtmCommand && lgtmActsAsApprove) || cmd == approveCommand {
 			return true
 		}
 	}
 	return false
+}
+
+func removeLighthouseCommandPrefix(cmd string) string {
+	cmd = strings.ToUpper(cmd)
+	if strings.HasPrefix(cmd, strings.ToUpper(util.LighthouseCommandPrefix)) {
+		cmd = strings.TrimPrefix(cmd, strings.ToUpper(util.LighthouseCommandPrefix))
+	}
+	return cmd
 }
 
 func isApprovalState(botName string, reviewActsAsApprove bool, c *comment) bool {
@@ -539,8 +553,8 @@ func notificationMatcher(botName string) func(*comment) bool {
 	}
 }
 
-func updateNotification(linkURL *url.URL, org, repo, branch string, latestNotification *comment, approversHandler approvers.Approvers) *string {
-	message := approvers.GetMessage(approversHandler, linkURL, org, repo, branch)
+func updateNotification(linkURL *url.URL, org, repo, branch string, latestNotification *comment, approversHandler approvers.Approvers, usePrefix bool) *string {
+	message := approvers.GetMessage(approversHandler, linkURL, org, repo, branch, usePrefix)
 	if message == nil || (latestNotification != nil && strings.Contains(latestNotification.Body, *message)) {
 		return nil
 	}
@@ -570,7 +584,7 @@ func addApprovers(approversHandler *approvers.Approvers, approveComments []*comm
 		}
 
 		for _, match := range commandRegex.FindAllStringSubmatch(c.Body, -1) {
-			name := strings.ToUpper(match[1])
+			name := removeLighthouseCommandPrefix(match[1])
 			if name != approveCommand && name != lgtmCommand {
 				continue
 			}

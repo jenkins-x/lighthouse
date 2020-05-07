@@ -233,7 +233,7 @@ func requirementDiff(pr *PullRequest, q *config.KeeperQuery, cc contextChecker) 
 // in order to generate a diff for the status description. We choose the query
 // for the repo that the PR is closest to meeting (as determined by the number
 // of unmet/violated requirements).
-func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]PullRequest, cc contextChecker, blocks blockers.Blockers) (string, string) {
+func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]PullRequest, cc contextChecker, blocks blockers.Blockers, providerType string) (string, string) {
 	if _, ok := pool[prKey(pr)]; !ok {
 		// if the branch is blocked forget checking for a diff
 		blockingIssues := blocks.GetApplicable(string(pr.Repository.Owner.Login), string(pr.Repository.Name), string(pr.BaseRef.Name))
@@ -257,6 +257,10 @@ func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]
 				minDiffCount = diffCount
 				minDiff = diff
 			}
+		}
+		// GitLab doesn't like updating status description without a state change.
+		if providerType == "gitlab" {
+			minDiff = ""
 		}
 		return scmprovider.StatusPending, fmt.Sprintf(statusNotInPool, minDiff)
 	}
@@ -308,7 +312,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 			return
 		}
 
-		wantState, wantDesc := expectedStatus(queryMap, pr, pool, cr, blocks)
+		wantState, wantDesc := expectedStatus(queryMap, pr, pool, cr, blocks, sc.spc.ProviderType())
 		var actualState githubql.StatusState
 		var actualDesc string
 		for _, ctx := range contexts {
@@ -329,7 +333,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 				}); err != nil {
 				log.WithError(err).Errorf(
 					"Failed to set status context from %q to %q.",
-					string(actualState),
+					strings.ToLower(string(actualState)),
 					wantState,
 				)
 			}
@@ -439,7 +443,19 @@ func (sc *statusController) search() []PullRequest {
 		sc.PreviousQuery = query
 	}
 
-	prs, err := search(sc.spc.Query, sc.logger, query, sc.LatestPR.Time, now)
+	var prs []PullRequest
+	var err error
+
+	if sc.spc.SupportsGraphQL() {
+		prs, err = graphQLSearch(sc.spc.Query, sc.logger, query, sc.LatestPR.Time, now)
+	} else {
+		kq := config.KeeperQuery{}
+		for _, r := range repos.List() {
+			kq.Repos = append(kq.Repos, r)
+		}
+
+		prs, err = restAPISearch(sc.spc, sc.logger, config.KeeperQueries{kq}, sc.LatestPR.Time, now)
+	}
 	log.WithField("duration", time.Since(now).String()).Debugf("Found %d open PRs.", len(prs))
 	if err != nil {
 		log := log.WithError(err)

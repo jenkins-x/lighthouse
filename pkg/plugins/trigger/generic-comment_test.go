@@ -119,10 +119,28 @@ func TestHandleGenericComment(t *testing.T) {
 			ShouldBuild: true,
 		},
 		{
+			name:        "accept /test with prefix from non-trusted member if PR author is trusted",
+			Author:      "untrusted-member",
+			PRAuthor:    "trusted-member",
+			Body:        "/lh-test all",
+			State:       "open",
+			IsPR:        true,
+			ShouldBuild: true,
+		},
+		{
 			name:        "reject /test from non-trusted member when PR author is untrusted",
 			Author:      "untrusted-member",
 			PRAuthor:    "untrusted-member",
 			Body:        "/test all",
+			State:       "open",
+			IsPR:        true,
+			ShouldBuild: false,
+		},
+		{
+			name:        "reject /test with prefix from non-trusted member when PR author is untrusted",
+			Author:      "untrusted-member",
+			PRAuthor:    "untrusted-member",
+			Body:        "/lh-test all",
 			State:       "open",
 			IsPR:        true,
 			ShouldBuild: false,
@@ -163,6 +181,16 @@ func TestHandleGenericComment(t *testing.T) {
 
 			Author:      "trusted-member",
 			Body:        "looks great, thanks!\n/ok-to-test",
+			State:       "open",
+			IsPR:        true,
+			ShouldBuild: true,
+			AddedLabels: issueLabels(labels.OkToTest),
+		},
+		{
+			name: "Trusted member's ok to test with prefix",
+
+			Author:      "trusted-member",
+			Body:        "looks great, thanks!\n/lh-ok-to-test",
 			State:       "open",
 			IsPR:        true,
 			ShouldBuild: true,
@@ -361,6 +389,32 @@ func TestHandleGenericComment(t *testing.T) {
 			name:   "Retest of run_if_changed job that failed. Changes require job",
 			Author: "trusted-member",
 			Body:   "/retest",
+			State:  "open",
+			IsPR:   true,
+			Presubmits: map[string][]config.Presubmit{
+				"org/repo": {
+					{
+						JobBase: config.JobBase{
+							Name: "jib",
+						},
+						RegexpChangeMatcher: config.RegexpChangeMatcher{
+							RunIfChanged: "CHANGED",
+						},
+						Reporter: config.Reporter{
+							Context: "pull-jib",
+						},
+						Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
+						RerunCommand: `/test jib`,
+					},
+				},
+			},
+			ShouldBuild:   true,
+			StartsExactly: "pull-jib",
+		},
+		{
+			name:   "Retest of run_if_changed job that failed with prefix. Changes require job",
+			Author: "trusted-member",
+			Body:   "/lh-retest",
 			State:  "open",
 			IsPR:   true,
 			Presubmits: map[string][]config.Presubmit{
@@ -776,119 +830,121 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		if tc.Branch == "" {
-			tc.Branch = "master"
-		}
-		g := &fake2.SCMClient{
-			CreatedStatuses:     map[string][]*scm.StatusInput{},
-			IssueComments:       map[int][]*scm.Comment{},
-			PullRequestComments: map[int][]*scm.Comment{},
-			OrgMembers:          map[string][]string{"org": {"trusted-member"}},
-			PullRequests: map[int]*scm.PullRequest{
-				0: {
-					Author: scm.User{Login: tc.PRAuthor},
-					Number: 0,
-					Head: scm.PullRequestBranch{
-						Sha: "cafe",
-					},
-					Base: scm.PullRequestBranch{
-						Ref: tc.Branch,
-						Repo: scm.Repository{
-							Namespace: "org",
-							Name:      "repo",
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.Branch == "" {
+				tc.Branch = "master"
+			}
+			g := &fake2.SCMClient{
+				CreatedStatuses:     map[string][]*scm.StatusInput{},
+				IssueComments:       map[int][]*scm.Comment{},
+				PullRequestComments: map[int][]*scm.Comment{},
+				OrgMembers:          map[string][]string{"org": {"trusted-member"}},
+				PullRequests: map[int]*scm.PullRequest{
+					0: {
+						Author: scm.User{Login: tc.PRAuthor},
+						Number: 0,
+						Head: scm.PullRequestBranch{
+							Sha: "cafe",
+						},
+						Base: scm.PullRequestBranch{
+							Ref: tc.Branch,
+							Repo: scm.Repository{
+								Namespace: "org",
+								Name:      "repo",
+							},
 						},
 					},
 				},
-			},
-			PullRequestChanges: map[int][]*scm.Change{0: {{Path: "CHANGED"}}},
-			CombinedStatuses: map[string]*scm.CombinedStatus{
-				"cafe": {
-					Statuses: []*scm.Status{
-						{State: scm.StatePending, Label: "pull-job"},
-						{State: scm.StateFailure, Label: "pull-jib"},
-						{State: scm.StateSuccess, Label: "pull-jub"},
-					},
-				},
-			},
-		}
-		if tc.IsPR {
-			g.PullRequestLabelsExisting = tc.IssueLabels
-		} else {
-			g.IssueLabelsExisting = tc.IssueLabels
-		}
-		fakeConfig := &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}}
-		fakeLauncher := fake.NewLauncher()
-		c := Client{
-			SCMProviderClient: g,
-			LauncherClient:    fakeLauncher,
-			Config:            fakeConfig,
-			Logger:            logrus.WithField("plugin", PluginName),
-		}
-		presubmits := tc.Presubmits
-		if presubmits == nil {
-			presubmits = map[string][]config.Presubmit{
-				"org/repo": {
-					{
-						JobBase: config.JobBase{
-							Name: "job",
+				PullRequestChanges: map[int][]*scm.Change{0: {{Path: "CHANGED"}}},
+				CombinedStatuses: map[string]*scm.CombinedStatus{
+					"cafe": {
+						Statuses: []*scm.Status{
+							{State: scm.StatePending, Label: "pull-job"},
+							{State: scm.StateFailure, Label: "pull-jib"},
+							{State: scm.StateSuccess, Label: "pull-jub"},
 						},
-						AlwaysRun: true,
-						Reporter: config.Reporter{
-							Context: "pull-job",
-						},
-						Trigger:      `(?m)^/test (?:.*? )?job(?: .*?)?$`,
-						RerunCommand: `/test job`,
-						Brancher:     config.Brancher{Branches: []string{"master"}},
-					},
-					{
-						JobBase: config.JobBase{
-							Name: "jib",
-						},
-						AlwaysRun: false,
-						Reporter: config.Reporter{
-							Context: "pull-jib",
-						},
-						Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
-						RerunCommand: `/test jib`,
 					},
 				},
 			}
-		}
-		if err := c.Config.SetPresubmits(presubmits); err != nil {
-			t.Fatalf("%s: failed to set presubmits: %v", tc.name, err)
-		}
+			if tc.IsPR {
+				g.PullRequestLabelsExisting = tc.IssueLabels
+			} else {
+				g.IssueLabelsExisting = tc.IssueLabels
+			}
+			fakeConfig := &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}}
+			fakeLauncher := fake.NewLauncher()
+			c := Client{
+				SCMProviderClient: g,
+				LauncherClient:    fakeLauncher,
+				Config:            fakeConfig,
+				Logger:            logrus.WithField("plugin", PluginName),
+			}
+			presubmits := tc.Presubmits
+			if presubmits == nil {
+				presubmits = map[string][]config.Presubmit{
+					"org/repo": {
+						{
+							JobBase: config.JobBase{
+								Name: "job",
+							},
+							AlwaysRun: true,
+							Reporter: config.Reporter{
+								Context: "pull-job",
+							},
+							Trigger:      `(?m)^/test (?:.*? )?job(?: .*?)?$`,
+							RerunCommand: `/test job`,
+							Brancher:     config.Brancher{Branches: []string{"master"}},
+						},
+						{
+							JobBase: config.JobBase{
+								Name: "jib",
+							},
+							AlwaysRun: false,
+							Reporter: config.Reporter{
+								Context: "pull-jib",
+							},
+							Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
+							RerunCommand: `/test jib`,
+						},
+					},
+				}
+			}
+			if err := c.Config.SetPresubmits(presubmits); err != nil {
+				t.Fatalf("%s: failed to set presubmits: %v", tc.name, err)
+			}
 
-		event := scmprovider.GenericCommentEvent{
-			Action: scm.ActionCreate,
-			Repo: scm.Repository{
-				Namespace: "org",
-				Name:      "repo",
-				FullName:  "org/repo",
-			},
-			Body:        tc.Body,
-			Author:      scm.User{Login: tc.Author},
-			IssueAuthor: scm.User{Login: tc.PRAuthor},
-			IssueState:  tc.State,
-			IsPR:        tc.IsPR,
-		}
+			event := scmprovider.GenericCommentEvent{
+				Action: scm.ActionCreate,
+				Repo: scm.Repository{
+					Namespace: "org",
+					Name:      "repo",
+					FullName:  "org/repo",
+				},
+				Body:        tc.Body,
+				Author:      scm.User{Login: tc.Author},
+				IssueAuthor: scm.User{Login: tc.PRAuthor},
+				IssueState:  tc.State,
+				IsPR:        tc.IsPR,
+			}
 
-		trigger := &plugins.Trigger{
-			IgnoreOkToTest:       tc.IgnoreOkToTest,
-			ElideSkippedContexts: tc.ElideSkippedContexts,
-		}
+			trigger := &plugins.Trigger{
+				IgnoreOkToTest:       tc.IgnoreOkToTest,
+				ElideSkippedContexts: tc.ElideSkippedContexts,
+			}
 
-		log.Printf("running case %s", tc.name)
-		// In some cases handleGenericComment can be called twice for the same event.
-		// For instance on Issue/PR creation and modification.
-		// Let's call it twice to ensure idempotency.
-		if err := handleGenericComment(c, trigger, event); err != nil {
-			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
-		}
-		validate(tc.name, fakeLauncher, g, tc, t)
-		if err := handleGenericComment(c, trigger, event); err != nil {
-			t.Fatalf("%s: didn't expect error: %s", tc.name, err)
-		}
-		validate(tc.name, fakeLauncher, g, tc, t)
+			log.Printf("running case %s", tc.name)
+			// In some cases handleGenericComment can be called twice for the same event.
+			// For instance on Issue/PR creation and modification.
+			// Let's call it twice to ensure idempotency.
+			if err := handleGenericComment(c, trigger, event); err != nil {
+				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
+			}
+			validate(tc.name, fakeLauncher, g, tc, t)
+			if err := handleGenericComment(c, trigger, event); err != nil {
+				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
+			}
+			validate(tc.name, fakeLauncher, g, tc, t)
+		})
 	}
 }
 

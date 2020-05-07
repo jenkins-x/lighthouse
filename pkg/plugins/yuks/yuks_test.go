@@ -138,36 +138,46 @@ func TestJokes(t *testing.T) {
 			shouldComment: false,
 			shouldError:   true,
 		},
+		{
+			name:          "leave joke on pr with prefix",
+			state:         "open",
+			action:        scm.ActionCreate,
+			body:          "/lh-joke",
+			joke:          "this? that.",
+			pr:            true,
+			shouldComment: true,
+			shouldError:   false,
+		},
 	}
 	for _, tc := range testcases {
-		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := scmprovider.ToTestClient(fakeScmClient)
+		t.Run(tc.name, func(t *testing.T) {
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
-		e := &scmprovider.GenericCommentEvent{
-			Action:     tc.action,
-			Body:       tc.body,
-			Number:     5,
-			IssueState: tc.state,
-			IsPR:       tc.pr,
-		}
-		err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, tc.joke)
-		if !tc.shouldError && err != nil {
-			t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
-			continue
-		} else if tc.shouldError && err == nil {
-			t.Errorf("For case %s, expected an error to occur", tc.name)
-			continue
-		}
-		var comments map[int][]*scm.Comment
-		if tc.pr {
-			comments = fc.PullRequestComments
-		} else {
-			comments = fc.IssueComments
-		}
-		if tc.shouldComment && len(comments[5]) != 1 {
-			t.Errorf("For case %s, should have commented.", tc.name)
-		} else if !tc.shouldComment && len(comments[5]) != 0 {
-			t.Errorf("For case %s, should not have commented.", tc.name)
-		}
+			e := &scmprovider.GenericCommentEvent{
+				Action:     tc.action,
+				Body:       tc.body,
+				Number:     5,
+				IssueState: tc.state,
+				IsPR:       tc.pr,
+			}
+			err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, tc.joke)
+			if !tc.shouldError && err != nil {
+				t.Fatalf("For case %s, didn't expect error: %v", tc.name, err)
+			} else if tc.shouldError && err == nil {
+				t.Fatalf("For case %s, expected an error to occur", tc.name)
+			}
+			var comments map[int][]*scm.Comment
+			if tc.pr {
+				comments = fc.PullRequestComments
+			} else {
+				comments = fc.IssueComments
+			}
+			if tc.shouldComment && len(comments[5]) != 1 {
+				t.Errorf("For case %s, should have commented.", tc.name)
+			} else if !tc.shouldComment && len(comments[5]) != 0 {
+				t.Errorf("For case %s, should not have commented.", tc.name)
+			}
+		})
 	}
 }

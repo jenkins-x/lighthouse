@@ -27,6 +27,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -598,11 +599,15 @@ func GenerateTemplate(templ, name string, data interface{}) (string, error) {
 // 	- a suggested list of people from each OWNERS files that can fully approve the PR
 // 	- how an approver can indicate their approval
 // 	- how an approver can cancel their approval
-func GetMessage(ap Approvers, linkURL *url.URL, org, repo, branch string) *string {
+func GetMessage(ap Approvers, linkURL *url.URL, org, repo, branch string, usePrefix bool) *string {
 	if linkURL == nil {
 		return nil
 	}
 	linkURL.Path = org + "/" + repo
+	lhPrefix := ""
+	if usePrefix {
+		lhPrefix = util.LighthouseCommandPrefix
+	}
 	message, err := GenerateTemplate(`{{if (and (not .ap.RequirementsMet) (call .ap.ManuallyApproved )) }}
 Approval requirements bypassed by manually added approval.
 
@@ -611,7 +616,7 @@ This pull-request has been approved by:{{range $index, $approval := .ap.ListAppr
 
 {{- if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign {{range $index, $cc := .ap.GetCCs}}{{if $index}}, {{end}}**{{$cc}}**{{end}}
-You can assign the PR to them by writing `+"`/assign {{range $index, $cc := .ap.GetCCs}}{{if $index}} {{end}}@{{$cc}}{{end}}`"+` in a comment when ready.
+You can assign the PR to them by writing `+"`/{{.lhPrefix}}assign {{range $index, $cc := .ap.GetCCs}}{{if $index}} {{end}}@{{$cc}}{{end}}`"+` in a comment when ready.
 {{- end}}
 
 {{if not .ap.RequireIssue -}}
@@ -625,7 +630,7 @@ Associated issue requirement bypassed by:{{range $index, $approval := .ap.ListNo
 *No associated issue*. Requirement bypassed by manually added approval.
 
 {{ else -}}
-*No associated issue*. Update pull-request body to add a reference to an issue, or get approval with `+"`/approve no-issue`"+`
+*No associated issue*. Update pull-request body to add a reference to an issue, or get approval with `+"`/{{.lhPrefix}}approve no-issue`"+`
 
 {{ end -}}
 
@@ -639,9 +644,9 @@ The pull request process is described [here](https://git.k8s.io/community/contri
 Needs approval from an approver in each of these files:
 
 {{range .ap.GetFiles .baseURL .branch}}{{.}}{{end}}
-Approvers can indicate their approval by writing `+"`/approve`"+` in a comment
-Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
-</details>`, "message", map[string]interface{}{"ap": ap, "baseURL": linkURL, "org": org, "repo": repo, "branch": branch})
+Approvers can indicate their approval by writing `+"`/{{.lhPrefix}}approve`"+` in a comment
+Approvers can cancel approval by writing `+"`/{{.lhPrefix}}approve cancel`"+` in a comment
+</details>`, "message", map[string]interface{}{"ap": ap, "baseURL": linkURL, "org": org, "repo": repo, "branch": branch, "lhPrefix": lhPrefix})
 	if err != nil {
 		ap.owners.log.WithError(err).Errorf("Error generating message.")
 		return nil

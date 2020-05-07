@@ -32,8 +32,8 @@ import (
 const pluginName = "shrug"
 
 var (
-	shrugRe   = regexp.MustCompile(`(?mi)^/shrug\s*$`)
-	unshrugRe = regexp.MustCompile(`(?mi)^/unshrug\s*$`)
+	shrugRe   = regexp.MustCompile(`(?mi)^/(?:lh-)?shrug\s*$`)
+	unshrugRe = regexp.MustCompile(`(?mi)^/(?:lh-)?unshrug\s*$`)
 )
 
 type event struct {

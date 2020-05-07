@@ -268,6 +268,14 @@ func TestDogs(t *testing.T) {
 			shouldComment: true,
 		},
 		{
+			name:          "leave dog on pr with prefix",
+			state:         "open",
+			action:        scm.ActionCreate,
+			body:          "/lh-woof",
+			pr:            true,
+			shouldComment: true,
+		},
+		{
 			name:          "leave dog on issue",
 			state:         "open",
 			action:        scm.ActionCreate,
@@ -304,6 +312,14 @@ func TestDogs(t *testing.T) {
 			shouldComment: true,
 		},
 		{
+			name:          "leave this-is-fine on pr with prefix",
+			state:         "open",
+			action:        scm.ActionCreate,
+			body:          "/lh-this-is-fine",
+			pr:            true,
+			shouldComment: true,
+		},
+		{
 			name:          "leave this-is-not-fine on pr",
 			state:         "open",
 			action:        scm.ActionCreate,
@@ -321,30 +337,32 @@ func TestDogs(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := scmprovider.ToTestClient(fakeScmClient)
+		t.Run(tc.name, func(t *testing.T) {
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 
-		e := &scmprovider.GenericCommentEvent{
-			Action:     tc.action,
-			Body:       tc.body,
-			Number:     5,
-			IssueState: tc.state,
-			IsPR:       tc.pr,
-		}
-		err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakePack("doge"))
-		if err != nil {
-			t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
-		}
-		var comments map[int][]*scm.Comment
-		if tc.pr {
-			comments = fc.PullRequestComments
-		} else {
-			comments = fc.IssueComments
-		}
-		if tc.shouldComment && len(comments[5]) != 1 {
-			t.Errorf("For case %s, should have commented.", tc.name)
-		} else if !tc.shouldComment && len(comments[5]) != 0 {
-			t.Errorf("For case %s, should not have commented.", tc.name)
-		}
+			e := &scmprovider.GenericCommentEvent{
+				Action:     tc.action,
+				Body:       tc.body,
+				Number:     5,
+				IssueState: tc.state,
+				IsPR:       tc.pr,
+			}
+			err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakePack("doge"))
+			if err != nil {
+				t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
+			}
+			var comments map[int][]*scm.Comment
+			if tc.pr {
+				comments = fc.PullRequestComments
+			} else {
+				comments = fc.IssueComments
+			}
+			if tc.shouldComment && len(comments[5]) != 1 {
+				t.Errorf("For case %s, should have commented.", tc.name)
+			} else if !tc.shouldComment && len(comments[5]) != 0 {
+				t.Errorf("For case %s, should not have commented.", tc.name)
+			}
+		})
 	}
 }

@@ -31,10 +31,10 @@ import (
 const pluginName = "help"
 
 var (
-	helpRe                     = regexp.MustCompile(`(?mi)^/help\s*$`)
-	helpRemoveRe               = regexp.MustCompile(`(?mi)^/remove-help\s*$`)
-	helpGoodFirstIssueRe       = regexp.MustCompile(`(?mi)^/good-first-issue\s*$`)
-	helpGoodFirstIssueRemoveRe = regexp.MustCompile(`(?mi)^/remove-good-first-issue\s*$`)
+	helpRe                     = regexp.MustCompile(`(?mi)^/(?:lh-)?help\s*$`)
+	helpRemoveRe               = regexp.MustCompile(`(?mi)^/(?:lh-)?remove-help\s*$`)
+	helpGoodFirstIssueRe       = regexp.MustCompile(`(?mi)^/(?:lh-)?good-first-issue\s*$`)
+	helpGoodFirstIssueRemoveRe = regexp.MustCompile(`(?mi)^/(?:lh-)?remove-good-first-issue\s*$`)
 	helpGuidelinesURL          = "https://git.k8s.io/community/contributors/guide/help-wanted.md"
 	helpMsgPruneMatch          = "This request has been marked as needing help from a contributor."
 	helpMsg                    = `

@@ -3,6 +3,7 @@ package webhook
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -524,12 +525,17 @@ func (o *Options) createHookServer() (*Server, error) {
 		return nil, errors.Wrap(err, "failed to create metapipeline client")
 	}
 
+	serverURL, err := url.Parse(o.gitServerURL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse server URL %s", o.gitServerURL)
+	}
 	server := &Server{
 		ClientFactory:      clientFactory,
 		ConfigAgent:        configAgent,
 		Plugins:            pluginAgent,
 		Metrics:            promMetrics,
 		MetapipelineClient: metapipelineClient,
+		ServerURL:          serverURL,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil

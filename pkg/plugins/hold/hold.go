@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	labelRe       = regexp.MustCompile(`(?mi)^/hold\s*$`)
-	labelCancelRe = regexp.MustCompile(`(?mi)^/hold cancel\s*$`)
+	labelRe       = regexp.MustCompile(`(?mi)^/(?:lh-)?hold\s*$`)
+	labelCancelRe = regexp.MustCompile(`(?mi)^/(?:lh-)?hold cancel\s*$`)
 )
 
 type hasLabelFunc func(label string, issueLabels []*scm.Label) bool

@@ -33,10 +33,10 @@ const pluginName = "label"
 
 var (
 	defaultLabels           = []string{"kind", "priority", "area"}
-	labelRegex              = regexp.MustCompile(`(?m)^/(area|committee|kind|language|priority|sig|triage|wg)\s*(.*)$`)
-	removeLabelRegex        = regexp.MustCompile(`(?m)^/remove-(area|committee|kind|language|priority|sig|triage|wg)\s*(.*)$`)
-	customLabelRegex        = regexp.MustCompile(`(?m)^/label\s*(.*)$`)
-	customRemoveLabelRegex  = regexp.MustCompile(`(?m)^/remove-label\s*(.*)$`)
+	labelRegex              = regexp.MustCompile(`(?m)^/(?:lh-)?(area|committee|kind|language|priority|sig|triage|wg)\s*(.*)$`)
+	removeLabelRegex        = regexp.MustCompile(`(?m)^/(?:lh-)?remove-(area|committee|kind|language|priority|sig|triage|wg)\s*(.*)$`)
+	customLabelRegex        = regexp.MustCompile(`(?m)^/(?:lh-)?label\s*(.*)$`)
+	customRemoveLabelRegex  = regexp.MustCompile(`(?m)^/(?:lh-)?remove-label\s*(.*)$`)
 	nonExistentLabelOnIssue = "Those labels are not set on the issue: `%v`"
 )
 
@@ -104,7 +104,7 @@ func getLabelsFromGenericMatches(matches [][]string, additionalLabels []string) 
 	var labels []string
 	for _, match := range matches {
 		parts := strings.Split(match[0], " ")
-		if ((parts[0] != "/label") && (parts[0] != "/remove-label")) || len(parts) != 2 {
+		if ((parts[0] != "/label") && (parts[0] != "/remove-label") && (parts[0] != "/lh-label") && (parts[0] != "/lh-remove-label")) || len(parts) != 2 {
 			continue
 		}
 		for _, l := range additionalLabels {

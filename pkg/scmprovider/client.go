@@ -18,6 +18,8 @@ type SCMClient interface {
 	// Functions implemented in client.go
 	BotName() (string, error)
 	SetBotName(string)
+	SupportsGraphQL() bool
+	ProviderType() string
 
 	// Functions implemented in content.go
 	GetFile(string, string, string, string) ([]byte, error)
@@ -57,6 +59,7 @@ type SCMClient interface {
 	Merge(string, string, int, MergeDetails) error
 	ReopenPR(string, string, int) error
 	ClosePR(string, string, int) error
+	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
 
 	// Functions implemented in repositories.go
 	GetRepoLabels(string, string) ([]*scm.Label, error)
@@ -69,6 +72,7 @@ type SCMClient interface {
 	HasPermission(string, string, string, ...string) (bool, error)
 	GetUserPermission(string, string, string) (string, error)
 	IsMember(string, string) (bool, error)
+	GetRepositoryByFullName(string) (*scm.Repository, error)
 
 	// Functions implemented in reviews.go
 	ListReviews(string, string, int) ([]*scm.Review, error)
@@ -118,6 +122,16 @@ func (c *Client) BotName() (string, error) {
 // SetBotName sets the bot name
 func (c *Client) SetBotName(botName string) {
 	c.botName = botName
+}
+
+// SupportsGraphQL returns true if the underlying provider supports our GraphQL queries
+func (c *Client) SupportsGraphQL() bool {
+	return c.client.GraphQL != nil
+}
+
+// ProviderType returns the type of the underlying SCM provider
+func (c *Client) ProviderType() string {
+	return c.client.Driver.String()
 }
 
 func (c *Client) repositoryName(owner string, repo string) string {

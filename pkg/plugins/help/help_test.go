@@ -95,6 +95,13 @@ func TestLabel(t *testing.T) {
 			issueLabels:           []string{},
 		},
 		{
+			name:                  "Want helpLabel with prefix",
+			body:                  "/lh-help",
+			expectedNewLabels:     formatLabels(labels.Help),
+			expectedRemovedLabels: []string{},
+			issueLabels:           []string{},
+		},
+		{
 			name:                  "Want helpLabel, already have it.",
 			body:                  "/help",
 			expectedNewLabels:     []string{},
@@ -111,6 +118,13 @@ func TestLabel(t *testing.T) {
 		{
 			name:                  "Want to remove helpLabel, don't have it",
 			body:                  "/remove-help",
+			expectedNewLabels:     []string{},
+			expectedRemovedLabels: []string{},
+			issueLabels:           []string{},
+		},
+		{
+			name:                  "Want to remove helpLabel with prefix, don't have it",
+			body:                  "/lh-remove-help",
 			expectedNewLabels:     []string{},
 			expectedRemovedLabels: []string{},
 			issueLabels:           []string{},
@@ -174,53 +188,54 @@ func TestLabel(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		sort.Strings(tc.expectedNewLabels)
-		fakeScmClient, fakeClient := fake.NewDefault()
-		fakeSCMProviderClient := scmprovider.ToTestClient(fakeScmClient)
-		fakeClient.RepoLabelsExisting = []string{labels.Help, labels.GoodFirstIssue}
+		t.Run(tc.name, func(t *testing.T) {
+			sort.Strings(tc.expectedNewLabels)
+			fakeScmClient, fakeClient := fake.NewDefault()
+			fakeSCMProviderClient := scmprovider.ToTestClient(fakeScmClient)
+			fakeClient.RepoLabelsExisting = []string{labels.Help, labels.GoodFirstIssue}
 
-		// Add initial labels
-		for _, label := range tc.issueLabels {
-			fakeSCMProviderClient.AddLabel("org", "repo", 1, label, false)
-		}
+			// Add initial labels
+			for _, label := range tc.issueLabels {
+				fakeSCMProviderClient.AddLabel("org", "repo", 1, label, false)
+			}
 
-		if len(tc.issueState) == 0 {
-			tc.issueState = "open"
-		}
-		if int(tc.action) == 0 {
-			tc.action = scm.ActionCreate
-		}
+			if len(tc.issueState) == 0 {
+				tc.issueState = "open"
+			}
+			if int(tc.action) == 0 {
+				tc.action = scm.ActionCreate
+			}
 
-		e := &scmprovider.GenericCommentEvent{
-			IsPR:       tc.isPR,
-			IssueState: tc.issueState,
-			Action:     tc.action,
-			Body:       tc.body,
-			Number:     1,
-			Repo:       scm.Repository{Namespace: "org", Name: "repo"},
-			Author:     scm.User{Login: "Alice"},
-		}
-		err := handle(fakeSCMProviderClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
-		if err != nil {
-			t.Errorf("For case %s, didn't expect error from label test: %v", tc.name, err)
-			continue
-		}
+			e := &scmprovider.GenericCommentEvent{
+				IsPR:       tc.isPR,
+				IssueState: tc.issueState,
+				Action:     tc.action,
+				Body:       tc.body,
+				Number:     1,
+				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
+				Author:     scm.User{Login: "Alice"},
+			}
+			err := handle(fakeSCMProviderClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
+			if err != nil {
+				t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+			}
 
-		// Check that all the correct labels (and only the correct labels) were added.
-		expectLabels := append(formatLabels(tc.issueLabels...), tc.expectedNewLabels...)
-		if expectLabels == nil {
-			expectLabels = []string{}
-		}
-		sort.Strings(expectLabels)
-		sort.Strings(fakeClient.IssueLabelsAdded)
-		if !reflect.DeepEqual(expectLabels, fakeClient.IssueLabelsAdded) {
-			t.Errorf("(%s): Expected the labels %q to be added, but %q were added.", tc.name, expectLabels, fakeClient.IssueLabelsAdded)
-		}
+			// Check that all the correct labels (and only the correct labels) were added.
+			expectLabels := append(formatLabels(tc.issueLabels...), tc.expectedNewLabels...)
+			if expectLabels == nil {
+				expectLabels = []string{}
+			}
+			sort.Strings(expectLabels)
+			sort.Strings(fakeClient.IssueLabelsAdded)
+			if !reflect.DeepEqual(expectLabels, fakeClient.IssueLabelsAdded) {
+				t.Errorf("(%s): Expected the labels %q to be added, but %q were added.", tc.name, expectLabels, fakeClient.IssueLabelsAdded)
+			}
 
-		sort.Strings(tc.expectedRemovedLabels)
-		sort.Strings(fakeClient.IssueLabelsRemoved)
-		if !reflect.DeepEqual(tc.expectedRemovedLabels, fakeClient.IssueLabelsRemoved) {
-			t.Errorf("(%s): Expected the labels %q to be removed, but %q were removed.", tc.name, tc.expectedRemovedLabels, fakeClient.IssueLabelsRemoved)
-		}
+			sort.Strings(tc.expectedRemovedLabels)
+			sort.Strings(fakeClient.IssueLabelsRemoved)
+			if !reflect.DeepEqual(tc.expectedRemovedLabels, fakeClient.IssueLabelsRemoved) {
+				t.Errorf("(%s): Expected the labels %q to be removed, but %q were removed.", tc.name, tc.expectedRemovedLabels, fakeClient.IssueLabelsRemoved)
+			}
+		})
 	}
 }

@@ -34,10 +34,10 @@ import (
 )
 
 var (
-	match           = regexp.MustCompile(`(?mi)^/(woof|bark)\s*$`)
-	fineRegex       = regexp.MustCompile(`(?mi)^/this-is-fine\s*$`)
-	notFineRegex    = regexp.MustCompile(`(?mi)^/this-is-not-fine\s*$`)
-	unbearableRegex = regexp.MustCompile(`(?mi)^/this-is-unbearable\s*$`)
+	match           = regexp.MustCompile(`(?mi)^/(?:lh-)?(woof|bark)\s*$`)
+	fineRegex       = regexp.MustCompile(`(?mi)^/(?:lh-)?this-is-fine\s*$`)
+	notFineRegex    = regexp.MustCompile(`(?mi)^/(?:lh-)?this-is-not-fine\s*$`)
+	unbearableRegex = regexp.MustCompile(`(?mi)^/(?:lh-)?this-is-unbearable\s*$`)
 	filetypes       = regexp.MustCompile(`(?i)\.(jpg|gif|png)$`)
 )
 
@@ -59,7 +59,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		Description: "The dog plugin adds a dog image to an issue or PR in response to the `/woof` command.",
 	}
 	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/(woof|bark|this-is-{fine|not-fine|unbearable})",
+		Usage:       "/(lh-)?(woof|bark|this-is-{fine|not-fine|unbearable})",
 		Description: "Add a dog image to the issue or PR",
 		Featured:    false,
 		WhoCanUse:   "Anyone",

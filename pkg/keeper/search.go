@@ -39,7 +39,7 @@ func floor(t time.Time) time.Time {
 	return t
 }
 
-func search(query querier, log *logrus.Entry, q string, start, end time.Time) ([]PullRequest, error) {
+func graphQLSearch(query querier, log *logrus.Entry, q string, start, end time.Time) ([]PullRequest, error) {
 	start = floor(start)
 	end = floor(end)
 	log = log.WithFields(logrus.Fields{
@@ -82,7 +82,7 @@ func search(query querier, log *logrus.Entry, q string, start, end time.Time) ([
 	return ret, nil
 }
 
-// dateToken generates a GitHub search query token for the specified date range.
+// dateToken generates a GitHub graphQLSearch query token for the specified date range.
 // See: https://help.github.com/articles/understanding-the-search-syntax/#query-for-dates
 func dateToken(start, end time.Time) string {
 	// GitHub's GraphQL API silently fails if you provide it with an invalid time

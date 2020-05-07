@@ -88,6 +88,15 @@ func TestLabel(t *testing.T) {
 			commenter:             orgMember,
 		},
 		{
+			name:                  "Add Single Area Label with prefix",
+			body:                  "/lh-area infra",
+			repoLabels:            []string{"area/infra"},
+			issueLabels:           []string{},
+			expectedNewLabels:     formatLabels("area/infra"),
+			expectedRemovedLabels: []string{},
+			commenter:             orgMember,
+		},
+		{
 			name:                  "Add Single Area Label when already present on Issue",
 			body:                  "/area infra",
 			repoLabels:            []string{"area/infra"},
@@ -279,6 +288,15 @@ func TestLabel(t *testing.T) {
 			commenter:             orgMember,
 		},
 		{
+			name:                  "Remove Area Label with prefix",
+			body:                  "/lh-remove-area infra",
+			repoLabels:            []string{"area/infra"},
+			issueLabels:           []string{"area/infra"},
+			expectedNewLabels:     []string{},
+			expectedRemovedLabels: formatLabels("area/infra"),
+			commenter:             orgMember,
+		},
+		{
 			name:                  "Remove Committee Label",
 			body:                  "/remove-committee infinite-monkeys",
 			repoLabels:            []string{"area/infra", "sig/testing", "committee/infinite-monkeys"},
@@ -400,6 +418,16 @@ func TestLabel(t *testing.T) {
 			commenter:             orgMember,
 		},
 		{
+			name:                  "Add custom label with prefix",
+			body:                  "/lh-label orchestrator/foo",
+			extraLabels:           []string{"orchestrator/foo", "orchestrator/bar"},
+			repoLabels:            []string{"orchestrator/foo"},
+			issueLabels:           []string{},
+			expectedNewLabels:     formatLabels("orchestrator/foo"),
+			expectedRemovedLabels: []string{},
+			commenter:             orgMember,
+		},
+		{
 			name:                  "Cannot add missing custom label",
 			body:                  "/label orchestrator/foo",
 			extraLabels:           []string{"orchestrator/jar", "orchestrator/bar"},
@@ -420,6 +448,16 @@ func TestLabel(t *testing.T) {
 			commenter:             orgMember,
 		},
 		{
+			name:                  "Remove custom label with prefix",
+			body:                  "/lh-remove-label orchestrator/foo",
+			extraLabels:           []string{"orchestrator/foo", "orchestrator/bar"},
+			repoLabels:            []string{"orchestrator/foo"},
+			issueLabels:           []string{"orchestrator/foo"},
+			expectedNewLabels:     []string{},
+			expectedRemovedLabels: formatLabels("orchestrator/foo"),
+			commenter:             orgMember,
+		},
+		{
 			name:                  "Cannot remove missing custom label",
 			body:                  "/remove-label orchestrator/jar",
 			extraLabels:           []string{"orchestrator/foo", "orchestrator/bar"},
@@ -432,52 +470,52 @@ func TestLabel(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		t.Logf("Running scenario %q", tc.name)
-		sort.Strings(tc.expectedNewLabels)
-		fakeScmClient, fakeData := fake.NewDefault()
-		fakeClient := scmprovider.ToTestClient(fakeScmClient)
-		fakeData.OrgMembers["org"] = []string{orgMember}
-		fakeData.RepoLabelsExisting = tc.repoLabels
+		t.Run(tc.name, func(t *testing.T) {
+			sort.Strings(tc.expectedNewLabels)
+			fakeScmClient, fakeData := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
+			fakeData.OrgMembers["org"] = []string{orgMember}
+			fakeData.RepoLabelsExisting = tc.repoLabels
 
-		// Add initial labels
-		for _, label := range tc.issueLabels {
-			fakeClient.AddLabel("org", "repo", 1, label, false)
-		}
-		e := &scmprovider.GenericCommentEvent{
-			Action: scm.ActionCreate,
-			Body:   tc.body,
-			Number: 1,
-			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
-			Author: scm.User{Login: tc.commenter},
-		}
-		err := handle(fakeClient, logrus.WithField("plugin", pluginName), tc.extraLabels, e)
-		if err != nil {
-			t.Errorf("didn't expect error from label test: %v", err)
-			continue
-		}
+			// Add initial labels
+			for _, label := range tc.issueLabels {
+				fakeClient.AddLabel("org", "repo", 1, label, false)
+			}
+			e := &scmprovider.GenericCommentEvent{
+				Action: scm.ActionCreate,
+				Body:   tc.body,
+				Number: 1,
+				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
+				Author: scm.User{Login: tc.commenter},
+			}
+			err := handle(fakeClient, logrus.WithField("plugin", pluginName), tc.extraLabels, e)
+			if err != nil {
+				t.Fatalf("didn't expect error from label test: %v", err)
+			}
 
-		// Check that all the correct labels (and only the correct labels) were added.
-		expectLabels := append(formatLabels(tc.issueLabels...), tc.expectedNewLabels...)
-		if expectLabels == nil {
-			expectLabels = []string{}
-		}
-		sort.Strings(expectLabels)
-		sort.Strings(fakeData.IssueLabelsAdded)
-		if !reflect.DeepEqual(expectLabels, fakeData.IssueLabelsAdded) {
-			t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fakeData.IssueLabelsAdded)
-		}
+			// Check that all the correct labels (and only the correct labels) were added.
+			expectLabels := append(formatLabels(tc.issueLabels...), tc.expectedNewLabels...)
+			if expectLabels == nil {
+				expectLabels = []string{}
+			}
+			sort.Strings(expectLabels)
+			sort.Strings(fakeData.IssueLabelsAdded)
+			if !reflect.DeepEqual(expectLabels, fakeData.IssueLabelsAdded) {
+				t.Errorf("expected the labels %q to be added, but %q were added.", expectLabels, fakeData.IssueLabelsAdded)
+			}
 
-		sort.Strings(tc.expectedRemovedLabels)
-		sort.Strings(fakeData.IssueLabelsRemoved)
-		if !reflect.DeepEqual(tc.expectedRemovedLabels, fakeData.IssueLabelsRemoved) {
-			t.Errorf("expected the labels %q to be removed, but %q were removed.", tc.expectedRemovedLabels, fakeData.IssueLabelsRemoved)
-		}
-		if len(fakeData.IssueCommentsAdded) > 0 && !tc.expectedBotComment {
-			t.Errorf("unexpected bot comments: %#v", fakeData.IssueCommentsAdded)
-		}
-		if len(fakeData.IssueCommentsAdded) == 0 && tc.expectedBotComment {
-			t.Error("expected a bot comment but got none")
-		}
+			sort.Strings(tc.expectedRemovedLabels)
+			sort.Strings(fakeData.IssueLabelsRemoved)
+			if !reflect.DeepEqual(tc.expectedRemovedLabels, fakeData.IssueLabelsRemoved) {
+				t.Errorf("expected the labels %q to be removed, but %q were removed.", tc.expectedRemovedLabels, fakeData.IssueLabelsRemoved)
+			}
+			if len(fakeData.IssueCommentsAdded) > 0 && !tc.expectedBotComment {
+				t.Errorf("unexpected bot comments: %#v", fakeData.IssueCommentsAdded)
+			}
+			if len(fakeData.IssueCommentsAdded) == 0 && tc.expectedBotComment {
+				t.Error("expected a bot comment but got none")
+			}
+		})
 	}
 }
 

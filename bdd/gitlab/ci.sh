@@ -70,8 +70,7 @@ echo "Building lighthouse with version $VERSION"
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
-# TODO: Figure out why chatops doesn't work for gitlab!
-export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
+export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
 
 # Enable checking the commit status reporting URL
 export BDD_LIGHTHOUSE_BASE_REPORT_URL=https://example.com
@@ -90,7 +89,8 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring
+    --tests test-create-spring \
+    --tests test-lighthouse
 
 # Gitlab labels on pull requests aren't properly implemented yet on our side, so no quickstart tests - they depend on them.
 
