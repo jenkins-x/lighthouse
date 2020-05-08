@@ -24,12 +24,12 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 )
 
-func TestParseIssueComment(t *testing.T) {
+func TestParsePRComment(t *testing.T) {
 	var testcases = []struct {
 		name             string
 		context          string
 		state            v1alpha1.PipelineState
-		ics              []*scm.Comment
+		prcs             []*scm.Comment
 		expectedDeletes  []int
 		expectedContexts []string
 		expectedUpdate   int
@@ -38,7 +38,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should delete old style comments",
 			context: "Jenkins foo test",
 			state:   v1alpha1.SuccessState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "Jenkins foo test **failed** for such-and-such.",
@@ -72,7 +72,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should not delete an up-to-date comment",
 			context: "bla test",
 			state:   v1alpha1.SuccessState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "--- | --- | ---\nfoo test | something | or other\n\n",
@@ -83,7 +83,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should delete when all tests pass",
 			context: "bla test",
 			state:   v1alpha1.SuccessState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "--- | --- | ---\nbla test | something | or other\n\n" + commentTag,
@@ -97,7 +97,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should delete a passing test with \\r",
 			context: "bla test",
 			state:   v1alpha1.SuccessState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "--- | --- | ---\r\nbla test | something | or other\r\n\r\n" + commentTag,
@@ -112,7 +112,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should update a failed test",
 			context: "bla test",
 			state:   v1alpha1.FailureState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "--- | --- | ---\nbla test | something | or other\n\n" + commentTag,
@@ -126,7 +126,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should preserve old results when updating",
 			context: "bla test",
 			state:   v1alpha1.FailureState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "--- | --- | ---\nbla test | something | or other\nfoo test | wow | aye\n\n" + commentTag,
@@ -140,7 +140,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should merge duplicates",
 			context: "bla test",
 			state:   v1alpha1.FailureState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "--- | --- | ---\nbla test | something | or other\nfoo test | wow such\n\n" + commentTag,
@@ -159,7 +159,7 @@ func TestParseIssueComment(t *testing.T) {
 			name:    "should update an old comment when a test passes",
 			context: "bla test",
 			state:   v1alpha1.SuccessState,
-			ics: []*scm.Comment{
+			prcs: []*scm.Comment{
 				{
 					Author: scm.User{Login: "k8s-ci-robot"},
 					Body:   "--- | --- | ---\nbla test | something | or other\nfoo test | wow | aye\n\n" + commentTag,
@@ -182,7 +182,7 @@ func TestParseIssueComment(t *testing.T) {
 					State: tc.state,
 				},
 			}
-			deletes, entries, update := parseIssueComments(lhj, "k8s-ci-robot", tc.ics)
+			deletes, entries, update := parsePRComments(lhj, "k8s-ci-robot", tc.prcs)
 			if len(deletes) != len(tc.expectedDeletes) {
 				t.Errorf("It %s: wrong number of deletes. Got %v, expected %v", tc.name, deletes, tc.expectedDeletes)
 			} else {

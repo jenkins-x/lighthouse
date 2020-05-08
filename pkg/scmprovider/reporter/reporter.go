@@ -36,7 +36,7 @@ const (
 // through GitHub comments.
 type SCMProviderClient interface {
 	BotName() (string, error)
-	ListIssueComments(string, string, int) ([]*scm.Comment, error)
+	ListPullRequestComments(string, string, int) ([]*scm.Comment, error)
 	CreateComment(string, string, int, bool, string) error
 	DeleteComment(string, string, int, int, bool) error
 	EditComment(string, string, int, int, string, bool) error
@@ -83,7 +83,7 @@ func Report(spc SCMProviderClient, reportTemplate *template.Template, lhj *v1alp
 		return nil
 	}
 
-	ics, err := spc.ListIssueComments(refs.Org, refs.Repo, refs.Pulls[0].Number)
+	prcs, err := spc.ListPullRequestComments(refs.Org, refs.Repo, refs.Pulls[0].Number)
 	if err != nil {
 		return fmt.Errorf("error listing comments: %v", err)
 	}
@@ -91,7 +91,7 @@ func Report(spc SCMProviderClient, reportTemplate *template.Template, lhj *v1alp
 	if err != nil {
 		return fmt.Errorf("error getting bot name: %v", err)
 	}
-	deletes, entries, updateID := parseIssueComments(lhj, botName, ics)
+	deletes, entries, updateID := parsePRComments(lhj, botName, prcs)
 	for _, delete := range deletes {
 		if err := spc.DeleteComment(refs.Org, refs.Repo, refs.Pulls[0].Number, delete, true); err != nil {
 			return fmt.Errorf("error deleting comment: %v", err)
@@ -115,12 +115,12 @@ func Report(spc SCMProviderClient, reportTemplate *template.Template, lhj *v1alp
 	return nil
 }
 
-// parseIssueComments returns a list of comments to delete, a list of table
+// parsePRComments returns a list of comments to delete, a list of table
 // entries, and the ID of the comment to update. If there are no table entries
 // then don't make a new comment. Otherwise, if the comment to update is 0,
 // create a new comment.
-func parseIssueComments(lhj *v1alpha1.LighthouseJob, botName string, ics []*scm.Comment) ([]int, []string, int) {
-	var delete []int
+func parsePRComments(lhj *v1alpha1.LighthouseJob, botName string, ics []*scm.Comment) ([]int, []string, int) {
+	var toDelete []int
 	var previousComments []int
 	var latestComment int
 	var entries []string
@@ -132,7 +132,7 @@ func parseIssueComments(lhj *v1alpha1.LighthouseJob, botName string, ics []*scm.
 		// Old report comments started with the context. Delete them.
 		// TODO(spxtr): Delete this check a few weeks after this merges.
 		if strings.HasPrefix(ic.Body, lhj.Spec.Context) {
-			delete = append(delete, ic.ID)
+			toDelete = append(toDelete, ic.ID)
 		}
 		if !strings.Contains(ic.Body, commentTag) {
 			continue
@@ -181,12 +181,12 @@ func parseIssueComments(lhj *v1alpha1.LighthouseJob, botName string, ics []*scm.
 		newEntries = append(newEntries, createEntry(lhj))
 		createNewComment = true
 	}
-	delete = append(delete, previousComments...)
+	toDelete = append(toDelete, previousComments...)
 	if (createNewComment || len(newEntries) == 0) && latestComment != 0 {
-		delete = append(delete, latestComment)
+		toDelete = append(toDelete, latestComment)
 		latestComment = 0
 	}
-	return delete, newEntries, latestComment
+	return toDelete, newEntries, latestComment
 }
 
 func createEntry(lhj *v1alpha1.LighthouseJob) string {
