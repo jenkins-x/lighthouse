@@ -156,10 +156,10 @@ func (e MergeCommitsForbiddenError) Error() string { return string(e) }
 
 // ReopenPR reopens a pull request
 func (c *Client) ReopenPR(owner, repo string, number int) error {
-	panic("implement me")
+	return scm.ErrNotSupported
 }
 
 // ClosePR closes a pull request
 func (c *Client) ClosePR(owner, repo string, number int) error {
-	panic("implement me")
+	return scm.ErrNotSupported
 }

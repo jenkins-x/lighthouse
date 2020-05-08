@@ -286,15 +286,15 @@ func (c *Client) EditComment(owner, repo string, number int, id int, comment str
 
 // ReopenIssue reopen an issue
 func (c *Client) ReopenIssue(owner, repo string, number int) error {
-	panic("implement me")
+	return scm.ErrNotSupported
 }
 
 // FindIssues find issues
 func (c *Client) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
-	panic("implement me")
+	return nil, scm.ErrNotSupported
 }
 
 // CloseIssue close issue
 func (c *Client) CloseIssue(owner, repo string, number int) error {
-	panic("implement me")
+	return scm.ErrNotSupported
 }
