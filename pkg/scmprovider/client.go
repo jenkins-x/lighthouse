@@ -93,17 +93,17 @@ type Client struct {
 
 // ClearMilestone clears milestone
 func (c *Client) ClearMilestone(org, repo string, num int) error {
-	panic("implement me")
+	return scm.ErrNotSupported
 }
 
 // SetMilestone sets milestone
 func (c *Client) SetMilestone(org, repo string, issueNum, milestoneNum int) error {
-	panic("implement me")
+	return scm.ErrNotSupported
 }
 
 // ListMilestones list milestones
 func (c *Client) ListMilestones(org, repo string) ([]Milestone, error) {
-	panic("implement me")
+	return nil, scm.ErrNotSupported
 }
 
 // BotName returns the bot name
