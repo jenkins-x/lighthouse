@@ -410,14 +410,10 @@ github.com/jbrukh/bayesian v0.0.0-20161210175230-bf3f261f9a9c h1:jqLMOnuwp+ac6nI
 github.com/jbrukh/bayesian v0.0.0-20161210175230-bf3f261f9a9c/go.mod h1:SELxwZQq/mPnfPCR2mchLmT4TQaPJvYtLcCtDWSM7vM=
 github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135 h1:3zy/Nvdi9V95Jfu6+W4NAJrHDeypB58FSLyzI3XfO/4=
 github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135/go.mod h1:K/L25ViEpDx196rOZyjn433tAM5zr2F/IouK+3g+DkE=
-github.com/jenkins-x/go-scm v1.5.117 h1:D7d1sDWUU+xocCNLQVoYKpMjVKnQvsPva+hPzruchbM=
-github.com/jenkins-x/go-scm v1.5.117/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
-github.com/jenkins-x/go-scm v1.5.118 h1:CMQqoxJasNjzeIfELXWbu3UXYHsxQ0Mv7kCjwJYVagg=
-github.com/jenkins-x/go-scm v1.5.118/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
+github.com/jenkins-x/go-scm v1.5.121 h1:s84yORmDdkETqB2hhGHM8+KeQ74bRkE1g+UoCjc+BQA=
+github.com/jenkins-x/go-scm v1.5.121/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
-github.com/jenkins-x/jx v0.0.0-20200508204527-0f525093e5f7 h1:b+OxOC3/sConHs9SyCTP0bbRapYCwJUGFYBoJ6OHtZA=
-github.com/jenkins-x/jx v0.0.0-20200508204527-0f525093e5f7/go.mod h1:AJ/IR1nGGbDLePNIxD0X9yiGGmlIJDB7+OuiBcT+KHo=
 github.com/jenkins-x/jx v0.0.0-20200511165834-ba15169e28fc h1:GtyaxrcmwuX3+38j0ffjR1P0NJPUPlU+1qSniR50naQ=
 github.com/jenkins-x/jx v0.0.0-20200511165834-ba15169e28fc/go.mod h1:AJ/IR1nGGbDLePNIxD0X9yiGGmlIJDB7+OuiBcT+KHo=
 github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb h1:woC0LbYpL9rgwZn13Z0KQBEGAmi9ugpWgWtQezHqsBM=
