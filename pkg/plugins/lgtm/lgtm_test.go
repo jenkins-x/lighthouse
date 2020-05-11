@@ -105,6 +105,7 @@ func TestLGTMComment(t *testing.T) {
 		shouldAssign  bool
 		skipCollab    bool
 		storeTreeHash bool
+		labelComments bool
 	}{
 		{
 			name:         "non-lgtm comment",
@@ -120,6 +121,15 @@ func TestLGTMComment(t *testing.T) {
 			hasLGTM:       false,
 			shouldToggle:  true,
 			shouldComment: true,
+		},
+		{
+			name:          "lgtm comment by reviewer, no lgtm on pr using comment",
+			body:          "/lgtm",
+			commenter:     "collab1",
+			hasLGTM:       false,
+			shouldToggle:  true,
+			shouldComment: true,
+			labelComments: true,
 		},
 		{
 			name:          "LGTM comment by reviewer, no lgtm on pr",
@@ -208,6 +218,16 @@ func TestLGTMComment(t *testing.T) {
 			shouldAssign:  true,
 		},
 		{
+			name:          "lgtm cancel by non-reviewer using comment",
+			body:          "/lgtm cancel",
+			commenter:     "collab2",
+			hasLGTM:       true,
+			shouldToggle:  true,
+			shouldComment: false,
+			shouldAssign:  true,
+			labelComments: true,
+		},
+		{
 			name:          "lgtm cancel by rando",
 			body:          "/lgtm cancel",
 			commenter:     "not-in-the-org",
@@ -274,8 +294,16 @@ func TestLGTMComment(t *testing.T) {
 	SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			fakeScmClient, fc := fake.NewDefault()
-			fakeClient := scmprovider.ToTestClient(fakeScmClient)
+			var fakeScmClient *scm.Client
+			var fc *fake.Data
+			var fakeClient *scmprovider.TestClient
+			if tc.labelComments {
+				fakeClient = scmprovider.NewTestClientForLabelsInComments()
+				fc = fakeClient.Data
+			} else {
+				fakeScmClient, fc = fake.NewDefault()
+				fakeClient = scmprovider.ToTestClient(fakeScmClient)
+			}
 
 			fc.PullRequests[5] = &scm.PullRequest{
 				Number: 5,
@@ -303,8 +331,9 @@ func TestLGTMComment(t *testing.T) {
 				Repo:        scm.Repository{Namespace: "org", Name: "repo"},
 				Link:        "<url>",
 			}
+			fakeLabel := "org/repo#5:" + LGTMLabel
 			if tc.hasLGTM {
-				fc.PullRequestLabelsAdded = []string{"org/repo#5:" + LGTMLabel}
+				fc.PullRequestLabelsAdded = []string{fakeLabel}
 			}
 			oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
 			pc := &plugins.Configuration{}
@@ -321,6 +350,9 @@ func TestLGTMComment(t *testing.T) {
 			}
 			if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
 				t.Fatalf("didn't expect error from lgtmComment: %v", err)
+			}
+			if err := fakeClient.PopulateFakeLabelsFromComments("org", "repo", 5, fakeLabel, tc.hasLGTM && tc.shouldToggle); err != nil {
+				t.Fatalf("Failure populating labels from comments: %v", err)
 			}
 			if tc.shouldAssign {
 				found := false
@@ -355,7 +387,11 @@ func TestLGTMComment(t *testing.T) {
 			} else if (tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 1) || (!tc.hasLGTM && len(fc.PullRequestLabelsAdded) > 0) {
 				t.Error("should not have added LGTM.")
 			}
-			if tc.shouldComment && len(fc.PullRequestComments[5]) != 1 {
+			expectedCommentCount := 1
+			if tc.labelComments {
+				expectedCommentCount = 2
+			}
+			if tc.shouldComment && len(fc.PullRequestComments[5]) != expectedCommentCount {
 				t.Error("should have commented.")
 			} else if !tc.shouldComment && len(fc.PullRequestComments[5]) != 0 {
 				t.Error("should not have commented.")

@@ -106,6 +106,9 @@ func (c *Client) AddLabel(owner, repo string, number int, label string, pr bool)
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	if pr {
+		if !c.SupportsPRLabels() {
+			return AddLabelToComment(c, owner, repo, number, label)
+		}
 		_, err := c.client.PullRequests.AddLabel(ctx, fullName, number, label)
 		return err
 	}
@@ -118,6 +121,9 @@ func (c *Client) RemoveLabel(owner, repo string, number int, label string, pr bo
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
 	if pr {
+		if !c.SupportsPRLabels() {
+			return DeleteLabelFromComment(c, owner, repo, number, label)
+		}
 		_, err := c.client.PullRequests.DeleteLabel(ctx, fullName, number, label)
 		return err
 	}
@@ -198,6 +204,9 @@ func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.L
 		Page: 1,
 	}
 	if pr {
+		if !c.SupportsPRLabels() {
+			return GetLabelsFromComment(c, org, repo, number)
+		}
 		for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
 			labels, resp, err = c.client.PullRequests.ListLabels(ctx, fullName, number, opts)
 			if err != nil {

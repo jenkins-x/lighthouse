@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -40,6 +41,7 @@ func TestWipLabel(t *testing.T) {
 		hasLabel      bool
 		shouldLabel   bool
 		shouldUnlabel bool
+		useComments   bool
 	}{
 		{
 			name:          "regular PR, need nothing",
@@ -58,6 +60,15 @@ func TestWipLabel(t *testing.T) {
 			shouldUnlabel: false,
 		},
 		{
+			name:          "wip title PR, needs label, uses comments",
+			title:         wipTitle,
+			draft:         false,
+			hasLabel:      false,
+			shouldLabel:   true,
+			shouldUnlabel: false,
+			useComments:   true,
+		},
+		{
 			name:          "draft PR, needs label",
 			title:         regularTitle,
 			draft:         true,
@@ -72,6 +83,15 @@ func TestWipLabel(t *testing.T) {
 			hasLabel:      true,
 			shouldLabel:   false,
 			shouldUnlabel: true,
+		},
+		{
+			name:          "regular PR, remove label, uses comments",
+			title:         regularTitle,
+			draft:         false,
+			hasLabel:      true,
+			shouldLabel:   false,
+			shouldUnlabel: true,
+			useComments:   true,
 		},
 		{
 			name:          "wip title PR, nothing to do",
@@ -91,39 +111,53 @@ func TestWipLabel(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		fakeScmClient, fc := fake.NewDefault()
-		fakeClient := scmprovider.ToTestClient(fakeScmClient)
+		t.Run(tc.name, func(t *testing.T) {
+			var fakeClient *scmprovider.TestClient
+			var fc *fake.Data
+			var fakeScmClient *scm.Client
 
-		org, repo, number := "org", "repo", 5
-		e := &event{
-			org:      org,
-			repo:     repo,
-			number:   number,
-			title:    tc.title,
-			draft:    tc.draft,
-			hasLabel: tc.hasLabel,
-		}
-
-		if err := handle(fakeClient, logrus.WithField("plugin", PluginName), e); err != nil {
-			t.Errorf("For case %s, didn't expect error from wip: %v", tc.name, err)
-			continue
-		}
-
-		fakeLabel := fmt.Sprintf("%s/%s#%d:%s", org, repo, number, labels.WorkInProgress)
-		if tc.shouldLabel {
-			if len(fc.PullRequestLabelsAdded) != 1 || fc.PullRequestLabelsAdded[0] != fakeLabel {
-				t.Errorf("For case %s: expected to add %q Label but instead added: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsAdded)
+			if tc.useComments {
+				fakeClient = scmprovider.NewTestClientForLabelsInComments()
+				fc = fakeClient.Data
+			} else {
+				fakeScmClient, fc = fake.NewDefault()
+				fakeClient = scmprovider.ToTestClient(fakeScmClient)
 			}
-		} else if len(fc.PullRequestLabelsAdded) > 0 {
-			t.Errorf("For case %s, expected to not add %q Label but added: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsAdded)
-		}
-		if tc.shouldUnlabel {
-			if len(fc.PullRequestLabelsRemoved) != 1 || fc.PullRequestLabelsRemoved[0] != fakeLabel {
-				t.Errorf("For case %s: expected to remove %q Label but instead removed: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsRemoved)
+			org, repo, number := "org", "repo", 5
+			e := &event{
+				org:      org,
+				repo:     repo,
+				number:   number,
+				title:    tc.title,
+				draft:    tc.draft,
+				hasLabel: tc.hasLabel,
 			}
-		} else if len(fc.PullRequestLabelsRemoved) > 0 {
-			t.Errorf("For case %s, expected to not remove %q Label but removed: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsRemoved)
-		}
+
+			if err := handle(fakeClient, logrus.WithField("plugin", PluginName), e); err != nil {
+				t.Fatalf("For case %s, didn't expect error from wip: %v", tc.name, err)
+			}
+
+			fakeLabel := fmt.Sprintf("%s/%s#%d:%s", org, repo, number, labels.WorkInProgress)
+
+			if err := fakeClient.PopulateFakeLabelsFromComments(org, repo, number, fakeLabel, tc.shouldUnlabel); err != nil {
+				t.Fatalf("Error populating label fields in test data: %v", err)
+			}
+
+			if tc.shouldLabel {
+				if len(fc.PullRequestLabelsAdded) != 1 || fc.PullRequestLabelsAdded[0] != fakeLabel {
+					t.Errorf("For case %s: expected to add %q Label but instead added: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsAdded)
+				}
+			} else if len(fc.PullRequestLabelsAdded) > 0 {
+				t.Errorf("For case %s, expected to not add %q Label but added: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsAdded)
+			}
+			if tc.shouldUnlabel {
+				if len(fc.PullRequestLabelsRemoved) != 1 || fc.PullRequestLabelsRemoved[0] != fakeLabel {
+					t.Errorf("For case %s: expected to remove %q Label but instead removed: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsRemoved)
+				}
+			} else if len(fc.PullRequestLabelsRemoved) > 0 {
+				t.Errorf("For case %s, expected to not remove %q Label but removed: %v", tc.name, labels.WorkInProgress, fc.PullRequestLabelsRemoved)
+			}
+		})
 	}
 }
 

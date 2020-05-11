@@ -67,16 +67,13 @@ rm values.tmpl.yaml.tmp
 sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/requirements.yaml
 
 # TODO: Disable chatops tests until issue creation and labeling on BBS is ready
-export BDD_ENABLE_TEST_CHATOPS_COMMANDS="false"
+export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
 
 echo "Building lighthouse with version $VERSION"
 
 # TODO hack until we fix boot to do this too!
 helm init --client-only
 helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
-
-# TODO: Re-enable checking whether build controller has updated PipelineActivity once BBS is actually being worked on again.
-export BDD_DISABLE_PIPELINEACTIVITY_CHECK=true
 
 # Enable checking the commit status reporting URL
 export BDD_LIGHTHOUSE_BASE_REPORT_URL=https://example.com
@@ -95,9 +92,8 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring
-
-# Bitbucket doesn't have pull request labels, so...yeah. Can't do quickstart tests, to say the least.
+    --tests test-create-spring \
+    --tests test-lighthouse
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then

@@ -97,7 +97,7 @@ func newTestReviewTime(t time.Time, user, body string, state string) *scm.Review
 	return r
 }
 
-func newFakeSCMProviderClient(hasLabel, humanApproved bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*scmprovider.Client, *fake.Data) {
+func newFakeSCMProviderClient(hasLabel, humanApproved, labelComments bool, files []string, comments []*scm.Comment, reviews []*scm.Review, testBotName string) (*scmprovider.TestClient, *fake.Data) {
 	labels := []string{"org/repo#1:lgtm"}
 	if hasLabel {
 		labels = append(labels, fmt.Sprintf("org/repo#%v:approved", prNumber))
@@ -124,11 +124,18 @@ func newFakeSCMProviderClient(hasLabel, humanApproved bool, files []string, comm
 	for _, file := range files {
 		changes = append(changes, &scm.Change{Path: file})
 	}
-	fakeScmClient, fc := fake.NewDefault()
+	var fakeScmClient *scm.Client
+	var fc *fake.Data
+	var fakeClient *scmprovider.TestClient
+
+	if labelComments {
+		fakeClient = scmprovider.NewTestClientForLabelsInComments()
+		fc = fakeClient.Data
+	} else {
+		fakeScmClient, fc = fake.NewDefault()
+		fakeClient = scmprovider.ToTestClient(fakeScmClient)
+	}
 	fc.RepoLabelsExisting = nil
-
-	fakeClient := scmprovider.ToClient(fakeScmClient, testBotName)
-
 	fc.PullRequestLabelsAdded = labels
 	fc.PullRequestChanges[prNumber] = changes
 	fc.PullRequestComments[prNumber] = comments
@@ -182,6 +189,7 @@ func TestHandle(t *testing.T) {
 		expectComment   bool
 		expectedComment string
 		expectToggle    bool
+		labelComments   bool
 	}{
 
 		// breaking cases
@@ -421,6 +429,47 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 <!-- META={"approvers":["alice"]} -->`,
 		},
 		{
+			name:     "remove approval with /approve cancel using comment",
+			hasLabel: true,
+			files:    []string{"a/a.go"},
+			comments: []*scm.Comment{
+				newTestComment("Alice", "/approve no-issue"),
+				newTestComment("k8s-ci-robot", scmprovider.CreateLabelComment([]string{"approved"})),
+				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **APPROVED**\n\nblah"),
+				newTestComment("Alice", "stuff\n/approve cancel \nmore stuff"),
+			},
+			reviews:             []*scm.Review{},
+			selfApprove:         true, // no-op test
+			needsIssue:          true,
+			lgtmActsAsApprove:   false,
+			reviewActsAsApprove: false,
+			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+
+			labelComments: true,
+			expectDelete:  true,
+			expectToggle:  true,
+			expectComment: true,
+			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
+
+This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
+
+*No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
+
+The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+
+<details open>
+Needs approval from an approver in each of these files:
+
+- **[a/OWNERS](https://github.com/org/repo/blob/master/a/OWNERS)**
+
+Approvers can indicate their approval by writing ` + "`/approve`" + ` in a comment
+Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a comment
+</details>
+<!-- META={"approvers":["alice"]} -->`,
+		},
+		{
 			name:     "remove approval after sync",
 			prBody:   "Changes the thing.\n fixes #42",
 			hasLabel: true,
@@ -591,6 +640,27 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			lgtmActsAsApprove:   true,
 			reviewActsAsApprove: false,
 			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+
+			expectDelete:  true,
+			expectToggle:  true,
+			expectComment: true,
+		},
+		{
+			name:     "lgtm means approve using comment",
+			prBody:   "This is a great PR that will fix\nlots of things!",
+			hasLabel: false,
+			files:    []string{"a/a.go", "a/aa.go"},
+			comments: []*scm.Comment{
+				newTestComment("k8s-ci-robot", "[APPROVALNOTIFIER] This PR is **NOT APPROVED**\n\nblah"),
+				newTestCommentTime(time.Now(), "alice", "stuff\n/lgtm\nblah"),
+			},
+			reviews:             []*scm.Review{},
+			selfApprove:         false,
+			needsIssue:          false,
+			lgtmActsAsApprove:   true,
+			reviewActsAsApprove: false,
+			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+			labelComments:       true,
 
 			expectDelete:  true,
 			expectToggle:  true,
@@ -1080,7 +1150,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fakeClient, fspc := newFakeSCMProviderClient(test.hasLabel, test.humanApproved, test.files, test.comments, test.reviews, testBotName)
+			fakeClient, fspc := newFakeSCMProviderClient(test.hasLabel, test.humanApproved, test.labelComments, test.files, test.comments, test.reviews, testBotName)
 			branch := "master"
 			if test.branch != "" {
 				branch = test.branch
@@ -1113,11 +1183,21 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				t.Errorf("[%s] Unexpected error handling event: %v.", test.name, err)
 			}
 
+			fakeLabel := fmt.Sprintf("org/repo#%v:approved", prNumber)
+
+			if err := fakeClient.PopulateFakeLabelsFromComments("org", "repo", prNumber, fakeLabel, test.hasLabel && test.expectToggle); err != nil {
+				t.Fatalf("Failure populating labels from comments: %v", err)
+			}
 			if test.expectDelete {
-				if len(fspc.PullRequestCommentsDeleted) != 1 {
+				deletedComments := 1
+				if test.labelComments && test.hasLabel && test.expectToggle {
+					deletedComments = 2
+				}
+				if len(fspc.PullRequestCommentsDeleted) != deletedComments {
 					t.Errorf(
-						"[%s] Expected 1 notification to be deleted but %d notifications were deleted.",
+						"[%s] Expected %d notification to be deleted but %d notifications were deleted.",
 						test.name,
+						deletedComments,
 						len(fspc.PullRequestCommentsDeleted),
 					)
 				}
@@ -1131,10 +1211,15 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				}
 			}
 			if test.expectComment {
-				if len(fspc.PullRequestCommentsAdded) != 1 {
+				addedComments := 1
+				if test.labelComments && !test.hasLabel && test.expectToggle {
+					addedComments = 2
+				}
+				if len(fspc.PullRequestCommentsAdded) != addedComments {
 					t.Errorf(
-						"[%s] Expected 1 notification to be added but %d notifications were added.",
+						"[%s] Expected %d notification to be added but %d notifications were added.",
 						test.name,
+						addedComments,
 						len(fspc.PullRequestCommentsAdded),
 					)
 				} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fspc.PullRequestCommentsAdded[0]; test.expectedComment != "" && got != expect {
@@ -1157,7 +1242,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 
 			labelAdded := false
 			for _, l := range fspc.PullRequestLabelsAdded {
-				if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
+				if l == fakeLabel {
 					if labelAdded {
 						t.Errorf("[%s] The approved label was applied to a PR that already had it!", test.name)
 					}
@@ -1169,7 +1254,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			}
 			toggled := labelAdded
 			for _, l := range fspc.PullRequestLabelsRemoved {
-				if l == fmt.Sprintf("org/repo#%v:approved", prNumber) {
+				if l == fakeLabel {
 					if !test.hasLabel {
 						t.Errorf("[%s] The approved label was removed from a PR that doesn't have it!", test.name)
 					}
@@ -1228,6 +1313,7 @@ func TestHandleGenericComment(t *testing.T) {
 		lgtmActsAsApprove bool
 		expectHandle      bool
 		expectState       *state
+		labelComments     bool
 	}{
 		{
 			name: "valid approve command",
@@ -1376,22 +1462,31 @@ func TestHandleGenericComment(t *testing.T) {
 		handleFunc = handle
 	}()
 
-	repo := scm.Repository{
-		Namespace: "org",
-		Name:      "repo",
-	}
-	pr := scm.PullRequest{
-		Base: scm.PullRequestBranch{
-			Ref: "branch",
-		},
-		Number: 1,
-	}
-	fakeScmClient, fspc := fake.NewDefault()
-	fakeClient := scmprovider.ToTestClient(fakeScmClient)
-	fspc.PullRequests[1] = &pr
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			repo := scm.Repository{
+				Namespace: "org",
+				Name:      "repo",
+			}
+			pr := scm.PullRequest{
+				Base: scm.PullRequestBranch{
+					Ref: "branch",
+				},
+				Number: 1,
+			}
+			var fakeScmClient *scm.Client
+			var fspc *fake.Data
+			var fakeClient *scmprovider.TestClient
+
+			if test.labelComments {
+				fakeClient = scmprovider.NewTestClientForLabelsInComments()
+				fspc = fakeClient.Data
+			} else {
+				fakeScmClient, fspc = fake.NewDefault()
+				fakeClient = scmprovider.ToTestClient(fakeScmClient)
+			}
+			fspc.PullRequests[1] = &pr
+
 			test.commentEvent.Repo = repo
 			config := &plugins.Configuration{}
 			config.Approve = append(config.Approve, plugins.Approve{

@@ -2,6 +2,7 @@ package scmprovider
 
 import (
 	"context"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/pkg/errors"
@@ -23,10 +24,17 @@ func (c *Client) GetPullRequest(owner, repo string, number int) (*scm.PullReques
 	if err != nil {
 		return nil, err
 	}
-	return c.populateBaseAndHeadRepos(ctx, pr)
+	return c.populateFields(ctx, pr, owner, repo)
 }
 
-func (c *Client) populateBaseAndHeadRepos(ctx context.Context, pr *scm.PullRequest) (*scm.PullRequest, error) {
+func (c *Client) populateFields(ctx context.Context, pr *scm.PullRequest, owner, repo string) (*scm.PullRequest, error) {
+	if pr != nil && !c.SupportsPRLabels() {
+		labels, err := c.GetIssueLabels(owner, repo, pr.Number, true)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting labels from comment for PR")
+		}
+		pr.Labels = append(pr.Labels, labels...)
+	}
 	// If we have an ID but no name, we've probably got a GitLab PR so go get its base information
 	if pr != nil && pr.Base.Repo.ID != "" && pr.Base.Repo.Name == "" {
 		baseRepo, _, err := c.client.Repositories.Find(ctx, pr.Base.Repo.ID)
@@ -65,7 +73,19 @@ func (c *Client) ListAllPullRequestsForFullNameRepo(fullName string, opts scm.Pu
 		allPRs = append(allPRs, pagePRs...)
 		opts.Page++
 	}
-	return allPRs, nil
+	if c.SupportsPRLabels() {
+		return allPRs, nil
+	}
+	nameParts := strings.Split(fullName, "/")
+	var withLabels []*scm.PullRequest
+	for _, pr := range allPRs {
+		updatedPR, err := c.populateFields(ctx, pr, nameParts[0], nameParts[1])
+		if err != nil {
+			return nil, err
+		}
+		withLabels = append(withLabels, updatedPR)
+	}
+	return withLabels, nil
 }
 
 // ListPullRequestComments list pull request comments
