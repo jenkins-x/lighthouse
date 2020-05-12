@@ -129,11 +129,13 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	c := client{
 		spc:                pc.SCMProviderClient,
-		jc:                 pc.Config.JobConfig,
 		clientFactory:      pc.ClientFactory,
 		metapipelineClient: pc.MetapipelineClient,
 		lhClient:           pc.LighthouseClient,
 	}
+	if pc.Config != nil {
+		c.jc = pc.Config.JobConfig
+	}	
 	return handle(pc.ClientFactory, c, pc.Logger, &e)
 }
 
