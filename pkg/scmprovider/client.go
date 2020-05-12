@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // ToClient converts the scm client to an API that the prow plugins expect
@@ -20,6 +21,7 @@ type SCMClient interface {
 	SetBotName(string)
 	SupportsGraphQL() bool
 	ProviderType() string
+	SupportsPRLabels() bool
 
 	// Functions implemented in content.go
 	GetFile(string, string, string, string) ([]byte, error)
@@ -124,6 +126,11 @@ func (c *Client) SetBotName(botName string) {
 	c.botName = botName
 }
 
+// SupportsPRLabels returns true if the underlying provider supports PR labels
+func (c *Client) SupportsPRLabels() bool {
+	return !NoLabelProviders().Has(c.ProviderType())
+}
+
 // SupportsGraphQL returns true if the underlying provider supports our GraphQL queries
 func (c *Client) SupportsGraphQL() bool {
 	return c.client.GraphQL != nil
@@ -150,4 +157,10 @@ type FileNotFound struct {
 // Error formats a file not found error
 func (e *FileNotFound) Error() string {
 	return fmt.Sprintf("%s/%s/%s @ %s not found", e.org, e.repo, e.path, e.commit)
+}
+
+// NoLabelProviders returns a set of provider names that don't support labels.
+func NoLabelProviders() sets.String {
+	// "coding" is a placeholder provider name from go-scm that we'll use for testing the comment support for label logic.
+	return sets.NewString("stash", "coding")
 }
