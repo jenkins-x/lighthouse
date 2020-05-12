@@ -161,5 +161,8 @@ func (c *Client) ReopenPR(owner, repo string, number int) error {
 
 // ClosePR closes a pull request
 func (c *Client) ClosePR(owner, repo string, number int) error {
-	return scm.ErrNotSupported
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.PullRequests.Close(ctx, fullName, number)
+	return err
 }

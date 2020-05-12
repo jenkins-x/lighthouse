@@ -296,5 +296,8 @@ func (c *Client) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
 
 // CloseIssue close issue
 func (c *Client) CloseIssue(owner, repo string, number int) error {
-	return scm.ErrNotSupported
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.Issues.Close(ctx, fullName, number)
+	return err
 }
