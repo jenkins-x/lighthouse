@@ -156,7 +156,10 @@ func (e MergeCommitsForbiddenError) Error() string { return string(e) }
 
 // ReopenPR reopens a pull request
 func (c *Client) ReopenPR(owner, repo string, number int) error {
-	return scm.ErrNotSupported
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.PullRequests.Reopen(ctx, fullName, number)
+	return err
 }
 
 // ClosePR closes a pull request
