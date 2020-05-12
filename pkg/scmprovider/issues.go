@@ -286,7 +286,10 @@ func (c *Client) EditComment(owner, repo string, number int, id int, comment str
 
 // ReopenIssue reopen an issue
 func (c *Client) ReopenIssue(owner, repo string, number int) error {
-	return scm.ErrNotSupported
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.Issues.Reopen(ctx, fullName, number)
+	return err
 }
 
 // FindIssues find issues
