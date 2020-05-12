@@ -135,7 +135,7 @@ func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) e
 	}
 	if pc.Config != nil {
 		c.jc = pc.Config.JobConfig
-	}	
+	}
 	return handle(pc.ClientFactory, c, pc.Logger, &e)
 }
 
