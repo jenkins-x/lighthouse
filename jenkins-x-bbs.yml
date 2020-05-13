@@ -47,6 +47,16 @@ pipelineConfig:
               secretKeyRef:
                 name: test-jenkins-user
                 key: password
+          - name: BDD_APPROVER_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: jx-pipeline-git-bitbucketserver-bs-approver
+                key: username
+          - name: BDD_APPROVER_ACCESS_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: jx-pipeline-git-bitbucketserver-bs-approver
+                key: password
         agent:
           image: gcr.io/jenkinsxio/builder-go-nodejs
         stages:
