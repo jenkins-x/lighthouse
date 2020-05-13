@@ -73,7 +73,7 @@ pipelineConfig:
                     mountPath: /kaniko-secrets
             steps:
               - name: build-binaries
-                image: gcr.io/jenkinsxio/builder-go
+                image: gcr.io/jenkinsxio/builder-go:0.0.0-SNAPSHOT-PR-7173-5
                 command: make
                 args:
                   - build-linux
