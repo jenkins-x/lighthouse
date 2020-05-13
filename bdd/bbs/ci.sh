@@ -66,7 +66,7 @@ cat env/lighthouse/values.tmpl.yaml
 rm values.tmpl.yaml.tmp
 sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/requirements.yaml
 
-cp env/jenkins-x-platform/values.tmpl.yaml tmp.yaml
+cp env/jenkins-x-platform/values.tmpl.yaml.template tmp.yaml
 cat tmp.yaml ../bdd/boot-vault.platform.yaml > env/jenkins-x-platform/values.tmpl.yaml
 rm tmp.yaml
 
