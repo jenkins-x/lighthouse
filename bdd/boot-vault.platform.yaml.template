@@ -27,7 +27,7 @@ controllerbuild:
   - "--verbose"
   image:
     repository: gcr.io/jenkinsxio/builder-go
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 {{- else }}
 controllerbuild:
   enabled: true
@@ -38,40 +38,40 @@ controllerbuild:
   - "--verbose"
   image:
     repository: gcr.io/jenkinsxio/builder-go
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 {{- end }}
 
 gcpreviews:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 
 gcactivities:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 
 gcpods:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 
 controllerworkflow:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 
 controllercommitstatus:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 
 controllerrole:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
 
 controllerteam:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: $VERSION
+    tag: 0.0.0-SNAPSHOT-PR-7173-5
