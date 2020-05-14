@@ -175,6 +175,7 @@ func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersCli
 		return err
 	}
 
+	log.Warnf("pr: %+v", pr)
 	repo, err := oc.LoadRepoOwners(ce.Repo.Namespace, ce.Repo.Name, pr.Base.Ref)
 	if err != nil {
 		return err
@@ -290,6 +291,7 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient
 	}
 
 	ref := pre.PullRequest.Base.Ref
+	log.Warnf("pre PR: %+v", pre.PullRequest)
 	repo, err := oc.LoadRepoOwners(pre.Repo.Namespace, pre.Repo.Name, ref)
 	if err != nil {
 		return err
