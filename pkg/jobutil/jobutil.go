@@ -236,7 +236,7 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 		labels[util.ContextLabel] = contextNameForLabel
 	}
 	if spec.Type != v1alpha1.PeriodicJob && spec.Refs != nil {
-		labels[util.OrgLabel] = spec.Refs.Org
+		labels[util.OrgLabel] = strings.ToLower(spec.Refs.Org)
 		labels[util.RepoLabel] = spec.Refs.Repo
 		labels[util.BranchLabel] = spec.GetBranch()
 		if len(spec.Refs.Pulls) > 0 {
