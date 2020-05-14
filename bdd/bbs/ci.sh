@@ -97,7 +97,6 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-quickstart-golang-http \
     --tests test-lighthouse
 
 bdd_result=$?
