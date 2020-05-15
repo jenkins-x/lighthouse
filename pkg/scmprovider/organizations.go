@@ -74,3 +74,10 @@ func (c *Client) ListOrgMembers(org string) ([]*scm.TeamMember, error) {
 	}
 	return allMembers, nil
 }
+
+// IsOrgAdmin returns whether this user is an admin of the org
+func (c *Client) IsOrgAdmin(org, user string) (bool, error) {
+	ctx := context.Background()
+	ok, _, err := c.client.Organizations.IsAdmin(ctx, org, user)
+	return ok, err
+}

@@ -52,6 +52,8 @@ type scmProviderClient interface {
 	GetRef(org, repo, ref string) (string, error)
 	HasPermission(org, repo, user string, role ...string) (bool, error)
 	ListStatuses(org, repo, ref string) ([]*scm.Status, error)
+	ProviderType() string
+	IsOrgAdmin(string, string) (bool, error)
 }
 
 type overrideClient interface {
@@ -76,6 +78,14 @@ func (c client) createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.Lighth
 	}
 	createdJob.Status = overrideStatus
 	return c.lhClient.UpdateStatus(createdJob)
+}
+
+func (c client) ProviderType() string {
+	return c.spc.ProviderType()
+}
+
+func (c client) IsOrgAdmin(org, user string) (bool, error) {
+	return c.spc.IsOrgAdmin(org, user)
 }
 
 func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
@@ -144,6 +154,13 @@ func authorized(spc scmProviderClient, log *logrus.Entry, org, repo, user string
 	if err != nil {
 		log.WithError(err).Warnf("cannot determine whether %s is an admin of %s/%s", user, org, repo)
 		return false
+	}
+	if !ok && spc.ProviderType() == "stash" {
+		ok, err = spc.IsOrgAdmin(org, user)
+		if err != nil {
+			log.WithError(err).Warnf("cannot determine whether %s is an admin of %s/%s", user, org, repo)
+			return false
+		}
 	}
 	return ok
 }
