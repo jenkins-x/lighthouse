@@ -53,6 +53,7 @@ type SCMClient interface {
 	ListTeams(string) ([]*scm.Team, error)
 	ListTeamMembers(int, string) ([]*scm.TeamMember, error)
 	ListOrgMembers(string) ([]*scm.TeamMember, error)
+	IsOrgAdmin(string, string) (bool, error)
 
 	// Functions implemented in pull_requests.go
 	GetPullRequest(string, string, int) (*scm.PullRequest, error)

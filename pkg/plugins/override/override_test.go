@@ -50,6 +50,14 @@ type fakeClient struct {
 	jobs       sets.String
 }
 
+func (c *fakeClient) ProviderType() string {
+	return "fake"
+}
+
+func (c *fakeClient) IsOrgAdmin(org, user string) (bool, error) {
+	return false, nil
+}
+
 func (c *fakeClient) CreateComment(org, repo string, number int, pr bool, comment string) error {
 	switch {
 	case org != fakeOrg:
