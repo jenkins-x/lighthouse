@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	commentTag = "<!-- test report -->"
+	commentTag = "!-- test report --"
 )
 
 // SCMProviderClient provides a client interface to report job status updates
@@ -228,7 +228,7 @@ func createComment(reportTemplate *template.Template, lhj *v1alpha1.LighthouseJo
 		"",
 		plugins.AboutThisBot,
 		"</details>",
-		commentTag,
+		"<" + commentTag + ">",
 	}...)
 	return strings.Join(lines, "\n"), nil
 }

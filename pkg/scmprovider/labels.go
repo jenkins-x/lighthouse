@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	labelTag = "<!-- label report -->"
+	labelTag = "!-- label report --"
 )
 
 // GetLabelsFromComment extracts the applied "labels" from a pull request from a comment
@@ -138,7 +138,7 @@ func CreateLabelComment(labels []string) string {
 	}
 	lines = append(lines, []string{
 		"",
-		labelTag,
+		"<" + labelTag + ">",
 	}...)
 	return strings.Join(lines, "\n")
 }
