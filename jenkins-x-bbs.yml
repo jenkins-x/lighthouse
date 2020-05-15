@@ -58,7 +58,7 @@ pipelineConfig:
                 name: jx-pipeline-git-bitbucketserver-bs-approver
                 key: password
         agent:
-          image: gcr.io/jenkinsxio/builder-go-nodejs:0.0.0-SNAPSHOT-PR-7173-54
+          image: gcr.io/jenkinsxio/builder-go-nodejs:0.0.0-SNAPSHOT-PR-7173-62
         stages:
           - name: ci
             options:
@@ -83,7 +83,7 @@ pipelineConfig:
                     mountPath: /kaniko-secrets
             steps:
               - name: build-binaries
-                image: gcr.io/jenkinsxio/builder-go:0.0.0-SNAPSHOT-PR-7173-54
+                image: gcr.io/jenkinsxio/builder-go:0.0.0-SNAPSHOT-PR-7173-62
                 command: make
                 args:
                   - build-linux
