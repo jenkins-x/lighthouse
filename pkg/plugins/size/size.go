@@ -110,7 +110,7 @@ func handlePR(spc scmProviderClient, sizes plugins.Size, le *logrus.Entry, pe sc
 	var count int
 	for _, change := range changes {
 		// Skip generated and linguist-generated files.
-		if gf.Match(change.Path) || ga.IsLinguistGenerated(change.Path) {
+		if gf != nil && ga != nil && (gf.Match(change.Path) || ga.IsLinguistGenerated(change.Path)) {
 			continue
 		}
 

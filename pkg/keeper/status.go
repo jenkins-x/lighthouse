@@ -322,6 +322,11 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 			}
 		}
 		if wantState != strings.ToLower(string(actualState)) || wantDesc != actualDesc {
+			reportURL := ""
+			// BitBucket Server requires a valid URL in all status reports
+			if sc.spc.ProviderType() == "stash" {
+				reportURL = "https://github.com/jenkins-x/lighthouse"
+			}
 			if _, err := sc.spc.CreateGraphQLStatus(
 				string(pr.Repository.Owner.Login),
 				string(pr.Repository.Name),
@@ -330,6 +335,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 					Context:     GetStatusContextLabel(),
 					State:       wantState,
 					Description: wantDesc,
+					TargetURL:   reportURL,
 				}); err != nil {
 				log.WithError(err).Errorf(
 					"Failed to set status context from %q to %q.",
