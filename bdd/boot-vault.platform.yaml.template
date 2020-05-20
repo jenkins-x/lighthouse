@@ -5,15 +5,15 @@ jenkins:
       Maven:
         Containers:
           Maven:
-            Image: gcr.io/jenkinsxio/builder-maven:0.0.0-SNAPSHOT-PR-7218-33
+            Image: gcr.io/jenkinsxio/builder-maven:0.0.0-SNAPSHOT-PR-7218-61
       Nodejs:
         Containers:
           Nodejs:
-            Image: gcr.io/jenkinsxio/builder-nodejs:0.0.0-SNAPSHOT-PR-7218-33
+            Image: gcr.io/jenkinsxio/builder-nodejs:0.0.0-SNAPSHOT-PR-7218-61
       Go:
         Containers:
           Go:
-            Image: gcr.io/jenkinsxio/builder-go:0.0.0-SNAPSHOT-PR-7218-33
+            Image: gcr.io/jenkinsxio/builder-go:0.0.0-SNAPSHOT-PR-7218-61
 
 {{- if eq .Requirements.webhook "lighthouse" }}
 controllerbuild:
@@ -27,7 +27,7 @@ controllerbuild:
   - "--verbose"
   image:
     repository: gcr.io/jenkinsxio/builder-go
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 {{- else }}
 controllerbuild:
   enabled: true
@@ -38,40 +38,40 @@ controllerbuild:
   - "--verbose"
   image:
     repository: gcr.io/jenkinsxio/builder-go
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 {{- end }}
 
 gcpreviews:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 
 gcactivities:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 
 gcpods:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 
 controllerworkflow:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 
 controllercommitstatus:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 
 controllerrole:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
 
 controllerteam:
   image:
     repository: gcr.io/jenkinsxio/builder-jx
-    tag: 0.0.0-SNAPSHOT-PR-7218-33
+    tag: 0.0.0-SNAPSHOT-PR-7218-61
