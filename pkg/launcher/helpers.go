@@ -5,9 +5,9 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/jenkins-x/jx/pkg/jxfactory"
-	"github.com/jenkins-x/jx/pkg/tekton/metapipeline"
-	"github.com/jenkins-x/jx/pkg/util"
+	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
+	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
+	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
