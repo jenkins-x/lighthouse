@@ -91,7 +91,6 @@ jx step bdd \
     --no-delete-app \
     --no-delete-repo \
     --tests install \
-    --tests test-create-spring \
     --tests test-lighthouse
 
 bdd_result=$?
