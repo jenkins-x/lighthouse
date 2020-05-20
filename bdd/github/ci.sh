@@ -79,6 +79,7 @@ export BDD_LIGHTHOUSE_BASE_REPORT_URL=https://example.com
 
 set +e
 jx step bdd \
+    --test-git-repo=https://github.com/abayer/bdd-jx.git \
     --versions-repo https://github.com/jenkins-x/jenkins-x-versions.git \
     --config ../bdd/github/cluster.yaml \
     --gopath /tmp \
