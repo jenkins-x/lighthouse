@@ -58,7 +58,7 @@ pipelineConfig:
                 name: jenkins-x-bot-test-github
                 key: password
         agent:
-          image: gcr.io/jenkinsxio/builder-go-nodejs
+          image: gcr.io/jenkinsxio/builder-go-nodejs:0.0.0-SNAPSHOT-PR-7218-33
         stages:
           - name: ci
             options:
