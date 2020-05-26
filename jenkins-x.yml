@@ -22,8 +22,52 @@ pipelineConfig:
             value: http://jenkins-x-athens-proxy
           - name: GO111MODULE
             value: "on"
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /secrets/kaniko/kaniko-secret.json
           - name: ORG
             value: jenkinsxio
+          - name: GKE_SA
+            value: /secrets/bdd/sa.json
+          - name: GH_ACCESS_TOKEN 
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-bot-test-github
+                key: password
+          - name: JENKINS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: test-jenkins-user 
+                key: password
+          - name: CHARTMUSEUM_USER
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-chartmuseum
+                key: BASIC_AUTH_USER
+          - name: CHARTMUSEUM_PASS
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-chartmuseum
+                key: BASIC_AUTH_PASS
+          options:
+            volumes:
+              - name: sa
+                secret:
+                  secretName: bdd-secret
+                  items:
+                    - key: bdd-credentials.json
+                      path: bdd/sa.json
+              - name: kaniko-secret
+                secret:
+                  secretName: kaniko-secret
+                  items:
+                    - key: kaniko-secret
+                      path: kaniko/kaniko-secret.json
+            containerOptions:
+              volumeMounts:
+                - mountPath: /secrets
+                  name: sa
+                - name: kaniko-secret
+                  mountPath: /secrets
           steps:
           - name: lint-checks
             image: gcr.io/jenkinsxio/builder-go
