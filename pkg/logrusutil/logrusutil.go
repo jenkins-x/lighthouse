@@ -18,6 +18,7 @@ limitations under the License.
 package logrusutil
 
 import (
+	stackdriver "github.com/TV4/logrus-stackdriver-formatter"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -53,6 +54,11 @@ func CreateDefaultFormatter() logrus.Formatter {
 			DisableTimestamp: true,
 		}
 	}
+
+	if os.Getenv("LOGRUS_FORMAT") == "stackdriver" {
+		return &stackdriver.Formatter{}
+	}
+
 	jsonFormat := &logrus.JSONFormatter{}
 	if os.Getenv("LOGRUS_JSON_PRETTY") == "true" {
 		jsonFormat.PrettyPrint = true
