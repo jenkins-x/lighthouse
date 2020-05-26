@@ -75,6 +75,8 @@ spec:
 {{- end }}
         - name: "JX_LOG_FORMAT"
           value: "{{ .Values.logFormat }}"
+        - name: "LOGRUS_FORMAT"
+          value: "{{ .Values.logFormat }}"
         - name: "LIGHTHOUSE_KEEPER_STATUS_CONTEXT_LABEL"
           value: "{{ .Values.keeper.statusContextLabel}}"
 {{- if hasKey .Values "env" }}
