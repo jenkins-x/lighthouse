@@ -1,6 +1,7 @@
 module github.com/jenkins-x/lighthouse
 
 require (
+	github.com/TV4/logrus-stackdriver-formatter v0.1.0
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.1
@@ -29,10 +30,6 @@ require (
 	sigs.k8s.io/yaml v1.1.0
 )
 
-exclude github.com/jenkins-x/jx/pkg/prow v0.0.0-20190912224545-e8f82ee218ba
-
-replace github.com/golang/lint => golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
-
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
 
 replace k8s.io/api => k8s.io/api v0.0.0-20190528110122-9ad12a4af326
@@ -44,8 +41,6 @@ replace k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190221084156-01f179d
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190528110200-4f3abb12cae2
 
 replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190528110544-fa58353d80f3
-
-replace git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 
 replace github.com/sirupsen/logrus => github.com/jtnord/logrus v1.4.2-0.20190423161236-606ffcaf8f5d
 
