@@ -23,7 +23,7 @@ pipelineConfig:
           - name: GO111MODULE
             value: "on"
           - name: GOOGLE_APPLICATION_CREDENTIALS
-            value: /builder/home/kaniko-secret.json
+            value: /secrets/kaniko/kaniko-secret.json
           - name: ORG
             value: jenkinsxio
           - name: GKE_SA
@@ -56,10 +56,18 @@ pipelineConfig:
                   items:
                     - key: bdd-credentials.json
                       path: bdd/sa.json
+              - name: kaniko-secret
+                secret:
+                  secretName: kaniko-secret
+                  items:
+                    - key: kaniko-secret
+                      path: kaniko/kaniko-secret.json
             containerOptions:
               volumeMounts:
                 - mountPath: /secrets
                   name: sa
+                - name: kaniko-secret
+                  mountPath: /secrets
           steps:
           - name: lint-checks
             image: gcr.io/jenkinsxio/builder-go
@@ -98,6 +106,18 @@ pipelineConfig:
           image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
         stages:
           - name: release
+            options:
+              volumes:
+                - name: kaniko-secret
+                  secret:
+                    secretName: kaniko-secret
+                    items:
+                      - key: kaniko-secret
+                        path: kaniko/kaniko-secret.json
+              containerOptions:
+                volumeMounts:
+                  - name: kaniko-secret
+                    mountPath: /secrets
             environment:
               - name: GIT_COMMITTER_EMAIL
                 value: jenkins-x@googlegroups.com
@@ -112,7 +132,7 @@ pipelineConfig:
               - name: GOPROXY
                 value: http://jenkins-x-athens-proxy
               - name: GOOGLE_APPLICATION_CREDENTIALS
-                value: /builder/home/kaniko-secret.json
+                value: /secrets/kaniko/kaniko-secret.json
               - name: ORG
                 value: jenkinsxio
               - name: CHARTMUSEUM_USER
@@ -154,19 +174,6 @@ pipelineConfig:
                 args:
                 - build
                 dir: /workspace/source/charts/lighthouse
-
-              - name: kaniko-credentials 
-                image: jenkinsxio/jx:1.3.963 
-                command: jx
-                args:
-                  - step 
-                  - credential
-                  - -s
-                  - kaniko-secret
-                  - -k
-                  - kaniko-secret
-                  - -f
-                  - /builder/home/kaniko-secret.json
 
               - name: git-user-pass 
                 image: jenkinsxio/jx:1.3.963
