@@ -2,5 +2,5 @@
 
 Dependency | Sources | Version | Mismatched versions
 ---------- | ------- | ------- | -------------------
-[jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) |  | [1.5.138]() | 
-[jenkins-x/jx](https://github.com/jenkins-x/jx) |  | [2.1.49](https://github.com/jenkins-x/jx/releases/tag/v2.1.49) | 
+[jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) |  | [1.5.137]() | 
+[jenkins-x/jx](https://github.com/jenkins-x/jx) |  | [2.1.50](https://github.com/jenkins-x/jx/releases/tag/v2.1.50) | 
