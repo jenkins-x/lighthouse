@@ -99,7 +99,6 @@ github.com/antham/envh v1.3.0/go.mod h1:XEzSj+S+lssBdPABWOqSKvhZZdVKbD2a0GqweLbg
 github.com/antham/strumt/v2 v2.0.1/go.mod h1:fIIeh2qDESI/OZP3k2adFzmp4i4Cazngj3RpYpR46xQ=
 github.com/aokoli/goutils v1.0.1 h1:7fpzNGoJ3VA8qcrm++XEE1QUe0mIwNeLa02Nwq7RDkg=
 github.com/aokoli/goutils v1.0.1/go.mod h1:SijmP0QR8LtwsmDs8Yii5Z/S4trXFGFC2oO5g9DP+DQ=
-github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/appscode/jsonpatch v0.0.0-20180911074601-5af499cf01c8/go.mod h1:4AJxUpXUhv4N+ziTvIcWWXgeorXpxPZOfk9HdEVr96M=
 github.com/appscode/jsonpatch v0.0.0-20190108182946-7c0e3b262f30/go.mod h1:4AJxUpXUhv4N+ziTvIcWWXgeorXpxPZOfk9HdEVr96M=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
@@ -475,14 +474,10 @@ github.com/jbrukh/bayesian v0.0.0-20161210175230-bf3f261f9a9c h1:jqLMOnuwp+ac6nI
 github.com/jbrukh/bayesian v0.0.0-20161210175230-bf3f261f9a9c/go.mod h1:SELxwZQq/mPnfPCR2mchLmT4TQaPJvYtLcCtDWSM7vM=
 github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135 h1:3zy/Nvdi9V95Jfu6+W4NAJrHDeypB58FSLyzI3XfO/4=
 github.com/jenkins-x/draft-repo v0.0.0-20180417100212-2f66cc518135/go.mod h1:K/L25ViEpDx196rOZyjn433tAM5zr2F/IouK+3g+DkE=
-github.com/jenkins-x/go-scm v1.5.137 h1:CsxRM5cNYAjtnwQ8GLscYXO0vc9Go6reYVAv/lADH/g=
-github.com/jenkins-x/go-scm v1.5.137/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
+github.com/jenkins-x/go-scm v1.5.138 h1:RTdHlcv+AND6ttZTu8DyxIGHfhPGlMAv7TJj62NapW0=
+github.com/jenkins-x/go-scm v1.5.138/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314 h1:kyBMx/ucSV92S+umX/V6DDaPNynlFFOM9MGJWApltoU=
 github.com/jenkins-x/golang-jenkins v0.0.0-20180919102630-65b83ad42314/go.mod h1:C6j5HgwlHGjRU27W4XCs6jXksqYFo8OdBu+p44jqQeM=
-github.com/jenkins-x/jx/v2 v2.1.45 h1:AemW/I95t8vREKPquf9CanfenI8zM8PuzLGYCf+9QLs=
-github.com/jenkins-x/jx/v2 v2.1.45/go.mod h1:4pQ8uZw7zDvhKyABaSvq17o9OhI/F2d7X+MJIhn2Of8=
-github.com/jenkins-x/jx/v2 v2.1.46 h1:bQaOD+1gMN/8SddiTJhzX6D0BF49P+vUvUzpvnv/Qhs=
-github.com/jenkins-x/jx/v2 v2.1.46/go.mod h1:4pQ8uZw7zDvhKyABaSvq17o9OhI/F2d7X+MJIhn2Of8=
 github.com/jenkins-x/jx/v2 v2.1.49 h1:VwVlG1w+V2NIbWaxY2UZTEMRT+CsfRCdyG58YaTiTn8=
 github.com/jenkins-x/jx/v2 v2.1.49/go.mod h1:4pQ8uZw7zDvhKyABaSvq17o9OhI/F2d7X+MJIhn2Of8=
 github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb h1:woC0LbYpL9rgwZn13Z0KQBEGAmi9ugpWgWtQezHqsBM=
