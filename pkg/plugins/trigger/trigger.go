@@ -161,6 +161,7 @@ func handlePush(pc plugins.Agent, pe scm.PushHook) error {
 func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, repo string) (bool, error) {
 	botUser, err := spc.BotName()
 	if err == nil && user == botUser {
+		logrus.Infof("User %q is the bot user", user)
 		return true, nil
 	}
 	// First check if user is a collaborator, assuming this is allowed
@@ -168,6 +169,7 @@ func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, rep
 		if ok, err := spc.IsCollaborator(org, repo, user); err != nil {
 			return false, fmt.Errorf("error in IsCollaborator: %v", err)
 		} else if ok {
+			logrus.Infof("User %q is a collaborator of org %q", user, org)
 			return true, nil
 		}
 	}
@@ -178,6 +180,7 @@ func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, rep
 	if member, err := spc.IsMember(org, user); err != nil {
 		return false, fmt.Errorf("error in IsMember(%s): %v", org, err)
 	} else if member {
+		logrus.Infof("User %q is a member of org %q", user, org)
 		return true, nil
 	}
 
@@ -191,6 +194,7 @@ func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, rep
 	if err != nil {
 		return false, fmt.Errorf("error in IsMember(%s): %v", trigger.TrustedOrg, err)
 	}
+	logrus.Infof("User %q is a member of the trusted org %q - %t", user, trigger.TrustedOrg, member)
 	return member, nil
 }
 
