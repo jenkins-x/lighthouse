@@ -8,8 +8,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
+	"github.com/jenkins-x/jx/v2/pkg/errorutil"
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
-	jxutil "github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/git"
@@ -72,7 +72,7 @@ func (g *gitHubAppKeeperController) Sync() error {
 			errs = append(errs, err)
 		}
 	}
-	return jxutil.CombineErrors(errs...)
+	return errorutil.CombineErrors(errs...)
 }
 
 func (g *gitHubAppKeeperController) Shutdown() {
@@ -145,7 +145,7 @@ func (g *gitHubAppKeeperController) createOwnerControllers() error {
 			g.controllers = append(g.controllers, c)
 		}
 	}
-	return jxutil.CombineErrors(errs...)
+	return errorutil.CombineErrors(errs...)
 }
 
 func (g *gitHubAppKeeperController) createOwnerController(owner string, configGetter config.Getter) (keeper.Controller, error) {
