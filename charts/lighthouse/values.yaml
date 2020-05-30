@@ -105,8 +105,8 @@ keeper:
     # - --github-endpoint=https://api.github.com
   resources:
     limits:
-     cpu: 200m
-     memory: 256Mi
+     cpu: 400m
+     memory: 512Mi
     requests:
      cpu: 100m
      memory: 128Mi
