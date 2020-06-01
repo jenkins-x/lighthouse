@@ -396,6 +396,26 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 		o.server.HandlePullRequestCommentEvent(l, *prCommentHook)
 		return l, "processed PR comment hook", nil
 	}
+	prReviewHook, ok := webhook.(*scm.ReviewHook)
+	if ok {
+		action := prReviewHook.Action
+		fields["Action"] = action.String()
+		pr := prReviewHook.PullRequest
+		fields["PR.Number"] = pr.Number
+		fields["PR.Ref"] = pr.Ref
+		fields["PR.Sha"] = pr.Sha
+		fields["PR.Title"] = pr.Title
+		fields["PR.Body"] = pr.Body
+		fields["Review.State"] = prReviewHook.Review.State
+		fields["Reviewer.Name"] = prReviewHook.Review.Author.Name
+		fields["Reviewer.Login"] = prReviewHook.Review.Author.Login
+		fields["Reviewer.Avatar"] = prReviewHook.Review.Author.Avatar
+
+		l.Info("invoking PR Review handler")
+
+		o.server.HandleReviewEvent(l, *prReviewHook)
+		return l, "processed PR review hook", nil
+	}
 	l.Debugf("unknown kind %s webhook %#v", webhook.Kind(), webhook)
 	return l, fmt.Sprintf("unknown hook %s", webhook.Kind()), nil
 }
