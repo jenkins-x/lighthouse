@@ -25,10 +25,9 @@ import (
 	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 // Server keeps the information required to start a server
@@ -228,6 +227,56 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 // HandleBranchEvent handles a branch event
 func (s *Server) HandleBranchEvent(entry *logrus.Entry, hook *scm.BranchHook) {
 	// TODO
+}
+
+// HandleReviewEvent handles a PR review event
+func (s *Server) HandleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
+	l = l.WithFields(logrus.Fields{
+		scmprovider.OrgLogField:  re.Repo.Namespace,
+		scmprovider.RepoLogField: re.Repo.Name,
+		scmprovider.PrLogField:   re.PullRequest.Number,
+		"review":                 re.Review.ID,
+		"reviewer":               re.Review.Author.Login,
+		"url":                    re.Review.Link,
+	})
+	l.Infof("Review %s.", re.Action)
+	for p, h := range s.Plugins.ReviewEventHandlers(re.PullRequest.Base.Repo.Namespace, re.PullRequest.Base.Repo.Name) {
+		s.wg.Add(1)
+		go func(p string, h plugins.ReviewEventHandler) {
+			defer s.wg.Done()
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
+			agent.InitializeCommentPruner(
+				re.Repo.Namespace,
+				re.Repo.Name,
+				re.PullRequest.Number,
+			)
+			if err := h(agent, re); err != nil {
+				agent.Logger.WithError(err).Error("Error handling ReviewEvent.")
+			}
+		}(p, h)
+	}
+	action := re.Action
+	if !actionRelatesToPullRequestComment(action, l) {
+		return
+	}
+	s.handleGenericComment(
+		l,
+		&scmprovider.GenericCommentEvent{
+			GUID:        re.GUID,
+			IsPR:        true,
+			Action:      action,
+			Body:        re.Review.Body,
+			Link:        re.Review.Link,
+			Number:      re.PullRequest.Number,
+			Repo:        re.Repo,
+			Author:      re.Review.Author,
+			IssueAuthor: re.PullRequest.Author,
+			Assignees:   re.PullRequest.Assignees,
+			IssueState:  re.PullRequest.State,
+			IssueBody:   re.PullRequest.Body,
+			IssueLink:   re.PullRequest.Link,
+		},
+	)
 }
 
 func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool {

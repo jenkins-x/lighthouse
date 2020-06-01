@@ -57,6 +57,28 @@ func (suite *WebhookTestSuite) TestProcessWebhookPR() {
 	assert.NotNil(t, logrusEntry)
 }
 
+func (suite *WebhookTestSuite) TestProcessWebhookPRReview() {
+	t := suite.T()
+
+	webhook := &scm.ReviewHook{
+		Action: scm.ActionSubmitted,
+		Repo:   suite.TestRepo,
+		Review: scm.Review{
+			State: "APPROVED",
+			Author: scm.User{
+				Login: "user",
+				Name:  "User",
+			},
+		},
+	}
+	l := logrus.WithField("test", t.Name())
+	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(l, webhook)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "processed PR review hook", message)
+	assert.NotNil(t, logrusEntry)
+}
+
 func (suite *WebhookTestSuite) TestProcessWebhookUnknownRepo() {
 	t := suite.T()
 
