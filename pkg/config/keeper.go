@@ -518,6 +518,10 @@ func (c Config) GetKeeperContextPolicy(org, repo, branch string) (*KeeperContext
 		}
 	}
 
+	// Remove anything from the required list that's also in the required if present list, since that may have been
+	// duplicated by branch protection.
+	required.Delete(requiredIfPresent.List()...)
+
 	t := &KeeperContextPolicy{
 		RequiredContexts:          required.List(),
 		RequiredIfPresentContexts: requiredIfPresent.List(),
