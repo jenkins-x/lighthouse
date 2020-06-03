@@ -20,7 +20,7 @@ spec:
         spec:
           containers:
             - command:
-                - gc-jobs
+                - /gc-jobs
               image: {{ tpl .Values.gcJobs.image.repository . }}:{{ tpl .Values.gcJobs.image.tag . }}
               imagePullPolicy: {{ tpl .Values.gcJobs.image.pullPolicy . }}
               args:
@@ -38,4 +38,5 @@ spec:
           serviceAccountName: {{ template "gcJobs.name" . }}
   successfulJobsHistoryLimit: {{ .Values.gcJobs.successfulJobsHistoryLimit }}
   schedule: {{ .Values.gcJobs.schedule | quote }}
+  startingDeadlineSeconds: 4000
   suspend: false

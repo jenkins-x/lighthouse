@@ -28,7 +28,7 @@ gcJobs:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
     tag: "{{ .Values.image.tag }}"
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-  schedule: "*/30 * * * *"
+  schedule: "0/30 * * * *"
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 3
   concurrencyPolicy: Forbid
