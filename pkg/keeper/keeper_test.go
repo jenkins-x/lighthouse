@@ -41,7 +41,7 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/git/localgit"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
 	launcherfake "github.com/jenkins-x/lighthouse/pkg/launcher/fake"
@@ -234,7 +234,7 @@ func TestAccumulateBatch(t *testing.T) {
 					Spec: v1alpha1.LighthouseJobSpec{
 						Job:     pj.job,
 						Context: pj.job,
-						Type:    v1alpha1.BatchJob,
+						Type:    config.BatchJob,
 						Refs:    new(v1alpha1.Refs),
 					},
 					Status: v1alpha1.LighthouseJobStatus{State: pj.state},
@@ -473,7 +473,7 @@ func TestAccumulate(t *testing.T) {
 					Spec: v1alpha1.LighthouseJobSpec{
 						Job:     pj.job,
 						Context: pj.job,
-						Type:    v1alpha1.PresubmitJob,
+						Type:    config.PresubmitJob,
 						Refs:    &v1alpha1.Refs{Pulls: []v1alpha1.Pull{{Number: pj.prNumber, SHA: pj.sha}}},
 					},
 					Status: v1alpha1.LighthouseJobStatus{State: pj.state},
@@ -646,52 +646,52 @@ func TestDividePool(t *testing.T) {
 		},
 	}
 	testPJs := []struct {
-		jobType v1alpha1.PipelineKind
+		jobType config.PipelineKind
 		org     string
 		repo    string
 		baseRef string
 		baseSHA string
 	}{
 		{
-			jobType: v1alpha1.PresubmitJob,
+			jobType: config.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: v1alpha1.BatchJob,
+			jobType: config.BatchJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: v1alpha1.PeriodicJob,
+			jobType: config.PeriodicJob,
 		},
 		{
-			jobType: v1alpha1.PresubmitJob,
+			jobType: config.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "patch",
 			baseSHA: "123",
 		},
 		{
-			jobType: v1alpha1.PresubmitJob,
+			jobType: config.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "abc",
 		},
 		{
-			jobType: v1alpha1.PresubmitJob,
+			jobType: config.PresubmitJob,
 			org:     "o",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: v1alpha1.PresubmitJob,
+			jobType: config.PresubmitJob,
 			org:     "k",
 			repo:    "other",
 			baseRef: "master",
@@ -750,7 +750,7 @@ func TestDividePool(t *testing.T) {
 			}
 		}
 		for _, pj := range sp.pjs {
-			if pj.Spec.Type != v1alpha1.PresubmitJob && pj.Spec.Type != v1alpha1.BatchJob {
+			if pj.Spec.Type != config.PresubmitJob && pj.Spec.Type != config.BatchJob {
 				t.Errorf("PJ with bad type in subpool %s: %+v", name, pj)
 			}
 			if pj.Spec.Refs.Org != sp.org || pj.Spec.Refs.Repo != sp.repo || pj.Spec.Refs.BaseRef != sp.branch || pj.Spec.Refs.BaseSHA != sp.sha {
@@ -903,15 +903,15 @@ func TestCheckMergeLabels(t *testing.T) {
 		name string
 
 		pr        PullRequest
-		method    scmprovider.PullRequestMergeType
-		expected  scmprovider.PullRequestMergeType
+		method    config.PullRequestMergeType
+		expected  config.PullRequestMergeType
 		expectErr bool
 	}{
 		{
 			name:      "default method without PR label override",
 			pr:        PullRequest{},
-			method:    scmprovider.MergeMerge,
-			expected:  scmprovider.MergeMerge,
+			method:    config.MergeMerge,
+			expected:  config.MergeMerge,
 			expectErr: false,
 		},
 		{
@@ -921,8 +921,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					Nodes []struct{ Name githubql.String }
 				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String("sig/testing")}}},
 			},
-			method:    scmprovider.MergeMerge,
-			expected:  scmprovider.MergeMerge,
+			method:    config.MergeMerge,
+			expected:  config.MergeMerge,
 			expectErr: false,
 		},
 		{
@@ -932,8 +932,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					Nodes []struct{ Name githubql.String }
 				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String(squashLabel)}}},
 			},
-			method:    scmprovider.MergeMerge,
-			expected:  scmprovider.MergeSquash,
+			method:    config.MergeMerge,
+			expected:  config.MergeSquash,
 			expectErr: false,
 		},
 		{
@@ -946,8 +946,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					{Name: githubql.String(rebaseLabel)}},
 				},
 			},
-			method:    scmprovider.MergeMerge,
-			expected:  scmprovider.MergeSquash,
+			method:    config.MergeMerge,
+			expected:  config.MergeSquash,
 			expectErr: true,
 		},
 	}
@@ -1381,7 +1381,7 @@ func TestTakeAction(t *testing.T) {
 						fgc.combinedStatus[pjSha][activity.Spec.Context].status)
 				}
 				numCreated++
-				if activity.Spec.Type == v1alpha1.BatchJob {
+				if activity.Spec.Type == config.BatchJob {
 					batchJobs = append(batchJobs, activity)
 				}
 			}
@@ -2414,7 +2414,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		name        string
 		tpl         config.KeeperMergeCommitTemplate
 		pr          PullRequest
-		mergeMethod scmprovider.PullRequestMergeType
+		mergeMethod config.PullRequestMergeType
 		expected    scmprovider.MergeDetails
 	}{{
 		name:        "No commit template",
@@ -2528,7 +2528,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			}},
 			pjs: []v1alpha1.LighthouseJob{{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: v1alpha1.PresubmitJob,
+					Type: config.PresubmitJob,
 					Refs: &v1alpha1.Refs{
 						Pulls: []v1alpha1.Pull{{
 							Number: 1,
@@ -2551,7 +2551,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			}},
 			pjs: []v1alpha1.LighthouseJob{{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: v1alpha1.PresubmitJob,
+					Type: config.PresubmitJob,
 					Refs: &v1alpha1.Refs{
 						Pulls: []v1alpha1.Pull{{
 							Number: 1,
@@ -2574,7 +2574,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			pjs: []v1alpha1.LighthouseJob{
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2587,7 +2587,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2600,7 +2600,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2640,7 +2640,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			pjs: []v1alpha1.LighthouseJob{
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2653,7 +2653,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2666,7 +2666,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2679,7 +2679,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 2,
@@ -2692,7 +2692,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 2,
@@ -2705,7 +2705,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: v1alpha1.PresubmitJob,
+						Type: config.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 2,

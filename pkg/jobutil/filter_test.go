@@ -27,7 +27,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"k8s.io/apimachinery/pkg/util/diff"
 )
 

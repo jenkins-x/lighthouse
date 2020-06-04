@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse-config/pkg/config"
 )
 
 func TestPostsubmitSpec(t *testing.T) {
@@ -49,7 +49,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				},
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.PostsubmitJob,
+				Type: config.PostsubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -63,7 +63,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.PostsubmitJob,
+				Type: config.PostsubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
@@ -85,7 +85,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.PostsubmitJob,
+				Type: config.PostsubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -120,7 +120,7 @@ func TestPresubmitSpec(t *testing.T) {
 				},
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.PresubmitJob,
+				Type: config.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -134,7 +134,7 @@ func TestPresubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.PresubmitJob,
+				Type: config.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
@@ -156,7 +156,7 @@ func TestPresubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.PresubmitJob,
+				Type: config.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -191,7 +191,7 @@ func TestBatchSpec(t *testing.T) {
 				},
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.BatchJob,
+				Type: config.BatchJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -205,7 +205,7 @@ func TestBatchSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.BatchJob,
+				Type: config.BatchJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
@@ -227,7 +227,7 @@ func TestBatchSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: v1alpha1.BatchJob,
+				Type: config.BatchJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -257,13 +257,13 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "periodic job, no extra labels",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: v1alpha1.PeriodicJob,
+				Type: config.PeriodicJob,
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				util.CreatedByLighthouse:     "true",
-				util.LighthouseJobAnnotation: "job",
-				util.LighthouseJobTypeLabel:  "periodic",
+				config.CreatedByLighthouse:    "true",
+				util.LighthouseJobAnnotation:  "job",
+				config.LighthouseJobTypeLabel: "periodic",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -273,16 +273,16 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "periodic job, extra labels",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: v1alpha1.PeriodicJob,
+				Type: config.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
 			},
 			expectedLabels: map[string]string{
-				util.CreatedByLighthouse:     "true",
-				util.LighthouseJobAnnotation: "job",
-				util.LighthouseJobTypeLabel:  "periodic",
-				"extra":                      "stuff",
+				config.CreatedByLighthouse:    "true",
+				util.LighthouseJobAnnotation:  "job",
+				config.LighthouseJobTypeLabel: "periodic",
+				"extra":                       "stuff",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -292,7 +292,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "presubmit job",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: v1alpha1.PresubmitJob,
+				Type: config.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					Org:  "org",
 					Repo: "repo",
@@ -304,14 +304,14 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				util.CreatedByLighthouse:     "true",
-				util.LighthouseJobAnnotation: "job",
-				util.LighthouseJobTypeLabel:  "presubmit",
-				util.OrgLabel:                "org",
-				util.RepoLabel:               "repo",
-				util.PullLabel:               "1",
-				util.BranchLabel:             "PR-1",
-				util.ContextLabel:            "pr-build",
+				config.CreatedByLighthouse:    "true",
+				util.LighthouseJobAnnotation:  "job",
+				config.LighthouseJobTypeLabel: "presubmit",
+				util.OrgLabel:                 "org",
+				util.RepoLabel:                "repo",
+				util.PullLabel:                "1",
+				util.BranchLabel:              "PR-1",
+				util.ContextLabel:             "pr-build",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -321,7 +321,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "non-github presubmit job",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: v1alpha1.PresubmitJob,
+				Type: config.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					Org:  "https://some-gerrit-instance.foo.com",
 					Repo: "some/invalid/repo",
@@ -332,13 +332,13 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				util.CreatedByLighthouse:     "true",
-				util.LighthouseJobAnnotation: "job",
-				util.LighthouseJobTypeLabel:  "presubmit",
-				util.OrgLabel:                "some-gerrit-instance.foo.com",
-				util.RepoLabel:               "repo",
-				util.PullLabel:               "1",
-				util.BranchLabel:             "PR-1",
+				config.CreatedByLighthouse:    "true",
+				util.LighthouseJobAnnotation:  "job",
+				config.LighthouseJobTypeLabel: "presubmit",
+				util.OrgLabel:                 "some-gerrit-instance.foo.com",
+				util.RepoLabel:                "repo",
+				util.PullLabel:                "1",
+				util.BranchLabel:              "PR-1",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -347,7 +347,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "job with name too long to fit in a label",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
-				Type: v1alpha1.PresubmitJob,
+				Type: config.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					Org:  "org",
 					Repo: "repo",
@@ -358,13 +358,13 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				util.CreatedByLighthouse:     "true",
-				util.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
-				util.LighthouseJobTypeLabel:  "presubmit",
-				util.OrgLabel:                "org",
-				util.RepoLabel:               "repo",
-				util.PullLabel:               "1",
-				util.BranchLabel:             "PR-1",
+				config.CreatedByLighthouse:    "true",
+				util.LighthouseJobAnnotation:  "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
+				config.LighthouseJobTypeLabel: "presubmit",
+				util.OrgLabel:                 "org",
+				util.RepoLabel:                "repo",
+				util.PullLabel:                "1",
+				util.BranchLabel:              "PR-1",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
@@ -374,7 +374,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "periodic job, extra labels, extra annotations",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: v1alpha1.PeriodicJob,
+				Type: config.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
@@ -383,10 +383,10 @@ func TestNewLighthouseJob(t *testing.T) {
 				"extraannotation": "foo",
 			},
 			expectedLabels: map[string]string{
-				util.CreatedByLighthouse:     "true",
-				util.LighthouseJobAnnotation: "job",
-				util.LighthouseJobTypeLabel:  "periodic",
-				"extra":                      "stuff",
+				config.CreatedByLighthouse:    "true",
+				util.LighthouseJobAnnotation:  "job",
+				config.LighthouseJobTypeLabel: "periodic",
+				"extra":                       "stuff",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -419,7 +419,7 @@ func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 			name: "job without annotation",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: v1alpha1.PeriodicJob,
+				Type: config.PeriodicJob,
 			},
 			annotations: nil,
 			expectedAnnotations: map[string]string{
@@ -430,7 +430,7 @@ func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 			name: "job with annotation",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: v1alpha1.PeriodicJob,
+				Type: config.PeriodicJob,
 			},
 			annotations: map[string]string{
 				"annotation": "foo",
@@ -467,7 +467,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: v1alpha1.PeriodicJob}},
+			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: config.PeriodicJob}},
 			expected: "periodic",
 		},
 		{
@@ -487,7 +487,7 @@ func TestJobURL(t *testing.T) {
 					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
 				},
 			},
-			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: v1alpha1.PeriodicJob}},
+			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: config.PeriodicJob}},
 			expected: "periodic",
 		},
 	}

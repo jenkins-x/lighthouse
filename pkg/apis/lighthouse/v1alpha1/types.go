@@ -9,22 +9,8 @@ import (
 	"time"
 
 	"github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
+	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-// PipelineKind specifies how the job is triggered.
-type PipelineKind string
-
-// Various job types.
-const (
-	// PresubmitJob means it runs on unmerged PRs.
-	PresubmitJob PipelineKind = "presubmit"
-	// PostsubmitJob means it runs on each new commit.
-	PostsubmitJob PipelineKind = "postsubmit"
-	// Periodic job means it runs on a time-basis, unrelated to git changes.
-	PeriodicJob PipelineKind = "periodic"
-	// BatchJob tests multiple unmerged PRs at the same time.
-	BatchJob PipelineKind = "batch"
 )
 
 // PipelineState specifies the current pipelne status
@@ -121,7 +107,7 @@ type LighthouseJobList struct {
 type LighthouseJobSpec struct {
 	// Type is the type of job and informs how
 	// the jobs is triggered
-	Type PipelineKind `json:"type,omitempty"`
+	Type config.PipelineKind `json:"type,omitempty"`
 	// Namespace defines where to create pods/resources.
 	Namespace string `json:"namespace,omitempty"`
 	// Job is the name of the job
@@ -143,10 +129,10 @@ type LighthouseJobSpec struct {
 // GetBranch returns the branch name corresponding to the refs on this spec.
 func (s *LighthouseJobSpec) GetBranch() string {
 	branch := s.Refs.BaseRef
-	if s.Type == PostsubmitJob {
+	if s.Type == config.PostsubmitJob {
 		return branch
 	}
-	if s.Type == BatchJob {
+	if s.Type == config.BatchJob {
 		return "batch"
 	}
 	if len(s.Refs.Pulls) > 0 {
@@ -169,7 +155,7 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 
 	env[JobSpecEnv] = fmt.Sprintf("type:%s", s.Type)
 
-	if s.Type == PeriodicJob {
+	if s.Type == config.PeriodicJob {
 		return env
 	}
 
@@ -179,7 +165,7 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 	env[PullBaseShaEnv] = s.Refs.BaseSHA
 	env[PullRefsEnv] = s.Refs.String()
 
-	if s.Type == PostsubmitJob || s.Type == BatchJob {
+	if s.Type == config.PostsubmitJob || s.Type == config.BatchJob {
 		return env
 	}
 

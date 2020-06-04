@@ -33,7 +33,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	prowConf "github.com/jenkins-x/lighthouse/pkg/config"
+	prowConf "github.com/jenkins-x/lighthouse-config/pkg/config"
 )
 
 const (
