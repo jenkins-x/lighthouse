@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 )
 
@@ -226,36 +227,36 @@ func TestShouldReport(t *testing.T) {
 	var testcases = []struct {
 		name       string
 		lhj        *v1alpha1.LighthouseJob
-		validTypes []v1alpha1.PipelineKind
+		validTypes []config.PipelineKind
 		report     bool
 	}{
 		{
 			name: "should report presubmit job",
 			lhj: &v1alpha1.LighthouseJob{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: v1alpha1.PresubmitJob,
+					Type: config.PresubmitJob,
 				},
 			},
-			validTypes: []v1alpha1.PipelineKind{v1alpha1.PresubmitJob},
+			validTypes: []config.PipelineKind{config.PresubmitJob},
 			report:     true,
 		},
 		{
 			name: "should not report postsubmit job",
 			lhj: &v1alpha1.LighthouseJob{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: v1alpha1.PostsubmitJob,
+					Type: config.PostsubmitJob,
 				},
 			},
-			validTypes: []v1alpha1.PipelineKind{v1alpha1.PresubmitJob},
+			validTypes: []config.PipelineKind{config.PresubmitJob},
 		},
 		{
 			name: "should report postsubmit job if told to",
 			lhj: &v1alpha1.LighthouseJob{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: v1alpha1.PostsubmitJob,
+					Type: config.PostsubmitJob,
 				},
 			},
-			validTypes: []v1alpha1.PipelineKind{v1alpha1.PresubmitJob, v1alpha1.PostsubmitJob},
+			validTypes: []config.PipelineKind{config.PresubmitJob, config.PostsubmitJob},
 			report:     true,
 		},
 	}

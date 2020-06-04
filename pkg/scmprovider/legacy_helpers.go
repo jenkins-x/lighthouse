@@ -57,16 +57,6 @@ const (
 	GenericCommentActionDeleted = "deleted" // "dismissed"
 )
 
-// PullRequestMergeType inidicates the type of the pull request
-type PullRequestMergeType string
-
-// Possible types of merges for the GitHub merge API
-const (
-	MergeMerge  PullRequestMergeType = "merge"
-	MergeRebase PullRequestMergeType = "rebase"
-	MergeSquash PullRequestMergeType = "squash"
-)
-
 // NormLogin normalizes GitHub login strings
 var NormLogin = strings.ToLower
 

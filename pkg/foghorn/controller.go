@@ -16,11 +16,11 @@ import (
 	jxclient "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
 	jxinformers "github.com/jenkins-x/jx/v2/pkg/client/informers/externalversions/jenkins.io/v1"
 	jxlisters "github.com/jenkins-x/jx/v2/pkg/client/listers/jenkins.io/v1"
+	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
@@ -482,7 +482,7 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 		return
 	}
 
-	err = reporter.Report(scmClient, c.jobConfig.Config().Plank.ReportTemplate, job, []v1alpha1.PipelineKind{v1alpha1.PresubmitJob})
+	err = reporter.Report(scmClient, c.jobConfig.Config().Plank.ReportTemplate, job, []config.PipelineKind{config.PresubmitJob})
 	if err != nil {
 		// For now, we're just going to ignore failures here.
 		c.logger.WithFields(fields).WithError(err).Warnf("failed to update comments on the PR")
