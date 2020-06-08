@@ -172,24 +172,9 @@ func (o *Options) defaultHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	path = strings.TrimPrefix(path, "/")
 	if path == "" || path == "index.html" {
-		o.getIndex(w, r)
 		return
 	}
 	http.Error(w, fmt.Sprintf("unknown path %s", path), 404)
-}
-
-// getIndex returns a simple home page
-func (o *Options) getIndex(w http.ResponseWriter, r *http.Request) {
-	logrus.Debug("GET index")
-	message := fmt.Sprintf(`Hello from Jenkins X Lighthouse version: %s
-
-For more information see: https://github.com/jenkins-x/lighthouse
-`, version.Version)
-
-	_, err := w.Write([]byte(message))
-	if err != nil {
-		logrus.Debugf("failed to write the index: %v", err)
-	}
 }
 
 func (o *Options) isReady() bool {
@@ -201,8 +186,7 @@ func (o *Options) isReady() bool {
 func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		// liveness probe etc
-		logrus.WithField("method", r.Method).Debug("invalid http method so returning index")
-		o.getIndex(w, r)
+		logrus.WithField("method", r.Method).Debug("invalid http method so returning 200")
 		return
 	}
 	logrus.Debug("about to parse webhook")
