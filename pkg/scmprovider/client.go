@@ -24,6 +24,7 @@ type SCMClient interface {
 	ProviderType() string
 	SupportsPRLabels() bool
 	ServerURL() *url.URL
+	QuoteAuthorForComment(string) string
 
 	// Functions implemented in content.go
 	GetFile(string, string, string, string) ([]byte, error)
@@ -132,6 +133,14 @@ func (c *Client) SetBotName(botName string) {
 // SupportsPRLabels returns true if the underlying provider supports PR labels
 func (c *Client) SupportsPRLabels() bool {
 	return !NoLabelProviders().Has(c.ProviderType())
+}
+
+// QuoteAuthorForComment will quote the author login for use in "@author" if appropriate for the provider.
+func (c *Client) QuoteAuthorForComment(author string) string {
+	if c.ProviderType() == "stash" {
+		return `"` + author + `"`
+	}
+	return author
 }
 
 // ServerURL returns the server URL for the client

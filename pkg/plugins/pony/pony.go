@@ -78,6 +78,7 @@ var client = http.Client{}
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
+	QuoteAuthorForComment(string) string
 }
 
 type herd interface {
@@ -142,7 +143,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 			log.WithError(err).Println("Failed to get a pony")
 			continue
 		}
-		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
 
 	var msg string
@@ -151,7 +152,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	} else {
 		msg = "https://theponyapi.com appears to be down"
 	}
-	if err := spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
+	if err := spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

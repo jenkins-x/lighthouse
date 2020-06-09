@@ -35,6 +35,7 @@ type closeClient interface {
 	CloseIssue(owner, repo string, number int) error
 	ClosePR(owner, repo string, number int) error
 	GetIssueLabels(owner, repo string, number int, pr bool) ([]*scm.Label, error)
+	QuoteAuthorForComment(string) string
 }
 
 func isActive(gc closeClient, org, repo string, number int, pr bool) (bool, error) {
@@ -87,7 +88,7 @@ func handleClose(gc closeClient, log *logrus.Entry, e *scmprovider.GenericCommen
 			repo,
 			number,
 			true,
-			plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, response),
+			plugins.FormatResponseRaw(e.Body, e.Link, gc.QuoteAuthorForComment(commentAuthor), response),
 		)
 	}
 
@@ -98,7 +99,7 @@ func handleClose(gc closeClient, log *logrus.Entry, e *scmprovider.GenericCommen
 		if err := gc.ClosePR(org, repo, number); err != nil {
 			return fmt.Errorf("Error closing PR: %v", err)
 		}
-		response := plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Closed this PR.")
+		response := plugins.FormatResponseRaw(e.Body, e.Link, gc.QuoteAuthorForComment(commentAuthor), "Closed this PR.")
 		return gc.CreateComment(org, repo, number, true, response)
 	}
 
@@ -106,6 +107,6 @@ func handleClose(gc closeClient, log *logrus.Entry, e *scmprovider.GenericCommen
 	if err := gc.CloseIssue(org, repo, number); err != nil {
 		return fmt.Errorf("Error closing issue: %v", err)
 	}
-	response := plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Closing this issue.")
+	response := plugins.FormatResponseRaw(e.Body, e.Link, gc.QuoteAuthorForComment(commentAuthor), "Closing this issue.")
 	return gc.CreateComment(org, repo, number, true, response)
 }

@@ -65,6 +65,10 @@ func (c *fakeClientClose) GetIssueLabels(owner, repo string, number int, pr bool
 	return labels, nil
 }
 
+func (c *fakeClientClose) QuoteAuthorForComment(author string) string {
+	return author
+}
+
 func TestCloseComment(t *testing.T) {
 	var testcases = []struct {
 		name          string

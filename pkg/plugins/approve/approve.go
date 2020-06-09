@@ -76,7 +76,6 @@ type scmProviderClient interface {
 	RemoveLabel(org, repo string, number int, label string, pr bool) error
 	ListIssueEvents(org, repo string, num int) ([]*scm.ListedIssueEvent, error)
 	ProviderType() string
-	ServerURL() *url.URL
 }
 
 type ownersClient interface {

@@ -72,6 +72,7 @@ type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	QuoteAuthorForComment(string) string
 }
 
 func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
@@ -111,7 +112,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		log.Info("Removing Shrug label.")
 		resp := "¯\\\\\\_(ツ)\\_/¯"
 		log.Infof("Commenting with \"%s\".", resp)
-		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp)); err != nil {
+		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp)); err != nil {
 			return fmt.Errorf("failed to comment on %s/%s#%d: %v", org, repo, e.Number, err)
 		}
 		return spc.RemoveLabel(org, repo, e.Number, labels.Shrug, e.IsPR)

@@ -590,7 +590,6 @@ func (ua UnapprovedFile) String() string {
 }
 
 func urlForProvider(providerType string, baseURL *url.URL, owner, repo, branch string, ownersPath string) string {
-
 	switch providerType {
 	case "stash":
 		u := fmt.Sprintf("%s/projects/%s/repos/%s/browse/%v", strings.TrimSuffix(baseURL.String(), "/"), strings.ToUpper(owner), repo, ownersPath)
@@ -617,6 +616,19 @@ func GenerateTemplate(templ, name string, data interface{}) (string, error) {
 	return buf.String(), nil
 }
 
+// GetQuotedCCs quotes ccs for @user usage if appropriate for the provider
+func (ap Approvers) GetQuotedCCs(providerType string) []string {
+	var users []string
+	for _, cc := range ap.GetCCs() {
+		if providerType == "stash" {
+			users = append(users, `"`+cc+`"`)
+		} else {
+			users = append(users, cc)
+		}
+	}
+	return users
+}
+
 // GetMessage returns the comment body that we want the approve plugin to display on PRs
 // The comment shows:
 // 	- a list of approvers files (and links) needed to get the PR approved
@@ -640,7 +652,7 @@ This pull-request has been approved by:{{range $index, $approval := .ap.ListAppr
 
 {{- if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign {{range $index, $cc := .ap.GetCCs}}{{if $index}}, {{end}}**{{$cc}}**{{end}}
-You can assign the PR to them by writing `+"`/{{.lhPrefix}}assign {{range $index, $cc := .ap.GetCCs}}{{if $index}} {{end}}@{{$cc}}{{end}}`"+` in a comment when ready.
+You can assign the PR to them by writing `+"`/{{.lhPrefix}}assign {{range $index, $cc := .ap.GetQuotedCCs .providerType}}{{if $index}} {{end}}@{{$cc}}{{end}}`"+` in a comment when ready.
 {{- end}}
 
 {{if not .ap.RequireIssue -}}

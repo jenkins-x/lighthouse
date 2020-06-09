@@ -84,6 +84,10 @@ func (fc *fakeClient) NumComments() int {
 	return n
 }
 
+func (fc *fakeClient) QuoteAuthorForComment(author string) string {
+	return author
+}
+
 type fakePruner struct{}
 
 func (fp *fakePruner) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool) {}

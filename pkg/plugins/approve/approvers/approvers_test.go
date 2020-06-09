@@ -753,7 +753,7 @@ func TestGetMessageBitBucketServer(t *testing.T) {
 
 This pull-request has been approved by: *[Bill](REFERENCE "Approved")*
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
-You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
+You can assign the PR to them by writing ` + "`/assign @\"alice\"`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 

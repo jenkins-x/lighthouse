@@ -108,6 +108,7 @@ type scmProviderClient interface {
 	RemoveLabel(org, repo string, number int, label string, pr bool) error
 	DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	QuoteAuthorForComment(string) string
 }
 
 type launcher interface {

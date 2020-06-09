@@ -71,6 +71,7 @@ type scmProviderClient interface {
 	UnrequestReview(org, repo string, number int, logins []string) error
 
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
+	QuoteAuthorForComment(string) string
 }
 
 func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
@@ -152,7 +153,8 @@ func handle(h *handler) error {
 				if len(msg) == 0 {
 					return nil
 				}
-				if err := h.spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg)); err != nil {
+				if err := h.spc.CreateComment(org, repo, e.Number, e.IsPR,
+					plugins.FormatResponseRaw(e.Body, e.Link, h.spc.QuoteAuthorForComment(e.Author.Login), msg)); err != nil {
 					return fmt.Errorf("comment err: %v", err)
 				}
 				return nil

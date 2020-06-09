@@ -97,6 +97,10 @@ func (c *fakeClient) CreateComment(owner, repo string, number int, pr bool, comm
 	return nil
 }
 
+func (c *fakeClient) QuoteAuthorForComment(author string) string {
+	return author
+}
+
 func newFakeClient(contribs []string) *fakeClient {
 	c := &fakeClient{
 		contributors: make(map[string]bool),

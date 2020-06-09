@@ -152,6 +152,10 @@ func (c *fakeClient) Launch(pj *v1alpha1.LighthouseJob, metapipelineClient metap
 	return pj, nil
 }
 
+func (c *fakeClient) QuoteAuthorForComment(author string) string {
+	return author
+}
+
 func (c *fakeClient) presubmitForContext(org, repo, context string) *config.Presubmit {
 	p, ok := c.presubmits[context]
 	if !ok {

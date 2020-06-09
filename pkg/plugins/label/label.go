@@ -82,6 +82,7 @@ type scmProviderClient interface {
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	QuoteAuthorForComment(string) string
 }
 
 // Get Labels from Regexp matches
@@ -193,7 +194,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, additionalLabels []string,
 	// Tried to remove Labels that were not present on the Issue
 	if len(noSuchLabelsOnIssue) > 0 {
 		msg := fmt.Sprintf(nonExistentLabelOnIssue, strings.Join(noSuchLabelsOnIssue, ", "))
-		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg))
 	}
 
 	return nil
