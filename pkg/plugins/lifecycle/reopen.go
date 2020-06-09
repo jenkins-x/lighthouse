@@ -34,6 +34,7 @@ type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	ReopenIssue(owner, repo string, number int) error
 	ReopenPR(owner, repo string, number int) error
+	QuoteAuthorForComment(string) string
 }
 
 func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
@@ -66,7 +67,7 @@ func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.Gener
 			repo,
 			number,
 			true,
-			plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, response),
+			plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(commentAuthor), response),
 		)
 	}
 
@@ -80,7 +81,7 @@ func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.Gener
 					repo,
 					number,
 					true,
-					plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp),
+					plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp),
 				)
 			}
 			return err
@@ -92,7 +93,7 @@ func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.Gener
 			repo,
 			number,
 			true,
-			plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Reopened this PR."),
+			plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(commentAuthor), "Reopened this PR."),
 		)
 	}
 
@@ -105,7 +106,7 @@ func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.Gener
 				repo,
 				number,
 				true,
-				plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp),
+				plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp),
 			)
 		}
 		return err
@@ -117,6 +118,6 @@ func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.Gener
 		repo,
 		number,
 		true,
-		plugins.FormatResponseRaw(e.Body, e.Link, commentAuthor, "Reopened this issue."),
+		plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(commentAuthor), "Reopened this issue."),
 	)
 }

@@ -41,6 +41,7 @@ type SCMProviderClient interface {
 	CreateComment(string, string, int, bool, string) error
 	DeleteComment(string, string, int, int, bool) error
 	EditComment(string, string, int, int, string, bool) error
+	QuoteAuthorForComment(string) string
 }
 
 // ShouldReport determines whether this LighthouseJob is of a type to be reporting back.
@@ -99,7 +100,7 @@ func Report(spc SCMProviderClient, reportTemplate *template.Template, lhj *v1alp
 		}
 	}
 	if len(entries) > 0 {
-		comment, err := createComment(reportTemplate, lhj, entries)
+		comment, err := createComment(reportTemplate, lhj, spc.QuoteAuthorForComment(lhj.Spec.Refs.Pulls[0].Author), entries)
 		if err != nil {
 			return fmt.Errorf("generating comment: %v", err)
 		}
@@ -202,7 +203,7 @@ func createEntry(lhj *v1alpha1.LighthouseJob) string {
 // createComment take a LighthouseJob and a list of entries generated with
 // createEntry and returns a nicely formatted comment. It may fail if template
 // execution fails.
-func createComment(reportTemplate *template.Template, lhj *v1alpha1.LighthouseJob, entries []string) (string, error) {
+func createComment(reportTemplate *template.Template, lhj *v1alpha1.LighthouseJob, author string, entries []string) (string, error) {
 	plural := ""
 	if len(entries) > 1 {
 		plural = "s"
@@ -214,7 +215,7 @@ func createComment(reportTemplate *template.Template, lhj *v1alpha1.LighthouseJo
 		}
 	}
 	lines := []string{
-		fmt.Sprintf("@%s: The following test%s **failed**, say `/retest` to rerun them all:", lhj.Spec.Refs.Pulls[0].Author, plural),
+		fmt.Sprintf("@%s: The following test%s **failed**, say `/retest` to rerun them all:", author, plural),
 		"",
 		"Test name | Commit | Details | Rerun command",
 		"--- | --- | --- | ---",

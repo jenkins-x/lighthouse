@@ -70,6 +70,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
+	QuoteAuthorForComment(string) string
 }
 
 type pack interface {
@@ -167,7 +168,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 			log.WithError(err).Println("Failed to get dog img")
 			continue
 		}
-		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
 
 	return errors.New("could not find a valid dog image")

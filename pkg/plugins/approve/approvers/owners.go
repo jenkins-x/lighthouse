@@ -230,11 +230,15 @@ type Approval struct {
 
 // String creates a link for the approval. Use `Login` if you just want the name.
 func (a Approval) String() string {
+	refLink := a.Reference
+	if refLink == "" {
+		refLink = "<>"
+	}
 	return fmt.Sprintf(
-		`*<a href="%s" title="%s">%s</a>*`,
-		a.Reference,
-		a.How,
+		`*[%s](%s "%s")*`,
 		a.Login,
+		refLink,
+		a.How,
 	)
 }
 
@@ -430,22 +434,28 @@ func (ap Approvers) UnapprovedFiles() sets.String {
 }
 
 // GetFiles returns owners files that still need approval.
-func (ap Approvers) GetFiles(baseURL *url.URL, branch string) []File {
+func (ap Approvers) GetFiles(baseURL *url.URL, owner, repo, branch, providerType string) []File {
 	allOwnersFiles := []File{}
 	filesApprovers := ap.GetFilesApprovers()
 	for _, file := range ap.owners.GetOwnersSet().List() {
 		if len(filesApprovers[file]) == 0 {
 			allOwnersFiles = append(allOwnersFiles, UnapprovedFile{
-				baseURL:  baseURL,
-				filepath: file,
-				branch:   branch,
+				baseURL:      baseURL,
+				owner:        owner,
+				repo:         repo,
+				filepath:     file,
+				branch:       branch,
+				providerType: providerType,
 			})
 		} else {
 			allOwnersFiles = append(allOwnersFiles, ApprovedFile{
-				baseURL:   baseURL,
-				filepath:  file,
-				approvers: filesApprovers[file],
-				branch:    branch,
+				baseURL:      baseURL,
+				owner:        owner,
+				repo:         repo,
+				filepath:     file,
+				approvers:    filesApprovers[file],
+				branch:       branch,
+				providerType: providerType,
 			})
 		}
 	}
@@ -541,17 +551,23 @@ type File interface {
 // ApprovedFile contains the information of a an approved file.
 type ApprovedFile struct {
 	baseURL  *url.URL
+	owner    string
+	repo     string
 	filepath string
 	// approvers is the set of users that approved this file change.
-	approvers sets.String
-	branch    string
+	approvers    sets.String
+	branch       string
+	providerType string
 }
 
 // UnapprovedFile contains the information of a an unapproved file.
 type UnapprovedFile struct {
-	baseURL  *url.URL
-	filepath string
-	branch   string
+	baseURL      *url.URL
+	owner        string
+	repo         string
+	filepath     string
+	branch       string
+	providerType string
 }
 
 func (a ApprovedFile) String() string {
@@ -559,11 +575,8 @@ func (a ApprovedFile) String() string {
 	if strings.HasSuffix(a.filepath, ".md") {
 		fullOwnersPath = a.filepath
 	}
-	link := fmt.Sprintf("%s/blob/%s/%v",
-		a.baseURL.String(),
-		a.branch,
-		fullOwnersPath,
-	)
+	link := urlForProvider(a.providerType, a.baseURL, a.owner, a.repo, a.branch, fullOwnersPath)
+
 	return fmt.Sprintf("- ~~[%s](%s)~~ [%v]\n", fullOwnersPath, link, strings.Join(a.approvers.List(), ","))
 }
 
@@ -572,12 +585,23 @@ func (ua UnapprovedFile) String() string {
 	if strings.HasSuffix(ua.filepath, ".md") {
 		fullOwnersPath = ua.filepath
 	}
-	link := fmt.Sprintf("%s/blob/%s/%v",
-		ua.baseURL.String(),
-		ua.branch,
-		fullOwnersPath,
-	)
+	link := urlForProvider(ua.providerType, ua.baseURL, ua.owner, ua.repo, ua.branch, fullOwnersPath)
 	return fmt.Sprintf("- **[%s](%s)**\n", fullOwnersPath, link)
+}
+
+func urlForProvider(providerType string, baseURL *url.URL, owner, repo, branch string, ownersPath string) string {
+	switch providerType {
+	case "stash":
+		u := fmt.Sprintf("%s/projects/%s/repos/%s/browse/%v", strings.TrimSuffix(baseURL.String(), "/"), strings.ToUpper(owner), repo, ownersPath)
+		if branch != "master" {
+			u = fmt.Sprintf("%s?at=%s", u, url.QueryEscape("refs/heads/"+branch))
+		}
+		return u
+	case "gitlab":
+		return fmt.Sprintf("%s/%s/%s/-/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, ownersPath)
+	default:
+		return fmt.Sprintf("%s/%s/%s/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, ownersPath)
+	}
 }
 
 // GenerateTemplate takes a template, name and data, and generates
@@ -592,6 +616,19 @@ func GenerateTemplate(templ, name string, data interface{}) (string, error) {
 	return buf.String(), nil
 }
 
+// GetQuotedCCs quotes ccs for @user usage if appropriate for the provider
+func (ap Approvers) GetQuotedCCs(providerType string) []string {
+	var users []string
+	for _, cc := range ap.GetCCs() {
+		if providerType == "stash" {
+			users = append(users, `"`+cc+`"`)
+		} else {
+			users = append(users, cc)
+		}
+	}
+	return users
+}
+
 // GetMessage returns the comment body that we want the approve plugin to display on PRs
 // The comment shows:
 // 	- a list of approvers files (and links) needed to get the PR approved
@@ -599,11 +636,10 @@ func GenerateTemplate(templ, name string, data interface{}) (string, error) {
 // 	- a suggested list of people from each OWNERS files that can fully approve the PR
 // 	- how an approver can indicate their approval
 // 	- how an approver can cancel their approval
-func GetMessage(ap Approvers, linkURL *url.URL, org, repo, branch string, usePrefix bool) *string {
+func GetMessage(ap Approvers, linkURL *url.URL, org, repo, branch string, usePrefix bool, providerType string) *string {
 	if linkURL == nil {
 		return nil
 	}
-	linkURL.Path = org + "/" + repo
 	lhPrefix := ""
 	if usePrefix {
 		lhPrefix = util.LighthouseCommandPrefix
@@ -616,7 +652,7 @@ This pull-request has been approved by:{{range $index, $approval := .ap.ListAppr
 
 {{- if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign {{range $index, $cc := .ap.GetCCs}}{{if $index}}, {{end}}**{{$cc}}**{{end}}
-You can assign the PR to them by writing `+"`/{{.lhPrefix}}assign {{range $index, $cc := .ap.GetCCs}}{{if $index}} {{end}}@{{$cc}}{{end}}`"+` in a comment when ready.
+You can assign the PR to them by writing `+"`/{{.lhPrefix}}assign {{range $index, $cc := .ap.GetQuotedCCs .providerType}}{{if $index}} {{end}}@{{$cc}}{{end}}`"+` in a comment when ready.
 {{- end}}
 
 {{if not .ap.RequireIssue -}}
@@ -643,14 +679,15 @@ The pull request process is described [here](https://git.k8s.io/community/contri
 <details {{if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}open{{end}}>
 Needs approval from an approver in each of these files:
 
-{{range .ap.GetFiles .baseURL .branch}}{{.}}{{end}}
+{{range .ap.GetFiles .baseURL .org .repo .branch .providerType}}{{.}}{{end}}
 Approvers can indicate their approval by writing `+"`/{{.lhPrefix}}approve`"+` in a comment
 Approvers can cancel approval by writing `+"`/{{.lhPrefix}}approve cancel`"+` in a comment
-</details>`, "message", map[string]interface{}{"ap": ap, "baseURL": linkURL, "org": org, "repo": repo, "branch": branch, "lhPrefix": lhPrefix})
+</details>`, "message", map[string]interface{}{"ap": ap, "baseURL": linkURL, "org": org, "repo": repo, "branch": branch, "lhPrefix": lhPrefix, "providerType": providerType})
 	if err != nil {
 		ap.owners.log.WithError(err).Errorf("Error generating message.")
 		return nil
 	}
+
 	message += getGubernatorMetadata(ap.GetCCs())
 
 	title, err := GenerateTemplate("This PR is **{{if not .IsApproved}}NOT {{end}}APPROVED**", "title", ap)

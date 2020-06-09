@@ -103,6 +103,11 @@ func (f *SCMClient) SupportsGraphQL() bool {
 	return false
 }
 
+// QuoteAuthorForComment adds quotes around the author for @ usage if needed
+func (f *SCMClient) QuoteAuthorForComment(author string) string {
+	return author
+}
+
 // BotName returns authenticated login.
 func (f *SCMClient) BotName() (string, error) {
 	return botName, nil

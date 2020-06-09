@@ -51,6 +51,10 @@ func (c *fakeClientReopen) IsCollaborator(owner, repo, login string) (bool, erro
 	return false, nil
 }
 
+func (c *fakeClientReopen) QuoteAuthorForComment(author string) string {
+	return author
+}
+
 func TestReopenComment(t *testing.T) {
 	var testcases = []struct {
 		name          string

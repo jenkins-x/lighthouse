@@ -49,6 +49,7 @@ type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	CreateComment(org, repo string, number int, pr bool, comment string) error
+	QuoteAuthorForComment(string) string
 }
 
 type pruneClient interface {
@@ -165,7 +166,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, config []plugins.Blockade,
 		if err := spc.AddLabel(org, repo, prNumber, labels.BlockedPaths, true); err != nil {
 			return err
 		}
-		msg := plugins.FormatResponse(pre.PullRequest.Author.Login, blockedPathsBody, sum.String())
+		msg := plugins.FormatResponse(spc.QuoteAuthorForComment(pre.PullRequest.Author.Login), blockedPathsBody, sum.String())
 		return spc.CreateComment(org, repo, prNumber, true, msg)
 	} else if !shouldBlock && labelPresent {
 		// Remove the label and delete any comments created by this plugin.

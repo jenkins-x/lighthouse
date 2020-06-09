@@ -48,6 +48,7 @@ type scmProviderClient interface {
 	SetMilestone(org, repo string, issueNum, milestoneNum int) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 	ListMilestones(org, repo string) ([]scmprovider.Milestone, error)
+	QuoteAuthorForComment(string) string
 }
 
 func init() {
@@ -128,7 +129,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	if !found {
 		// not in the milestone maintainers team
 		msg := fmt.Sprintf(mustBeAuthorized, org, milestone.MaintainersTeam, org, milestone.MaintainersTeam, milestone.MaintainersFriendlyName)
-		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg))
 	}
 
 	milestones, err := spc.ListMilestones(org, repo)
@@ -156,7 +157,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		sort.Strings(slice)
 
 		msg := fmt.Sprintf(invalidMilestone, strings.Join(slice, ", "), clearKeyword)
-		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg))
 	}
 
 	if err := spc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {

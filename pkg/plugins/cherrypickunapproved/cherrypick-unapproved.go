@@ -63,6 +63,7 @@ type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	QuoteAuthorForComment(string) string
 }
 
 type commentPruner interface {
@@ -134,7 +135,7 @@ func handlePR(spc scmProviderClient, log *logrus.Entry, pr *scm.PullRequestHook,
 		log.WithError(err).Errorf("GitHub failed to add the following label: %s", labels.CpUnapproved)
 	}
 
-	formattedComment := plugins.FormatSimpleResponse(pr.PullRequest.Author.Login, commentBody)
+	formattedComment := plugins.FormatSimpleResponse(spc.QuoteAuthorForComment(pr.PullRequest.Author.Login), commentBody)
 	if err := spc.CreateComment(org, repo, prNumber, true, formattedComment); err != nil {
 		log.WithError(err).Errorf("Failed to comment %q", formattedComment)
 	}

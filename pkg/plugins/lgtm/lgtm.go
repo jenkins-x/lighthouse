@@ -148,6 +148,7 @@ type scmProviderClient interface {
 	IsMember(org, user string) (bool, error)
 	ListTeams(org string) ([]*scm.Team, error)
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
+	QuoteAuthorForComment(string) string
 }
 
 // reviewCtx contains information about each review event
@@ -276,7 +277,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if isAuthor && wantLGTM {
 		resp := "you cannot LGTM your own PR."
 		log.Infof("Commenting with \"%s\".", resp)
-		return spc.CreateComment(rc.repo.Namespace, rc.repo.Name, rc.number, true, plugins.FormatResponseRaw(rc.body, rc.htmlURL, rc.author, resp))
+		return spc.CreateComment(rc.repo.Namespace, rc.repo.Name, rc.number, true, plugins.FormatResponseRaw(rc.body, rc.htmlURL, spc.QuoteAuthorForComment(rc.author), resp))
 	}
 
 	// Determine if reviewer is already assigned
@@ -302,7 +303,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 	if !isAuthor && !skipCollaborators && !isCollaborator {
 		resp := "changing LGTM is restricted to collaborators"
 		log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
-		return spc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
+		return spc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, spc.QuoteAuthorForComment(author), resp))
 	}
 
 	// either ensure that the commentor is a collaborator or an approver/reviwer
@@ -328,7 +329,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 		if !loadReviewers(ro, filenames).Has(scmprovider.NormLogin(author)) {
 			resp := "adding LGTM is restricted to approvers and reviewers in OWNERS files."
 			log.Infof("Reply to /lgtm request with comment: \"%s\"", resp)
-			return spc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, author, resp))
+			return spc.CreateComment(org, repoName, number, true, plugins.FormatResponseRaw(body, htmlURL, spc.QuoteAuthorForComment(author), resp))
 		}
 	}
 

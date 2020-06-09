@@ -53,6 +53,7 @@ type scmProviderClient interface {
 	GetRepoLabels(owner, repo string) ([]*scm.Label, error)
 	BotName() (string, error)
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	QuoteAuthorForComment(string) string
 }
 
 func init() {
@@ -147,5 +148,5 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	}
 
 	msg := fmt.Sprintf(chatBack, strings.Join(toRepeat, ", "))
-	return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, msg))
+	return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg))
 }

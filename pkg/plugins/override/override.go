@@ -54,6 +54,7 @@ type scmProviderClient interface {
 	ListStatuses(org, repo, ref string) ([]*scm.Status, error)
 	ProviderType() string
 	IsOrgAdmin(string, string) (bool, error)
+	QuoteAuthorForComment(string) string
 }
 
 type overrideClient interface {
@@ -102,11 +103,17 @@ func (c client) GetRef(org, repo, ref string) (string, error) {
 func (c client) GetPullRequest(org, repo string, number int) (*scm.PullRequest, error) {
 	return c.spc.GetPullRequest(org, repo, number)
 }
+
 func (c client) ListStatuses(org, repo, ref string) ([]*scm.Status, error) {
 	return c.spc.ListStatuses(org, repo, ref)
 }
+
 func (c client) HasPermission(org, repo, user string, role ...string) (bool, error) {
 	return c.spc.HasPermission(org, repo, user, role...)
+}
+
+func (c client) QuoteAuthorForComment(author string) string {
+	return c.spc.QuoteAuthorForComment(author)
 }
 
 func (c client) presubmitForContext(org, repo, context string) *config.Presubmit {
@@ -198,7 +205,7 @@ func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entr
 		if m[1] == "" {
 			resp := "/override requires a failed status context to operate on, but none was given"
 			log.Debug(resp)
-			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 		}
 		overrides.Insert(m[2])
 	}
@@ -206,14 +213,14 @@ func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entr
 	if !authorized(oc, log, org, repo, user) {
 		resp := fmt.Sprintf("%s unauthorized: /override is restricted to repo administrators", user)
 		log.Debug(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 	}
 
 	pr, err := oc.GetPullRequest(org, repo, number)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get PR #%d in %s/%s", number, org, repo)
 		log.WithError(err).Warn(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 	}
 
 	sha := pr.Head.Sha
@@ -221,7 +228,7 @@ func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entr
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get commit statuses for PR #%d in %s/%s", number, org, repo)
 		log.WithError(err).Warn(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 	}
 
 	contexts := sets.NewString()
@@ -239,7 +246,7 @@ The following unknown contexts were given:
 Only the following contexts were expected:
 %s`, formatList(unknown.List()), formatList(contexts.List()))
 		log.Debug(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 	}
 
 	done := sets.String{}
@@ -250,7 +257,7 @@ Only the following contexts were expected:
 		}
 		msg := fmt.Sprintf("Overrode contexts on behalf of %s: %s", user, strings.Join(done.List(), ", "))
 		log.Info(msg)
-		err := oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, msg))
+		err := oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), msg))
 		if err != nil {
 			log.WithError(err).Warn("Failed to create the comment")
 		}
@@ -266,7 +273,7 @@ Only the following contexts were expected:
 			if err != nil {
 				resp := fmt.Sprintf("Cannot get base ref of PR")
 				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 			}
 
 			pj := jobutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
@@ -281,7 +288,7 @@ Only the following contexts were expected:
 			if _, err := oc.createOverrideJob(&pj); err != nil {
 				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
 				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 			}
 		}
 		statusInput := &scm.StatusInput{
@@ -293,7 +300,7 @@ Only the following contexts were expected:
 		if _, err := oc.CreateStatus(org, repo, sha, statusInput); err != nil {
 			resp := fmt.Sprintf("Cannot update PR status for context %s", statusInput.Label)
 			log.WithError(err).Warn(resp)
-			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, user, resp))
+			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 		}
 		done.Insert(status.Label)
 	}

@@ -81,6 +81,7 @@ type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	QuoteAuthorForComment(string) string
 }
 
 type commentPruner interface {
@@ -139,7 +140,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmpr
 	// If PR does not have the good-first-issue label and we are asking for it to be added,
 	// add both the good-first-issue and help labels
 	if !hasGoodFirstIssue && helpGoodFirstIssueRe.MatchString(e.Body) {
-		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, commentAuthor, goodFirstIssueMsg)); err != nil {
+		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, spc.QuoteAuthorForComment(commentAuthor), goodFirstIssueMsg)); err != nil {
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", goodFirstIssueMsg)
 		}
 
@@ -159,7 +160,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmpr
 	// If PR does not have the help label and we're asking it to be added,
 	// add the label
 	if !hasHelp && helpRe.MatchString(e.Body) {
-		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, commentAuthor, helpMsg)); err != nil {
+		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, spc.QuoteAuthorForComment(commentAuthor), helpMsg)); err != nil {
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", helpMsg)
 		}
 		if err := spc.AddLabel(org, repo, e.Number, labels.Help, e.IsPR); err != nil {

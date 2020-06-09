@@ -43,6 +43,7 @@ type scmProviderClient interface {
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
+	QuoteAuthorForComment(string) string
 }
 
 func init() {
@@ -85,14 +86,14 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
 
 	combinedStatus, err := spc.GetCombinedStatus(org, repo, pr.Head.Sha)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get combined commit statuses for PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
 	if combinedStatus.State == scm.StateSuccess {
 		return nil
@@ -103,7 +104,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get combined status for PR #%d in %s/%s: %v", number, org, repo, err)
 		log.Warn(resp)
-		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
 	triggerWillHandle := func(p config.Presubmit) bool {
 		for _, presubmit := range filteredPresubmits {
@@ -141,7 +142,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		if _, err := spc.CreateStatus(org, repo, pr.Head.Sha, status); err != nil {
 			resp := fmt.Sprintf("Cannot update PR status for context %s: %v", context, err)
 			log.Warn(resp)
-			return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, e.Author.Login, resp))
+			return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 		}
 	}
 	return nil
