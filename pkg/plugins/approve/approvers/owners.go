@@ -230,11 +230,15 @@ type Approval struct {
 
 // String creates a link for the approval. Use `Login` if you just want the name.
 func (a Approval) String() string {
+	refLink := a.Reference
+	if refLink == "" {
+		refLink = "<>"
+	}
 	return fmt.Sprintf(
-		`*<a href="%s" title="%s">%s</a>*`,
-		a.Reference,
-		a.How,
+		`*[%s](%s "%s")*`,
 		a.Login,
+		refLink,
+		a.How,
 	)
 }
 

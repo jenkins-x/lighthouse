@@ -211,7 +211,7 @@ func TestHandle(t *testing.T) {
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -277,9 +277,9 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">Alice</a>*
+This pull-request has been approved by: *[Alice](<> "Approved")*
 
-Associated issue requirement bypassed by: *<a href="" title="Approved">Alice</a>*
+Associated issue requirement bypassed by: *[Alice](<> "Approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -313,7 +313,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">Alice</a>*
+This pull-request has been approved by: *[Alice](<> "Approved")*
 
 Associated issue: *#42*
 
@@ -359,7 +359,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("ALIcE", "stuff\n/approve"),
 				newTestCommentTime(time.Now(), "k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">ALIcE</a>*, *<a href="#" title="Author self-approved">cjwagner</a>*
+This pull-request has been approved by: *[ALIcE](<> "Approved")*, *[cjwagner](# "Author self-approved")*
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with `+"`/approve no-issue`"+`
 
@@ -410,7 +410,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
@@ -451,7 +451,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
@@ -538,7 +538,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("alice", "stuff\n/approve\nblah"),
 				newTestCommentTime(time.Now(), "k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">alice</a>*
+This pull-request has been approved by: *[alice](<> "Approved")*
 
 Associated issue: *#1*
 
@@ -719,7 +719,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">Alice</a>*
+This pull-request has been approved by: *[Alice](<> "Approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -785,7 +785,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">Alice</a>*
+This pull-request has been approved by: *[Alice](<> "Approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -898,7 +898,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">Alice</a>*
+This pull-request has been approved by: *[Alice](<> "Approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -1004,7 +1004,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="" title="Approved">Alice</a>*
+This pull-request has been approved by: *[Alice](<> "Approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -1038,7 +1038,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -1072,7 +1072,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
 
 The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
 
@@ -1109,7 +1109,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *<a href="#" title="Author self-approved">cjwagner</a>*
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
