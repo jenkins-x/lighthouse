@@ -28,6 +28,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
@@ -75,6 +76,7 @@ type scmProviderClient interface {
 	RemoveLabel(org, repo string, number int, label string, pr bool) error
 	ListIssueEvents(org, repo string, num int) ([]*scm.ListedIssueEvent, error)
 	ProviderType() string
+	ServerURL() *url.URL
 }
 
 type ownersClient interface {
@@ -145,11 +147,17 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
+	baseURL, err := url.Parse(ce.Link)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse URL %s", ce.Link)
+	}
+	baseURL.Path = ""
+	baseURL.RawQuery = ""
 	return handleGenericComment(
 		pc.Logger,
 		pc.SCMProviderClient,
 		pc.OwnersClient,
-		pc.ServerURL,
+		baseURL,
 		pc.PluginConfig,
 		&ce,
 	)
@@ -202,11 +210,17 @@ func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersCli
 // handleReviewEvent should only handle reviews that have no approval command.
 // Reviews with approval commands will be handled by handleGenericCommentEvent.
 func handleReviewEvent(pc plugins.Agent, re scm.ReviewHook) error {
+	baseURL, err := url.Parse(re.PullRequest.Link)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse URL %s", re.PullRequest.Link)
+	}
+	baseURL.Path = ""
+	baseURL.RawQuery = ""
 	return handleReview(
 		pc.Logger,
 		pc.SCMProviderClient,
 		pc.OwnersClient,
-		pc.ServerURL,
+		baseURL,
 		pc.PluginConfig,
 		&re,
 	)
@@ -263,11 +277,17 @@ func handleReview(log *logrus.Entry, spc scmProviderClient, oc ownersClient, ser
 }
 
 func handlePullRequestEvent(pc plugins.Agent, pre scm.PullRequestHook) error {
+	baseURL, err := url.Parse(pre.PullRequest.Link)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse URL %s", pre.PullRequest.Link)
+	}
+	baseURL.Path = ""
+	baseURL.RawQuery = ""
 	return handlePullRequest(
 		pc.Logger,
 		pc.SCMProviderClient,
 		pc.OwnersClient,
-		pc.ServerURL,
+		baseURL,
 		pc.PluginConfig,
 		&pre,
 	)
@@ -347,7 +367,7 @@ func findAssociatedIssue(body, org string) (int, error) {
 // - Iff all files have been approved, the bot will add the "approved" label.
 // - Iff a cancel command is found, that reviewer will be removed from the approverSet
 // 	and the munger will remove the approved label if it has been applied
-func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, serverURL *url.URL, opts *plugins.Approve, pr *state) error {
+func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, baseURL *url.URL, opts *plugins.Approve, pr *state) error {
 	fetchErr := func(context string, err error) error {
 		return fmt.Errorf("failed to get %s for %s/%s#%d: %v", context, pr.org, pr.repo, pr.number, err)
 	}
@@ -431,7 +451,7 @@ func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, serve
 	notifications := filterComments(comments, notificationMatcher(botName))
 	latestNotification := getLast(notifications)
 	usePrefix := spc.ProviderType() == "gitlab"
-	newMessage := updateNotification(serverURL, pr.org, pr.repo, pr.branch, latestNotification, approversHandler, usePrefix)
+	newMessage := updateNotification(baseURL, pr.org, pr.repo, pr.branch, latestNotification, approversHandler, usePrefix, spc.ProviderType())
 	if newMessage != nil {
 		for _, notif := range notifications {
 			if err := spc.DeleteComment(pr.org, pr.repo, pr.number, notif.ID, true); err != nil {
@@ -553,8 +573,8 @@ func notificationMatcher(botName string) func(*comment) bool {
 	}
 }
 
-func updateNotification(linkURL *url.URL, org, repo, branch string, latestNotification *comment, approversHandler approvers.Approvers, usePrefix bool) *string {
-	message := approvers.GetMessage(approversHandler, linkURL, org, repo, branch, usePrefix)
+func updateNotification(linkURL *url.URL, org, repo, branch string, latestNotification *comment, approversHandler approvers.Approvers, usePrefix bool, providerType string) *string {
+	message := approvers.GetMessage(approversHandler, linkURL, org, repo, branch, usePrefix, providerType)
 	if message == nil || (latestNotification != nil && strings.Contains(latestNotification.Body, *message)) {
 		return nil
 	}

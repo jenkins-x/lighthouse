@@ -3,6 +3,7 @@ package scmprovider
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -22,6 +23,7 @@ type SCMClient interface {
 	SupportsGraphQL() bool
 	ProviderType() string
 	SupportsPRLabels() bool
+	ServerURL() *url.URL
 
 	// Functions implemented in content.go
 	GetFile(string, string, string, string) ([]byte, error)
@@ -130,6 +132,11 @@ func (c *Client) SetBotName(botName string) {
 // SupportsPRLabels returns true if the underlying provider supports PR labels
 func (c *Client) SupportsPRLabels() bool {
 	return !NoLabelProviders().Has(c.ProviderType())
+}
+
+// ServerURL returns the server URL for the client
+func (c *Client) ServerURL() *url.URL {
+	return c.client.BaseURL
 }
 
 // SupportsGraphQL returns true if the underlying provider supports our GraphQL queries
