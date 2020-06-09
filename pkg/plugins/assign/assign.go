@@ -32,9 +32,9 @@ import (
 const pluginName = "assign"
 
 var (
-	assignRe = regexp.MustCompile(`(?mi)^/(?:lh-)?(un)?assign(( @?[-\w]+?)*)\s*$`)
+	assignRe = regexp.MustCompile(`(?mi)^/(?:lh-)?(un)?assign(( @?(?:")?[-\w]+?)*(?:")?)\s*$`)
 	// CCRegexp parses and validates /cc commands, also used by blunderbuss
-	CCRegexp = regexp.MustCompile(`(?mi)^/(?:lh-)?(un)?cc(( +@?[-/\w]+?)*)\s*$`)
+	CCRegexp = regexp.MustCompile(`(?mi)^/(?:lh-)?(un)?cc(( +@?(?:")?[-/\w]+?)*(?:")?)\s*$`)
 )
 
 func init() {
@@ -88,7 +88,7 @@ func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) e
 func parseLogins(text string) []string {
 	var parts []string
 	for _, p := range strings.Split(text, " ") {
-		t := strings.Trim(p, "@ ")
+		t := strings.Trim(p, "@ \"")
 		if t == "" {
 			continue
 		}

@@ -215,6 +215,13 @@ func TestAssignAndReview(t *testing.T) {
 			unassigned: []string{"spxtr"},
 		},
 		{
+			name:       "multi commands with quoted users",
+			body:       "/assign @\"fejta\"\n/unassign \"spxtr\"",
+			commenter:  "rando",
+			assigned:   []string{"fejta"},
+			unassigned: []string{"spxtr"},
+		},
+		{
 			name:      "interesting names",
 			body:      "/assign @hello-world @allow_underscore",
 			commenter: "rando",
