@@ -185,7 +185,7 @@ func (o Owners) GetOwnersSet() sets.String {
 // always suggest the same people.
 func (o Owners) GetShuffledApprovers() []string {
 	approversList := o.GetAllPotentialApprovers()
-	order := rand.New(rand.NewSource(o.seed)).Perm(len(approversList))
+	order := rand.New(rand.NewSource(o.seed)).Perm(len(approversList)) // #nosec
 	people := make([]string, 0, len(approversList))
 	for _, i := range order {
 		people = append(people, approversList[i])
