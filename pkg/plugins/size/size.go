@@ -99,7 +99,8 @@ func handlePR(spc scmProviderClient, sizes plugins.Size, le *logrus.Entry, pe sc
 
 	ga, err := gitattributes.NewGroup(func() ([]byte, error) { return spc.GetFile(owner, repo, ".gitattributes", sha) })
 	if err != nil {
-		return err
+		// Continue on parse errors, but warn that something is wrong.
+		le.Warnf("error while loading .gitattributes: %v", err)
 	}
 
 	changes, err := spc.GetPullRequestChanges(owner, repo, num)
