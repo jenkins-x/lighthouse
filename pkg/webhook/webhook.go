@@ -1,7 +1,9 @@
 package webhook
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -191,6 +193,21 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 	logrus.Debug("about to parse webhook")
 
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logrus.Errorf("failed to Read Body: %s", err.Error())
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Read Body: %s", err.Error()))
+		return
+	}
+
+	err = r.Body.Close() // must close
+	if err != nil {
+		logrus.Errorf("failed to Close Body: %s", err.Error())
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Read Close: %s", err.Error()))
+		return
+	}
+
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	scmClient, serverURL, err := o.createSCMClient()
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
@@ -256,6 +273,11 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
+	// Demux events only to external plugins that require this event.
+	if external := o.server.externalPluginsForEvent(webhook.Kind(), webhook.Repository().FullName); len(external) > 0 {
+		go o.server.callExternalPlugins(l, external, bodyBytes, r.Header)
+	}
+
 	_, err = w.Write([]byte(output))
 	if err != nil {
 		l.Debugf("failed to process the webhook: %v", err)
