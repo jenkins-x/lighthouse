@@ -3,14 +3,14 @@ dependencies:
   owner: jenkins-x
   repo: go-scm
   url: https://github.com/jenkins-x/go-scm
-  version: 1.5.141
+  version: 1.5.142
   versionURL: ""
 - host: github.com
   owner: jenkins-x
   repo: jx
   url: https://github.com/jenkins-x/jx
-  version: 2.1.71
-  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.1.71
+  version: 2.1.73
+  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.1.73
 - host: github.com
   owner: jenkins-x
   repo: lighthouse-config
