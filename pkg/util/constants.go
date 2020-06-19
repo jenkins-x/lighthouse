@@ -75,4 +75,13 @@ const (
 
 	// LighthouseCommandPrefix is an optional prefix for commands to deal with things like GitLab hijacking /approve
 	LighthouseCommandPrefix = "lh-"
+
+	// LighthouseUserAgent is the header value for User-Agent when Lighthouse calls external plugins
+	LighthouseUserAgent = "LighthouseHook"
+
+	// LighthouseWebhookKindHeader is the header key used for the webhook kind when relaying to external plugins
+	LighthouseWebhookKindHeader = "X-Lighthouse-Webhook-Kind"
+
+	// LighthouseSignatureHeader is the header key used for the signature when relaying to external plugins
+	LighthouseSignatureHeader = "X-Lighthouse-Signature"
 )

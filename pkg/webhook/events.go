@@ -18,6 +18,10 @@ package webhook
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -33,6 +37,7 @@ import (
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -338,13 +343,29 @@ func (s *Server) externalPluginsForEvent(eventKind scm.WebhookKind, srcRepo stri
 }
 
 // callExternalPlugins dispatches the provided payload to the external plugins.
-func (s *Server) callExternalPlugins(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, payload []byte, h http.Header) {
-	h.Set("User-Agent", "LighthouseHook")
+func (s *Server) callExternalPlugins(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, webhook scm.Webhook, hmacToken string) {
+	headers := http.Header{}
+	headers.Set("User-Agent", util.LighthouseUserAgent)
+	headers.Set(util.LighthouseWebhookKindHeader, string(webhook.Kind()))
+	payload, err := json.Marshal(webhook)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to marshal webhook for relaying to external plugins. Webhook is: %v", webhook)
+		return
+	}
+	mac := hmac.New(sha256.New, []byte(hmacToken))
+	_, err = mac.Write(payload)
+	if err != nil {
+		l.WithError(err).Error("Unable to generate signature for relayed webhook")
+		return
+	}
+	sum := mac.Sum(nil)
+	signature := "sha256=" + hex.EncodeToString(sum)
+	headers.Set(util.LighthouseSignatureHeader, signature)
 	for _, p := range externalPlugins {
 		s.wg.Add(1)
 		go func(p plugins.ExternalPlugin) {
 			defer s.wg.Done()
-			if err := s.dispatch(p.Endpoint, payload, h); err != nil {
+			if err := s.dispatch(p.Endpoint, payload, headers); err != nil {
 				l.WithError(err).WithField("external-plugin", p.Name).Error("Error dispatching event to external plugin.")
 			} else {
 				l.WithField("external-plugin", p.Name).Info("Dispatched event to external plugin")

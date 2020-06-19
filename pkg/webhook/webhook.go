@@ -275,7 +275,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 	// Demux events only to external plugins that require this event.
 	if external := o.server.externalPluginsForEvent(webhook.Kind(), webhook.Repository().FullName); len(external) > 0 {
-		go o.server.callExternalPlugins(l, external, bodyBytes, r.Header)
+		go o.server.callExternalPlugins(l, external, webhook, o.hmacToken())
 	}
 
 	_, err = w.Write([]byte(output))
@@ -434,8 +434,12 @@ func (o *Options) GetFactory() jxfactory.Factory {
 	return o.factory
 }
 
+func (o *Options) hmacToken() string {
+	return os.Getenv("HMAC_TOKEN")
+}
+
 func (o *Options) secretFn(webhook scm.Webhook) (string, error) {
-	return os.Getenv("HMAC_TOKEN"), nil
+	return o.hmacToken(), nil
 }
 
 func (o *Options) createSCMClient() (*scm.Client, string, error) {
