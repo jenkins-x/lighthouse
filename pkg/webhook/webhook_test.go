@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -172,6 +173,108 @@ func (suite *WebhookTestSuite) SetupSuite() {
 		FullName:  "test-org/test-repo",
 		Branch:    "master",
 		Private:   false,
+	}
+}
+
+func TestNeedDemux(t *testing.T) {
+	tests := []struct {
+		name string
+
+		eventType scm.WebhookKind
+		srcRepo   string
+		plugins   map[string][]plugins.ExternalPlugin
+
+		expected []plugins.ExternalPlugin
+	}{
+		{
+			name: "no external plugins",
+
+			eventType: scm.WebhookKindIssueComment,
+			srcRepo:   "kubernetes/test-infra",
+			plugins:   nil,
+
+			expected: nil,
+		},
+		{
+			name: "we have variety",
+
+			eventType: scm.WebhookKindIssueComment,
+			srcRepo:   "kubernetes/test-infra",
+			plugins: map[string][]plugins.ExternalPlugin{
+				"kubernetes/test-infra": {
+					{
+						Name:   "sandwich",
+						Events: []string{"pull_request"},
+					},
+					{
+						Name: "coffee",
+					},
+				},
+				"kubernetes/kubernetes": {
+					{
+						Name:   "gumbo",
+						Events: []string{"issue_comment"},
+					},
+				},
+				"kubernetes": {
+					{
+						Name:   "chicken",
+						Events: []string{"push"},
+					},
+					{
+						Name: "water",
+					},
+					{
+						Name:   "chocolate",
+						Events: []string{"pull_request", "issue_comment", "issues"},
+					},
+				},
+			},
+
+			expected: []plugins.ExternalPlugin{
+				{
+					Name: "coffee",
+				},
+				{
+					Name: "water",
+				},
+				{
+					Name:   "chocolate",
+					Events: []string{"pull_request", "issue_comment", "issues"},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			pa := &plugins.ConfigAgent{}
+			pa.Set(&plugins.Configuration{
+				ExternalPlugins: test.plugins,
+			})
+			s := &Server{Plugins: pa}
+
+			gotPlugins := s.externalPluginsForEvent(test.eventType, test.srcRepo)
+			if len(gotPlugins) != len(test.expected) {
+				t.Fatalf("expected plugins: %+v, got: %+v", test.expected, gotPlugins)
+			}
+			for _, expected := range test.expected {
+				var found bool
+				for _, got := range gotPlugins {
+					if got.Name != expected.Name {
+						continue
+					}
+					if !reflect.DeepEqual(expected, got) {
+						t.Errorf("expected plugin: %+v, got: %+v", expected, got)
+					}
+					found = true
+				}
+				if !found {
+					t.Errorf("expected plugins: %+v, got: %+v", test.expected, gotPlugins)
+					break
+				}
+			}
+		})
 	}
 }
 
