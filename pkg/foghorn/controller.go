@@ -21,7 +21,9 @@ import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/record"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -269,7 +271,7 @@ func (c *Controller) syncHandler(key string) error {
 	}
 
 	// Get the PipelineActivity resource with this namespace/name
-	activity, err := c.activityLister.PipelineActivities(namespace).Get(name)
+	jxActivity, err := c.activityLister.PipelineActivities(namespace).Get(name)
 	if err != nil {
 		// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
 		// TODO: Actually delete.
@@ -282,10 +284,15 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
+	activityRecord, err := jx.ConvertPipelineActivity(jxActivity)
+	if err != nil {
+		return err
+	}
+
 	var job *v1alpha1.LighthouseJob
 
 	// Get all LighthouseJobs with the same owner/repo/branch/build/context
-	labelSelector, err := createLabelSelectorFromActivity(activity)
+	labelSelector, err := createLabelSelectorFromActivity(activityRecord)
 	possibleJobs, err := c.lhLister.LighthouseJobs(namespace).List(labelSelector)
 	if err != nil {
 		return err
@@ -298,7 +305,7 @@ func (c *Controller) syncHandler(key string) error {
 
 	// To be safe, find the job with the activity's name in its status.
 	for _, j := range possibleJobs {
-		if j.Status.ActivityName == activity.Name {
+		if j.Status.ActivityName == jxActivity.Name {
 			job = j
 		}
 	}
@@ -309,8 +316,8 @@ func (c *Controller) syncHandler(key string) error {
 
 	// Update the job's status for the activity.
 	jobCopy := job.DeepCopy()
-	c.updateJobStatusForActivity(activity, jobCopy)
-	c.reportStatus(namespace, activity, jobCopy)
+	c.updateJobStatusForActivity(activityRecord, jobCopy)
+	c.reportStatus(namespace, activityRecord, jobCopy)
 
 	currentJob, err := c.lhLister.LighthouseJobs(namespace).Get(jobCopy.Name)
 	if err != nil {
@@ -330,16 +337,15 @@ func (c *Controller) syncHandler(key string) error {
 	return nil
 }
 
-func (c *Controller) updateJobStatusForActivity(activity *jxv1.PipelineActivity, job *v1alpha1.LighthouseJob) {
-	activityState := v1alpha1.ToPipelineState(activity.Spec.Status)
-	if activityState != job.Status.State {
-		job.Status.State = activityState
+func (c *Controller) updateJobStatusForActivity(activity *record.ActivityRecord, job *v1alpha1.LighthouseJob) {
+	if activity.Status != job.Status.State {
+		job.Status.State = activity.Status
 	}
-	if activity.Spec.LastCommitSHA != job.Status.LastCommitSHA {
-		job.Status.LastCommitSHA = activity.Spec.LastCommitSHA
+	if activity.LastCommitSHA != job.Status.LastCommitSHA {
+		job.Status.LastCommitSHA = activity.LastCommitSHA
 	}
-	if activity.Spec.CompletedTimestamp != nil && activity.Spec.CompletedTimestamp != job.Status.CompletionTime {
-		job.Status.CompletionTime = activity.Spec.CompletedTimestamp
+	if activity.CompletionTime != nil && activity.CompletionTime != job.Status.CompletionTime {
+		job.Status.CompletionTime = activity.CompletionTime
 	}
 }
 
@@ -352,38 +358,35 @@ func RateLimiter() workqueue.RateLimitingInterface {
 	return workqueue.NewNamedRateLimitingQueue(rl, controllerName)
 }
 
-func createLabelSelectorFromActivity(activity *jxv1.PipelineActivity) (labels.Selector, error) {
+func createLabelSelectorFromActivity(activity *record.ActivityRecord) (labels.Selector, error) {
 	var selectors []string
 
-	if owner, ok := activity.Labels[util.ActivityOwnerLabel]; ok {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.OrgLabel, owner))
+	if activity.Owner != "" {
+		selectors = append(selectors, fmt.Sprintf("%s=%s", util.OrgLabel, activity.Owner))
 	}
-	if repo, ok := activity.Labels[util.ActivityRepositoryLabel]; ok {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.RepoLabel, repo))
+	if activity.Repo != "" {
+		selectors = append(selectors, fmt.Sprintf("%s=%s", util.RepoLabel, activity.Repo))
 	}
-	if branch, ok := activity.Labels[util.ActivityBranchLabel]; ok {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.BranchLabel, branch))
+	if activity.Branch != "" {
+		selectors = append(selectors, fmt.Sprintf("%s=%s", util.BranchLabel, activity.Branch))
 	}
-	if buildNum, ok := activity.Labels[util.ActivityBuildLabel]; ok {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.BuildNumLabel, buildNum))
+	if activity.BuildIdentifier != "" {
+		selectors = append(selectors, fmt.Sprintf("%s=%s", util.BuildNumLabel, activity.BuildIdentifier))
 	}
-	if context, ok := activity.Labels[util.ActivityContextLabel]; ok {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.ContextLabel, context))
+	if activity.Context != "" {
+		selectors = append(selectors, fmt.Sprintf("%s=%s", util.ContextLabel, activity.Context))
 	}
 
 	return labels.Parse(strings.Join(selectors, ","))
 }
 
-func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, job *v1alpha1.LighthouseJob) {
-	sha := activity.Spec.LastCommitSHA
-	if sha == "" && activity.Labels != nil {
-		sha = activity.Labels[jxv1.LabelLastCommitSha]
-	}
+func (c *Controller) reportStatus(ns string, activity *record.ActivityRecord, job *v1alpha1.LighthouseJob) {
+	sha := activity.LastCommitSHA
 
-	owner := activity.Spec.GitOwner
-	repo := activity.Spec.GitRepository
-	gitURL := activity.Spec.GitURL
-	activityStatus := activity.Spec.Status
+	owner := activity.Owner
+	repo := activity.Repo
+	gitURL := activity.GitURL
+	activityStatus := activity.Status
 	statusInfo := toScmStatusDescriptionRunningStages(activity, c.gitKind())
 
 	fields := map[string]interface{}{
@@ -393,10 +396,10 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 		"gitRepo":     repo,
 		"gitSHA":      sha,
 		"gitURL":      gitURL,
-		"gitBranch":   activity.Spec.GitBranch,
+		"gitBranch":   activity.Branch,
 		"gitStatus":   statusInfo.scmStatus.String(),
-		"buildNumber": activity.Spec.Build,
-		"duration":    durationString(activity.Spec.StartedTimestamp, activity.Spec.CompletedTimestamp),
+		"buildNumber": activity.BuildIdentifier,
+		"duration":    durationString(activity.StartTime, activity.CompletionTime),
 	}
 	if gitURL == "" {
 		c.logger.WithFields(fields).Debugf("Cannot report pipeline %s as we have no git SHA", activity.Name)
@@ -435,7 +438,7 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 		return
 	}
 
-	pipelineContext := activity.Spec.Context
+	pipelineContext := activity.Context
 	if pipelineContext == "" {
 		pipelineContext = "jenkins-x"
 	}
@@ -457,8 +460,8 @@ func (c *Controller) reportStatus(ns string, activity *jxv1.PipelineActivity, jo
 		targetURL := c.createReportTargetURL(defaultTargetURLTemplate, ReportParams{
 			Owner:      owner,
 			Repository: repo,
-			Branch:     activity.Spec.GitBranch,
-			Build:      activity.Spec.Build,
+			Branch:     activity.Branch,
+			Build:      activity.BuildIdentifier,
 			Context:    pipelineContext,
 			// TODO: Need to get the job URL base in here somehow. (apb)
 			BaseURL: strings.TrimRight(urlBase, "/"),
@@ -539,39 +542,36 @@ type reportStatusInfo struct {
 	runningStages string
 }
 
-func toScmStatusDescriptionRunningStages(activity *jxv1.PipelineActivity, gitKind string) reportStatusInfo {
+func toScmStatusDescriptionRunningStages(activity *record.ActivityRecord, gitKind string) reportStatusInfo {
 	info := reportStatusInfo{
 		description:   "",
 		runningStages: "",
 		scmStatus:     scm.StateUnknown,
 	}
-	switch activity.Spec.Status {
-	case jxv1.ActivityStatusTypeSucceeded:
+	switch activity.Status {
+	case v1alpha1.SuccessState:
 		info.scmStatus = scm.StateSuccess
 		info.description = "Pipeline successful"
-	case jxv1.ActivityStatusTypeRunning, jxv1.ActivityStatusTypePending:
+	case v1alpha1.RunningState, v1alpha1.PendingState:
 		info.scmStatus = scm.StateRunning
 		info.description = "Pipeline running"
-	case jxv1.ActivityStatusTypeError:
+	case v1alpha1.AbortedState:
 		info.scmStatus = scm.StateError
 		info.description = "Error executing pipeline"
-	case jxv1.ActivityStatusTypeNone:
-		info.scmStatus = scm.StatePending
-		info.description = "Pipeline triggered"
-	case jxv1.ActivityStatusTypeFailed:
+	case v1alpha1.FailureState:
 		info.scmStatus = scm.StateFailure
 		info.description = "Pipeline failed"
 	default:
 		info.scmStatus = scm.StateUnknown
 		info.description = "Pipeline in unknown state"
 	}
-	stagesByStatus := activity.StagesByStatus()
 
+	runningStages := activity.RunningStages()
 	// GitLab does not currently support updating description without changing state, so we need simple descriptions there.
 	// TODO: link to GitLab issue (apb)
-	if len(stagesByStatus[jxv1.ActivityStatusTypeRunning]) > 0 && gitKind != "gitlab" {
-		info.runningStages = strings.Join(stagesByStatus[jxv1.ActivityStatusTypeRunning], ",")
-		info.description = fmt.Sprintf("Pipeline running stage(s): %s", strings.Join(stagesByStatus[jxv1.ActivityStatusTypeRunning], ", "))
+	if len(runningStages) > 0 && gitKind != "gitlab" {
+		info.runningStages = strings.Join(runningStages, ",")
+		info.description = fmt.Sprintf("Pipeline running stage(s): %s", strings.Join(runningStages, ", "))
 		if len(info.description) > 63 {
 			info.description = info.description[:59] + "..."
 		}

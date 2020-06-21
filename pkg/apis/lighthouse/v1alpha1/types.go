@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -332,21 +331,3 @@ type ByNum []Pull
 func (prs ByNum) Len() int           { return len(prs) }
 func (prs ByNum) Swap(i, j int)      { prs[i], prs[j] = prs[j], prs[i] }
 func (prs ByNum) Less(i, j int) bool { return prs[i].Number < prs[j].Number }
-
-// ToPipelineState converts the PipelineActivity state to LighthouseJob state
-func ToPipelineState(status v1.ActivityStatusType) PipelineState {
-	switch status {
-	case v1.ActivityStatusTypePending:
-		return PendingState
-	case v1.ActivityStatusTypeAborted:
-		return AbortedState
-	case v1.ActivityStatusTypeRunning:
-		return RunningState
-	case v1.ActivityStatusTypeSucceeded:
-		return SuccessState
-	case v1.ActivityStatusTypeFailed, v1.ActivityStatusTypeError:
-		return FailureState
-	default:
-		return FailureState
-	}
-}
