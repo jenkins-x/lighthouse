@@ -269,8 +269,8 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
 	// Demux events only to external plugins that require this event.
-	if external := o.server.externalPluginsForEvent(webhook.Kind(), webhook.Repository().FullName); len(external) > 0 {
-		go o.server.callExternalPlugins(l, external, webhook, o.hmacToken())
+	if external := util.ExternalPluginsForEvent(o.server.Plugins, string(webhook.Kind()), webhook.Repository().FullName); len(external) > 0 {
+		go util.CallExternalPluginsWithWebhook(l, external, webhook, o.hmacToken(), &o.server.wg)
 	}
 
 	_, err = w.Write([]byte(output))
