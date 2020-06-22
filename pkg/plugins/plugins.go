@@ -28,7 +28,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
-	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/commentpruner"
@@ -137,14 +136,13 @@ func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help H
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
-	ClientFactory      jxfactory.Factory
-	SCMProviderClient  *scmprovider.Client
-	LauncherClient     launcher.PipelineLauncher
-	MetapipelineClient metapipeline.Client
-	GitClient          git2.Client
-	KubernetesClient   kubernetes.Interface
-	LighthouseClient   lighthouseclient.LighthouseJobInterface
-	ServerURL          *url.URL
+	ClientFactory     jxfactory.Factory
+	SCMProviderClient *scmprovider.Client
+	LauncherClient    launcher.PipelineLauncher
+	GitClient         git2.Client
+	KubernetesClient  kubernetes.Interface
+	LighthouseClient  lighthouseclient.LighthouseJobInterface
+	ServerURL         *url.URL
 	/*
 		SlackClient      *slack.Client
 	*/
@@ -164,18 +162,17 @@ type Agent struct {
 }
 
 // NewAgent bootstraps a new Agent struct from the passed dependencies.
-func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, metapipelineClient metapipeline.Client, serverURL *url.URL, logger *logrus.Entry) Agent {
+func NewAgent(clientFactory jxfactory.Factory, configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientAgent *ClientAgent, serverURL *url.URL, logger *logrus.Entry) Agent {
 	prowConfig := configAgent.Config()
 	pluginConfig := pluginConfigAgent.Config()
 	scmClient := scmprovider.ToClient(clientAgent.SCMProviderClient, clientAgent.BotName)
 	return Agent{
-		ClientFactory:      clientFactory,
-		SCMProviderClient:  scmClient,
-		GitClient:          clientAgent.GitClient,
-		LauncherClient:     clientAgent.LauncherClient,
-		MetapipelineClient: metapipelineClient,
-		LighthouseClient:   clientAgent.LighthouseClient,
-		ServerURL:          serverURL,
+		ClientFactory:     clientFactory,
+		SCMProviderClient: scmClient,
+		GitClient:         clientAgent.GitClient,
+		LauncherClient:    clientAgent.LauncherClient,
+		LighthouseClient:  clientAgent.LighthouseClient,
+		ServerURL:         serverURL,
 
 		/*
 			SlackClient:   clientAgent.SlackClient,
@@ -214,11 +211,10 @@ type ClientAgent struct {
 	BotName           string
 	SCMProviderClient *scm.Client
 
-	KubernetesClient   kubernetes.Interface
-	GitClient          git2.Client
-	LauncherClient     launcher.PipelineLauncher
-	MetapipelineClient metapipeline.Client
-	LighthouseClient   lighthouseclient.LighthouseJobInterface
+	KubernetesClient kubernetes.Interface
+	GitClient        git2.Client
+	LauncherClient   launcher.PipelineLauncher
+	LighthouseClient lighthouseclient.LighthouseJobInterface
 
 	/*	SlackClient      *slack.Client
 	 */
