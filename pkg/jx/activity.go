@@ -43,6 +43,7 @@ func ConvertPipelineActivity(pa *v1.PipelineActivity) (*record.ActivityRecord, e
 		Repo:            pa.Spec.GitRepository,
 		Branch:          pa.Spec.GitBranch,
 		BuildIdentifier: pa.Spec.Build,
+		LastCommitSHA:   sha,
 		BaseSHA:         pa.Spec.BaseSHA,
 		Context:         pa.Spec.Context,
 		GitURL:          pa.Spec.GitURL,
@@ -84,6 +85,5 @@ func convertStep(paStep v1.CoreActivityStep) *record.ActivityStageOrStep {
 		Status:         ToPipelineState(paStep.Status),
 		StartTime:      paStep.StartedTimestamp,
 		CompletionTime: paStep.CompletedTimestamp,
-		Steps:          []*record.ActivityStageOrStep{},
 	}
 }

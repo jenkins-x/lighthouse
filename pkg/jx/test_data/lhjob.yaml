@@ -1,0 +1,51 @@
+apiVersion: lighthouse.jenkins.io/v1alpha1
+kind: LighthouseJob
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/job: github
+  creationTimestamp: "2020-06-22T11:53:15Z"
+  generation: 1
+  labels:
+    created-by-lighthouse: "true"
+    event-GUID: "647468648"
+    lighthouse.jenkins-x.io/branch: PR-813
+    lighthouse.jenkins-x.io/buildNum: "6"
+    lighthouse.jenkins-x.io/context: github
+    lighthouse.jenkins-x.io/job: github
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.pull: "813"
+    lighthouse.jenkins-x.io/refs.repo: lighthouse
+    lighthouse.jenkins-x.io/type: presubmit
+  name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+  namespace: jx
+  resourceVersion: "196519432"
+  selfLink: /apis/lighthouse.jenkins.io/v1alpha1/namespaces/jx/lighthousejobs/f46327af-b47e-11ea-b797-9256b7b8d9b0
+  uid: f4b1580b-b47e-11ea-b02a-42010a8401ad
+spec:
+  context: github
+  job: github
+  namespace: jx
+  refs:
+    base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
+    base_ref: master
+    base_sha: e8d56b5ee9671599c75644af574a251dd3b94a5c
+    org: jenkins-x
+    pulls:
+    - author: abayer
+      author_link: https://github.com/abayer
+      commit_link: https://github.com/jenkins-x/lighthouse/pull/813/commits/dd64c739442d505cf5381e2a14b60968e8a0d86e
+      link: https://github.com/jenkins-x/lighthouse/pull/813.diff
+      number: 813
+      sha: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    repo: lighthouse
+    repo_link: https://github.com/jenkins-x/lighthouse
+  rerun_command: /test github
+  type: presubmit
+status:
+  activityName: jenkins-x-lighthouse-pr-813-6
+  description: 'Pipeline running stage(s): ci'
+  lastCommitSHA: dd64c739442d505cf5381e2a14b60968e8a0d86e
+  lastReportState: running
+  reportURL: https://dashboard-jx.jenkins-x.live/teams/jx/projects/jenkins-x/lighthouse/PR-813/6
+  startTime: "2020-06-22T11:53:15Z"
+  state: running
