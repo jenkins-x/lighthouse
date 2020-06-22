@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"reflect"
 	"strings"
+	"sync"
 	"syscall"
 	"text/template"
 	"time"
@@ -70,6 +71,7 @@ type Controller struct {
 	jobConfig    *config.Agent
 	pluginConfig *plugins.ConfigAgent
 
+	wg     *sync.WaitGroup
 	logger *logrus.Entry
 	ns     string
 }
@@ -164,6 +166,8 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 			}
 		},
 	})
+
+	controller.wg = &sync.WaitGroup{}
 
 	return controller, nil
 }
@@ -438,6 +442,11 @@ func (c *Controller) reportStatus(ns string, activity *record.ActivityRecord, jo
 		return
 	}
 
+	// Trigger external plugins if appropriate
+	if external := util.ExternalPluginsForEvent(c.pluginConfig, util.LighthousePayloadTypeActivity, fmt.Sprintf("%s/%s", owner, repo)); len(external) > 0 {
+		go util.CallExternalPluginsWithActivityRecord(c.logger, external, activity, c.hmacToken(), c.wg)
+	}
+
 	pipelineContext := activity.Context
 	if pipelineContext == "" {
 		pipelineContext = "jenkins-x"
@@ -648,6 +657,10 @@ func (c *Controller) createSCMToken(gitKind string) (string, error) {
 		return value, fmt.Errorf("No token available for git kind %s at environment variable $%s", gitKind, envName)
 	}
 	return value, nil
+}
+
+func (c *Controller) hmacToken() string {
+	return os.Getenv("HMAC_TOKEN")
 }
 
 // stopper returns a channel that remains open until an interrupt is received.

@@ -1,24 +1,34 @@
 package util
 
 import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
+	"sync"
+	"time"
 
-	"github.com/jenkins-x/go-scm/pkg/hmac"
+	goscmhmac "github.com/jenkins-x/go-scm/pkg/hmac"
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/record"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// ParseExternalPluginWebhook parses a webhook relayed to an external plugin
-func ParseExternalPluginWebhook(req *http.Request, secretToken string) (scm.Webhook, error) {
+// ParseExternalPluginEvent parses a webhook relayed to an external plugin
+func ParseExternalPluginEvent(req *http.Request, secretToken string) (scm.Webhook, *record.ActivityRecord, error) {
 	data, err := ioutil.ReadAll(
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	log := logrus.WithFields(map[string]interface{}{
@@ -29,22 +39,50 @@ func ParseExternalPluginWebhook(req *http.Request, secretToken string) (scm.Webh
 
 	ua := req.Header.Get("User-Agent")
 	if ua != LighthouseUserAgent {
-		return nil, fmt.Errorf("unknown User-Agent %s, expected %s", ua, LighthouseUserAgent)
+		return nil, nil, fmt.Errorf("unknown User-Agent %s, expected %s", ua, LighthouseUserAgent)
 	}
 
 	sig := req.Header.Get(LighthouseSignatureHeader)
 	if sig == "" {
-		return nil, scm.ErrSignatureInvalid
+		return nil, nil, scm.ErrSignatureInvalid
 	}
-	if !hmac.ValidatePrefix(data, []byte(secretToken), sig) {
-		return nil, scm.ErrSignatureInvalid
+	if !goscmhmac.ValidatePrefix(data, []byte(secretToken), sig) {
+		return nil, nil, scm.ErrSignatureInvalid
 	}
 
+	payloadType := req.Header.Get(LighthousePayloadTypeHeader)
+	switch payloadType {
+	case LighthousePayloadTypeWebhook:
+		hook, err := parseWebhook(log, req, data)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "parsing webhook")
+		}
+		return hook, nil, nil
+	case LighthousePayloadTypeActivity:
+		ar := new(record.ActivityRecord)
+		err := json.Unmarshal(data, ar)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "parsing activity")
+		}
+		return nil, ar, nil
+	default:
+		return nil, nil, fmt.Errorf("unknown Lighthouse payload type %s", payloadType)
+	}
+}
+
+func parseActivity(l *logrus.Entry, req *http.Request, data []byte) (*record.ActivityRecord, error) {
+	ar := new(record.ActivityRecord)
+	err := json.Unmarshal(data, ar)
+	return ar, err
+}
+
+func parseWebhook(l *logrus.Entry, req *http.Request, data []byte) (scm.Webhook, error) {
 	kind := req.Header.Get(LighthouseWebhookKindHeader)
 	if kind == "" {
 		return nil, scm.MissingHeader{Header: LighthouseWebhookKindHeader}
 	}
 	var hook scm.Webhook
+	var err error
 	switch scm.WebhookKind(kind) {
 	case scm.WebhookKindBranch:
 		hook = new(scm.BranchHook)
@@ -116,7 +154,7 @@ func ParseExternalPluginWebhook(req *http.Request, secretToken string) (scm.Webh
 		hook = new(scm.WatchHook)
 		err = json.Unmarshal(data, hook)
 	default:
-		log.WithField("Kind", kind).Warnf("unknown webhook")
+		l.WithField("Kind", kind).Warnf("unknown webhook")
 		return nil, scm.UnknownWebhook{Event: kind}
 	}
 	if err != nil {
@@ -124,4 +162,118 @@ func ParseExternalPluginWebhook(req *http.Request, secretToken string) (scm.Webh
 	}
 
 	return hook, nil
+}
+
+// callExternalPlugins dispatches the provided payload to the external plugins.
+func callExternalPlugins(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, payload []byte, headers http.Header, hmacToken string, wg *sync.WaitGroup) {
+	headers.Set("User-Agent", LighthouseUserAgent)
+	mac := hmac.New(sha256.New, []byte(hmacToken))
+	_, err := mac.Write(payload)
+	if err != nil {
+		l.WithError(err).Error("Unable to generate signature for relayed payload")
+		return
+	}
+	sum := mac.Sum(nil)
+	signature := "sha256=" + hex.EncodeToString(sum)
+	headers.Set(LighthouseSignatureHeader, signature)
+	for _, p := range externalPlugins {
+		wg.Add(1)
+		go func(p plugins.ExternalPlugin) {
+			defer wg.Done()
+			if err := dispatch(p.Endpoint, payload, headers); err != nil {
+				l.WithError(err).WithField("external-plugin", p.Name).Error("Error dispatching event to external plugin.")
+			} else {
+				l.WithField("external-plugin", p.Name).Info("Dispatched event to external plugin")
+			}
+		}(p)
+	}
+}
+
+// CallExternalPluginsWithActivityRecord dispatches the provided activity record to the external plugins.
+func CallExternalPluginsWithActivityRecord(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, activity *record.ActivityRecord, hmacToken string, wg *sync.WaitGroup) {
+	headers := http.Header{}
+	headers.Set(LighthousePayloadTypeHeader, LighthousePayloadTypeActivity)
+	payload, err := json.Marshal(activity)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to marshal activity for relaying to external plugins. Activity is: %v", activity)
+		return
+	}
+	callExternalPlugins(l, externalPlugins, payload, headers, hmacToken, wg)
+}
+
+// CallExternalPluginsWithWebhook dispatches the provided webhook to the external plugins.
+func CallExternalPluginsWithWebhook(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, webhook scm.Webhook, hmacToken string, wg *sync.WaitGroup) {
+	headers := http.Header{}
+	headers.Set(LighthouseWebhookKindHeader, string(webhook.Kind()))
+	headers.Set(LighthousePayloadTypeHeader, LighthousePayloadTypeWebhook)
+	payload, err := json.Marshal(webhook)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to marshal webhook for relaying to external plugins. Webhook is: %v", webhook)
+		return
+	}
+	callExternalPlugins(l, externalPlugins, payload, headers, hmacToken, wg)
+}
+
+// dispatch creates a new request using the provided payload and headers
+// and dispatches the request to the provided endpoint.
+func dispatch(endpoint string, payload []byte, h http.Header) error {
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(payload))
+	if err != nil {
+		return err
+	}
+	req.Header = h
+	var resp *http.Response
+	backoff := 100 * time.Millisecond
+	maxRetries := 5
+
+	c := &http.Client{}
+	for retries := 0; retries < maxRetries; retries++ {
+		resp, err = c.Do(req)
+		if err == nil {
+			break
+		}
+		time.Sleep(backoff)
+		backoff *= 2
+	}
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	rb, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return fmt.Errorf("response has status %q and body %q", resp.Status, string(rb))
+	}
+	return nil
+}
+
+// ExternalPluginsForEvent returns whether there are any external plugins that need to
+// get the present event.
+func ExternalPluginsForEvent(pluginConfig *plugins.ConfigAgent, eventKind string, srcRepo string) []plugins.ExternalPlugin {
+	var matching []plugins.ExternalPlugin
+	srcOrg := strings.Split(srcRepo, "/")[0]
+
+	for repo, extPlugins := range pluginConfig.Config().ExternalPlugins {
+		// Make sure the repositories match
+		if repo != srcRepo && repo != srcOrg {
+			continue
+		}
+
+		// Make sure the events match
+		for _, p := range extPlugins {
+			if len(p.Events) == 0 {
+				matching = append(matching, p)
+			} else {
+				for _, et := range p.Events {
+					if et == eventKind || et == eventKind+"s" {
+						matching = append(matching, p)
+						break
+					}
+				}
+			}
+		}
+	}
+	return matching
 }
