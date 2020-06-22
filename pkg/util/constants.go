@@ -84,4 +84,13 @@ const (
 
 	// LighthouseSignatureHeader is the header key used for the signature when relaying to external plugins
 	LighthouseSignatureHeader = "X-Lighthouse-Signature"
+
+	// LighthousePayloadTypeHeader is the header key displaying what type of payload this is, either "webhook" or "activity"
+	LighthousePayloadTypeHeader = "X-Lighthouse-Payload-Type"
+
+	// LighthousePayloadTypeWebhook is the webhook type
+	LighthousePayloadTypeWebhook = "webhook"
+
+	// LighthousePayloadTypeActivity is the activity type
+	LighthousePayloadTypeActivity = "activity"
 )

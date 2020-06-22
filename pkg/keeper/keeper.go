@@ -31,7 +31,6 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
@@ -55,7 +54,7 @@ import (
 var sleep = time.Sleep
 
 type launcher interface {
-	Launch(*v1alpha1.LighthouseJob, metapipeline.Client, scm.Repository) (*v1alpha1.LighthouseJob, error)
+	Launch(*v1alpha1.LighthouseJob, scm.Repository) (*v1alpha1.LighthouseJob, error)
 }
 
 type scmProviderClient interface {
@@ -86,7 +85,6 @@ type DefaultController struct {
 	spc            scmProviderClient
 	launcherClient launcher
 	gc             git.Client
-	mpClient       metapipeline.Client
 	tektonClient   tektonclient.Interface
 	lhClient       clientset.Interface
 	ns             string
@@ -210,7 +208,7 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(spcSync, spcStatus *scmprovider.Client, launcherClient launcher, mpClient metapipeline.Client, tektonClient tektonclient.Interface, lighthouseClient clientset.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(spcSync, spcStatus *scmprovider.Client, launcherClient launcher, tektonClient tektonclient.Interface, lighthouseClient clientset.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -231,7 +229,6 @@ func NewController(spcSync, spcStatus *scmprovider.Client, launcherClient launch
 		logger:         logger.WithField("controller", "sync"),
 		spc:            spcSync,
 		launcherClient: launcherClient,
-		mpClient:       mpClient,
 		tektonClient:   tektonClient,
 		lhClient:       lighthouseClient,
 		ns:             ns,
@@ -1116,7 +1113,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 				Branch:    string(pr.BaseRef.Name),
 				Clone:     cloneURL,
 			}
-			if _, err := c.launcherClient.Launch(&pj, c.mpClient, repo); err != nil {
+			if _, err := c.launcherClient.Launch(&pj, repo); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create pipeline on the cluster.")
 				return fmt.Errorf("failed to create a pipeline for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
 			}

@@ -1,4 +1,4 @@
-package launcher
+package jx
 
 import (
 	"os"
@@ -6,9 +6,11 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	jxclient "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
+	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
+	launcher2 "github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -17,24 +19,31 @@ import (
 
 // launcher default launcher
 type launcher struct {
-	jxClient  jxclient.Interface
-	lhClient  clientset.Interface
-	namespace string
+	jxClient           jxclient.Interface
+	lhClient           clientset.Interface
+	metapipelineClient metapipeline.Client
+	namespace          string
 }
 
 // NewLauncher creates a new builder
-func NewLauncher(jxClient jxclient.Interface, lhClient clientset.Interface, namespace string) (PipelineLauncher, error) {
+func NewLauncher() (launcher2.PipelineLauncher, error) {
+	factory := jxfactory.NewFactory()
+	mpClient, _, jxClient, _, lhClient, namespace, err := NewMetaPipelineClient(factory)
+	if err != nil {
+		return nil, errors.Wrapf(err, "couldn't get metapipeline client")
+	}
 	b := &launcher{
-		jxClient:  jxClient,
-		lhClient:  lhClient,
-		namespace: namespace,
+		jxClient:           jxClient,
+		lhClient:           lhClient,
+		metapipelineClient: mpClient,
+		namespace:          namespace,
 	}
 	return b, nil
 }
 
 // Launch creates a pipeline
 // TODO: This should be moved somewhere else, probably, and needs some kind of unit testing (apb)
-func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient metapipeline.Client, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
+func (b *launcher) Launch(request *v1alpha1.LighthouseJob, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
 	spec := &request.Spec
 
 	name := repository.Name
@@ -94,7 +103,7 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		EnvVariables: spec.GetEnvVars(),
 	}
 
-	activityKey, tektonCRDs, err := metapipelineClient.Create(pipelineCreateParam)
+	activityKey, tektonCRDs, err := b.metapipelineClient.Create(pipelineCreateParam)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create Tekton CRDs")
 	}
@@ -118,7 +127,7 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, metapipelineClient me
 		return nil, errors.Wrapf(err, "unable to set status on LighthouseJob %s", appliedJob.Name)
 	}
 
-	err = metapipelineClient.Apply(activityKey, tektonCRDs)
+	err = b.metapipelineClient.Apply(activityKey, tektonCRDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply Tekton CRDs")
 	}

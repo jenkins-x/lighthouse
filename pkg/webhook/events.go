@@ -17,40 +17,27 @@ limitations under the License.
 package webhook
 
 import (
-	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
-	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
-	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 
 // Server keeps the information required to start a server
 type Server struct {
-	ClientFactory      jxfactory.Factory
-	MetapipelineClient metapipeline.Client
-	ClientAgent        *plugins.ClientAgent
-	Plugins            *plugins.ConfigAgent
-	ConfigAgent        *config.Agent
-	ServerURL          *url.URL
-	TokenGenerator     func() []byte
-	Metrics            *Metrics
+	ClientFactory  jxfactory.Factory
+	ClientAgent    *plugins.ClientAgent
+	Plugins        *plugins.ConfigAgent
+	ConfigAgent    *config.Agent
+	ServerURL      *url.URL
+	TokenGenerator func() []byte
+	Metrics        *Metrics
 
 	// Tracks running handlers for graceful shutdown
 	wg sync.WaitGroup
@@ -72,7 +59,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		s.wg.Add(1)
 		go func(p string, h plugins.IssueCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ic.Repo.Namespace,
 				ic.Repo.Name,
@@ -140,7 +127,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 		s.wg.Add(1)
 		go func(p string, h plugins.GenericCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ce.Repo.Namespace,
 				ce.Repo.Name,
@@ -169,7 +156,7 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		c++
 		go func(p string, h plugins.PushEventHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			if err := h(agent, *pe); err != nil {
 				agent.Logger.WithError(err).Error("Error handling PushEvent.")
 			}
@@ -199,7 +186,7 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 		c++
 		go func(p string, h plugins.PullRequestHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				pr.Repo.Namespace,
 				pr.Repo.Name,
@@ -255,7 +242,7 @@ func (s *Server) HandleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 		s.wg.Add(1)
 		go func(p string, h plugins.ReviewEventHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.MetapipelineClient, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				re.Repo.Namespace,
 				re.Repo.Name,
@@ -311,106 +298,4 @@ func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool 
 		l.Errorf(failedCommentCoerceFmt, "pull_request", action.String())
 		return false
 	}
-}
-
-// externalPluginsForEvent returns whether there are any external plugins that need to
-// get the present event.
-func (s *Server) externalPluginsForEvent(eventKind scm.WebhookKind, srcRepo string) []plugins.ExternalPlugin {
-	var matching []plugins.ExternalPlugin
-	srcOrg := strings.Split(srcRepo, "/")[0]
-
-	for repo, extPlugins := range s.Plugins.Config().ExternalPlugins {
-		// Make sure the repositories match
-		if repo != srcRepo && repo != srcOrg {
-			continue
-		}
-
-		// Make sure the events match
-		for _, p := range extPlugins {
-			if len(p.Events) == 0 {
-				matching = append(matching, p)
-			} else {
-				for _, et := range p.Events {
-					if et == string(eventKind) || et == string(eventKind)+"s" {
-						matching = append(matching, p)
-						break
-					}
-				}
-			}
-		}
-	}
-	return matching
-}
-
-// callExternalPlugins dispatches the provided payload to the external plugins.
-func (s *Server) callExternalPlugins(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, webhook scm.Webhook, hmacToken string) {
-	headers := http.Header{}
-	headers.Set("User-Agent", util.LighthouseUserAgent)
-	headers.Set(util.LighthouseWebhookKindHeader, string(webhook.Kind()))
-	payload, err := json.Marshal(webhook)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to marshal webhook for relaying to external plugins. Webhook is: %v", webhook)
-		return
-	}
-	mac := hmac.New(sha256.New, []byte(hmacToken))
-	_, err = mac.Write(payload)
-	if err != nil {
-		l.WithError(err).Error("Unable to generate signature for relayed webhook")
-		return
-	}
-	sum := mac.Sum(nil)
-	signature := "sha256=" + hex.EncodeToString(sum)
-	headers.Set(util.LighthouseSignatureHeader, signature)
-	for _, p := range externalPlugins {
-		s.wg.Add(1)
-		go func(p plugins.ExternalPlugin) {
-			defer s.wg.Done()
-			if err := s.dispatch(p.Endpoint, payload, headers); err != nil {
-				l.WithError(err).WithField("external-plugin", p.Name).Error("Error dispatching event to external plugin.")
-			} else {
-				l.WithField("external-plugin", p.Name).Info("Dispatched event to external plugin")
-			}
-		}(p)
-	}
-}
-
-// dispatch creates a new request using the provided payload and headers
-// and dispatches the request to the provided endpoint.
-func (s *Server) dispatch(endpoint string, payload []byte, h http.Header) error {
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(payload))
-	if err != nil {
-		return err
-	}
-	req.Header = h
-	resp, err := s.do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	rb, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("response has status %q and body %q", resp.Status, string(rb))
-	}
-	return nil
-}
-
-func (s *Server) do(req *http.Request) (*http.Response, error) {
-	var resp *http.Response
-	var err error
-	backoff := 100 * time.Millisecond
-	maxRetries := 5
-
-	c := &http.Client{}
-	for retries := 0; retries < maxRetries; retries++ {
-		resp, err = c.Do(req)
-		if err == nil {
-			break
-		}
-		time.Sleep(backoff)
-		backoff *= 2
-	}
-	return resp, err
 }
