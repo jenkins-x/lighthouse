@@ -9,13 +9,12 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
 	"github.com/jenkins-x/jx/v2/pkg/errorutil"
-	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
-	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
@@ -28,7 +27,6 @@ type gitHubAppKeeperController struct {
 	gitServer          string
 	githubAppSecretDir string
 	configAgent        *config.Agent
-	mpClient           metapipeline.Client
 	botName            string
 	gitKind            string
 	maxRecordsPerPool  int
@@ -40,14 +38,13 @@ type gitHubAppKeeperController struct {
 
 // NewGitHubAppKeeperController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, mpClient metapipeline.Client, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string) (keeper.Controller, error) {
+func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string) (keeper.Controller, error) {
 
 	gitServer := util.GithubServer
 	return &gitHubAppKeeperController{
 		ownerTokenFinder:  util.NewOwnerTokensDir(gitServer, githubAppSecretDir),
 		gitServer:         gitServer,
 		configAgent:       configAgent,
-		mpClient:          mpClient,
 		botName:           botName,
 		gitKind:           gitKind,
 		maxRecordsPerPool: maxRecordsPerPool,
@@ -170,15 +167,15 @@ func (g *gitHubAppKeeperController) createOwnerController(owner string, configGe
 	gitClient.SetCredentials(util.GitHubAppGitRemoteUsername, func() []byte {
 		return []byte(token)
 	})
-	tektonClient, jxClient, _, lhClient, ns, err := clients.GetClientsAndNamespace(nil)
+	tektonClient, _, _, lhClient, ns, err := clients.GetClientsAndNamespace(nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient, err := launcher.NewLauncher(jxClient, lhClient, ns)
+	launcherClient, err := jx.NewLauncher()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting PipelineLauncher client.")
 	}
-	c, err := keeper.NewController(gitproviderClient, gitproviderClient, launcherClient, g.mpClient, tektonClient, lhClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
+	c, err := keeper.NewController(gitproviderClient, gitproviderClient, launcherClient, tektonClient, lhClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
 	return c, err
 }
 

@@ -33,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -64,11 +63,10 @@ type overrideClient interface {
 }
 
 type client struct {
-	spc                scmProviderClient
-	jc                 config.JobConfig
-	clientFactory      jxfactory.Factory
-	metapipelineClient metapipeline.Client
-	lhClient           lighthouseclient.LighthouseJobInterface
+	spc           scmProviderClient
+	jc            config.JobConfig
+	clientFactory jxfactory.Factory
+	lhClient      lighthouseclient.LighthouseJobInterface
 }
 
 func (c client) createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
@@ -145,10 +143,9 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	c := client{
-		spc:                pc.SCMProviderClient,
-		clientFactory:      pc.ClientFactory,
-		metapipelineClient: pc.MetapipelineClient,
-		lhClient:           pc.LighthouseClient,
+		spc:           pc.SCMProviderClient,
+		clientFactory: pc.ClientFactory,
+		lhClient:      pc.LighthouseClient,
 	}
 	if pc.Config != nil {
 		c.jc = pc.Config.JobConfig

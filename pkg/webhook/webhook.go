@@ -19,6 +19,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
@@ -127,13 +128,7 @@ func (o *Options) Run() error {
 
 	o.gitClient = gitClient
 
-	_, jxClient, _, lhClient, _, err := clients.GetClientsAndNamespace(nil)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to create JX client")
-		logrus.Errorf("%s", err.Error())
-		return err
-	}
-	o.launcher, err = launcher.NewLauncher(jxClient, lhClient, o.namespace)
+	o.launcher, err = jx.NewLauncher()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
 		logrus.Errorf("%s", err.Error())
@@ -550,22 +545,16 @@ func (o *Options) createHookServer() (*Server, error) {
 		logrus.Warn("no configAgent configuration")
 	}
 
-	metapipelineClient, err := launcher.NewMetaPipelineClient(clientFactory)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create metapipeline client")
-	}
-
 	serverURL, err := url.Parse(o.gitServerURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse server URL %s", o.gitServerURL)
 	}
 	server := &Server{
-		ClientFactory:      clientFactory,
-		ConfigAgent:        configAgent,
-		Plugins:            pluginAgent,
-		Metrics:            promMetrics,
-		MetapipelineClient: metapipelineClient,
-		ServerURL:          serverURL,
+		ClientFactory: clientFactory,
+		ConfigAgent:   configAgent,
+		Plugins:       pluginAgent,
+		Metrics:       promMetrics,
+		ServerURL:     serverURL,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil

@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
@@ -112,18 +111,17 @@ type scmProviderClient interface {
 }
 
 type launcher interface {
-	Launch(*v1alpha1.LighthouseJob, metapipeline.Client, scm.Repository) (*v1alpha1.LighthouseJob, error)
+	Launch(*v1alpha1.LighthouseJob, scm.Repository) (*v1alpha1.LighthouseJob, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.
 //
 // TODO(fejta): consider exporting an interface rather than a struct
 type Client struct {
-	SCMProviderClient  scmProviderClient
-	LauncherClient     launcher
-	Config             *config.Config
-	Logger             *logrus.Entry
-	MetapipelineClient metapipeline.Client
+	SCMProviderClient scmProviderClient
+	LauncherClient    launcher
+	Config            *config.Config
+	Logger            *logrus.Entry
 }
 
 type trustedUserClient interface {
@@ -134,11 +132,10 @@ type trustedUserClient interface {
 
 func getClient(pc plugins.Agent) Client {
 	return Client{
-		SCMProviderClient:  pc.SCMProviderClient,
-		Config:             pc.Config,
-		LauncherClient:     pc.LauncherClient,
-		Logger:             pc.Logger,
-		MetapipelineClient: pc.MetapipelineClient,
+		SCMProviderClient: pc.SCMProviderClient,
+		Config:            pc.Config,
+		LauncherClient:    pc.LauncherClient,
+		Logger:            pc.Logger,
 	}
 }
 
@@ -260,7 +257,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 		c.Logger.Infof("Starting %s build.", job.Name)
 		pj := jobutil.NewPresubmit(pr, baseSHA, job, eventGUID)
 		c.Logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
-		if _, err := c.LauncherClient.Launch(&pj, c.MetapipelineClient, pr.Repository()); err != nil {
+		if _, err := c.LauncherClient.Launch(&pj, pr.Repository()); err != nil {
 			c.Logger.WithError(err).Error("Failed to create LighthouseJob.")
 			errors = append(errors, err)
 			if _, statusErr := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {
