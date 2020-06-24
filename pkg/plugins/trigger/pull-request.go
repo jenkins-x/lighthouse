@@ -22,9 +22,9 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
+	"github.com/jenkins-x/lighthouse-config/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
-	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 )
