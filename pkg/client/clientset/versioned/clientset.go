@@ -12,8 +12,6 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	LighthouseV1alpha1() lighthousev1alpha1.LighthouseV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Lighthouse() lighthousev1alpha1.LighthouseV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -25,12 +23,6 @@ type Clientset struct {
 
 // LighthouseV1alpha1 retrieves the LighthouseV1alpha1Client
 func (c *Clientset) LighthouseV1alpha1() lighthousev1alpha1.LighthouseV1alpha1Interface {
-	return c.lighthouseV1alpha1
-}
-
-// Deprecated: Lighthouse retrieves the default version of LighthouseClient.
-// Please explicitly pick a version.
-func (c *Clientset) Lighthouse() lighthousev1alpha1.LighthouseV1alpha1Interface {
 	return c.lighthouseV1alpha1
 }
 
