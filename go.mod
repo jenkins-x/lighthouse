@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/sessions v1.1.3
 	github.com/jenkins-x/go-scm v1.5.143
 	github.com/jenkins-x/jx/v2 v2.1.82
-	github.com/jenkins-x/lighthouse-config v0.0.4
+	github.com/jenkins-x/lighthouse-config v0.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v0.9.4
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect
@@ -21,8 +21,8 @@ require (
 	github.com/tektoncd/pipeline v0.8.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
-	k8s.io/api v0.0.0-20190816222004-e3a6b8045b0b
-	k8s.io/apimachinery v0.0.0-20190816221834-a9f1d8a9c101
+	k8s.io/api v0.16.5
+	k8s.io/apimachinery v0.16.5
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/metrics v0.0.0-20190704050707-780c337c9cbd // indirect
 	knative.dev/pkg v0.0.0-20191217184203-cf220a867b3d
