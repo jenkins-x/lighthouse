@@ -180,7 +180,7 @@ func makeTestPipelineRun(condition *kpgapis.Condition, baseRunName string, pipel
 			ResourceVersion: "12345678",
 		},
 		Spec: pipelinev1alpha1.PipelineRunSpec{
-			PipelineRef: pipelinev1alpha1.PipelineRef{
+			PipelineRef: &pipelinev1alpha1.PipelineRef{
 				APIVersion: tektonAPIVersion,
 				Name:       pipelineName,
 			},

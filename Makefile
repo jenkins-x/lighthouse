@@ -17,7 +17,7 @@ GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 
 GOTEST := $(GO) test
 
-CLIENTSET_GENERATOR_VERSION := kubernetes-1.12.9
+CLIENTSET_GENERATOR_VERSION := kubernetes-1.15.12
 
 all: check test build
 

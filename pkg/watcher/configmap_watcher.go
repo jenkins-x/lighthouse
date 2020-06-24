@@ -139,7 +139,7 @@ func (w *ConfigMapWatcher) createWatcher() error {
 		},
 	}
 	var informer cache.Controller
-	_, informer, w.watch = watchtools.NewIndexerInformerWatcher(lw, &v1.ConfigMap{})
+	_, informer, w.watch, _ = watchtools.NewIndexerInformerWatcher(lw, &v1.ConfigMap{})
 	if ok := cache.WaitForCacheSync(w.stopCh, informer.HasSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}

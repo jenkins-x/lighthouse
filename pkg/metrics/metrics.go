@@ -19,6 +19,7 @@ package metrics
 
 import (
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -57,7 +58,11 @@ func serveMetrics() {
 // metrics to the provided endpoint.
 func pushMetrics(component, endpoint string, interval time.Duration) {
 	interrupts.TickLiteral(func() {
-		if err := push.FromGatherer(component, push.HostnameGroupingKey(), endpoint, prometheus.DefaultGatherer); err != nil {
+		hn, err := os.Hostname()
+		if err != nil {
+			hn = "unknown"
+		}
+		if err := push.New(endpoint, component).Grouping("instance", hn).Gatherer(prometheus.DefaultGatherer).Push(); err != nil {
 			logrus.WithField("component", component).WithError(err).Error("Failed to push metrics.")
 		}
 	}, interval)
