@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/v2/pkg/log"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // RateLimits contains rate limit information
@@ -45,7 +45,7 @@ func firstNumber(values []string) int {
 func (c *Client) Query(ctx context.Context, q interface{}, vars map[string]interface{}) error {
 	graphql := c.client.GraphQL
 	if graphql == nil {
-		log.Logger().Warnf("no GraphQL graphql supported for git provider %s", c.client.Driver.String())
+		logrus.Warnf("no GraphQL graphql supported for git provider %s", c.client.Driver.String())
 		return nil
 	}
 	return graphql.Query(ctx, q, vars)
