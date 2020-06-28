@@ -366,7 +366,7 @@ func createLabelSelectorFromActivity(activity *record.ActivityRecord) (labels.Se
 	var selectors []string
 
 	if activity.Owner != "" {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.OrgLabel, activity.Owner))
+		selectors = append(selectors, fmt.Sprintf("%s=%s", util.OrgLabel, strings.ToLower(activity.Owner)))
 	}
 	if activity.Repo != "" {
 		selectors = append(selectors, fmt.Sprintf("%s=%s", util.RepoLabel, activity.Repo))
