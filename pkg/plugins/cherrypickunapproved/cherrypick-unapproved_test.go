@@ -24,7 +24,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/labels"
+	"github.com/jenkins-x/lighthouse-config/pkg/labels"
 )
 
 type fakeClient struct {

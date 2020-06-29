@@ -240,6 +240,14 @@ func (pa *ConfigAgent) Load(path string) error {
 	if err := np.Validate(); err != nil {
 		return err
 	}
+	presentPlugins := make(map[string]interface{}, len(pluginHelp))
+	for k, v := range pluginHelp {
+		cp := v
+		presentPlugins[k] = &cp
+	}
+	if err := np.ValidatePluginsArePresent(presentPlugins); err != nil {
+		return err
+	}
 
 	pa.Set(np)
 	return nil
@@ -252,6 +260,14 @@ func (pa *ConfigAgent) LoadYAMLConfig(data []byte) (*Configuration, error) {
 		return c, err
 	}
 	if err := c.Validate(); err != nil {
+		return c, err
+	}
+	presentPlugins := make(map[string]interface{}, len(pluginHelp))
+	for k, v := range pluginHelp {
+		cp := v
+		presentPlugins[k] = &cp
+	}
+	if err := c.ValidatePluginsArePresent(presentPlugins); err != nil {
 		return c, err
 	}
 	return c, nil

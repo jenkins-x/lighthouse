@@ -25,7 +25,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/labels"
+	"github.com/jenkins-x/lighthouse-config/pkg/labels"
 )
 
 func TestHandle(t *testing.T) {
