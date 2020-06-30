@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	v1 "github.com/jenkins-x/jx/v2/pkg/apis/jenkins.io/v1"
+	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/record"

@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
-	jxclient "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
+	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"

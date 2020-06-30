@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	jxclient "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
+	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/jx/v2/pkg/util"

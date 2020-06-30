@@ -7,8 +7,8 @@ import (
 	"syscall"
 	"time"
 
-	jxclient "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
-	jxinformers "github.com/jenkins-x/jx/v2/pkg/client/informers/externalversions"
+	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
+	jxinformers "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions"
 	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"

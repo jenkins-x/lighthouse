@@ -18,8 +18,9 @@ limitations under the License.
 package logrusutil
 
 import (
-	stackdriver "github.com/TV4/logrus-stackdriver-formatter"
 	"os"
+
+	stackdriver "github.com/TV4/logrus-stackdriver-formatter"
 
 	"github.com/sirupsen/logrus"
 )
