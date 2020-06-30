@@ -1,3 +1,6 @@
+# Make does not offer a recursive wildcard function, so here's one:
+rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+
 SHELL := /bin/bash
 PROJECT := github.com/jenkins-x/lighthouse
 WEBHOOKS_EXECUTABLE := lighthouse
@@ -14,6 +17,7 @@ GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
 VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
 GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
+GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 
 GOTEST := $(GO) test
 
@@ -28,8 +32,16 @@ test:
 .PHONY: check
 check: fmt lint sec
 
+get-fmt-deps: ## Install test dependencies
+	$(GO_NOMOD) get golang.org/x/tools/cmd/goimports
+
+.PHONY: importfmt
+importfmt: get-fmt-deps
+	@echo "Formatting the imports..."
+	goimports -w $(GO_DEPENDENCIES)
+
 .PHONY: fmt
-fmt:
+fmt: importfmt
 	@echo "FORMATTING"
 	@FORMATTED=`$(GO) fmt ./...`
 	@([[ ! -z "$(FORMATTED)" ]] && printf "Fixed unformatted files:\n$(FORMATTED)") || true

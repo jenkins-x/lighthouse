@@ -4,7 +4,7 @@ import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 
-	jxclient "github.com/jenkins-x/jx/v2/pkg/client/clientset/versioned"
+	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/jx/v2/pkg/kube"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
