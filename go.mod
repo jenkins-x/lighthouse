@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/sessions v1.1.3
 	github.com/jenkins-x/go-scm v1.5.143
-	github.com/jenkins-x/jx/v2 v2.1.90
+	github.com/jenkins-x/jx/v2 v2.1.92
 	github.com/jenkins-x/lighthouse-config v0.0.6
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
@@ -15,7 +15,7 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
 	github.com/shurcooL/githubv4 v0.0.0-20191102174205-af46314aec7b
 	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.6.0
 	github.com/tektoncd/pipeline v0.11.3
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
