@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/sessions v1.1.3
 	github.com/jenkins-x/go-scm v1.5.143
 	github.com/jenkins-x/jx-api v0.0.13
-	github.com/jenkins-x/jx/v2 v2.1.95
+	github.com/jenkins-x/jx/v2 v2.1.96
 	github.com/jenkins-x/lighthouse-config v0.0.6
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
