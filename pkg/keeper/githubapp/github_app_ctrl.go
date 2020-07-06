@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
-	"github.com/jenkins-x/jx/v2/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/git"
@@ -32,13 +32,14 @@ type gitHubAppKeeperController struct {
 	maxRecordsPerPool  int
 	historyURI         string
 	statusURI          string
+	ns                 string
 	logger             *logrus.Entry
 	m                  sync.Mutex
 }
 
 // NewGitHubAppKeeperController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string) (keeper.Controller, error) {
+func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string, ns string) (keeper.Controller, error) {
 
 	gitServer := util.GithubServer
 	return &gitHubAppKeeperController{
@@ -50,6 +51,7 @@ func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config
 		maxRecordsPerPool: maxRecordsPerPool,
 		historyURI:        historyURI,
 		statusURI:         statusURI,
+		ns:                ns,
 		logger:            logrus.NewEntry(logrus.StandardLogger()),
 	}, nil
 
@@ -62,14 +64,14 @@ func (g *gitHubAppKeeperController) Sync() error {
 		return err
 	}
 	// now lets sync them all
-	errs := []error{}
+	var errs *multierror.Error
 	for _, c := range g.controllers {
 		err := c.Sync()
 		if err != nil {
-			errs = append(errs, err)
+			errs = multierror.Append(errs, err)
 		}
 	}
-	return errorutil.CombineErrors(errs...)
+	return errs.ErrorOrNil()
 }
 
 func (g *gitHubAppKeeperController) Shutdown() {
@@ -119,7 +121,7 @@ func (g *gitHubAppKeeperController) createOwnerControllers() error {
 	g.Shutdown()
 	g.controllers = nil
 
-	errs := []error{}
+	var errs *multierror.Error
 
 	cfg := g.configAgent.Config()
 	if cfg == nil {
@@ -137,12 +139,12 @@ func (g *gitHubAppKeeperController) createOwnerControllers() error {
 
 		c, err := g.createOwnerController(owner, configGetter)
 		if err != nil {
-			errs = append(errs, err)
+			errs = multierror.Append(errs, err)
 		} else {
 			g.controllers = append(g.controllers, c)
 		}
 	}
-	return errorutil.CombineErrors(errs...)
+	return errs.ErrorOrNil()
 }
 
 func (g *gitHubAppKeeperController) createOwnerController(owner string, configGetter config.Getter) (keeper.Controller, error) {
@@ -167,15 +169,15 @@ func (g *gitHubAppKeeperController) createOwnerController(owner string, configGe
 	gitClient.SetCredentials(util.GitHubAppGitRemoteUsername, func() []byte {
 		return []byte(token)
 	})
-	tektonClient, _, _, lhClient, ns, err := clients.GetClientsAndNamespace(nil)
+	tektonClient, _, lhClient, _, err := clients.GetAPIClients()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient, err := jx.NewLauncher()
+	launcherClient, err := jx.NewLauncher(g.ns)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting PipelineLauncher client.")
 	}
-	c, err := keeper.NewController(gitproviderClient, gitproviderClient, launcherClient, tektonClient, lhClient, ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
+	c, err := keeper.NewController(gitproviderClient, gitproviderClient, launcherClient, tektonClient, lhClient, g.ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
 	return c, err
 }
 

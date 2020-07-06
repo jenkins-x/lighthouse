@@ -14,7 +14,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
@@ -47,7 +46,6 @@ type Options struct {
 	Port        int
 	JSONLog     bool
 
-	factory          jxfactory.Factory
 	namespace        string
 	pluginFilename   string
 	configFilename   string
@@ -81,16 +79,9 @@ func NewCmdWebhook() *cobra.Command {
 	cmd.Flags().StringVar(&options.pluginFilename, "plugin-file", "", "Path to the plugins.yaml file. If not specified it is loaded from the 'plugins' ConfigMap")
 	cmd.Flags().StringVar(&options.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
+	cmd.Flags().StringVar(&options.namespace, "namespace", "", "The namespace to listen in")
 
 	return cmd
-}
-
-// NewWebhook creates a new webhook handler
-func NewWebhook(factory jxfactory.Factory, server *Server) *Options {
-	return &Options{
-		factory: factory,
-		server:  server,
-	}
 }
 
 // Run will implement this command
@@ -99,11 +90,7 @@ func (o *Options) Run() error {
 		logrus.SetFormatter(logrusutil.CreateDefaultFormatter())
 	}
 
-	_, ns, err := o.GetFactory().CreateJXClient()
-	if err != nil {
-		return errors.Wrapf(err, "failed to create JX Client")
-	}
-	o.namespace = ns
+	var err error
 	o.server, err = o.createHookServer()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create Hook Server")
@@ -128,7 +115,7 @@ func (o *Options) Run() error {
 
 	o.gitClient = gitClient
 
-	o.launcher, err = jx.NewLauncher()
+	o.launcher, err = jx.NewLauncher(o.namespace)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
 		logrus.Errorf("%s", err.Error())
@@ -246,7 +233,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	_, _, kubeClient, lhClient, _, err := clients.GetClientsAndNamespace(nil)
+	_, kubeClient, lhClient, _, err := clients.GetAPIClients()
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
@@ -421,14 +408,6 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 	return l, fmt.Sprintf("unknown hook %s", webhook.Kind()), nil
 }
 
-// GetFactory lazily creates a Factory if its not already created
-func (o *Options) GetFactory() jxfactory.Factory {
-	if o.factory == nil {
-		o.factory = jxfactory.NewFactory()
-	}
-	return o.factory
-}
-
 func (o *Options) hmacToken() string {
 	return os.Getenv("HMAC_TOKEN")
 }
@@ -506,8 +485,7 @@ func (o *Options) createHookServer() (*Server, error) {
 		}
 	}
 
-	clientFactory := o.GetFactory()
-	kubeClient, _, err := clientFactory.CreateKubeClient()
+	_, kubeClient, _, _, err := clients.GetAPIClients()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Kube client")
 	}
@@ -550,11 +528,10 @@ func (o *Options) createHookServer() (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to parse server URL %s", o.gitServerURL)
 	}
 	server := &Server{
-		ClientFactory: clientFactory,
-		ConfigAgent:   configAgent,
-		Plugins:       pluginAgent,
-		Metrics:       promMetrics,
-		ServerURL:     serverURL,
+		ConfigAgent: configAgent,
+		Plugins:     pluginAgent,
+		Metrics:     promMetrics,
+		ServerURL:   serverURL,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil

@@ -6,7 +6,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
@@ -26,9 +25,8 @@ type launcher struct {
 }
 
 // NewLauncher creates a new builder
-func NewLauncher() (launcher2.PipelineLauncher, error) {
-	factory := jxfactory.NewFactory()
-	mpClient, _, jxClient, _, lhClient, namespace, err := NewMetaPipelineClient(factory)
+func NewLauncher(ns string) (launcher2.PipelineLauncher, error) {
+	mpClient, jxClient, lhClient, err := NewMetaPipelineClient(ns)
 	if err != nil {
 		return nil, errors.Wrapf(err, "couldn't get metapipeline client")
 	}
@@ -36,7 +34,7 @@ func NewLauncher() (launcher2.PipelineLauncher, error) {
 		jxClient:           jxClient,
 		lhClient:           lhClient,
 		metapipelineClient: mpClient,
-		namespace:          namespace,
+		namespace:          ns,
 	}
 	return b, nil
 }

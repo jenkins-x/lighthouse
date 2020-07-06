@@ -99,10 +99,6 @@ keeper:
     tag: "{{ .Values.image.tag }}"
   imagePullPolicy: IfNotPresent
   terminationGracePeriodSeconds: 30
-  args:
-    - --dry-run=false
-    #- --github-endpoint=http://ghproxy
-    # - --github-endpoint=https://api.github.com
   resources:
     limits:
      cpu: 400m

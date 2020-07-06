@@ -9,9 +9,9 @@ import (
 
 	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	jxinformers "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions"
-	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/foghorn"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
@@ -70,7 +70,7 @@ func main() {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 
-	cfg, err := jxfactory.NewFactory().CreateKubeConfig()
+	cfg, err := clients.GetConfig("", "")
 	if err != nil {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}

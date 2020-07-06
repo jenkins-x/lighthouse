@@ -6,6 +6,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/sessions v1.1.3
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/jenkins-x/go-scm v1.5.146
 	github.com/jenkins-x/jx-api v0.0.13
 	github.com/jenkins-x/jx/v2 v2.1.101

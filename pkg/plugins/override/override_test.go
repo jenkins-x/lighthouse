@@ -24,13 +24,11 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 )
 
@@ -144,7 +142,7 @@ func (c *fakeClient) GetRef(org, repo, ref string) (string, error) {
 	return fakeBaseSHA, nil
 }
 
-func (c *fakeClient) Launch(pj *v1alpha1.LighthouseJob, metapipelineClient metapipeline.Client, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
+func (c *fakeClient) Launch(pj *v1alpha1.LighthouseJob, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
 	if pj.Spec.Context == "fail-create" {
 		return pj, errors.New("injected Launch error")
 	}
@@ -207,7 +205,6 @@ func TestAuthorized(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
-	clientFactory := jxfactory.NewFactory()
 	cases := []struct {
 		name          string
 		action        scm.Action
@@ -560,7 +557,7 @@ func TestHandle(t *testing.T) {
 				tc.jobs = sets.String{}
 			}
 
-			err := handle(clientFactory, &fc, log, &event)
+			err := handle(&fc, log, &event)
 			switch {
 			case err != nil:
 				if !tc.err {
