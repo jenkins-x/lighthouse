@@ -26,8 +26,10 @@ import (
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
+	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -42,8 +44,8 @@ type options struct {
 	botName       string
 	gitServerURL  string
 	gitKind       string
-
-	namespace string
+	isJX          bool
+	namespace     string
 
 	runOnce bool
 
@@ -81,6 +83,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store keeper action history. GCS writes will use the default object ACL for the bucket")
 	fs.StringVar(&o.statusURI, "status-path", "", "The /local/path or gs://path/to/object to store status controller state. GCS writes will use the default object ACL for the bucket.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.BoolVar(&o.isJX, "jx", true, "Whether to listen for and launch Jenkins X pipelines")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -137,8 +140,15 @@ func main() {
 	}
 	gitToken := os.Getenv("GIT_TOKEN")
 
+	var launcherFunc func(ns string) (launcher.PipelineLauncher, error)
+	if o.isJX {
+		launcherFunc = jx.NewLauncher
+	}
+	if launcherFunc == nil {
+		logrus.Fatalf("No pipeline engine type specified")
+	}
 	cfg := configAgent.Config
-	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)
+	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, launcherFunc, o.namespace)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}

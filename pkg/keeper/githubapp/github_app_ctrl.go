@@ -12,9 +12,9 @@ import (
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/git"
-	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
@@ -33,13 +33,14 @@ type gitHubAppKeeperController struct {
 	historyURI         string
 	statusURI          string
 	ns                 string
+	launcherFunc       func(ns string) (launcher.PipelineLauncher, error)
 	logger             *logrus.Entry
 	m                  sync.Mutex
 }
 
 // NewGitHubAppKeeperController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string, ns string) (keeper.Controller, error) {
+func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string, launcherFunc func(ns string) (launcher.PipelineLauncher, error), ns string) (keeper.Controller, error) {
 
 	gitServer := util.GithubServer
 	return &gitHubAppKeeperController{
@@ -51,6 +52,7 @@ func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config
 		maxRecordsPerPool: maxRecordsPerPool,
 		historyURI:        historyURI,
 		statusURI:         statusURI,
+		launcherFunc:      launcherFunc,
 		ns:                ns,
 		logger:            logrus.NewEntry(logrus.StandardLogger()),
 	}, nil
@@ -173,7 +175,7 @@ func (g *gitHubAppKeeperController) createOwnerController(owner string, configGe
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient, err := jx.NewLauncher(g.ns)
+	launcherClient, err := g.launcherFunc(g.ns)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting PipelineLauncher client.")
 	}

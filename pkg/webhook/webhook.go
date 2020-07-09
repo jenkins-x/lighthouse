@@ -46,6 +46,7 @@ type Options struct {
 	Port        int
 	JSONLog     bool
 
+	isJX             bool
 	namespace        string
 	pluginFilename   string
 	configFilename   string
@@ -80,7 +81,7 @@ func NewCmdWebhook() *cobra.Command {
 	cmd.Flags().StringVar(&options.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
 	cmd.Flags().StringVar(&options.namespace, "namespace", "", "The namespace to listen in")
-
+	cmd.Flags().BoolVar(&options.isJX, "jx", true, "Whether to launch pipelines in Jenkins X")
 	return cmd
 }
 
@@ -115,9 +116,17 @@ func (o *Options) Run() error {
 
 	o.gitClient = gitClient
 
-	o.launcher, err = jx.NewLauncher(o.namespace)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to create PipelineLauncher client")
+	// TODO: Handle other possible engines
+	if o.isJX {
+		o.launcher, err = jx.NewLauncher(o.namespace)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to create PipelineLauncher client")
+			logrus.Errorf("%s", err.Error())
+			return err
+		}
+	}
+	if o.launcher == nil {
+		err = errors.New("No pipeline engine type specified")
 		logrus.Errorf("%s", err.Error())
 		return err
 	}

@@ -29,6 +29,9 @@ spec:
         imagePullPolicy: {{ tpl .Values.foghorn.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
+{{- if .Values.pipelineEngine.isJX }}
+          - "--jx"
+{{- end }}
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"

@@ -127,11 +127,18 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
 
+	var activityLister jxlisters.PipelineActivityLister
+	var activitySynced cache.InformerSynced
+
+	if activityInformer != nil {
+		activityLister = activityInformer.Lister()
+		activitySynced = activityInformer.Informer().HasSynced
+	}
 	controller := &Controller{
 		jxClient:         jxClient,
 		lhClient:         lhClient,
-		activityLister:   activityInformer.Lister(),
-		activitySynced:   activityInformer.Informer().HasSynced,
+		activityLister:   activityLister,
+		activitySynced:   activitySynced,
 		lhLister:         lhInformer.Lister(),
 		lhSynced:         lhInformer.Informer().HasSynced,
 		logger:           logger,
@@ -143,29 +150,30 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 		kubeClient:       kubeClient,
 	}
 
-	activityInformer.Informer()
 	logger.Info("Setting up event handlers")
-	activityInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			newAct := newObj.(*jxv1.PipelineActivity)
-			oldAct := oldObj.(*jxv1.PipelineActivity)
-			// Skip updates solely triggered by resyncs. We only care if they're actually different.
-			if oldAct.ResourceVersion == newAct.ResourceVersion {
-				return
-			}
-			key, err := cache.MetaNamespaceKeyFunc(newObj)
-			if err == nil {
-				controller.queue.AddRateLimited(key)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err == nil {
-				controller.queue.AddRateLimited(key)
-			}
-		},
-	})
+	if activityInformer != nil {
+		activityInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {},
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				newAct := newObj.(*jxv1.PipelineActivity)
+				oldAct := oldObj.(*jxv1.PipelineActivity)
+				// Skip updates solely triggered by resyncs. We only care if they're actually different.
+				if oldAct.ResourceVersion == newAct.ResourceVersion {
+					return
+				}
+				key, err := cache.MetaNamespaceKeyFunc(newObj)
+				if err == nil {
+					controller.queue.AddRateLimited(key)
+				}
+			},
+			DeleteFunc: func(obj interface{}) {
+				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+				if err == nil {
+					controller.queue.AddRateLimited(key)
+				}
+			},
+		})
+	}
 
 	controller.wg = &sync.WaitGroup{}
 
@@ -182,9 +190,13 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 
 	defer c.configMapWatcher.Stop()
 
+	syncChecks := []cache.InformerSynced{c.lhSynced}
+	if c.activitySynced != nil {
+		syncChecks = append(syncChecks, c.activitySynced)
+	}
 	// Wait for the caches to be synced before starting workers
 	c.logger.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.activitySynced, c.lhSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, syncChecks...); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -274,25 +286,31 @@ func (c *Controller) syncHandler(key string) error {
 		return nil
 	}
 
-	// Get the PipelineActivity resource with this namespace/name
-	jxActivity, err := c.activityLister.PipelineActivities(namespace).Get(name)
-	if err != nil {
-		// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
-		// TODO: Actually delete.
-		if kubeerrors.IsNotFound(err) {
-			c.logger.Warnf("activity '%s' in work queue no longer exists", key)
-			return nil
+	var activityRecord *record.ActivityRecord
+
+	if c.activityLister != nil {
+		// Get the PipelineActivity resource with this namespace/name
+		jxActivity, err := c.activityLister.PipelineActivities(namespace).Get(name)
+		if err != nil {
+			// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
+			// TODO: Actually delete.
+			if kubeerrors.IsNotFound(err) {
+				c.logger.Warnf("activity '%s' in work queue no longer exists", key)
+				return nil
+			}
+
+			// Return an error here so that we requeue and retry.
+			return err
 		}
-
-		// Return an error here so that we requeue and retry.
-		return err
+		activityRecord, err = jx.ConvertPipelineActivity(jxActivity)
+		if err != nil {
+			return err
+		}
 	}
 
-	activityRecord, err := jx.ConvertPipelineActivity(jxActivity)
-	if err != nil {
-		return err
+	if activityRecord == nil {
+		return errors.New("no pipeline engine source configured")
 	}
-
 	var job *v1alpha1.LighthouseJob
 
 	// Get all LighthouseJobs with the same owner/repo/branch/build/context
@@ -309,7 +327,7 @@ func (c *Controller) syncHandler(key string) error {
 
 	// To be safe, find the job with the activity's name in its status.
 	for _, j := range possibleJobs {
-		if j.Status.ActivityName == jxActivity.Name {
+		if j.Status.ActivityName == activityRecord.Name {
 			job = j
 		}
 	}

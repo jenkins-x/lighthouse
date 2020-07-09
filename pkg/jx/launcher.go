@@ -9,15 +9,15 @@ import (
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	launcher2 "github.com/jenkins-x/lighthouse/pkg/launcher"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// launcher default launcher
-type launcher struct {
+// jxLauncher default jxLauncher
+type jxLauncher struct {
 	jxClient           jxclient.Interface
 	lhClient           clientset.Interface
 	metapipelineClient metapipeline.Client
@@ -25,12 +25,12 @@ type launcher struct {
 }
 
 // NewLauncher creates a new builder
-func NewLauncher(ns string) (launcher2.PipelineLauncher, error) {
+func NewLauncher(ns string) (launcher.PipelineLauncher, error) {
 	mpClient, jxClient, lhClient, err := NewMetaPipelineClient(ns)
 	if err != nil {
 		return nil, errors.Wrapf(err, "couldn't get metapipeline client")
 	}
-	b := &launcher{
+	b := &jxLauncher{
 		jxClient:           jxClient,
 		lhClient:           lhClient,
 		metapipelineClient: mpClient,
@@ -41,7 +41,7 @@ func NewLauncher(ns string) (launcher2.PipelineLauncher, error) {
 
 // Launch creates a pipeline
 // TODO: This should be moved somewhere else, probably, and needs some kind of unit testing (apb)
-func (b *launcher) Launch(request *v1alpha1.LighthouseJob, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
+func (b *jxLauncher) Launch(request *v1alpha1.LighthouseJob, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
 	spec := &request.Spec
 
 	name := repository.Name
@@ -132,7 +132,7 @@ func (b *launcher) Launch(request *v1alpha1.LighthouseJob, repository scm.Reposi
 	return fullyCreatedJob, nil
 }
 
-func (b *launcher) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobSpec) metapipeline.PullRef {
+func (b *jxLauncher) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobSpec) metapipeline.PullRef {
 	var pullRef metapipeline.PullRef
 	if len(spec.Refs.Pulls) > 0 {
 		var prs []metapipeline.PullRequestRef

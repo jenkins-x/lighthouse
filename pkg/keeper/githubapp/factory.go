@@ -5,8 +5,8 @@ import (
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/git"
-	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
@@ -14,10 +14,10 @@ import (
 
 // NewKeeperController creates a new controller; either regular or a GitHub App flavour
 // depending on the $GITHUB_APP_SECRET_DIR environment variable
-func NewKeeperController(configAgent *config.Agent, botName string, gitKind string, gitToken string, serverURL string, maxRecordsPerPool int, historyURI string, statusURI string, ns string) (keeper.Controller, error) {
+func NewKeeperController(configAgent *config.Agent, botName string, gitKind string, gitToken string, serverURL string, maxRecordsPerPool int, historyURI string, statusURI string, launcherFunc func(ns string) (launcher.PipelineLauncher, error), ns string) (keeper.Controller, error) {
 	githubAppSecretDir := util.GetGitHubAppSecretDir()
 	if githubAppSecretDir != "" {
-		return NewGitHubAppKeeperController(githubAppSecretDir, configAgent, botName, gitKind, maxRecordsPerPool, historyURI, statusURI, ns)
+		return NewGitHubAppKeeperController(githubAppSecretDir, configAgent, botName, gitKind, maxRecordsPerPool, historyURI, statusURI, launcherFunc, ns)
 	}
 
 	scmClient, err := factory.NewClient(gitKind, serverURL, "")
@@ -38,7 +38,7 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient, err := jx.NewLauncher(ns)
+	launcherClient, err := launcherFunc(ns)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting PipelineLauncher client.")
 	}
