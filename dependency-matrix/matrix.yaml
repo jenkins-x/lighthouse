@@ -9,11 +9,11 @@ dependencies:
   owner: jenkins-x
   repo: jx
   url: https://github.com/jenkins-x/jx
-  version: 2.1.97
-  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.1.97
+  version: 2.1.98
+  versionURL: https://github.com/jenkins-x/jx/releases/tag/v2.1.98
 - host: github.com
   owner: jenkins-x
   repo: lighthouse-config
   url: https://github.com/jenkins-x/lighthouse-config
-  version: 0.0.7
+  version: 0.0.8
   versionURL: ""
