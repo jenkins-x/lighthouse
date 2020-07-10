@@ -54,7 +54,7 @@ import (
 var sleep = time.Sleep
 
 type launcher interface {
-	Launch(*v1alpha1.LighthouseJob, scm.Repository) (*v1alpha1.LighthouseJob, error)
+	Launch(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
 }
 
 type scmProviderClient interface {
@@ -1065,10 +1065,11 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 
 func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Presubmit, prs []PullRequest) error {
 	refs := v1alpha1.Refs{
-		Org:     sp.org,
-		Repo:    sp.repo,
-		BaseRef: sp.branch,
-		BaseSHA: sp.sha,
+		Org:      sp.org,
+		Repo:     sp.repo,
+		BaseRef:  sp.branch,
+		BaseSHA:  sp.sha,
+		CloneURI: sp.cloneURL,
 	}
 	for _, pr := range prs {
 		refs.Pulls = append(
@@ -1099,21 +1100,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 			}
 			pj := jobutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
-			cloneURL := string(pr.Repository.URL)
-			if cloneURL == "" {
-				c.logger.WithField("owner", refs.Org).WithField("repository", refs.Repo).Warnf("no GitURL returned")
-				// TODO load URL via scm client?
-			}
-			if !strings.HasPrefix(cloneURL, ".git") {
-				cloneURL = cloneURL + ".git"
-			}
-			repo := scm.Repository{
-				Name:      string(pr.Repository.Name),
-				Namespace: string(pr.Repository.Owner.Login),
-				Branch:    string(pr.BaseRef.Name),
-				Clone:     cloneURL,
-			}
-			if _, err := c.launcherClient.Launch(&pj, repo); err != nil {
+			if _, err := c.launcherClient.Launch(&pj); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create pipeline on the cluster.")
 				return fmt.Errorf("failed to create a pipeline for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
 			}
@@ -1272,9 +1259,9 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]config.Pres
 }
 
 func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, error) {
-	sp.log.Infof("Syncing subpool: %d PRs, %d PJs.", len(sp.prs), len(sp.pjs))
-	successes, pendings, missings, missingSerialTests := accumulate(sp.presubmits, sp.prs, sp.pjs, sp.log)
-	batchMerge, batchPending := accumulateBatch(sp.presubmits, sp.prs, sp.pjs, sp.log)
+	sp.log.Infof("Syncing subpool: %d PRs, %d PJs.", len(sp.prs), len(sp.ljs))
+	successes, pendings, missings, missingSerialTests := accumulate(sp.presubmits, sp.prs, sp.ljs, sp.log)
+	batchMerge, batchPending := accumulateBatch(sp.presubmits, sp.prs, sp.ljs, sp.log)
 	sp.log.WithFields(logrus.Fields{
 		"prs-passing":   prNumbers(successes),
 		"prs-pending":   prNumbers(pendings),
@@ -1366,16 +1353,17 @@ func sortPools(pools []Pool) {
 }
 
 type subpool struct {
-	log    *logrus.Entry
-	org    string
-	repo   string
-	branch string
+	log      *logrus.Entry
+	org      string
+	repo     string
+	branch   string
+	cloneURL string
 	// sha is the baseSHA for this subpool
 	sha string
 
-	// pjs contains all PipelineActivitys of type Presubmit or Batch
+	// ljs contains all LighthouseJobs of type Presubmit or Batch
 	// that have the same baseSHA as the subpool
-	pjs []v1alpha1.LighthouseJob
+	ljs []v1alpha1.LighthouseJob
 	prs []PullRequest
 
 	cc contextChecker
@@ -1397,6 +1385,13 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 		repo := string(pr.Repository.Name)
 		branch := string(pr.BaseRef.Name)
 		branchRef := string(pr.BaseRef.Prefix) + string(pr.BaseRef.Name)
+		cloneURL := string(pr.Repository.URL)
+		if cloneURL == "" {
+			return nil, errors.New("no clone URL specified for repository")
+		}
+		if !strings.HasSuffix(cloneURL, ".git") {
+			cloneURL = cloneURL + ".git"
+		}
 		fn := poolKey(org, repo, branch)
 		if sps[fn] == nil {
 			sha, err := c.spc.GetRef(org, repo, strings.TrimPrefix(branchRef, "refs/"))
@@ -1405,15 +1400,17 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 			}
 			sps[fn] = &subpool{
 				log: c.logger.WithFields(logrus.Fields{
-					"org":      org,
-					"repo":     repo,
-					"branch":   branch,
-					"base-sha": sha,
+					"org":       org,
+					"repo":      repo,
+					"branch":    branch,
+					"base-sha":  sha,
+					"clone-url": cloneURL,
 				}),
-				org:    org,
-				repo:   repo,
-				branch: branch,
-				sha:    sha,
+				org:      org,
+				repo:     repo,
+				branch:   branch,
+				sha:      sha,
+				cloneURL: cloneURL,
 			}
 		}
 		sps[fn].prs = append(sps[fn].prs, pr)
@@ -1426,7 +1423,7 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 		if sps[fn] == nil || pj.Spec.Refs.BaseSHA != sps[fn].sha {
 			continue
 		}
-		sps[fn].pjs = append(sps[fn].pjs, pj)
+		sps[fn].ljs = append(sps[fn].ljs, pj)
 	}
 	return sps, nil
 }

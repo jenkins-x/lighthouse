@@ -59,14 +59,16 @@ func createRefs(pr *scm.PullRequest, baseSHA string) v1alpha1.Refs {
 	repo := pr.Base.Repo.Name
 	number := pr.Number
 	repoLink := pr.Base.Repo.Link
+	cloneURL := pr.Base.Repo.Clone
 	return v1alpha1.Refs{
 		Org:      org,
 		Repo:     repo,
 		RepoLink: repoLink,
 		BaseLink: fmt.Sprintf("%s/commit/%s", repoLink, baseSHA),
 
-		BaseRef: pr.Base.Ref,
-		BaseSHA: baseSHA,
+		BaseRef:  pr.Base.Ref,
+		BaseSHA:  baseSHA,
+		CloneURI: cloneURL,
 		Pulls: []v1alpha1.Pull{
 			{
 				Number:     number,

@@ -4,7 +4,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/jenkins-x/go-scm/scm"
 	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -41,12 +40,12 @@ func NewLauncher(ns string) (launcher.PipelineLauncher, error) {
 
 // Launch creates a pipeline
 // TODO: This should be moved somewhere else, probably, and needs some kind of unit testing (apb)
-func (b *jxLauncher) Launch(request *v1alpha1.LighthouseJob, repository scm.Repository) (*v1alpha1.LighthouseJob, error) {
+func (b *jxLauncher) Launch(request *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
 	spec := &request.Spec
 
-	name := repository.Name
-	owner := repository.Namespace
-	sourceURL := repository.Clone
+	name := spec.Refs.Repo
+	owner := spec.Refs.Org
+	sourceURL := spec.Refs.CloneURI
 
 	pullRefData := b.getPullRefs(sourceURL, spec)
 	pullRefs := ""
@@ -55,9 +54,6 @@ func (b *jxLauncher) Launch(request *v1alpha1.LighthouseJob, repository scm.Repo
 	}
 
 	branch := spec.GetBranch()
-	if branch == "" {
-		branch = repository.Branch
-	}
 	if branch == "" {
 		branch = "master"
 	}
