@@ -28,7 +28,7 @@ The following environment variables are used:
 
 ## Features 
 
-Currently Lighthouse supports the common [prow plugins](https://github.com/jenkins-x/lighthouse/tree/master/pkg/prow/plugins) and handles push webhooks to branches to then trigger Jenkins X pipelines. 
+Currently Lighthouse supports the common [Prow plugins](https://github.com/jenkins-x/lighthouse/tree/master/pkg/plugins) and handles push webhooks to branches to then trigger Jenkins X pipelines. 
     
 Lighthouse uses the same `config.yaml` and `plugins.yaml` file structure from Prow so that we can easily migrate from `prow <-> lighthouse`. 
 
@@ -39,7 +39,7 @@ We can also reuse Prow's capability of defining many separate pipelines on a rep
 
 ## Comparisons to Prow
 
-Lighthouse is very prow-like and currently reuses the Prow plugin source code and a bunch of [plugins from prow](https://github.com/jenkins-x/lighthouse/tree/master/pkg/prow/plugins)
+Lighthouse is very prow-like and currently reuses the Prow plugin source code and a bunch of [plugins from Prow](https://github.com/jenkins-x/lighthouse/tree/master/pkg/plugins)
 
 Its got a few differences though:
 
@@ -59,7 +59,7 @@ Most of the github structs map 1-1 with the [jenkins-x/go-scm](https://github.co
 
 e.g. compare the `githubClient` API for the [prow lgtm](https://github.com/kubernetes/test-infra/blob/344024d30165cda6f4691cc178f25b16f1a1f5af/prow/plugins/lgtm/lgtm.go#L134-L150) versus the [lighthouse lgtm](https://github.com/jenkins-x/lighthouse/blob/master/pkg/prow/plugins/lgtm/lgtm.go#L135-L150).
 
-All the prow plugin related code lives in the [pkg/prow](https://github.com/jenkins-x/lighthouse/tree/master/pkg/prow) tree of packages. Mostly all we've done is switch to using [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) and switch out the current prow agents and instead use a single `tekton` agent using the [PlumberClient](https://github.com/jenkins-x/lighthouse/blob/master/pkg/plumber/interface.go#L3-L6) to trigger pipelines.
+All the prow plugin related code lives in the [tree of packages](https://github.com/jenkins-x/lighthouse/tree/master/pkg). Mostly all we've done is switch to using [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) and switch out the current prow agents and instead use a single `tekton` agent using the [PlumberClient](https://github.com/jenkins-x/lighthouse/blob/master/pkg/plumber/interface.go#L3-L6) to trigger pipelines.
 
 ## Testing Lighthouse
 
