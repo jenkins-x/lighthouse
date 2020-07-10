@@ -1752,7 +1752,7 @@ func scmRepoToGraphQLRepo(scmRepo *scm.Repository) Repository {
 	return Repository{
 		Name:          githubql.String(scmRepo.Name),
 		NameWithOwner: githubql.String(scmRepo.FullName),
-		URL:           githubql.String(scmRepo.Link),
+		URL:           githubql.String(scmRepo.Clone),
 		Owner:         SCMUser{Login: githubql.String(scmRepo.Namespace)},
 	}
 }
