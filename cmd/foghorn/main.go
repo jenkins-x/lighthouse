@@ -7,9 +7,6 @@ import (
 	"syscall"
 	"time"
 
-	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
-	jxinformers "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions"
-	jxinformersv1 "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions/jenkins.io/v1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
@@ -22,7 +19,6 @@ import (
 
 type options struct {
 	namespace string
-	isJX      bool
 
 	dryRun bool
 }
@@ -35,7 +31,6 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to mutate any real-world state.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
-	fs.BoolVar(&o.isJX, "jx", true, "Whether to listen for Jenkins X pipelines")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -78,10 +73,6 @@ func main() {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}
 
-	var jxClient jxclient.Interface
-	var jxInformerFactory jxinformers.SharedInformerFactory
-	var paInformer jxinformersv1.PipelineActivityInformer
-
 	lhClient, err := clientset.NewForConfig(cfg)
 	if err != nil {
 		logrus.WithError(err).Fatal("Could not create Lighthouse API client")
@@ -92,27 +83,14 @@ func main() {
 	}
 	lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Minute*30, lhinformers.WithNamespace(o.namespace))
 
-	if o.isJX {
-		jxClient, err = jxclient.NewForConfig(cfg)
-		if err != nil {
-			logrus.WithError(err).Fatal("Could not create Jenkins X API client")
-		}
-		jxInformerFactory = jxinformers.NewSharedInformerFactoryWithOptions(jxClient, time.Minute*30, jxinformers.WithNamespace(o.namespace))
-		paInformer = jxInformerFactory.Jenkins().V1().PipelineActivities()
-	}
 	controller, err := foghorn.NewController(kubeClient,
-		jxClient,
 		lhClient,
-		paInformer,
 		lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs(),
 		o.namespace,
 		nil)
 
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating controller")
-	}
-	if o.isJX && jxInformerFactory != nil {
-		jxInformerFactory.Start(stopCh)
 	}
 	lhInformerFactory.Start(stopCh)
 
