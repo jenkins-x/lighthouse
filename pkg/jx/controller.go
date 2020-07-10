@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -14,6 +15,7 @@ import (
 	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	jxinformers "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions/jenkins.io/v1"
 	jxlisters "github.com/jenkins-x/jx-api/pkg/client/listers/jenkins.io/v1"
+	"github.com/jenkins-x/jx/v2/pkg/tekton/metapipeline"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
@@ -25,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -34,7 +37,9 @@ import (
 )
 
 const (
-	controllerName = "jx-controller"
+	controllerName    = "jx-controller"
+	activityKeyPrefix = "activity"
+	jobKeyPrefix      = "job"
 )
 
 // Controller listens for changes to PipelineActivitys and updates the corresponding LighthouseJobs with their activity
@@ -42,6 +47,8 @@ type Controller struct {
 	jxClient   jxclient.Interface
 	lhClient   clientset.Interface
 	kubeClient kubernetes.Interface
+
+	mpClient metapipeline.Client
 
 	activityLister jxlisters.PipelineActivityLister
 	activitySynced cache.InformerSynced
@@ -97,16 +104,18 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
 
-	var activityLister jxlisters.PipelineActivityLister
-	var activitySynced cache.InformerSynced
+	activityLister := activityInformer.Lister()
+	activitySynced := activityInformer.Informer().HasSynced
 
-	if activityInformer != nil {
-		activityLister = activityInformer.Lister()
-		activitySynced = activityInformer.Informer().HasSynced
+	mpClient, _, _, err := NewMetaPipelineClient(ns)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create metapipeline client")
 	}
+
 	controller := &Controller{
 		jxClient:         jxClient,
 		lhClient:         lhClient,
+		mpClient:         mpClient,
 		activityLister:   activityLister,
 		activitySynced:   activitySynced,
 		lhLister:         lhInformer.Lister(),
@@ -120,34 +129,55 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 	}
 
 	logger.Info("Setting up event handlers")
-	if activityInformer != nil {
-		activityInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					controller.queue.AddRateLimited(key)
-				}
-			},
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				newAct := newObj.(*jxv1.PipelineActivity)
-				oldAct := oldObj.(*jxv1.PipelineActivity)
-				// Skip updates solely triggered by resyncs. We only care if they're actually different.
-				if oldAct.ResourceVersion == newAct.ResourceVersion {
-					return
-				}
-				key, err := cache.MetaNamespaceKeyFunc(newObj)
-				if err == nil {
-					controller.queue.AddRateLimited(key)
-				}
-			},
-			DeleteFunc: func(obj interface{}) {
-				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				if err == nil {
-					controller.queue.AddRateLimited(key)
-				}
-			},
-		})
-	}
+	lhInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				controller.queue.AddRateLimited(jobKeyPrefix + ":::" + key)
+			}
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			newJob := newObj.(*v1alpha1.LighthouseJob)
+			oldJob := oldObj.(*v1alpha1.LighthouseJob)
+			if oldJob.ResourceVersion == newJob.ResourceVersion {
+				return
+			}
+			// Don't queue for any job that's already launched
+			if newJob.Status.ActivityName == "" || newJob.Status.State != v1alpha1.TriggeredState {
+				return
+			}
+			key, err := cache.MetaNamespaceKeyFunc(newObj)
+			if err == nil {
+				controller.queue.AddRateLimited(jobKeyPrefix + ":::" + key)
+			}
+		},
+	})
+	activityInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				controller.queue.AddRateLimited(activityKeyPrefix + ":::" + key)
+			}
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			newAct := newObj.(*jxv1.PipelineActivity)
+			oldAct := oldObj.(*jxv1.PipelineActivity)
+			// Skip updates solely triggered by resyncs. We only care if they're actually different.
+			if oldAct.ResourceVersion == newAct.ResourceVersion {
+				return
+			}
+			key, err := cache.MetaNamespaceKeyFunc(newObj)
+			if err == nil {
+				controller.queue.AddRateLimited(activityKeyPrefix + ":::" + key)
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err == nil {
+				controller.queue.AddRateLimited(activityKeyPrefix + ":::" + key)
+			}
+		},
+	})
 
 	controller.wg = &sync.WaitGroup{}
 
@@ -249,13 +279,128 @@ func (c *Controller) processNextWorkItem() bool {
 // syncHandler compares the actual state with the desired, and attempts to
 // converge the two.
 func (c *Controller) syncHandler(key string) error {
+	// Get the type of the key
+	keyParts := strings.Split(key, ":::")
+
+	if len(keyParts) != 2 {
+		return fmt.Errorf("no key type found in %s", key)
+	}
 	// Convert the namespace/name string into a distinct namespace and name
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	namespace, name, err := cache.SplitMetaNamespaceKey(keyParts[1])
 	if err != nil {
-		c.logger.Warnf("invalid resource key: %s", key)
+		c.logger.Warnf("invalid resource key: %s", keyParts[1])
 		return nil
 	}
 
+	if keyParts[0] == activityKeyPrefix {
+		return c.syncActivity(namespace, name, key)
+	}
+	if keyParts[0] == jobKeyPrefix {
+		return c.syncJob(namespace, name, key)
+	}
+
+	return fmt.Errorf("unknown key type: %s", keyParts[0])
+}
+
+func (c *Controller) syncJob(namespace, name, key string) error {
+	// Get the LighthouseJob resource with this namespace/name
+	origJob, err := c.lhLister.LighthouseJobs(namespace).Get(name)
+	if err != nil {
+		// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
+		// TODO: Actually delete.
+		if kubeerrors.IsNotFound(err) {
+			c.logger.Warnf("activity '%s' in work queue no longer exists", key)
+			return nil
+		}
+
+		// Return an error here so that we requeue and retry.
+		return err
+	}
+
+	spec := &origJob.Spec
+
+	jobName := spec.Refs.Repo
+	owner := spec.Refs.Org
+	sourceURL := spec.Refs.CloneURI
+
+	pullRefData := c.getPullRefs(sourceURL, spec)
+	pullRefs := ""
+	if len(spec.Refs.Pulls) > 0 {
+		pullRefs = pullRefData.String()
+	}
+
+	branch := spec.GetBranch()
+	if branch == "" {
+		branch = "master"
+	}
+	if pullRefs == "" {
+		pullRefs = branch + ":"
+	}
+
+	job := spec.Job
+	var kind metapipeline.PipelineKind
+	if len(spec.Refs.Pulls) > 0 {
+		kind = metapipeline.PullRequestPipeline
+	} else {
+		kind = metapipeline.ReleasePipeline
+	}
+
+	l := logrus.WithFields(logrus.Fields(map[string]interface{}{
+		"Owner":     owner,
+		"Name":      jobName,
+		"SourceURL": sourceURL,
+		"Branch":    branch,
+		"PullRefs":  pullRefs,
+		"Job":       job,
+	}))
+	l.Info("about to start Jenkinx X meta pipeline")
+
+	sa := os.Getenv("JX_SERVICE_ACCOUNT")
+	if sa == "" {
+		sa = "tekton-bot"
+	}
+
+	pipelineCreateParam := metapipeline.PipelineCreateParam{
+		PullRef:      pullRefData,
+		PipelineKind: kind,
+		Context:      spec.Context,
+		// No equivalent to https://github.com/jenkins-x/jx/blob/bb59278c2707e0e99b3c24be926745c324824388/pkg/cmd/controller/pipeline/pipelinerunner_controller.go#L236
+		//   for getting environment variables from the prow job here, so far as I can tell (abayer)
+		// Also not finding an equivalent to labels from the PipelineRunRequest
+		ServiceAccount: sa,
+		// I believe we can use an empty string default image?
+		DefaultImage: os.Getenv("JX_DEFAULT_IMAGE"),
+		EnvVariables: spec.GetEnvVars(),
+	}
+
+	activityKey, tektonCRDs, err := c.mpClient.Create(pipelineCreateParam)
+	if err != nil {
+		return errors.Wrap(err, "unable to create Tekton CRDs")
+	}
+
+	jobCopy := origJob.DeepCopy()
+	// Add the build number from the activity key to the labels on the job
+	jobCopy.Labels[util.BuildNumLabel] = activityKey.Build
+
+	// Set status on the job
+	jobCopy.Status = v1alpha1.LighthouseJobStatus{
+		State:        v1alpha1.PendingState,
+		ActivityName: util.ToValidName(activityKey.Name),
+		StartTime:    metav1.Now(),
+	}
+	_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).UpdateStatus(jobCopy)
+	if err != nil {
+		return errors.Wrapf(err, "unable to set status on LighthouseJob %s", jobCopy.Name)
+	}
+
+	err = c.mpClient.Apply(activityKey, tektonCRDs)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply Tekton CRDs")
+	}
+	return nil
+}
+
+func (c *Controller) syncActivity(namespace, name, key string) error {
 	// Get the PipelineActivity resource with this namespace/name
 	jxActivity, err := c.activityLister.PipelineActivities(namespace).Get(name)
 	if err != nil {
@@ -351,6 +496,22 @@ func createLabelSelectorFromActivity(activity *v1alpha1.ActivityRecord) (labels.
 	}
 
 	return labels.Parse(strings.Join(selectors, ","))
+}
+
+func (c *Controller) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobSpec) metapipeline.PullRef {
+	var pullRef metapipeline.PullRef
+	if len(spec.Refs.Pulls) > 0 {
+		var prs []metapipeline.PullRequestRef
+		for _, pull := range spec.Refs.Pulls {
+			prs = append(prs, metapipeline.PullRequestRef{ID: strconv.Itoa(pull.Number), MergeSHA: pull.SHA})
+		}
+
+		pullRef = metapipeline.NewPullRefWithPullRequest(sourceURL, spec.Refs.BaseRef, spec.Refs.BaseSHA, prs...)
+	} else {
+		pullRef = metapipeline.NewPullRef(sourceURL, spec.Refs.BaseRef, spec.Refs.BaseSHA)
+	}
+
+	return pullRef
 }
 
 // stopper returns a channel that remains open until an interrupt is received.
