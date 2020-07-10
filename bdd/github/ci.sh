@@ -89,7 +89,6 @@ jx step bdd \
     --default-admin-password $JENKINS_PASSWORD \
     --no-delete-app \
     --no-delete-repo \
-    --tests test-create-spring \
     --tests test-lighthouse
 
 bdd_result=$?
