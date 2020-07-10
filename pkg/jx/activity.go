@@ -5,7 +5,6 @@ import (
 
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/record"
 )
 
 // ToPipelineState converts the PipelineActivity state to LighthouseJob state
@@ -27,7 +26,7 @@ func ToPipelineState(status v1.ActivityStatusType) v1alpha1.PipelineState {
 }
 
 // ConvertPipelineActivity converts a PipelineActivity from jx to an ActivityRecord
-func ConvertPipelineActivity(pa *v1.PipelineActivity) (*record.ActivityRecord, error) {
+func ConvertPipelineActivity(pa *v1.PipelineActivity) (*v1alpha1.ActivityRecord, error) {
 	if pa == nil {
 		return nil, errors.New("pipeline activity is nil")
 	}
@@ -37,7 +36,7 @@ func ConvertPipelineActivity(pa *v1.PipelineActivity) (*record.ActivityRecord, e
 		sha = pa.Labels[v1.LabelLastCommitSha]
 	}
 
-	ar := &record.ActivityRecord{
+	ar := &v1alpha1.ActivityRecord{
 		Name:            pa.Name,
 		Owner:           pa.Spec.GitOwner,
 		Repo:            pa.Spec.GitRepository,
@@ -51,7 +50,7 @@ func ConvertPipelineActivity(pa *v1.PipelineActivity) (*record.ActivityRecord, e
 		Status:          ToPipelineState(pa.Spec.Status),
 		StartTime:       pa.Spec.StartedTimestamp,
 		CompletionTime:  pa.Spec.CompletedTimestamp,
-		Stages:          []*record.ActivityStageOrStep{},
+		Stages:          []*v1alpha1.ActivityStageOrStep{},
 	}
 
 	for _, step := range pa.Spec.Steps {
@@ -63,13 +62,13 @@ func ConvertPipelineActivity(pa *v1.PipelineActivity) (*record.ActivityRecord, e
 	return ar, nil
 }
 
-func convertStage(paStage *v1.StageActivityStep) *record.ActivityStageOrStep {
-	stage := &record.ActivityStageOrStep{
+func convertStage(paStage *v1.StageActivityStep) *v1alpha1.ActivityStageOrStep {
+	stage := &v1alpha1.ActivityStageOrStep{
 		Name:           paStage.Name,
 		Status:         ToPipelineState(paStage.Status),
 		StartTime:      paStage.StartedTimestamp,
 		CompletionTime: paStage.CompletedTimestamp,
-		Steps:          []*record.ActivityStageOrStep{},
+		Steps:          []*v1alpha1.ActivityStageOrStep{},
 	}
 
 	for _, child := range paStage.Steps {
@@ -79,8 +78,8 @@ func convertStage(paStage *v1.StageActivityStep) *record.ActivityStageOrStep {
 	return stage
 }
 
-func convertStep(paStep v1.CoreActivityStep) *record.ActivityStageOrStep {
-	return &record.ActivityStageOrStep{
+func convertStep(paStep v1.CoreActivityStep) *v1alpha1.ActivityStageOrStep {
+	return &v1alpha1.ActivityStageOrStep{
 		Name:           paStep.Name,
 		Status:         ToPipelineState(paStep.Status),
 		StartTime:      paStep.StartedTimestamp,

@@ -24,7 +24,6 @@ import (
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/record"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -286,7 +285,7 @@ func (c *Controller) syncHandler(key string) error {
 		return nil
 	}
 
-	var activityRecord *record.ActivityRecord
+	var activityRecord *v1alpha1.ActivityRecord
 
 	if c.activityLister != nil {
 		// Get the PipelineActivity resource with this namespace/name
@@ -359,7 +358,7 @@ func (c *Controller) syncHandler(key string) error {
 	return nil
 }
 
-func (c *Controller) updateJobStatusForActivity(activity *record.ActivityRecord, job *v1alpha1.LighthouseJob) {
+func (c *Controller) updateJobStatusForActivity(activity *v1alpha1.ActivityRecord, job *v1alpha1.LighthouseJob) {
 	if activity.Status != job.Status.State {
 		job.Status.State = activity.Status
 	}
@@ -380,7 +379,7 @@ func RateLimiter() workqueue.RateLimitingInterface {
 	return workqueue.NewNamedRateLimitingQueue(rl, controllerName)
 }
 
-func createLabelSelectorFromActivity(activity *record.ActivityRecord) (labels.Selector, error) {
+func createLabelSelectorFromActivity(activity *v1alpha1.ActivityRecord) (labels.Selector, error) {
 	var selectors []string
 
 	if activity.Owner != "" {
@@ -402,7 +401,7 @@ func createLabelSelectorFromActivity(activity *record.ActivityRecord) (labels.Se
 	return labels.Parse(strings.Join(selectors, ","))
 }
 
-func (c *Controller) reportStatus(ns string, activity *record.ActivityRecord, job *v1alpha1.LighthouseJob) {
+func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, job *v1alpha1.LighthouseJob) {
 	sha := activity.LastCommitSHA
 
 	owner := activity.Owner
@@ -569,7 +568,7 @@ type reportStatusInfo struct {
 	runningStages string
 }
 
-func toScmStatusDescriptionRunningStages(activity *record.ActivityRecord, gitKind string) reportStatusInfo {
+func toScmStatusDescriptionRunningStages(activity *v1alpha1.ActivityRecord, gitKind string) reportStatusInfo {
 	info := reportStatusInfo{
 		description:   "",
 		runningStages: "",

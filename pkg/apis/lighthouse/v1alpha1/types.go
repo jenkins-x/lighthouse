@@ -90,6 +90,8 @@ type LighthouseJobStatus struct {
 	LastReportState string `json:"lastReportState,omitempty"`
 	// LastCommitSHA is the commit that will be/has been reported to on the SCM provider
 	LastCommitSHA string `json:"lastCommitSHA,omitempty"`
+	// Activity is the most recent activity recorded for the pipeline associated with this job.
+	Activity *ActivityRecord `json:"activity,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -331,3 +333,45 @@ type ByNum []Pull
 func (prs ByNum) Len() int           { return len(prs) }
 func (prs ByNum) Swap(i, j int)      { prs[i], prs[j] = prs[j], prs[i] }
 func (prs ByNum) Less(i, j int) bool { return prs[i].Number < prs[j].Number }
+
+// ActivityRecord is a struct for reporting information on a pipeline, build, or other activity triggered by Lighthouse
+type ActivityRecord struct {
+	Name            string                 `json:"name"`
+	Owner           string                 `json:"owner,omitempty"`
+	Repo            string                 `json:"repo,omitempty"`
+	Branch          string                 `json:"branch,omitempty"`
+	BuildIdentifier string                 `json:"buildId,omitempty"`
+	Context         string                 `json:"context,omitempty"`
+	GitURL          string                 `json:"gitURL,omitempty"`
+	LogURL          string                 `json:"logURL,omitempty"`
+	LinkURL         string                 `json:"linkURL,omitempty"`
+	Status          PipelineState          `json:"status,omitempty"`
+	BaseSHA         string                 `json:"baseSHA,omitempty"`
+	LastCommitSHA   string                 `json:"lastCommitSHA,omitempty"`
+	StartTime       *metav1.Time           `json:"startTime,omitempty"`
+	CompletionTime  *metav1.Time           `json:"completionTime,omitempty"`
+	Stages          []*ActivityStageOrStep `json:"stages,omitempty"`
+	Steps           []*ActivityStageOrStep `json:"steps,omitEmpty"`
+}
+
+// ActivityStageOrStep represents a stage of an activity
+type ActivityStageOrStep struct {
+	Name           string                 `json:"name"`
+	Status         PipelineState          `json:"status"`
+	StartTime      *metav1.Time           `json:"startTime,omitempty"`
+	CompletionTime *metav1.Time           `json:"completionTime,omitempty"`
+	Stages         []*ActivityStageOrStep `json:"stages,omitempty"`
+	Steps          []*ActivityStageOrStep `json:"steps,omitempty"`
+}
+
+// RunningStages returns the list of stages currently running
+func (a *ActivityRecord) RunningStages() []string {
+	var running []string
+
+	for _, stage := range a.Stages {
+		if stage.Status == RunningState {
+			running = append(running, stage.Name)
+		}
+	}
+	return running
+}
