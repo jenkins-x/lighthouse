@@ -37,20 +37,16 @@ func NewLauncher(ns string) (launcher.PipelineLauncher, error) {
 // Launch creates a pipeline
 // TODO: This should be moved somewhere else, probably, and needs some kind of unit testing (apb)
 func (b *jxLauncher) Launch(request *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
+	// Set status on the job
+	request.Status = v1alpha1.LighthouseJobStatus{
+		State: v1alpha1.TriggeredState,
+	}
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).Create(request)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply LighthouseJob")
 	}
-	// Set status on the job
-	appliedJob.Status = v1alpha1.LighthouseJobStatus{
-		State: v1alpha1.TriggeredState,
-	}
-	fullyCreatedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(b.namespace).UpdateStatus(appliedJob)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to set status on LighthouseJob %s", appliedJob.Name)
-	}
 
-	return fullyCreatedJob, nil
+	return appliedJob, nil
 	/*	spec := &request.Spec
 
 		name := spec.Refs.Repo
