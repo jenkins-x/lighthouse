@@ -382,15 +382,20 @@ func (c *Controller) syncJob(namespace, name, key string) error {
 	// Add the build number from the activity key to the labels on the job
 	jobCopy.Labels[util.BuildNumLabel] = activityKey.Build
 
+	appliedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).Update(jobCopy)
+	if err != nil {
+		return errors.Wrapf(err, "unable to set build number on LighthouseJob %s", jobCopy.Name)
+	}
+
 	// Set status on the job
-	jobCopy.Status = v1alpha1.LighthouseJobStatus{
+	appliedJob.Status = v1alpha1.LighthouseJobStatus{
 		State:        v1alpha1.PendingState,
 		ActivityName: util.ToValidName(activityKey.Name),
 		StartTime:    metav1.Now(),
 	}
-	_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).UpdateStatus(jobCopy)
+	_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).UpdateStatus(appliedJob)
 	if err != nil {
-		return errors.Wrapf(err, "unable to set status on LighthouseJob %s", jobCopy.Name)
+		return errors.Wrapf(err, "unable to set status on LighthouseJob %s", appliedJob.Name)
 	}
 
 	err = c.mpClient.Apply(activityKey, tektonCRDs)
