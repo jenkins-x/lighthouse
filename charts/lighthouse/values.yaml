@@ -137,9 +137,6 @@ user: ""
 
 logFormat: "json"
 
-pipelineEngine:
-  isJX: true
-
 cluster:
   crds:
     create: true

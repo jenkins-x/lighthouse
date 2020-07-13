@@ -35,9 +35,6 @@ spec:
         imagePullPolicy: {{ .Values.keeper.imagePullPolicy }}
         args:
           - "--namespace={{ .Release.Namespace }}"
-{{- if .Values.pipelineEngine.isJX }}
-          - "--jx"
-{{- end }}
         ports:
           - name: http
             containerPort: {{ .Values.keeper.service.internalPort }}

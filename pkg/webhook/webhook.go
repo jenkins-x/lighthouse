@@ -18,7 +18,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/git"
-	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
@@ -46,7 +45,6 @@ type Options struct {
 	Port        int
 	JSONLog     bool
 
-	isJX             bool
 	namespace        string
 	pluginFilename   string
 	configFilename   string
@@ -81,7 +79,6 @@ func NewCmdWebhook() *cobra.Command {
 	cmd.Flags().StringVar(&options.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
 	cmd.Flags().StringVar(&options.namespace, "namespace", "", "The namespace to listen in")
-	cmd.Flags().BoolVar(&options.isJX, "jx", true, "Whether to launch pipelines in Jenkins X")
 	return cmd
 }
 
@@ -116,20 +113,11 @@ func (o *Options) Run() error {
 
 	o.gitClient = gitClient
 
-	// TODO: Handle other possible engines
-	if o.isJX {
-		o.launcher, err = jx.NewLauncher(o.namespace)
-		if err != nil {
-			err = errors.Wrapf(err, "failed to create PipelineLauncher client")
-			logrus.Errorf("%s", err.Error())
-			return err
-		}
+	_, _, lhClient, _, err := clients.GetAPIClients()
+	if err != nil {
+		return errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	if o.launcher == nil {
-		err = errors.New("No pipeline engine type specified")
-		logrus.Errorf("%s", err.Error())
-		return err
-	}
+	o.launcher = launcher.NewLauncher(lhClient, o.namespace)
 	mux := http.NewServeMux()
 	mux.Handle(HealthPath, http.HandlerFunc(o.health))
 	mux.Handle(ReadyPath, http.HandlerFunc(o.ready))
