@@ -144,6 +144,7 @@ func specFromJobBase(jb config.JobBase) v1alpha1.LighthouseJobSpec {
 		namespace = *jb.Namespace
 	}
 	return v1alpha1.LighthouseJobSpec{
+		Agent:          jb.Agent,
 		Job:            jb.Name,
 		Namespace:      namespace,
 		MaxConcurrency: jb.MaxConcurrency,

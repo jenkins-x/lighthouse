@@ -109,6 +109,8 @@ type LighthouseJobSpec struct {
 	// Type is the type of job and informs how
 	// the jobs is triggered
 	Type config.PipelineKind `json:"type,omitempty"`
+	// Agent is what should run this job, if anything.
+	Agent string `json:"agent,omitempty"`
 	// Namespace defines where to create pods/resources.
 	Namespace string `json:"namespace,omitempty"`
 	// Job is the name of the job

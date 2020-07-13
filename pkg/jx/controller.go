@@ -322,102 +322,105 @@ func (c *Controller) syncJob(namespace, name, key string) error {
 
 	spec := &origJob.Spec
 
-	jobName := spec.Refs.Repo
-	owner := spec.Refs.Org
-	sourceURL := spec.Refs.CloneURI
+	// Only launch for the appropriate agent types and for triggered state
+	if origJob.Status.State == v1alpha1.TriggeredState && (spec.Agent == config.JenkinsXAgent || spec.Agent == config.LegacyDefaultAgent) {
+		jobName := spec.Refs.Repo
+		owner := spec.Refs.Org
+		sourceURL := spec.Refs.CloneURI
 
-	pullRefData := c.getPullRefs(sourceURL, spec)
-	pullRefs := ""
-	if len(spec.Refs.Pulls) > 0 {
-		pullRefs = pullRefData.String()
-	}
+		pullRefData := c.getPullRefs(sourceURL, spec)
+		pullRefs := ""
+		if len(spec.Refs.Pulls) > 0 {
+			pullRefs = pullRefData.String()
+		}
 
-	branch := spec.GetBranch()
-	if branch == "" {
-		branch = "master"
-	}
-	if pullRefs == "" {
-		pullRefs = branch + ":"
-	}
+		branch := spec.GetBranch()
+		if branch == "" {
+			branch = "master"
+		}
+		if pullRefs == "" {
+			pullRefs = branch + ":"
+		}
 
-	job := spec.Job
-	var kind metapipeline.PipelineKind
-	if len(spec.Refs.Pulls) > 0 {
-		kind = metapipeline.PullRequestPipeline
-	} else {
-		kind = metapipeline.ReleasePipeline
-	}
+		job := spec.Job
+		var kind metapipeline.PipelineKind
+		if len(spec.Refs.Pulls) > 0 {
+			kind = metapipeline.PullRequestPipeline
+		} else {
+			kind = metapipeline.ReleasePipeline
+		}
 
-	l := logrus.WithFields(logrus.Fields(map[string]interface{}{
-		"Owner":     owner,
-		"Name":      jobName,
-		"SourceURL": sourceURL,
-		"Branch":    branch,
-		"PullRefs":  pullRefs,
-		"Job":       job,
-	}))
-	l.Info("about to start Jenkinx X meta pipeline")
+		l := logrus.WithFields(logrus.Fields(map[string]interface{}{
+			"Owner":     owner,
+			"Name":      jobName,
+			"SourceURL": sourceURL,
+			"Branch":    branch,
+			"PullRefs":  pullRefs,
+			"Job":       job,
+		}))
+		l.Info("about to start Jenkinx X meta pipeline")
 
-	sa := os.Getenv("JX_SERVICE_ACCOUNT")
-	if sa == "" {
-		sa = "tekton-bot"
-	}
+		sa := os.Getenv("JX_SERVICE_ACCOUNT")
+		if sa == "" {
+			sa = "tekton-bot"
+		}
 
-	pipelineCreateParam := metapipeline.PipelineCreateParam{
-		PullRef:      pullRefData,
-		PipelineKind: kind,
-		Context:      spec.Context,
-		// No equivalent to https://github.com/jenkins-x/jx/blob/bb59278c2707e0e99b3c24be926745c324824388/pkg/cmd/controller/pipeline/pipelinerunner_controller.go#L236
-		//   for getting environment variables from the prow job here, so far as I can tell (abayer)
-		// Also not finding an equivalent to labels from the PipelineRunRequest
-		ServiceAccount: sa,
-		// I believe we can use an empty string default image?
-		DefaultImage: os.Getenv("JX_DEFAULT_IMAGE"),
-		EnvVariables: spec.GetEnvVars(),
-	}
+		pipelineCreateParam := metapipeline.PipelineCreateParam{
+			PullRef:      pullRefData,
+			PipelineKind: kind,
+			Context:      spec.Context,
+			// No equivalent to https://github.com/jenkins-x/jx/blob/bb59278c2707e0e99b3c24be926745c324824388/pkg/cmd/controller/pipeline/pipelinerunner_controller.go#L236
+			//   for getting environment variables from the prow job here, so far as I can tell (abayer)
+			// Also not finding an equivalent to labels from the PipelineRunRequest
+			ServiceAccount: sa,
+			// I believe we can use an empty string default image?
+			DefaultImage: os.Getenv("JX_DEFAULT_IMAGE"),
+			EnvVariables: spec.GetEnvVars(),
+		}
 
-	activityKey, tektonCRDs, err := c.mpClient.Create(pipelineCreateParam)
-	if err != nil {
-		return errors.Wrap(err, "unable to create Tekton CRDs")
-	}
+		activityKey, tektonCRDs, err := c.mpClient.Create(pipelineCreateParam)
+		if err != nil {
+			return errors.Wrap(err, "unable to create Tekton CRDs")
+		}
 
-	jobCopy := origJob.DeepCopy()
+		jobCopy := origJob.DeepCopy()
 
-	// Add the build number from the activity key to the labels on the job
-	jobCopy.Labels[util.BuildNumLabel] = activityKey.Build
+		// Add the build number from the activity key to the labels on the job
+		jobCopy.Labels[util.BuildNumLabel] = activityKey.Build
 
-	origJSON, err := json.Marshal(origJob)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal original job %s", origJob.Name)
-	}
-	copyJSON, err := json.Marshal(jobCopy)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal updated job %s", jobCopy.Name)
-	}
-	patch, err := jsonpatch.CreateMergePatch(origJSON, copyJSON)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create JSON patch for job %s", jobCopy.Name)
-	}
+		origJSON, err := json.Marshal(origJob)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal original job %s", origJob.Name)
+		}
+		copyJSON, err := json.Marshal(jobCopy)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal updated job %s", jobCopy.Name)
+		}
+		patch, err := jsonpatch.CreateMergePatch(origJSON, copyJSON)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create JSON patch for job %s", jobCopy.Name)
+		}
 
-	appliedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).Patch(jobCopy.Name, types.MergePatchType, patch)
-	if err != nil {
-		return errors.Wrapf(err, "unable to set build number on LighthouseJob %s", jobCopy.Name)
-	}
+		appliedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).Patch(jobCopy.Name, types.MergePatchType, patch)
+		if err != nil {
+			return errors.Wrapf(err, "unable to set build number on LighthouseJob %s", jobCopy.Name)
+		}
 
-	// Set status on the job
-	appliedJob.Status = v1alpha1.LighthouseJobStatus{
-		State:        v1alpha1.PendingState,
-		ActivityName: util.ToValidName(activityKey.Name),
-		StartTime:    metav1.Now(),
-	}
-	_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).UpdateStatus(appliedJob)
-	if err != nil {
-		return errors.Wrapf(err, "unable to set status on LighthouseJob %s", appliedJob.Name)
-	}
+		// Set status on the job
+		appliedJob.Status = v1alpha1.LighthouseJobStatus{
+			State:        v1alpha1.PendingState,
+			ActivityName: util.ToValidName(activityKey.Name),
+			StartTime:    metav1.Now(),
+		}
+		_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).UpdateStatus(appliedJob)
+		if err != nil {
+			return errors.Wrapf(err, "unable to set status on LighthouseJob %s", appliedJob.Name)
+		}
 
-	err = c.mpClient.Apply(activityKey, tektonCRDs)
-	if err != nil {
-		return errors.Wrap(err, "unable to apply Tekton CRDs")
+		err = c.mpClient.Apply(activityKey, tektonCRDs)
+		if err != nil {
+			return errors.Wrap(err, "unable to apply Tekton CRDs")
+		}
 	}
 	return nil
 }
