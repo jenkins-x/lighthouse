@@ -5,6 +5,8 @@
 package v1alpha1
 
 import (
+	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -244,6 +246,16 @@ func (in *LighthouseJobSpec) DeepCopyInto(out *LighthouseJobSpec) {
 	if in.Refs != nil {
 		in, out := &in.Refs, &out.Refs
 		*out = new(Refs)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.PipelineRunSpec != nil {
+		in, out := &in.PipelineRunSpec, &out.PipelineRunSpec
+		*out = new(pipelinev1alpha1.PipelineRunSpec)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.PodSpec != nil {
+		in, out := &in.PodSpec, &out.PodSpec
+		*out = new(v1.PodSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	return

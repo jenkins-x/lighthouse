@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
+	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -127,6 +129,11 @@ type LighthouseJobSpec struct {
 	// MaxConcurrency restricts the total number of instances
 	// of this job that can run in parallel at once
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
+	// PipelineRunSpec provides the basis for running the test as a Tekton Pipeline
+	// https://github.com/tektoncd/pipeline
+	PipelineRunSpec *pipelinev1alpha1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
+	// PodSpec provides the basis for running the test under a Kubernetes agent
+	PodSpec *corev1.PodSpec `json:"pod_spec,omitempty"`
 }
 
 // GetBranch returns the branch name corresponding to the refs on this spec.
