@@ -1,6 +1,7 @@
 package jx
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	jxv1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
 	jxinformers "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions/jenkins.io/v1"
@@ -29,6 +31,7 @@ import (
 	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -379,10 +382,24 @@ func (c *Controller) syncJob(namespace, name, key string) error {
 	}
 
 	jobCopy := origJob.DeepCopy()
+
 	// Add the build number from the activity key to the labels on the job
 	jobCopy.Labels[util.BuildNumLabel] = activityKey.Build
 
-	appliedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).Update(jobCopy)
+	origJSON, err := json.Marshal(origJob)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal original job %s", origJob.Name)
+	}
+	copyJSON, err := json.Marshal(jobCopy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal updated job %s", jobCopy.Name)
+	}
+	patch, err := jsonpatch.CreateMergePatch(origJSON, copyJSON)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create JSON patch for job %s", jobCopy.Name)
+	}
+
+	appliedJob, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).Patch(jobCopy.Name, types.MergePatchType, patch)
 	if err != nil {
 		return errors.Wrapf(err, "unable to set build number on LighthouseJob %s", jobCopy.Name)
 	}
