@@ -145,8 +145,8 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 			if oldJob.ResourceVersion == newJob.ResourceVersion {
 				return
 			}
-			// Don't queue for any job that's already launched
-			if newJob.Status.ActivityName == "" || newJob.Status.State != v1alpha1.TriggeredState {
+			// Don't queue any job that isn't in the triggered state
+			if newJob.Status.State != v1alpha1.TriggeredState {
 				return
 			}
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
