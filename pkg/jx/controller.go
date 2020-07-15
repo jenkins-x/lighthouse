@@ -134,9 +134,9 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 	logger.Info("Setting up event handlers")
 	lhInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
+			key, err := toKey(obj)
 			if err == nil {
-				controller.queue.AddRateLimited(jobKeyPrefix + ":::" + key)
+				controller.queue.AddRateLimited(key)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -149,17 +149,17 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 			if newJob.Status.State != v1alpha1.TriggeredState {
 				return
 			}
-			key, err := cache.MetaNamespaceKeyFunc(newObj)
+			key, err := toKey(newObj)
 			if err == nil {
-				controller.queue.AddRateLimited(jobKeyPrefix + ":::" + key)
+				controller.queue.AddRateLimited(key)
 			}
 		},
 	})
 	activityInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
+			key, err := toKey(obj)
 			if err == nil {
-				controller.queue.AddRateLimited(activityKeyPrefix + ":::" + key)
+				controller.queue.AddRateLimited(key)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -169,15 +169,9 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 			if oldAct.ResourceVersion == newAct.ResourceVersion {
 				return
 			}
-			key, err := cache.MetaNamespaceKeyFunc(newObj)
+			key, err := toKey(newObj)
 			if err == nil {
-				controller.queue.AddRateLimited(activityKeyPrefix + ":::" + key)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err == nil {
-				controller.queue.AddRateLimited(activityKeyPrefix + ":::" + key)
+				controller.queue.AddRateLimited(key)
 			}
 		},
 	})
@@ -185,6 +179,21 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 	controller.wg = &sync.WaitGroup{}
 
 	return controller, nil
+}
+
+func toKey(obj interface{}) (string, error) {
+	baseKey, err := cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
+		return "", err
+	}
+	switch obj.(type) {
+	case *v1alpha1.LighthouseJob:
+		return jobKeyPrefix + ":::" + baseKey, nil
+	case *jxv1.PipelineActivity:
+		return activityKeyPrefix + ":::" + baseKey, nil
+	default:
+		return "", errors.New("unknown type, cannot enqueue")
+	}
 }
 
 // Run actually runs the controller
@@ -309,8 +318,6 @@ func (c *Controller) syncJob(namespace, name, key string) error {
 	// Get the LighthouseJob resource with this namespace/name
 	origJob, err := c.lhLister.LighthouseJobs(namespace).Get(name)
 	if err != nil {
-		// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
-		// TODO: Actually delete.
 		if kubeerrors.IsNotFound(err) {
 			c.logger.Warnf("activity '%s' in work queue no longer exists", key)
 			return nil
