@@ -111,7 +111,7 @@ type scmProviderClient interface {
 }
 
 type launcher interface {
-	Launch(*v1alpha1.LighthouseJob, scm.Repository) (*v1alpha1.LighthouseJob, error)
+	Launch(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.
@@ -257,7 +257,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 		c.Logger.Infof("Starting %s build.", job.Name)
 		pj := jobutil.NewPresubmit(pr, baseSHA, job, eventGUID)
 		c.Logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
-		if _, err := c.LauncherClient.Launch(&pj, pr.Repository()); err != nil {
+		if _, err := c.LauncherClient.Launch(&pj); err != nil {
 			c.Logger.WithError(err).Error("Failed to create LighthouseJob.")
 			errors = append(errors, err)
 			if _, statusErr := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {

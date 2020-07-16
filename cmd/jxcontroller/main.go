@@ -7,11 +7,13 @@ import (
 	"syscall"
 	"time"
 
+	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
+	jxinformers "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
-	"github.com/jenkins-x/lighthouse/pkg/foghorn"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
+	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -57,7 +59,7 @@ func stopper() chan struct{} {
 }
 
 func main() {
-	logrusutil.ComponentInit("lighthouse-foghorn")
+	logrusutil.ComponentInit("lighthouse-jx-controller")
 
 	defer interrupts.WaitForGracefulShutdown()
 
@@ -83,8 +85,17 @@ func main() {
 	}
 	lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Minute*30, lhinformers.WithNamespace(o.namespace))
 
-	controller, err := foghorn.NewController(kubeClient,
+	jxClient, err := jxclient.NewForConfig(cfg)
+	if err != nil {
+		logrus.WithError(err).Fatal("Could not create Jenkins X API client")
+	}
+	jxInformerFactory := jxinformers.NewSharedInformerFactoryWithOptions(jxClient, time.Minute*30, jxinformers.WithNamespace(o.namespace))
+	paInformer := jxInformerFactory.Jenkins().V1().PipelineActivities()
+
+	controller, err := jx.NewController(kubeClient,
+		jxClient,
 		lhClient,
+		paInformer,
 		lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs(),
 		o.namespace,
 		nil)
@@ -92,6 +103,7 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating controller")
 	}
+	jxInformerFactory.Start(stopCh)
 	lhInformerFactory.Start(stopCh)
 
 	if err = controller.Run(2, stopCh); err != nil {

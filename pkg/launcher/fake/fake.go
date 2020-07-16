@@ -3,7 +3,6 @@ package fake
 import (
 	"errors"
 
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +26,7 @@ func NewLauncher() *Launcher {
 }
 
 // Launch creates a launcher job
-func (p *Launcher) Launch(po *v1alpha1.LighthouseJob, repo scm.Repository) (*v1alpha1.LighthouseJob, error) {
+func (p *Launcher) Launch(po *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
 	if p.FailJobs.Has(po.Spec.Job) {
 		return po, errors.New("failed to create job")
 	}

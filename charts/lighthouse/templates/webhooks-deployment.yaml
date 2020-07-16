@@ -29,6 +29,8 @@ spec:
       - name: {{ template "webhooks.name" . }}
         image: {{ tpl .Values.webhooks.image.repository . }}:{{ tpl .Values.webhooks.image.tag . }}
         imagePullPolicy: {{ tpl .Values.webhooks.image.pullPolicy . }}
+        args:
+          - "--namespace={{ .Release.Namespace }}"
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"

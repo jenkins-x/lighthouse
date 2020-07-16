@@ -6,10 +6,11 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/sessions v1.1.3
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/jenkins-x/go-scm v1.5.147
 	github.com/jenkins-x/jx-api v0.0.13
 	github.com/jenkins-x/jx/v2 v2.1.101
-	github.com/jenkins-x/lighthouse-config v0.0.7
+	github.com/jenkins-x/lighthouse-config v0.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect

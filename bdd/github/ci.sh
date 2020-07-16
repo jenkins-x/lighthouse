@@ -89,23 +89,12 @@ jx step bdd \
     --default-admin-password $JENKINS_PASSWORD \
     --no-delete-app \
     --no-delete-repo \
-    --tests test-create-spring \
     --tests test-lighthouse
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
   pushd ..
-  mkdir -p extra-logs
-  kubectl logs --tail=-1 "$(kubectl get pod -l app=controllerbuild -o jsonpath='{.items[*].metadata.name}')" > extra-logs/controllerbuild.log
-  kubectl logs --tail=-1 "$(kubectl get pod -l app=lighthouse-keeper -o jsonpath='{.items[*].metadata.name}')" > extra-logs/keeper.log
-  kubectl logs --tail=-1 "$(kubectl get pod -l app=lighthouse-foghorn -o jsonpath='{.items[*].metadata.name}')" > extra-logs/foghorn.log
-  lh_cnt=0
-  for lh_pod in $(kubectl get pod -l app=lighthouse-webhooks -o jsonpath='{.items[*].metadata.name}'); do
-    ((lh_cnt=lh_cnt+1))
-    kubectl logs --tail=-1 "${lh_pod}" > extra-logs/lh.${lh_cnt}.log
-  done
-
-  jx step stash -c lighthouse-tests -p "extra-logs/*.log" --bucket-url gs://jx-prod-logs
+  bash bdd/capture-failed-pod-logs.sh
   popd
 fi
 cd ../charts/lighthouse

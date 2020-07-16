@@ -1,49 +1,69 @@
 package clients
 
 import (
+	"fmt"
+	"os"
+	"os/user"
+	"path/filepath"
+
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
-	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
-	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
-	"github.com/jenkins-x/jx/v2/pkg/kube"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	kubeclient "k8s.io/client-go/kubernetes"
 )
 
-// GetClientsAndNamespace returns the tekton, jx, kube, and Lighthouse clients and the dev namespace
-func GetClientsAndNamespace(factory jxfactory.Factory) (tektonclient.Interface, jxclient.Interface, kubeclient.Interface, clientset.Interface, string, error) {
-	if factory == nil {
-		factory = jxfactory.NewFactory()
+// GetAPIClients returns the tekton, kube, and Lighthouse clients and the kubeconfig used to create them
+func GetAPIClients() (tektonclient.Interface, kubeclient.Interface, clientset.Interface, *rest.Config, error) {
+	kubeCfg, err := GetConfig("", "")
+	if err != nil {
+		return nil, nil, nil, nil, errors.Wrap(err, "unable to get kubeconfig")
 	}
 
-	tektonClient, _, err := factory.CreateTektonClient()
+	lhClient, err := clientset.NewForConfig(kubeCfg)
 	if err != nil {
-		return nil, nil, nil, nil, "", errors.Wrap(err, "unable to create Tekton client")
+		return nil, nil, nil, nil, errors.Wrap(err, "unable to create Lighthouse client")
 	}
 
-	jxClient, _, err := factory.CreateJXClient()
+	tektonClient, err := tektonclient.NewForConfig(kubeCfg)
 	if err != nil {
-		return nil, nil, nil, nil, "", errors.Wrap(err, "unable to create JX client")
+		return nil, nil, nil, nil, errors.Wrap(err, "unable to create Tekton client")
 	}
 
-	kubeClient, ns, err := factory.CreateKubeClient()
+	kubeClient, err := kubeclient.NewForConfig(kubeCfg)
 	if err != nil {
-		return nil, nil, nil, nil, "", errors.Wrap(err, "unable to create Kube client")
-	}
-	ns, _, err = kube.GetDevNamespace(kubeClient, ns)
-	if err != nil {
-		return nil, nil, nil, nil, "", errors.Wrap(err, "unable to find the dev namespace")
+		return nil, nil, nil, nil, errors.Wrap(err, "unable to create Kubernetes client")
 	}
 
-	config, err := factory.CreateKubeConfig()
-	if err != nil {
-		return nil, nil, nil, nil, "", errors.Wrap(err, "unable to create kubeconfig for Lighthouse client")
+	return tektonClient, kubeClient, lhClient, kubeCfg, nil
+}
+
+// GetConfig returns a rest.Config to be used for kubernetes client creation.
+// It does so in the following order:
+//   1. Use the passed kubeconfig/masterURL.
+//   2. Fallback to the KUBECONFIG environment variable.
+//   3. Fallback to in-cluster config.
+//   4. Fallback to the ~/.kube/config.
+func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
+	if kubeconfig == "" {
+		kubeconfig = os.Getenv("KUBECONFIG")
 	}
-	lhClient, err := clientset.NewForConfig(config)
-	if err != nil {
-		return nil, nil, nil, nil, "", errors.Wrap(err, "unable to create Lighthouse client")
+	// If we have an explicit indication of where the kubernetes config lives, read that.
+	if kubeconfig != "" {
+		return clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
+	}
+	// If not, try the in-cluster config.
+	if c, err := rest.InClusterConfig(); err == nil {
+		return c, nil
+	}
+	// If no in-cluster config, try the default location in the user's home directory.
+	if usr, err := user.Current(); err == nil {
+		if c, err := clientcmd.BuildConfigFromFlags("", filepath.Join(usr.HomeDir, ".kube", "config")); err == nil {
+			return c, nil
+		}
 	}
 
-	return tektonClient, jxClient, kubeClient, lhClient, ns, nil
+	return nil, fmt.Errorf("could not create a valid kubeconfig")
 }
