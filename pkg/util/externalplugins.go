@@ -16,14 +16,14 @@ import (
 
 	goscmhmac "github.com/jenkins-x/go-scm/pkg/hmac"
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/record"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // ParseExternalPluginEvent parses a webhook relayed to an external plugin
-func ParseExternalPluginEvent(req *http.Request, secretToken string) (scm.Webhook, *record.ActivityRecord, error) {
+func ParseExternalPluginEvent(req *http.Request, secretToken string) (scm.Webhook, *v1alpha1.ActivityRecord, error) {
 	data, err := ioutil.ReadAll(
 		io.LimitReader(req.Body, 10000000),
 	)
@@ -59,7 +59,7 @@ func ParseExternalPluginEvent(req *http.Request, secretToken string) (scm.Webhoo
 		}
 		return hook, nil, nil
 	case LighthousePayloadTypeActivity:
-		ar := new(record.ActivityRecord)
+		ar := new(v1alpha1.ActivityRecord)
 		err := json.Unmarshal(data, ar)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "parsing activity")
@@ -70,8 +70,8 @@ func ParseExternalPluginEvent(req *http.Request, secretToken string) (scm.Webhoo
 	}
 }
 
-func parseActivity(l *logrus.Entry, req *http.Request, data []byte) (*record.ActivityRecord, error) {
-	ar := new(record.ActivityRecord)
+func parseActivity(l *logrus.Entry, req *http.Request, data []byte) (*v1alpha1.ActivityRecord, error) {
+	ar := new(v1alpha1.ActivityRecord)
 	err := json.Unmarshal(data, ar)
 	return ar, err
 }
@@ -190,7 +190,7 @@ func callExternalPlugins(l *logrus.Entry, externalPlugins []plugins.ExternalPlug
 }
 
 // CallExternalPluginsWithActivityRecord dispatches the provided activity record to the external plugins.
-func CallExternalPluginsWithActivityRecord(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, activity *record.ActivityRecord, hmacToken string, wg *sync.WaitGroup) {
+func CallExternalPluginsWithActivityRecord(l *logrus.Entry, externalPlugins []plugins.ExternalPlugin, activity *v1alpha1.ActivityRecord, hmacToken string, wg *sync.WaitGroup) {
 	headers := http.Header{}
 	headers.Set(LighthousePayloadTypeHeader, LighthousePayloadTypeActivity)
 	payload, err := json.Marshal(activity)

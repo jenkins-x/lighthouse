@@ -42,11 +42,8 @@ type options struct {
 	botName       string
 	gitServerURL  string
 	gitKind       string
+	namespace     string
 
-	syncThrottle   int
-	statusThrottle int
-
-	dryRun  bool
 	runOnce bool
 
 	maxRecordsPerPool int
@@ -77,14 +74,12 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.botName, "bot-name", "", "The bot name")
 	fs.StringVar(&o.gitServerURL, "git-url", "", "The git provider URL")
 	fs.StringVar(&o.gitKind, "git-kind", "", "The git provider kind (e.g. github, gitlab, bitbucketserver")
-	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to mutate any real-world state.")
 	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
-	fs.IntVar(&o.syncThrottle, "sync-hourly-tokens", 800, "The maximum number of tokens per hour to be used by the sync controller.")
-	fs.IntVar(&o.statusThrottle, "status-hourly-tokens", 400, "The maximum number of tokens per hour to be used by the status controller.")
 
 	fs.IntVar(&o.maxRecordsPerPool, "max-records-per-pool", 1000, "The maximum number of history records stored for an individual Keeper pool.")
 	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store keeper action history. GCS writes will use the default object ACL for the bucket")
 	fs.StringVar(&o.statusURI, "status-path", "", "The /local/path or gs://path/to/object to store status controller state. GCS writes will use the default object ACL for the bucket.")
+	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -142,7 +137,7 @@ func main() {
 	gitToken := os.Getenv("GIT_TOKEN")
 
 	cfg := configAgent.Config
-	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI)
+	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}

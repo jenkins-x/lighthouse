@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
@@ -63,10 +62,9 @@ type overrideClient interface {
 }
 
 type client struct {
-	spc           scmProviderClient
-	jc            config.JobConfig
-	clientFactory jxfactory.Factory
-	lhClient      lighthouseclient.LighthouseJobInterface
+	spc      scmProviderClient
+	jc       config.JobConfig
+	lhClient lighthouseclient.LighthouseJobInterface
 }
 
 func (c client) createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
@@ -143,14 +141,13 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	c := client{
-		spc:           pc.SCMProviderClient,
-		clientFactory: pc.ClientFactory,
-		lhClient:      pc.LighthouseClient,
+		spc:      pc.SCMProviderClient,
+		lhClient: pc.LighthouseClient,
 	}
 	if pc.Config != nil {
 		c.jc = pc.Config.JobConfig
 	}
-	return handle(pc.ClientFactory, c, pc.Logger, &e)
+	return handle(c, pc.Logger, &e)
 }
 
 func authorized(spc scmProviderClient, log *logrus.Entry, org, repo, user string) bool {
@@ -181,7 +178,7 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(clientFactory jxfactory.Factory, oc overrideClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
+func handle(oc overrideClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
 
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil

@@ -13,18 +13,12 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	jxv1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
-	jxclient "github.com/jenkins-x/jx-api/pkg/client/clientset/versioned"
-	jxinformers "github.com/jenkins-x/jx-api/pkg/client/informers/externalversions/jenkins.io/v1"
-	jxlisters "github.com/jenkins-x/jx-api/pkg/client/listers/jenkins.io/v1"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/jx"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/record"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -34,7 +28,6 @@ import (
 	"golang.org/x/time/rate"
 	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -50,12 +43,8 @@ const (
 
 // Controller listens for changes to PipelineActivitys and updates the corresponding LighthouseJobs and provider commit statuses.
 type Controller struct {
-	jxClient   jxclient.Interface
 	lhClient   clientset.Interface
 	kubeClient kubernetes.Interface
-
-	activityLister jxlisters.PipelineActivityLister
-	activitySynced cache.InformerSynced
 
 	lhLister lhlisters.LighthouseJobLister
 	lhSynced cache.InformerSynced
@@ -76,9 +65,8 @@ type Controller struct {
 	ns     string
 }
 
-// NewController returns a new controller for syncing PipelineActivity updates to LighthouseJobs and commit statuses
-func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface, lhClient clientset.Interface, activityInformer jxinformers.PipelineActivityInformer,
-	lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) (*Controller, error) {
+// NewController returns a new controller for syncing LighthouseJobs and commit statuses
+func NewController(kubeClient kubernetes.Interface, lhClient clientset.Interface, lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) (*Controller, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName)
 	}
@@ -128,10 +116,7 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 	}
 
 	controller := &Controller{
-		jxClient:         jxClient,
 		lhClient:         lhClient,
-		activityLister:   activityInformer.Lister(),
-		activitySynced:   activityInformer.Informer().HasSynced,
 		lhLister:         lhInformer.Lister(),
 		lhSynced:         lhInformer.Informer().HasSynced,
 		logger:           logger,
@@ -143,13 +128,12 @@ func NewController(kubeClient kubernetes.Interface, jxClient jxclient.Interface,
 		kubeClient:       kubeClient,
 	}
 
-	activityInformer.Informer()
 	logger.Info("Setting up event handlers")
-	activityInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	lhInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			newAct := newObj.(*jxv1.PipelineActivity)
-			oldAct := oldObj.(*jxv1.PipelineActivity)
+			newAct := newObj.(*v1alpha1.LighthouseJob)
+			oldAct := oldObj.(*v1alpha1.LighthouseJob)
 			// Skip updates solely triggered by resyncs. We only care if they're actually different.
 			if oldAct.ResourceVersion == newAct.ResourceVersion {
 				return
@@ -184,7 +168,7 @@ func (c *Controller) Run(threadiness int, stopCh <-chan struct{}) error {
 
 	// Wait for the caches to be synced before starting workers
 	c.logger.Info("Waiting for informer caches to sync")
-	if ok := cache.WaitForCacheSync(stopCh, c.activitySynced, c.lhSynced); !ok {
+	if ok := cache.WaitForCacheSync(stopCh, c.lhSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
 
@@ -274,11 +258,9 @@ func (c *Controller) syncHandler(key string) error {
 		return nil
 	}
 
-	// Get the PipelineActivity resource with this namespace/name
-	jxActivity, err := c.activityLister.PipelineActivities(namespace).Get(name)
+	job, err := c.lhLister.LighthouseJobs(namespace).Get(name)
 	if err != nil {
-		// The PipelineActivity resource may no longer exist, in which case we delete the associated LH job
-		// TODO: Actually delete.
+		// The LighthouseJob resource may no longer exist
 		if kubeerrors.IsNotFound(err) {
 			c.logger.Warnf("activity '%s' in work queue no longer exists", key)
 			return nil
@@ -288,33 +270,14 @@ func (c *Controller) syncHandler(key string) error {
 		return err
 	}
 
-	activityRecord, err := jx.ConvertPipelineActivity(jxActivity)
-	if err != nil {
-		return err
-	}
-
-	var job *v1alpha1.LighthouseJob
-
-	// Get all LighthouseJobs with the same owner/repo/branch/build/context
-	labelSelector, err := createLabelSelectorFromActivity(activityRecord)
-	possibleJobs, err := c.lhLister.LighthouseJobs(namespace).List(labelSelector)
-	if err != nil {
-		return err
-	}
-	if len(possibleJobs) == 0 {
-		// TODO: Something to handle jx start pipeline cases - my previous approach resulted in infinite creations of new jobs, which was...wrong. (apb)
-		c.logger.Warnf("no LighthouseJobs found matching label selector %s", labelSelector.String())
+	if job == nil {
 		return nil
 	}
 
-	// To be safe, find the job with the activity's name in its status.
-	for _, j := range possibleJobs {
-		if j.Status.ActivityName == jxActivity.Name {
-			job = j
-		}
-	}
+	activityRecord := job.Status.Activity
 
-	if job == nil {
+	if activityRecord == nil {
+		// There's no activity on the job, so there's nothing for us to do.
 		return nil
 	}
 
@@ -341,7 +304,7 @@ func (c *Controller) syncHandler(key string) error {
 	return nil
 }
 
-func (c *Controller) updateJobStatusForActivity(activity *record.ActivityRecord, job *v1alpha1.LighthouseJob) {
+func (c *Controller) updateJobStatusForActivity(activity *v1alpha1.ActivityRecord, job *v1alpha1.LighthouseJob) {
 	if activity.Status != job.Status.State {
 		job.Status.State = activity.Status
 	}
@@ -362,29 +325,7 @@ func RateLimiter() workqueue.RateLimitingInterface {
 	return workqueue.NewNamedRateLimitingQueue(rl, controllerName)
 }
 
-func createLabelSelectorFromActivity(activity *record.ActivityRecord) (labels.Selector, error) {
-	var selectors []string
-
-	if activity.Owner != "" {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.OrgLabel, strings.ToLower(activity.Owner)))
-	}
-	if activity.Repo != "" {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.RepoLabel, activity.Repo))
-	}
-	if activity.Branch != "" {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.BranchLabel, activity.Branch))
-	}
-	if activity.BuildIdentifier != "" {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.BuildNumLabel, activity.BuildIdentifier))
-	}
-	if activity.Context != "" {
-		selectors = append(selectors, fmt.Sprintf("%s=%s", util.ContextLabel, activity.Context))
-	}
-
-	return labels.Parse(strings.Join(selectors, ","))
-}
-
-func (c *Controller) reportStatus(ns string, activity *record.ActivityRecord, job *v1alpha1.LighthouseJob) {
+func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, job *v1alpha1.LighthouseJob) {
 	sha := activity.LastCommitSHA
 
 	owner := activity.Owner
@@ -551,7 +492,7 @@ type reportStatusInfo struct {
 	runningStages string
 }
 
-func toScmStatusDescriptionRunningStages(activity *record.ActivityRecord, gitKind string) reportStatusInfo {
+func toScmStatusDescriptionRunningStages(activity *v1alpha1.ActivityRecord, gitKind string) reportStatusInfo {
 	info := reportStatusInfo{
 		description:   "",
 		runningStages: "",

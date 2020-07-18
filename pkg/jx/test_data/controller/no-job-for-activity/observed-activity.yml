@@ -1,0 +1,127 @@
+apiVersion: jenkins.io/v1
+kind: PipelineActivity
+metadata:
+  creationTimestamp: "2020-06-22T11:53:16Z"
+  generation: 24
+  labels:
+    branch: PR-813
+    build: "1"
+    context: github
+    lastCommitSha: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    owner: jenkins-x
+    provider: github
+    repository: lighthouse
+  name: jenkins-x-lighthouse-pr-813-1
+  namespace: jx
+  resourceVersion: "196520840"
+  selfLink: /apis/jenkins.io/v1/namespaces/jx/pipelineactivities/jenkins-x-lighthouse-pr-813-6
+  uid: f53aa32b-b47e-11ea-b02a-42010a8401ad
+spec:
+  author: abayer
+  authorAvatarURL: https://avatars2.githubusercontent.com/u/120218?v=4
+  authorURL: https://github.com/abayer
+  baseSHA: e8d56b5ee9671599c75644af574a251dd3b94a5c
+  batchPipelineActivity: {}
+  build: "1"
+  context: github
+  gitBranch: PR-813
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  gitUrl: https://github.com/jenkins-x/lighthouse.git
+  lastCommitSHA: dd64c739442d505cf5381e2a14b60968e8a0d86e
+  pipeline: jenkins-x/lighthouse/PR-813
+  pullTitle: 'WIP: feat: Work towards supporting other engines besides jx'
+  startedTimestamp: "2020-06-22T11:53:17Z"
+  status: Running
+  steps:
+  - kind: Stage
+    stage:
+      completedTimestamp: "2020-06-22T11:53:49Z"
+      name: meta pipeline
+      startedTimestamp: "2020-06-22T11:53:17Z"
+      status: Succeeded
+      steps:
+      - completedTimestamp: "2020-06-22T11:53:17Z"
+        name: Credential Initializer C5wrl
+        startedTimestamp: "2020-06-22T11:53:17Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:17Z"
+        name: Working Dir Initializer Vjz4t
+        startedTimestamp: "2020-06-22T11:53:17Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:18Z"
+        name: Place Tools
+        startedTimestamp: "2020-06-22T11:53:17Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:25Z"
+        description: https://github.com/jenkins-x/lighthouse.git
+        name: Git Source Meta Jenkins X Lighthouse Pr 81 7gtvf Vxn85
+        startedTimestamp: "2020-06-22T11:53:18Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:29Z"
+        name: Git Merge
+        startedTimestamp: "2020-06-22T11:53:25Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:32Z"
+        name: Merge Pull Refs
+        startedTimestamp: "2020-06-22T11:53:29Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:42Z"
+        name: Create Effective Pipeline
+        startedTimestamp: "2020-06-22T11:53:32Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:49Z"
+        name: Create Tekton Crds
+        startedTimestamp: "2020-06-22T11:53:42Z"
+        status: Succeeded
+  - kind: Stage
+    stage:
+      name: ci
+      startedTimestamp: "2020-06-22T11:53:50Z"
+      status: Running
+      steps:
+      - completedTimestamp: "2020-06-22T11:53:50Z"
+        name: Credential Initializer 52cws
+        startedTimestamp: "2020-06-22T11:53:50Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:51Z"
+        name: Working Dir Initializer Z594z
+        startedTimestamp: "2020-06-22T11:53:50Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:52Z"
+        name: Place Tools
+        startedTimestamp: "2020-06-22T11:53:51Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:53:59Z"
+        description: https://github.com/jenkins-x/lighthouse.git
+        name: Git Source Jenkins X Lighthouse Pr 813 Git R8sdb F64b8
+        startedTimestamp: "2020-06-22T11:53:52Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:54:02Z"
+        name: Git Merge
+        startedTimestamp: "2020-06-22T11:53:59Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:55:37Z"
+        name: Build Binaries
+        startedTimestamp: "2020-06-22T11:54:02Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:55:54Z"
+        name: Build And Push Webhooks
+        startedTimestamp: "2020-06-22T11:55:37Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:56:10Z"
+        name: Build And Push Keeper
+        startedTimestamp: "2020-06-22T11:55:54Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:56:26Z"
+        name: Build And Push Foghorn
+        startedTimestamp: "2020-06-22T11:56:10Z"
+        status: Succeeded
+      - completedTimestamp: "2020-06-22T11:56:41Z"
+        name: Build And Push Gc Jobs
+        startedTimestamp: "2020-06-22T11:56:26Z"
+        status: Succeeded
+      - name: Runci
+        startedTimestamp: "2020-06-22T11:56:41Z"
+        status: Running
+status: {}

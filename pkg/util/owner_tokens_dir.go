@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jenkins-x/jx/v2/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -24,7 +23,7 @@ func NewOwnerTokensDir(gitServer, dir string) *OwnerTokensDir {
 // FindToken finds the token for the given owner
 func (o *OwnerTokensDir) FindToken(owner string) (string, error) {
 	dir := o.dir
-	ownerURL := util.UrlJoin(o.gitServer, owner)
+	ownerURL := URLJoin(o.gitServer, owner)
 	prefix := ownerURL + "="
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {

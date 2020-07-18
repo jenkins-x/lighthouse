@@ -712,6 +712,7 @@ func TestDividePool(t *testing.T) {
 		npr.BaseRef.Prefix = "refs/heads/"
 		npr.Repository.Name = githubql.String(p.repo)
 		npr.Repository.Owner.Login = githubql.String(p.org)
+		npr.Repository.URL = githubql.String(fmt.Sprintf("https://github.com/%s/%s.git", p.org, p.repo))
 		pulls[prKey(&npr)] = npr
 	}
 	var pjs []v1alpha1.LighthouseJob
@@ -749,7 +750,7 @@ func TestDividePool(t *testing.T) {
 				t.Errorf("PR in wrong subpool. Got PR %+v in subpool %s.", pr, name)
 			}
 		}
-		for _, pj := range sp.pjs {
+		for _, pj := range sp.ljs {
 			if pj.Spec.Type != config.PresubmitJob && pj.Spec.Type != config.BatchJob {
 				t.Errorf("PJ with bad type in subpool %s: %+v", name, pj)
 			}
@@ -1523,6 +1524,7 @@ func testPR(org, repo, branch string, number int, mergeable githubql.MergeableSt
 	pr.Repository.Name = githubql.String(repo)
 	pr.Repository.NameWithOwner = githubql.String(fmt.Sprintf("%s/%s", org, repo))
 	pr.BaseRef.Name = githubql.String(branch)
+	pr.Repository.URL = githubql.String(fmt.Sprintf("https://github.com/%s/%s.git", org, repo))
 
 	pr.Commits.Nodes = append(pr.Commits.Nodes, struct{ Commit Commit }{
 		Commit{
@@ -1628,71 +1630,70 @@ func TestSync(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		t.Logf("Starting case %q...", tc.name)
-		fgc := &fgc{prs: tc.prs}
-		fakeLauncher := launcherfake.NewLauncher()
-		fakeLighthouseClient := fake.NewSimpleClientset()
-		fakeTektonClient := tektonfake.NewSimpleClientset()
-		ca := &config.Agent{}
-		ca.Set(&config.Config{
-			ProwConfig: config.ProwConfig{
-				Keeper: config.Keeper{
-					Queries:            []config.KeeperQuery{{}},
-					MaxGoroutines:      4,
-					StatusUpdatePeriod: time.Second * 0,
+		t.Run(tc.name, func(t *testing.T) {
+			fgc := &fgc{prs: tc.prs}
+			fakeLauncher := launcherfake.NewLauncher()
+			fakeLighthouseClient := fake.NewSimpleClientset()
+			fakeTektonClient := tektonfake.NewSimpleClientset()
+			ca := &config.Agent{}
+			ca.Set(&config.Config{
+				ProwConfig: config.ProwConfig{
+					Keeper: config.Keeper{
+						Queries:            []config.KeeperQuery{{}},
+						MaxGoroutines:      4,
+						StatusUpdatePeriod: time.Second * 0,
+					},
 				},
-			},
-		})
-		hist, err := history.New(100, "")
-		if err != nil {
-			t.Fatalf("Failed to create history client: %v", err)
-		}
-		sc := &statusController{
-			logger:         logrus.WithField("controller", "status-update"),
-			spc:            fgc,
-			config:         ca.Config,
-			newPoolPending: make(chan bool, 1),
-			shutDown:       make(chan bool),
-		}
-		go sc.run()
-		defer sc.shutdown()
-		c := &DefaultController{
-			config:         ca.Config,
-			spc:            fgc,
-			launcherClient: fakeLauncher,
-			tektonClient:   fakeTektonClient,
-			lhClient:       fakeLighthouseClient,
-			ns:             "jx",
-			logger:         logrus.WithField("controller", "sync"),
-			sc:             sc,
-			changedFiles: &changedFilesAgent{
-				spc:             fgc,
-				nextChangeCache: make(map[changeCacheKey][]string),
-			},
-			History: hist,
-		}
+			})
+			hist, err := history.New(100, "")
+			if err != nil {
+				t.Fatalf("Failed to create history client: %v", err)
+			}
+			sc := &statusController{
+				logger:         logrus.WithField("controller", "status-update"),
+				spc:            fgc,
+				config:         ca.Config,
+				newPoolPending: make(chan bool, 1),
+				shutDown:       make(chan bool),
+			}
+			go sc.run()
+			defer sc.shutdown()
+			c := &DefaultController{
+				config:         ca.Config,
+				spc:            fgc,
+				launcherClient: fakeLauncher,
+				tektonClient:   fakeTektonClient,
+				lhClient:       fakeLighthouseClient,
+				ns:             "jx",
+				logger:         logrus.WithField("controller", "sync"),
+				sc:             sc,
+				changedFiles: &changedFilesAgent{
+					spc:             fgc,
+					nextChangeCache: make(map[changeCacheKey][]string),
+				},
+				History: hist,
+			}
 
-		if err := c.Sync(); err != nil {
-			t.Errorf("Unexpected error from 'Sync()': %v.", err)
-			continue
-		}
-		if len(tc.expectedPools) != len(c.pools) {
-			t.Errorf("Keeper pools did not match expected. Got %#v, expected %#v.", c.pools, tc.expectedPools)
-			continue
-		}
-		for _, expected := range tc.expectedPools {
-			var match *Pool
-			for i, actual := range c.pools {
-				if expected.Org == actual.Org && expected.Repo == actual.Repo && expected.Branch == actual.Branch {
-					match = &c.pools[i]
+			if err := c.Sync(); err != nil {
+				t.Fatalf("Unexpected error from 'Sync()': %v.", err)
+			}
+			if len(tc.expectedPools) != len(c.pools) {
+				t.Fatalf("Keeper pools did not match expected. Got %#v, expected %#v.", c.pools, tc.expectedPools)
+			}
+			for _, expected := range tc.expectedPools {
+				var match *Pool
+				for i, actual := range c.pools {
+					if expected.Org == actual.Org && expected.Repo == actual.Repo && expected.Branch == actual.Branch {
+						match = &c.pools[i]
+					}
+				}
+				if match == nil {
+					t.Errorf("Failed to find expected pool %s/%s %s.", expected.Org, expected.Repo, expected.Branch)
+				} else if !reflect.DeepEqual(*match, expected) {
+					t.Errorf("Expected pool %#v does not match actual pool %#v.", expected, *match)
 				}
 			}
-			if match == nil {
-				t.Errorf("Failed to find expected pool %s/%s %s.", expected.Org, expected.Repo, expected.Branch)
-			} else if !reflect.DeepEqual(*match, expected) {
-				t.Errorf("Expected pool %#v does not match actual pool %#v.", expected, *match)
-			}
-		}
+		})
 	}
 }
 

@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/jx/v2/pkg/jxfactory"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
@@ -31,7 +30,6 @@ import (
 
 // Server keeps the information required to start a server
 type Server struct {
-	ClientFactory  jxfactory.Factory
 	ClientAgent    *plugins.ClientAgent
 	Plugins        *plugins.ConfigAgent
 	ConfigAgent    *config.Agent
@@ -59,7 +57,7 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		s.wg.Add(1)
 		go func(p string, h plugins.IssueCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ic.Repo.Namespace,
 				ic.Repo.Name,
@@ -127,7 +125,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 		s.wg.Add(1)
 		go func(p string, h plugins.GenericCommentHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				ce.Repo.Namespace,
 				ce.Repo.Name,
@@ -156,7 +154,7 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		c++
 		go func(p string, h plugins.PushEventHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			if err := h(agent, *pe); err != nil {
 				agent.Logger.WithError(err).Error("Error handling PushEvent.")
 			}
@@ -186,7 +184,7 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 		c++
 		go func(p string, h plugins.PullRequestHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				pr.Repo.Namespace,
 				pr.Repo.Name,
@@ -242,7 +240,7 @@ func (s *Server) HandleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 		s.wg.Add(1)
 		go func(p string, h plugins.ReviewEventHandler) {
 			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ClientFactory, s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 			agent.InitializeCommentPruner(
 				re.Repo.Namespace,
 				re.Repo.Name,

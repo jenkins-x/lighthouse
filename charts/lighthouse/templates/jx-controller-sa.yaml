@@ -1,0 +1,6 @@
+{{- if .Values.engines.jx }}
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ template "jxcontroller.name" . }}
+{{- end }}

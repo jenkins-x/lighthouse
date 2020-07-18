@@ -9,7 +9,6 @@ import (
 	v1 "github.com/jenkins-x/jx-api/pkg/apis/jenkins.io/v1"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/jx"
-	"github.com/jenkins-x/lighthouse/pkg/record"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/yaml"
@@ -42,7 +41,7 @@ func TestConvertPipelineActivity(t *testing.T) {
 
 	expectedBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/test_data/record.yaml", workDir))
 	assert.NoError(t, err)
-	expectedRecord := &record.ActivityRecord{}
+	expectedRecord := &v1alpha1.ActivityRecord{}
 	err = yaml.Unmarshal(expectedBytes, expectedRecord)
 
 	assert.Equal(t, expectedRecord, converted)
