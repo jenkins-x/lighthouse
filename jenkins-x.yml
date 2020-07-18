@@ -135,7 +135,7 @@ pipelineConfig:
                 image: jenkinsxio/jx:1.3.963
                 command: /bin/sh
                 args:
-                - c 
+                - -c 
                 - "mkdir -p /builder/home && jx step credential -s knative-git-user-pass -k password -f /builder/home/git-token"
 
               - name: build-and-push-webhooks
