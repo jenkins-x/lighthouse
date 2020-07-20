@@ -1,0 +1,97 @@
+baseSHA: c47ce72d4e2991a9440e6d954ecbf79d596f9352
+branch: PR-7463
+buildId: "17"
+context: boot-vault
+gitURL: https://github.com/jenkins-x/jx.git
+lastCommitSHA: 8a3c5f595cdc3162e46390c72a5d22fb9c89d1df
+name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+owner: jenkins-x
+repo: jx
+stages:
+  - completionTime: "2020-07-20T19:56:53Z"
+    name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-build-2jnvr
+    startTime: "2020-07-20T19:50:21Z"
+    status: success
+    steps:
+      - completionTime: "2020-07-20T19:50:57Z"
+        name: setup-builder-home
+        startTime: "2020-07-20T19:50:57Z"
+        status: success
+      - completionTime: "2020-07-20T19:51:06Z"
+        name: git-merge
+        startTime: "2020-07-20T19:50:57Z"
+        status: success
+      - completionTime: "2020-07-20T19:55:11Z"
+        name: build-binary
+        startTime: "2020-07-20T19:51:06Z"
+        status: success
+      - completionTime: "2020-07-20T19:55:12Z"
+        name: validate-binary
+        startTime: "2020-07-20T19:55:12Z"
+        status: success
+      - completionTime: "2020-07-20T19:55:32Z"
+        name: build-and-push-image
+        startTime: "2020-07-20T19:55:12Z"
+        status: success
+      - completionTime: "2020-07-20T19:55:52Z"
+        name: build-and-push-nodejs
+        startTime: "2020-07-20T19:55:32Z"
+        status: success
+      - completionTime: "2020-07-20T19:50:53Z"
+        name: create-dir-workspace-w6cv9
+        startTime: "2020-07-20T19:50:53Z"
+        status: success
+      - completionTime: "2020-07-20T19:56:31Z"
+        name: build-and-push-go
+        startTime: "2020-07-20T19:56:12Z"
+        status: success
+      - completionTime: "2020-07-20T19:56:49Z"
+        name: build-and-push-go-nodejs
+        startTime: "2020-07-20T19:56:31Z"
+        status: success
+      - completionTime: "2020-07-20T19:50:57Z"
+        name: git-source-jenkins-x-jx-pr-7463-boot-vault-9mbgb-6jfk4
+        startTime: "2020-07-20T19:50:54Z"
+        status: success
+      - completionTime: "2020-07-20T19:56:52Z"
+        name: source-copy-jenkins-x-jx-pr-7463-boot-vault-9mbgb-x6nv4
+        startTime: "2020-07-20T19:56:50Z"
+        status: success
+      - completionTime: "2020-07-20T19:56:50Z"
+        name: source-mkdir-jenkins-x-jx-pr-7463-boot-vault-9mbgb-tdcg5
+        startTime: "2020-07-20T19:56:50Z"
+        status: success
+      - completionTime: "2020-07-20T19:56:11Z"
+        name: build-and-push-maven
+        startTime: "2020-07-20T19:55:52Z"
+        status: success
+  - name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-e2e-tests-ds74m
+    startTime: "2020-07-20T19:56:53Z"
+    status: running
+    steps:
+      - completionTime: "2020-07-20T19:58:45Z"
+        name: setup-builder-home
+        startTime: "2020-07-20T19:58:44Z"
+        status: success
+      - name: boot-vault-e2e-tests
+        startTime: "2020-07-20T19:58:12Z"
+        status: running
+      - name: generate-report
+        startTime: "2020-07-20T19:58:12Z"
+        status: running
+      - name: clear-kubeconfig
+        startTime: "2020-07-20T19:58:36Z"
+        status: running
+      - name: stashhtmlreport
+        startTime: "2020-07-20T19:58:36Z"
+        status: running
+      - completionTime: "2020-07-20T19:58:44Z"
+        name: source-copy-workspace-7hpkx
+        startTime: "2020-07-20T19:58:38Z"
+        status: success
+      - completionTime: "2020-07-20T19:58:38Z"
+        name: create-dir-workspace-tncdr
+        startTime: "2020-07-20T19:58:38Z"
+        status: success
+startTime: "2020-07-20T19:50:21Z"
+status: running

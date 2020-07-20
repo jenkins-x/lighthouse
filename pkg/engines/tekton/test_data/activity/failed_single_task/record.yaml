@@ -1,0 +1,34 @@
+baseSHA: b5bf878e8a278681117619aa12053431ab743415
+branch: PR-1533
+buildId: "7"
+completionTime: "2020-07-20T18:50:43Z"
+context: pr-build
+gitURL: https://github.com/jenkins-x-charts/jx-build-templates.git
+lastCommitSHA: 3bb45bf8478b267bc38e8ad5ad6356cfb8a97d0f
+name: jenkins-x-charts-jx-build-templ-wbbx6-7
+owner: jenkins-x-charts
+repo: jx-build-templates
+stages:
+  - completionTime: "2020-07-20T18:50:43Z"
+    name: jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-zjcjs
+    startTime: "2020-07-20T18:50:22Z"
+    status: failure
+    steps:
+      - completionTime: "2020-07-20T18:50:31Z"
+        name: setup-builder-home
+        startTime: "2020-07-20T18:50:31Z"
+        status: success
+      - completionTime: "2020-07-20T18:50:33Z"
+        name: git-merge
+        startTime: "2020-07-20T18:50:31Z"
+        status: success
+      - completionTime: "2020-07-20T18:50:43Z"
+        name: build-build
+        startTime: "2020-07-20T18:50:34Z"
+        status: failure
+      - completionTime: "2020-07-20T18:50:30Z"
+        name: git-source-jenkins-x-charts-jx-build-templ-wbbx6-67k4m
+        startTime: "2020-07-20T18:50:27Z"
+        status: success
+startTime: "2020-07-20T18:50:22Z"
+status: failure

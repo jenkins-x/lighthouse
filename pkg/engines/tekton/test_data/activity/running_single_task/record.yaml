@@ -1,0 +1,38 @@
+baseSHA: c47ce72d4e2991a9440e6d954ecbf79d596f9352
+branch: PR-7463
+buildId: "18"
+context: unit
+gitURL: https://github.com/jenkins-x/jx.git
+lastCommitSHA: 8a3c5f595cdc3162e46390c72a5d22fb9c89d1df
+name: jenkins-x-jx-pr-7463-unit-wbf7v-18
+owner: jenkins-x
+repo: jx
+stages:
+  - name: jenkins-x-jx-pr-7463-unit-wbf7v-18-ci-8r5qw
+    startTime: "2020-07-20T20:15:20Z"
+    status: running
+    steps:
+      - completionTime: "2020-07-20T20:15:37Z"
+        name: setup-builder-home
+        startTime: "2020-07-20T20:15:37Z"
+        status: success
+      - completionTime: "2020-07-20T20:15:48Z"
+        name: git-merge
+        startTime: "2020-07-20T20:15:37Z"
+        status: success
+      - completionTime: "2020-07-20T20:15:51Z"
+        name: init-jx
+        startTime: "2020-07-20T20:15:48Z"
+        status: success
+      - name: build
+        startTime: "2020-07-20T20:15:31Z"
+        status: running
+      - name: unit-test
+        startTime: "2020-07-20T20:15:31Z"
+        status: running
+      - completionTime: "2020-07-20T20:15:37Z"
+        name: git-source-jenkins-x-jx-pr-7463-unit-wbf7v-vrx5d
+        startTime: "2020-07-20T20:15:34Z"
+        status: success
+startTime: "2020-07-20T20:15:20Z"
+status: running

@@ -1,0 +1,108 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x-charts/jx-build-templates.git
+  creationTimestamp: "2020-07-20T18:50:22Z"
+  generation: 1
+  labels:
+    branch: PR-1533
+    build: "7"
+    context: pr-build
+    jenkins.io/pipelineType: build
+    lighthouse.jenkins-x.io/baseSHA: b5bf878e8a278681117619aa12053431ab743415
+    lighthouse.jenkins-x.io/branch: PR-1533
+    lighthouse.jenkins-x.io/buildNum: "7"
+    lighthouse.jenkins-x.io/context: pr-build
+    lighthouse.jenkins-x.io/lastCommitSHA: 3bb45bf8478b267bc38e8ad5ad6356cfb8a97d0f
+    lighthouse.jenkins-x.io/refs.org: jenkins-x-charts
+    lighthouse.jenkins-x.io/refs.repo: jx-build-templates
+    owner: jenkins-x-charts
+    repository: jx-build-templates
+    tekton.dev/pipeline: jenkins-x-charts-jx-build-templ-wbbx6-7
+  name: jenkins-x-charts-jx-build-templ-wbbx6-7
+  namespace: jx
+  resourceVersion: "16699294"
+  selfLink: /apis/tekton.dev/v1beta1/namespaces/jx/pipelineruns/jenkins-x-charts-jx-build-templ-wbbx6-7
+  uid: dd626c56-cab9-11ea-a610-42010a8400cb
+spec:
+  params:
+  - name: version
+    value: 0.0.0-SNAPSHOT-PR-1533-7
+  - name: build_id
+    value: "7"
+  pipelineRef:
+    apiVersion: tekton.dev/v1alpha1
+    name: jenkins-x-charts-jx-build-templ-wbbx6-7
+  podTemplate:
+    schedulerName: ""
+  resources:
+  - name: jenkins-x-charts-jx-build-templ-wbbx6
+    resourceRef:
+      apiVersion: tekton.dev/v1alpha1
+      name: jenkins-x-charts-jx-build-templ-wbbx6
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
+status:
+  completionTime: "2020-07-20T18:50:43Z"
+  conditions:
+  - lastTransitionTime: "2020-07-20T18:50:43Z"
+    message: TaskRun jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-zjcjs
+      has failed
+    reason: Failed
+    status: "False"
+    type: Succeeded
+  startTime: "2020-07-20T18:50:22Z"
+  taskRuns:
+    jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-zjcjs:
+      pipelineTaskName: from-build-pack
+      status:
+        completionTime: "2020-07-20T18:50:43Z"
+        conditions:
+        - lastTransitionTime: "2020-07-20T18:50:43Z"
+          message: '"step-build-build" exited with code 2 (image: "docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:e07b1253adee49f22be8011a306892cb5e4f3bb31820a48af602a1d22175d194");
+            for logs run: kubectl -n jx logs jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-z-dncc5
+            -c step-build-build'
+          reason: Failed
+          status: "False"
+          type: Succeeded
+        podName: jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-z-dncc5
+        startTime: "2020-07-20T18:50:22Z"
+        steps:
+        - container: step-setup-builder-home
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+          name: setup-builder-home
+          terminated:
+            containerID: docker://668ec740179a94e0079f6aeb5792bb055084630be4fc3570dc2ea829b4e50aaa
+            exitCode: 0
+            finishedAt: "2020-07-20T18:50:31Z"
+            reason: Completed
+            startedAt: "2020-07-20T18:50:31Z"
+        - container: step-git-merge
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+          name: git-merge
+          terminated:
+            containerID: docker://e04a4c966e80ac96880d3d070f4a036a1f2f96b699b430e5b3c69e75ecf14443
+            exitCode: 0
+            finishedAt: "2020-07-20T18:50:33Z"
+            reason: Completed
+            startedAt: "2020-07-20T18:50:31Z"
+        - container: step-build-build
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:e07b1253adee49f22be8011a306892cb5e4f3bb31820a48af602a1d22175d194
+          name: build-build
+          terminated:
+            containerID: docker://36496b028da8b73d64fe74f1931e8e45a1b38e26b4f92d95b6f23c3eb9214eda
+            exitCode: 2
+            finishedAt: "2020-07-20T18:50:43Z"
+            reason: Error
+            startedAt: "2020-07-20T18:50:34Z"
+        - container: step-git-source-jenkins-x-charts-jx-build-templ-wbbx6-67k4m
+          imageID: docker-pullable://gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
+          name: git-source-jenkins-x-charts-jx-build-templ-wbbx6-67k4m
+          terminated:
+            containerID: docker://db96a8cc1edac1f8790fe553596da3e34b3ea69b8e5f8a1647d4b06d8f1a26cf
+            exitCode: 0
+            finishedAt: "2020-07-20T18:50:30Z"
+            message: '[{"key":"commit","value":"b5bf878e8a278681117619aa12053431ab743415","resourceRef":{"name":"jenkins-x-charts-jx-build-templ-wbbx6"}}]'
+            reason: Completed
+            startedAt: "2020-07-20T18:50:27Z"
