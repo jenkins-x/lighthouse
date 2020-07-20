@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/jenkins-x/go-scm v1.5.147
 	github.com/jenkins-x/jx-api v0.0.13
-	github.com/jenkins-x/jx/v2 v2.1.101
+	github.com/jenkins-x/jx/v2 v2.1.107
 	github.com/jenkins-x/lighthouse-config v0.0.8
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.1.0
