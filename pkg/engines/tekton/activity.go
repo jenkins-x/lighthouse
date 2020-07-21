@@ -6,6 +6,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/apis"
 )
 
@@ -35,7 +36,8 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 
 	record.Status = convertTektonStatus(cond, record.StartTime, record.CompletionTime)
 
-	for taskName, task := range pr.Status.TaskRuns {
+	for _, taskName := range sets.StringKeySet(pr.Status.TaskRuns).List() {
+		task := pr.Status.TaskRuns[taskName]
 		t := &v1alpha1.ActivityStageOrStep{
 			Name:           taskName,
 			Status:         convertTektonStatus(task.Status.GetCondition(apis.ConditionSucceeded), task.Status.StartTime, task.Status.CompletionTime),
