@@ -753,8 +753,8 @@ github.com/jenkins-x/jx-logging v0.0.8 h1:V6W3il1JFSL1BTuXio3NVefqtJWFIm3Dg/99nx
 github.com/jenkins-x/jx-logging v0.0.8/go.mod h1:mjEejiArk2Mk+J+72/YcSKGo9bZlJ/LwKYjMgAiv+G4=
 github.com/jenkins-x/jx-logging v0.0.10 h1:K1+2NaWOOk2pP9dJlErjlOvYbA24oQ9D9ItJIa+j2Q0=
 github.com/jenkins-x/jx-logging v0.0.10/go.mod h1:mjEejiArk2Mk+J+72/YcSKGo9bZlJ/LwKYjMgAiv+G4=
-github.com/jenkins-x/jx/v2 v2.1.110 h1:MjJ20MwwqXUnlFTrA0+/kYGel/yr13m/e8dcZDd9dzY=
-github.com/jenkins-x/jx/v2 v2.1.110/go.mod h1:7C7unH+NYBRn+jbj5wBosjZvmB1Xo47Cg82ZeehNOMg=
+github.com/jenkins-x/jx/v2 v2.1.111 h1:FUbvHf+7iZSsMfSYSLmhsxbzLUAjllYpkRnliMy3FOY=
+github.com/jenkins-x/jx/v2 v2.1.111/go.mod h1:7C7unH+NYBRn+jbj5wBosjZvmB1Xo47Cg82ZeehNOMg=
 github.com/jenkins-x/lighthouse-config v0.0.6 h1:s73GxzEaqsqn/9w+VnkPKLx4lSs450PMgk4rpCioOm0=
 github.com/jenkins-x/lighthouse-config v0.0.6/go.mod h1:5ax5UF79SGM+Xc3HrWR/9LsPQBWDxE+TEJMwPAikst8=
 github.com/jenkins-x/lighthouse-config v0.0.8 h1:Y+ApzE98QDiEOoncKk+uBWU3zu/cqC+0L2XKGJqZRIo=
