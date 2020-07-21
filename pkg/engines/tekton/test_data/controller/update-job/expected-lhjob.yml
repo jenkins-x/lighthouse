@@ -1,0 +1,56 @@
+apiVersion: lighthouse.jenkins.io/v1alpha1
+kind: LighthouseJob
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/job: github
+  labels:
+    created-by-lighthouse: "true"
+    lighthouse.jenkins-x.io/branch: PR-813
+    lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
+    lighthouse.jenkins-x.io/context: github
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    lighthouse.jenkins-x.io/job: github
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.pull: "813"
+    lighthouse.jenkins-x.io/refs.repo: lighthouse
+    lighthouse.jenkins-x.io/type: presubmit
+  name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+  namespace: jx
+spec:
+  agent: tekton-pipeline
+  context: github
+  job: github
+  namespace: jx
+  pipeline_run_spec:
+    pipelineRef:
+      apiVersion: tekton.dev/v1beta1
+      name: jenkins-x-charts-jx-build-templ-wbbx6-7
+    podTemplate:
+      schedulerName: ""
+    resources:
+      - name: jenkins-x-charts-jx-build-templ-wbbx6
+        resourceRef:
+          apiVersion: tekton.dev/v1beta1
+          name: jenkins-x-charts-jx-build-templ-wbbx6
+    serviceAccountName: tekton-bot
+    timeout: 240h0m0s
+  refs:
+    base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
+    base_ref: master
+    base_sha: e8d56b5ee9671599c75644af574a251dd3b94a5c
+    clone_uri: https://github.com/jenkins-x/lighthouse.git
+    org: jenkins-x
+    pulls:
+    - author: abayer
+      author_link: https://github.com/abayer
+      commit_link: https://github.com/jenkins-x/lighthouse/pull/813/commits/dd64c739442d505cf5381e2a14b60968e8a0d86e
+      link: https://github.com/jenkins-x/lighthouse/pull/813.diff
+      number: 813
+      sha: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    repo: lighthouse
+    repo_link: https://github.com/jenkins-x/lighthouse
+  rerun_command: /test github
+  type: presubmit
+status:
+  state: pending
+  activityName: f46327af-b47e-11ea-b797-9256b7b8d9b0

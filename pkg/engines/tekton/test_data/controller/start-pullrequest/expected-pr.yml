@@ -1,0 +1,60 @@
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x/lighthouse.git
+    lighthouse.jenkins-x.io/job: github
+  labels:
+    created-by-lighthouse: "true"
+    lighthouse.jenkins-x.io/baseSHA: e8d56b5ee9671599c75644af574a251dd3b94a5c
+    lighthouse.jenkins-x.io/branch: PR-813
+    lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
+    lighthouse.jenkins-x.io/context: github
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    lighthouse.jenkins-x.io/job: github
+    lighthouse.jenkins-x.io/lastCommitSHA: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.pull: "813"
+    lighthouse.jenkins-x.io/refs.repo: lighthouse
+    lighthouse.jenkins-x.io/type: presubmit
+  name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+  namespace: jx
+spec:
+  params:
+    - name: BUILD_ID
+      value: "7828158075477027098"
+    - name: JOB_NAME
+      value: github
+    - name: JOB_SPEC
+      value: type:presubmit
+    - name: JOB_TYPE
+      value: presubmit
+    - name: PULL_BASE_REF
+      value: master
+    - name: PULL_BASE_SHA
+      value: e8d56b5ee9671599c75644af574a251dd3b94a5c
+    - name: PULL_NUMBER
+      value: "813"
+    - name: PULL_PULL_SHA
+      value: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    - name: PULL_REFS
+      value: master:e8d56b5ee9671599c75644af574a251dd3b94a5c,813:dd64c739442d505cf5381e2a14b60968e8a0d86e
+    - name: REPO_NAME
+      value: lighthouse
+    - name: REPO_OWNER
+      value: jenkins-x
+  pipelineRef:
+    apiVersion: tekton.dev/v1beta1
+    name: jenkins-x-charts-jx-build-templ-wbbx6-7
+  podTemplate:
+    schedulerName: ""
+  resources:
+    - name: f46327af-b47e-11ea-b797-9256b7b8d9b0-implicit-ref
+      resourceSpec:
+        params:
+          - name: url
+            value: https://github.com/jenkins-x/lighthouse.git
+          - name: revision
+            value: dd64c739442d505cf5381e2a14b60968e8a0d86e
+        type: git
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
+status: {}

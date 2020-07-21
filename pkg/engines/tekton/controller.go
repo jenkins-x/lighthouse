@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bwmarrin/snowflake"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -35,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	utilrand "k8s.io/apimachinery/pkg/util/rand"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -327,12 +327,11 @@ func (c *Controller) syncJob(namespace, name, key string) error {
 
 	// Only launch for the appropriate agent types and for triggered state
 	if origJob.Status.State == v1alpha1.TriggeredState && spec.Agent == config.TektonPipelineAgent {
-		pr, err := makePipelineRun(origJob)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create PipelineRun for job %s", origJob.Name)
-		}
-
 		jobCopy := origJob.DeepCopy()
+		pr, err := makePipelineRun(*jobCopy)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create PipelineRun for job %s", jobCopy.Name)
+		}
 
 		// Add the build ID from the pipelinerun to the labels on the job
 		jobCopy.Labels[util.BuildNumLabel] = pr.Labels[util.BuildNumLabel]
@@ -484,31 +483,24 @@ func stopper() chan struct{} {
 }
 
 // generateBuildID generates a unique build ID for consistency with Prow behavior
-func generateBuildID() (string, error) {
-	node, err := snowflake.NewNode(1)
-	if err != nil {
-		return "", err
-	}
-	return node.Generate().String(), nil
+func generateBuildID() string {
+	return fmt.Sprintf("%d", utilrand.Int())
 }
 
 // makePipeline creates a PipelineRun and substitutes LighthouseJob managed pipeline resources with ResourceSpec instead of ResourceRef
 // so that we don't have to take care of potentially dangling created pipeline resources.
-func makePipelineRun(lj *v1alpha1.LighthouseJob) (*tektonv1beta1.PipelineRun, error) {
+func makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.PipelineRun, error) {
 	// First validate.
 	if lj.Spec.PipelineRunSpec == nil {
 		return nil, errors.New("no PipelineSpec defined")
 	}
 
-	buildID, err := generateBuildID()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't generate unique build ID")
-	}
+	buildID := generateBuildID()
 	if buildID == "" {
 		return nil, errors.New("empty BuildID in status")
 	}
 
-	prLabels, annotations := jobutil.LabelsAndAnnotationsForJob(*lj, buildID)
+	prLabels, annotations := jobutil.LabelsAndAnnotationsForJob(lj, buildID)
 	specCopy := lj.Spec.PipelineRunSpec.DeepCopy()
 	p := tektonv1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
