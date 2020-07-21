@@ -35,6 +35,10 @@ func TestSyncHandler(t *testing.T) {
 			name:       "start-pullrequest",
 			inputIsJob: true,
 		},
+		{
+			name:       "update-job",
+			inputIsJob: false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -120,8 +124,6 @@ func TestSyncHandler(t *testing.T) {
 				updatedPR := prs.Items[0].DeepCopy()
 				if d := cmp.Diff(expectedPR, updatedPR); d != "" {
 					t.Errorf("PipelineRun did not match expected: %s", d)
-					pry, _ := yaml.Marshal(updatedPR)
-					t.Logf("pr:\n%s", pry)
 				}
 			}
 			if expectedJob != nil {

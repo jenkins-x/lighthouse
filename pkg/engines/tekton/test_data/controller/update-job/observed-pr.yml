@@ -53,4 +53,71 @@ spec:
       name: jenkins-x-charts-jx-build-templ-wbbx6
   serviceAccountName: tekton-bot
   timeout: 240h0m0s
-status: {}
+status:
+  conditions:
+    - lastTransitionTime: "2020-07-20T20:15:20Z"
+      message: 'Tasks Completed: 0, Incomplete: 1, Skipped: 0'
+      reason: Running
+      status: Unknown
+      type: Succeeded
+  startTime: "2020-07-20T20:15:20Z"
+  taskRuns:
+    jenkins-x-jx-pr-7463-unit-wbf7v-18-ci-8r5qw:
+      pipelineTaskName: ci
+      status:
+        conditions:
+          - lastTransitionTime: "2020-07-20T20:15:32Z"
+            message: Not all Steps in the Task have finished executing
+            reason: Running
+            status: Unknown
+            type: Succeeded
+        podName: jenkins-x-jx-pr-7463-unit-wbf7v-18-ci-8r5qw-pod-76qzz
+        startTime: "2020-07-20T20:15:20Z"
+        steps:
+          - container: step-setup-builder-home
+            imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+            name: setup-builder-home
+            terminated:
+              containerID: docker://9ff452e9e09706f7ce7fc3ff2b0b769336ea6160a120e6a9c3a8a2098b2afc8e
+              exitCode: 0
+              finishedAt: "2020-07-20T20:15:37Z"
+              reason: Completed
+              startedAt: "2020-07-20T20:15:37Z"
+          - container: step-git-merge
+            imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+            name: git-merge
+            terminated:
+              containerID: docker://6b46062c9e0c0a59ed257dc76998180eb165556f5ef636007896f7dbfcb14409
+              exitCode: 0
+              finishedAt: "2020-07-20T20:15:48Z"
+              reason: Completed
+              startedAt: "2020-07-20T20:15:37Z"
+          - container: step-init-jx
+            imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:ab77416f4eb310c86dde4dc0d7ba9277dba633b9e0dcda2b0d7265742ab28d3d
+            name: init-jx
+            terminated:
+              containerID: docker://557593f6feea5e417bf45debbca0f2e430e427ed0dbf88b37c2fb86619d5290d
+              exitCode: 0
+              finishedAt: "2020-07-20T20:15:51Z"
+              reason: Completed
+              startedAt: "2020-07-20T20:15:48Z"
+          - container: step-build
+            imageID: docker-pullable://golang@sha256:d7e0b99badf7f34b5096089484a733897c9b89aa12ffb9f67f81da054f8a403e
+            name: build
+            running:
+              startedAt: "2020-07-20T20:15:31Z"
+          - container: step-unit-test
+            imageID: docker-pullable://golang@sha256:d7e0b99badf7f34b5096089484a733897c9b89aa12ffb9f67f81da054f8a403e
+            name: unit-test
+            running:
+              startedAt: "2020-07-20T20:15:31Z"
+          - container: step-git-source-jenkins-x-jx-pr-7463-unit-wbf7v-vrx5d
+            imageID: docker-pullable://gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
+            name: git-source-jenkins-x-jx-pr-7463-unit-wbf7v-vrx5d
+            terminated:
+              containerID: docker://40fd861cee402ee184685b7d756a009578a5877c172787fc31ff000c28a6d047
+              exitCode: 0
+              finishedAt: "2020-07-20T20:15:37Z"
+              message: '[{"key":"commit","value":"c47ce72d4e2991a9440e6d954ecbf79d596f9352","resourceRef":{"name":"jenkins-x-jx-pr-7463-unit-wbf7v"}}]'
+              reason: Completed
+              startedAt: "2020-07-20T20:15:34Z"
