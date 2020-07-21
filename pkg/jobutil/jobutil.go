@@ -289,11 +289,14 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 }
 
 // LabelsAndAnnotationsForJob returns a standard set of labels to add to pod/build/etc resources.
-func LabelsAndAnnotationsForJob(pj v1alpha1.LighthouseJob) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForJob(lj v1alpha1.LighthouseJob, buildID string) (map[string]string, map[string]string) {
 	var extraLabels map[string]string
-	if extraLabels = pj.ObjectMeta.Labels; extraLabels == nil {
+	if extraLabels = lj.ObjectMeta.Labels; extraLabels == nil {
 		extraLabels = map[string]string{}
 	}
-	extraLabels[config.LighthouseJobIDLabel] = pj.ObjectMeta.Name
-	return LabelsAndAnnotationsForSpec(pj.Spec, extraLabels, nil)
+	extraLabels[config.LighthouseJobIDLabel] = lj.ObjectMeta.Name
+	if buildID != "" {
+		extraLabels[util.BuildNumLabel] = buildID
+	}
+	return LabelsAndAnnotationsForSpec(lj.Spec, extraLabels, nil)
 }

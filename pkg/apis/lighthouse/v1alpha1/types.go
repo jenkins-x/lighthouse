@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
-	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,6 +40,8 @@ const (
 
 // Environment variables to be added to the pipeline we kick off
 const (
+	// BuildIDEnv is an optional unique build ID environment variable that can be used by an engine.
+	BuildIDEnv = "BUILD_ID"
 	// JobSpecEnv is a legacy Prow variable with "type:(type)"
 	JobSpecEnv = "JOB_SPEC"
 	// JobNameEnv is the name of the job
@@ -78,7 +80,7 @@ type LighthouseJob struct {
 type LighthouseJobStatus struct {
 	// State is the full state of the job
 	State PipelineState `json:"state,omitempty"`
-	// ActivityName is the name of the PipelineActivity associated with this job, if any.
+	// ActivityName is the name of the PipelineActivity, PipelineRun, etc associated with this job, if any.
 	ActivityName string `json:"activityName,omitempty"`
 	// Description is used for the description of the commit status we report.
 	Description string `json:"description,omitempty"`
@@ -120,6 +122,9 @@ type LighthouseJobSpec struct {
 	// Refs is the code under test, determined at
 	// runtime by Prow itself
 	Refs *Refs `json:"refs,omitempty"`
+	// ExtraRefs are auxiliary repositories that
+	// need to be cloned, determined from config
+	ExtraRefs []Refs `json:"extra_refs,omitempty"`
 	// Context is the name of the status context used to
 	// report back to GitHub
 	Context string `json:"context,omitempty"`
@@ -131,7 +136,7 @@ type LighthouseJobSpec struct {
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
 	// PipelineRunSpec provides the basis for running the test as a Tekton Pipeline
 	// https://github.com/tektoncd/pipeline
-	PipelineRunSpec *pipelinev1alpha1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
+	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
 	// PodSpec provides the basis for running the test under a Kubernetes agent
 	PodSpec *corev1.PodSpec `json:"pod_spec,omitempty"`
 }
