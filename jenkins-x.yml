@@ -178,6 +178,16 @@ pipelineConfig:
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=${inputs.params.version}
 
+              - name: build-and-push-tekton-controller
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.tektoncontroller
+                  - --destination=gcr.io/jenkinsxio/lighthouse-tekton-controller:${inputs.params.version}
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=${inputs.params.version}
+
               - name: build-and-push-gc-jobs
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor

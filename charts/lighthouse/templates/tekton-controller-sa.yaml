@@ -1,0 +1,6 @@
+{{- if .Values.engines.tekton }}
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ template "tektoncontroller.name" . }}
+{{- end }}

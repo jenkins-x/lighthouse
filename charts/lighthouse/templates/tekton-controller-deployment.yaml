@@ -1,38 +1,36 @@
-{{- if .Values.engines.jx }}
+{{- if .Values.engines.tekton }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "jxcontroller.name" . }}
+  name: {{ template "tektoncontroller.name" . }}
   labels:
     draft: {{ default "draft-app" .Values.draft }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-    app: {{ template "jxcontroller.name" . }}
+    app: {{ template "tektoncontroller.name" . }}
 spec:
-  replicas: {{ .Values.jxcontroller.replicaCount }}
+  replicas: {{ .Values.tektoncontroller.replicaCount }}
   selector:
     matchLabels:
       draft: {{ default "draft-app" .Values.draft }}
-      app: {{ template "jxcontroller.name" . }}
+      app: {{ template "tektoncontroller.name" . }}
   template:
     metadata:
       labels:
         draft: {{ default "draft-app" .Values.draft }}
-        app: {{ template "jxcontroller.name" . }}
+        app: {{ template "tektoncontroller.name" . }}
 {{- if .Values.podAnnotations }}
       annotations:
 {{ toYaml .Values.podAnnotations | indent 8 }}
 {{- end }}
     spec:
-      serviceAccountName: {{ template "jxcontroller.name" . }}
+      serviceAccountName: {{ template "tektoncontroller.name" . }}
       containers:
-      - name: {{ template "jxcontroller.name" . }}
-        image: {{ tpl .Values.jxcontroller.image.repository . }}:{{ tpl .Values.jxcontroller.image.tag . }}
-        imagePullPolicy: {{ tpl .Values.jxcontroller.image.pullPolicy . }}
+      - name: {{ template "tektoncontroller.name" . }}
+        image: {{ tpl .Values.tektoncontroller.image.repository . }}:{{ tpl .Values.tektoncontroller.image.tag . }}
+        imagePullPolicy: {{ tpl .Values.tektoncontroller.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
         env:
-          - name: "JX_LOG_FORMAT"
-            value: "{{ .Values.logFormat }}"
           - name: "LOGRUS_FORMAT"
             value: "{{ .Values.logFormat }}"
 {{- if hasKey .Values "env" }}
@@ -45,16 +43,16 @@ spec:
         resources:
 {{ toYaml . | indent 12 }}
 {{- end }}
-      terminationGracePeriodSeconds: {{ .Values.jxcontroller.terminationGracePeriodSeconds }}
-{{- with .Values.jxcontroller.nodeSelector }}
+      terminationGracePeriodSeconds: {{ .Values.tektoncontroller.terminationGracePeriodSeconds }}
+{{- with .Values.tektoncontroller.nodeSelector }}
       nodeSelector:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.jxcontroller.affinity }}
+{{- with .Values.tektoncontroller.affinity }}
       affinity:
 {{ toYaml . | indent 8 }}
 {{- end }}
-{{- with .Values.jxcontroller.tolerations }}
+{{- with .Values.tektoncontroller.tolerations }}
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}

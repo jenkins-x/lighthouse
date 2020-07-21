@@ -95,6 +95,21 @@ jxcontroller:
       memory: 128Mi
   terminationGracePeriodSeconds: 180
 
+tektoncontroller:
+  replicaCount: 1
+  image:
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"
+    tag: "{{ .Values.image.tag }}"
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 80m
+      memory: 128Mi
+  terminationGracePeriodSeconds: 180
+
 keeper:
   statusContextLabel: "Lighthouse Merge Status"
   replicaCount: 1
@@ -143,3 +158,4 @@ cluster:
 
 engines:
   jx: true
+  tekton: false
