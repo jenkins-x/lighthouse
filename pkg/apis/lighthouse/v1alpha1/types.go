@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -161,11 +160,6 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 	env := map[string]string{
 		JobNameEnv: s.Job,
 		JobTypeEnv: string(s.Type),
-	}
-
-	registry := os.Getenv("DOCKER_REGISTRY")
-	if registry != "" {
-		env["DOCKER_REGISTRY"] = registry
 	}
 
 	env[JobSpecEnv] = fmt.Sprintf("type:%s", s.Type)
