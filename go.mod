@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/sessions v1.1.3
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/jenkins-x/go-scm v1.5.147
+	github.com/jenkins-x/go-scm v1.5.148
 	github.com/jenkins-x/jx-api v0.0.13
 	github.com/jenkins-x/jx/v2 v2.1.111
 	github.com/jenkins-x/lighthouse-config v0.0.8
