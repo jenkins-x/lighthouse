@@ -36,7 +36,12 @@ import (
 
 const (
 	primarySCMTokenEnvVar  = "E2E_PRIMARY_SCM_TOKEN"  /* #nosec */
+	primarySCMUserEnvVar   = "E2E_GIT_USER"
 	approverSCMTokenEnvVar = "E2E_APPROVER_SCM_TOKEN" /* #nosec */
+	approverSCMUserEnvVar  = "E2E_APPROVER_USER"
+	hmacTokenEnvVar        = "E2E_HMAC_TOKEN"         /* #nosec */
+	gitServerEnvVar        = "E2E_GIT_SERVER"
+	gitKindEnvVar          = "E2E_GIT_KIND"
 	baseRepoName           = "lh-e2e-test"
 )
 
@@ -60,7 +65,7 @@ func CreateGitClient(gitServerURL string, userFunc func() string, tokenFunc func
 // CreateSCMClient takes functions that return the username and token to use, and creates the scm.Client and Lighthouse SCM client
 func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (*scm.Client, scmprovider.SCMClient, string, error) {
 	kind := gitKind()
-	serverURL := os.Getenv("E2E_GIT_SERVER")
+	serverURL := os.Getenv(gitServerEnvVar)
 
 	client, err := factory.NewClient(kind, serverURL, "")
 
@@ -75,15 +80,19 @@ func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (
 }
 
 func gitKind() string {
-	kind := os.Getenv("E2E_GIT_KIND")
+	kind := os.Getenv(gitKindEnvVar)
 	if kind == "" {
 		kind = "github"
 	}
 	return kind
 }
 
-// CreateHMACToken creates an HMAC token for use in webhooks
+// CreateHMACToken creates an HMAC token for use in webhooks, defaulting to the E2E_HMAC_TOKEN env var if set
 func CreateHMACToken() (string, error) {
+	fromEnv := os.Getenv(hmacTokenEnvVar)
+	if fromEnv != "" {
+		return fromEnv, nil
+	}
 	src := rand.New(rand.NewSource(time.Now().UnixNano())) /* #nosec */
 	b := make([]byte, 21)                                  // can be simplified to n/2 if n is always even
 
@@ -96,7 +105,7 @@ func CreateHMACToken() (string, error) {
 
 // GetBotName gets the bot user name
 func GetBotName() string {
-	botName := os.Getenv("E2E_GIT_USER")
+	botName := os.Getenv(primarySCMUserEnvVar)
 	if botName == "" {
 		botName = "jenkins-x-bot"
 	}
@@ -105,7 +114,7 @@ func GetBotName() string {
 
 // GetApproverName gets the approver user's username
 func GetApproverName() string {
-	botName := os.Getenv("E2E_APPROVER_USER")
+	botName := os.Getenv(approverSCMUserEnvVar)
 	if botName == "" {
 		botName = "jenkins-x-bot"
 	}
