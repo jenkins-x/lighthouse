@@ -12,7 +12,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
-	"github.com/jenkins-x/lighthouse/pkg/engines/tekton"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	. "github.com/onsi/ginkgo"
@@ -357,12 +356,6 @@ func generatePipelineRunSpec() *tektonv1beta1.PipelineRunSpec {
 		PipelineRef: &tektonv1beta1.PipelineRef{
 			Name: "lh-test-pipeline",
 		},
-		Resources: []tektonv1beta1.PipelineResourceBinding{{
-			Name: "pipeline-git",
-			ResourceRef: &tektonv1beta1.PipelineResourceRef{
-				Name: tekton.ProwImplicitGitResource,
-			},
-		}},
 		ServiceAccountName: "default",
 	}
 }
