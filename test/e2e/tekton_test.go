@@ -19,6 +19,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 const (
@@ -357,6 +359,23 @@ func generatePipelineRunSpec() *tektonv1beta1.PipelineRunSpec {
 			Name: "lh-test-pipeline",
 		},
 		ServiceAccountName: "default",
+		Workspaces: []tektonv1beta1.WorkspaceBinding{{
+			Name: "shared-data",
+			VolumeClaimTemplate: &corev1.PersistentVolumeClaim{
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("1Gi"),
+						},
+					},
+					VolumeName:       "",
+					StorageClassName: nil,
+					VolumeMode:       nil,
+					DataSource:       nil,
+				},
+			},
+		}},
 	}
 }
 

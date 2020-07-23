@@ -2,36 +2,36 @@ module github.com/jenkins-x/lighthouse
 
 require (
 	github.com/TV4/logrus-stackdriver-formatter v0.1.0
-	github.com/bwmarrin/snowflake v0.3.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/google/go-cmp v0.4.0
+	github.com/google/go-cmp v0.4.1
 	github.com/gorilla/sessions v1.1.3
-	github.com/hashicorp/go-multierror v1.0.0
+	github.com/hashicorp/go-multierror v1.1.0
 	github.com/jenkins-x/go-scm v1.5.149
 	github.com/jenkins-x/jx-api v0.0.13
 	github.com/jenkins-x/jx/v2 v2.1.114
 	github.com/jenkins-x/lighthouse-config v0.0.9
-	github.com/onsi/ginkgo v1.10.1
-	github.com/onsi/gomega v1.7.0
+	github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/gomega v1.8.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.1.0
+	github.com/prometheus/client_golang v1.5.0
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5 // indirect
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
 	github.com/shurcooL/githubv4 v0.0.0-20191102174205-af46314aec7b
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.6.1
-	github.com/tektoncd/pipeline v0.11.3
+	github.com/tektoncd/pipeline v0.14.2
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
-	k8s.io/api v0.17.2
-	k8s.io/apimachinery v0.17.2
+	k8s.io/api v0.18.1
+	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/metrics v0.0.0-20190704050707-780c337c9cbd // indirect
-	knative.dev/pkg v0.0.0-20200207181514-32ea84581573
-	sigs.k8s.io/yaml v1.1.0
+	knative.dev/pkg v0.0.0-20200702222342-ea4d6e985ba0
+	knative.dev/serving v0.16.0 // indirect
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace github.com/heptio/sonobuoy => github.com/jenkins-x/sonobuoy v0.11.7-0.20190318120422-253758214767
