@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: task-to-run-script
+  namespace: {{ .Namespace }}
+spec:
+  resources:
+    inputs:
+      - name: pipeline-git
+        type: git
+    outputs:
+      - name: pipeline-git
+        type: git
+  steps:
+    - name: script
+      image: ubuntu
+      command:
+        - bash
+      args:
+        - $(resources.inputs.pipeline-git.path)/script.sh
+---
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: lh-test-pipeline
+  namespace: {{ .Namespace }}
+spec:
+  resources:
+    - name: pipeline-git
+      type: git
+  tasks:
+    - name: run-script
+      taskRef:
+        name: task-to-run-script
+      resources:
+        inputs:
+          - name: pipeline-git
+            resource: pipeline-git
+        outputs:
+          - name: pipeline-git
+            resource: pipeline-git

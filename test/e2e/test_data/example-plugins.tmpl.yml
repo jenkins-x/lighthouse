@@ -1,0 +1,45 @@
+approve:
+- lgtm_acts_as_approve: true
+  repos:
+  - {{ .Owner }}/{{ .Repo }}
+  require_self_approval: true
+blunderbuss: {}
+cat: {}
+cherry_pick_unapproved: {}
+config_updater: {}
+heart: {}
+label:
+  additional_labels: null
+owners: {}
+plugins:
+  {{ .Owner }}/{{ .Repo }}:
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - override
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - dog
+  - pony
+requiresig: {}
+sigmention: {}
+size:
+  l: 0
+  m: 0
+  s: 0
+  xl: 0
+  xxl: 0
+slack: {}
+triggers:
+- repos:
+  - {{ .Owner }}/{{ .Repo }}
+  trusted_org: {{ .Owner }}
+welcome:
+- message_template: Welcome

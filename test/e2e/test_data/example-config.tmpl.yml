@@ -1,0 +1,50 @@
+branch-protection:
+  orgs:
+    {{ .Owner }}:
+      repos:
+        {{ .Repo }}:
+          required_status_checks:
+            contexts:
+            - pr-build
+  protect-tested-repos: true
+deck:
+  spyglass: {}
+gerrit: {}
+github:
+  LinkURL: null
+owners_dir_blacklist:
+  default: null
+  repos: null
+plank: {}
+pod_namespace: {{ .Namespace }}
+postsubmits: []
+presubmits:
+  {{ .Owner }}/{{ .Repo }}:
+  - agent: {{ .Agent }}
+    always_run: true
+    context: pr-build
+    name: pr-build
+    rerun_command: /test this
+    trigger: (?m)^/test( all| this),?(\s+|$)
+prowjob_namespace: {{ .Namespace }}
+push_gateway:
+  serve_metrics: false
+sinker: {}
+tide:
+  context_options:
+    from-branch-protection: true
+    required-if-present-contexts: []
+    skip-unknown-contexts: false
+  merge_method:
+    {{ .Owner }}/{{ .Repo }}: merge
+  queries:
+  - labels:
+    - approved
+    missingLabels:
+    - do-not-merge
+    - do-not-merge/hold
+    - do-not-merge/work-in-progress
+    - needs-ok-to-test
+    - needs-rebase
+    repos:
+    - {{ .Owner }}/{{ .Repo }}

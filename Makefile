@@ -31,7 +31,7 @@ all: check test build
 
 .PHONY: test
 test: 
-	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -short ./...
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -short ./pkg/... ./cmd/...
 
 .PHONY: check
 check: fmt lint sec
@@ -101,6 +101,13 @@ jx-controller:
 tekton-controller:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTONCONTROLLER_EXECUTABLE) $(TEKTONCONTROLLER_MAIN_SRC_FILE)
 
+.PHONY: compile-e2e
+compile-e2e:
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" ./test/...
+
+.PHONY: run-e2e-tests
+run-e2e-tests:
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -short ./test/...
 
 .PHONY: mod
 mod: build
