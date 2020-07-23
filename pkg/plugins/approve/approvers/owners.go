@@ -679,7 +679,7 @@ The pull request process is described [here](https://git.k8s.io/community/contri
 <details {{if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}open{{end}}>
 Needs approval from an approver in each of these files:
 
-{{range .ap.GetFiles .baseURL .org .repo .branch .providerType}}{{.}}{{end}}
+{{range .ap.GetFiles .baseURL .branch}}{{.}}{{end}}
 Approvers can indicate their approval by writing `+"`/{{.lhPrefix}}approve`"+` in a comment
 Approvers can cancel approval by writing `+"`/{{.lhPrefix}}approve cancel`"+` in a comment
 </details>`, "message", map[string]interface{}{"ap": ap, "baseURL": linkURL, "org": org, "repo": repo, "branch": branch, "lhPrefix": lhPrefix, "providerType": providerType})
