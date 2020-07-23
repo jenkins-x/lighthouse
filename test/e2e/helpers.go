@@ -18,8 +18,9 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
-	"github.com/jenkins-x/lighthouse-config/pkg/plugins"
+	cfgplugins "github.com/jenkins-x/lighthouse-config/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -29,13 +30,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 )
 
 const (
-	primarySCMTokenEnvVar  = "E2E_PRIMARY_SCM_TOKEN"
-	approverSCMTokenEnvVar = "E2E_APPROVER_SCM_TOKEN"
+	primarySCMTokenEnvVar  = "E2E_PRIMARY_SCM_TOKEN"  /* #nosec */
+	approverSCMTokenEnvVar = "E2E_APPROVER_SCM_TOKEN" /* #nosec */
 	baseRepoName           = "lh-e2e-test"
 )
 
@@ -83,8 +84,8 @@ func gitKind() string {
 
 // CreateHMACToken creates an HMAC token for use in webhooks
 func CreateHMACToken() (string, error) {
-	src := rand.New(rand.NewSource(time.Now().UnixNano()))
-	b := make([]byte, 21) // can be simplified to n/2 if n is always even
+	src := rand.New(rand.NewSource(time.Now().UnixNano())) /* #nosec */
+	b := make([]byte, 21)                                  // can be simplified to n/2 if n is always even
 
 	if _, err := src.Read(b); err != nil {
 		return "", err
@@ -131,18 +132,20 @@ func getSCMToken(envName, gitKind string) (string, error) {
 
 // CreateBaseRepository creates the repository that will be used for tests
 func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitClient git.Client) (*scm.Repository, string, error) {
-	repoName := baseRepoName + "-" + strconv.FormatInt(GinkgoRandomSeed(), 10)
+	repoName := baseRepoName + "-" + strconv.FormatInt(ginkgo.GinkgoRandomSeed(), 10)
 
 	input := &scm.RepositoryInput{
-		Namespace: botUser,
-		Name:      repoName,
-		Private:   true,
+		Name:    repoName,
+		Private: true,
 	}
 
 	repo, _, err := botClient.Repositories.Create(context.Background(), input)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to create repository")
 	}
+
+	// Sleep 5 seconds to ensure repository exists enough to be pushed to.
+	time.Sleep(5 * time.Second)
 
 	r, err := gitClient.Clone(repo.Namespace + "/" + repo.Name)
 	if err != nil {
@@ -154,14 +157,14 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 	}
 
 	baseScriptFile := filepath.Join("test_data", "baseRepoScript.sh")
-	baseScript, err := ioutil.ReadFile(baseScriptFile)
+	baseScript, err := ioutil.ReadFile(baseScriptFile) /* #nosec */
 
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to read %s", baseScriptFile)
 	}
 
 	scriptOutputFile := filepath.Join(r.Dir, "script.sh")
-	err = ioutil.WriteFile(scriptOutputFile, baseScript, 0755)
+	err = ioutil.WriteFile(scriptOutputFile, baseScript, 0600)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "couldn't write to %s", scriptOutputFile)
 	}
@@ -181,15 +184,15 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 		return nil, "", errors.Wrapf(err, "couldn't marshal OWNERS yaml")
 	}
 
-	err = ioutil.WriteFile(ownersFile, ownersYaml, 0644)
+	err = ioutil.WriteFile(ownersFile, ownersYaml, 0600)
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "couldn't write to %s", ownersFile)
 	}
 	ExpectCommandExecution(r.Dir, 1, 0, "git", "add", ownersFile)
 
-	ExpectCommandExecution(r.Dir, 1, 0, "git", "-a", "-m", "Initial commit of functioning script and OWNERS")
+	ExpectCommandExecution(r.Dir, 1, 0, "git", "commit", "-a", "-m", "Initial commit of functioning script and OWNERS")
 
-	err = r.Push(repo.Namespace+"/"+repo.Name, "master")
+	err = r.Push(repo.Name, "master")
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to push to %s", repo.Clone)
 	}
@@ -200,15 +203,15 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 // ExpectCommandExecution performs the given command in the current work directory and asserts that it completes successfully
 func ExpectCommandExecution(dir string, commandTimeout time.Duration, exitCode int, c string, args ...string) {
 	f := func() error {
-		command := exec.Command(c, args...)
+		command := exec.Command(c, args...) /* #nosec */
 		command.Dir = dir
-		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		session.Wait(commandTimeout)
-		Eventually(session).Should(gexec.Exit(exitCode))
+		session, err := gexec.Start(command, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
+		session.Wait(10 * time.Second * commandTimeout)
+		gomega.Eventually(session).Should(gexec.Exit(exitCode))
 		return err
 	}
 	err := retryExponentialBackoff(1, f)
-	Expect(err).ShouldNot(HaveOccurred())
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 }
 
 // retryExponentialBackoff retries the given function up to the maximum duration
@@ -224,18 +227,19 @@ type configReplacement struct {
 	Owner     string
 	Repo      string
 	Namespace string
+	Agent     string
 }
 
 // ProcessConfigAndPlugins reads the templates for the config and plugins config maps and replaces the owner, repo, and namespace in them
-func ProcessConfigAndPlugins(owner, repo, namespace string) (*config.Config, *plugins.Configuration, error) {
+func ProcessConfigAndPlugins(owner, repo, namespace, agent string) (*config.Config, *cfgplugins.Configuration, error) {
 	cfgFile := filepath.Join("test_data", "example-config.tmpl.yml")
 	pluginFile := filepath.Join("test_data", "example-plugins.tmpl.yml")
 
-	rawConfig, err := ioutil.ReadFile(cfgFile)
+	rawConfig, err := ioutil.ReadFile(cfgFile) /* #nosec */
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "reading config template %s", cfgFile)
 	}
-	rawPlugins, err := ioutil.ReadFile(pluginFile)
+	rawPlugins, err := ioutil.ReadFile(pluginFile) /* #nosec */
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "reading plugins template %s", pluginFile)
 	}
@@ -253,6 +257,7 @@ func ProcessConfigAndPlugins(owner, repo, namespace string) (*config.Config, *pl
 		Owner:     owner,
 		Repo:      repo,
 		Namespace: namespace,
+		Agent:     agent,
 	}
 
 	var cfgBuf bytes.Buffer
@@ -267,15 +272,14 @@ func ProcessConfigAndPlugins(owner, repo, namespace string) (*config.Config, *pl
 		return nil, nil, errors.Wrapf(err, "applying plugins template from %s", pluginFile)
 	}
 
-	var generatedCfg *config.Config
-	var generatedPlugin *plugins.Configuration
-
-	err = yaml.Unmarshal(cfgBuf.Bytes(), generatedCfg)
+	generatedCfg, err := config.LoadYAMLConfig(cfgBuf.Bytes())
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "unmarshalling config from %s", cfgFile)
 	}
 
-	err = yaml.Unmarshal(pluginBuf.Bytes(), generatedPlugin)
+	pluginAgent := &plugins.ConfigAgent{}
+
+	generatedPlugin, err := pluginAgent.LoadYAMLConfig(pluginBuf.Bytes())
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "unmarshalling plugins from %s", pluginFile)
 	}
@@ -302,7 +306,7 @@ func CreateWebHook(scmClient *scm.Client, repo *scm.Repository, hmacToken string
 }
 
 // ApplyConfigAndPluginsConfigMaps takes the config and plugins and creates/applies the config maps in the cluster using kubectl
-func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Configuration) error {
+func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *cfgplugins.Configuration) error {
 	cfgMap := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -312,6 +316,7 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 			Name:      "config",
 			Namespace: cfg.LighthouseJobNamespace,
 		},
+		Data: make(map[string]string),
 	}
 	cfgData, err := yaml.Marshal(cfg)
 	if err != nil {
@@ -328,12 +333,13 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 			Name:      "plugins",
 			Namespace: cfg.LighthouseJobNamespace,
 		},
+		Data: make(map[string]string),
 	}
 	pluginData, err := yaml.Marshal(pluginsCfg)
 	if err != nil {
 		return errors.Wrapf(err, "writing plugins to YAML")
 	}
-	cfgMap.Data["plugins.yaml"] = string(pluginData)
+	pluginMap.Data["plugins.yaml"] = string(pluginData)
 
 	tmpDir, err := ioutil.TempDir("", "kubectl")
 	if err != nil {
@@ -352,11 +358,11 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 	cfgFile := filepath.Join(tmpDir, "config-map.yaml")
 	pluginFile := filepath.Join(tmpDir, "plugins-map.yaml")
 
-	err = ioutil.WriteFile(cfgFile, cfgYaml, 0644)
+	err = ioutil.WriteFile(cfgFile, cfgYaml, 0600)
 	if err != nil {
 		return errors.Wrapf(err, "writing config map to %s", cfgFile)
 	}
-	err = ioutil.WriteFile(pluginFile, pluginYaml, 0644)
+	err = ioutil.WriteFile(pluginFile, pluginYaml, 0600)
 	if err != nil {
 		return errors.Wrapf(err, "writing plugins map to %s", pluginFile)
 	}

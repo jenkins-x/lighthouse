@@ -17,7 +17,7 @@ owners_dir_blacklist:
   repos: null
 plank: {}
 pod_namespace: {{ .Namespace }}
-postsubmits: []
+postsubmits: {}
 presubmits:
   {{ .Owner }}/{{ .Repo }}:
   - agent: {{ .Agent }}
