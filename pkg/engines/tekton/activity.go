@@ -78,6 +78,9 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 }
 
 func convertTektonStatus(cond *apis.Condition, start, finished *metav1.Time) v1alpha1.PipelineState {
+	if cond == nil {
+		return v1alpha1.PendingState
+	}
 	switch {
 	case cond.Status == corev1.ConditionTrue:
 		return v1alpha1.SuccessState
