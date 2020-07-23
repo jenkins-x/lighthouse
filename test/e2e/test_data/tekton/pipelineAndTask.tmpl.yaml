@@ -4,20 +4,15 @@ metadata:
   name: task-to-run-script
   namespace: {{ .Namespace }}
 spec:
-  resources:
-    inputs:
-      - name: pipeline-git
-        type: git
-    outputs:
-      - name: pipeline-git
-        type: git
+  workspaces:
+    - name: source
   steps:
     - name: script
       image: ubuntu
       command:
         - bash
       args:
-        - $(resources.inputs.pipeline-git.path)/script.sh
+        - $(workspaces.source.path)/script.sh
 ---
 
 apiVersion: tekton.dev/v1beta1
@@ -26,17 +21,29 @@ metadata:
   name: lh-test-pipeline
   namespace: {{ .Namespace }}
 spec:
-  resources:
-    - name: pipeline-git
-      type: git
+  params:
+    - name: git-repo-url
+      type: string
+    - name: git-revision
+      type: string
+  workspaces:
+    - name: shared-data
   tasks:
+    - name: fetch-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.git-repo-url)
+        - name: revision
+          value: $(params.git-revision)
     - name: run-script
+      runAfter: ["fetch-repo"]
       taskRef:
         name: task-to-run-script
-      resources:
-        inputs:
-          - name: pipeline-git
-            resource: pipeline-git
-        outputs:
-          - name: pipeline-git
-            resource: pipeline-git
+      workspaces:
+        - name: source
+          workspace: shared-data

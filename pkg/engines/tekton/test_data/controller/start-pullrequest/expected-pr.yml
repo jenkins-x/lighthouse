@@ -41,6 +41,10 @@ spec:
       value: lighthouse
     - name: REPO_OWNER
       value: jenkins-x
+    - name: git-repo-url
+      value: https://github.com/jenkins-x/lighthouse.git
+    - name: git-revision
+      value: dd64c739442d505cf5381e2a14b60968e8a0d86e
   pipelineRef:
     apiVersion: tekton.dev/v1beta1
     name: jenkins-x-charts-jx-build-templ-wbbx6-7

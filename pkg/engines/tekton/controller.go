@@ -44,9 +44,11 @@ import (
 )
 
 const (
-	controllerName = "tekton-controller"
-	prKeyPrefix    = "pr"
-	jobKeyPrefix   = "job"
+	controllerName   = "tekton-controller"
+	prKeyPrefix      = "pr"
+	jobKeyPrefix     = "job"
+	repoUrlParamKey  = "git-repo-url"
+	revisionParamKey = "git-revision"
 )
 
 // Controller listens for changes to PipelineRuns and updates the corresponding LighthouseJobs with their activity
@@ -519,6 +521,12 @@ func makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.PipelineRun, err
 	// Add parameters instead of env vars.
 	env := lj.Spec.GetEnvVars()
 	env[v1alpha1.BuildIDEnv] = buildID
+	env[repoUrlParamKey] = lj.Spec.Refs.CloneURI
+	if len(lj.Spec.Refs.Pulls) > 0 {
+		env[revisionParamKey] = lj.Spec.Refs.Pulls[0].SHA
+	} else {
+		env[revisionParamKey] = "master"
+	}
 	for _, key := range sets.StringKeySet(env).List() {
 		val := env[key]
 		// TODO: make this handle existing values/substitutions.

@@ -35,11 +35,11 @@ import (
 )
 
 const (
-	primarySCMTokenEnvVar  = "E2E_PRIMARY_SCM_TOKEN"  /* #nosec */
+	primarySCMTokenEnvVar  = "E2E_PRIMARY_SCM_TOKEN" /* #nosec */
 	primarySCMUserEnvVar   = "E2E_GIT_USER"
 	approverSCMTokenEnvVar = "E2E_APPROVER_SCM_TOKEN" /* #nosec */
 	approverSCMUserEnvVar  = "E2E_APPROVER_USER"
-	hmacTokenEnvVar        = "E2E_HMAC_TOKEN"         /* #nosec */
+	hmacTokenEnvVar        = "E2E_HMAC_TOKEN" /* #nosec */
 	gitServerEnvVar        = "E2E_GIT_SERVER"
 	gitKindEnvVar          = "E2E_GIT_KIND"
 	baseRepoName           = "lh-e2e-test"
@@ -304,9 +304,9 @@ func CreateWebHook(scmClient *scm.Client, repo *scm.Repository, hmacToken string
 	}
 	targetURL := string(output)
 	input := &scm.HookInput{
-		Name:   "lh-test-hook",
-		Target: fmt.Sprintf("http://%s/hook", targetURL),
-		Secret: hmacToken,
+		Name:         "lh-test-hook",
+		Target:       fmt.Sprintf("http://%s/hook", targetURL),
+		Secret:       hmacToken,
 		NativeEvents: []string{"*"},
 	}
 	_, _, err = scmClient.Repositories.CreateHook(context.Background(), repo.Namespace+"/"+repo.Name, input)
