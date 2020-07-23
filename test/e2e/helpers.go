@@ -298,16 +298,16 @@ func ProcessConfigAndPlugins(owner, repo, namespace, agent string) (*config.Conf
 
 // CreateWebHook creates a webhook on the SCM provider for the repository
 func CreateWebHook(scmClient *scm.Client, repo *scm.Repository, hmacToken string) error {
-	output, err := exec.Command("kubectl", "get", "ingress", "hook", "-o", "jsonpath='{.spec.rules[0].host}").CombinedOutput()
+	output, err := exec.Command("kubectl", "get", "ingress", "hook", "-o", "jsonpath={.spec.rules[0].host}").CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err, "failed to get hook ingress")
 	}
 	targetURL := string(output)
 	input := &scm.HookInput{
 		Name:   "lh-test-hook",
-		Target: targetURL,
+		Target: fmt.Sprintf("http://%s/hook", targetURL),
 		Secret: hmacToken,
-		Events: scm.HookEvents{},
+		NativeEvents: []string{"*"},
 	}
 	_, _, err = scmClient.Repositories.CreateHook(context.Background(), repo.Namespace+"/"+repo.Name, input)
 
