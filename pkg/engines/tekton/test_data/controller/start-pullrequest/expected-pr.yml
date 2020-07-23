@@ -50,15 +50,6 @@ spec:
     name: jenkins-x-charts-jx-build-templ-wbbx6-7
   podTemplate:
     schedulerName: ""
-  resources:
-    - name: f46327af-b47e-11ea-b797-9256b7b8d9b0-implicit-ref
-      resourceSpec:
-        params:
-          - name: url
-            value: https://github.com/jenkins-x/lighthouse.git
-          - name: revision
-            value: dd64c739442d505cf5381e2a14b60968e8a0d86e
-        type: git
   serviceAccountName: tekton-bot
   timeout: 240h0m0s
 status: {}

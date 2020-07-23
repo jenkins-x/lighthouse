@@ -27,11 +27,6 @@ spec:
       name: jenkins-x-charts-jx-build-templ-wbbx6-7
     podTemplate:
       schedulerName: ""
-    resources:
-      - name: git
-        resourceRef:
-          apiVersion: tekton.dev/v1beta1
-          name: PROW_IMPLICIT_GIT_REF # Used by Prow to create a PipelineResource with the triggering git ref
     serviceAccountName: tekton-bot
     timeout: 240h0m0s
   refs:

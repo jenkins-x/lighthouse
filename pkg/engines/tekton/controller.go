@@ -539,32 +539,6 @@ func makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.PipelineRun, err
 		})
 	}
 
-	// Inject resources from LighthouseJob.
-	for i, res := range p.Spec.Resources {
-		refName := res.ResourceRef.Name
-		var refs v1alpha1.Refs
-		var suffix string
-		if refName == ProwImplicitGitResource {
-			if lj.Spec.Refs == nil {
-				return nil, fmt.Errorf("%q requested on a LighthouseJob without an implicit git ref", ProwImplicitGitResource)
-			}
-			refs = *lj.Spec.Refs
-			suffix = "-implicit-ref"
-		} else if match := reProwExtraRef.FindStringSubmatch(refName); len(match) == 2 {
-			index, _ := strconv.Atoi(match[1]) // We can't error because the regexp only matches digits.
-			refs = lj.Spec.ExtraRefs[index]    // ValidatePipelineRunSpec made sure this is safe.
-			suffix = fmt.Sprintf("-extra-ref-%d", index)
-		} else {
-			continue
-		}
-		// Change resource ref to resource spec
-		name := lj.Name + suffix
-		resource := makePipelineGitResourceSpec(refs)
-		p.Spec.Resources[i].ResourceRef = nil
-		p.Spec.Resources[i].Name = name
-		p.Spec.Resources[i].ResourceSpec = resource
-	}
-
 	return &p, nil
 }
 
