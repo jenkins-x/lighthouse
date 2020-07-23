@@ -159,3 +159,14 @@ cluster:
 engines:
   jx: true
   tekton: false
+
+createIngress: false
+
+domainName: ""
+
+hook:
+  ingress:
+    class: nginx
+    annotations:
+    tls:
+      secretName: ""
