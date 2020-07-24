@@ -446,7 +446,6 @@ func ExpectThatPullRequestHasCommentMatching(lhClient scmprovider.SCMClient, pr 
 // or a timeout is reached.
 func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.PullRequest, contexts []string, desiredStatuses ...string) {
 	gomega.Expect(pr.Sha).ShouldNot(gomega.Equal(""))
-
 	repo := pr.Repository()
 	checkPRStatuses := func() error {
 		statuses, err := lhClient.ListStatuses(repo.Namespace, repo.Name, pr.Sha)
@@ -554,4 +553,216 @@ func RunWithReporters(t *testing.T, suiteId string) {
 	reporters = append(reporters, gr.NewJUnitReporter(filepath.Join(reportsDir, fmt.Sprintf("%s.junit.xml", suiteId))))
 	gomega.RegisterFailHandler(ginkgo.Fail)
 	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, fmt.Sprintf("Lighthouse E2E tests: %s", suiteId), reporters)
+}
+
+// AttemptToLGTMOwnPullRequest return an error if the /lgtm fails to add the lgtm label to PR
+func AttemptToLGTMOwnPullRequest(lhClient scmprovider.SCMClient, pr *scm.PullRequest) error {
+	repo := pr.Repository()
+
+	err := lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, "/lgtm")
+	if err != nil {
+		return err
+	}
+
+	return ExpectThatPullRequestHasCommentMatching(lhClient, pr, func(comments []*scm.Comment) error {
+		for _, c := range comments {
+			if strings.Contains(c.Body, "you cannot LGTM your own PR.") {
+				return nil
+			}
+		}
+		return fmt.Errorf("couldn't find comment containing the expected message")
+	})
+}
+
+// AddReviewerToPullRequestWithChatOpsCommand returns an error of the command fails to add the reviewer to either the reviewers list or the assignees list
+func AddReviewerToPullRequestWithChatOpsCommand(lhClient scmprovider.SCMClient, pr *scm.PullRequest, reviewer string) error {
+	ginkgo.By(fmt.Sprintf("Adding the '/cc %s' comment and waiting for %s to be a reviewer", reviewer, reviewer))
+	repo := pr.Repository()
+	err := lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/cc %s", reviewer))
+
+	err = ExpectThatPullRequestMatches(lhClient, pr.Number, repo.Namespace, repo.Name, func(request *scm.PullRequest) error {
+		if len(request.Assignees) == 0 && len(request.Reviewers) == 0 {
+			return fmt.Errorf("expected %s as reviewer, but no reviewers or assignees set on PR")
+		}
+		for _, r := range request.Reviewers {
+			if r.Login == reviewer {
+				return nil
+			}
+		}
+		for _, a := range request.Assignees {
+			if a.Login == reviewer {
+				return nil
+			}
+		}
+		return fmt.Errorf("expected %s as a reviewer, but the user is not present in reviewers or assignees on the PR", reviewer)
+	})
+	if err != nil {
+		return err
+	}
+
+	ginkgo.By(fmt.Sprintf("Adding the '/uncc %s' comment and waiting for the user to be gone from reviewers", reviewer))
+	err = lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/uncc %s", reviewer))
+	if err != nil {
+		return err
+	}
+
+	return ExpectThatPullRequestMatches(lhClient, pr.Number, repo.Namespace, repo.Name, func(request *scm.PullRequest) error {
+		if len(request.Assignees) == 0 && len(request.Reviewers) == 0 {
+			return nil
+		}
+		for _, r := range request.Reviewers {
+			if r.Login == reviewer {
+				return fmt.Errorf("expected %s to be removed from reviewers but is still present", reviewer)
+			}
+		}
+		for _, a := range request.Assignees {
+			if a.Login == reviewer {
+				return fmt.Errorf("expected %s to be removed from assignees but is still present", reviewer)
+			}
+		}
+		return nil
+	})
+}
+
+// ExpectThatPullRequestMatches returns an error if the PR does not satisfy the provided funciton
+func ExpectThatPullRequestMatches(lhClient scmprovider.SCMClient, pullRequestNumber int, owner, repo string, matchFunc func(request *scm.PullRequest) error) error {
+	f := func() error {
+		pullRequest, err := lhClient.GetPullRequest(owner, repo, pullRequestNumber)
+		if err != nil {
+			return err
+		}
+		return matchFunc(pullRequest)
+	}
+
+	return retryExponentialBackoff(lighthouseActionTimeout, f)
+}
+
+// ExpectThatPullRequestHasLabel returns an error if the PR does not have the specified label
+func ExpectThatPullRequestHasLabel(lhClient scmprovider.SCMClient, pullRequestNumber int, owner, repo, label string) error {
+	return ExpectThatPullRequestMatches(lhClient, pullRequestNumber, owner, repo, func(request *scm.PullRequest) error {
+		if len(request.Labels) < 1 {
+			return fmt.Errorf("the pull request has no labels")
+		}
+		for _, l := range request.Labels {
+			if l.Name == label {
+				return nil
+			}
+		}
+		return fmt.Errorf("the pull request does not have the specified label: %s", label)
+
+	})
+}
+
+// ExpectThatPullRequestDoesNotHaveLabel returns an error if the PR does have the specified label
+func ExpectThatPullRequestDoesNotHaveLabel(lhClient scmprovider.SCMClient, pullRequestNumber int, owner, repo, label string) error {
+	return ExpectThatPullRequestMatches(lhClient, pullRequestNumber, owner, repo, func(request *scm.PullRequest) error {
+		if len(request.Labels) < 1 {
+			return nil
+		}
+		for _, l := range request.Labels {
+			if l.Name == label {
+				return fmt.Errorf("the pull request has the specified label %s but shouldn't", label)
+			}
+		}
+		return nil
+
+	})
+}
+
+// AddHoldLabelToPullRequestWithChatOpsCommand returns an error of the command fails to add the do-not-merge/hold label
+func AddHoldLabelToPullRequestWithChatOpsCommand(lhClient scmprovider.SCMClient, pr *scm.PullRequest) error {
+	repo := pr.Repository()
+	ginkgo.By("Adding the /hold comment and waiting for the label to be present")
+	err := lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, "/hold")
+	if err != nil {
+		return err
+	}
+
+	err = ExpectThatPullRequestHasLabel(lhClient, pr.Number, repo.Namespace, repo.Name, "do-not-merge/hold")
+	if err != nil {
+		return err
+	}
+
+	ginkgo.By("Adding the /hold cancel comment and waiting for the label to be gone")
+	err = lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, "/hold cancel")
+	if err != nil {
+		return err
+	}
+
+	return ExpectThatPullRequestDoesNotHaveLabel(lhClient, pr.Number, repo.Namespace, repo.Name, "do-not-merge/hold")
+}
+
+// AddWIPLabelToPullRequestByUpdatingTitle adds the WIP label by adding WIP to a pull request's title
+func AddWIPLabelToPullRequestByUpdatingTitle(lhClient scmprovider.SCMClient, scmClient *scm.Client, pr *scm.PullRequest) error {
+	repo := pr.Repository()
+	originalTitle := pr.Title
+
+	ginkgo.By("Changing the pull request title to start with WIP and waiting for the label to be present")
+
+	input := &scm.PullRequestInput{
+		Title: fmt.Sprintf("WIP %s", originalTitle),
+	}
+	_, _, err := scmClient.PullRequests.Update(context.Background(), fmt.Sprintf("%s/%s", repo.Namespace, repo.Name), pr.Number, input)
+	if err != nil {
+		return err
+	}
+	err = ExpectThatPullRequestHasLabel(lhClient, pr.Number, repo.Namespace, repo.Name, "do-not-merge/work-in-progress")
+	if err != nil {
+		return err
+	}
+
+	ginkgo.By("Changing the pull request title to remove the WIP and waiting for the label to be gone")
+	input = &scm.PullRequestInput{
+		Title: originalTitle,
+	}
+	_, _, err = scmClient.PullRequests.Update(context.Background(), fmt.Sprintf("%s/%s", repo.Namespace, repo.Name), pr.Number, input)
+	if err != nil {
+		return err
+	}
+
+	return ExpectThatPullRequestDoesNotHaveLabel(lhClient, pr.Number, repo.Namespace, repo.Name, "do-not-merge/work-in-progress")
+}
+
+// ApprovePullRequest attempts to /approve a PR with the given approver git provider, then verify the label is there with the default provider
+func ApprovePullRequest(lhClient scmprovider.SCMClient, approverclient scmprovider.SCMClient, pr *scm.PullRequest) error {
+	repo := pr.Repository()
+
+	ginkgo.By("approving the PR")
+	approveCmd := "approve"
+	if GitKind() == "gitlab" {
+		approveCmd = "lh-" + approveCmd
+	}
+
+	err := approverclient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/%s", approveCmd))
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+	ginkgo.By("waiting for the approved label to appear")
+	return ExpectThatPullRequestHasLabel(lhClient, pr.Number, repo.Namespace, repo.Name, "approved")
+}
+
+// WaitForPullRequestToMerge checks the PR's status until it's merged or timed out.
+func WaitForPullRequestToMerge(lhClient scmprovider.SCMClient, pr *scm.PullRequest) {
+	repo := pr.Repository()
+	waitForMergeFunc := func() error {
+		updatedPR, err := lhClient.GetPullRequest(repo.Namespace, repo.Name, pr.Number)
+		if err != nil {
+			logInfof("WARNING: Error getting pull request: %s\n", err)
+			return err
+		}
+		if updatedPR == nil {
+			err = fmt.Errorf("got a nil PR for %s", pr.Link)
+			logInfof("WARNING: %s\n", err)
+			return err
+		}
+		if updatedPR.Merged {
+			return nil
+		} else {
+			err = fmt.Errorf("PR %s not yet merged", pr.Link)
+			logInfof("WARNING: %s, sleeping and retrying\n", err)
+			return err
+		}
+	}
+
+	err := retryExponentialBackoff(15*time.Minute, waitForMergeFunc)
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 }

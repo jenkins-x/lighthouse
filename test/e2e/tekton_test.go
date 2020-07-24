@@ -39,6 +39,7 @@ var (
 	scmClient      *scm.Client
 	spc            scmprovider.SCMClient
 	approverClient *scm.Client
+	approverSpc    scmprovider.SCMClient
 	gitServerURL   string
 	repo           *scm.Repository
 	repoFullName   string
@@ -76,9 +77,10 @@ func ChatOpsTests() bool {
 			Expect(gitServerURL).ShouldNot(BeEmpty())
 
 			By("creating approver SCM client")
-			approverClient, _, _, err = CreateSCMClient(GetApproverName, GetApproverSCMToken)
+			approverClient, approverSpc, _, err = CreateSCMClient(GetApproverName, GetApproverSCMToken)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(approverClient).ShouldNot(BeNil())
+			Expect(approverSpc).ShouldNot(BeNil())
 
 			By("creating git client")
 			gitClient, err = CreateGitClient(gitServerURL, GetBotName, GetPrimarySCMToken)
@@ -171,6 +173,94 @@ func ChatOpsTests() bool {
 				By("waiting for build to succeed", func() {
 					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
 				})
+			})
+
+			It("updates the PR to fail, and verifies behaviors", func() {
+				By("changing the PR to fail", func() {
+					failScriptFile := filepath.Join("test_data", "failingRepoScript.sh")
+					failScript, err := ioutil.ReadFile(failScriptFile) /* #nosec */
+					Expect(err).ShouldNot(HaveOccurred())
+
+					scriptOutputFile := filepath.Join(localClone.Dir, "script.sh")
+					err = ioutil.WriteFile(scriptOutputFile, failScript, 0600)
+					Expect(err).ShouldNot(HaveOccurred())
+
+					ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Updating to fail")
+
+					err = localClone.Push(repo.Name, prBranch)
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+
+				By("waiting for the PR build to fail", func() {
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				})
+
+				By("attempting to LGTM our own PR", func() {
+					err = AttemptToLGTMOwnPullRequest(spc, pr)
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+
+				if GitKind() != "stash" {
+					By("requesting and unrequesting a reviewer", func() {
+						err = AddReviewerToPullRequestWithChatOpsCommand(spc, pr, GetApproverName())
+						Expect(err).NotTo(HaveOccurred())
+					})
+				}
+
+				By("adding a hold label", func() {
+					err = AddHoldLabelToPullRequestWithChatOpsCommand(spc, pr)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				// Adding WIP to a MR title is hijacked by GitLab and currently doesn't send a webhook event, so skip for now.
+				if GitKind() != "gitlab" {
+					By("adding a WIP label", func() {
+						err = AddWIPLabelToPullRequestByUpdatingTitle(spc, scmClient, pr)
+						Expect(err).NotTo(HaveOccurred())
+					})
+				}
+
+				By("approving pull request", func() {
+					err = ApprovePullRequest(spc, approverSpc, pr)
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+
+				// '/retest' and '/test this' need to be done by a user other than the bot, as best as I can tell. (APB)
+
+				By("retest failed context with it failing again", func() {
+					err = approverSpc.CreateComment(repo.Namespace, repo.Name, pr.Number, true, "/retest")
+					Expect(err).ShouldNot(HaveOccurred())
+
+					// Wait until we see a pending or running status, meaning we've got a new build
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
+
+					// Wait until we see the build fail.
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				})
+
+				By("'/test this' with it failing again", func() {
+					err = approverSpc.CreateComment(repo.Namespace, repo.Name, pr.Number, true, "/test this")
+					Expect(err).ShouldNot(HaveOccurred())
+
+					// Wait until we see a pending or running status, meaning we've got a new build
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
+
+					// Wait until we see the build fail.
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				})
+
+				// '/override' has to be done by a repo admin, so use the bot user.
+
+				By("override failed context, see status as success, wait for it to merge", func() {
+					err = spc.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/override %s", defaultContext))
+					Expect(err).ShouldNot(HaveOccurred())
+
+					// Wait until we see a success status
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
+
+					WaitForPullRequestToMerge(spc, pr)
+				})
+
 			})
 		})
 		/*		var (
