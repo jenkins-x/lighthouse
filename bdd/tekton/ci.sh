@@ -18,7 +18,7 @@ if [ -z "${BUILD_ID}" ]; then
 fi
 
 # Create the cluster with some standard labels and info for cleanup. Minimum version is 1.16.x
-gcloud container clusters create lh-tekton-e2e-${BUILD_ID} --num-nodes=3 --machine-type n1-standard-2 --enable-autoscaling --min-nodes=3 --max-nodes=5 --zone=europe-west1-c --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/service.management,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring --labels=created-by=${USER},create-time=$(date "+%a-%b-%d-%Y-%H-%M-%S" |tr '[:upper:]' '[:lower:]'),cluster=lh-tekton-e2e,branch=$(echo $BRANCH_NAME | tr '[:upper:]' '[:lower:]') --project=jenkins-x-bdd3 --cluster-version=1.16.9-gke.6
+gcloud container clusters create ${BRANCH_NAME}-lh-tekton-e2e-${BUILD_ID} --num-nodes=3 --machine-type n1-standard-2 --enable-autoscaling --min-nodes=3 --max-nodes=5 --zone=europe-west1-c --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/service.management,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring --labels=created-by=${USER},create-time=$(date "+%a-%b-%d-%Y-%H-%M-%S" |tr '[:upper:]' '[:lower:]'),cluster=lh-tekton-e2e,branch=$(echo $BRANCH_NAME | tr '[:upper:]' '[:lower:]') --project=jenkins-x-bdd3 --cluster-version=1.16.9-gke.6
 
 # Install the nginx ingress controller
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.34.1/deploy/static/provider/cloud/deploy.yaml
@@ -60,3 +60,5 @@ export E2E_GIT_KIND=github
 # Run the test - we probably want something here to capture controller logs but we'll deal with that in a bit.
 make run-e2e-tests
 
+# Mark the cluster to be GC'd if we got this far and the tests passed
+gcloud container clusters update ${BRANCH_NAME}-lh-tekton-e2e-${BUILD_ID} --project=jenkins-x-bdd3 --zone=europe-west1-c --update-labels=delete-me=true
