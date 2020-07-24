@@ -2,7 +2,7 @@
 set -e
 set -x
 
-gcloud container clusters create lh-tekton-e2e-${BUILD_ID} --num-nodes=3 --machine-type n1-standard-2 --enable-autoscaling --min-nodes=3 --max-nodes=5 --zone=europe-west1-c --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/service.management,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring --labels=created-by=${USER},create-time=$(date "+%a-%b-%d-%Y-%H-%M-%S" |tr '[:upper:]' '[:lower:]'),cluster=lh-tekton-e2e,branch=$(echo $BRANCH | tr '[:upper:]' '[:lower:]')
+gcloud container clusters create lh-tekton-e2e-${BUILD_ID} --num-nodes=3 --machine-type n1-standard-2 --enable-autoscaling --min-nodes=3 --max-nodes=5 --zone=europe-west1-c --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/service.management,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring --labels=created-by=${USER},create-time=$(date "+%a-%b-%d-%Y-%H-%M-%S" |tr '[:upper:]' '[:lower:]'),cluster=lh-tekton-e2e,branch=$(echo $BRANCH | tr '[:upper:]' '[:lower:]') --project=jenkins-x-bdd3
 
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.34.1/deploy/static/provider/cloud/deploy.yaml
 
