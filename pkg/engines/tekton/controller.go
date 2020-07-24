@@ -358,9 +358,8 @@ func (c *Controller) syncJob(namespace, name, key string) error {
 
 		// Set status on the job
 		appliedJob.Status = v1alpha1.LighthouseJobStatus{
-			State:        v1alpha1.PendingState,
-			ActivityName: util.ToValidName(pr.Name),
-			StartTime:    metav1.Now(),
+			State:     v1alpha1.PendingState,
+			StartTime: metav1.Now(),
 		}
 		_, err = c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).UpdateStatus(appliedJob)
 		if err != nil {
@@ -391,21 +390,26 @@ func (c *Controller) syncPipelineRun(namespace, name, key string) error {
 
 	var job *v1alpha1.LighthouseJob
 
+	// TODO: For the moment, we could just do a get, but I think we're going to change the name of the PR eventually.
 	// Get all LighthouseJobs with the same owner/repo/branch/build/context
 	labelSelector, err := createLabelSelectorFromActivity(activityRecord)
+	if err != nil {
+		c.logger.Errorf("error creating label selector: %s", err)
+		return err
+	}
+
 	possibleJobs, err := c.lhLister.LighthouseJobs(namespace).List(labelSelector)
 	if err != nil {
 		return err
 	}
 	if len(possibleJobs) == 0 {
-		// TODO: Something to handle jx start pipeline cases - my previous approach resulted in infinite creations of new jobs, which was...wrong. (apb)
 		c.logger.Warnf("no LighthouseJobs found matching label selector %s", labelSelector.String())
 		return nil
 	}
 
 	// To be safe, find the job with the activity's name in its status.
 	for _, j := range possibleJobs {
-		if j.Status.ActivityName == activityRecord.Name {
+		if j.Name == activityRecord.Name {
 			job = j
 		}
 	}

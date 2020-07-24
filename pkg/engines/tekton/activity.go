@@ -1,6 +1,8 @@
 package tekton
 
 import (
+	"strings"
+
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -38,8 +40,9 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 
 	for _, taskName := range sets.StringKeySet(pr.Status.TaskRuns).List() {
 		task := pr.Status.TaskRuns[taskName]
+		cleanedUpTaskName := strings.TrimPrefix(taskName, pr.Name+"-")
 		t := &v1alpha1.ActivityStageOrStep{
-			Name:           taskName,
+			Name:           cleanedUpTaskName,
 			Status:         convertTektonStatus(task.Status.GetCondition(apis.ConditionSucceeded), task.Status.StartTime, task.Status.CompletionTime),
 			StartTime:      task.Status.StartTime,
 			CompletionTime: task.Status.CompletionTime,
