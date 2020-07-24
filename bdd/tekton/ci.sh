@@ -23,11 +23,18 @@ gcloud container clusters create lh-tekton-e2e-${BUILD_ID} --num-nodes=3 --machi
 # Install the nginx ingress controller
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v0.34.1/deploy/static/provider/cloud/deploy.yaml
 
-# Sleep 30 seconds to wait for the ingress controller to get an external IP and then capture it
-sleep 30
 
-# Capture the external IP since it'll end up getting used in our "domain name"
-EXTERNAL_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath={.status.loadBalancer.ingress[0].ip})
+# TODO: Replace this with something smarter
+# Capture the external IP since it'll end up getting used in our "domain name", but loop for up to 2 minutes until we get it
+iters=0
+while [ $iters -lt 12 ]; do
+  EXTERNAL_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath={.status.loadBalancer.ingress[0].ip})
+  if [ -n "${EXTERNAL_IP}" ]; then
+    break
+  fi
+  iters=$((iters + 1))
+  sleep 10
+done
 
 # Create our test namespace and switch into it
 kubectl create namespace lh-test
