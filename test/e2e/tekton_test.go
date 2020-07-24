@@ -8,10 +8,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"text/template"
 
+	"github.com/cenkalti/backoff"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse-config/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/git"
@@ -26,8 +28,9 @@ import (
 )
 
 const (
-	ns       = "lh-test"
-	prBranch = "for-pr"
+	ns             = "lh-test"
+	prBranch       = "for-pr"
+	defaultContext = "pr-build"
 )
 
 var (
@@ -145,6 +148,29 @@ func ChatOpsTests() bool {
 					pr, _, err = scmClient.PullRequests.Create(context.Background(), repoFullName, prInput)
 					Expect(err).ShouldNot(HaveOccurred())
 					Expect(pr).ShouldNot(BeNil())
+				})
+				By("verifying OWNERS link in APPROVALNOTIFIER comment is correct", func() {
+					err = ExpectThatPullRequestHasCommentMatching(spc, pr, func(comments []*scm.Comment) error {
+						for _, c := range comments {
+							if strings.Contains(c.Body, "[APPROVALNOTIFIER]") {
+								ownerRegex := regexp.MustCompile(`(?m).*\[OWNERS]\((.*)\).*`)
+								matches := ownerRegex.FindStringSubmatch(c.Body)
+								if len(matches) == 0 {
+									return backoff.Permanent(fmt.Errorf("could not find OWNERS link in:\n%s", c.Body))
+								}
+								expected := urlForProvider(GitKind(), gitServerURL, repo.Namespace, repo.Name)
+								if expected != matches[1] {
+									return backoff.Permanent(fmt.Errorf("expected OWNERS URL %s, but got %s", expected, matches[1]))
+								}
+								return nil
+							}
+						}
+						return fmt.Errorf("couldn't find comment containing APPROVALNOTIFIER")
+					})
+					Expect(err).NotTo(HaveOccurred())
+				})
+				By("waiting for build to succeed", func() {
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
 				})
 			})
 		})
@@ -387,7 +413,7 @@ func ChatOpsTests() bool {
 
 func urlForProvider(providerType string, serverURL string, owner string, repo string) string {
 	switch providerType {
-	case "bitbucketserver":
+	case "stash":
 		return fmt.Sprintf("%s/projects/%s/repos/%s/browse/OWNERS", serverURL, strings.ToUpper(owner), repo)
 	case "gitlab":
 		return fmt.Sprintf("%s/%s/%s/-/blob/master/OWNERS", serverURL, owner, repo)

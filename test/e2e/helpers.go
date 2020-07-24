@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
@@ -43,6 +44,10 @@ const (
 	gitServerEnvVar        = "E2E_GIT_SERVER"
 	gitKindEnvVar          = "E2E_GIT_KIND"
 	baseRepoName           = "lh-e2e-test"
+)
+
+var (
+	lighthouseActionTimeout = 5 * time.Minute
 )
 
 // CreateGitClient creates the git client used for cloning and making changes to the test repository
@@ -419,4 +424,103 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *cfgplugins.
 	ExpectCommandExecution(tmpDir, 1, 0, "kubectl", "apply", "-f", "plugins-map.yaml")
 
 	return nil
+}
+
+// ExpectThatPullRequestHasCommentMatching returns an error if the PR does not have a comment matching the provided function
+func ExpectThatPullRequestHasCommentMatching(lhClient scmprovider.SCMClient, pr *scm.PullRequest, matchFunc func(comments []*scm.Comment) error) error {
+	f := func() error {
+		comments, err := lhClient.ListPullRequestComments(pr.Repository().Namespace, pr.Repository().Name, pr.Number)
+		if err != nil {
+			return err
+		}
+		return matchFunc(comments)
+	}
+
+	return retryExponentialBackoff(lighthouseActionTimeout, f)
+}
+
+// WaitForPullRequestCommitStatus checks a pull request until either it reaches a given status in all the contexts supplied
+// or a timeout is reached.
+func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.PullRequest, contexts []string, desiredStatuses ...string) {
+	gomega.Expect(pr.Sha).ShouldNot(gomega.Equal(""))
+
+	repo := pr.Repository()
+	checkPRStatuses := func() error {
+		statuses, err := lhClient.ListStatuses(repo.Namespace, repo.Name, pr.Sha)
+		if err != nil {
+			logInfof("error fetching commit statuses for PR %s/%s/%d: %s\n", repo.Namespace, repo.Name, pr.Number, err)
+			return err
+		}
+		contextStatuses := make(map[string]*scm.Status)
+		// For GitHub, only set the status if it's the first one we see for the context, which is always the newest
+		// For GitLab, ordering is actually the inverse,
+
+		var orderedStatuses []*scm.Status
+		if GitKind() == "gitlab" {
+			for i := len(statuses) - 1; i >= 0; i-- {
+				orderedStatuses = append(orderedStatuses, statuses[i])
+			}
+		} else {
+			orderedStatuses = append(orderedStatuses, statuses...)
+		}
+		for _, status := range orderedStatuses {
+			if status == nil {
+				return err
+			}
+			if _, exists := contextStatuses[status.Label]; !exists {
+				contextStatuses[status.Label] = status
+			}
+		}
+
+		var matchedStatus *scm.Status
+		var wrongStatuses []string
+
+		for _, c := range contexts {
+			status, ok := contextStatuses[c]
+			if !ok || status == nil {
+				wrongStatuses = append(wrongStatuses, fmt.Sprintf("%s: missing", c))
+			} else if !isADesiredStatus(status.State.String(), desiredStatuses) {
+				wrongStatuses = append(wrongStatuses, fmt.Sprintf("%s: %s", c, status.State.String()))
+			} else {
+				matchedStatus = status
+			}
+		}
+
+		if len(wrongStatuses) > 0 || matchedStatus == nil {
+			errMsg := fmt.Sprintf("wrong or missing status for PR %s/%s/%d context(s): %s, expected %s", repo.Namespace, repo.Name, pr.Number, strings.Join(wrongStatuses, ", "), strings.Join(desiredStatuses, ","))
+			logInfof("WARNING: %s\n", errMsg)
+			return errors.New(errMsg)
+		}
+
+		return nil
+	}
+
+	exponentialBackOff := backoff.NewExponentialBackOff()
+	exponentialBackOff.MaxElapsedTime = 15 * time.Minute
+	exponentialBackOff.MaxInterval = 10 * time.Second
+	exponentialBackOff.Reset()
+	err := backoff.Retry(checkPRStatuses, exponentialBackOff)
+
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+}
+
+func isADesiredStatus(status string, desiredStatuses []string) bool {
+	for _, s := range desiredStatuses {
+		if status == s {
+			return true
+		}
+	}
+	return false
+}
+
+const infoPrefix = "      "
+
+// logInfo info logging
+func logInfo(message string) {
+	fmt.Fprintln(ginkgo.GinkgoWriter, infoPrefix+message)
+}
+
+// logInfof info logging
+func logInfof(format string, args ...interface{}) {
+	fmt.Fprintf(ginkgo.GinkgoWriter, infoPrefix+fmt.Sprintf(format, args...))
 }
