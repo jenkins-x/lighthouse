@@ -447,10 +447,16 @@ func ExpectThatPullRequestHasCommentMatching(lhClient scmprovider.SCMClient, pr 
 func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.PullRequest, contexts []string, desiredStatuses ...string) {
 	gomega.Expect(pr.Sha).ShouldNot(gomega.Equal(""))
 	repo := pr.Repository()
+
+	logInfof("original SHA: %s", pr.Sha)
+	updatedPR, err := lhClient.GetPullRequest(repo.Namespace, repo.Name, pr.Number)
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+	logInfof("updated SHA: %s", updatedPR.Sha)
+
 	checkPRStatuses := func() error {
-		statuses, err := lhClient.ListStatuses(repo.Namespace, repo.Name, pr.Sha)
+		statuses, err := lhClient.ListStatuses(repo.Namespace, repo.Name, updatedPR.Sha)
 		if err != nil {
-			logInfof("error fetching commit statuses for PR %s/%s/%d: %s\n", repo.Namespace, repo.Name, pr.Number, err)
+			logInfof("error fetching commit statuses for PR %s/%s/%d: %s\n", repo.Namespace, repo.Name, updatedPR.Number, err)
 			return err
 		}
 		contextStatuses := make(map[string]*scm.Status)
@@ -489,7 +495,7 @@ func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.Pull
 		}
 
 		if len(wrongStatuses) > 0 || matchedStatus == nil {
-			errMsg := fmt.Sprintf("wrong or missing status for PR %s/%s/%d context(s): %s, expected %s", repo.Namespace, repo.Name, pr.Number, strings.Join(wrongStatuses, ", "), strings.Join(desiredStatuses, ","))
+			errMsg := fmt.Sprintf("wrong or missing status for PR %s/%s/%d context(s): %s, expected %s", repo.Namespace, repo.Name, updatedPR.Number, strings.Join(wrongStatuses, ", "), strings.Join(desiredStatuses, ","))
 			logInfof("WARNING: %s\n", errMsg)
 			return errors.New(errMsg)
 		}
@@ -501,7 +507,7 @@ func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.Pull
 	exponentialBackOff.MaxElapsedTime = 15 * time.Minute
 	exponentialBackOff.MaxInterval = 10 * time.Second
 	exponentialBackOff.Reset()
-	err := backoff.Retry(checkPRStatuses, exponentialBackOff)
+	err = backoff.Retry(checkPRStatuses, exponentialBackOff)
 
 	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 }
