@@ -37,9 +37,9 @@ import (
 
 const (
 	primarySCMTokenEnvVar  = "E2E_PRIMARY_SCM_TOKEN" /* #nosec */
-	primarySCMUserEnvVar   = "E2E_GIT_USER"
+	primarySCMUserEnvVar   = "E2E_PRIMARY_SCM_USER"
 	approverSCMTokenEnvVar = "E2E_APPROVER_SCM_TOKEN" /* #nosec */
-	approverSCMUserEnvVar  = "E2E_APPROVER_USER"
+	approverSCMUserEnvVar  = "E2E_APPROVER_SCM_USER"
 	hmacTokenEnvVar        = "E2E_HMAC_TOKEN" /* #nosec */
 	gitServerEnvVar        = "E2E_GIT_SERVER"
 	gitKindEnvVar          = "E2E_GIT_KIND"

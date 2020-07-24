@@ -1,20 +1,20 @@
 git:
-  kind: github
-  name: github
-  server: https://github.com
+  kind: {{ .Env.E2E_GIT_KIND }}
+  name: {{ .Env.E2E_GIT_KIND }}
+  server: {{ .Env.E2E_GIT_SERVER }}
 
 # the secret used for webhooks
-hmacToken: $HMACTOKEN
+hmacToken: {{ .Env.E2E_HMAC_TOKEN }}
 
 # Default values for Go projects.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 image:
-  tag: $VERSION
+  tag: {{ .Env.VERSION }}
 
-user: $BOTUSER
+user: {{ .Env.E2E_PRIMARY_SCM_USER }}
 
-oauthToken: $BOTSECRET
+oauthToken: {{ .Env.E2E_PRIMARY_SCM_TOKEN }}
 
 engines:
   jx: false
@@ -22,4 +22,4 @@ engines:
 
 createIngress: true
 
-domainName: $DOMAINNAME.nip.io
+domainName: {{ .Env.EXTERNAL_IP }}.nip.io
