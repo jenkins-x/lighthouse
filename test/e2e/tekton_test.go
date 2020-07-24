@@ -54,8 +54,7 @@ var _ = AfterSuite(func() {
 })
 
 func TestTekton(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Lighthouse Tekton")
+	RunWithReporters(t, "Tekton integration")
 }
 
 var _ = ChatOpsTests()

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"text/template"
 	"time"
 
@@ -32,6 +33,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/onsi/ginkgo"
+	ginkgoconfig "github.com/onsi/ginkgo/config"
+	gr "github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/gomega"
 )
 
@@ -523,4 +526,32 @@ func logInfo(message string) {
 // logInfof info logging
 func logInfof(format string, args ...interface{}) {
 	fmt.Fprintf(ginkgo.GinkgoWriter, infoPrefix+fmt.Sprintf(format, args...))
+}
+
+func RunWithReporters(t *testing.T, suiteId string) {
+	reportsDir := os.Getenv("REPORTS_DIR")
+	if reportsDir == "" {
+		reportsDir = filepath.Join("../", "build", "reports")
+	}
+	err := os.MkdirAll(reportsDir, 0700)
+	if err != nil {
+		t.Errorf("cannot create %s because %v", reportsDir, err)
+	}
+	reporters := make([]ginkgo.Reporter, 0)
+
+	slowSpecThresholdStr := os.Getenv("SLOW_SPEC_THRESHOLD")
+	if slowSpecThresholdStr == "" {
+		slowSpecThresholdStr = "50000"
+		_ = os.Setenv("SLOW_SPEC_THRESHOLD", slowSpecThresholdStr)
+
+	}
+	slowSpecThreshold, err := strconv.ParseFloat(slowSpecThresholdStr, 64)
+	if err != nil {
+		panic(err.Error())
+	}
+	ginkgoconfig.DefaultReporterConfig.SlowSpecThreshold = slowSpecThreshold
+	ginkgoconfig.DefaultReporterConfig.Verbose = testing.Verbose()
+	reporters = append(reporters, gr.NewJUnitReporter(filepath.Join(reportsDir, fmt.Sprintf("%s.junit.xml", suiteId))))
+	gomega.RegisterFailHandler(ginkgo.Fail)
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, fmt.Sprintf("Lighthouse E2E tests: %s", suiteId), reporters)
 }
