@@ -170,7 +170,7 @@ func ChatOpsTests() bool {
 					Expect(err).NotTo(HaveOccurred())
 				})
 				By("waiting for build to succeed", func() {
-					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+					WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
 				})
 			})
 		})
