@@ -448,12 +448,14 @@ func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.Pull
 	gomega.Expect(pr.Sha).ShouldNot(gomega.Equal(""))
 	repo := pr.Repository()
 
-	logInfof("original SHA: %s", pr.Sha)
-	updatedPR, err := lhClient.GetPullRequest(repo.Namespace, repo.Name, pr.Number)
-	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-	logInfof("updated SHA: %s", updatedPR.Sha)
 
 	checkPRStatuses := func() error {
+		logInfof("original SHA: %s", pr.Sha)
+		updatedPR, err := lhClient.GetPullRequest(repo.Namespace, repo.Name, pr.Number)
+		if err != nil {
+			return err
+		}
+		logInfof("updated SHA: %s", updatedPR.Sha)
 		statuses, err := lhClient.ListStatuses(repo.Namespace, repo.Name, updatedPR.Sha)
 		if err != nil {
 			logInfof("error fetching commit statuses for PR %s/%s/%d: %s\n", repo.Namespace, repo.Name, updatedPR.Number, err)
@@ -507,7 +509,7 @@ func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.Pull
 	exponentialBackOff.MaxElapsedTime = 15 * time.Minute
 	exponentialBackOff.MaxInterval = 10 * time.Second
 	exponentialBackOff.Reset()
-	err = backoff.Retry(checkPRStatuses, exponentialBackOff)
+	err := backoff.Retry(checkPRStatuses, exponentialBackOff)
 
 	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 }
