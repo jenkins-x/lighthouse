@@ -60,3 +60,13 @@ data:
   password: {{ .GitToken }}
   username: {{ .GitUser }}
 type: kubernetes.io/basic-auth
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-bot
+  namespace: {{ .Namespace }}
+secrets:
+  - name: lh-tekton-git-creds

@@ -401,7 +401,7 @@ func generatePipelineRunSpec() *tektonv1beta1.PipelineRunSpec {
 		PipelineRef: &tektonv1beta1.PipelineRef{
 			Name: "lh-test-pipeline",
 		},
-		ServiceAccountName: "default",
+		ServiceAccountName: "tekton-bot",
 		Workspaces: []tektonv1beta1.WorkspaceBinding{{
 			Name: "shared-data",
 			VolumeClaimTemplate: &corev1.PersistentVolumeClaim{
