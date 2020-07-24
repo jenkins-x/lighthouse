@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -24,7 +25,8 @@ import (
 )
 
 const (
-	ns = "lh-test"
+	ns       = "lh-test"
+	prBranch = "for-pr"
 )
 
 var (
@@ -35,7 +37,8 @@ var (
 	approverClient *scm.Client
 	gitServerURL   string
 	repo           *scm.Repository
-	repoDir        string
+	repoFullName   string
+	localClone     *git.Repo
 )
 
 var _ = BeforeSuite(func() {
@@ -63,10 +66,15 @@ var _ = BeforeSuite(func() {
 	Expect(gitClient).ShouldNot(BeNil())
 
 	By("creating repository")
-	repo, repoDir, err = CreateBaseRepository(GetBotName(), GetApproverName(), scmClient, gitClient)
+	repo, localClone, err = CreateBaseRepository(GetBotName(), GetApproverName(), scmClient, gitClient)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(repo).ShouldNot(BeNil())
-	Expect(repoDir).ShouldNot(BeEmpty())
+	Expect(localClone).ShouldNot(BeNil())
+	repoFullName = fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
+
+	By(fmt.Sprintf("adding %s to new repository", GetApproverName()))
+	err = AddCollaborator(GetApproverName(), repo, scmClient, approverClient)
+	Expect(err).ShouldNot(HaveOccurred())
 
 	By("adding the Pipeline and Task definitions to the cluster")
 	err = applyPipelineAndTask()
@@ -78,7 +86,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).ShouldNot(BeNil())
 	Expect(pluginCfg).ShouldNot(BeNil())
 
-	cfg.Presubmits[fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)][0].PipelineRunSpec = generatePipelineRunSpec()
+	cfg.Presubmits[repoFullName][0].PipelineRunSpec = generatePipelineRunSpec()
 
 	err = ApplyConfigAndPluginsConfigMaps(cfg, pluginCfg)
 	Expect(err).ShouldNot(HaveOccurred())
@@ -105,6 +113,33 @@ var _ = ChatOpsTests()
 
 func ChatOpsTests() bool {
 	return Describe("Lighthouse Tekton support", func() {
+		var (
+			pr *scm.PullRequest
+		)
+
+		By("creating the initial, passing pull request", func() {
+			err := localClone.CheckoutNewBranch(prBranch)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			newFile := filepath.Join(localClone.Dir, "README")
+			err = ioutil.WriteFile(newFile, []byte("Hello world"), 0600)
+			ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
+
+			ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
+
+			err = localClone.Push(repo.Name, prBranch)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			prInput := &scm.PullRequestInput{
+				Title: "Lighthouse Test PR",
+				Head:  prBranch,
+				Base:  "master",
+				Body:  "Test PR for Lighthouse",
+			}
+			pr, _, err = scmClient.PullRequests.Create(context.Background(), repoFullName, prInput)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(pr).ShouldNot(BeNil())
+		})
 		/*		var (
 					T                helpers.TestOptions
 					err              error

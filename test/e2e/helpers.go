@@ -47,7 +47,7 @@ const (
 
 // CreateGitClient creates the git client used for cloning and making changes to the test repository
 func CreateGitClient(gitServerURL string, userFunc func() string, tokenFunc func() (string, error)) (git.Client, error) {
-	gitClient, err := git.NewClient(gitServerURL, gitKind())
+	gitClient, err := git.NewClient(gitServerURL, GitKind())
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func CreateGitClient(gitServerURL string, userFunc func() string, tokenFunc func
 
 // CreateSCMClient takes functions that return the username and token to use, and creates the scm.Client and Lighthouse SCM client
 func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (*scm.Client, scmprovider.SCMClient, string, error) {
-	kind := gitKind()
+	kind := GitKind()
 	serverURL := os.Getenv(gitServerEnvVar)
 
 	client, err := factory.NewClient(kind, serverURL, "")
@@ -79,7 +79,8 @@ func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (
 	return client, spc, serverURL, err
 }
 
-func gitKind() string {
+// GitKind returns the git provider flavor being used
+func GitKind() string {
 	kind := os.Getenv(gitKindEnvVar)
 	if kind == "" {
 		kind = "github"
@@ -123,12 +124,12 @@ func GetApproverName() string {
 
 // GetPrimarySCMToken gets the token used by the bot/primary user
 func GetPrimarySCMToken() (string, error) {
-	return getSCMToken(primarySCMTokenEnvVar, gitKind())
+	return getSCMToken(primarySCMTokenEnvVar, GitKind())
 }
 
 // GetApproverSCMToken gets the token used by the approver
 func GetApproverSCMToken() (string, error) {
-	return getSCMToken(approverSCMTokenEnvVar, gitKind())
+	return getSCMToken(approverSCMTokenEnvVar, GitKind())
 }
 
 func getSCMToken(envName, gitKind string) (string, error) {
@@ -140,7 +141,7 @@ func getSCMToken(envName, gitKind string) (string, error) {
 }
 
 // CreateBaseRepository creates the repository that will be used for tests
-func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitClient git.Client) (*scm.Repository, string, error) {
+func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitClient git.Client) (*scm.Repository, *git.Repo, error) {
 	repoName := baseRepoName + "-" + strconv.FormatInt(ginkgo.GinkgoRandomSeed(), 10)
 
 	input := &scm.RepositoryInput{
@@ -150,7 +151,7 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 
 	repo, _, err := botClient.Repositories.Create(context.Background(), input)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to create repository")
+		return nil, nil, errors.Wrapf(err, "failed to create repository")
 	}
 
 	// Sleep 5 seconds to ensure repository exists enough to be pushed to.
@@ -158,24 +159,24 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 
 	r, err := gitClient.Clone(repo.Namespace + "/" + repo.Name)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "could not clone %s", repo.FullName)
+		return nil, nil, errors.Wrapf(err, "could not clone %s", repo.FullName)
 	}
 	err = r.CheckoutNewBranch("master")
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	baseScriptFile := filepath.Join("test_data", "baseRepoScript.sh")
 	baseScript, err := ioutil.ReadFile(baseScriptFile) /* #nosec */
 
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to read %s", baseScriptFile)
+		return nil, nil, errors.Wrapf(err, "failed to read %s", baseScriptFile)
 	}
 
 	scriptOutputFile := filepath.Join(r.Dir, "script.sh")
 	err = ioutil.WriteFile(scriptOutputFile, baseScript, 0600)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "couldn't write to %s", scriptOutputFile)
+		return nil, nil, errors.Wrapf(err, "couldn't write to %s", scriptOutputFile)
 	}
 
 	ExpectCommandExecution(r.Dir, 1, 0, "git", "add", scriptOutputFile)
@@ -190,12 +191,12 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 	ownersFile := filepath.Join(r.Dir, "OWNERS")
 	ownersYaml, err := yaml.Marshal(owners)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "couldn't marshal OWNERS yaml")
+		return nil, nil, errors.Wrapf(err, "couldn't marshal OWNERS yaml")
 	}
 
 	err = ioutil.WriteFile(ownersFile, ownersYaml, 0600)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "couldn't write to %s", ownersFile)
+		return nil, nil, errors.Wrapf(err, "couldn't write to %s", ownersFile)
 	}
 	ExpectCommandExecution(r.Dir, 1, 0, "git", "add", ownersFile)
 
@@ -203,10 +204,48 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 
 	err = r.Push(repo.Name, "master")
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to push to %s", repo.Clone)
+		return nil, nil, errors.Wrapf(err, "failed to push to %s", repo.Clone)
 	}
 
-	return repo, r.Dir, nil
+	return repo, r, nil
+}
+
+// AddCollaborator adds the approver user to the repo
+func AddCollaborator(approver string, repo *scm.Repository, botClient *scm.Client, approverClient *scm.Client) error {
+	_, alreadyCollaborator, _, err := botClient.Repositories.AddCollaborator(context.Background(), fmt.Sprintf("%s/%s", repo.Namespace, repo.Name), approver, "admin")
+	if alreadyCollaborator {
+		return nil
+	}
+	if err != nil {
+		return errors.Wrapf(err, "adding %s as collaborator for repo %s/%s", approver, repo.Namespace, repo.Name)
+	}
+
+	// Don't bother checking for invites with BitBucket Server
+	if GitKind() == "stash" {
+		return nil
+	}
+
+	// Sleep for a bit
+	time.Sleep(15 * time.Second)
+
+	invites, _, err := approverClient.Users.ListInvitations(context.Background())
+	if err == scm.ErrNotSupported {
+		// Ignore any cases of not supported
+		return nil
+	}
+	if err != nil {
+		return errors.Wrapf(err, "listing invitations for user %s", approver)
+	}
+	for _, i := range invites {
+		_, err = approverClient.Users.AcceptInvitation(context.Background(), i.ID)
+		if err == scm.ErrNotSupported {
+			return nil
+		}
+		if err != nil {
+			return errors.Wrapf(err, "accepting invitation %d for user %s", i.ID, approver)
+		}
+	}
+	return nil
 }
 
 // ExpectCommandExecution performs the given command in the current work directory and asserts that it completes successfully
