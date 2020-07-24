@@ -41,61 +41,6 @@ var (
 	localClone     *git.Repo
 )
 
-var _ = BeforeSuite(func() {
-	var err error
-	By("creating HMAC token")
-	hmacToken, err = CreateHMACToken()
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(hmacToken).ShouldNot(BeEmpty())
-
-	By("creating primary SCM client")
-	scmClient, spc, gitServerURL, err = CreateSCMClient(GetBotName, GetPrimarySCMToken)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(scmClient).ShouldNot(BeNil())
-	Expect(spc).ShouldNot(BeNil())
-	Expect(gitServerURL).ShouldNot(BeEmpty())
-
-	By("creating approver SCM client")
-	approverClient, _, _, err = CreateSCMClient(GetApproverName, GetApproverSCMToken)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(approverClient).ShouldNot(BeNil())
-
-	By("creating git client")
-	gitClient, err = CreateGitClient(gitServerURL, GetBotName, GetPrimarySCMToken)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(gitClient).ShouldNot(BeNil())
-
-	By("creating repository")
-	repo, localClone, err = CreateBaseRepository(GetBotName(), GetApproverName(), scmClient, gitClient)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(repo).ShouldNot(BeNil())
-	Expect(localClone).ShouldNot(BeNil())
-	repoFullName = fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
-
-	By(fmt.Sprintf("adding %s to new repository", GetApproverName()))
-	err = AddCollaborator(GetApproverName(), repo, scmClient, approverClient)
-	Expect(err).ShouldNot(HaveOccurred())
-
-	By("adding the Pipeline and Task definitions to the cluster")
-	err = applyPipelineAndTask()
-	Expect(err).ShouldNot(HaveOccurred())
-
-	By(fmt.Sprintf("creating and populating Lighthouse config for %s", repo.Clone))
-	cfg, pluginCfg, err := ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, config.TektonPipelineAgent)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(cfg).ShouldNot(BeNil())
-	Expect(pluginCfg).ShouldNot(BeNil())
-
-	cfg.Presubmits[repoFullName][0].PipelineRunSpec = generatePipelineRunSpec()
-
-	err = ApplyConfigAndPluginsConfigMaps(cfg, pluginCfg)
-	Expect(err).ShouldNot(HaveOccurred())
-
-	By(fmt.Sprintf("setting up webhooks for %s", repo.Clone))
-	err = CreateWebHook(scmClient, repo, hmacToken)
-	Expect(err).ShouldNot(HaveOccurred())
-})
-
 var _ = AfterSuite(func() {
 	err := gitClient.Clean()
 	if err != nil {
@@ -113,32 +58,92 @@ var _ = ChatOpsTests()
 
 func ChatOpsTests() bool {
 	return Describe("Lighthouse Tekton support", func() {
+		BeforeEach(func() {
+			var err error
+			By("creating HMAC token")
+			hmacToken, err = CreateHMACToken()
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(hmacToken).ShouldNot(BeEmpty())
+
+			By("creating primary SCM client")
+			scmClient, spc, gitServerURL, err = CreateSCMClient(GetBotName, GetPrimarySCMToken)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(scmClient).ShouldNot(BeNil())
+			Expect(spc).ShouldNot(BeNil())
+			Expect(gitServerURL).ShouldNot(BeEmpty())
+
+			By("creating approver SCM client")
+			approverClient, _, _, err = CreateSCMClient(GetApproverName, GetApproverSCMToken)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(approverClient).ShouldNot(BeNil())
+
+			By("creating git client")
+			gitClient, err = CreateGitClient(gitServerURL, GetBotName, GetPrimarySCMToken)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(gitClient).ShouldNot(BeNil())
+
+			By("creating repository")
+			repo, localClone, err = CreateBaseRepository(GetBotName(), GetApproverName(), scmClient, gitClient)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(repo).ShouldNot(BeNil())
+			Expect(localClone).ShouldNot(BeNil())
+			repoFullName = fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
+
+			By(fmt.Sprintf("adding %s to new repository", GetApproverName()))
+			err = AddCollaborator(GetApproverName(), repo, scmClient, approverClient)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			By("adding the Pipeline and Task definitions to the cluster")
+			err = applyPipelineAndTask()
+			Expect(err).ShouldNot(HaveOccurred())
+
+			By(fmt.Sprintf("creating and populating Lighthouse config for %s", repo.Clone))
+			cfg, pluginCfg, err := ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, config.TektonPipelineAgent)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(cfg).ShouldNot(BeNil())
+			Expect(pluginCfg).ShouldNot(BeNil())
+
+			cfg.Presubmits[repoFullName][0].PipelineRunSpec = generatePipelineRunSpec()
+
+			err = ApplyConfigAndPluginsConfigMaps(cfg, pluginCfg)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			By(fmt.Sprintf("setting up webhooks for %s", repo.Clone))
+			err = CreateWebHook(scmClient, repo, hmacToken)
+			Expect(err).ShouldNot(HaveOccurred())
+		})
 		var (
-			pr *scm.PullRequest
+			err error
+			pr  *scm.PullRequest
 		)
 
-		By("creating the initial, passing pull request", func() {
-			err := localClone.CheckoutNewBranch(prBranch)
-			Expect(err).ShouldNot(HaveOccurred())
+		Describe("creating a PR and verifying behavior against it", func() {
+			It("creates the initial, passing pull request", func() {
+				By("cloning, creating the new branch, and pushing it", func() {
+					err = localClone.CheckoutNewBranch(prBranch)
+					Expect(err).ShouldNot(HaveOccurred())
 
-			newFile := filepath.Join(localClone.Dir, "README")
-			err = ioutil.WriteFile(newFile, []byte("Hello world"), 0600)
-			ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
+					newFile := filepath.Join(localClone.Dir, "README")
+					err = ioutil.WriteFile(newFile, []byte("Hello world"), 0600)
+					ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
 
-			ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
+					ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
 
-			err = localClone.Push(repo.Name, prBranch)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			prInput := &scm.PullRequestInput{
-				Title: "Lighthouse Test PR",
-				Head:  prBranch,
-				Base:  "master",
-				Body:  "Test PR for Lighthouse",
-			}
-			pr, _, err = scmClient.PullRequests.Create(context.Background(), repoFullName, prInput)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(pr).ShouldNot(BeNil())
+					err = localClone.Push(repo.Name, prBranch)
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+				By("creating a pull request", func() {
+					prInput := &scm.PullRequestInput{
+						Title: "Lighthouse Test PR",
+						Head:  prBranch,
+						Base:  "master",
+						Body:  "Test PR for Lighthouse",
+					}
+					pr, _, err = scmClient.PullRequests.Create(context.Background(), repoFullName, prInput)
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(pr).ShouldNot(BeNil())
+				})
+			})
 		})
 		/*		var (
 					T                helpers.TestOptions
