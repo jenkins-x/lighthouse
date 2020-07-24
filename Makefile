@@ -103,7 +103,7 @@ tekton-controller:
 
 .PHONY: compile-e2e
 compile-e2e:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" ./test/...
+	$(GOTEST) -run=nope -failfast -short -ldflags "$(GO_LDFLAGS)" ./test/...
 
 .PHONY: run-e2e-tests
 run-e2e-tests:

@@ -54,6 +54,8 @@ dateLabel=$(date "+%a-%b-%d-%Y-%H-%M-%S")
 # Activate the service account json provided by the pipeline, if it exists
 if [ -n "${GKE_SA}" ]; then
   gcloud auth activate-service-account --key-file "${GKE_SA}"
+else
+  echo "GKE_SA environment variable not set, so using current GKE login to create cluster"
 fi
 
 # Create the cluster with some standard labels and info for cleanup. Minimum version is 1.16.x

@@ -527,7 +527,8 @@ func logInfof(format string, args ...interface{}) {
 	fmt.Fprintf(ginkgo.GinkgoWriter, infoPrefix+fmt.Sprintf(format, args...))
 }
 
-func RunWithReporters(t *testing.T, suiteId string) {
+// RunWithReporters runs a suite with better logging and gathering of test results
+func RunWithReporters(t *testing.T, suiteID string) {
 	reportsDir := os.Getenv("REPORTS_DIR")
 	if reportsDir == "" {
 		reportsDir = filepath.Join("../", "build", "reports")
@@ -550,9 +551,9 @@ func RunWithReporters(t *testing.T, suiteId string) {
 	}
 	ginkgoconfig.DefaultReporterConfig.SlowSpecThreshold = slowSpecThreshold
 	ginkgoconfig.DefaultReporterConfig.Verbose = testing.Verbose()
-	reporters = append(reporters, gr.NewJUnitReporter(filepath.Join(reportsDir, fmt.Sprintf("%s.junit.xml", suiteId))))
+	reporters = append(reporters, gr.NewJUnitReporter(filepath.Join(reportsDir, fmt.Sprintf("%s.junit.xml", suiteID))))
 	gomega.RegisterFailHandler(ginkgo.Fail)
-	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, fmt.Sprintf("Lighthouse E2E tests: %s", suiteId), reporters)
+	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, fmt.Sprintf("Lighthouse E2E tests: %s", suiteID), reporters)
 }
 
 // AttemptToLGTMOwnPullRequest return an error if the /lgtm fails to add the lgtm label to PR
@@ -756,11 +757,10 @@ func WaitForPullRequestToMerge(lhClient scmprovider.SCMClient, pr *scm.PullReque
 		}
 		if updatedPR.Merged {
 			return nil
-		} else {
-			err = fmt.Errorf("PR %s not yet merged", pr.Link)
-			logInfof("WARNING: %s, sleeping and retrying\n", err)
-			return err
 		}
+		err = fmt.Errorf("PR %s not yet merged", pr.Link)
+		logInfof("WARNING: %s, sleeping and retrying\n", err)
+		return err
 	}
 
 	err := retryExponentialBackoff(15*time.Minute, waitForMergeFunc)
