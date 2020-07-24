@@ -27,6 +27,10 @@ pipelineConfig:
             value: http://jenkins-x-athens-proxy:80
           - name: GKE_SA
             value: /secrets/bdd/sa.json
+          - name: E2E_GIT_KIND
+            value: github
+          - name: E2E_GIT_SERVER
+            value: https://github.com
           - name: CHARTMUSEUM_USER
             valueFrom:
               secretKeyRef:
@@ -37,7 +41,7 @@ pipelineConfig:
               secretKeyRef:
                 name: jenkins-x-chartmuseum
                 key: BASIC_AUTH_PASS
-          - name: E2E_GIT_USER
+          - name: E2E_PRIMARY_SCM_USER
             valueFrom:
               secretKeyRef:
                 name: lighthouse-bot-test-github
@@ -52,7 +56,7 @@ pipelineConfig:
               secretKeyRef:
                 name: test-jenkins-user 
                 key: password
-          - name: E2E_APPROVER_USER
+          - name: E2E_APPROVER_SCM_USER
             valueFrom:
               secretKeyRef:
                 name: jenkins-x-bot-test-github
