@@ -10,7 +10,7 @@ owner: jenkins-x
 repo: lighthouse
 stages:
   - completionTime: "2020-07-20T18:00:05Z"
-    name: jenkins-x-lighthouse-pr-854-bbs-d5q9c-4-ci-wbnrf
+    name: ci-wbnrf
     startTime: "2020-07-20T17:29:24Z"
     status: success
     steps:

@@ -10,7 +10,7 @@ owner: jenkins-x-charts
 repo: jx-build-templates
 stages:
   - completionTime: "2020-07-20T18:50:43Z"
-    name: jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-zjcjs
+    name: from-build-pack-zjcjs
     startTime: "2020-07-20T18:50:22Z"
     status: failure
     steps:

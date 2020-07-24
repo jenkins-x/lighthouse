@@ -53,4 +53,3 @@ spec:
   type: presubmit
 status:
   state: pending
-  activityName: f46327af-b47e-11ea-b797-9256b7b8d9b0

@@ -8,7 +8,7 @@ name: jenkins-x-jx-pr-7463-unit-wbf7v-18
 owner: jenkins-x
 repo: jx
 stages:
-  - name: jenkins-x-jx-pr-7463-unit-wbf7v-18-ci-8r5qw
+  - name: ci-8r5qw
     startTime: "2020-07-20T20:15:20Z"
     status: running
     steps:

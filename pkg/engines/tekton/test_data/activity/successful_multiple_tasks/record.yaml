@@ -10,7 +10,7 @@ owner: jenkins-x
 repo: jx
 stages:
   - completionTime: "2020-07-20T19:56:53Z"
-    name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-build-2jnvr
+    name: build-2jnvr
     startTime: "2020-07-20T19:50:21Z"
     status: success
     steps:
@@ -67,7 +67,7 @@ stages:
         startTime: "2020-07-20T19:55:52Z"
         status: success
   - completionTime: "2020-07-20T20:50:27Z"
-    name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-e2e-tests-ds74m
+    name: e2e-tests-ds74m
     startTime: "2020-07-20T19:56:53Z"
     status: success
     steps:

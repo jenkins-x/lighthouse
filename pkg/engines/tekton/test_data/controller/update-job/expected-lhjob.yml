@@ -92,6 +92,5 @@ status:
     startTime: "2020-07-20T20:15:20Z"
     status: running
     steps: null
-  activityName: f46327af-b47e-11ea-b797-9256b7b8d9b0
   startTime: null
   state: pending
