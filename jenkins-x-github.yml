@@ -37,7 +37,12 @@ pipelineConfig:
               secretKeyRef:
                 name: jenkins-x-chartmuseum
                 key: BASIC_AUTH_PASS
-          - name: GH_ACCESS_TOKEN
+          - name: E2E_GIT_USER
+            valueFrom:
+              secretKeyRef:
+                name: lighthouse-bot-test-github
+                key: username
+          - name: E2E_PRIMARY_SCM_TOKEN
             valueFrom:
               secretKeyRef:
                 name: lighthouse-bot-test-github
@@ -47,12 +52,12 @@ pipelineConfig:
               secretKeyRef:
                 name: test-jenkins-user 
                 key: password
-          - name: BDD_APPROVER_USERNAME
+          - name: E2E_APPROVER_USER
             valueFrom:
               secretKeyRef:
                 name: jenkins-x-bot-test-github
                 key: username
-          - name: BDD_APPROVER_ACCESS_TOKEN
+          - name: E2E_APPROVER_SCM_TOKEN
             valueFrom:
               secretKeyRef:
                 name: jenkins-x-bot-test-github
@@ -148,5 +153,5 @@ pipelineConfig:
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=$(inputs.params.version)
 
-              - command: bdd/github/ci.sh
+              - command: bdd/tekton/ci.sh
                 name: runci
