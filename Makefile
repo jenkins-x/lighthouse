@@ -107,7 +107,7 @@ compile-e2e:
 
 .PHONY: run-e2e-tests
 run-e2e-tests:
-	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -short ./test/...
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) --count=1 -v ./test/...
 
 .PHONY: mod
 mod: build
