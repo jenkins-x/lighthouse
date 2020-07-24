@@ -3,6 +3,7 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -96,6 +97,8 @@ func ChatOpsTests() bool {
 			By("adding the Pipeline and Task definitions to the cluster")
 			err = applyPipelineAndTask()
 			Expect(err).ShouldNot(HaveOccurred())
+			ExpectCommandExecution(localClone.Dir, 1, 0, "kubectl", "apply", "-f",
+				"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-clone/0.1/git-clone.yaml")
 
 			By(fmt.Sprintf("creating and populating Lighthouse config for %s", repo.Clone))
 			cfg, pluginCfg, err := ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, config.TektonPipelineAgent)
@@ -420,7 +423,10 @@ func generatePipelineRunSpec() *tektonv1beta1.PipelineRunSpec {
 }
 
 type pipelineCRDInput struct {
-	Namespace string
+	Namespace  string
+	BaseGitURL string
+	GitUser    string
+	GitToken   string
 }
 
 func applyPipelineAndTask() error {
@@ -440,8 +446,16 @@ func applyPipelineAndTask() error {
 		return errors.Wrapf(err, "parsing pipeline/task template from %s", pAndTFile)
 	}
 
+	rawToken, err := GetPrimarySCMToken()
+	if err != nil {
+		return errors.Wrapf(err, "getting git token for user %s", GetBotName())
+	}
+
 	input := pipelineCRDInput{
-		Namespace: ns,
+		Namespace:  ns,
+		BaseGitURL: gitServerURL,
+		GitUser:    base64.StdEncoding.EncodeToString([]byte(GetBotName())),
+		GitToken:   base64.StdEncoding.EncodeToString([]byte(rawToken)),
 	}
 
 	var pAndTBuf bytes.Buffer

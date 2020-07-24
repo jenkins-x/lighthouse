@@ -47,3 +47,16 @@ spec:
       workspaces:
         - name: source
           workspace: shared-data
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    tekton.dev/git-0: {{ .BaseGitURL }}
+  name: lh-tekton-git-creds
+  namespace: {{ .Namespace }}
+data:
+  password: {{ .GitToken }}
+  username: {{ .GitUser }}
+type: kubernetes.io/basic-auth
