@@ -450,12 +450,10 @@ func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.Pull
 
 
 	checkPRStatuses := func() error {
-		logInfof("original SHA: %s", pr.Sha)
 		updatedPR, err := lhClient.GetPullRequest(repo.Namespace, repo.Name, pr.Number)
 		if err != nil {
 			return err
 		}
-		logInfof("updated SHA: %s", updatedPR.Sha)
 		statuses, err := lhClient.ListStatuses(repo.Namespace, repo.Name, updatedPR.Sha)
 		if err != nil {
 			logInfof("error fetching commit statuses for PR %s/%s/%d: %s\n", repo.Namespace, repo.Name, updatedPR.Number, err)
