@@ -582,7 +582,7 @@ func AddReviewerToPullRequestWithChatOpsCommand(lhClient scmprovider.SCMClient, 
 
 	err = ExpectThatPullRequestMatches(lhClient, pr.Number, repo.Namespace, repo.Name, func(request *scm.PullRequest) error {
 		if len(request.Assignees) == 0 && len(request.Reviewers) == 0 {
-			return fmt.Errorf("expected %s as reviewer, but no reviewers or assignees set on PR")
+			return fmt.Errorf("expected %s as reviewer, but no reviewers or assignees set on PR", reviewer)
 		}
 		for _, r := range request.Reviewers {
 			if r.Login == reviewer {
