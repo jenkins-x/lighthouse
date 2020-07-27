@@ -137,3 +137,4 @@ status:
     startTime: "2020-06-22T11:53:17Z"
     status: running
   activityName: jenkins-x-lighthouse-pr-813-1
+  reportURL: https://example.com/teams/some-team/projects/jenkins-x/lighthouse/PR-813/1

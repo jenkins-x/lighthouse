@@ -80,6 +80,22 @@ func (f *fakeMetapipelineClient) Close() error {
 }
 
 func TestSyncHandler(t *testing.T) {
+	origBase := os.Getenv(baseTargetURLEnvVar)
+	origTeam := os.Getenv(targetURLTeamEnvVar)
+	os.Setenv(baseTargetURLEnvVar, "https://example.com")
+	os.Setenv(targetURLTeamEnvVar, "some-team")
+	defer func() {
+		if origBase != "" {
+			os.Setenv(baseTargetURLEnvVar, origBase)
+		} else {
+			os.Unsetenv(baseTargetURLEnvVar)
+		}
+		if origTeam != "" {
+			os.Setenv(targetURLTeamEnvVar, origTeam)
+		} else {
+			os.Unsetenv(targetURLTeamEnvVar)
+		}
+	}()
 	testCases := []struct {
 		name       string
 		inputIsJob bool
