@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -127,12 +126,6 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 
 			for k, v := range tt.env {
 				expectedEnv[k] = v
-			}
-
-			// In CI, this will be set, but it may not be set locally, so add it if it's in the env.
-			registry := os.Getenv("DOCKER_REGISTRY")
-			if registry != "" {
-				expectedEnv["DOCKER_REGISTRY"] = registry
 			}
 
 			generatedEnv := tt.spec.GetEnvVars()

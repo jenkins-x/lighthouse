@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"text/template"
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -37,12 +38,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/yaml"
 )
 
 const (
-	controllerName    = "jx-controller"
-	activityKeyPrefix = "activity"
-	jobKeyPrefix      = "job"
+	controllerName           = "jx-controller"
+	activityKeyPrefix        = "activity"
+	jobKeyPrefix             = "job"
+	defaultTargetURLTemplate = "{{ .BaseURL }}/teams/{{ .Team }}/projects/{{ .Owner }}/{{ .Repository }}/{{ .Branch }}/{{ .Build }}"
+	baseTargetURLEnvVar      = "LIGHTHOUSE_REPORT_URL_BASE"
+	targetURLTeamEnvVar      = "LIGHTHOUSE_REPORT_URL_TEAM"
+	targetURLTemplateEnvVar  = "LIGHTHOUSE_REPORT_URL_TEMPLATE"
 )
 
 // Controller listens for changes to PipelineActivitys and updates the corresponding LighthouseJobs with their activity
@@ -476,6 +482,36 @@ func (c *Controller) syncActivity(namespace, name, key string) error {
 
 	// Update the job's status for the activity.
 	jobCopy := job.DeepCopy()
+	urlBase := c.getReportURLBase()
+	if urlBase != "" {
+		urlTeam := c.getReportURLTeam()
+		team := namespace
+		// override with env var if set
+		if urlTeam != "" {
+			team = urlTeam
+		}
+
+		pipelineContext := activityRecord.Context
+		if pipelineContext == "" {
+			pipelineContext = "jenkins-x"
+		}
+
+		targetURL := c.createReportTargetURL(defaultTargetURLTemplate, ReportParams{
+			Owner:      activityRecord.Owner,
+			Repository: activityRecord.Repo,
+			Branch:     activityRecord.Branch,
+			Build:      activityRecord.BuildIdentifier,
+			Context:    pipelineContext,
+			// TODO: Need to get the job URL base in here somehow. (apb)
+			BaseURL: strings.TrimRight(urlBase, "/"),
+			Team:    team,
+		})
+
+		if strings.HasPrefix(targetURL, "http://") || strings.HasPrefix(targetURL, "https://") {
+			jobCopy.Status.ReportURL = targetURL
+		}
+	}
+
 	jobCopy.Status.Activity = activityRecord
 
 	currentJob, err := c.lhLister.LighthouseJobs(namespace).Get(jobCopy.Name)
@@ -544,6 +580,53 @@ func (c *Controller) getPullRefs(sourceURL string, spec *v1alpha1.LighthouseJobS
 	return pullRef
 }
 
+// getReportURLBase gets the base report URL from the environment
+func (c *Controller) getReportURLBase() string {
+	return os.Getenv(baseTargetURLEnvVar)
+}
+
+// getReportURLTeam gets the team to construct the report url
+func (c *Controller) getReportURLTeam() string {
+	return os.Getenv(targetURLTeamEnvVar)
+}
+
+// getReportTargetURLTemplate returns the template to use for constructing the target URL.
+func (c *Controller) getReportTargetURLTemplate() string {
+	fromEnv := os.Getenv(targetURLTemplateEnvVar)
+	if fromEnv != "" {
+		return fromEnv
+	}
+	return defaultTargetURLTemplate
+}
+
+// ReportParams contains the parameters for target URL templates
+type ReportParams struct {
+	BaseURL, Owner, Repository, Branch, Build, Context, Team string
+}
+
+// createReportTargetURL creates the target URL for pipeline results/logs from a template
+func (c *Controller) createReportTargetURL(templateText string, params ReportParams) string {
+	templateData, err := toObjectMap(params)
+	if err != nil {
+		c.logger.WithError(err).Warnf("failed to convert git ReportParams to a map for %#v", params)
+		return ""
+	}
+
+	tmpl, err := template.New("target_url.tmpl").Option("missingkey=error").Parse(templateText)
+	if err != nil {
+		c.logger.WithError(err).Warnf("failed to parse git ReportsParam template: %s", templateText)
+		return ""
+	}
+
+	var buf strings.Builder
+	err = tmpl.Execute(&buf, templateData)
+	if err != nil {
+		c.logger.WithError(err).Warnf("failed to evaluate git ReportsParam template: %s due to: %s", templateText, err.Error())
+		return ""
+	}
+	return buf.String()
+}
+
 // stopper returns a channel that remains open until an interrupt is received.
 func stopper() chan struct{} {
 	stop := make(chan struct{})
@@ -558,4 +641,15 @@ func stopper() chan struct{} {
 		os.Exit(1)
 	}()
 	return stop
+}
+
+// toObjectMap converts the given object into a map of strings/maps using YAML marshalling
+func toObjectMap(object interface{}) (map[string]interface{}, error) {
+	answer := map[string]interface{}{}
+	data, err := yaml.Marshal(object)
+	if err != nil {
+		return answer, err
+	}
+	err = yaml.Unmarshal(data, &answer)
+	return answer, err
 }

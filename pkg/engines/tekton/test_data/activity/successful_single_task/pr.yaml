@@ -1,0 +1,164 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x/lighthouse.git
+  creationTimestamp: "2020-07-20T17:29:24Z"
+  generation: 1
+  labels:
+    branch: PR-854
+    build: "4"
+    context: bbs
+    jenkins.io/pipelineType: build
+    lighthouse.jenkins-x.io/baseSHA: 82747f50259ef389d4ec8e7185c327c657faec02
+    lighthouse.jenkins-x.io/branch: PR-854
+    lighthouse.jenkins-x.io/buildNum: "4"
+    lighthouse.jenkins-x.io/context: github
+    lighthouse.jenkins-x.io/lastCommitSHA: feb00a651ac860c842d02b9eac3cc2fc9eb06c10
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.repo: lighthouse
+    owner: jenkins-x
+    repository: lighthouse
+    tekton.dev/pipeline: jenkins-x-lighthouse-pr-854-bbs-d5q9c-4
+  name: jenkins-x-lighthouse-pr-854-bbs-d5q9c-4
+  namespace: jx
+  resourceVersion: "16679114"
+  selfLink: /apis/tekton.dev/v1beta1/namespaces/jx/pipelineruns/jenkins-x-lighthouse-pr-854-bbs-d5q9c-4
+  uid: 8e1712a0-caae-11ea-a610-42010a8400cb
+spec:
+  params:
+  - name: version
+    value: 0.0.0-SNAPSHOT-PR-854-4
+  - name: build_id
+    value: "4"
+  pipelineRef:
+    apiVersion: tekton.dev/v1alpha1
+    name: jenkins-x-lighthouse-pr-854-bbs-d5q9c-4
+  podTemplate:
+    schedulerName: ""
+  resources:
+  - name: jenkins-x-lighthouse-pr-854-bbs-d5q9c
+    resourceRef:
+      apiVersion: tekton.dev/v1alpha1
+      name: jenkins-x-lighthouse-pr-854-bbs-d5q9c
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
+status:
+  completionTime: "2020-07-20T18:00:05Z"
+  conditions:
+  - lastTransitionTime: "2020-07-20T18:00:05Z"
+    message: 'Tasks Completed: 1, Skipped: 0'
+    reason: Succeeded
+    status: "True"
+    type: Succeeded
+  startTime: "2020-07-20T17:29:24Z"
+  taskRuns:
+    jenkins-x-lighthouse-pr-854-bbs-d5q9c-4-ci-wbnrf:
+      pipelineTaskName: ci
+      status:
+        completionTime: "2020-07-20T18:00:05Z"
+        conditions:
+        - lastTransitionTime: "2020-07-20T18:00:05Z"
+          message: All Steps have completed executing
+          reason: Succeeded
+          status: "True"
+          type: Succeeded
+        podName: jenkins-x-lighthouse-pr-854-bbs-d5q9c-4-ci-wbnrf-pod-h6dc8
+        resourcesResult:
+        - key: commit
+          resourceRef:
+            name: jenkins-x-lighthouse-pr-854-bbs-d5q9c
+          value: 82747f50259ef389d4ec8e7185c327c657faec02
+        startTime: "2020-07-20T17:29:24Z"
+        steps:
+        - container: step-setup-builder-home
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+          name: setup-builder-home
+          terminated:
+            containerID: docker://f6979cbac5116c55913eb89ff634339501f01fbcc912fc06b9d517a5ba2d6a7b
+            exitCode: 0
+            finishedAt: "2020-07-20T17:29:38Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:29:38Z"
+        - container: step-git-merge
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+          name: git-merge
+          terminated:
+            containerID: docker://55082aa793082d50fecd06d93b193e8f9131a8cd9cac55ddc32222a26cd6c645
+            exitCode: 0
+            finishedAt: "2020-07-20T17:29:42Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:29:39Z"
+        - container: step-build-binaries
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:e07b1253adee49f22be8011a306892cb5e4f3bb31820a48af602a1d22175d194
+          name: build-binaries
+          terminated:
+            containerID: docker://fd3a7c82432c857b985b1efcda3693732178b7e56952a5a1bbae54f15017c2ff
+            exitCode: 0
+            finishedAt: "2020-07-20T17:32:19Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:29:42Z"
+        - container: step-build-and-push-webhooks
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-webhooks
+          terminated:
+            containerID: docker://ff3b683846fe1ac8bb17bf7f11776022c67db0eec294b3168a5fef4a7172fa25
+            exitCode: 0
+            finishedAt: "2020-07-20T17:34:39Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:32:19Z"
+        - container: step-build-and-push-keeper
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-keeper
+          terminated:
+            containerID: docker://fa844b75e8ee20fefef254b8cfb4e37b31e2fc47b416d7d6e2e020e5b6ffcf82
+            exitCode: 0
+            finishedAt: "2020-07-20T17:34:55Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:34:39Z"
+        - container: step-build-and-push-foghorn
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-foghorn
+          terminated:
+            containerID: docker://dbb3aafdb74f9e631a91efb46776831bc67591daa109b77201c826441331e243
+            exitCode: 0
+            finishedAt: "2020-07-20T17:35:42Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:34:55Z"
+        - container: step-build-and-push-jx-controller
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-jx-controller
+          terminated:
+            containerID: docker://74fbed0c4b55690cf940c29f3e0bd34dfe619bf984102adab20163002f5e79ad
+            exitCode: 0
+            finishedAt: "2020-07-20T17:36:00Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:35:42Z"
+        - container: step-build-and-push-gc-jobs
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-gc-jobs
+          terminated:
+            containerID: docker://af701bb74d066643752d03e79af3f0c337232eea710d0905c0b3d8693628ddc8
+            exitCode: 0
+            finishedAt: "2020-07-20T17:36:18Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:36:00Z"
+        - container: step-runci
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-go-nodejs@sha256:5dd5fd06be6092169a67f3f8101597fac38b9c2267396920029ff466376f86d9
+          name: runci
+          terminated:
+            containerID: docker://c703a3456523e67054b21a9c9bd72bcb53d8c9a54340580f902972361f3acaca
+            exitCode: 0
+            finishedAt: "2020-07-20T18:00:03Z"
+            reason: Completed
+            startedAt: "2020-07-20T17:36:18Z"
+        - container: step-git-source-jenkins-x-lighthouse-pr-854-bbs-d5q9c-7btdc
+          imageID: docker-pullable://gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
+          name: git-source-jenkins-x-lighthouse-pr-854-bbs-d5q9c-7btdc
+          terminated:
+            containerID: docker://e6d77435b8309a85d493399a9570ebf6b1260bbbdc576ce8c4daeb3a62330020
+            exitCode: 0
+            finishedAt: "2020-07-20T17:29:38Z"
+            message: '[{"key":"commit","value":"82747f50259ef389d4ec8e7185c327c657faec02","resourceRef":{"name":"jenkins-x-lighthouse-pr-854-bbs-d5q9c"}}]'
+            reason: Completed
+            startedAt: "2020-07-20T17:29:34Z"

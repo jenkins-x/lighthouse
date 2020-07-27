@@ -1,0 +1,56 @@
+{{- if .Values.engines.tekton }}
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "tektoncontroller.name" . }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - configmaps
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - tekton.dev
+  resources:
+  - pipelineresources
+  - tasks
+  - pipelines
+  - pipelineruns
+  verbs:
+  - create
+  - list
+  - get
+  - update
+  - watch
+  - patch
+  - delete
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - get
+  - watch
+  - patch
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs/status
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - get
+  - watch
+  - patch
+{{- end }}

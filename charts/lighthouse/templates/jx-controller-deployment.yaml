@@ -31,22 +31,6 @@ spec:
         args:
           - "--namespace={{ .Release.Namespace }}"
         env:
-          - name: "GIT_KIND"
-            value: "{{ .Values.git.kind }}"
-          - name: "GIT_SERVER"
-            value: "{{ .Values.git.server }}"
-{{- if .Values.githubApp.enabled }}
-          - name: "GITHUB_APP_SECRET_DIR"
-            value: "/secrets/githubapp/tokens"
-{{- else }}
-          - name: "GIT_USER"
-            value: {{ .Values.user }}
-          - name: "GIT_TOKEN"
-            valueFrom:
-              secretKeyRef:
-                name: lighthouse-oauth-token
-                key: oauth
-{{- end }}
           - name: "JX_LOG_FORMAT"
             value: "{{ .Values.logFormat }}"
           - name: "LOGRUS_FORMAT"
@@ -57,17 +41,9 @@ spec:
             value: {{ quote $pval }}
 {{- end }}
 {{- end }}
+{{- with .Values.tektoncontroller.resources }}
         resources:
-{{ toYaml .Values.jxcontroller.resources | indent 12 }}
-{{- if .Values.githubApp.enabled }}
-        volumeMounts:
-          - name: githubapp-tokens
-            mountPath: /secrets/githubapp/tokens
-            readOnly: true
-      volumes:
-        - name: githubapp-tokens
-          secret:
-            secretName: tide-githubapp-tokens
+{{ toYaml . | indent 12 }}
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.jxcontroller.terminationGracePeriodSeconds }}
 {{- with .Values.jxcontroller.nodeSelector }}

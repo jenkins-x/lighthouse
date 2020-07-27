@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -33,12 +32,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/yaml"
 )
 
 const (
-	controllerName           = "foghorn"
-	defaultTargetURLTemplate = "{{ .BaseURL }}/teams/{{ .Team }}/projects/{{ .Owner }}/{{ .Repository }}/{{ .Branch }}/{{ .Build }}"
+	controllerName = "foghorn"
 )
 
 // Controller listens for changes to PipelineActivitys and updates the corresponding LighthouseJobs and provider commit statuses.
@@ -394,33 +391,10 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 	}
 
 	gitRepoStatus := &scm.StatusInput{
-		State: statusInfo.scmStatus,
-		Label: pipelineContext,
-		Desc:  statusInfo.description,
-	}
-	urlBase := c.getReportURLBase()
-	if urlBase != "" {
-		urlTeam := c.getReportURLTeam()
-		team := ns
-		// override with env var if set
-		if urlTeam != "" {
-			team = urlTeam
-		}
-
-		targetURL := c.createReportTargetURL(defaultTargetURLTemplate, ReportParams{
-			Owner:      owner,
-			Repository: repo,
-			Branch:     activity.Branch,
-			Build:      activity.BuildIdentifier,
-			Context:    pipelineContext,
-			// TODO: Need to get the job URL base in here somehow. (apb)
-			BaseURL: strings.TrimRight(urlBase, "/"),
-			Team:    team,
-		})
-
-		if strings.HasPrefix(targetURL, "http://") || strings.HasPrefix(targetURL, "https://") {
-			gitRepoStatus.Target = targetURL
-		}
+		State:  statusInfo.scmStatus,
+		Label:  pipelineContext,
+		Desc:   statusInfo.description,
+		Target: job.Status.ReportURL,
 	}
 	scmClient, _, _, err := c.createSCMClient(owner)
 	if err != nil {
@@ -441,49 +415,8 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 		c.logger.WithFields(fields).WithError(err).Warnf("failed to update comments on the PR")
 	}
 	c.logger.WithFields(fields).Info("reported git status")
-	if gitRepoStatus.Target != "" {
-		job.Status.ReportURL = gitRepoStatus.Target
-	}
 	job.Status.Description = statusInfo.description
 	job.Status.LastReportState = statusInfo.scmStatus.String()
-}
-
-// getReportURLBase gets the base report URL from the environment
-func (c *Controller) getReportURLBase() string {
-	return os.Getenv("LIGHTHOUSE_REPORT_URL_BASE")
-}
-
-// getReportURLTeam gets the team to construct the report url
-func (c *Controller) getReportURLTeam() string {
-	return os.Getenv("LIGHTHOUSE_REPORT_URL_TEAM")
-}
-
-// ReportParams contains the parameters for target URL templates
-type ReportParams struct {
-	BaseURL, Owner, Repository, Branch, Build, Context, Team string
-}
-
-// createReportTargetURL creates the target URL for pipeline results/logs from a template
-func (c *Controller) createReportTargetURL(templateText string, params ReportParams) string {
-	templateData, err := toObjectMap(params)
-	if err != nil {
-		c.logger.WithError(err).Warnf("failed to convert git ReportParams to a map for %#v", params)
-		return ""
-	}
-
-	tmpl, err := template.New("target_url.tmpl").Option("missingkey=error").Parse(templateText)
-	if err != nil {
-		c.logger.WithError(err).Warnf("failed to parse git ReportsParam template: %s", templateText)
-		return ""
-	}
-
-	var buf strings.Builder
-	err = tmpl.Execute(&buf, templateData)
-	if err != nil {
-		c.logger.WithError(err).Warnf("failed to evaluate git ReportsParam template: %s due to: %s", templateText, err.Error())
-		return ""
-	}
-	return buf.String()
 }
 
 type reportStatusInfo struct {
@@ -527,17 +460,6 @@ func toScmStatusDescriptionRunningStages(activity *v1alpha1.ActivityRecord, gitK
 		}
 	}
 	return info
-}
-
-// toObjectMap converts the given object into a map of strings/maps using YAML marshalling
-func toObjectMap(object interface{}) (map[string]interface{}, error) {
-	answer := map[string]interface{}{}
-	data, err := yaml.Marshal(object)
-	if err != nil {
-		return answer, err
-	}
-	err = yaml.Unmarshal(data, &answer)
-	return answer, err
 }
 
 // durationString returns the duration between start and end time as string

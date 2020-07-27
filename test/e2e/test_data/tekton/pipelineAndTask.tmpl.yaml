@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: task-to-run-script
+  namespace: {{ .Namespace }}
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: script
+      image: ubuntu
+      command:
+        - bash
+      args:
+        - $(workspaces.source.path)/script.sh
+---
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: lh-test-pipeline
+  namespace: {{ .Namespace }}
+spec:
+  params:
+    - name: git-repo-url
+      type: string
+    - name: git-revision
+      type: string
+  workspaces:
+    - name: shared-data
+  tasks:
+    - name: fetch-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.git-repo-url)
+        - name: revision
+          value: $(params.git-revision)
+    - name: run-script
+      runAfter: ["fetch-repo"]
+      taskRef:
+        name: task-to-run-script
+      workspaces:
+        - name: source
+          workspace: shared-data
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    tekton.dev/git-0: {{ .BaseGitURL }}
+  name: lh-tekton-git-creds
+  namespace: {{ .Namespace }}
+data:
+  password: {{ .GitToken }}
+  username: {{ .GitUser }}
+type: kubernetes.io/basic-auth
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-bot
+  namespace: {{ .Namespace }}
+secrets:
+  - name: lh-tekton-git-creds
