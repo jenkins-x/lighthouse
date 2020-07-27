@@ -244,8 +244,12 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 		labels[util.OrgLabel] = strings.ToLower(spec.Refs.Org)
 		labels[util.RepoLabel] = spec.Refs.Repo
 		labels[util.BranchLabel] = spec.GetBranch()
+		labels[util.BaseSHALabel] = spec.Refs.BaseSHA
 		if len(spec.Refs.Pulls) > 0 {
 			labels[util.PullLabel] = strconv.Itoa(spec.Refs.Pulls[0].Number)
+			labels[util.LastCommitSHALabel] = spec.Refs.Pulls[0].SHA
+		} else {
+			labels[util.LastCommitSHALabel] = spec.Refs.BaseSHA
 		}
 	}
 
@@ -274,6 +278,9 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 	annotations := map[string]string{
 		util.LighthouseJobAnnotation: spec.Job,
 	}
+	if spec.Refs != nil && spec.Refs.CloneURI != "" {
+		annotations[util.CloneURIAnnotation] = spec.Refs.CloneURI
+	}
 	for k, v := range extraAnnotations {
 		annotations[k] = v
 	}
@@ -282,11 +289,14 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 }
 
 // LabelsAndAnnotationsForJob returns a standard set of labels to add to pod/build/etc resources.
-func LabelsAndAnnotationsForJob(pj v1alpha1.LighthouseJob) (map[string]string, map[string]string) {
+func LabelsAndAnnotationsForJob(lj v1alpha1.LighthouseJob, buildID string) (map[string]string, map[string]string) {
 	var extraLabels map[string]string
-	if extraLabels = pj.ObjectMeta.Labels; extraLabels == nil {
+	if extraLabels = lj.ObjectMeta.Labels; extraLabels == nil {
 		extraLabels = map[string]string{}
 	}
-	extraLabels[config.LighthouseJobIDLabel] = pj.ObjectMeta.Name
-	return LabelsAndAnnotationsForSpec(pj.Spec, extraLabels, nil)
+	extraLabels[config.LighthouseJobIDLabel] = lj.ObjectMeta.Name
+	if buildID != "" {
+		extraLabels[util.BuildNumLabel] = buildID
+	}
+	return LabelsAndAnnotationsForSpec(lj.Spec, extraLabels, nil)
 }

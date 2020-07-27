@@ -1,0 +1,161 @@
+buildPack: none
+pipelineConfig:
+  pipelines:
+    pullRequest:
+      pipeline:
+        options:
+          containerOptions:
+            resources:
+              limits:
+                cpu: 4
+                memory: 6144Mi
+              requests:
+                cpu: 1
+                memory: 2048Mi
+        environment:
+          - name: GIT_COMMITTER_EMAIL
+            value: jenkins-x@googlegroups.com
+          - name: GIT_AUTHOR_EMAIL
+            value: jenkins-x@googlegroups.com
+          - name: GIT_AUTHOR_NAME
+            value: jenkins-x-bot
+          - name: GIT_COMMITTER_NAME
+            value: jenkins-x-bot
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /kaniko-secrets/kaniko/kaniko-secret.json
+          - name: GOPROXY
+            value: http://jenkins-x-athens-proxy:80
+          - name: GKE_SA
+            value: /secrets/bdd/sa.json
+          - name: E2E_GIT_KIND
+            value: github
+          - name: E2E_GIT_SERVER
+            value: https://github.com
+          - name: CHARTMUSEUM_USER
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-chartmuseum
+                key: BASIC_AUTH_USER
+          - name: CHARTMUSEUM_PASS
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-chartmuseum
+                key: BASIC_AUTH_PASS
+          - name: E2E_PRIMARY_SCM_USER
+            valueFrom:
+              secretKeyRef:
+                name: lighthouse-bot-test-github
+                key: username
+          - name: E2E_PRIMARY_SCM_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: lighthouse-bot-test-github
+                key: password
+          - name: JENKINS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: test-jenkins-user 
+                key: password
+          - name: E2E_APPROVER_SCM_USER
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-bot-test-github
+                key: username
+          - name: E2E_APPROVER_SCM_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: jenkins-x-bot-test-github
+                key: password
+        agent:
+          image: gcr.io/jenkinsxio/builder-go-nodejs
+        stages:
+          - name: ci
+            options:
+              volumes:
+                - name: kaniko-secret
+                  secret:
+                    secretName: kaniko-secret
+                    items:
+                      - key: kaniko-secret
+                        path: kaniko/kaniko-secret.json
+                - name: sa
+                  secret:
+                    secretName: bdd-secret
+                    items:
+                      - key: bdd-credentials.json
+                        path: bdd/sa.json
+              containerOptions:
+                volumeMounts:
+                  - mountPath: /secrets
+                    name: sa
+                  - name: kaniko-secret
+                    mountPath: /kaniko-secrets
+            steps:
+              - name: build-binaries
+                image: gcr.io/jenkinsxio/builder-go
+                command: make
+                args:
+                  - build-linux
+                dir: /workspace/source
+
+              - name: build-and-push-webhooks
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.webhooks
+                  - --destination=gcr.io/jenkinsxio/lighthouse-webhooks:$(inputs.params.version)
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+
+              - name: build-and-push-keeper
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.keeper
+                  - --destination=gcr.io/jenkinsxio/lighthouse-keeper:$(inputs.params.version)
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=$(inputs.params.version)
+
+              - name: build-and-push-foghorn
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.foghorn
+                  - --destination=gcr.io/jenkinsxio/lighthouse-foghorn:$(inputs.params.version)
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=$(inputs.params.version)
+
+              - name: build-and-push-jx-controller
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.jxcontroller
+                  - --destination=gcr.io/jenkinsxio/lighthouse-jx-controller:${inputs.params.version}
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=${inputs.params.version}
+
+              - name: build-and-push-tekton-controller
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.tektoncontroller
+                  - --destination=gcr.io/jenkinsxio/lighthouse-tekton-controller:${inputs.params.version}
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=${inputs.params.version}
+
+              - name: build-and-push-gc-jobs
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.gcJobs
+                  - --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:$(inputs.params.version)
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=$(inputs.params.version)
+
+              - command: bdd/tekton/ci.sh
+                name: runci

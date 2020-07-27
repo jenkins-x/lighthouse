@@ -1,0 +1,267 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x/jx.git
+  creationTimestamp: "2020-07-20T19:50:21Z"
+  generation: 1
+  labels:
+    branch: PR-7463
+    build: "17"
+    context: boot-vault
+    jenkins.io/pipelineType: build
+    lighthouse.jenkins-x.io/baseSHA: c47ce72d4e2991a9440e6d954ecbf79d596f9352
+    lighthouse.jenkins-x.io/branch: PR-7463
+    lighthouse.jenkins-x.io/buildNum: "17"
+    lighthouse.jenkins-x.io/context: boot-vault
+    lighthouse.jenkins-x.io/lastCommitSHA: 8a3c5f595cdc3162e46390c72a5d22fb9c89d1df
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.repo: jx
+    owner: jenkins-x
+    repository: jx
+    tekton.dev/pipeline: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  namespace: jx
+  resourceVersion: "16746634"
+  selfLink: /apis/tekton.dev/v1beta1/namespaces/jx/pipelineruns/jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  uid: 3edf18d1-cac2-11ea-a610-42010a8400cb
+spec:
+  params:
+  - name: version
+    value: 0.0.0-SNAPSHOT-PR-7463-17
+  - name: build_id
+    value: "17"
+  pipelineRef:
+    apiVersion: tekton.dev/v1alpha1
+    name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  podTemplate:
+    schedulerName: ""
+  resources:
+  - name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
+    resourceRef:
+      apiVersion: tekton.dev/v1alpha1
+      name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
+status:
+  completionTime: "2020-07-20T20:50:27Z"
+  conditions:
+  - lastTransitionTime: "2020-07-20T20:50:27Z"
+    message: 'Tasks Completed: 2, Skipped: 0'
+    reason: Succeeded
+    status: "True"
+    type: Succeeded
+  startTime: "2020-07-20T19:50:21Z"
+  taskRuns:
+    jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-build-2jnvr:
+      pipelineTaskName: build
+      status:
+        completionTime: "2020-07-20T19:56:53Z"
+        conditions:
+        - lastTransitionTime: "2020-07-20T19:56:53Z"
+          message: All Steps have completed executing
+          reason: Succeeded
+          status: "True"
+          type: Succeeded
+        podName: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-build-2jnvr-pod-kkvlf
+        resourcesResult:
+        - key: commit
+          resourceRef:
+            name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
+          value: c47ce72d4e2991a9440e6d954ecbf79d596f9352
+        startTime: "2020-07-20T19:50:21Z"
+        steps:
+        - container: step-setup-builder-home
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+          name: setup-builder-home
+          terminated:
+            containerID: docker://4e6c91b0b0ade1bd04b96f7f084efadd4b0dcb86499efa90aeae48864f1aad29
+            exitCode: 0
+            finishedAt: "2020-07-20T19:50:57Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:50:57Z"
+        - container: step-git-merge
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+          name: git-merge
+          terminated:
+            containerID: docker://cf2b9d3a4f88b75ce1508dfb424c20190886e498aa91a0ee759696102406876f
+            exitCode: 0
+            finishedAt: "2020-07-20T19:51:06Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:50:57Z"
+        - container: step-build-binary
+          imageID: docker-pullable://golang@sha256:d7e0b99badf7f34b5096089484a733897c9b89aa12ffb9f67f81da054f8a403e
+          name: build-binary
+          terminated:
+            containerID: docker://0963449726cedd5cca64ff089c0f2687c5321910a665fadb13f5b0352b1760e9
+            exitCode: 0
+            finishedAt: "2020-07-20T19:55:11Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:51:06Z"
+        - container: step-validate-binary
+          imageID: docker-pullable://golang@sha256:d7e0b99badf7f34b5096089484a733897c9b89aa12ffb9f67f81da054f8a403e
+          name: validate-binary
+          terminated:
+            containerID: docker://5fa8e77cfa71de5b0fb8ef8f04fbacedcfe4bff315d210b3de24dd0454dc4223
+            exitCode: 0
+            finishedAt: "2020-07-20T19:55:12Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:55:12Z"
+        - container: step-build-and-push-image
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-image
+          terminated:
+            containerID: docker://ae13ac1ca38d4eba9a15579e24cf3ee7c9ef07b6f5e2b66cf73dd1e6cdd8a7ef
+            exitCode: 0
+            finishedAt: "2020-07-20T19:55:32Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:55:12Z"
+        - container: step-build-and-push-nodejs
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-nodejs
+          terminated:
+            containerID: docker://129fb2adbefc19d7048f195a18d15fc50b5d37b89f842950285275b305d92692
+            exitCode: 0
+            finishedAt: "2020-07-20T19:55:52Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:55:32Z"
+        - container: step-create-dir-workspace-w6cv9
+          imageID: docker-pullable://busybox@sha256:2131f09e4044327fd101ca1fd4043e6f3ad921ae7ee901e9142e6e36b354a907
+          name: create-dir-workspace-w6cv9
+          terminated:
+            containerID: docker://f7cc84a5b893697eb8e6907000bf7391d53c334bc1e684d732c29b295a59541d
+            exitCode: 0
+            finishedAt: "2020-07-20T19:50:53Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:50:53Z"
+        - container: step-build-and-push-go
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-go
+          terminated:
+            containerID: docker://16448a801a725ddcdc8e77402dd79ce7fa47d6b1d38b6e74977093d417bb1935
+            exitCode: 0
+            finishedAt: "2020-07-20T19:56:31Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:56:12Z"
+        - container: step-build-and-push-go-nodejs
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-go-nodejs
+          terminated:
+            containerID: docker://da07e413f75b5936fb142b86fa1017f1821dcccd49831bc846512b48277ab42c
+            exitCode: 0
+            finishedAt: "2020-07-20T19:56:49Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:56:31Z"
+        - container: step-git-source-jenkins-x-jx-pr-7463-boot-vault-9mbgb-6jfk4
+          imageID: docker-pullable://gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
+          name: git-source-jenkins-x-jx-pr-7463-boot-vault-9mbgb-6jfk4
+          terminated:
+            containerID: docker://69532706184d73b07d2cf8597d9f857a89df3483880f517f7e1ff74a189c3c34
+            exitCode: 0
+            finishedAt: "2020-07-20T19:50:57Z"
+            message: '[{"key":"commit","value":"c47ce72d4e2991a9440e6d954ecbf79d596f9352","resourceRef":{"name":"jenkins-x-jx-pr-7463-boot-vault-9mbgb"}}]'
+            reason: Completed
+            startedAt: "2020-07-20T19:50:54Z"
+        - container: step-source-copy-jenkins-x-jx-pr-7463-boot-vault-9mbgb-x6nv4
+          imageID: docker-pullable://busybox@sha256:2131f09e4044327fd101ca1fd4043e6f3ad921ae7ee901e9142e6e36b354a907
+          name: source-copy-jenkins-x-jx-pr-7463-boot-vault-9mbgb-x6nv4
+          terminated:
+            containerID: docker://63e982f4bef496b2af836905028375baa1e694f52e634a3420fc7aff1a8cf3f8
+            exitCode: 0
+            finishedAt: "2020-07-20T19:56:52Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:56:50Z"
+        - container: step-source-mkdir-jenkins-x-jx-pr-7463-boot-vault-9mbgb-tdcg5
+          imageID: docker-pullable://busybox@sha256:2131f09e4044327fd101ca1fd4043e6f3ad921ae7ee901e9142e6e36b354a907
+          name: source-mkdir-jenkins-x-jx-pr-7463-boot-vault-9mbgb-tdcg5
+          terminated:
+            containerID: docker://d8da3c25e308812ad5798a04519e0692567e9501bdaa219711cef5e0b3cd20e9
+            exitCode: 0
+            finishedAt: "2020-07-20T19:56:50Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:56:50Z"
+        - container: step-build-and-push-maven
+          imageID: docker-pullable://gcr.io/kaniko-project/executor@sha256:a0756adbb79d48e04ac9ffb7e7291c4a86fd2ffc55adc9db61480aba74ca4674
+          name: build-and-push-maven
+          terminated:
+            containerID: docker://a06a114785c5794c13dafa21d0f548037c29c9690450e4a1933ad9e272473df3
+            exitCode: 0
+            finishedAt: "2020-07-20T19:56:11Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:55:52Z"
+    jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-e2e-tests-ds74m:
+      pipelineTaskName: e2e-tests
+      status:
+        completionTime: "2020-07-20T20:50:27Z"
+        conditions:
+        - lastTransitionTime: "2020-07-20T20:50:27Z"
+          message: All Steps have completed executing
+          reason: Succeeded
+          status: "True"
+          type: Succeeded
+        podName: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-e2e-tests-ds74m--w4ttd
+        startTime: "2020-07-20T19:56:53Z"
+        steps:
+        - container: step-setup-builder-home
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+          name: setup-builder-home
+          terminated:
+            containerID: docker://2a6124bda33744d5710c9ab6d2787db4bfc31aaf1e92725b7c8bbc8dfb0e1f73
+            exitCode: 0
+            finishedAt: "2020-07-20T19:58:45Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:58:44Z"
+        - container: step-boot-vault-e2e-tests
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-go-nodejs@sha256:e46a06e4bb1ef265389fa10d83ecffee6e3e3391c050ed347d32ccae4fcb26e0
+          name: boot-vault-e2e-tests
+          terminated:
+            containerID: docker://cedafbbe02258458082815cfc995c9a9e8c37648ad186b6f6ca07b85fd5f2600
+            exitCode: 0
+            finishedAt: "2020-07-20T20:50:15Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:58:45Z"
+        - container: step-generate-report
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-nodejs10x@sha256:e7ff71273ddd8a1a3db7aae0cbbbf294d136ffb22416814dc1ba966061d66a51
+          name: generate-report
+          terminated:
+            containerID: docker://6cc219a3409ee347c035c46fc8b5a14e8b922ca0d9d65006b66abdd0c5a120b9
+            exitCode: 0
+            finishedAt: "2020-07-20T20:50:25Z"
+            reason: Completed
+            startedAt: "2020-07-20T20:50:15Z"
+        - container: step-clear-kubeconfig
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:6560c7cddfe1712c840ff6f429fedf961c7ad442c3b3e0f48c4f83f1f29156ed
+          name: clear-kubeconfig
+          terminated:
+            containerID: docker://c0da5c57d35010089e8b1d1417b7cb5334aa0355e6b663aba45066219ddabcb6
+            exitCode: 0
+            finishedAt: "2020-07-20T20:50:26Z"
+            reason: Completed
+            startedAt: "2020-07-20T20:50:26Z"
+        - container: step-stashhtmlreport
+          imageID: docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:6560c7cddfe1712c840ff6f429fedf961c7ad442c3b3e0f48c4f83f1f29156ed
+          name: stashhtmlreport
+          terminated:
+            containerID: docker://e0cdd4b5eec880ec2eff3436d6e355910e415abd341fb181eec8fa65b5982136
+            exitCode: 0
+            finishedAt: "2020-07-20T20:50:27Z"
+            reason: Completed
+            startedAt: "2020-07-20T20:50:26Z"
+        - container: step-source-copy-workspace-7hpkx
+          imageID: docker-pullable://busybox@sha256:2131f09e4044327fd101ca1fd4043e6f3ad921ae7ee901e9142e6e36b354a907
+          name: source-copy-workspace-7hpkx
+          terminated:
+            containerID: docker://d7b36a57400a1efe415311e6b1516e3e0c7a1ab87454eade9caea6f1f739be85
+            exitCode: 0
+            finishedAt: "2020-07-20T19:58:44Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:58:38Z"
+        - container: step-create-dir-workspace-tncdr
+          imageID: docker-pullable://busybox@sha256:2131f09e4044327fd101ca1fd4043e6f3ad921ae7ee901e9142e6e36b354a907
+          name: create-dir-workspace-tncdr
+          terminated:
+            containerID: docker://e899d802cdbd5e93925451244128ef98c95da5c6f219fd51ba5a9c09e59eb296
+            exitCode: 0
+            finishedAt: "2020-07-20T19:58:38Z"
+            reason: Completed
+            startedAt: "2020-07-20T19:58:38Z"
