@@ -96,6 +96,7 @@ jxcontroller:
   terminationGracePeriodSeconds: 180
 
 tektoncontroller:
+  dashboardURL: ""
   replicaCount: 1
   image:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"

@@ -20,9 +20,9 @@ import (
 )
 
 type options struct {
-	namespace string
-
-	dryRun bool
+	namespace    string
+	dashboardURL string
+	dryRun       bool
 }
 
 func (o *options) Validate() error {
@@ -33,7 +33,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to mutate any real-world state.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
-
+	fs.StringVar(&o.dashboardURL, "dashboard-url", "", "The base URL for the Tekton Dashboard to link to for build reports")
 	err := fs.Parse(args)
 	if err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
@@ -98,6 +98,7 @@ func main() {
 		prInformer,
 		lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs(),
 		o.namespace,
+		o.dashboardURL,
 		nil)
 
 	if err != nil {

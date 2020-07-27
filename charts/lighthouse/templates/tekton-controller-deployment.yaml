@@ -30,6 +30,9 @@ spec:
         imagePullPolicy: {{ tpl .Values.tektoncontroller.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
+{{- if ne .Values.tektoncontroller.dashboardURL "" }}
+          - "--dashboard-url={{ .Values.tektoncontroller.dashboardURL}}"
+{{- end }}
         env:
           - name: "LOGRUS_FORMAT"
             value: "{{ .Values.logFormat }}"

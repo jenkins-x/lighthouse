@@ -75,14 +75,15 @@ type Controller struct {
 
 	jobConfig *config.Agent
 
-	wg     *sync.WaitGroup
-	logger *logrus.Entry
-	ns     string
+	wg           *sync.WaitGroup
+	logger       *logrus.Entry
+	ns           string
+	dashboardURL string
 }
 
 // NewController returns a new controller for syncing PipelineRun updates to LighthouseJobs and commit statuses
 func NewController(kubeClient kubernetes.Interface, tektonClient tektonclient.Interface, lhClient clientset.Interface, prInformer tektoninformers.PipelineRunInformer,
-	lhInformer lhinformers.LighthouseJobInformer, ns string, logger *logrus.Entry) (*Controller, error) {
+	lhInformer lhinformers.LighthouseJobInformer, ns string, dashboardURL string, logger *logrus.Entry) (*Controller, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName)
 	}
@@ -125,6 +126,7 @@ func NewController(kubeClient kubernetes.Interface, tektonClient tektonclient.In
 		lhSynced:         lhInformer.Informer().HasSynced,
 		logger:           logger,
 		ns:               ns,
+		dashboardURL:     dashboardURL,
 		queue:            RateLimiter(),
 		jobConfig:        configAgent,
 		configMapWatcher: configMapWatcher,
@@ -422,6 +424,9 @@ func (c *Controller) syncPipelineRun(namespace, name, key string) error {
 
 	// Update the job's status for the activity.
 	jobCopy := job.DeepCopy()
+	if c.dashboardURL != "" {
+		jobCopy.Status.ReportURL = fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", trimDashboardURL(c.dashboardURL), c.ns, rawRun.Name)
+	}
 	jobCopy.Status.Activity = activityRecord
 
 	currentJob, err := c.lhLister.LighthouseJobs(namespace).Get(jobCopy.Name)
@@ -441,6 +446,10 @@ func (c *Controller) syncPipelineRun(namespace, name, key string) error {
 		}
 	}
 	return nil
+}
+
+func trimDashboardURL(base string) string {
+	return strings.TrimSuffix(strings.TrimSuffix(base, "#"), "/")
 }
 
 // RateLimiter creates a ratelimiting queue for the foghorn controller.

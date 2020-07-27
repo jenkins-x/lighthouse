@@ -26,6 +26,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	dashboardBaseURL = "https://example.com/"
+)
+
 func TestSyncHandler(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -103,6 +107,7 @@ func TestSyncHandler(t *testing.T) {
 				lhLister:     lhLister,
 				logger:       logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
 				ns:           ns,
+				dashboardURL: dashboardBaseURL,
 			}
 
 			var key string
