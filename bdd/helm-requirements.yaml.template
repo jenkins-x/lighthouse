@@ -13,6 +13,10 @@ dependencies:
     name: lighthouse
     repository: https://chartmuseum-jx.jenkins-x.live
     version: $VERSION
+  - alias: lighthouse-jx
+    condition: lighthouse.enabled
+    name: lighthouse-jx
+    repository: http://chartmuseum.jenkins-x.io
   - alias: bucketrepo
     condition: bucketrepo.enabled
     name: bucketrepo
