@@ -57,6 +57,7 @@ git checkout tags/v${BOOT_CONFIG_VERSION} -b latest-boot-config
 
 cp ../bdd/ghe/jx-requirements.yml .
 cp ../bdd/ghe/parameters.yaml env
+cat ../bdd/lh-jx-values.yaml >> env/lighthouse-jx/values.tmpl.yaml
 
 # Manually interpolate lighthouse version tag
 cat ../bdd/values.yaml.template >> env/lighthouse/values.tmpl.yaml
