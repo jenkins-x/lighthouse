@@ -28,7 +28,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse-config/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 )
 

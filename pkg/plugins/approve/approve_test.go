@@ -32,7 +32,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/jenkins-x/lighthouse-config/pkg/labels"
+	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/approve/approvers"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"

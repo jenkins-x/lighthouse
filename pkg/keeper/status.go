@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jenkins-x/lighthouse-config/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/pkg/errors"
