@@ -1,7 +1,7 @@
 apiVersion: v1
+appVersion: 0.0.693
 description: A Helm chart for Kubernetes
+home: https://github.com/jenkins-x/lighthouse
 icon: https://raw.githubusercontent.com/jenkins-x/jenkins-x-website/master/images/logo/jenkinsx-icon-color.svg
 name: lighthouse
-version: 0.1.0-SNAPSHOT
-home: https://github.com/jenkins-x/lighthouse
-
+version: 0.0.693
