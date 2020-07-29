@@ -26,7 +26,7 @@ import (
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse-config/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 

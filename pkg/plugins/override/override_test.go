@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/lighthouse-config/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 )
 
 const (

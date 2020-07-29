@@ -29,7 +29,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse-config/pkg/labels"
+	"github.com/jenkins-x/lighthouse/pkg/labels"
 )
 
 func formatLabels(labels []string) []string {

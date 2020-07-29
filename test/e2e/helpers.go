@@ -19,8 +19,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/lighthouse-config/pkg/config"
-	cfgplugins "github.com/jenkins-x/lighthouse-config/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
@@ -287,7 +286,7 @@ type configReplacement struct {
 }
 
 // ProcessConfigAndPlugins reads the templates for the config and plugins config maps and replaces the owner, repo, and namespace in them
-func ProcessConfigAndPlugins(owner, repo, namespace, agent string) (*config.Config, *cfgplugins.Configuration, error) {
+func ProcessConfigAndPlugins(owner, repo, namespace, agent string) (*config.Config, *plugins.Configuration, error) {
 	cfgFile := filepath.Join("test_data", "example-config.tmpl.yml")
 	pluginFile := filepath.Join("test_data", "example-plugins.tmpl.yml")
 
@@ -362,7 +361,7 @@ func CreateWebHook(scmClient *scm.Client, repo *scm.Repository, hmacToken string
 }
 
 // ApplyConfigAndPluginsConfigMaps takes the config and plugins and creates/applies the config maps in the cluster using kubectl
-func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *cfgplugins.Configuration) error {
+func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Configuration) error {
 	cfgMap := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",

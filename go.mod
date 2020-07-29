@@ -9,7 +9,6 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/jenkins-x/go-scm v1.5.150
-	github.com/jenkins-x/lighthouse-config v0.0.9
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pkg/errors v0.9.1
@@ -23,6 +22,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
 	google.golang.org/grpc v1.28.1 // indirect
+	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	k8s.io/api v0.18.1
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
