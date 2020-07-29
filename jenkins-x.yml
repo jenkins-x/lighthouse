@@ -206,7 +206,7 @@ pipelineConfig:
                   - --version
                   - $VERSION
                   - --build
-                  - "\"make build tidy-deps\""
+                  - "\"make mod\""
                   - --repo
                   - https://github.com/jenkins-x/jx.git
 
