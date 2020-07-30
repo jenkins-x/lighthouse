@@ -14,6 +14,7 @@ metadata:
     lighthouse.jenkins-x.io/branch: PR-7463
     lighthouse.jenkins-x.io/buildNum: "18"
     lighthouse.jenkins-x.io/context: unit
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
     lighthouse.jenkins-x.io/lastCommitSHA: 8a3c5f595cdc3162e46390c72a5d22fb9c89d1df
     lighthouse.jenkins-x.io/refs.org: jenkins-x
     lighthouse.jenkins-x.io/refs.repo: jx

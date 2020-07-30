@@ -14,6 +14,7 @@ metadata:
     lighthouse.jenkins-x.io/branch: PR-1533
     lighthouse.jenkins-x.io/buildNum: "7"
     lighthouse.jenkins-x.io/context: pr-build
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
     lighthouse.jenkins-x.io/lastCommitSHA: 3bb45bf8478b267bc38e8ad5ad6356cfb8a97d0f
     lighthouse.jenkins-x.io/refs.org: jenkins-x-charts
     lighthouse.jenkins-x.io/refs.repo: jx-build-templates

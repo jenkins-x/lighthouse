@@ -3,12 +3,13 @@ branch: PR-7463
 buildId: "18"
 context: unit
 gitURL: https://github.com/jenkins-x/jx.git
+jobId: f46327af-b47e-11ea-b797-9256b7b8d9b0
 lastCommitSHA: 8a3c5f595cdc3162e46390c72a5d22fb9c89d1df
 name: jenkins-x-jx-pr-7463-unit-wbf7v-18
 owner: jenkins-x
 repo: jx
 stages:
-  - name: ci-8r5qw
+  - name: ci
     startTime: "2020-07-20T20:15:20Z"
     status: running
     steps:

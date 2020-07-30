@@ -345,6 +345,7 @@ func (prs ByNum) Less(i, j int) bool { return prs[i].Number < prs[j].Number }
 // ActivityRecord is a struct for reporting information on a pipeline, build, or other activity triggered by Lighthouse
 type ActivityRecord struct {
 	Name            string                 `json:"name"`
+	JobID           string                 `json:"jobId,omitempty"`
 	Owner           string                 `json:"owner,omitempty"`
 	Repo            string                 `json:"repo,omitempty"`
 	Branch          string                 `json:"branch,omitempty"`

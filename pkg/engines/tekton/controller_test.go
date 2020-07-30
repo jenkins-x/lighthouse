@@ -135,6 +135,8 @@ func TestSyncHandler(t *testing.T) {
 				updatedPR := prs.Items[0].DeepCopy()
 				if d := cmp.Diff(expectedPR, updatedPR); d != "" {
 					t.Errorf("PipelineRun did not match expected: %s", d)
+					py, _ := yaml.Marshal(updatedPR)
+					t.Logf("pr:\n%s", string(py))
 				}
 			}
 			if expectedJob != nil {

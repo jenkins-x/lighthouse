@@ -4,13 +4,14 @@ buildId: "7"
 completionTime: "2020-07-20T18:50:43Z"
 context: pr-build
 gitURL: https://github.com/jenkins-x-charts/jx-build-templates.git
+jobId: f46327af-b47e-11ea-b797-9256b7b8d9b0
 lastCommitSHA: 3bb45bf8478b267bc38e8ad5ad6356cfb8a97d0f
 name: jenkins-x-charts-jx-build-templ-wbbx6-7
 owner: jenkins-x-charts
 repo: jx-build-templates
 stages:
   - completionTime: "2020-07-20T18:50:43Z"
-    name: from-build-pack-zjcjs
+    name: from-build-pack
     startTime: "2020-07-20T18:50:22Z"
     status: failure
     steps:

@@ -14,6 +14,7 @@ metadata:
     lighthouse.jenkins-x.io/branch: PR-854
     lighthouse.jenkins-x.io/buildNum: "4"
     lighthouse.jenkins-x.io/context: github
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
     lighthouse.jenkins-x.io/lastCommitSHA: feb00a651ac860c842d02b9eac3cc2fc9eb06c10
     lighthouse.jenkins-x.io/refs.org: jenkins-x
     lighthouse.jenkins-x.io/refs.repo: lighthouse
