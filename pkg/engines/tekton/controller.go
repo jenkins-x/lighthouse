@@ -14,6 +14,7 @@ import (
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
@@ -413,7 +414,7 @@ func (c *Controller) syncPipelineRun(namespace, name, key string) error {
 
 	// To be safe, find the job with the activity's name in its status.
 	for _, j := range possibleJobs {
-		if j.Name == activityRecord.Name {
+		if j.Name == activityRecord.JobID {
 			job = j
 		}
 	}
@@ -521,13 +522,19 @@ func (c *Controller) makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.
 	specCopy := lj.Spec.PipelineRunSpec.DeepCopy()
 	p := tektonv1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Annotations: annotations,
-			Name:        lj.Name,
-			Namespace:   lj.Spec.Namespace,
-			Labels:      prLabels,
+			Annotations:  annotations,
+			GenerateName: fmt.Sprintf("%s-", lj.Spec.Job),
+			Namespace:    lj.Spec.Namespace,
+			Labels:       prLabels,
 		},
 		Spec: *specCopy,
 	}
+	p.OwnerReferences = []metav1.OwnerReference{{
+		APIVersion: lighthouse.GroupAndVersion,
+		Kind:       "LighthouseJob",
+		Name:       lj.Name,
+		UID:        lj.UID,
+	}}
 
 	if err := validatePipelineRunSpec(lj.Spec.Type, lj.Spec.ExtraRefs, lj.Spec.PipelineRunSpec); err != nil {
 		return nil, fmt.Errorf("invalid pipeline_run_spec: %v", err)

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,6 +23,7 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 
 	record.Name = pr.Name
 
+	record.JobID = pr.Labels[config.LighthouseJobIDLabel]
 	record.BaseSHA = pr.Labels[util.BaseSHALabel]
 	record.Repo = pr.Labels[util.RepoLabel]
 	record.Context = pr.Labels[util.ContextLabel]
@@ -40,7 +42,7 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 
 	for _, taskName := range sets.StringKeySet(pr.Status.TaskRuns).List() {
 		task := pr.Status.TaskRuns[taskName]
-		cleanedUpTaskName := strings.TrimPrefix(taskName, pr.Name+"-")
+		cleanedUpTaskName := strings.TrimPrefix(taskName[:len(taskName)-6], pr.Name+"-")
 		t := &v1alpha1.ActivityStageOrStep{
 			Name:           cleanedUpTaskName,
 			Status:         convertTektonStatus(task.Status.GetCondition(apis.ConditionSucceeded), task.Status.StartTime, task.Status.CompletionTime),
