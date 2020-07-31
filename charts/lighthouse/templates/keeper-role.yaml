@@ -4,22 +4,6 @@ metadata:
   name: {{ template "keeper.name" . }}
 rules:
   - apiGroups:
-      - jenkins.io
-    resources:
-      - apps
-      - environments
-      - pipelineactivities
-      - sourcerepositories
-      - pipelinestructures
-    verbs:
-      - create
-      - get
-      - edit
-      - update
-      - patch
-      - list
-      - watch
-  - apiGroups:
       - ""
     resources:
       - namespaces
