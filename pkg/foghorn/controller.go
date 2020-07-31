@@ -2,12 +2,9 @@ package foghorn
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
 	"reflect"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -69,43 +66,7 @@ func NewController(kubeClient kubernetes.Interface, lhClient clientset.Interface
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
 
-	onConfigYamlChange := func(text string) {
-		if text != "" {
-			cfg, err := config.LoadYAMLConfig([]byte(text))
-			if err != nil {
-				logrus.WithError(err).Error("Error processing the prow Config YAML")
-			} else {
-				logrus.Info("updating the prow core configuration")
-				configAgent.Set(cfg)
-			}
-		}
-	}
-
-	onPluginsYamlChange := func(text string) {
-		if text != "" {
-			cfg, err := pluginAgent.LoadYAMLConfig([]byte(text))
-			if err != nil {
-				logrus.WithError(err).Error("Error processing the prow Plugins YAML")
-			} else {
-				logrus.Info("updating the prow plugins configuration")
-				pluginAgent.Set(cfg)
-			}
-		}
-	}
-
-	callbacks := []watcher.ConfigMapCallback{
-		&watcher.ConfigMapEntryCallback{
-			Name:     util.ProwConfigMapName,
-			Key:      util.ProwConfigFilename,
-			Callback: onConfigYamlChange,
-		},
-		&watcher.ConfigMapEntryCallback{
-			Name:     util.ProwPluginsConfigMapName,
-			Key:      util.ProwPluginsFilename,
-			Callback: onPluginsYamlChange,
-		},
-	}
-	configMapWatcher, err := watcher.NewConfigMapWatcher(kubeClient, ns, callbacks, stopper())
+	configMapWatcher, err := watcher.SetupConfigMapWatchers(ns, configAgent, pluginAgent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
@@ -327,7 +288,7 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 	repo := activity.Repo
 	gitURL := activity.GitURL
 	activityStatus := activity.Status
-	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind())
+	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind(c.jobConfig.Config))
 
 	fields := map[string]interface{}{
 		"name":        activity.Name,
@@ -394,7 +355,7 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 		Desc:   statusInfo.description,
 		Target: job.Status.ReportURL,
 	}
-	scmClient, _, _, _, err := util.GetSCMClient(owner)
+	scmClient, _, _, _, err := util.GetSCMClient(owner, c.jobConfig.Config)
 	if err != nil {
 		c.logger.WithFields(fields).WithError(err).Warnf("failed to create SCM client")
 		return
@@ -466,20 +427,4 @@ func durationString(start *metav1.Time, end *metav1.Time) string {
 		return ""
 	}
 	return end.Sub(start.Time).Round(time.Second).String()
-}
-
-// stopper returns a channel that remains open until an interrupt is received.
-func stopper() chan struct{} {
-	stop := make(chan struct{})
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		logrus.Warn("Interrupt received, attempting clean shutdown...")
-		close(stop)
-		<-c
-		logrus.Error("Second interrupt received, force exiting...")
-		os.Exit(1)
-	}()
-	return stop
 }

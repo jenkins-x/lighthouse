@@ -9,6 +9,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -54,9 +55,12 @@ func defaultScmTransport(scmClient *scm.Client) {
 }
 
 // GetGitServer returns the git server base URL from the environment
-func GetGitServer() string {
+func GetGitServer(cfg config.Getter) string {
 	serverURL := os.Getenv("GIT_SERVER")
 
+	if serverURL == "" && cfg != nil && cfg().ProviderConfig != nil {
+		serverURL = cfg().ProviderConfig.Server
+	}
 	if serverURL == "" {
 		serverURL = "https://github.com"
 	}
@@ -64,9 +68,9 @@ func GetGitServer() string {
 }
 
 // GetSCMClient gets the Lighthouse SCM client, go-scm client, server URL, and token for the current user and server
-func GetSCMClient(owner string) (scmprovider.SCMClient, *scm.Client, string, string, error) {
-	kind := GitKind()
-	serverURL := GetGitServer()
+func GetSCMClient(owner string, cfg config.Getter) (scmprovider.SCMClient, *scm.Client, string, string, error) {
+	kind := GitKind(cfg)
+	serverURL := GetGitServer(cfg)
 	ghaSecretDir := GetGitHubAppSecretDir()
 
 	var token string
@@ -86,13 +90,16 @@ func GetSCMClient(owner string) (scmprovider.SCMClient, *scm.Client, string, str
 	}
 
 	client, err := factory.NewClient(kind, serverURL, token)
-	scmClient := scmprovider.ToClient(client, GetBotName())
+	scmClient := scmprovider.ToClient(client, GetBotName(cfg))
 	return scmClient, client, serverURL, token, err
 }
 
 // GitKind gets the git kind from the environment
-func GitKind() string {
+func GitKind(cfg config.Getter) string {
 	kind := os.Getenv("GIT_KIND")
+	if kind == "" && cfg != nil && cfg().ProviderConfig != nil {
+		kind = cfg().ProviderConfig.Kind
+	}
 	if kind == "" {
 		kind = "github"
 	}
@@ -100,7 +107,7 @@ func GitKind() string {
 }
 
 // GetBotName returns the bot name from the environment
-func GetBotName() string {
+func GetBotName(cfg config.Getter) string {
 	if GetGitHubAppSecretDir() != "" {
 		ghaBotName, err := GetGitHubAppAPIUser()
 		// TODO: Probably should handle error cases here better, but for now, just fall through.
@@ -109,6 +116,9 @@ func GetBotName() string {
 		}
 	}
 	botName := os.Getenv("GIT_USER")
+	if botName == "" && cfg != nil && cfg().ProviderConfig != nil {
+		botName = cfg().ProviderConfig.BotUser
+	}
 	if botName == "" {
 		botName = "jenkins-x-bot"
 	}

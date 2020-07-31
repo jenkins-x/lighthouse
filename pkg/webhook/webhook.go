@@ -6,11 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
@@ -94,8 +91,9 @@ func (o *Options) Run() error {
 	}
 	defer o.configMapWatcher.Stop()
 
-	o.gitServerURL = util.GetGitServer()
-	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind())
+	cfg := o.server.ConfigAgent.Config
+	o.gitServerURL = util.GetGitServer(cfg)
+	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind(cfg))
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}
@@ -167,6 +165,8 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 	logrus.Debug("about to parse webhook")
 
+	cfg := o.server.ConfigAgent.Config
+
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		logrus.Errorf("failed to Read Body: %s", err.Error())
@@ -182,7 +182,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-	_, scmClient, serverURL, _, err := util.GetSCMClient("")
+	_, scmClient, serverURL, _, err := util.GetSCMClient("", cfg)
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
@@ -217,8 +217,8 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	} else {
-		gitCloneUser = util.GetBotName()
-		token, err = util.GetSCMToken(util.GitKind())
+		gitCloneUser = util.GetBotName(cfg)
+		token, err = util.GetSCMToken(util.GitKind(cfg))
 		if err != nil {
 			logrus.Errorf("no scm token specified: %s", err.Error())
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: no scm token specified: %s", err.Error()))
@@ -236,7 +236,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	util.AddAuthToSCMClient(scmClient, token, ghaSecretDir != "")
 
 	o.server.ClientAgent = &plugins.ClientAgent{
-		BotName:           util.GetBotName(),
+		BotName:           util.GetBotName(cfg),
 		SCMProviderClient: scmClient,
 		KubernetesClient:  kubeClient,
 		GitClient:         o.gitClient,
@@ -408,48 +408,8 @@ func (o *Options) createHookServer() (*Server, error) {
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
 
-	onConfigYamlChange := func(text string) {
-		if text != "" {
-			config, err := config.LoadYAMLConfig([]byte(text))
-			if err != nil {
-				logrus.WithError(err).Error("Error processing the prow Config YAML")
-			} else {
-				logrus.Info("updating the prow core configuration")
-				configAgent.Set(config)
-			}
-		}
-	}
-
-	onPluginsYamlChange := func(text string) {
-		if text != "" {
-			config, err := pluginAgent.LoadYAMLConfig([]byte(text))
-			if err != nil {
-				logrus.WithError(err).Error("Error processing the prow Plugins YAML")
-			} else {
-				logrus.Info("updating the prow plugins configuration")
-				pluginAgent.Set(config)
-			}
-		}
-	}
-
-	_, kubeClient, _, _, err := clients.GetAPIClients()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create Kube client")
-	}
-
-	callbacks := []watcher.ConfigMapCallback{
-		&watcher.ConfigMapEntryCallback{
-			Name:     util.ProwConfigMapName,
-			Key:      util.ProwConfigFilename,
-			Callback: onConfigYamlChange,
-		},
-		&watcher.ConfigMapEntryCallback{
-			Name:     util.ProwPluginsConfigMapName,
-			Key:      util.ProwPluginsFilename,
-			Callback: onPluginsYamlChange,
-		},
-	}
-	o.configMapWatcher, err = watcher.NewConfigMapWatcher(kubeClient, o.namespace, callbacks, stopper())
+	var err error
+	o.configMapWatcher, err = watcher.SetupConfigMapWatchers(o.namespace, configAgent, pluginAgent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
@@ -490,20 +450,4 @@ func responseHTTPError(w http.ResponseWriter, statusCode int, response string) {
 		"status-code": statusCode,
 	}).Info(response)
 	http.Error(w, response, statusCode)
-}
-
-// stopper returns a channel that remains open until an interrupt is received.
-func stopper() chan struct{} {
-	stop := make(chan struct{})
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		logrus.Warn("Interrupt received, attempting clean shutdown...")
-		close(stop)
-		<-c
-		logrus.Error("Second interrupt received, force exiting...")
-		os.Exit(1)
-	}()
-	return stop
 }

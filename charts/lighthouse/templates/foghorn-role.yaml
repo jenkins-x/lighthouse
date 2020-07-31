@@ -4,14 +4,6 @@ metadata:
   name: {{ template "foghorn.name" . }}
 rules:
 - apiGroups:
-  - jenkins.io
-  resources:
-  - pipelineactivities
-  verbs:
-  - list
-  - get
-  - watch
-- apiGroups:
   - ""
   resources:
   - namespaces
