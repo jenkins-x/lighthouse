@@ -11,14 +11,12 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions/lighthouse/v1alpha1"
 	lhlisters "github.com/jenkins-x/lighthouse/pkg/client/listers/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
@@ -329,7 +327,7 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 	repo := activity.Repo
 	gitURL := activity.GitURL
 	activityStatus := activity.Status
-	statusInfo := toScmStatusDescriptionRunningStages(activity, c.gitKind())
+	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind())
 
 	fields := map[string]interface{}{
 		"name":        activity.Name,
@@ -382,7 +380,7 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 
 	// Trigger external plugins if appropriate
 	if external := util.ExternalPluginsForEvent(c.pluginConfig, util.LighthousePayloadTypeActivity, fmt.Sprintf("%s/%s", owner, repo)); len(external) > 0 {
-		go util.CallExternalPluginsWithActivityRecord(c.logger, external, activity, c.hmacToken(), c.wg)
+		go util.CallExternalPluginsWithActivityRecord(c.logger, external, activity, util.HMACToken(), c.wg)
 	}
 
 	pipelineContext := activity.Context
@@ -396,7 +394,7 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 		Desc:   statusInfo.description,
 		Target: job.Status.ReportURL,
 	}
-	scmClient, _, _, err := c.createSCMClient(owner)
+	scmClient, _, _, _, err := util.GetSCMClient(owner)
 	if err != nil {
 		c.logger.WithFields(fields).WithError(err).Warnf("failed to create SCM client")
 		return
@@ -468,62 +466,6 @@ func durationString(start *metav1.Time, end *metav1.Time) string {
 		return ""
 	}
 	return end.Sub(start.Time).Round(time.Second).String()
-}
-
-func (c *Controller) createSCMClient(owner string) (scmprovider.SCMClient, string, string, error) {
-	kind := c.gitKind()
-	serverURL := os.Getenv("GIT_SERVER")
-	ghaSecretDir := util.GetGitHubAppSecretDir()
-
-	var token string
-	var err error
-	if ghaSecretDir != "" {
-		tokenFinder := util.NewOwnerTokensDir(serverURL, ghaSecretDir)
-		token, err = tokenFinder.FindToken(owner)
-		if err != nil {
-			logrus.Errorf("failed to read owner token: %s", err.Error())
-			return nil, "", "", errors.Wrapf(err, "failed to read owner token for owner %s", owner)
-		}
-	} else {
-		token, err = c.createSCMToken(kind)
-		if err != nil {
-			return nil, serverURL, token, err
-		}
-	}
-
-	client, err := factory.NewClient(kind, serverURL, token)
-	scmClient := scmprovider.ToClient(client, c.GetBotName())
-	return scmClient, serverURL, token, err
-}
-
-func (c *Controller) gitKind() string {
-	kind := os.Getenv("GIT_KIND")
-	if kind == "" {
-		kind = "github"
-	}
-	return kind
-}
-
-// GetBotName returns the bot name
-func (c *Controller) GetBotName() string {
-	botName := os.Getenv("GIT_USER")
-	if botName == "" {
-		botName = "jenkins-x-bot"
-	}
-	return botName
-}
-
-func (c *Controller) createSCMToken(gitKind string) (string, error) {
-	envName := "GIT_TOKEN"
-	value := os.Getenv(envName)
-	if value == "" {
-		return value, fmt.Errorf("No token available for git kind %s at environment variable $%s", gitKind, envName)
-	}
-	return value, nil
-}
-
-func (c *Controller) hmacToken() string {
-	return os.Getenv("HMAC_TOKEN")
 }
 
 // stopper returns a channel that remains open until an interrupt is received.
