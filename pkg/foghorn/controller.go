@@ -327,7 +327,7 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 	repo := activity.Repo
 	gitURL := activity.GitURL
 	activityStatus := activity.Status
-	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind())
+	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind(c.jobConfig.Config))
 
 	fields := map[string]interface{}{
 		"name":        activity.Name,
@@ -394,7 +394,7 @@ func (c *Controller) reportStatus(ns string, activity *v1alpha1.ActivityRecord, 
 		Desc:   statusInfo.description,
 		Target: job.Status.ReportURL,
 	}
-	scmClient, _, _, _, err := util.GetSCMClient(owner)
+	scmClient, _, _, _, err := util.GetSCMClient(owner, c.jobConfig.Config)
 	if err != nil {
 		c.logger.WithFields(fields).WithError(err).Warnf("failed to create SCM client")
 		return

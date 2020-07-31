@@ -94,8 +94,9 @@ func (o *Options) Run() error {
 	}
 	defer o.configMapWatcher.Stop()
 
-	o.gitServerURL = util.GetGitServer()
-	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind())
+	cfg := o.server.ConfigAgent.Config
+	o.gitServerURL = util.GetGitServer(cfg)
+	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind(cfg))
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}
@@ -167,6 +168,8 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 	logrus.Debug("about to parse webhook")
 
+	cfg := o.server.ConfigAgent.Config
+
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		logrus.Errorf("failed to Read Body: %s", err.Error())
@@ -182,7 +185,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-	_, scmClient, serverURL, _, err := util.GetSCMClient("")
+	_, scmClient, serverURL, _, err := util.GetSCMClient("", cfg)
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
@@ -217,8 +220,8 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	} else {
-		gitCloneUser = util.GetBotName()
-		token, err = util.GetSCMToken(util.GitKind())
+		gitCloneUser = util.GetBotName(cfg)
+		token, err = util.GetSCMToken(util.GitKind(cfg))
 		if err != nil {
 			logrus.Errorf("no scm token specified: %s", err.Error())
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: no scm token specified: %s", err.Error()))
@@ -236,7 +239,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	util.AddAuthToSCMClient(scmClient, token, ghaSecretDir != "")
 
 	o.server.ClientAgent = &plugins.ClientAgent{
-		BotName:           util.GetBotName(),
+		BotName:           util.GetBotName(cfg),
 		SCMProviderClient: scmClient,
 		KubernetesClient:  kubeClient,
 		GitClient:         o.gitClient,

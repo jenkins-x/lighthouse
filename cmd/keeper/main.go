@@ -109,7 +109,7 @@ func main() {
 	var err error
 	botName := o.botName
 	if botName == "" {
-		botName = util.GetBotName()
+		botName = util.GetBotName(configAgent.Config)
 	}
 	if util.GetGitHubAppSecretDir() != "" {
 		botName, err = util.GetGitHubAppAPIUser()
@@ -122,11 +122,11 @@ func main() {
 	}
 	serverURL := o.gitServerURL
 	if serverURL == "" {
-		serverURL = util.GetGitServer()
+		serverURL = util.GetGitServer(configAgent.Config)
 	}
 	gitKind := o.gitKind
 	if gitKind == "" {
-		gitKind = util.GitKind()
+		gitKind = util.GitKind(configAgent.Config)
 	}
 	gitToken, err := util.GetSCMToken(gitKind)
 	if err != nil {

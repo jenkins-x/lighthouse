@@ -115,6 +115,20 @@ type ProwConfig struct {
 
 	// GitHubOptions allows users to control how prow applications display GitHub website links.
 	GitHubOptions GitHubOptions `json:"github,omitempty"`
+
+	// ProviderConfig contains optional SCM provider information
+	ProviderConfig *ProviderConfig `json:"providerConfig,omitempty"`
+}
+
+// ProviderConfig is optionally used to configure information about the SCM provider being used. These values will be
+// used as fallbacks if environment variables aren't set.
+type ProviderConfig struct {
+	// Kind is the go-scm driver name
+	Kind string `json:"kind,omitempty"`
+	// Server is the base URL for the provider, like https://github.com
+	Server string `json:"server,omitempty"`
+	// BotUser is the username on the provider the bot will use
+	BotUser string `json:"botUser,omitempty"`
 }
 
 // OwnersDirBlacklist is used to configure which directories to ignore when
