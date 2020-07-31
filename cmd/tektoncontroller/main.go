@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
@@ -13,6 +11,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/engines/tekton"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	tektoninformers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions"
@@ -42,28 +41,12 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	return o
 }
 
-// stopper returns a channel that remains open until an interrupt is received.
-func stopper() chan struct{} {
-	stop := make(chan struct{})
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		logrus.Warn("Interrupt received, attempting clean shutdown...")
-		close(stop)
-		<-c
-		logrus.Error("Second interrupt received, force exiting...")
-		os.Exit(1)
-	}()
-	return stop
-}
-
 func main() {
 	logrusutil.ComponentInit("lighthouse-jx-controller")
 
 	defer interrupts.WaitForGracefulShutdown()
 
-	stopCh := stopper()
+	stopCh := util.Stopper()
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 	if err := o.Validate(); err != nil {

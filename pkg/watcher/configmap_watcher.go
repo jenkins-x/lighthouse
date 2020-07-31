@@ -3,6 +3,10 @@ package watcher
 import (
 	"fmt"
 
+	"github.com/jenkins-x/lighthouse/pkg/clients"
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -35,6 +39,60 @@ type ConfigMapEntryCallback struct {
 	Key      string
 	Callback func(string)
 	oldValue string
+}
+
+// SetupConfigMapWatchers takes a config agent and plugin agent, each potentially nil, and sets up the appropriate watchers for them.
+func SetupConfigMapWatchers(ns string, configAgent *config.Agent, pluginAgent *plugins.ConfigAgent) (*ConfigMapWatcher, error) {
+	var callbacks []ConfigMapCallback
+
+	if configAgent != nil {
+		onConfigYamlChange := func(text string) {
+			if text != "" {
+				loadedConfig, err := config.LoadYAMLConfig([]byte(text))
+				if err != nil {
+					logrus.WithError(err).Error("Error processing the prow Config YAML")
+				} else {
+					logrus.Info("updating the prow core configuration")
+					configAgent.Set(loadedConfig)
+				}
+			}
+		}
+		callbacks = append(callbacks, &ConfigMapEntryCallback{
+			Name:     util.ProwConfigMapName,
+			Key:      util.ProwConfigFilename,
+			Callback: onConfigYamlChange,
+		})
+	}
+
+	if pluginAgent != nil {
+		onPluginsYamlChange := func(text string) {
+			if text != "" {
+				config, err := pluginAgent.LoadYAMLConfig([]byte(text))
+				if err != nil {
+					logrus.WithError(err).Error("Error processing the prow Plugins YAML")
+				} else {
+					logrus.Info("updating the prow plugins configuration")
+					pluginAgent.Set(config)
+				}
+			}
+		}
+		callbacks = append(callbacks, &ConfigMapEntryCallback{
+			Name:     util.ProwPluginsConfigMapName,
+			Key:      util.ProwPluginsFilename,
+			Callback: onPluginsYamlChange,
+		})
+	}
+
+	// No watch to configure
+	if len(callbacks) == 0 {
+		return nil, nil
+	}
+	_, kubeClient, _, _, err := clients.GetAPIClients()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create Kube client")
+	}
+
+	return NewConfigMapWatcher(kubeClient, ns, callbacks, util.Stopper())
 }
 
 // OnChange invokes the callback function if the value is not empty and changes

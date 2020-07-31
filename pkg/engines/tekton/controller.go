@@ -3,14 +3,11 @@ package tekton
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/signal"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -91,26 +88,7 @@ func NewController(kubeClient kubernetes.Interface, tektonClient tektonclient.In
 
 	configAgent := &config.Agent{}
 
-	onConfigYamlChange := func(text string) {
-		if text != "" {
-			cfg, err := config.LoadYAMLConfig([]byte(text))
-			if err != nil {
-				logrus.WithError(err).Error("Error processing the prow Config YAML")
-			} else {
-				logrus.Info("updating the prow core configuration")
-				configAgent.Set(cfg)
-			}
-		}
-	}
-
-	callbacks := []watcher.ConfigMapCallback{
-		&watcher.ConfigMapEntryCallback{
-			Name:     util.ProwConfigMapName,
-			Key:      util.ProwConfigFilename,
-			Callback: onConfigYamlChange,
-		},
-	}
-	configMapWatcher, err := watcher.NewConfigMapWatcher(kubeClient, ns, callbacks, stopper())
+	configMapWatcher, err := watcher.SetupConfigMapWatchers(ns, configAgent, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}
@@ -482,22 +460,6 @@ func createLabelSelectorFromActivity(activity *v1alpha1.ActivityRecord) (labels.
 	}
 
 	return labels.Parse(strings.Join(selectors, ","))
-}
-
-// stopper returns a channel that remains open until an interrupt is received.
-func stopper() chan struct{} {
-	stop := make(chan struct{})
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		logrus.Warn("Interrupt received, attempting clean shutdown...")
-		close(stop)
-		<-c
-		logrus.Error("Second interrupt received, force exiting...")
-		os.Exit(1)
-	}()
-	return stop
 }
 
 // generateBuildID generates a unique build ID for consistency with Prow behavior
