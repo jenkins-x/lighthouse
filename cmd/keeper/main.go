@@ -109,7 +109,7 @@ func main() {
 	var err error
 	botName := o.botName
 	if botName == "" {
-		botName = os.Getenv("GIT_USER")
+		botName = util.GetBotName()
 	}
 	if util.GetGitHubAppSecretDir() != "" {
 		botName, err = util.GetGitHubAppAPIUser()
@@ -122,19 +122,16 @@ func main() {
 	}
 	serverURL := o.gitServerURL
 	if serverURL == "" {
-		serverURL = os.Getenv("GIT_SERVER")
-	}
-	if serverURL == "" {
-		serverURL = "https://github.com"
+		serverURL = util.GetGitServer()
 	}
 	gitKind := o.gitKind
 	if gitKind == "" {
-		gitKind = os.Getenv("GIT_KIND")
+		gitKind = util.GitKind()
 	}
-	if gitKind == "" {
-		gitKind = "github"
+	gitToken, err := util.GetSCMToken(gitKind)
+	if err != nil {
+		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}
-	gitToken := os.Getenv("GIT_TOKEN")
 
 	cfg := configAgent.Config
 	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)

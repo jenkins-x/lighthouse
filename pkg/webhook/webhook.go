@@ -13,7 +13,6 @@ import (
 	"syscall"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -95,12 +94,8 @@ func (o *Options) Run() error {
 	}
 	defer o.configMapWatcher.Stop()
 
-	_, o.gitServerURL, err = o.createSCMClient()
-	if err != nil {
-		return errors.Wrapf(err, "failed to create ScmClient")
-	}
-
-	gitClient, err := git.NewClient(o.gitServerURL, o.gitKind())
+	o.gitServerURL = util.GetGitServer()
+	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind())
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}
@@ -187,7 +182,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-	scmClient, serverURL, err := o.createSCMClient()
+	_, scmClient, serverURL, _, err := util.GetSCMClient("")
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
@@ -222,8 +217,8 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	} else {
-		gitCloneUser = o.GetBotName()
-		token, err = o.createSCMToken(o.gitKind())
+		gitCloneUser = util.GetBotName()
+		token, err = util.GetSCMToken(util.GitKind())
 		if err != nil {
 			logrus.Errorf("no scm token specified: %s", err.Error())
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: no scm token specified: %s", err.Error()))
@@ -241,7 +236,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	util.AddAuthToSCMClient(scmClient, token, ghaSecretDir != "")
 
 	o.server.ClientAgent = &plugins.ClientAgent{
-		BotName:           o.GetBotName(),
+		BotName:           util.GetBotName(),
 		SCMProviderClient: scmClient,
 		KubernetesClient:  kubeClient,
 		GitClient:         o.gitClient,
@@ -254,7 +249,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 	}
 	// Demux events only to external plugins that require this event.
 	if external := util.ExternalPluginsForEvent(o.server.Plugins, string(webhook.Kind()), webhook.Repository().FullName); len(external) > 0 {
-		go util.CallExternalPluginsWithWebhook(l, external, webhook, o.hmacToken(), &o.server.wg)
+		go util.CallExternalPluginsWithWebhook(l, external, webhook, util.HMACToken(), &o.server.wg)
 	}
 
 	_, err = w.Write([]byte(output))
@@ -405,53 +400,8 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 	return l, fmt.Sprintf("unknown hook %s", webhook.Kind()), nil
 }
 
-func (o *Options) hmacToken() string {
-	return os.Getenv("HMAC_TOKEN")
-}
-
 func (o *Options) secretFn(webhook scm.Webhook) (string, error) {
-	return o.hmacToken(), nil
-}
-
-func (o *Options) createSCMClient() (*scm.Client, string, error) {
-	kind := o.gitKind()
-	serverURL := os.Getenv("GIT_SERVER")
-
-	client, err := factory.NewClient(kind, serverURL, "")
-	return client, serverURL, err
-}
-
-func (o *Options) gitKind() string {
-	kind := os.Getenv("GIT_KIND")
-	if kind == "" {
-		kind = "github"
-	}
-	return kind
-}
-
-// GetBotName returns the bot name
-func (o *Options) GetBotName() string {
-	if util.GetGitHubAppSecretDir() != "" {
-		ghaBotName, err := util.GetGitHubAppAPIUser()
-		// TODO: Probably should handle error cases here better, but for now, just fall through.
-		if err == nil && ghaBotName != "" {
-			return ghaBotName
-		}
-	}
-	o.botName = os.Getenv("GIT_USER")
-	if o.botName == "" {
-		o.botName = "jenkins-x-bot"
-	}
-	return o.botName
-}
-
-func (o *Options) createSCMToken(gitKind string) (string, error) {
-	envName := "GIT_TOKEN"
-	value := os.Getenv(envName)
-	if value == "" {
-		return value, fmt.Errorf("No token available for git kind %s at environment variable $%s", gitKind, envName)
-	}
-	return value, nil
+	return util.HMACToken(), nil
 }
 
 func (o *Options) createHookServer() (*Server, error) {

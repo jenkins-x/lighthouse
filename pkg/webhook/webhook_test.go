@@ -120,7 +120,6 @@ func (suite *WebhookTestSuite) TestProcessWebhookUnknownRepo() {
 }
 
 func (suite *WebhookTestSuite) SetupSuite() {
-	options := &Options{}
 	t := suite.T()
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
@@ -142,12 +141,12 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	var objs []runtime.Object
 	kubeClient := kubefake.NewSimpleClientset(objs...)
 	lhClient := fake.NewSimpleClientset()
-	scmClient, serverURL, err := options.createSCMClient()
+	_, scmClient, serverURL, _, err := util.GetSCMClient("")
 	assert.NoError(t, err)
-	gitClient, err := git.NewClient(serverURL, options.gitKind())
+	gitClient, err := git.NewClient(serverURL, util.GitKind())
 	assert.NoError(t, err)
-	user := options.GetBotName()
-	token, err := options.createSCMToken(options.gitKind())
+	user := util.GetBotName()
+	token, err := util.GetSCMToken(util.GitKind())
 	gitClient.SetCredentials(user, func() []byte {
 		return []byte(token)
 	})
@@ -157,7 +156,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 			ConfigAgent: configAgent,
 			Plugins:     pluginAgent,
 			ClientAgent: &plugins.ClientAgent{
-				BotName:           options.GetBotName(),
+				BotName:           util.GetBotName(),
 				SCMProviderClient: scmClient,
 				KubernetesClient:  kubeClient,
 				GitClient:         gitClient,
