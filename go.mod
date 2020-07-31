@@ -8,7 +8,8 @@ require (
 	github.com/google/go-cmp v0.4.1
 	github.com/gorilla/sessions v1.2.0
 	github.com/hashicorp/go-multierror v1.1.0
-	github.com/jenkins-x/go-scm v1.5.152
+	github.com/jenkins-x/go-scm v1.5.153
+	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pkg/errors v0.9.1
@@ -26,6 +27,7 @@ require (
 	k8s.io/api v0.18.1
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
+	k8s.io/utils v0.0.0-20200124190032-861946025e34
 	knative.dev/pkg v0.0.0-20200702222342-ea4d6e985ba0
 	sigs.k8s.io/yaml v1.2.0
 )

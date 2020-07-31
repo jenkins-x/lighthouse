@@ -34,6 +34,8 @@ rules:
   - secrets
   verbs:
   - get
+  - update
+  - create
   - list
   - watch
 - apiGroups:

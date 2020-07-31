@@ -20,6 +20,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"k8s.io/utils/diff"
 )
 
 func TestValidateExternalPlugins(t *testing.T) {
@@ -166,20 +168,21 @@ func TestSetDefault_Maps(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		cfg := Configuration{
-			ConfigUpdater: tc.config,
-		}
-		cfg.setDefaults()
-		actual := cfg.ConfigUpdater.Maps
-		if len(actual) != len(tc.expected) {
-			t.Errorf("%s: actual and expected have different keys: %v %v", tc.name, actual, tc.expected)
-			continue
-		}
-		for k, n := range tc.expected {
-			if an := actual[k]; !reflect.DeepEqual(an, n) {
-				t.Errorf("%s - %s: expected %s != actual %s", tc.name, k, n, an)
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := Configuration{
+				ConfigUpdater: tc.config,
 			}
-		}
+			cfg.setDefaults()
+			actual := cfg.ConfigUpdater.Maps
+			if len(actual) != len(tc.expected) {
+				t.Fatalf("%s: actual and expected have different keys: %v %v", tc.name, actual, tc.expected)
+			}
+			for k, n := range tc.expected {
+				if an := actual[k]; !reflect.DeepEqual(an, n) {
+					t.Errorf("%s - %s: unexpected value. Diff: %v", tc.name, k, diff.ObjectReflectDiff(an, n))
+				}
+			}
+		})
 	}
 }
 
