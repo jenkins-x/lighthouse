@@ -143,9 +143,12 @@ type Owners struct {
 	// control in the provided repos.
 	SkipCollaborators []string `json:"skip_collaborators,omitempty"`
 
-	// LabelsBlackList holds a list of labels that should not be present in any
+	// LabelsExcludeList holds a list of labels that should not be present in any
 	// OWNERS file, preventing their automatic addition by the owners-label plugin.
 	// This check is performed by the verify-owners plugin.
+	LabelsExcludeList []string `json:"labels_excludes,omitempty"`
+
+	// LabelsBlackList is DEPRECATED in favor of LabelsExcludeList
 	LabelsBlackList []string `json:"labels_blacklist,omitempty"`
 }
 
@@ -438,16 +441,20 @@ type ConfigUpdater struct {
 
 // MergeWarning is a config for the slackevents plugin's manual merge warnings.
 // If a PR is pushed to any of the repos listed in the config then send messages
-// to the all the slack channels listed if pusher is NOT in the whitelist.
+// to the all the slack channels listed if pusher is NOT in the includes.
 type MergeWarning struct {
 	// Repos is either of the form org/repos or just org.
 	Repos []string `json:"repos,omitempty"`
 	// List of channels on which a event is published.
 	Channels []string `json:"channels,omitempty"`
-	// A slack event is published if the user is not part of the WhiteList.
-	WhiteList []string `json:"whitelist,omitempty"`
-	// A slack event is published if the user is not on the branch whitelist
-	BranchWhiteList map[string][]string `json:"branch_whitelist,omitempty"`
+	// A slack event is published if the user is not part of the includes.
+	Includes []string `json:"includes,omitempty"`
+	// Deprecated in favor of Includes
+	Whitelist []string `json:"whitelist,omitempty"`
+	// A slack event is published if the user is not in the branch includes
+	BranchIncludes map[string][]string `json:"branch_includes,omitempty"`
+	// Deprecated in favor of BranchIncludes
+	BranchWhitelist map[string][]string `json:"branch_whitelist,omitempty"`
 }
 
 // Welcome is config for the welcome plugin.
@@ -689,8 +696,11 @@ func (c *Configuration) setDefaults() {
 	if c.SigMention.Regexp == "" {
 		c.SigMention.Regexp = `(?m)@kubernetes/sig-([\w-]*)-(misc|test-failures|bugs|feature-requests|proposals|pr-reviews|api-reviews)`
 	}
-	if c.Owners.LabelsBlackList == nil {
-		c.Owners.LabelsBlackList = []string{labels.Approved, labels.LGTM}
+	if c.Owners.LabelsExcludeList == nil {
+		c.Owners.LabelsExcludeList = c.Owners.LabelsBlackList
+	}
+	if c.Owners.LabelsExcludeList == nil {
+		c.Owners.LabelsExcludeList = []string{labels.Approved, labels.LGTM}
 	}
 	for _, milestone := range c.RepoMilestone {
 		if milestone.MaintainersFriendlyName == "" {

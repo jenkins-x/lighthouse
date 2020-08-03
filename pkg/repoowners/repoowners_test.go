@@ -105,8 +105,8 @@ func getTestClient(
 	enableMdYaml,
 	skipCollab,
 	includeAliases bool,
-	ownersDirBlacklistDefault []string,
-	ownersDirBlacklistByRepo map[string][]string,
+	ownersDirExcludesDefault []string,
+	ownersDirExcludesByRepo map[string][]string,
 	extraBranchesAndFiles map[string]map[string][]byte,
 ) (*Client, func(), error) {
 	testAliasesFile := map[string][]byte{
@@ -158,9 +158,9 @@ func getTestClient(
 			},
 			config: &prowConf.Config{
 				ProwConfig: prowConf.ProwConfig{
-					OwnersDirBlacklist: prowConf.OwnersDirBlacklist{
-						Repos:   ownersDirBlacklistByRepo,
-						Default: ownersDirBlacklistDefault,
+					OwnersDirExcludes: &prowConf.OwnersDirExcludes{
+						Repos:   ownersDirExcludesByRepo,
+						Default: ownersDirExcludesDefault,
 					},
 				},
 			},
@@ -173,7 +173,7 @@ func getTestClient(
 		nil
 }
 
-func TestOwnersDirBlacklist(t *testing.T) {
+func TestOwnersDirExcludes(t *testing.T) {
 	validatorExcluded := func(t *testing.T, ro *RepoOwners) {
 		for dir := range ro.approvers {
 			if strings.Contains(dir, "src") {
@@ -211,7 +211,7 @@ func TestOwnersDirBlacklist(t *testing.T) {
 		}
 	}
 
-	getRepoOwnersWithBlacklist := func(t *testing.T, defaults []string, byRepo map[string][]string) *RepoOwners {
+	getRepoOwnersWithExcludes := func(t *testing.T, defaults []string, byRepo map[string][]string) *RepoOwners {
 		client, cleanup, err := getTestClient(testFiles, true, false, true, defaults, byRepo, nil)
 		if err != nil {
 			t.Fatalf("Error creating test client: %v.", err)
@@ -227,34 +227,34 @@ func TestOwnersDirBlacklist(t *testing.T) {
 	}
 
 	type testConf struct {
-		blackistDefault []string
-		blacklistByRepo map[string][]string
+		excludesDefault []string
+		excludesByRepo  map[string][]string
 		validator       func(t *testing.T, ro *RepoOwners)
 	}
 
 	tests := map[string]testConf{}
 
-	tests["blacklist by org"] = testConf{
-		blacklistByRepo: map[string][]string{
+	tests["excludes by org"] = testConf{
+		excludesByRepo: map[string][]string{
 			"org": {"src"},
 		},
 		validator: validatorExcluded,
 	}
-	tests["blacklist by org/repo"] = testConf{
-		blacklistByRepo: map[string][]string{
+	tests["excludes by org/repo"] = testConf{
+		excludesByRepo: map[string][]string{
 			"org/repo": {"src"},
 		},
 		validator: validatorExcluded,
 	}
-	tests["blacklist by default"] = testConf{
-		blackistDefault: []string{"src"},
+	tests["excludes by default"] = testConf{
+		excludesDefault: []string{"src"},
 		validator:       validatorExcluded,
 	}
-	tests["no blacklist setup"] = testConf{
+	tests["no excludes setup"] = testConf{
 		validator: validatorIncluded,
 	}
-	tests["blacklist setup but not matching this repo"] = testConf{
-		blacklistByRepo: map[string][]string{
+	tests["excludes setup but not matching this repo"] = testConf{
+		excludesByRepo: map[string][]string{
 			"not_org/not_repo": {"src"},
 			"not_org":          {"src"},
 		},
@@ -263,7 +263,7 @@ func TestOwnersDirBlacklist(t *testing.T) {
 
 	for name, conf := range tests {
 		t.Run(name, func(t *testing.T) {
-			ro := getRepoOwnersWithBlacklist(t, conf.blackistDefault, conf.blacklistByRepo)
+			ro := getRepoOwnersWithExcludes(t, conf.excludesDefault, conf.excludesByRepo)
 			conf.validator(t, ro)
 		})
 	}

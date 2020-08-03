@@ -12,7 +12,7 @@ deck:
 gerrit: {}
 github:
   LinkURL: null
-owners_dir_blacklist:
+owners_dir_excludes:
   default: null
   repos: null
 plank: {}

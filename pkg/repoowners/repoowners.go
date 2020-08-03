@@ -43,7 +43,7 @@ const (
 	baseDirConvention = ""
 )
 
-var defaultDirBlacklist = sets.NewString(".git", "_output")
+var defaultDirExcludes = sets.NewString(".git", "_output")
 
 type dirOptions struct {
 	NoParentOwners bool `json:"no_parent_owners,omitempty"`
@@ -160,7 +160,7 @@ type RepoOwners struct {
 
 	baseDir      string
 	enableMDYAML bool
-	dirBlacklist sets.String
+	dirExcludes  sets.String
 
 	log *logrus.Entry
 }
@@ -231,16 +231,16 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 			entry.aliases = loadAliasesFrom(gitRepo.Dir, log)
 		}
 
-		blacklistConfig := c.config.OwnersDirBlacklist
+		excludeConfig := c.config.OwnersDirExcludes
 
-		dirBlacklist := defaultDirBlacklist.Union(sets.NewString(blacklistConfig.Default...))
-		if bl, ok := blacklistConfig.Repos[org]; ok {
-			dirBlacklist.Insert(bl...)
+		dirExcludes := defaultDirExcludes.Union(sets.NewString(excludeConfig.Default...))
+		if bl, ok := excludeConfig.Repos[org]; ok {
+			dirExcludes.Insert(bl...)
 		}
-		if bl, ok := blacklistConfig.Repos[org+"/"+repo]; ok {
-			dirBlacklist.Insert(bl...)
+		if bl, ok := excludeConfig.Repos[org+"/"+repo]; ok {
+			dirExcludes.Insert(bl...)
 		}
-		entry.owners, err = loadOwnersFrom(gitRepo.Dir, mdYaml, entry.aliases, dirBlacklist, log)
+		entry.owners, err = loadOwnersFrom(gitRepo.Dir, mdYaml, entry.aliases, dirExcludes, log)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load RepoOwners for %s: %v", fullName, err)
 		}
@@ -316,7 +316,7 @@ func loadAliasesFrom(baseDir string, log *logrus.Entry) RepoAliases {
 	return result
 }
 
-func loadOwnersFrom(baseDir string, mdYaml bool, aliases RepoAliases, dirBlacklist sets.String, log *logrus.Entry) (*RepoOwners, error) {
+func loadOwnersFrom(baseDir string, mdYaml bool, aliases RepoAliases, dirExcludes sets.String, log *logrus.Entry) (*RepoOwners, error) {
 	o := &RepoOwners{
 		RepoAliases:  aliases,
 		baseDir:      baseDir,
@@ -329,7 +329,7 @@ func loadOwnersFrom(baseDir string, mdYaml bool, aliases RepoAliases, dirBlackli
 		labels:            make(map[string]map[*regexp.Regexp]sets.String),
 		options:           make(map[string]dirOptions),
 
-		dirBlacklist: dirBlacklist,
+		dirExcludes: dirExcludes,
 	}
 
 	return o, filepath.Walk(o.baseDir, o.walkFunc)
@@ -353,7 +353,7 @@ func (o *RepoOwners) walkFunc(path string, info os.FileInfo, err error) error {
 	}
 	filename := filepath.Base(path)
 
-	if info.Mode().IsDir() && o.dirBlacklist.Has(filename) {
+	if info.Mode().IsDir() && o.dirExcludes.Has(filename) {
 		return filepath.SkipDir
 	}
 	if !info.Mode().IsRegular() {

@@ -126,22 +126,22 @@ func requirementDiff(pr *PullRequest, q *config.KeeperQuery, cc contextChecker) 
 
 	// Weight incorrect branches with very high diff so that we select the query
 	// for the correct branch.
-	targetBranchBlacklisted := false
+	targetBranchExcluded := false
 	for _, excludedBranch := range q.ExcludedBranches {
 		if string(pr.BaseRef.Name) == excludedBranch {
-			targetBranchBlacklisted = true
+			targetBranchExcluded = true
 			break
 		}
 	}
-	// if no whitelist is configured, the target is OK by default
-	targetBranchWhitelisted := len(q.IncludedBranches) == 0
+	// if no inclusion list is configured, the target is OK by default
+	targetBranchIncluded := len(q.IncludedBranches) == 0
 	for _, includedBranch := range q.IncludedBranches {
 		if string(pr.BaseRef.Name) == includedBranch {
-			targetBranchWhitelisted = true
+			targetBranchIncluded = true
 			break
 		}
 	}
-	if targetBranchBlacklisted || !targetBranchWhitelisted {
+	if targetBranchExcluded || !targetBranchIncluded {
 		diff += 1000
 		if desc == "" {
 			desc = fmt.Sprintf(" Merging to branch %s is forbidden.", pr.BaseRef.Name)
