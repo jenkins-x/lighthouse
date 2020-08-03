@@ -491,6 +491,10 @@ func (c *Controller) makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.
 		},
 		Spec: *specCopy,
 	}
+	// Set a default timeout of 1 day if no timeout is specified
+	if p.Spec.Timeout == nil {
+		p.Spec.Timeout = &metav1.Duration{Duration: 24 * time.Hour}
+	}
 	p.OwnerReferences = []metav1.OwnerReference{{
 		APIVersion: lighthouse.GroupAndVersion,
 		Kind:       "LighthouseJob",

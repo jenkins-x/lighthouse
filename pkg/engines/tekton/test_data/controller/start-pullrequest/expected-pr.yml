@@ -55,5 +55,5 @@ spec:
   podTemplate:
     schedulerName: ""
   serviceAccountName: tekton-bot
-  timeout: 240h0m0s
+  timeout: 24h0m0s
 status: {}
