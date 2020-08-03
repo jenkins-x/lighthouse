@@ -68,7 +68,7 @@ branch-protection:
 deck:
   spyglass: {}
 gerrit: {}
-owners_dir_blacklist:
+owners_dir_excludes:
   default: null
   repos: null
 plank: {}

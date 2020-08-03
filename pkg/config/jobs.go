@@ -231,7 +231,7 @@ func (br Brancher) GetRE() *regexp.Regexp {
 	return br.re
 }
 
-// ShouldRun returns true if the input branch matches, given the whitelist/blacklist.
+// ShouldRun returns true if the input branch matches, given the includes/excludes.
 func (br Brancher) ShouldRun(branch string) bool {
 	if br.RunsAgainstAllBranch() {
 		return true

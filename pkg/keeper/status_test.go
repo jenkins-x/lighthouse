@@ -36,15 +36,15 @@ func TestExpectedStatus(t *testing.T) {
 	testcases := []struct {
 		name string
 
-		baseref         string
-		branchWhitelist []string
-		branchBlacklist []string
-		sameBranchReqs  bool
-		labels          []string
-		milestone       string
-		contexts        []Context
-		inPool          bool
-		blocks          []int
+		baseref           string
+		branchIncludeList []string
+		branchExcludeList []string
+		sameBranchReqs    bool
+		labels            []string
+		milestone         string
+		contexts          []Context
+		inPool            bool
+		blocks            []int
 
 		state string
 		desc  string
@@ -101,34 +101,34 @@ func TestExpectedStatus(t *testing.T) {
 			desc:  fmt.Sprintf(statusNotInPool, " Needs need-1 label."),
 		},
 		{
-			name:            "against excluded branch",
-			baseref:         "bad",
-			branchBlacklist: []string{"bad"},
-			sameBranchReqs:  true,
-			labels:          neededLabels,
-			inPool:          false,
+			name:              "against excluded branch",
+			baseref:           "bad",
+			branchExcludeList: []string{"bad"},
+			sameBranchReqs:    true,
+			labels:            neededLabels,
+			inPool:            false,
 
 			state: scmprovider.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Merging to branch bad is forbidden."),
 		},
 		{
-			name:            "not against included branch",
-			baseref:         "bad",
-			branchWhitelist: []string{"good"},
-			sameBranchReqs:  true,
-			labels:          neededLabels,
-			inPool:          false,
+			name:              "not against included branch",
+			baseref:           "bad",
+			branchIncludeList: []string{"good"},
+			sameBranchReqs:    true,
+			labels:            neededLabels,
+			inPool:            false,
 
 			state: scmprovider.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Merging to branch bad is forbidden."),
 		},
 		{
-			name:            "choose query for correct branch",
-			baseref:         "bad",
-			branchWhitelist: []string{"good"},
-			milestone:       "v1.0",
-			labels:          neededLabels,
-			inPool:          false,
+			name:              "choose query for correct branch",
+			baseref:           "bad",
+			branchIncludeList: []string{"good"},
+			milestone:         "v1.0",
+			labels:            neededLabels,
+			inPool:            false,
 
 			state: scmprovider.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Needs 1, 2, 3, 4, 5, 6, 7 labels."),
@@ -215,14 +215,14 @@ func TestExpectedStatus(t *testing.T) {
 			Milestone: "v1.0",
 		}
 		if tc.sameBranchReqs {
-			secondQuery.ExcludedBranches = tc.branchBlacklist
-			secondQuery.IncludedBranches = tc.branchWhitelist
+			secondQuery.ExcludedBranches = tc.branchExcludeList
+			secondQuery.IncludedBranches = tc.branchIncludeList
 		}
 		queriesByRepo := config.KeeperQueries{
 			config.KeeperQuery{
 				Orgs:             []string{""},
-				ExcludedBranches: tc.branchBlacklist,
-				IncludedBranches: tc.branchWhitelist,
+				ExcludedBranches: tc.branchExcludeList,
+				IncludedBranches: tc.branchIncludeList,
 				Labels:           neededLabels,
 				MissingLabels:    forbiddenLabels,
 				Milestone:        "v1.0",
