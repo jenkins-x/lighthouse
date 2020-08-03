@@ -26,6 +26,7 @@ import (
 	_ "github.com/jenkins-x/lighthouse/pkg/plugins/skip"
 	_ "github.com/jenkins-x/lighthouse/pkg/plugins/stage"
 	_ "github.com/jenkins-x/lighthouse/pkg/plugins/trigger"
+	_ "github.com/jenkins-x/lighthouse/pkg/plugins/updateconfig"
 	_ "github.com/jenkins-x/lighthouse/pkg/plugins/welcome"
 	_ "github.com/jenkins-x/lighthouse/pkg/plugins/wip"
 	_ "github.com/jenkins-x/lighthouse/pkg/plugins/yuks"
