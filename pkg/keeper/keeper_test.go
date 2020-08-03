@@ -491,11 +491,12 @@ func TestAccumulate(t *testing.T) {
 }
 
 type fgc struct {
-	prs       []PullRequest
-	refs      map[string]string
-	merged    int
-	setStatus bool
-	mergeErrs map[int]error
+	prs              []PullRequest
+	refs             map[string]string
+	merged           int
+	setStatus        bool
+	mergeErrs        map[int]error
+	mergeErrComments map[int]string
 
 	expectedSHA    string
 	ignoreExpected bool
@@ -547,6 +548,14 @@ func (f *fgc) Query(ctx context.Context, q interface{}, vars map[string]interfac
 			}{PullRequest: pr},
 		)
 	}
+	return nil
+}
+
+func (f *fgc) CreateComment(org, repo string, number int, isPR bool, commentBody string) error {
+	if f.mergeErrComments == nil {
+		f.mergeErrComments = make(map[int]string)
+	}
+	f.mergeErrComments[number] = commentBody
 	return nil
 }
 
@@ -1364,11 +1373,47 @@ func TestTakeAction(t *testing.T) {
 			if tc.batchPending {
 				batchPending = []PullRequest{{}}
 			}
+			successes := genPulls(tc.successes)
+			pendings := genPulls(tc.pendings)
+			nones := genPulls(tc.nones)
+			batchMerges := genPulls(tc.batchMerges)
 			t.Logf("Test case: %s", tc.name)
-			if act, _, err := c.takeAction(sp, batchPending, genPulls(tc.successes), genPulls(tc.pendings), genPulls(tc.nones), genPulls(tc.batchMerges), sp.presubmits); err != nil && !tc.expectErr {
+			if act, _, err := c.takeAction(sp, batchPending, successes, pendings, nones, batchMerges, sp.presubmits); err != nil && !tc.expectErr {
 				t.Fatalf("Unexpected error in takeAction: %v", err)
 			} else if err == nil && tc.expectErr {
 				t.Error("Missing expected error from takeAction.")
+			} else if err != nil && tc.expectErr {
+				var prsToMerge []PullRequest
+				var failed []int
+				var merged []int
+				if len(batchMerges) > 0 {
+					prsToMerge = append(prsToMerge, batchMerges...)
+					failedAndStopped := false
+					for _, pr := range batchMerges {
+						prNum := int(pr.Number)
+						if mergeErr, ok := tc.mergeErrs[prNum]; ok {
+							failed = append(failed, prNum)
+							switch mergeErr.(type) {
+							case scmprovider.MergeCommitsForbiddenError, scmprovider.UnauthorizedToPushError:
+								failedAndStopped = true
+							default:
+								continue
+							}
+						} else if !failedAndStopped {
+							merged = append(merged, prNum)
+						}
+					}
+				} else {
+					if ok, prToMerge := pickSmallestPassingNumber(sp.log, c.spc, successes, sp.cc); ok {
+						prsToMerge = append(prsToMerge, prToMerge)
+						failed = append(failed, int(prToMerge.Number))
+					}
+				}
+				for prNum, rawErr := range tc.mergeErrs {
+					detailedErr := mergeErrorDetail(rawErr)
+					expectedErr := rollupMergeErrors(prsToMerge, failed, merged, []error{detailedErr})
+					assert.Equal(t, fmt.Sprintf("Failed to merge this PR due to:\n>%s\n", expectedErr.Error()), fgc.mergeErrComments[prNum])
+				}
 			} else if act != tc.action {
 				t.Errorf("Wrong action. Got %v, wanted %v.", act, tc.action)
 			}
