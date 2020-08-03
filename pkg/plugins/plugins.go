@@ -167,6 +167,7 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 	return Agent{
 		SCMProviderClient: scmClient,
 		GitClient:         clientAgent.GitClient,
+		KubernetesClient:  clientAgent.KubernetesClient,
 		LauncherClient:    clientAgent.LauncherClient,
 		LighthouseClient:  clientAgent.LighthouseClient,
 		ServerURL:         serverURL,
