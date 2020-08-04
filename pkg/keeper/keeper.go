@@ -69,6 +69,7 @@ type scmProviderClient interface {
 	ProviderType() string
 	GetRepositoryByFullName(string) (*scm.Repository, error)
 	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
+	CreateComment(owner, repo string, number int, isPR bool, comment string) error
 }
 
 type contextChecker interface {
@@ -938,6 +939,7 @@ func (c *DefaultController) prepareMergeDetails(commitTemplates config.KeeperMer
 
 func (c *DefaultController) mergePRs(sp subpool, prs []PullRequest) error {
 	var merged, failed []int
+	var failedPRs []PullRequest
 	defer func() {
 		if len(merged) == 0 {
 			return
@@ -961,6 +963,7 @@ func (c *DefaultController) mergePRs(sp subpool, prs []PullRequest) error {
 				log.WithError(err).Error("Merge failed.")
 				errs = append(errs, err)
 				failed = append(failed, int(pr.Number))
+				failedPRs = append(failedPRs, pr)
 				continue
 			}
 		}
@@ -973,6 +976,7 @@ func (c *DefaultController) mergePRs(sp subpool, prs []PullRequest) error {
 			log.WithError(err).Error("Merge failed.")
 			errs = append(errs, err)
 			failed = append(failed, int(pr.Number))
+			failedPRs = append(failedPRs, pr)
 		} else {
 			log.Info("Merged.")
 			merged = append(merged, int(pr.Number))
@@ -991,6 +995,18 @@ func (c *DefaultController) mergePRs(sp subpool, prs []PullRequest) error {
 		return nil
 	}
 
+	finalErr := rollupMergeErrors(prs, failed, merged, errs)
+	reportErr := c.commentOnPRsWithFailedMerge(failedPRs, finalErr.Error())
+	if reportErr != nil {
+		sp.log.WithFields(logrus.Fields{
+			"targets": prNumbers(failedPRs),
+		}).WithError(reportErr).Error("error reporting back to PRs upon failed merge")
+	}
+
+	return finalErr
+}
+
+func rollupMergeErrors(prs []PullRequest, failed []int, merged []int, errs []error) error {
 	// Construct a more informative error.
 	var batch string
 	if len(prs) > 1 {
@@ -999,7 +1015,25 @@ func (c *DefaultController) mergePRs(sp subpool, prs []PullRequest) error {
 			batch = fmt.Sprintf("%s, partial merge %v", batch, merged)
 		}
 	}
+
 	return fmt.Errorf("failed merging %v%s: %v", failed, batch, errorutil.NewAggregate(errs...))
+}
+
+func mergeErrorDetail(origErr error) error {
+	switch origErr.(type) {
+	case scmprovider.ModifiedHeadError:
+		return fmt.Errorf("PR was modified: %v", origErr)
+	case scmprovider.UnmergablePRBaseChangedError:
+		return fmt.Errorf("base branch was modified: %v", origErr)
+	case scmprovider.UnauthorizedToPushError:
+		return fmt.Errorf("branch needs to be configured to allow this robot to push: %v", origErr)
+	case scmprovider.MergeCommitsForbiddenError:
+		return fmt.Errorf("keeper needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", origErr)
+	case scmprovider.UnmergablePRError:
+		return fmt.Errorf("PR is unmergable. Do the Keeper merge requirements match the SCM provider settings for the repo? %v", origErr)
+	default:
+		return origErr
+	}
 }
 
 // tryMerge attempts 1 merge and returns a bool indicating if we should try
@@ -1013,6 +1047,7 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 			// Successful merge!
 			return true, nil
 		}
+		detailedErr := mergeErrorDetail(err)
 		// TODO: Add a config option to abort batches if a PR in the batch
 		// cannot be merged for any reason. This would skip merging
 		// not just the changed PR, but also the other PRs in the batch.
@@ -1026,7 +1061,7 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 			// modifies their PR as we try to merge it in a batch then we
 			// end up in an untested state. This is unlikely to cause any
 			// real problems.
-			return true, fmt.Errorf("PR was modified: %v", err)
+			return true, detailedErr
 		} else if _, ok = err.(scmprovider.UnmergablePRBaseChangedError); ok {
 			//  complained that the base branch was modified. This is a
 			// strange error because the API doesn't even allow the request to
@@ -1036,7 +1071,7 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 			// in time. https://gitprovider.com/kubernetes/test-infra/issues/5171
 			// We handle this by sleeping for a few seconds before trying to
 			// merge again.
-			err = fmt.Errorf("base branch was modified: %v", err)
+			err = detailedErr
 			if retry+1 < maxRetries {
 				sleep(backoff)
 				backoff *= 2
@@ -1047,15 +1082,15 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 			// overzealous branch protection setting will not allow the robot to
 			// push to a specific branch.
 			// We won't be able to merge the other PRs.
-			return false, fmt.Errorf("branch needs to be configured to allow this robot to push: %v", err)
+			return false, detailedErr
 		} else if _, ok = err.(scmprovider.MergeCommitsForbiddenError); ok {
 			// GitHub let us know that the merge method configured for this repo
 			// is not allowed by other repo settings, so we should let the admins
 			// know that the configuration needs to be updated.
 			// We won't be able to merge the other PRs.
-			return false, fmt.Errorf("Keeper needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", err)
+			return false, detailedErr
 		} else if _, ok = err.(scmprovider.UnmergablePRError); ok {
-			return true, fmt.Errorf("PR is unmergable. Do the Keeper merge requirements match the GitHub settings for the repo? %v", err)
+			return true, detailedErr
 		}
 		return true, err
 	}
@@ -1256,6 +1291,24 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]config.Pres
 		}
 	}
 	return presubmits, nil
+}
+
+func (c *DefaultController) commentOnPRsWithFailedMerge(prs []PullRequest, errorString string) error {
+
+	commentBody := fmt.Sprintf("Failed to merge this PR due to:\n>%s\n", errorString)
+
+	var errs []error
+	for _, pr := range prs {
+		err := c.spc.CreateComment(string(pr.Repository.Owner.Login), string(pr.Repository.Name), int(pr.Number), true, commentBody)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Wrap(errorutil.NewAggregate(errs...), "error reporting on failed merges")
+	}
+	return nil
 }
 
 func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, error) {
