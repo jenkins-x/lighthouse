@@ -1030,7 +1030,7 @@ func mergeErrorDetail(origErr error) error {
 	case scmprovider.MergeCommitsForbiddenError:
 		return fmt.Errorf("keeper needs to be configured to use the 'rebase' merge method for this repo or the repo needs to allow merge commits: %v", origErr)
 	case scmprovider.UnmergablePRError:
-		return fmt.Errorf("PR is unmergable. Do the Keeper merge requirements match the GitHub settings for the repo? %v", origErr)
+		return fmt.Errorf("PR is unmergable. Do the Keeper merge requirements match the SCM provider settings for the repo? %v", origErr)
 	default:
 		return origErr
 	}
