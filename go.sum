@@ -627,8 +627,8 @@ github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/U
 github.com/jenkins-x/go-scm v1.5.65/go.mod h1:MgGRkJScE/rJ30J/bXYqduN5sDPZqZFITJopsnZmTOw=
 github.com/jenkins-x/go-scm v1.5.79/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
 github.com/jenkins-x/go-scm v1.5.117/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
-github.com/jenkins-x/go-scm v1.5.154 h1:LD/Pdx4O8JFTPKhFF/rrvWrw40+LPSA1V0w9eOLvuNk=
-github.com/jenkins-x/go-scm v1.5.154/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
+github.com/jenkins-x/go-scm v1.5.155 h1:mTUssRLKfm0mv5eOzJZ510RfpoWI7DaWSInNpQXurEs=
+github.com/jenkins-x/go-scm v1.5.155/go.mod h1:Gt1dJz1rH47GbMlL47mWkibKHAM5+htwzOpsGmEbvfg=
 github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb h1:woC0LbYpL9rgwZn13Z0KQBEGAmi9ugpWgWtQezHqsBM=
 github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb/go.mod h1:Erk5rrGYkvFlFAoVbz/7obMDEIUFCEbhK1odoR0Msqo=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
