@@ -149,8 +149,9 @@ func (c *Client) ServerURL() *url.URL {
 }
 
 // SupportsGraphQL returns true if the underlying provider supports our GraphQL queries
+// Currently, that means it has to be GitHub.
 func (c *Client) SupportsGraphQL() bool {
-	return c.client.GraphQL != nil
+	return c.client.Driver == scm.DriverGithub
 }
 
 // ProviderType returns the type of the underlying SCM provider
