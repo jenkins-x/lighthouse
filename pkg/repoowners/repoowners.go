@@ -233,12 +233,15 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 
 		excludeConfig := c.config.OwnersDirExcludes
 
-		dirExcludes := defaultDirExcludes.Union(sets.NewString(excludeConfig.Default...))
-		if bl, ok := excludeConfig.Repos[org]; ok {
-			dirExcludes.Insert(bl...)
-		}
-		if bl, ok := excludeConfig.Repos[org+"/"+repo]; ok {
-			dirExcludes.Insert(bl...)
+		dirExcludes := sets.NewString()
+		if excludeConfig != nil {
+			dirExcludes = defaultDirExcludes.Union(sets.NewString(excludeConfig.Default...))
+			if bl, ok := excludeConfig.Repos[org]; ok {
+				dirExcludes.Insert(bl...)
+			}
+			if bl, ok := excludeConfig.Repos[org+"/"+repo]; ok {
+				dirExcludes.Insert(bl...)
+			}
 		}
 		entry.owners, err = loadOwnersFrom(gitRepo.Dir, mdYaml, entry.aliases, dirExcludes, log)
 		if err != nil {
