@@ -22,6 +22,7 @@ type SCMClient interface {
 	SetBotName(string)
 	SupportsGraphQL() bool
 	ProviderType() string
+	PRRefFmt() string
 	SupportsPRLabels() bool
 	ServerURL() *url.URL
 	QuoteAuthorForComment(string) string
@@ -157,6 +158,18 @@ func (c *Client) SupportsGraphQL() bool {
 // ProviderType returns the type of the underlying SCM provider
 func (c *Client) ProviderType() string {
 	return c.client.Driver.String()
+}
+
+// PRRefFmt returns the "refs/(something)/%d/(something)" sprintf format used for constructing PR refs for this provider
+func (c *Client) PRRefFmt() string {
+	switch c.client.Driver {
+	case scm.DriverStash:
+		return "refs/pull-requests/%d/from"
+	case scm.DriverGitlab:
+		return "refs/merge-requests/%d/head"
+	default:
+		return "refs/pull/%d/head"
+	}
 }
 
 func (c *Client) repositoryName(owner string, repo string) string {

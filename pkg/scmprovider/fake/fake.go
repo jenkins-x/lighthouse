@@ -98,6 +98,11 @@ func (f *SCMClient) ProviderType() string {
 	return providerType
 }
 
+// PRRefFmt returns the PR ref format for the provider
+func (f *SCMClient) PRRefFmt() string {
+	return "refs/pull/%d/head"
+}
+
 // SupportsGraphQL returns whether the provider supports GraphQL
 func (f *SCMClient) SupportsGraphQL() bool {
 	return false

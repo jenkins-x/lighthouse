@@ -523,6 +523,10 @@ func (f *fgc) ProviderType() string {
 	return "fake"
 }
 
+func (f *fgc) PRRefFmt() string {
+	return "refs/pull/%d/head"
+}
+
 func (f *fgc) GetRepositoryByFullName(string) (*scm.Repository, error) {
 	return nil, scm.ErrNotSupported
 }

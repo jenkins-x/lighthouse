@@ -559,10 +559,11 @@ func TestCreateRefs(t *testing.T) {
 				Link:       "https://github.example.com/kubernetes/Hello-World/pull/42",
 				AuthorLink: "https://github.example.com/ibzib",
 				CommitLink: "https://github.example.com/kubernetes/Hello-World/pull/42/commits/123456",
+				Ref:        "refs/pull/42/head",
 			},
 		},
 	}
-	if actual := createRefs(pr, "abcdef"); !reflect.DeepEqual(expected, actual) {
+	if actual := createRefs(pr, "abcdef", "refs/pull/%d/head"); !reflect.DeepEqual(expected, actual) {
 		t.Errorf("diff between expected and actual refs:%s", diff.ObjectReflectDiff(expected, actual))
 	}
 }

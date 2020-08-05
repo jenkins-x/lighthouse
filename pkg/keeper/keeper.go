@@ -67,6 +67,7 @@ type scmProviderClient interface {
 	Query(context.Context, interface{}, map[string]interface{}) error
 	SupportsGraphQL() bool
 	ProviderType() string
+	PRRefFmt() string
 	GetRepositoryByFullName(string) (*scm.Repository, error)
 	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
 	CreateComment(owner, repo string, number int, isPR bool, comment string) error
@@ -1113,6 +1114,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 				Number: int(pr.Number),
 				Author: string(pr.Author.Login),
 				SHA:    string(pr.HeadRefOID),
+				Ref:    fmt.Sprintf(c.spc.PRRefFmt(), int(pr.Number)),
 			},
 		)
 	}

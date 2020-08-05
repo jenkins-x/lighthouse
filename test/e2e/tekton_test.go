@@ -102,7 +102,7 @@ func ChatOpsTests() bool {
 			err = applyPipelineAndTask()
 			Expect(err).ShouldNot(HaveOccurred())
 			ExpectCommandExecution(localClone.Dir, 1, 0, "kubectl", "apply", "-f",
-				"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-clone/0.1/git-clone.yaml")
+				"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-batch-merge/0.1/git-batch-merge.yaml")
 
 			By(fmt.Sprintf("creating and populating Lighthouse config for %s", repo.Clone))
 			cfg, pluginCfg, err := ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, config.TektonPipelineAgent)
