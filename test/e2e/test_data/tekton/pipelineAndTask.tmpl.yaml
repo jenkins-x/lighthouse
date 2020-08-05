@@ -40,6 +40,8 @@ spec:
           value: $(params.git-repo-url)
         - name: batchedRefs
           value: $(params.batch-refs)
+        - name: subdirectory
+          value: ""
     - name: run-script
       runAfter: ["fetch-repo"]
       taskRef:
