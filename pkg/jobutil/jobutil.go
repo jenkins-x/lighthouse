@@ -54,7 +54,7 @@ func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotat
 	}
 }
 
-func createRefs(pr *scm.PullRequest, baseSHA string) v1alpha1.Refs {
+func createRefs(pr *scm.PullRequest, baseSHA string, prRefFmt string) v1alpha1.Refs {
 	org := pr.Base.Repo.Namespace
 	repo := pr.Base.Repo.Name
 	number := pr.Number
@@ -77,6 +77,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string) v1alpha1.Refs {
 				Link:       pr.Link,
 				AuthorLink: pr.Author.Link,
 				CommitLink: fmt.Sprintf("%s/pull/%d/commits/%s", repoLink, number, pr.Head.Sha),
+				Ref:        fmt.Sprintf(prRefFmt, number),
 			},
 		},
 	}
@@ -85,8 +86,8 @@ func createRefs(pr *scm.PullRequest, baseSHA string) v1alpha1.Refs {
 // NewPresubmit converts a config.Presubmit into a builder.PipelineOptions.
 // The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a gitprovider.EventGUID label.
-func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string) v1alpha1.LighthouseJob {
-	refs := createRefs(pr, baseSHA)
+func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string, prRefFmt string) v1alpha1.LighthouseJob {
+	refs := createRefs(pr, baseSHA, prRefFmt)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
 		labels[k] = v

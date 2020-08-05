@@ -43,6 +43,10 @@ func TestSyncHandler(t *testing.T) {
 			name:       "update-job",
 			inputIsJob: false,
 		},
+		{
+			name:       "start-batch-pullrequest",
+			inputIsJob: true,
+		},
 	}
 
 	for _, tc := range testCases {

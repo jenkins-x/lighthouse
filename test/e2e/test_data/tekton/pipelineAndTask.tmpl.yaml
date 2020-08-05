@@ -24,22 +24,22 @@ spec:
   params:
     - name: git-repo-url
       type: string
-    - name: git-revision
+    - name: batch-refs
       type: string
   workspaces:
     - name: shared-data
   tasks:
     - name: fetch-repo
       taskRef:
-        name: git-clone
+        name: git-batch-merge
       workspaces:
         - name: output
           workspace: shared-data
       params:
         - name: url
           value: $(params.git-repo-url)
-        - name: revision
-          value: $(params.git-revision)
+        - name: batchedRefs
+          value: $(params.batch-refs)
     - name: run-script
       runAfter: ["fetch-repo"]
       taskRef:

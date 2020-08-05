@@ -52,6 +52,10 @@ func (c *fakeClient) ProviderType() string {
 	return "fake"
 }
 
+func (c *fakeClient) PRRefFmt() string {
+	return "refs/pull/%d/head"
+}
+
 func (c *fakeClient) IsOrgAdmin(org, user string) (bool, error) {
 	return false, nil
 }

@@ -49,6 +49,8 @@ const (
 	gitCloneCatalogTaskName = "git-clone"
 	gitCloneURLParam        = "url"
 	gitCloneRevisionParam   = "revision"
+	gitMergeCatalogTaskName = "git-batch-merge"
+	gitMergeBatchRefsParam  = "batchedRefs"
 )
 
 // Controller listens for changes to PipelineRuns and updates the corresponding LighthouseJobs with their activity
@@ -509,18 +511,30 @@ func (c *Controller) makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.
 	// Add parameters instead of env vars.
 	env := lj.Spec.GetEnvVars()
 	env[v1alpha1.BuildIDEnv] = buildID
-	urlParamKey, revParamKey, err := determineGitCloneTaskParams(&p, c.tektonClient)
+	paramNames, err := determineGitCloneOrMergeTaskParams(&p, c.tektonClient)
 	if err != nil {
 		return nil, err
 	}
-	if urlParamKey == "" || revParamKey == "" {
-		c.logger.Warnf("git-clone task parameters not found in Pipeline for PipelineRun, so skipping setting PipelineRun parameters for revision")
+	if paramNames == nil {
+		c.logger.Warnf("git-clone and/or git-batch-merge task parameters not found in Pipeline for PipelineRun, so skipping setting PipelineRun parameters for revision")
 	} else {
-		env[urlParamKey] = lj.Spec.Refs.CloneURI
-		if len(lj.Spec.Refs.Pulls) > 0 {
-			env[revParamKey] = lj.Spec.Refs.Pulls[0].SHA
-		} else {
-			env[revParamKey] = "master"
+		env[paramNames.urlParam] = lj.Spec.Refs.CloneURI
+		if paramNames.revParam != "" {
+			if len(lj.Spec.Refs.Pulls) > 0 {
+				env[paramNames.revParam] = lj.Spec.Refs.Pulls[0].SHA
+			} else {
+				env[paramNames.revParam] = "master"
+			}
+		}
+		if paramNames.baseRevisionParam != "" {
+			env[paramNames.baseRevisionParam] = lj.Spec.Refs.BaseRef
+		}
+		if paramNames.batchedRefsParam != "" {
+			var batchedRefsVals []string
+			for _, pull := range lj.Spec.Refs.Pulls {
+				batchedRefsVals = append(batchedRefsVals, pull.Ref)
+			}
+			env[paramNames.batchedRefsParam] = strings.Join(batchedRefsVals, " ")
 		}
 	}
 	for _, key := range sets.StringKeySet(env).List() {
@@ -538,13 +552,20 @@ func (c *Controller) makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.
 	return &p, nil
 }
 
-func determineGitCloneTaskParams(pr *tektonv1beta1.PipelineRun, tektonClient tektonclient.Interface) (string, string, error) {
+type gitTaskParamNames struct {
+	urlParam          string
+	revParam          string
+	batchedRefsParam  string
+	baseRevisionParam string
+}
+
+func determineGitCloneOrMergeTaskParams(pr *tektonv1beta1.PipelineRun, tektonClient tektonclient.Interface) (*gitTaskParamNames, error) {
 	if pr == nil {
-		return "", "", errors.New("provided PipelineRun is nil")
+		return nil, errors.New("provided PipelineRun is nil")
 	}
 
 	if pr.Spec.PipelineSpec == nil && pr.Spec.PipelineRef == nil {
-		return "", "", errors.New("neither PipelineSpec nor PipelineRef specified for PipelineRun")
+		return nil, errors.New("neither PipelineSpec nor PipelineRef specified for PipelineRun")
 	}
 	var pipelineSpec *tektonv1beta1.PipelineSpec
 
@@ -553,31 +574,51 @@ func determineGitCloneTaskParams(pr *tektonv1beta1.PipelineRun, tektonClient tek
 	} else {
 		pipeline, err := tektonClient.TektonV1beta1().Pipelines(pr.Namespace).Get(pr.Spec.PipelineRef.Name, metav1.GetOptions{})
 		if err != nil {
-			return "", "", errors.Wrapf(err, "failed to find Pipeline %s for PipelineRun", pr.Spec.PipelineRef.Name)
+			return nil, errors.Wrapf(err, "failed to find Pipeline %s for PipelineRun", pr.Spec.PipelineRef.Name)
 		}
 		pipelineSpec = &pipeline.Spec
 	}
 
+	paramNames := &gitTaskParamNames{}
+
 	for _, task := range pipelineSpec.Tasks {
-		if task.TaskRef != nil && task.TaskRef.Name == gitCloneCatalogTaskName {
-			urlParam := ""
-			revParam := ""
-			for _, p := range task.Params {
-				if p.Name == gitCloneURLParam && p.Value.Type == tektonv1beta1.ParamTypeString {
-					urlParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
+		if task.TaskRef != nil {
+			if task.TaskRef.Name == gitCloneCatalogTaskName {
+				for _, p := range task.Params {
+					if p.Name == gitCloneURLParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+						paramNames.urlParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
+					}
+					if p.Name == gitCloneRevisionParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+						paramNames.revParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
+					}
 				}
-				if p.Name == gitCloneRevisionParam && p.Value.Type == tektonv1beta1.ParamTypeString {
-					revParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
+
+				if paramNames.urlParam != "" && paramNames.revParam != "" {
+					return paramNames, nil
 				}
 			}
+			if task.TaskRef.Name == gitMergeCatalogTaskName {
+				for _, p := range task.Params {
+					if p.Name == gitCloneURLParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+						paramNames.urlParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
+					}
+					if p.Name == gitCloneRevisionParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+						paramNames.baseRevisionParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
+					}
+					if p.Name == gitMergeBatchRefsParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+						paramNames.batchedRefsParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
+					}
+				}
 
-			if urlParam != "" && revParam != "" {
-				return urlParam, revParam, nil
+				if paramNames.urlParam != "" && paramNames.batchedRefsParam != "" {
+					return paramNames, nil
+				}
+
 			}
 		}
 	}
 
-	return "", "", nil
+	return nil, nil
 }
 
 func extractPipelineParamFromTaskParamValue(taskParam string) string {

@@ -51,6 +51,7 @@ type scmProviderClient interface {
 	HasPermission(org, repo, user string, role ...string) (bool, error)
 	ListStatuses(org, repo, ref string) ([]*scm.Status, error)
 	ProviderType() string
+	PRRefFmt() string
 	IsOrgAdmin(string, string) (bool, error)
 	QuoteAuthorForComment(string) string
 }
@@ -79,6 +80,10 @@ func (c client) createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.Lighth
 
 func (c client) ProviderType() string {
 	return c.spc.ProviderType()
+}
+
+func (c client) PRRefFmt() string {
+	return c.spc.PRRefFmt()
 }
 
 func (c client) IsOrgAdmin(org, user string) (bool, error) {
@@ -270,7 +275,7 @@ Only the following contexts were expected:
 				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
 			}
 
-			pj := jobutil.NewPresubmit(pr, baseSHA, *pre, e.GUID)
+			pj := jobutil.NewPresubmit(pr, baseSHA, *pre, e.GUID, oc.PRRefFmt())
 			now := metav1.Now()
 			pj.Status = v1alpha1.LighthouseJobStatus{
 				State:          v1alpha1.SuccessState,

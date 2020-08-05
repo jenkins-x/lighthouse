@@ -108,6 +108,7 @@ type scmProviderClient interface {
 	DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 	QuoteAuthorForComment(string) string
+	PRRefFmt() string
 }
 
 type launcher interface {
@@ -255,7 +256,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 	var errors []error
 	for _, job := range requestedJobs {
 		c.Logger.Infof("Starting %s build.", job.Name)
-		pj := jobutil.NewPresubmit(pr, baseSHA, job, eventGUID)
+		pj := jobutil.NewPresubmit(pr, baseSHA, job, eventGUID, c.SCMProviderClient.PRRefFmt())
 		c.Logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
 		if _, err := c.LauncherClient.Launch(&pj); err != nil {
 			c.Logger.WithError(err).Error("Failed to create LighthouseJob.")
