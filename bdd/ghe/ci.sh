@@ -96,7 +96,7 @@ jx step bdd \
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
   pushd ..
-  bash bdd/capture-failed-pod-logs.sh
+  bash bdd/capture-failed-pod-logs.sh jx
   popd
 fi
 cd ../charts/lighthouse
