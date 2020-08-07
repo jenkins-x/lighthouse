@@ -133,6 +133,14 @@ func ChatOpsTests() bool {
 				err = ioutil.WriteFile(newFile, []byte("Hello world"), 0600)
 				ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
 
+				changedScriptFile := filepath.Join("test_data", "passingRepoScript.sh")
+				changedScript, err := ioutil.ReadFile(changedScriptFile) /* #nosec */
+				Expect(err).ShouldNot(HaveOccurred())
+
+				scriptOutputFile := filepath.Join(localClone.Dir, "script.sh")
+				err = ioutil.WriteFile(scriptOutputFile, changedScript, 0600)
+				Expect(err).ShouldNot(HaveOccurred())
+
 				ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
 
 				err = localClone.Push(repo.Name, prBranch)
