@@ -51,6 +51,9 @@ CLUSTER_NAME=$( echo ${BRANCH_NAME,,}-${BUILD_ID,,}-lh-tekton-e2e )
 
 dateLabel=$(date "+%a-%b-%d-%Y-%H-%M-%S")
 
+# Update gcloud so we can do --release-channel
+gcloud components update -q
+
 # Activate the service account json provided by the pipeline, if it exists
 if [ -n "${GKE_SA}" ]; then
   gcloud auth activate-service-account --key-file "${GKE_SA}"
