@@ -3,6 +3,8 @@ git:
   name: github
   server: ""
 
+lighthouseJobNamespace: ""
+
 githubApp:
   enabled: false
   username:  "jenkins-x[bot]"
@@ -156,3 +158,13 @@ hook:
     annotations:
     tls:
       secretName: ""
+
+configMaps:
+  create: false
+  configUpdater:
+    orgAndRepo: ""
+    path: ""
+  # Example of specifying config-updater repository, which should contain "config.yaml" and "plugins.yaml" in the given path.
+  # configUpdater:
+  #   orgAndRepo: foo/bar
+  #   path: a/b/c

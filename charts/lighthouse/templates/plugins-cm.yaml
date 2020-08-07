@@ -1,0 +1,57 @@
+{{- /*
+Only create the "config" ConfigMap on install, so that we don't overwrite it on upgrade.
+*/ -}}
+{{- if and .Values.configMaps.create (not .Release.IsUpgrade) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plugins
+  labels:
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+data:
+  plugins.yaml: |
+    approve:
+    - lgtm_acts_as_approve: true
+      repos: []
+      require_self_approval: true
+    blunderbuss: {}
+    cat: {}
+    cherry_pick_unapproved: {}
+    config_updater:
+      gzip: false
+{{- if ne .Values.configMaps.configUpdater.path "" }}
+      maps:
+        {{ .Values.configMaps.configUpdater.path }}/config.yaml:
+          name: config
+        {{ .Values.configMaps.configUpdater.path }}/plugins.yaml:
+          name: plugins
+{{- else }}
+      maps: {}
+{{- end }}
+    external_plugins: {}
+    heart: {}
+    label:
+      additional_labels: null
+    owners: {}
+{{- if ne .Values.configMaps.configUpdater.orgAndRepo }}
+    plugins:
+      {{ .Values.configMaps.configUpdater.orgAndRepo }}:
+      - config-updater
+{{- else }}
+    plugins: {}
+{{- end }}
+    requiresig: {}
+    sigmention: {}
+    size:
+      l: 0
+      m: 0
+      s: 0
+      xl: 0
+      xxl: 0
+    slack: {}
+    triggers: []
+    welcome:
+    - message_template: Welcome
+{{- end }}
