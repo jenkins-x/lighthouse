@@ -1,0 +1,58 @@
+{{- /*
+Only create the "config" ConfigMap on install, so that we don't overwrite it on upgrade.
+*/ -}}
+{{- if and .Values.configMaps.create (not .Release.IsUpgrade) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  labels:
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+data:
+  config.yaml: |
+    branch-protection:
+      orgs: {}
+      protect-tested-repos: true
+    deck:
+      spyglass: {}
+    gerrit: {}
+    github:
+      LinkURL: null
+    owners_dir_excludes:
+      default: null
+      repos: null
+    plank: {}
+{{- if ne .Values.lighthouseJobNamespace "" }}
+    pod_namespace: {{ .Values.lighthouseJobNamespace }}
+{{- else }}
+    pod_namespace: {{ .Release.Namespace }}
+{{- end }}
+    postsubmits: {}
+    presubmits: {}
+{{- if ne .Values.lighthouseJobNamespace "" }}
+    prowjob_namespace: {{ .Values.lighthouseJobNamespace }}
+{{- else }}
+    prowjob_namespace: {{ .Release.Namespace }}
+{{- end }}
+    push_gateway:
+      serve_metrics: false
+    sinker: {}
+    tide:
+      context_options:
+        from-branch-protection: true
+        required-if-present-contexts: []
+        skip-unknown-contexts: false
+      merge_method: {}
+      queries:
+      - labels:
+        - approved
+        missingLabels:
+        - do-not-merge
+        - do-not-merge/hold
+        - do-not-merge/work-in-progress
+        - needs-ok-to-test
+        - needs-rebase
+        repos: []
+{{- end }}

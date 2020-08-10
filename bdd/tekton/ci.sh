@@ -106,8 +106,20 @@ gomplate -f bdd/tekton/values.yaml.template -o myvalues.yaml
 # helm 3 is installed on jx builders as "helm3", and that's what we want to use to install here.
 helm3 install -f myvalues.yaml --namespace lh-test lighthouse charts/lighthouse
 
+# Make sure we didn't create the config ConfigMap, since that should only be created if explicitly specified
+set +e
+if kubectl get configmap config ; then
+  echo "Shouldn't have gotten the 'config' ConfigMap, but did"
+  exit 1
+fi
+
 # Run the test - we probably want something here to capture controller logs but we'll deal with that in a bit.
 make run-e2e-tests
 
-# Mark the cluster to be GC'd if we got this far and the tests passed
-gcloud container clusters update "${CLUSTER_NAME}" --project=jenkins-x-bdd3 --zone=europe-west1-c --update-labels=delete-me=true
+bdd_result=$?
+if [[ $bdd_result != 0 ]]; then
+  bash bdd/capture-failed-pod-logs.sh tekton
+else
+  # Mark the cluster to be GC'd if we got this far and the tests passed
+  gcloud container clusters update "${CLUSTER_NAME}" --project=jenkins-x-bdd3 --zone=europe-west1-c --update-labels=delete-me=true
+fi
