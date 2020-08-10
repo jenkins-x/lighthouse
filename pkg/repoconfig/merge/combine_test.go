@@ -3,8 +3,8 @@ package merge_test
 import (
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig/merge"
-	"github.com/jenkins-x/lighthouse/pkg/repoconfig/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

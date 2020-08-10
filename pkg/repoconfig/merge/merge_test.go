@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig/merge"
-	"github.com/jenkins-x/lighthouse/pkg/repoconfig/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/yaml"

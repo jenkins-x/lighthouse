@@ -1,9 +1,9 @@
 package merge
 
 import (
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/repoconfig/v1alpha1"
 )
 
 // ToPresubmit converts the repo config to the lighthouse config resource

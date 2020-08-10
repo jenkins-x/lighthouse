@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig/merge"
-	"github.com/jenkins-x/lighthouse/pkg/repoconfig/v1alpha1"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 )
