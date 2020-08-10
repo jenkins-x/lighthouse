@@ -2,6 +2,10 @@
 
 A lightweight ChatOps based webhook handler which can trigger Jenkins X Pipelines and soon Tekton Pipelines based on webhooks from multiple git providers such as: GitHub, GitHub Enterprise, BitBucket Server, BitBucket Cloud, GitLab, Gitea etc
 
+## Installing without Jenkins X
+
+See [the install guide](https://github.com/jenkins-x/lighthouse/blob/master/docs/INSTALL.md).
+
 ## Building
 
 To build the code clone git then type:

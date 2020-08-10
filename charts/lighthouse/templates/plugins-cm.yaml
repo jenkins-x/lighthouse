@@ -15,6 +15,8 @@ data:
     approve:
     - lgtm_acts_as_approve: true
       repos: []
+      # repos are specified here as:
+      # - org/repo
       require_self_approval: true
     blunderbuss: {}
     cat: {}
@@ -42,6 +44,21 @@ data:
 {{- else }}
     plugins: {}
 {{- end }}
+    # Example of configuration for a repository
+    # org/repo:
+    #   - approve
+    #   - assign
+    #   - help
+    #   - hold
+    #   - lgtm
+    #   - lifecycle
+    #   - override
+    #   - size
+    #   - trigger
+    #   - wip
+    #   - cat
+    #   - dog
+    #   - pony
     requiresig: {}
     sigmention: {}
     size:
@@ -52,6 +69,10 @@ data:
       xxl: 0
     slack: {}
     triggers: []
+    # Example triggers configuration:
+    # - repos:
+    #     - org/repo
+    #   trusted_org: org
     welcome:
     - message_template: Welcome
 {{- end }}
