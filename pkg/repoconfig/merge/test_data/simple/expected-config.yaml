@@ -1,0 +1,44 @@
+branch-protection:
+  orgs:
+    myorg:
+      repos:
+        myowner:
+          required_status_checks:
+            contexts:
+            - lint
+deck:
+  spyglass: {}
+gerrit: {}
+github:
+  LinkURL: null
+owners_dir_blacklist:
+  default: null
+  repos: null
+plank: {}
+postsubmits:
+  myorg/myowner:
+  - agent: ""
+    context: release
+    name: release
+presubmits:
+  myorg/myowner:
+  - agent: ""
+    always_run: true
+    context: lint
+    name: lint
+    rerun_command: /relint
+    trigger: /lint
+push_gateway:
+  serve_metrics: false
+sinker: {}
+tide:
+  context_options:
+    required-if-present-contexts: null
+  queries:
+  - labels:
+    - mylabel
+    missingLabels:
+    - foo
+    - bar
+    repos:
+    - myorg/myowner

@@ -1,0 +1,38 @@
+apiVersion: config.lighthouse.jenkins-x.io/v1alpha1
+kind: RepositoryConfig
+spec:
+  presubmits:
+  - name: lint
+    context: "lint"
+    alwaysRun: true
+    optional: false
+    trigger: "/lint"
+    rerunCommand: "/relint"
+  postsubmits:
+  - name: release
+    context: "release"
+  branchProtection:
+    contexts:
+    - lint
+  pluginConfig:
+    plugins:
+    - approve
+    - assign
+    - help
+    - hold
+    - lgtm
+    - lifecycle
+    - size
+    - trigger
+    - wip
+    - heart
+    approve:
+      lgtmActsAsApprove: false
+      requireSelfApproval: false
+  keeper:
+    query:
+      labels:
+      - mylabel
+      missingLabels:
+      - foo
+      - bar
