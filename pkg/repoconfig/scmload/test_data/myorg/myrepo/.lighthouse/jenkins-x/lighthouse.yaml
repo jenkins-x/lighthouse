@@ -1,0 +1,17 @@
+apiVersion: config.lighthouse.jenkins-x.io/v1alpha1
+kind: RepositoryConfig
+spec:
+  presubmits:
+  - name: test
+    context: "test"
+    alwaysRun: true
+    optional: false
+    trigger: "/test"
+    rerunCommand: "/retest"
+  postsubmits:
+  - name: release
+    context: "release"
+  branchProtection:
+    contexts:
+    - test
+

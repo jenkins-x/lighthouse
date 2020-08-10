@@ -1,0 +1,49 @@
+approve:
+- lgtm_acts_as_approve: true
+  repos:
+  - someorg/somerepo
+  require_self_approval: true
+blunderbuss: {}
+cat: {}
+cherry_pick_unapproved: {}
+config_updater:
+  maps:
+    env/prow/config.yaml:
+      name: config
+    env/prow/plugins.yaml:
+      name: plugins
+heart: {}
+label:
+  additional_labels: null
+owners: {}
+plugins:
+  someorg/somerepo:
+  - config-updater
+  - approve
+  - assign
+  - blunderbuss
+  - help
+  - hold
+  - lgtm
+  - lifecycle
+  - size
+  - trigger
+  - wip
+  - heart
+  - cat
+  - override
+  - dog
+  - pony
+requiresig: {}
+sigmention: {}
+size:
+  l: 0
+  m: 0
+  s: 0
+  xl: 0
+  xxl: 0
+slack: {}
+triggers:
+- repos:
+  - someorg/somerepo
+  trusted_org: someorg
