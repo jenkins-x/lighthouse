@@ -48,17 +48,21 @@ data:
     # org/repo:
     #   - approve
     #   - assign
+    #   - cat
+    #   - dog
     #   - help
     #   - hold
+    #   - label
     #   - lgtm
     #   - lifecycle
     #   - override
+    #   - pony
+    #   - shrug
     #   - size
+    #   - skip
     #   - trigger
     #   - wip
-    #   - cat
-    #   - dog
-    #   - pony
+    #   - yuks
     requiresig: {}
     sigmention: {}
     size:

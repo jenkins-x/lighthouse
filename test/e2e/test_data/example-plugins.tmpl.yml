@@ -15,7 +15,6 @@ plugins:
   {{ .Owner }}/{{ .Repo }}:
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -28,6 +27,10 @@ plugins:
   - cat
   - dog
   - pony
+  - label
+  - yuks
+  - shrug
+  - skip
 requiresig: {}
 sigmention: {}
 size:
