@@ -17,13 +17,16 @@ limitations under the License.
 package updateconfig
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"fmt"
 	"path"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/jenkins-x/go-scm/scm"
+	config2 "github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	zglob "github.com/mattn/go-zglob"
@@ -32,10 +35,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"sigs.k8s.io/yaml"
 )
 
 const (
-	pluginName = "config-updater"
+	pluginName                     = "config-updater"
+	configUpdaterContextName       = "Lighthouse Config Updater"
+	configUpdaterContextMsgFailed  = "Validation errors in config map file(s)"
+	configUpdaterContextMsgSuccess = "Validation successful"
+	configUpdaterMsgPruneMatch     = "Validation error founds in config map file(s):"
 )
 
 func init() {
@@ -63,12 +71,22 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, isPR bool, comment string) error
+	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetFile(org, repo, filepath, commit string) ([]byte, error)
 }
 
+type commentPruner interface {
+	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
+}
+
 func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
-	return handle(pc.SCMProviderClient, pc.KubernetesClient.CoreV1(), pc.Config.LighthouseJobNamespace, pc.Logger, pre, pc.PluginConfig.ConfigUpdater)
+	cp, err := pc.CommentPruner()
+	if err != nil {
+		return err
+	}
+
+	return handle(pc.SCMProviderClient, pc.KubernetesClient.CoreV1(), cp, pc.Config.LighthouseJobNamespace, pc.Logger, pre, pc.PluginConfig.ConfigUpdater)
 }
 
 // FileGetter knows how to get the contents of a file by name
@@ -83,6 +101,11 @@ type scmFileGetter struct {
 
 func (g *scmFileGetter) GetFile(filename string) ([]byte, error) {
 	return g.client.GetFile(g.org, g.repo, filename, g.commit)
+}
+
+type configValidateResults struct {
+	cmName string
+	err    error
 }
 
 // Update updates the configmap with the data from the identified files
@@ -120,7 +143,7 @@ func Update(fg FileGetter, kc corev1.ConfigMapInterface, name, namespace string,
 		if err != nil {
 			return fmt.Errorf("get file err: %v", err)
 		}
-		logger.WithFields(logrus.Fields{"key": upd.Key, "filename": upd.Filename}).Debug("Populating key.")
+		logger.WithFields(logrus.Fields{"key": upd.Key, "cmName": upd.Filename}).Debug("Populating key.")
 		value := content
 		if upd.GZIP {
 			buff := bytes.NewBuffer([]byte{})
@@ -175,7 +198,7 @@ type ConfigMapUpdate struct {
 }
 
 // FilterChanges determines which of the changes are relevant for config updating, returning mapping of
-// config map to key to filename to update that key from.
+// config map to key to cmName to update that key from.
 func FilterChanges(cfg plugins.ConfigUpdater, changes []*scm.Change, log *logrus.Entry) map[ConfigMapID][]ConfigMapUpdate {
 	toUpdate := map[ConfigMapID][]ConfigMapUpdate{}
 	for _, change := range changes {
@@ -210,7 +233,7 @@ func FilterChanges(cfg plugins.ConfigUpdater, changes []*scm.Change, log *logrus
 				// if the key changed, we need to remove the old key
 				if change.Renamed {
 					oldKey := path.Base(change.PreviousPath)
-					// not setting the filename field will cause the key to be
+					// not setting the cmName field will cause the key to be
 					// deleted
 					toUpdate[id] = append(toUpdate[id], ConfigMapUpdate{Key: oldKey})
 				}
@@ -229,9 +252,23 @@ func FilterChanges(cfg plugins.ConfigUpdater, changes []*scm.Change, log *logrus
 	return toUpdate
 }
 
-func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, defaultNamespace string, log *logrus.Entry, pre scm.PullRequestHook, config plugins.ConfigUpdater) error {
-	// Only consider newly merged PRs
-	if pre.Action != scm.ActionClose {
+func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, cp commentPruner, defaultNamespace string, log *logrus.Entry, pre scm.PullRequestHook, config plugins.ConfigUpdater) error {
+	// Only consider PRs with relevant actions
+	isMerge := false
+	isUpdate := false
+
+	switch pre.Action {
+	case scm.ActionClose:
+		isMerge = true
+	case scm.ActionOpen, scm.ActionReopen, scm.ActionSync:
+		isUpdate = true
+	case scm.ActionEdited, scm.ActionUpdate:
+		changes := pre.Changes
+		if changes.Base.Ref.From != "" || changes.Base.Sha.From != "" {
+			isUpdate = true
+		}
+	}
+	if !isMerge && !isUpdate {
 		return nil
 	}
 
@@ -241,7 +278,7 @@ func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, defaultNamespace 
 
 	pr := pre.PullRequest
 
-	if !pr.Merged || pr.MergeSha == "" || pr.Base.Repo.Branch != pr.Base.Ref {
+	if isMerge && (!pr.Merged || pr.MergeSha == "" || pr.Base.Repo.Branch != pr.Base.Ref) {
 		return nil
 	}
 
@@ -254,52 +291,130 @@ func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, defaultNamespace 
 		return err
 	}
 
-	message := func(name, namespace string, updates []ConfigMapUpdate, indent string) string {
-		identifier := fmt.Sprintf("`%s` configmap", name)
-		if namespace != "" {
-			identifier = fmt.Sprintf("%s in namespace `%s`", identifier, namespace)
-		}
-		msg := fmt.Sprintf("%s using the following files:", identifier)
-		for _, u := range updates {
-			msg = fmt.Sprintf("%s\n%s- key `%s` using file `%s`", msg, indent, u.Key, u.Filename)
-		}
-		return msg
-	}
-
 	// Are any of the changes files ones that define a configmap we want to update?
 	toUpdate := FilterChanges(config, changes, log)
 
-	var updated []string
-	indent := " " // one space
-	if len(toUpdate) > 1 {
-		indent = "   " // three spaces for sub bullets
-	}
-	for cm, data := range toUpdate {
-		if cm.Namespace == "" {
-			cm.Namespace = defaultNamespace
+	if isMerge {
+		message := func(name, namespace string, updates []ConfigMapUpdate, indent string) string {
+			identifier := fmt.Sprintf("`%s` configmap", name)
+			if namespace != "" {
+				identifier = fmt.Sprintf("%s in namespace `%s`", identifier, namespace)
+			}
+			msg := fmt.Sprintf("%s using the following files:", identifier)
+			for _, u := range updates {
+				msg = fmt.Sprintf("%s\n%s- key `%s` using file `%s`", msg, indent, u.Key, u.Filename)
+			}
+			return msg
 		}
-		logger := log.WithFields(logrus.Fields{"configmap": map[string]string{"name": cm.Name, "namespace": cm.Namespace}})
-		if err := Update(&scmFileGetter{org: org, repo: repo, commit: pr.MergeSha, client: spc}, kc.ConfigMaps(cm.Namespace), cm.Name, cm.Namespace, data, logger); err != nil {
-			return err
-		}
-		updated = append(updated, message(cm.Name, cm.Namespace, data, indent))
-	}
 
-	var msg string
-	switch n := len(updated); n {
-	case 0:
+		var updated []string
+		indent := " " // one space
+		if len(toUpdate) > 1 {
+			indent = "   " // three spaces for sub bullets
+		}
+		for cm, data := range toUpdate {
+			if cm.Namespace == "" {
+				cm.Namespace = defaultNamespace
+			}
+			logger := log.WithFields(logrus.Fields{"configmap": map[string]string{"name": cm.Name, "namespace": cm.Namespace}})
+			if err := Update(&scmFileGetter{org: org, repo: repo, commit: pr.MergeSha, client: spc}, kc.ConfigMaps(cm.Namespace), cm.Name, cm.Namespace, data, logger); err != nil {
+				return err
+			}
+			updated = append(updated, message(cm.Name, cm.Namespace, data, indent))
+		}
+
+		var msg string
+		switch n := len(updated); n {
+		case 0:
+			return nil
+		case 1:
+			msg = fmt.Sprintf("Updated the %s", updated[0])
+		default:
+			msg = fmt.Sprintf("Updated the following %d configmaps:\n", n)
+			for _, updateMsg := range updated {
+				msg += fmt.Sprintf(" * %s\n", updateMsg) // one space indent
+			}
+		}
+
+		if err := spc.CreateComment(org, repo, pr.Number, true, plugins.FormatResponseRaw(pr.Body, pr.Link, pr.Author.Login, msg)); err != nil {
+			return fmt.Errorf("comment err: %v", err)
+		}
 		return nil
-	case 1:
-		msg = fmt.Sprintf("Updated the %s", updated[0])
-	default:
-		msg = fmt.Sprintf("Updated the following %d configmaps:\n", n)
-		for _, updateMsg := range updated {
-			msg += fmt.Sprintf(" * %s\n", updateMsg) // one space indent
+	}
+
+	var validationErrors []string
+
+	for cm, data := range toUpdate {
+		fg := &scmFileGetter{
+			org:    org,
+			repo:   repo,
+			commit: pr.MergeSha,
+			client: spc,
+		}
+
+		logger := log.WithFields(logrus.Fields{"configmap": map[string]string{"name": cm.Name, "namespace": cm.Namespace}})
+		for _, upd := range data {
+			content, err := fg.GetFile(upd.Filename)
+			if err != nil {
+				validationErrors = append(validationErrors, fmt.Sprintf("reading file %s: %s", upd.Filename, err.Error()))
+				break
+			}
+			logger.WithFields(logrus.Fields{"key": upd.Key, "cmName": upd.Filename, "configmap": cm.Name}).Debug("Validating data.")
+
+			var yamlErr error
+			switch cm.Name {
+			case "config":
+				_, yamlErr = config2.LoadYAMLConfig(content)
+			case "plugins":
+				ca := &plugins.ConfigAgent{}
+				_, yamlErr = ca.LoadYAMLConfig(content)
+			default:
+				m := make(map[interface{}]interface{})
+				yamlErr = yaml.Unmarshal(content, &m)
+			}
+			if yamlErr != nil {
+				validationErrors = append(validationErrors, fmt.Sprintf("In file %s for config map %s:\n%s", upd.Filename, cm.Name, indentErrMsg(yamlErr)))
+			}
 		}
 	}
 
-	if err := spc.CreateComment(org, repo, pr.Number, true, plugins.FormatResponseRaw(pr.Body, pr.Link, pr.Author.Login, msg)); err != nil {
-		return fmt.Errorf("comment err: %v", err)
+	cp.PruneComments(true, func(comment *scm.Comment) bool {
+		return strings.Contains(comment.Body, configUpdaterMsgPruneMatch)
+	})
+
+	var statusInput *scm.StatusInput
+	message := ""
+
+	if len(validationErrors) > 0 {
+		statusInput = &scm.StatusInput{
+			State: scm.StateFailure,
+			Label: configUpdaterContextName,
+			Desc:  configUpdaterContextMsgFailed,
+		}
+		message = fmt.Sprintf("%s\n\n%s", configUpdaterMsgPruneMatch, strings.Join(validationErrors, "\n\n---\n\n"))
+	} else {
+		statusInput = &scm.StatusInput{
+			State: scm.StateSuccess,
+			Label: configUpdaterContextName,
+			Desc:  configUpdaterContextMsgSuccess,
+		}
+	}
+
+	if _, err := spc.CreateStatus(org, repo, pr.Head.Sha, statusInput); err != nil {
+		resp := fmt.Sprintf("Cannot update PR status for context %s", statusInput.Label)
+		log.WithError(err).Warn(resp)
+	}
+	if message != "" {
+		return spc.CreateComment(org, repo, pr.Number, true, message)
 	}
 	return nil
+}
+
+func indentErrMsg(err error) string {
+	var lines []string
+	sc := bufio.NewScanner(strings.NewReader(err.Error()))
+	for sc.Scan() {
+		lines = append(lines, "> "+sc.Text())
+	}
+	return strings.Join(lines, "\n")
 }

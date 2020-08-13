@@ -3,6 +3,8 @@ package v1alpha1
 import (
 	"regexp"
 
+	"time"
+
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	v1 "k8s.io/api/core/v1"
 )
@@ -25,10 +27,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-import (
-	"time"
-)
 
 // this file contains copies of structs from the config package
 // using different JSON/YAML marshalling so that they look like

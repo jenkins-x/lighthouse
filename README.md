@@ -1,6 +1,6 @@
 # Lighthouse
 
-A lightweight ChatOps based webhook handler which can trigger Jenkins X Pipelines and soon Tekton Pipelines based on webhooks from multiple git providers such as: GitHub, GitHub Enterprise, BitBucket Server, BitBucket Cloud, GitLab, Gitea etc
+A lightweight ChatOps based webhook handler which can trigger Jenkins X Pipelines and Tekton Pipelines based on webhooks from multiple git providers such as: GitHub, GitHub Enterprise, BitBucket Server and GitLab
 
 ## Installing without Jenkins X
 
