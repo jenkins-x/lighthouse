@@ -146,7 +146,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 }
 
 func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
-	baseURL, err := url.Parse(ce.Link)
+	baseURL, err := url.Parse(ce.IssueLink)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse URL %s", ce.Link)
 	}

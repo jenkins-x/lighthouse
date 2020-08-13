@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
@@ -138,4 +140,20 @@ func GetSCMToken(gitKind string) (string, error) {
 // HMACToken gets the HMAC token from the environment
 func HMACToken() string {
 	return os.Getenv("HMAC_TOKEN")
+}
+
+// BlobURLForProvider gets the link to the blob for an individual file in a commit or branch
+func BlobURLForProvider(providerType string, baseURL *url.URL, owner, repo, branch string, fullPath string) string {
+	switch providerType {
+	case "stash":
+		u := fmt.Sprintf("%s/projects/%s/repos/%s/browse/%v", strings.TrimSuffix(baseURL.String(), "/"), strings.ToUpper(owner), repo, fullPath)
+		if branch != "master" {
+			u = fmt.Sprintf("%s?at=%s", u, url.QueryEscape("refs/heads/"+branch))
+		}
+		return u
+	case "gitlab":
+		return fmt.Sprintf("%s/%s/%s/-/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
+	default:
+		return fmt.Sprintf("%s/%s/%s/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
+	}
 }

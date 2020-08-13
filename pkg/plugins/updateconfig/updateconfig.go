@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"net/url"
 	"path"
 	"strings"
 	"unicode/utf8"
@@ -29,7 +30,9 @@ import (
 	config2 "github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	zglob "github.com/mattn/go-zglob"
+	errors2 "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	coreapi "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -75,6 +78,7 @@ type scmProviderClient interface {
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetFile(org, repo, filepath, commit string) ([]byte, error)
 	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
+	ProviderType() string
 }
 
 type commentPruner interface {
@@ -349,6 +353,13 @@ func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, cp commentPruner,
 
 	var validationErrors []string
 
+	baseURL, err := url.Parse(pr.Link)
+	if err != nil {
+		return errors2.Wrapf(err, "failed to parse URL %s", pr.Link)
+	}
+	baseURL.Path = ""
+	baseURL.RawQuery = ""
+
 	for cm, data := range toUpdate {
 		fg := &scmFileGetter{
 			org:    org,
@@ -378,7 +389,8 @@ func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, cp commentPruner,
 				yamlErr = yaml.Unmarshal(content, &m)
 			}
 			if yamlErr != nil {
-				validationErrors = append(validationErrors, fmt.Sprintf("In file %s for config map %s:\n%s", upd.Filename, cm.Name, indentErrMsg(yamlErr)))
+				link := util.BlobURLForProvider(spc.ProviderType(), baseURL, org, repo, pr.Head.Sha, upd.Filename)
+				validationErrors = append(validationErrors, fmt.Sprintf("In file [%s](%s) for config map **%s**:\n%s", upd.Filename, link, cm.Name, indentErrMsg(yamlErr)))
 			}
 		}
 	}

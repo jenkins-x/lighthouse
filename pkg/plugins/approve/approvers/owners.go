@@ -575,7 +575,7 @@ func (a ApprovedFile) String() string {
 	if strings.HasSuffix(a.filepath, ".md") {
 		fullOwnersPath = a.filepath
 	}
-	link := urlForProvider(a.providerType, a.baseURL, a.owner, a.repo, a.branch, fullOwnersPath)
+	link := util.BlobURLForProvider(a.providerType, a.baseURL, a.owner, a.repo, a.branch, fullOwnersPath)
 
 	return fmt.Sprintf("- ~~[%s](%s)~~ [%v]\n", fullOwnersPath, link, strings.Join(a.approvers.List(), ","))
 }
@@ -585,23 +585,8 @@ func (ua UnapprovedFile) String() string {
 	if strings.HasSuffix(ua.filepath, ".md") {
 		fullOwnersPath = ua.filepath
 	}
-	link := urlForProvider(ua.providerType, ua.baseURL, ua.owner, ua.repo, ua.branch, fullOwnersPath)
+	link := util.BlobURLForProvider(ua.providerType, ua.baseURL, ua.owner, ua.repo, ua.branch, fullOwnersPath)
 	return fmt.Sprintf("- **[%s](%s)**\n", fullOwnersPath, link)
-}
-
-func urlForProvider(providerType string, baseURL *url.URL, owner, repo, branch string, ownersPath string) string {
-	switch providerType {
-	case "stash":
-		u := fmt.Sprintf("%s/projects/%s/repos/%s/browse/%v", strings.TrimSuffix(baseURL.String(), "/"), strings.ToUpper(owner), repo, ownersPath)
-		if branch != "master" {
-			u = fmt.Sprintf("%s?at=%s", u, url.QueryEscape("refs/heads/"+branch))
-		}
-		return u
-	case "gitlab":
-		return fmt.Sprintf("%s/%s/%s/-/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, ownersPath)
-	default:
-		return fmt.Sprintf("%s/%s/%s/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, ownersPath)
-	}
 }
 
 // GenerateTemplate takes a template, name and data, and generates
