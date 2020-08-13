@@ -37,7 +37,7 @@ data:
     label:
       additional_labels: null
     owners: {}
-{{- if ne .Values.configMaps.configUpdater.orgAndRepo }}
+{{- if ne .Values.configMaps.configUpdater.orgAndRepo "" }}
     plugins:
       {{ .Values.configMaps.configUpdater.orgAndRepo }}:
       - config-updater
