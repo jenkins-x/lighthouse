@@ -74,6 +74,7 @@ type scmProviderClient interface {
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
 	GetFile(org, repo, filepath, commit string) ([]byte, error)
+	GetPullRequest(org, repo string, number int) (*scm.PullRequest, error)
 }
 
 type commentPruner interface {
@@ -294,6 +295,10 @@ func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, cp commentPruner,
 	// Are any of the changes files ones that define a configmap we want to update?
 	toUpdate := FilterChanges(config, changes, log)
 
+	if len(toUpdate) == 0 {
+		return nil
+	}
+
 	if isMerge {
 		message := func(name, namespace string, updates []ConfigMapUpdate, indent string) string {
 			identifier := fmt.Sprintf("`%s` configmap", name)
@@ -348,7 +353,7 @@ func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, cp commentPruner,
 		fg := &scmFileGetter{
 			org:    org,
 			repo:   repo,
-			commit: pr.MergeSha,
+			commit: pr.Head.Sha,
 			client: spc,
 		}
 

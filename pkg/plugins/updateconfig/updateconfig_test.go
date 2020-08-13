@@ -1236,19 +1236,19 @@ func TestUpdateConfig(t *testing.T) {
 					},
 					"invalid/invalid-yaml-config.yaml": {
 						"master": "old-config",
-						"12345":  string(invalidYaml),
+						"abcdef": string(invalidYaml),
 					},
 					"invalid/invalid-yaml-plugins.yaml": {
 						"master": "old-plugins",
-						"12345":  string(invalidYaml),
+						"abcdef": string(invalidYaml),
 					},
 					"valid/config.yaml": {
 						"master": "old-config",
-						"12345":  string(validConfig),
+						"abcdef": string(validConfig),
 					},
 					"invalid/invalid-config.yaml": {
 						"master": "old-config",
-						"12345":  string(invalidConfig),
+						"abcdef": string(invalidConfig),
 					},
 				},
 			}
