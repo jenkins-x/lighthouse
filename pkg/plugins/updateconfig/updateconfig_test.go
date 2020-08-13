@@ -62,6 +62,7 @@ func TestUpdateConfig(t *testing.T) {
 		Author: scm.User{
 			Login: "foo",
 		},
+		Link: "https://github.com/kubernetes/kubernetes/pull/1",
 	}
 
 	testcases := []struct {
@@ -1014,7 +1015,7 @@ func TestUpdateConfig(t *testing.T) {
 			},
 			errorCommentContains: []string{
 				"Validation error founds in config map file(s):",
-				"In file invalid/invalid-yaml-config.yaml for config map config:",
+				"In file [invalid/invalid-yaml-config.yaml](https://github.com/kubernetes/kubernetes/blob/abcdef/invalid/invalid-yaml-config.yaml) for config map **config**:",
 				"> error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context",
 			},
 			expectedStatus: []*scm.StatusInput{{
@@ -1055,7 +1056,7 @@ func TestUpdateConfig(t *testing.T) {
 			},
 			errorCommentContains: []string{
 				"Validation error founds in config map file(s):",
-				"In file invalid/invalid-config.yaml for config map config:",
+				"In file [invalid/invalid-config.yaml](https://github.com/kubernetes/kubernetes/blob/abcdef/invalid/invalid-config.yaml) for config map **config**:",
 				"> error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config",
 			},
 			expectedStatus: []*scm.StatusInput{{
@@ -1103,8 +1104,8 @@ func TestUpdateConfig(t *testing.T) {
 			},
 			errorCommentContains: []string{
 				"Validation error founds in config map file(s):",
-				"In file invalid/invalid-yaml-config.yaml for config map config:",
-				"In file invalid/invalid-yaml-plugins.yaml for config map plugins:",
+				"In file [invalid/invalid-yaml-config.yaml](https://github.com/kubernetes/kubernetes/blob/abcdef/invalid/invalid-yaml-config.yaml) for config map **config**:",
+				"In file [invalid/invalid-yaml-plugins.yaml](https://github.com/kubernetes/kubernetes/blob/abcdef/invalid/invalid-yaml-plugins.yaml) for config map **plugins**:",
 				"> error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context",
 			},
 			expectedStatus: []*scm.StatusInput{{
