@@ -17,10 +17,15 @@ limitations under the License.
 package updateconfig
 
 import (
+	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
@@ -47,20 +52,30 @@ func TestUpdateConfig(t *testing.T) {
 				Name:      "kubernetes",
 			},
 		},
+		Head: scm.PullRequestBranch{
+			Sha: "abcdef",
+			Repo: scm.Repository{
+				Namespace: "kubernetes",
+				Name:      "kubernetes",
+			},
+		},
 		Author: scm.User{
 			Login: "foo",
 		},
 	}
 
 	testcases := []struct {
-		name               string
-		prAction           scm.Action
-		merged             bool
-		mergeCommit        string
-		changes            []*scm.Change
-		existConfigMaps    []runtime.Object
-		expectedConfigMaps []*coreapi.ConfigMap
-		config             *plugins.ConfigUpdater
+		name                 string
+		prAction             scm.Action
+		merged               bool
+		mergeCommit          string
+		changes              []*scm.Change
+		existConfigMaps      []runtime.Object
+		expectedConfigMaps   []*coreapi.ConfigMap
+		config               *plugins.ConfigUpdater
+		errorCommentContains []string
+		existingComment      string
+		expectedStatus       []*scm.StatusInput
 	}{
 		{
 			name:     "Opened PR, no update",
@@ -967,6 +982,174 @@ func TestUpdateConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "invalid YAML in config.yaml, existed configmap",
+			prAction:    scm.ActionOpen,
+			merged:      false,
+			mergeCommit: "12345",
+			changes: []*scm.Change{
+				{
+					Path:      "invalid/invalid-yaml-config.yaml",
+					Additions: 1,
+				},
+			},
+			existConfigMaps: []runtime.Object{
+				&coreapi.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "config",
+						Namespace: defaultNamespace,
+					},
+					Data: map[string]string{
+						"invalid-yaml-config.yaml": "old-config",
+					},
+				},
+			},
+			config: &plugins.ConfigUpdater{
+				GZIP: false,
+				Maps: map[string]plugins.ConfigMapSpec{
+					"invalid/invalid-yaml-config.yaml": {
+						Name: "config",
+					},
+				},
+			},
+			errorCommentContains: []string{
+				"Validation error founds in config map file(s):",
+				"In file invalid/invalid-yaml-config.yaml for config map config:",
+				"> error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context",
+			},
+			expectedStatus: []*scm.StatusInput{{
+				State: scm.StateFailure,
+				Label: configUpdaterContextName,
+				Desc:  configUpdaterContextMsgFailed,
+			}},
+		},
+		{
+			name:        "can't unmarshal config.yaml",
+			prAction:    scm.ActionOpen,
+			merged:      false,
+			mergeCommit: "12345",
+			changes: []*scm.Change{
+				{
+					Path:      "invalid/invalid-config.yaml",
+					Additions: 1,
+				},
+			},
+			existConfigMaps: []runtime.Object{
+				&coreapi.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "config",
+						Namespace: defaultNamespace,
+					},
+					Data: map[string]string{
+						"invalid-config.yaml": "old-config",
+					},
+				},
+			},
+			config: &plugins.ConfigUpdater{
+				GZIP: false,
+				Maps: map[string]plugins.ConfigMapSpec{
+					"invalid/invalid-config.yaml": {
+						Name: "config",
+					},
+				},
+			},
+			errorCommentContains: []string{
+				"Validation error founds in config map file(s):",
+				"In file invalid/invalid-config.yaml for config map config:",
+				"> error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config",
+			},
+			expectedStatus: []*scm.StatusInput{{
+				State: scm.StateFailure,
+				Label: configUpdaterContextName,
+				Desc:  configUpdaterContextMsgFailed,
+			}},
+		},
+		{
+			name:        "invalid YAML in config.yaml and plugins.yaml",
+			prAction:    scm.ActionOpen,
+			merged:      false,
+			mergeCommit: "12345",
+			changes: []*scm.Change{
+				{
+					Path:      "invalid/invalid-yaml-config.yaml",
+					Additions: 1,
+				},
+				{
+					Path:      "invalid/invalid-yaml-plugins.yaml",
+					Additions: 1,
+				},
+			},
+			existConfigMaps: []runtime.Object{
+				&coreapi.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "config",
+						Namespace: defaultNamespace,
+					},
+					Data: map[string]string{
+						"invalid-yaml-config.yaml": "old-config",
+					},
+				},
+			},
+			config: &plugins.ConfigUpdater{
+				GZIP: false,
+				Maps: map[string]plugins.ConfigMapSpec{
+					"invalid/invalid-yaml-config.yaml": {
+						Name: "config",
+					},
+					"invalid/invalid-yaml-plugins.yaml": {
+						Name: "plugins",
+					},
+				},
+			},
+			errorCommentContains: []string{
+				"Validation error founds in config map file(s):",
+				"In file invalid/invalid-yaml-config.yaml for config map config:",
+				"In file invalid/invalid-yaml-plugins.yaml for config map plugins:",
+				"> error converting YAML to JSON: yaml: line 2: mapping values are not allowed in this context",
+			},
+			expectedStatus: []*scm.StatusInput{{
+				State: scm.StateFailure,
+				Label: configUpdaterContextName,
+				Desc:  configUpdaterContextMsgFailed,
+			}},
+		},
+		{
+			name:        "valid YAML in config.yaml with existing comment",
+			prAction:    scm.ActionOpen,
+			merged:      false,
+			mergeCommit: "12345",
+			changes: []*scm.Change{
+				{
+					Path:      "valid/config.yaml",
+					Additions: 1,
+				},
+			},
+			existConfigMaps: []runtime.Object{
+				&coreapi.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "config",
+						Namespace: defaultNamespace,
+					},
+					Data: map[string]string{
+						"valid/config.yaml": "old-config",
+					},
+				},
+			},
+			config: &plugins.ConfigUpdater{
+				GZIP: false,
+				Maps: map[string]plugins.ConfigMapSpec{
+					"valid/config.yaml": {
+						Name: "config",
+					},
+				},
+			},
+			expectedStatus: []*scm.StatusInput{{
+				State: scm.StateSuccess,
+				Label: configUpdaterContextName,
+				Desc:  configUpdaterContextMsgSuccess,
+			}},
+			existingComment: configUpdaterMsgPruneMatch,
+		},
 	}
 
 	for _, tc := range testcases {
@@ -981,6 +1164,18 @@ func TestUpdateConfig(t *testing.T) {
 				event.PullRequest.MergeSha = tc.mergeCommit
 			}
 
+			invalidYaml, err := ioutil.ReadFile(filepath.Join("test_data", "invalid-yaml.yaml"))
+			if err != nil {
+				t.Fatalf("couldn't read test_data/invalid-yaml.yaml: %v", err)
+			}
+			validConfig, err := ioutil.ReadFile(filepath.Join("test_data", "valid-config.yaml"))
+			if err != nil {
+				t.Fatalf("couldn't read test_data/valid-config.yaml: %v", err)
+			}
+			invalidConfig, err := ioutil.ReadFile(filepath.Join("test_data", "invalid-config.yaml"))
+			if err != nil {
+				t.Fatalf("couldn't read test_data/invalid-config.yaml: %v", err)
+			}
 			fspc := &fake2.SCMClient{
 				PullRequests: map[int]*scm.PullRequest{
 					basicPR.Number: &basicPR,
@@ -1039,7 +1234,26 @@ func TestUpdateConfig(t *testing.T) {
 					"dir/subdir/fejtaverse/sig-bar/removed.yaml": {
 						"master": "old-removed-config",
 					},
+					"invalid/invalid-yaml-config.yaml": {
+						"master": "old-config",
+						"12345":  string(invalidYaml),
+					},
+					"invalid/invalid-yaml-plugins.yaml": {
+						"master": "old-plugins",
+						"12345":  string(invalidYaml),
+					},
+					"valid/config.yaml": {
+						"master": "old-config",
+						"12345":  string(validConfig),
+					},
+					"invalid/invalid-config.yaml": {
+						"master": "old-config",
+						"12345":  string(invalidConfig),
+					},
 				},
+			}
+			if tc.existingComment != "" {
+				fspc.CreateComment("kubernetes", "kubernetes", basicPR.Number, true, tc.existingComment)
 			}
 			fkc := fake.NewSimpleClientset(tc.existConfigMaps...)
 
@@ -1071,8 +1285,9 @@ func TestUpdateConfig(t *testing.T) {
 				}
 			}
 			m.SetDefaults()
+			cp := commentpruner.NewEventClient(fspc, logrus.WithField("client", "commentpruner"), basicPR.Repository().Namespace, basicPR.Repository().Name, basicPR.Number)
 
-			if err := handle(fspc, fkc.CoreV1(), defaultNamespace, log, event, *m); err != nil {
+			if err := handle(fspc, fkc.CoreV1(), cp, defaultNamespace, log, event, *m); err != nil {
 				t.Fatalf("%s: unexpected error handling: %s", tc.name, err)
 			}
 
@@ -1092,6 +1307,36 @@ func TestUpdateConfig(t *testing.T) {
 					t.Fatalf("%s: client saw an action for something that wasn't an object: %v", tc.name, err)
 				}
 				modifiedConfigMaps.Insert(objectMeta.GetName())
+			}
+
+			if tc.errorCommentContains != nil {
+				if len(fspc.PullRequestComments[basicPR.Number]) != 1 {
+					t.Errorf("%s: Expect 1 comment, actually got %d", tc.name, len(fspc.PullRequestComments[basicPR.Number]))
+				} else {
+					comment := fspc.PullRequestComments[basicPR.Number][0].Body
+					var missingLines []string
+					for _, errLine := range tc.errorCommentContains {
+						if !strings.Contains(comment, errLine) {
+							missingLines = append(missingLines, fmt.Sprintf(" - '%s'", errLine))
+						}
+					}
+					if len(missingLines) > 0 {
+						t.Errorf("Missing lines from comment '%s':\n%s", comment, strings.Join(missingLines, "\n"))
+					}
+				}
+			}
+
+			if tc.expectedStatus != nil {
+				createdStatus := fspc.CreatedStatuses[basicPR.Head.Sha]
+				if createdStatus == nil {
+					t.Errorf("no status set but one was expected")
+				} else if d := cmp.Diff(createdStatus, tc.expectedStatus); d != "" {
+					t.Errorf("status did not match expected: %s", d)
+				}
+
+				if tc.errorCommentContains == nil && len(fspc.PullRequestComments[basicPR.Number]) > 0 {
+					t.Errorf("Expected no comments, but found %d", len(fspc.PullRequestComments[basicPR.Number]))
+				}
 			}
 
 			if tc.expectedConfigMaps != nil {
