@@ -1,4 +1,16 @@
+Lighthouse has been installed successfully.
 
-Get the application URL by running these commands:
+To verify pods have started, run:
 
-kubectl get ingress {{ template "fullname" . }}
+    kubectl --namespace={{ .Release.Namespace }} get pods -l "app={{ template "foghorn.name" . }}"
+    kubectl --namespace={{ .Release.Namespace }} get pods -l "app={{ template "keeper.name" . }}"
+    kubectl --namespace={{ .Release.Namespace }} get pods -l "app={{ template "webhooks.name" . }}"
+{{- if .Values.engines.tekton }}
+    kubectl --namespace={{ .Release.Namespace }} get pods -l "app={{ template "tektoncontroller.name" . }}"
+{{- end }}
+
+{{- if .Values.createIngress }}
+To get the application URL, run:
+
+    kubectl get ingress {{ template "fullname" . }}
+{{- end }}
