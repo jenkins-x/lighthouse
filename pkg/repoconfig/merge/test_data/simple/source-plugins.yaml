@@ -3,7 +3,6 @@ approve:
   repos:
   - someorg/somerepo
   require_self_approval: true
-blunderbuss: {}
 cat: {}
 cherry_pick_unapproved: {}
 config_updater:
@@ -21,7 +20,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm

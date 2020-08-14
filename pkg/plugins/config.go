@@ -32,8 +32,7 @@ import (
 )
 
 const (
-	defaultBlunderbussReviewerCount = 2
-	failOnMissingPlugin             = false
+	failOnMissingPlugin = false
 )
 
 // Configuration is the top-level serialization target for plugin Configuration.
@@ -56,11 +55,9 @@ type Configuration struct {
 	UseDeprecatedSelfApprove   bool                   `json:"use_deprecated_2018_implicit_self_approve_default_migrate_before_july_2019,omitempty"`
 	UseDeprecatedReviewApprove bool                   `json:"use_deprecated_2018_review_acts_as_approve_default_migrate_before_july_2019,omitempty"`
 	Blockades                  []Blockade             `json:"blockades,omitempty"`
-	Blunderbuss                Blunderbuss            `json:"blunderbuss,omitempty"`
 	Cat                        Cat                    `json:"cat,omitempty"`
 	CherryPickUnapproved       CherryPickUnapproved   `json:"cherry_pick_unapproved,omitempty"`
 	ConfigUpdater              ConfigUpdater          `json:"config_updater,omitempty"`
-	Golint                     *Golint                `json:"golint,omitempty"`
 	Heart                      Heart                  `json:"heart,omitempty"`
 	Label                      Label                  `json:"label,omitempty"`
 	Lgtm                       []Lgtm                 `json:"lgtm,omitempty"`
@@ -72,14 +69,6 @@ type Configuration struct {
 	Size                       Size                   `json:"size,omitempty"`
 	Triggers                   []Trigger              `json:"triggers,omitempty"`
 	Welcome                    []Welcome              `json:"welcome,omitempty"`
-}
-
-// Golint holds configuration for the golint plugin
-type Golint struct {
-	// MinimumConfidence is the smallest permissible confidence
-	// in (0,1] over which problems will be printed. Defaults to
-	// 0.8, as does the `go lint` tool.
-	MinimumConfidence *float64 `json:"minimum_confidence,omitempty"`
 }
 
 // ExternalPlugin holds configuration for registering an external
@@ -94,31 +83,6 @@ type ExternalPlugin struct {
 	// server to the external plugin. If no events are specified,
 	// everything is sent.
 	Events []string `json:"events,omitempty"`
-}
-
-// Blunderbuss defines configuration for the blunderbuss plugin.
-type Blunderbuss struct {
-	// ReviewerCount is the minimum number of reviewers to request
-	// reviews from. Defaults to requesting reviews from 2 reviewers
-	// if FileWeightCount is not set.
-	ReviewerCount *int `json:"request_count,omitempty"`
-	// MaxReviewerCount is the maximum number of reviewers to request
-	// reviews from. Defaults to 0 meaning no limit.
-	MaxReviewerCount int `json:"max_request_count,omitempty"`
-	// FileWeightCount is the maximum number of reviewers to request
-	// reviews from. Selects reviewers based on file weighting.
-	// This and request_count are mutually exclusive options.
-	FileWeightCount *int `json:"file_weight_count,omitempty"`
-	// ExcludeApprovers controls whether approvers are considered to be
-	// reviewers. By default, approvers are considered as reviewers if
-	// insufficient reviewers are available. If ExcludeApprovers is true,
-	// approvers will never be considered as reviewers.
-	ExcludeApprovers bool `json:"exclude_approvers,omitempty"`
-	// UseStatusAvailability controls whether blunderbuss will consider GitHub's
-	// status availability when requesting reviews for users. This will use at one
-	// additional token per successful reviewer (and potentially more depending on
-	// how many busy reviewers it had to pass over).
-	UseStatusAvailability bool `json:"use_status_availability,omitempty"`
 }
 
 // Owners contains configuration related to handling OWNERS files.
@@ -683,10 +647,6 @@ func (c *Configuration) setDefaults() {
 			c.ExternalPlugins[repo][i].Endpoint = fmt.Sprintf("http://%s", p.Name)
 		}
 	}
-	if c.Blunderbuss.ReviewerCount == nil && c.Blunderbuss.FileWeightCount == nil {
-		c.Blunderbuss.ReviewerCount = new(int)
-		*c.Blunderbuss.ReviewerCount = defaultBlunderbussReviewerCount
-	}
 	for i, trigger := range c.Triggers {
 		if trigger.TrustedOrg == "" || trigger.JoinOrgURL != "" {
 			continue
@@ -816,19 +776,6 @@ func validateExternalPlugins(pluginMap map[string][]ExternalPlugin) error {
 	return nil
 }
 
-func validateBlunderbuss(b *Blunderbuss) error {
-	if b.ReviewerCount != nil && b.FileWeightCount != nil {
-		return errors.New("cannot use both request_count and file_weight_count in blunderbuss")
-	}
-	if b.ReviewerCount != nil && *b.ReviewerCount < 1 {
-		return fmt.Errorf("invalid request_count: %v (needs to be positive)", *b.ReviewerCount)
-	}
-	if b.FileWeightCount != nil && *b.FileWeightCount < 1 {
-		return fmt.Errorf("invalid file_weight_count: %v (needs to be positive)", *b.FileWeightCount)
-	}
-	return nil
-}
-
 func validateConfigUpdater(updater *ConfigUpdater) error {
 	files := sets.NewString()
 	configMapKeys := map[string]sets.String{}
@@ -918,9 +865,6 @@ func (c *Configuration) Validate() error {
 		return err
 	}
 	if err := validateExternalPlugins(c.ExternalPlugins); err != nil {
-		return err
-	}
-	if err := validateBlunderbuss(&c.Blunderbuss); err != nil {
 		return err
 	}
 	if err := validateConfigUpdater(&c.ConfigUpdater); err != nil {

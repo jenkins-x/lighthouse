@@ -119,7 +119,6 @@ approve:
   repos:
   - test-org/bdd-gh-1573770044
   require_self_approval: true
-blunderbuss: {}
 cat: {}
 cherry_pick_unapproved: {}
 config_updater: {}
@@ -161,7 +160,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -176,7 +174,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -191,7 +188,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -206,7 +202,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -221,7 +216,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -236,7 +230,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -251,7 +244,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -266,7 +258,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -281,7 +272,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -296,7 +286,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -311,7 +300,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -326,7 +314,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -341,7 +328,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -356,7 +342,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -371,7 +356,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -386,7 +370,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -401,7 +384,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -416,7 +398,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -431,7 +412,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -446,7 +426,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -461,7 +440,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -476,7 +454,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -491,7 +468,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -506,7 +482,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -521,7 +496,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -536,7 +510,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -551,7 +524,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -566,7 +538,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -581,7 +552,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm
@@ -596,7 +566,6 @@ plugins:
   - config-updater
   - approve
   - assign
-  - blunderbuss
   - help
   - hold
   - lgtm

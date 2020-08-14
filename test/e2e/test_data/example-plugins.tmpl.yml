@@ -3,7 +3,6 @@ approve:
   repos:
   - {{ .Owner }}/{{ .Repo }}
   require_self_approval: true
-blunderbuss: {}
 cat: {}
 cherry_pick_unapproved: {}
 config_updater: {}
