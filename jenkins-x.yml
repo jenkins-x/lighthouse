@@ -25,11 +25,26 @@ pipelineConfig:
           - name: ORG
             value: jenkinsxio
           steps:
+          - name: init-helm
+            image: alpine/helm:2.12.3
+            command: helm
+            args:
+              - init
+              - --client-only
+
+          - name: helm-lint
+            image: gcr.io/jenkinsxio/builder-go
+            command: make
+            args:
+              - build
+            dir: /workspace/source/charts/lighthouse
+
           - name: lint-checks
             image: gcr.io/jenkinsxio/builder-go
             command: make
             args:
             - check
+            - verify-code-unchanged
             dir: /workspace/source
 
           - name: unit-tests
@@ -39,20 +54,6 @@ pipelineConfig:
             - test
             - build-linux
             dir: /workspace/source
-
-          - name: init-helm
-            image: alpine/helm:2.12.3
-            command: helm
-            args:
-            - init
-            - --client-only
-
-          - name: helm-lint
-            image: gcr.io/jenkinsxio/builder-go
-            command: make
-            args:
-            - build
-            dir: /workspace/source/charts/lighthouse
 
     release:
       pipeline:

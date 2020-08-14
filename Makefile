@@ -153,3 +153,15 @@ codegen-clientset: $(CODEGEN_BIN) ## Generate the k8s types and clients
 	@echo "Generating Kubernetes Clients for pkg/apis/lighthouse/v1alpha1 in pkg/client for lighthouse.jenkins.io:v1alpha1"
 	$(CODEGEN_BIN) --generator-version $(CLIENTSET_GENERATOR_VERSION) clientset --output-package=pkg/client --input-package=pkg/apis --group-with-version=lighthouse:v1alpha1
 
+
+verify-code-unchanged: ## Verify the generated/formatting of code is up to date
+	$(eval CHANGED = $(shell git ls-files --modified --others --exclude-standard))
+	@if [ "$(CHANGED)" == "" ]; \
+      	then \
+      	    echo "All generated and formatted files up to date"; \
+      	else \
+      		echo "Code generation and/or formatting is out of date"; \
+      		echo "$(CHANGED)"; \
+			git diff; \
+      		exit 1; \
+      	fi
