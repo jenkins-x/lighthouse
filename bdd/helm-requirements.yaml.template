@@ -11,7 +11,7 @@ dependencies:
   - alias: lighthouse
     condition: lighthouse.enabled
     name: lighthouse
-    repository: https://chartmuseum-jx.jenkins-x.live
+    repository: https://chartmuseum.jenkins-x.io
     version: $VERSION
   - alias: lighthouse-jx
     condition: lighthouse.enabled
