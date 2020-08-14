@@ -51,12 +51,16 @@ const (
 	RepoOwnerEnv = "REPO_OWNER"
 	// RepoNameEnv is the name of the repository we're building
 	RepoNameEnv = "REPO_NAME"
+	// RepoURLEnv is the clone URL for the repo we're building
+	RepoURLEnv = "REPO_URL"
 	// PullBaseRefEnv is the base ref (such as master) for a pull request
 	PullBaseRefEnv = "PULL_BASE_REF"
 	// PullBaseShaEnv is the actual commit sha for the base for a pull request
 	PullBaseShaEnv = "PULL_BASE_SHA"
 	// PullRefsEnv is the refs and shas for the base and PR, like "master:abcd1234...,123:5678abcd..." for PR-123.
 	PullRefsEnv = "PULL_REFS"
+	// PullPullRefEnv is the batch refs, if needed, in a format suitable for the `git-batch-merge` task.
+	PullPullRefEnv = "PULL_PULL_REF"
 	// PullNumberEnv is the pull request number
 	PullNumberEnv = "PULL_NUMBER"
 	// PullPullShaEnv is the pull request's sha
