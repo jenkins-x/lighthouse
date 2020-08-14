@@ -1,0 +1,55 @@
+{{ define "chart.valuesTable" }}
+| Key | Type | Description | Default |
+|-----|------|-------------|---------|
+{{- range .Values }}
+| `{{ .Key }}` | {{ .Type }} | {{ .Description }} | {{ .Default }} |
+{{- end }}
+{{ end }}
+
+# Lighthouse
+
+This chart bootstraps installation of [Lighthouse](https://github.com/jenkins-x/lighthouse).
+
+## Installing
+
+- Add jenkins-x helm charts repo
+
+```bash
+helm repo add jenkins-x http://chartmuseum.jenkins-x.io
+
+helm repo update
+```
+
+- Install (or upgrade)
+
+```bash
+# This will install Lighthouse in the lighthouse namespace (with a my-lighthouse release name)
+
+# Helm v2
+helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
+# Helm v3
+helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
+```
+
+Look [below](#values) for the list of all available options and their corresponding description.
+
+## Uninstalling
+
+To uninstall the chart, simply delete the release.
+
+```bash
+# This will uninstall Lighthouse in the lighthouse namespace (assuming a my-lighthouse release name)
+
+# Helm v2
+helm delete --purge my-lighthouse
+# Helm v3
+helm uninstall my-lighthouse --namespace lighthouse
+```
+
+## Version
+
+{{ template "chart.versionLine" . }}
+
+{{ template "chart.valuesSection" . }}
+
+You can look directly at the [values.yaml](./values.yaml) file to look at the options and their default values.

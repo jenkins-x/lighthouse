@@ -1,12 +1,18 @@
 CHART_REPO := http://jenkins-x-chartmuseum:8080
 CURRENT=$(pwd)
+GO_MOD := GO111MODULE=on go
 NAME := lighthouse
 OS := $(shell uname)
 
-build: clean
+HELMDOCS := $(GOPATH)/bin/helm-docs
+$(HELMDOCS):
+	pushd /tmp; $(GO_MOD) get -u github.com/norwoodj/helm-docs/cmd/helm-docs@v0.15.0; popd
+
+build: clean $(HELMDOCS)
 	rm -rf requirements.lock
 	helm dependency build
 	helm lint
+	$(HELMDOCS)
 
 install: clean build
 	helm install . --name ${NAME}
