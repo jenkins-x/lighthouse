@@ -1,7 +1,7 @@
 {{- /*
-Only create the "config" ConfigMap on install, so that we don't overwrite it on upgrade.
+Only create the "plugins" ConfigMap on install, so that we don't overwrite it on upgrade.
 */ -}}
-{{- if and .Values.configMaps.create (not .Release.IsUpgrade) }}
+{{- if and .Values.configMaps.create (or (not .Release.IsUpgrade) .Values.configMaps.plugins) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,6 +11,10 @@ metadata:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
 data:
+{{- if .Values.configMaps.plugins }}
+  plugins.yaml: |
+{{ .Values.configMaps.plugins | indent 4 }}
+{{- else }}
   plugins.yaml: |
     approve:
     - lgtm_acts_as_approve: true
@@ -79,4 +83,5 @@ data:
     #   trusted_org: org
     welcome:
     - message_template: Welcome
+{{- end }}
 {{- end }}

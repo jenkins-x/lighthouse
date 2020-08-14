@@ -161,6 +161,8 @@ hook:
 
 configMaps:
   create: false
+  config: null
+  plugins: null
   configUpdater:
     orgAndRepo: ""
     path: ""
