@@ -37,6 +37,8 @@ spec:
       value: e8d56b5ee9671599c75644af574a251dd3b94a5c
     - name: PULL_NUMBER
       value: "813"
+    - name: PULL_PULL_REF
+      value: refs/pull/813/head refs/pull/814/head
     - name: PULL_PULL_SHA
       value: dd64c739442d505cf5381e2a14b60968e8a0d86e
     - name: PULL_REFS
@@ -45,6 +47,8 @@ spec:
       value: lighthouse
     - name: REPO_OWNER
       value: jenkins-x
+    - name: REPO_URL
+      value: https://github.com/jenkins-x/lighthouse.git
     - name: batch-refs
       value: refs/pull/813/head refs/pull/814/head
     - name: branch-name

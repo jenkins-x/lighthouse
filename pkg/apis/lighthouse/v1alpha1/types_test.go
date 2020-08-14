@@ -35,10 +35,11 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 				Namespace: "jx",
 				Job:       "some-release-job",
 				Refs: &v1alpha1.Refs{
-					Org:     "some-org",
-					Repo:    "some-repo",
-					BaseRef: "master",
-					BaseSHA: "1234abcd",
+					Org:      "some-org",
+					Repo:     "some-repo",
+					CloneURI: "https://github.com/some-org/some-repo.git",
+					BaseRef:  "master",
+					BaseSHA:  "1234abcd",
 				},
 			},
 			env: map[string]string{
@@ -59,10 +60,11 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 				Namespace: "jx",
 				Job:       "some-pr-job",
 				Refs: &v1alpha1.Refs{
-					Org:     "some-org",
-					Repo:    "some-repo",
-					BaseRef: "master",
-					BaseSHA: "1234abcd",
+					Org:      "some-org",
+					Repo:     "some-repo",
+					CloneURI: "https://github.com/some-org/some-repo.git",
+					BaseRef:  "master",
+					BaseSHA:  "1234abcd",
 					Pulls: []v1alpha1.Pull{
 						{
 							Number: 1,
@@ -91,10 +93,11 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 				Namespace: "jx",
 				Job:       "some-pr-job",
 				Refs: &v1alpha1.Refs{
-					Org:     "some-org",
-					Repo:    "some-repo",
-					BaseRef: "master",
-					BaseSHA: "1234abcd",
+					Org:      "some-org",
+					Repo:     "some-repo",
+					CloneURI: "https://github.com/some-org/some-repo.git",
+					BaseRef:  "master",
+					BaseSHA:  "1234abcd",
 					Pulls: []v1alpha1.Pull{
 						{
 							Number: 1,

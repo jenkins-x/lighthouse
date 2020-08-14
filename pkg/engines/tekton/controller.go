@@ -511,6 +511,16 @@ func (c *Controller) makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.
 	// Add parameters instead of env vars.
 	env := lj.Spec.GetEnvVars()
 	env[v1alpha1.BuildIDEnv] = buildID
+	env[v1alpha1.RepoURLEnv] = lj.Spec.Refs.CloneURI
+	var batchedRefsVals []string
+	for _, pull := range lj.Spec.Refs.Pulls {
+		if pull.Ref != "" {
+			batchedRefsVals = append(batchedRefsVals, pull.Ref)
+		}
+	}
+	if len(batchedRefsVals) > 0 {
+		env[v1alpha1.PullPullRefEnv] = strings.Join(batchedRefsVals, " ")
+	}
 	paramNames, err := determineGitCloneOrMergeTaskParams(&p, c.tektonClient)
 	if err != nil {
 		return nil, err
@@ -530,10 +540,6 @@ func (c *Controller) makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.
 			env[paramNames.baseRevisionParam] = lj.Spec.Refs.BaseRef
 		}
 		if paramNames.batchedRefsParam != "" {
-			var batchedRefsVals []string
-			for _, pull := range lj.Spec.Refs.Pulls {
-				batchedRefsVals = append(batchedRefsVals, pull.Ref)
-			}
 			env[paramNames.batchedRefsParam] = strings.Join(batchedRefsVals, " ")
 		}
 	}
