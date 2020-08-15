@@ -30,7 +30,7 @@
 | updateconfig          | `config_updater`          | TODO |
 | welcome               | `welcome`                 | TODO |
 | wip                   |                           | TODO |
-| yuks                  |                           | TODO |
+| yuks                  |                           | [docs](./plugins/yuks.md) |
 
 ## Plugins configuration file (plugins.yaml)
 
