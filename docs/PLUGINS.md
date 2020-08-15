@@ -2,7 +2,7 @@
 
 ## Lighthouse plugins list
 
-| plugin name           | configuration stanza    | docs |
+| plugin name           | configuration stanza      | docs |
 | --------------------- | ------------------------- | ---- |
 | approve               | `approve`                 | TODO |
 | assign                |                           | TODO |
@@ -29,7 +29,7 @@
 | trigger               | `triggers`                | TODO |
 | updateconfig          | `config_updater`          | TODO |
 | welcome               | `welcome`                 | TODO |
-| wip                   |                           | TODO |
+| wip                   |                           | [docs](./plugins/wip.md)  |
 | yuks                  |                           | [docs](./plugins/yuks.md) |
 
 ## Plugins configuration file (plugins.yaml)
