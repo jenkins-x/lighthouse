@@ -28,7 +28,7 @@
 | stage                 |                           | TODO |
 | trigger               | `triggers`                | TODO |
 | updateconfig          | `config_updater`          | TODO |
-| welcome               | `welcome`                 | TODO |
+| welcome               | `welcome`                 | [docs](./plugins/welcome.md) |
 | wip                   |                           | [docs](./plugins/wip.md)  |
 | yuks                  |                           | [docs](./plugins/yuks.md) |
 
