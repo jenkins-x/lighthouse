@@ -23,7 +23,7 @@
 | pony                  |                           | TODO |
 | shrug                 |                           | TODO |
 | sigmention            | `sigmention`              | TODO |
-| size                  | `size`                    | TODO |
+| size                  | `size`                    | [docs](./plugins/size.md) |
 | skip                  |                           | TODO |
 | stage                 |                           | TODO |
 | trigger               | `triggers`                | TODO |
