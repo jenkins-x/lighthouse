@@ -12,9 +12,9 @@ The yuks plugin comments with jokes.
 
 ## Commands
 
-### /joke
+### /joke or /lh-joke
 
-Posts comments with jokes in response to the `/joke` command.
+Posts comments with jokes in response to the `/joke` or `/lh-joke` commands.
 
 ## Configuration
 
