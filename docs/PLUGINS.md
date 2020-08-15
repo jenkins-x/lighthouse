@@ -21,7 +21,7 @@
 | override              |                           | TODO |
 | owners-label          |                           | TODO |
 | pony                  |                           | TODO |
-| shrug                 |                           | TODO |
+| shrug                 |                           | [docs](./plugins/shrug.md) |
 | sigmention            | `sigmention`              | TODO |
 | size                  | `size`                    | TODO |
 | skip                  |                           | TODO |
