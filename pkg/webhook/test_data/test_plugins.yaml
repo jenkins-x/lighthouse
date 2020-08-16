@@ -578,7 +578,6 @@ plugins:
   - override
 requiresig: {}
 sigmention: {}
-slack: {}
 triggers:
 - repos:
   - jenkins-x/dummy
