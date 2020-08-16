@@ -38,7 +38,6 @@ size:
   s: 0
   xl: 0
   xxl: 0
-slack: {}
 triggers:
 - repos:
   - {{ .Owner }}/{{ .Repo }}

@@ -64,7 +64,6 @@ type Configuration struct {
 	RepoMilestone              map[string]Milestone   `json:"repo_milestone,omitempty"`
 	RequireMatchingLabel       []RequireMatchingLabel `json:"require_matching_label,omitempty"`
 	RequireSIG                 RequireSIG             `json:"requiresig,omitempty"`
-	Slack                      Slack                  `json:"slack,omitempty"`
 	SigMention                 SigMention             `json:"sigmention,omitempty"`
 	Size                       Size                   `json:"size,omitempty"`
 	Triggers                   []Trigger              `json:"triggers,omitempty"`
@@ -351,12 +350,6 @@ type Milestone struct {
 	MaintainersFriendlyName string `json:"maintainers_friendly_name,omitempty"`
 }
 
-// Slack contains the configuration for the slack plugin.
-type Slack struct {
-	MentionChannels []string       `json:"mentionchannels,omitempty"`
-	MergeWarnings   []MergeWarning `json:"mergewarnings,omitempty"`
-}
-
 // ConfigMapSpec contains configuration options for the configMap being updated
 // by the config-updater plugin.
 type ConfigMapSpec struct {
@@ -401,24 +394,6 @@ type ConfigUpdater struct {
 	// If GZIP is true then files will be gzipped before insertion into
 	// their corresponding configmap
 	GZIP bool `json:"gzip"`
-}
-
-// MergeWarning is a config for the slackevents plugin's manual merge warnings.
-// If a PR is pushed to any of the repos listed in the config then send messages
-// to the all the slack channels listed if pusher is NOT in the includes.
-type MergeWarning struct {
-	// Repos is either of the form org/repos or just org.
-	Repos []string `json:"repos,omitempty"`
-	// List of channels on which a event is published.
-	Channels []string `json:"channels,omitempty"`
-	// A slack event is published if the user is not part of the includes.
-	Includes []string `json:"includes,omitempty"`
-	// Deprecated in favor of Includes
-	Whitelist []string `json:"whitelist,omitempty"`
-	// A slack event is published if the user is not in the branch includes
-	BranchIncludes map[string][]string `json:"branch_includes,omitempty"`
-	// Deprecated in favor of BranchIncludes
-	BranchWhitelist map[string][]string `json:"branch_whitelist,omitempty"`
 }
 
 // Welcome is config for the welcome plugin.

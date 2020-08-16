@@ -74,7 +74,6 @@ data:
       s: 0
       xl: 0
       xxl: 0
-    slack: {}
     triggers: []
     # Example triggers configuration:
     # - repos:

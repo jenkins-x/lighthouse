@@ -58,7 +58,6 @@ require_matching_label: {}
 requiresig: {}
 sigmention: {}
 size: {}
-slack: {}
 triggers: []
 welcome: []
 
