@@ -26,6 +26,11 @@ spec:
     podTemplate:
       schedulerName: ""
     serviceAccountName: tekton-bot
+  pipeline_run_params:
+    - name: branch-name
+      value_template: '{{ range $i, $v := .Pulls }}{{if $i}} {{end}}{{ $v.SHA }}{{ end }}'
+    - name: repo-url
+      value_template: '{{ .CloneURI }}'
   refs:
     base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
     base_ref: master

@@ -140,6 +140,8 @@ type LighthouseJobSpec struct {
 	// PipelineRunSpec provides the basis for running the test as a Tekton Pipeline
 	// https://github.com/tektoncd/pipeline
 	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
+	// PipelineRunParams are the params used by the pipeline run
+	PipelineRunParams []config.PipelineRunParam `json:"pipeline_run_params,omitempty"`
 	// PodSpec provides the basis for running the test under a Kubernetes agent
 	PodSpec *corev1.PodSpec `json:"pod_spec,omitempty"`
 }

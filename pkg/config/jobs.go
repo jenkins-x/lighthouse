@@ -76,6 +76,14 @@ func mergePreset(preset Preset, labels map[string]string, pod *v1.PodSpec) error
 	return nil
 }
 
+// PipelineRunParam represents a param used by the pipeline run
+type PipelineRunParam struct {
+	// Name is the name of the param
+	Name string `json:"name,omitempty"`
+	// ValueTemplate is the template used to build the value from well know variables
+	ValueTemplate string `json:"value_template,omitempty"`
+}
+
 // JobBase contains attributes common to all job types
 type JobBase struct {
 	// The name of the job. Must match regex [A-Za-z0-9-._]+
@@ -107,6 +115,8 @@ type JobBase struct {
 	Spec *v1.PodSpec `json:"spec,omitempty"`
 	// PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline
 	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
+	// PipelineRunParams are the params used by the pipeline run
+	PipelineRunParams []PipelineRunParam `json:"pipeline_run_params,omitempty"`
 
 	UtilityConfig
 }
