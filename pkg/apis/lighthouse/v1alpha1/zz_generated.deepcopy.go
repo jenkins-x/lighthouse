@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	config "github.com/jenkins-x/lighthouse/pkg/config"
 	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -259,6 +260,11 @@ func (in *LighthouseJobSpec) DeepCopyInto(out *LighthouseJobSpec) {
 		in, out := &in.PipelineRunSpec, &out.PipelineRunSpec
 		*out = new(v1beta1.PipelineRunSpec)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.PipelineRunParams != nil {
+		in, out := &in.PipelineRunParams, &out.PipelineRunParams
+		*out = make([]config.PipelineRunParam, len(*in))
+		copy(*out, *in)
 	}
 	if in.PodSpec != nil {
 		in, out := &in.PodSpec, &out.PodSpec

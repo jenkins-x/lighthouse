@@ -111,6 +111,20 @@ func ChatOpsTests() bool {
 			Expect(pluginCfg).ShouldNot(BeNil())
 
 			cfg.Presubmits[repoFullName][0].PipelineRunSpec = generatePipelineRunSpec()
+			cfg.Presubmits[repoFullName][0].PipelineRunParams = []config.PipelineRunParam{
+				{
+					Name:          "batch-refs",
+					ValueTemplate: "{{ range $i, $v := .Pulls }}{{if $i}} {{end}}{{ $v.Ref }}{{ end }}",
+				},
+				{
+					Name:          "branch-name",
+					ValueTemplate: "{{ .BaseRef }}",
+				},
+				{
+					Name:          "repo-url",
+					ValueTemplate: "{{ .CloneURI }}",
+				},
+			}
 
 			err = ApplyConfigAndPluginsConfigMaps(cfg, pluginCfg)
 			Expect(err).ShouldNot(HaveOccurred())

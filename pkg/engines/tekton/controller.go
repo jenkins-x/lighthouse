@@ -1,6 +1,7 @@
 package tekton
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -521,26 +523,41 @@ func (c *Controller) makePipelineRun(lj v1alpha1.LighthouseJob) (*tektonv1beta1.
 	if len(batchedRefsVals) > 0 {
 		env[v1alpha1.PullPullRefEnv] = strings.Join(batchedRefsVals, " ")
 	}
-	paramNames, err := determineGitCloneOrMergeTaskParams(&p, c.tektonClient)
-	if err != nil {
-		return nil, err
-	}
-	if paramNames == nil {
-		c.logger.Warnf("git-clone and/or git-batch-merge task parameters not found in Pipeline for PipelineRun, so skipping setting PipelineRun parameters for revision")
-	} else {
-		env[paramNames.urlParam] = lj.Spec.Refs.CloneURI
-		if paramNames.revParam != "" {
-			if len(lj.Spec.Refs.Pulls) > 0 {
-				env[paramNames.revParam] = lj.Spec.Refs.Pulls[0].SHA
-			} else {
-				env[paramNames.revParam] = "master"
+	if len(lj.Spec.PipelineRunParams) > 0 {
+		for _, param := range lj.Spec.PipelineRunParams {
+			parsedTemplate, err := template.New(param.Name).Parse(param.ValueTemplate)
+			if err != nil {
+				return nil, err
 			}
+			var msgBuffer bytes.Buffer
+			err = parsedTemplate.Execute(&msgBuffer, lj.Spec.Refs)
+			if err != nil {
+				return nil, err
+			}
+			env[param.Name] = msgBuffer.String()
 		}
-		if paramNames.baseRevisionParam != "" {
-			env[paramNames.baseRevisionParam] = lj.Spec.Refs.BaseRef
+	} else {
+		paramNames, err := determineGitCloneOrMergeTaskParams(&p, c.tektonClient)
+		if err != nil {
+			return nil, err
 		}
-		if paramNames.batchedRefsParam != "" {
-			env[paramNames.batchedRefsParam] = strings.Join(batchedRefsVals, " ")
+		if paramNames == nil {
+			c.logger.Warnf("git-clone and/or git-batch-merge task parameters not found in Pipeline for PipelineRun, so skipping setting PipelineRun parameters for revision")
+		} else {
+			env[paramNames.urlParam] = lj.Spec.Refs.CloneURI
+			if paramNames.revParam != "" {
+				if len(lj.Spec.Refs.Pulls) > 0 {
+					env[paramNames.revParam] = lj.Spec.Refs.Pulls[0].SHA
+				} else {
+					env[paramNames.revParam] = "master"
+				}
+			}
+			if paramNames.baseRevisionParam != "" {
+				env[paramNames.baseRevisionParam] = lj.Spec.Refs.BaseRef
+			}
+			if paramNames.batchedRefsParam != "" {
+				env[paramNames.batchedRefsParam] = strings.Join(batchedRefsVals, " ")
+			}
 		}
 	}
 	for _, key := range sets.StringKeySet(env).List() {
