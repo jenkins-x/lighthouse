@@ -12,7 +12,7 @@
 | cherrypickunapproved  | `cherry_pick_unapproved`  | TODO |
 | dog                   |                           | TODO |
 | help                  |                           | TODO |
-| hold                  |                           | TODO |
+| hold                  |                           | [docs](./plugins/hold.md) |
 | label                 | `label`                   | TODO |
 | lgtm                  | `lgtm`                    | TODO |
 | lifecycle             |                           | TODO |
