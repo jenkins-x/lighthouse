@@ -13,6 +13,9 @@ import (
 
 	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	kubeclient "k8s.io/client-go/kubernetes"
+
+	//  import the auth plugin package - see https://github.com/jenkins-x/lighthouse/issues/928
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 // GetAPIClients returns the tekton, kube, and Lighthouse clients and the kubeconfig used to create them
