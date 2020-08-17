@@ -60,8 +60,9 @@ func defaultScmTransport(scmClient *scm.Client) {
 func GetGitServer(cfg config.Getter) string {
 	serverURL := os.Getenv("GIT_SERVER")
 
-	if serverURL == "" && cfg != nil && cfg().ProviderConfig != nil {
-		serverURL = cfg().ProviderConfig.Server
+	actualConfig := cfg()
+	if serverURL == "" && actualConfig != nil && actualConfig.ProviderConfig != nil {
+		serverURL = actualConfig.ProviderConfig.Server
 	}
 	if serverURL == "" {
 		serverURL = "https://github.com"
@@ -99,8 +100,9 @@ func GetSCMClient(owner string, cfg config.Getter) (scmprovider.SCMClient, *scm.
 // GitKind gets the git kind from the environment
 func GitKind(cfg config.Getter) string {
 	kind := os.Getenv("GIT_KIND")
-	if kind == "" && cfg != nil && cfg().ProviderConfig != nil {
-		kind = cfg().ProviderConfig.Kind
+	actualConfig := cfg()
+	if kind == "" && actualConfig != nil && actualConfig.ProviderConfig != nil {
+		kind = actualConfig.ProviderConfig.Kind
 	}
 	if kind == "" {
 		kind = "github"
@@ -118,8 +120,9 @@ func GetBotName(cfg config.Getter) string {
 		}
 	}
 	botName := os.Getenv("GIT_USER")
-	if botName == "" && cfg != nil && cfg().ProviderConfig != nil {
-		botName = cfg().ProviderConfig.BotUser
+	actualConfig := cfg()
+	if botName == "" && actualConfig != nil && actualConfig.ProviderConfig != nil {
+		botName = actualConfig.ProviderConfig.BotUser
 	}
 	if botName == "" {
 		botName = "jenkins-x-bot"
