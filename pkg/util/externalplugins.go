@@ -253,6 +253,10 @@ func dispatch(endpoint string, payload []byte, h http.Header) error {
 // get the present event.
 func ExternalPluginsForEvent(pluginConfig *plugins.ConfigAgent, eventKind string, srcRepo string) []plugins.ExternalPlugin {
 	var matching []plugins.ExternalPlugin
+	if pluginConfig.Config() == nil {
+		return matching
+	}
+
 	srcOrg := strings.Split(srcRepo, "/")[0]
 
 	for repo, extPlugins := range pluginConfig.Config().ExternalPlugins {
