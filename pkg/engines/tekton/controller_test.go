@@ -1,28 +1,26 @@
 package tekton
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
-	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
+	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/util"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
-	tektoninformers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilrand "k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/tools/cache"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/yaml"
 )
 
@@ -30,113 +28,71 @@ const (
 	dashboardBaseURL = "https://example.com/"
 )
 
-func TestSyncHandler(t *testing.T) {
-	testCases := []struct {
-		name       string
-		inputIsJob bool
-	}{
-		{
-			name:       "start-pullrequest",
-			inputIsJob: true,
-		},
-		{
-			name:       "update-job",
-			inputIsJob: false,
-		},
-		{
-			name:       "start-batch-pullrequest",
-			inputIsJob: true,
-		},
+func TestReconcile(t *testing.T) {
+	testCases := []string{
+		"start-pullrequest",
+		"update-job",
+		"start-batch-pullrequest",
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc, func(t *testing.T) {
 			utilrand.Seed(12345)
-			testData := path.Join("test_data", "controller", tc.name)
+
+			testData := path.Join("test_data", "controller", tc)
 			_, err := os.Stat(testData)
 			assert.NoError(t, err)
 
+			// load observed state
+			ns := "jx"
 			observedPR, err := loadControllerPipelineRun(true, testData)
 			assert.NoError(t, err)
 			observedJob, err := loadLighthouseJob(true, testData)
 			assert.NoError(t, err)
+			observedPipeline, err := loadObservedPipeline(testData)
+			assert.NoError(t, err)
+			var state []runtime.Object
+			if observedPR != nil {
+				state = append(state, observedPR)
+			}
+			if observedJob != nil {
+				state = append(state, observedJob)
+			}
+			if observedPipeline != nil {
+				state = append(state, observedPipeline)
+			}
 
+			// load expected state
 			expectedPR, err := loadControllerPipelineRun(false, testData)
 			assert.NoError(t, err)
 			expectedJob, err := loadLighthouseJob(false, testData)
 			assert.NoError(t, err)
 
-			ns := "jx"
-			var tektonObjects []runtime.Object
-			if observedPR != nil {
-				tektonObjects = append(tektonObjects, observedPR)
-			}
-			var lhObjects []runtime.Object
-			if observedJob != nil {
-				lhObjects = append(lhObjects, observedJob)
-			}
-
-			observedPipeline, err := loadObservedPipeline(testData)
+			// create fake controller
+			scheme := runtime.NewScheme()
+			err = lighthousev1alpha1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			if observedPipeline != nil {
-				tektonObjects = append(tektonObjects, observedPipeline)
-			}
-
-			tektonClient := tektonfake.NewSimpleClientset(tektonObjects...)
-			lhClient := fake.NewSimpleClientset(lhObjects...)
-
-			lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Minute*30, lhinformers.WithNamespace(ns))
-
-			lhInformer := lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs()
-			lhLister := lhInformer.Lister()
-
-			tektonInformerFactory := tektoninformers.NewSharedInformerFactoryWithOptions(tektonClient, time.Minute*30, tektoninformers.WithNamespace(ns))
-
-			tektonInformer := tektonInformerFactory.Tekton().V1beta1().PipelineRuns()
-			tektonLister := tektonInformer.Lister()
-
-			stopCh := context.Background().Done()
-
-			tektonInformerFactory.Start(stopCh)
-			lhInformerFactory.Start(stopCh)
-
-			if ok := cache.WaitForCacheSync(stopCh, lhInformer.Informer().HasSynced, tektonInformer.Informer().HasSynced); !ok {
-				t.Fatalf("caches never synced")
-			}
-
-			controller := &Controller{
-				tektonClient: tektonClient,
-				lhClient:     lhClient,
-				prLister:     tektonLister,
-				lhLister:     lhLister,
-				logger:       logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
-				ns:           ns,
-				dashboardURL: dashboardBaseURL,
-			}
-
-			var key string
-			if tc.inputIsJob {
-				if observedJob != nil {
-					key, err = toKey(observedJob)
-				} else {
-					t.Fatal("Expected an observed LighthouseJob but none loaded from observed-lhjob.yml")
-				}
-			} else {
-				if observedPR != nil {
-					key, err = toKey(observedPR)
-				} else {
-					t.Fatal("Expected an observed PipelineRun but none was loaded from observed-pr.yml")
-				}
-			}
+			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			err = controller.syncHandler(key)
+			c := fake.NewFakeClientWithScheme(scheme, state...)
+			reconciler := NewLighthouseJobReconciler(c, scheme, dashboardBaseURL, ns)
+
+			// invoke reconcile
+			_, err = reconciler.Reconcile(ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: ns,
+					Name:      observedJob.GetName(),
+				},
+			})
 			assert.NoError(t, err)
 
+			// assert observed state matches expected state
 			if expectedPR != nil {
-				prs, err := tektonClient.TektonV1beta1().PipelineRuns(ns).List(metav1.ListOptions{})
+				var pipelineRunList tektonv1beta1.PipelineRunList
+				err := c.List(nil, &pipelineRunList, client.InNamespace(ns))
 				assert.NoError(t, err)
-				assert.Len(t, prs.Items, 1)
-				updatedPR := prs.Items[0].DeepCopy()
+				assert.Len(t, pipelineRunList.Items, 1)
+				updatedPR := pipelineRunList.Items[0].DeepCopy()
 				if d := cmp.Diff(expectedPR, updatedPR); d != "" {
 					t.Errorf("PipelineRun did not match expected: %s", d)
 					py, _ := yaml.Marshal(updatedPR)
@@ -144,11 +100,12 @@ func TestSyncHandler(t *testing.T) {
 				}
 			}
 			if expectedJob != nil {
-				jobs, err := lhClient.LighthouseV1alpha1().LighthouseJobs(ns).List(metav1.ListOptions{})
+				var jobList lighthousev1alpha1.LighthouseJobList
+				err := c.List(nil, &jobList, client.InNamespace(ns))
 				assert.NoError(t, err)
-				assert.Len(t, jobs.Items, 1)
+				assert.Len(t, jobList.Items, 1)
 				// Ignore status.starttime since that's always going to be different
-				updatedJob := jobs.Items[0].DeepCopy()
+				updatedJob := jobList.Items[0].DeepCopy()
 				updatedJob.Status.StartTime = metav1.Time{}
 				if d := cmp.Diff(expectedJob, updatedJob); d != "" {
 					t.Errorf("LighthouseJob did not match expected: %s", d)
