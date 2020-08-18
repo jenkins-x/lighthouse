@@ -17,10 +17,13 @@ metadata:
     lighthouse.jenkins-x.io/type: presubmit
   generateName: github-
   namespace: jx
+  resourceVersion: '1'
   ownerReferences:
-    - apiVersion: lighthouse.jenkins.io/v1
+    - apiVersion: lighthouse.jenkins.io/v1alpha1
       kind: LighthouseJob
       name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+      Controller: true
+      BlockOwnerDeletion: true
 spec:
   params:
     - name: BUILD_ID

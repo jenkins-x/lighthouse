@@ -3,19 +3,16 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
 
-	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
+	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
-	"github.com/jenkins-x/lighthouse/pkg/engines/tekton"
+	tektonengine "github.com/jenkins-x/lighthouse/pkg/engines/tekton"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
-	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
-	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	tektoninformers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions"
-	"k8s.io/client-go/kubernetes"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type options struct {
@@ -42,11 +39,15 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 }
 
 func main() {
-	logrusutil.ComponentInit("lighthouse-jx-controller")
+	logrusutil.ComponentInit("lighthouse-tekton-controller")
 
-	defer interrupts.WaitForGracefulShutdown()
-
-	stopCh := util.Stopper()
+	scheme := runtime.NewScheme()
+	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
+		logrus.WithError(err).Fatal("Failed to register scheme")
+	}
+	if err := pipelinev1beta1.AddToScheme(scheme); err != nil {
+		logrus.WithError(err).Fatal("Failed to register scheme")
+	}
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 	if err := o.Validate(); err != nil {
@@ -58,39 +59,18 @@ func main() {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}
 
-	lhClient, err := clientset.NewForConfig(cfg)
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Namespace: o.namespace})
 	if err != nil {
-		logrus.WithError(err).Fatal("Could not create Lighthouse API client")
+		logrus.WithError(err).Fatal("Unable to start manager")
 	}
-	kubeClient, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		logrus.WithError(err).Fatal("Could not create Kubernetes API client")
+
+	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.dashboardURL, o.namespace)
+	if err = reconciler.SetupWithManager(mgr); err != nil {
+		logrus.WithError(err).Fatal("Unable to create controller")
 	}
-	lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Minute*30, lhinformers.WithNamespace(o.namespace))
 
-	tektonClient, err := tektonclient.NewForConfig(cfg)
-	if err != nil {
-		logrus.WithError(err).Fatal("Could not create Tekton Pipelines API client")
-	}
-	tektonInformerFactory := tektoninformers.NewSharedInformerFactoryWithOptions(tektonClient, time.Minute*30, tektoninformers.WithNamespace(o.namespace))
-	prInformer := tektonInformerFactory.Tekton().V1beta1().PipelineRuns()
-
-	controller, err := tekton.NewController(kubeClient,
-		tektonClient,
-		lhClient,
-		prInformer,
-		lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs(),
-		o.namespace,
-		o.dashboardURL,
-		nil)
-
-	if err != nil {
-		logrus.WithError(err).Fatal("Error creating controller")
-	}
-	tektonInformerFactory.Start(stopCh)
-	lhInformerFactory.Start(stopCh)
-
-	if err = controller.Run(2, stopCh); err != nil {
-		logrus.WithError(err).Fatal("Error running controller")
+	defer interrupts.WaitForGracefulShutdown()
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		logrus.WithError(err).Fatal("Problem running manager")
 	}
 }

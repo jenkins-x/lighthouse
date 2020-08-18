@@ -16,6 +16,7 @@ metadata:
     lighthouse.jenkins-x.io/type: presubmit
   name: f46327af-b47e-11ea-b797-9256b7b8d9b0
   namespace: jx
+  resourceVersion: "2"
 spec:
   agent: tekton-pipeline
   context: github
