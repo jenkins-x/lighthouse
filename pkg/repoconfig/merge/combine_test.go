@@ -3,53 +3,53 @@ package merge_test
 import (
 	"testing"
 
-	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig/merge"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCombineRepositoryConfig(t *testing.T) {
-	v1 := v1alpha1.RepositoryConfig{
-		Spec: v1alpha1.RepositoryConfigSpec{
-			Presubmits: []v1alpha1.Presubmit{
+	v1 := repoconfig.RepositoryConfig{
+		Spec: repoconfig.RepositoryConfigSpec{
+			Presubmits: []repoconfig.Presubmit{
 				{
-					JobBase: v1alpha1.JobBase{
+					JobBase: repoconfig.JobBase{
 						Name: "lint",
 					},
 					AlwaysRun:    true,
 					Optional:     false,
 					Trigger:      "/lint",
 					RerunCommand: "/relint",
-					Reporter: v1alpha1.Reporter{
+					Reporter: repoconfig.Reporter{
 						Context: "lint",
 					},
 				},
 			},
-			Postsubmits: []v1alpha1.Postsubmit{
+			Postsubmits: []repoconfig.Postsubmit{
 				{
-					JobBase: v1alpha1.JobBase{
+					JobBase: repoconfig.JobBase{
 						Name: "release",
 					},
-					Reporter: v1alpha1.Reporter{
+					Reporter: repoconfig.Reporter{
 						Context: "release",
 					},
 				},
 			},
 		},
 	}
-	v2 := v1alpha1.RepositoryConfig{
-		Spec: v1alpha1.RepositoryConfigSpec{
-			Presubmits: []v1alpha1.Presubmit{
+	v2 := repoconfig.RepositoryConfig{
+		Spec: repoconfig.RepositoryConfigSpec{
+			Presubmits: []repoconfig.Presubmit{
 				{
-					JobBase: v1alpha1.JobBase{
+					JobBase: repoconfig.JobBase{
 						Name: "another",
 					},
 					AlwaysRun:    true,
 					Optional:     false,
 					Trigger:      "/another",
 					RerunCommand: "/reanother",
-					Reporter: v1alpha1.Reporter{
+					Reporter: repoconfig.Reporter{
 						Context: "another",
 					},
 				},
@@ -59,8 +59,8 @@ func TestCombineRepositoryConfig(t *testing.T) {
 
 	testCases := []struct {
 		name                string
-		r1                  *v1alpha1.RepositoryConfig
-		r2                  *v1alpha1.RepositoryConfig
+		r1                  *repoconfig.RepositoryConfig
+		r2                  *repoconfig.RepositoryConfig
 		expectedPresubmits  int
 		expectedPostsubmits int
 	}{

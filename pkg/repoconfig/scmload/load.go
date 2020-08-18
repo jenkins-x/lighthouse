@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig/merge"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
@@ -31,12 +31,12 @@ func MergeConfig(cfg *config.Config, pluginCfg *plugins.Configuration, scmClient
 }
 
 // LoadRepositoryConfig loads the `lighthouse.yaml` configuration files in the repository
-func LoadRepositoryConfig(scmClient *scm.Client, repoOwner string, repoName string, sha string) (*v1alpha1.RepositoryConfig, error) {
+func LoadRepositoryConfig(scmClient *scm.Client, repoOwner string, repoName string, sha string) (*repoconfig.RepositoryConfig, error) {
 	if sha == "" {
 		sha = "master"
 	}
 
-	var answer *v1alpha1.RepositoryConfig
+	var answer *repoconfig.RepositoryConfig
 	repo := scm.Join(repoOwner, repoName)
 
 	ctx := context.Background()
@@ -73,7 +73,7 @@ func isDirType(t string) bool {
 	return strings.ToLower(t) == "dir"
 }
 
-func loadConfigFile(ctx context.Context, client *scm.Client, repo string, path string, sha string) (*v1alpha1.RepositoryConfig, error) {
+func loadConfigFile(ctx context.Context, client *scm.Client, repo string, path string, sha string) (*repoconfig.RepositoryConfig, error) {
 	c, r, err := client.Contents.Find(ctx, repo, path, sha)
 	if err != nil {
 		if r != nil && r.Status == 404 {
@@ -84,7 +84,7 @@ func loadConfigFile(ctx context.Context, client *scm.Client, repo string, path s
 	if len(c.Data) == 0 {
 		return nil, nil
 	}
-	repoConfig := &v1alpha1.RepositoryConfig{}
+	repoConfig := &repoconfig.RepositoryConfig{}
 	err = yaml.Unmarshal(c.Data, repoConfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal file %s in repo %s with sha %s", path, repo, sha)

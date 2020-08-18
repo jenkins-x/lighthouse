@@ -1,17 +1,3 @@
-package v1alpha1
-
-import (
-	"regexp"
-
-	"time"
-
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	v1 "k8s.io/api/core/v1"
-)
-
-// These structs are copies of the config package structs but with nicer kubernetes native camel case
-// yaml encoding
-
 /*
 Copyright 2017 The Kubernetes Authors.
 
@@ -27,6 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package repoconfig
+
+import (
+	"regexp"
+	"time"
+
+	"github.com/jenkins-x/lighthouse/pkg/config"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	v1 "k8s.io/api/core/v1"
+)
 
 // this file contains copies of structs from the config package
 // using different JSON/YAML marshalling so that they look like
@@ -63,6 +60,8 @@ type JobBase struct {
 	Spec *v1.PodSpec `json:"spec,omitempty"`
 	// PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline
 	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipelineRunSpec,omitempty"`
+	// PipelineRunParams are the params used by the pipeline run
+	PipelineRunParams []config.PipelineRunParam `json:"pipeline_run_params,omitempty"`
 
 	UtilityConfig
 }

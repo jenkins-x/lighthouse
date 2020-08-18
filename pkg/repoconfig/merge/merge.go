@@ -1,13 +1,13 @@
 package merge
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 )
 
 // ConfigMerge merges the repository configuration into the global configuration
-func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConfig *v1alpha1.RepositoryConfig, repoOwner string, repoName string) error {
+func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConfig *repoconfig.RepositoryConfig, repoOwner string, repoName string) error {
 	repoKey := repoOwner + "/" + repoName
 	if len(repoConfig.Spec.Presubmits) > 0 {
 		if cfg.Presubmits == nil {
