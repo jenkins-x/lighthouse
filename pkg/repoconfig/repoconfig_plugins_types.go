@@ -1,4 +1,4 @@
-package v1alpha1
+package repoconfig
 
 // this file contains copies of structs from the plugins package
 // using different JSON/YAML marshalling so that they look like

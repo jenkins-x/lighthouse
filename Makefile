@@ -149,9 +149,9 @@ $(CODEGEN_BIN):
 
 generate-client: codegen-clientset fmt ## Generate the client
 
-codegen-clientset: $(CODEGEN_BIN) ## Generate the k8s types and clients
+codegen-clientset: ## Generate the k8s types and clients
 	@echo "Generating Kubernetes Clients for pkg/apis/lighthouse/v1alpha1 in pkg/client for lighthouse.jenkins.io:v1alpha1"
-	$(CODEGEN_BIN) --generator-version $(CLIENTSET_GENERATOR_VERSION) clientset --output-package=pkg/client --input-package=pkg/apis --group-with-version=lighthouse:v1alpha1
+	./hack/update-codegen.sh
 
 
 verify-code-unchanged: ## Verify the generated/formatting of code is up to date

@@ -1,17 +1,11 @@
-package v1alpha1
+package repoconfig
 
 import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +genclient
-// +genclient:noStatus
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // RepositoryConfig represents local repository configurations
-//
-// +k8s:openapi-gen=true
 type RepositoryConfig struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -44,8 +38,6 @@ type RepositoryConfigSpec struct {
 }
 
 // RepositoryConfigList contains a list of RepositoryConfig
-//
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type RepositoryConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional

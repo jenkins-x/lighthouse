@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig/merge"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,37 +21,37 @@ func TestMergeRepositoryConfig(t *testing.T) {
 		name       string
 		cfg        config.Config
 		pluginCfg  plugins.Configuration
-		repoConfig v1alpha1.RepositoryConfig
+		repoConfig repoconfig.RepositoryConfig
 	}{
 		{
 			name: "emptyConfig",
-			repoConfig: v1alpha1.RepositoryConfig{
-				Spec: v1alpha1.RepositoryConfigSpec{
-					Presubmits: []v1alpha1.Presubmit{
+			repoConfig: repoconfig.RepositoryConfig{
+				Spec: repoconfig.RepositoryConfigSpec{
+					Presubmits: []repoconfig.Presubmit{
 						{
-							JobBase: v1alpha1.JobBase{
+							JobBase: repoconfig.JobBase{
 								Name: "lint",
 							},
 							AlwaysRun:    true,
 							Optional:     false,
 							Trigger:      "/lint",
 							RerunCommand: "/relint",
-							Reporter: v1alpha1.Reporter{
+							Reporter: repoconfig.Reporter{
 								Context: "lint",
 							},
 						},
 					},
-					Postsubmits: []v1alpha1.Postsubmit{
+					Postsubmits: []repoconfig.Postsubmit{
 						{
-							JobBase: v1alpha1.JobBase{
+							JobBase: repoconfig.JobBase{
 								Name: "release",
 							},
-							Reporter: v1alpha1.Reporter{
+							Reporter: repoconfig.Reporter{
 								Context: "release",
 							},
 						},
 					},
-					Keeper: &v1alpha1.Keeper{
+					Keeper: &repoconfig.Keeper{
 						Query: &config.KeeperQuery{
 							Labels:        []string{"mylabel"},
 							MissingLabels: []string{"foo", "bar"},
@@ -102,7 +102,7 @@ func TestMergeRepositoryConfigFiles(t *testing.T) {
 
 			cfg := &config.Config{}
 			pluginCfg := &plugins.Configuration{}
-			repoConfig := &v1alpha1.RepositoryConfig{}
+			repoConfig := &repoconfig.RepositoryConfig{}
 			LoadYAMLFile(t, srcConfigFile, cfg)
 			LoadYAMLFile(t, srcPluginsFile, pluginCfg)
 			LoadYAMLFile(t, repoConfigFile, repoConfig)

@@ -44,6 +44,7 @@ pipelineConfig:
             command: make
             args:
             - check
+            - generate-client
             - verify-code-unchanged
             dir: /workspace/source
 

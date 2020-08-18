@@ -1,12 +1,12 @@
 package merge
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 )
 
 // CombineConfigs combines the two configurations together from multiple files
-func CombineConfigs(a, b *v1alpha1.RepositoryConfig) *v1alpha1.RepositoryConfig {
+func CombineConfigs(a, b *repoconfig.RepositoryConfig) *repoconfig.RepositoryConfig {
 	if a == nil {
 		return b
 	}

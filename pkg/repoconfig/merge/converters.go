@@ -1,13 +1,13 @@
 package merge
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 )
 
 // ToPresubmit converts the repo config to the lighthouse config resource
-func ToPresubmit(r v1alpha1.Presubmit) config.Presubmit {
+func ToPresubmit(r repoconfig.Presubmit) config.Presubmit {
 	return config.Presubmit{
 		JobBase:             ToJobBase(r.JobBase),
 		AlwaysRun:           r.AlwaysRun,
@@ -21,7 +21,7 @@ func ToPresubmit(r v1alpha1.Presubmit) config.Presubmit {
 }
 
 // ToPostsubmit converts the repo config to the lighthouse config resource
-func ToPostsubmit(r v1alpha1.Postsubmit) config.Postsubmit {
+func ToPostsubmit(r repoconfig.Postsubmit) config.Postsubmit {
 	return config.Postsubmit{
 		JobBase:             ToJobBase(r.JobBase),
 		RegexpChangeMatcher: ToRegexpChangeMatcher(r.RegexpChangeMatcher),
@@ -31,7 +31,7 @@ func ToPostsubmit(r v1alpha1.Postsubmit) config.Postsubmit {
 }
 
 // ToJobBase converts the repo config to the lighthouse config resource
-func ToJobBase(r v1alpha1.JobBase) config.JobBase {
+func ToJobBase(r repoconfig.JobBase) config.JobBase {
 	return config.JobBase{
 		Name:            r.Name,
 		Labels:          r.Labels,
@@ -49,7 +49,7 @@ func ToJobBase(r v1alpha1.JobBase) config.JobBase {
 }
 
 // ToBrancher converts the repo config to the lighthouse config resource
-func ToBrancher(r v1alpha1.Brancher) config.Brancher {
+func ToBrancher(r repoconfig.Brancher) config.Brancher {
 	return config.Brancher{
 		SkipBranches: r.SkipBranches,
 		Branches:     r.Branches,
@@ -57,7 +57,7 @@ func ToBrancher(r v1alpha1.Brancher) config.Brancher {
 }
 
 // ToReporter converts the repo config to the lighthouse config resource
-func ToReporter(r v1alpha1.Reporter) config.Reporter {
+func ToReporter(r repoconfig.Reporter) config.Reporter {
 	return config.Reporter{
 		Context:    r.Context,
 		SkipReport: r.SkipReport,
@@ -65,12 +65,12 @@ func ToReporter(r v1alpha1.Reporter) config.Reporter {
 }
 
 // ToRegexpChangeMatcher converts the repo config to the lighthouse config resource
-func ToRegexpChangeMatcher(r v1alpha1.RegexpChangeMatcher) config.RegexpChangeMatcher {
+func ToRegexpChangeMatcher(r repoconfig.RegexpChangeMatcher) config.RegexpChangeMatcher {
 	return config.RegexpChangeMatcher{RunIfChanged: r.RunIfChanged}
 }
 
 // ToUtilityConfig converts the repo config to the lighthouse config resource
-func ToUtilityConfig(r v1alpha1.UtilityConfig) config.UtilityConfig {
+func ToUtilityConfig(r repoconfig.UtilityConfig) config.UtilityConfig {
 	return config.UtilityConfig{
 		Decorate:       r.Decorate,
 		PathAlias:      r.PathAlias,
@@ -81,7 +81,7 @@ func ToUtilityConfig(r v1alpha1.UtilityConfig) config.UtilityConfig {
 }
 
 // ToApprove converts the repo config to the lighthouse config resource
-func ToApprove(r *v1alpha1.Approve, repoKey string) plugins.Approve {
+func ToApprove(r *repoconfig.Approve, repoKey string) plugins.Approve {
 	return plugins.Approve{
 		Repos:               []string{repoKey},
 		IssueRequired:       r.IssueRequired,
