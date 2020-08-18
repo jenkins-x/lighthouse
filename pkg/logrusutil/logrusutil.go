@@ -20,8 +20,7 @@ package logrusutil
 import (
 	"os"
 
-	stackdriver "github.com/TV4/logrus-stackdriver-formatter"
-
+	"github.com/jenkins-x/lighthouse/pkg/logrusutil/stackdriver"
 	"github.com/sirupsen/logrus"
 )
 
