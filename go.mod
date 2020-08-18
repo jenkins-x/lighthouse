@@ -2,9 +2,9 @@ module github.com/jenkins-x/lighthouse
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible
-	github.com/TV4/logrus-stackdriver-formatter v0.1.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/evanphx/json-patch v4.5.0+incompatible
+	github.com/go-stack/stack v1.8.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.4.1
 	github.com/gorilla/sessions v1.2.0
@@ -32,8 +32,6 @@ require (
 	knative.dev/pkg v0.0.0-20200702222342-ea4d6e985ba0
 	sigs.k8s.io/yaml v1.2.0
 )
-
-replace github.com/TV4/logrus-stackdriver-formatter => github.com/jenkins-x/logrus-stackdriver-formatter v0.1.1-0.20200408213659-1dcf20c371bb
 
 replace k8s.io/client-go => k8s.io/client-go v0.17.6
 
