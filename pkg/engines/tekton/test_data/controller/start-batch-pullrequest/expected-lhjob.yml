@@ -31,11 +31,11 @@ spec:
     serviceAccountName: tekton-bot
   pipeline_run_params:
     - name: batch-refs
-      value_template: '{{ range $i, $v := .Pulls }}{{if $i}} {{end}}{{ $v.Ref }}{{ end }}'
+      value_template: '{{ range $i, $v := .Refs.Pulls }}{{if $i}} {{end}}{{ $v.Ref }}{{ end }}'
     - name: branch-name
-      value_template: '{{ .BaseRef }}'
+      value_template: '{{ .Refs.BaseRef }}'
     - name: repo-url
-      value_template: '{{ .CloneURI }}'
+      value_template: '{{ .Refs.CloneURI }}'
   refs:
     base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
     base_ref: master

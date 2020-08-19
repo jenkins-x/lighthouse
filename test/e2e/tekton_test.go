@@ -114,15 +114,15 @@ func ChatOpsTests() bool {
 			cfg.Presubmits[repoFullName][0].PipelineRunParams = []config.PipelineRunParam{
 				{
 					Name:          "batch-refs",
-					ValueTemplate: "{{ range $i, $v := .Pulls }}{{if $i}} {{end}}{{ $v.Ref }}{{ end }}",
+					ValueTemplate: "{{ range $i, $v := .Refs.Pulls }}{{if $i}} {{end}}{{ $v.Ref }}{{ end }}",
 				},
 				{
 					Name:          "branch-name",
-					ValueTemplate: "{{ .BaseRef }}",
+					ValueTemplate: "{{ .Refs.BaseRef }}",
 				},
 				{
 					Name:          "repo-url",
-					ValueTemplate: "{{ .CloneURI }}",
+					ValueTemplate: "{{ .Refs.CloneURI }}",
 				},
 			}
 
