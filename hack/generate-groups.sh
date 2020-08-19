@@ -44,11 +44,12 @@ APIS_PKG="$3"
 GROUPS_WITH_VERSIONS="$4"
 shift 4
 
+GENERATOR_VERSION=v0.17.6
 (
   # To support running this script from anywhere, we have to first cd into this directory
   # so we can install the tools.
   cd "$(dirname "${0}")"
-  go install k8s.io/code-generator/cmd/{defaulter-gen,client-gen,lister-gen,informer-gen,deepcopy-gen}
+  go get k8s.io/code-generator/cmd/{defaulter-gen,client-gen,lister-gen,informer-gen,deepcopy-gen}@$GENERATOR_VERSION
 )
 
 PREFIX=${GOBIN:-${GOPATH}/bin}
