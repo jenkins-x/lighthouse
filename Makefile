@@ -1,31 +1,33 @@
 # Make does not offer a recursive wildcard function, so here's one:
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
-SHELL := /bin/bash
 PROJECT := github.com/jenkins-x/lighthouse
+
 WEBHOOKS_EXECUTABLE := lighthouse
 KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
 GCJOBS_EXECUTABLE := gc-jobs
 TEKTONCONTROLLER_EXECUTABLE := lighthouse-tekton-controller
-DOCKER_REGISTRY := jenkinsxio
-DOCKER_IMAGE_NAME := lighthouse
+
 WEBHOOKS_MAIN_SRC_FILE=cmd/webhooks/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
 GCJOBS_MAIN_SRC_FILE=cmd/gc/main.go
 TEKTONCONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
+
+DOCKER_REGISTRY := jenkinsxio
+DOCKER_IMAGE_NAME := lighthouse
+
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
+GOTEST := $(GO) test
+
 VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
 GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 
-GOTEST := $(GO) test
-
-CLIENTSET_GENERATOR_VERSION := kubernetes-1.15.12
-
-all: check test build
+.PHONY: all
+all: build test check
 
 .PHONY: test
 test: 
@@ -39,13 +41,13 @@ get-fmt-deps: ## Install test dependencies
 
 .PHONY: importfmt
 importfmt: get-fmt-deps
-	@echo "Formatting the imports..."
-	goimports -w $(GO_DEPENDENCIES)
+	@echo "FORMATTING IMPORTS"
+	@goimports -w $(GO_DEPENDENCIES)
 
 .PHONY: fmt
 fmt: importfmt
-	@echo "FORMATTING"
-	@FORMATTED=`$(GO) fmt ./...`
+	@echo "FORMATTING SOURCE"
+	FORMATTED=`$(GO) fmt ./...`
 	@([[ ! -z "$(FORMATTED)" ]] && printf "Fixed unformatted files:\n$(FORMATTED)") || true
 
 GOLINT := $(GOPATH)/bin/golint
@@ -66,7 +68,7 @@ $(GOSEC):
 .PHONY: sec
 sec: $(GOSEC)
 	@echo "SECURITY SCANNING"
-	$(GOSEC) -fmt=csv ./...
+	$(GOSEC) -quiet -fmt=csv ./...
 
 .PHONY: clean
 clean:
@@ -143,16 +145,11 @@ production-container:
 push-container: production-container
 	docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME)
 
-CODEGEN_BIN := $(GOPATH)/bin/codegen
-$(CODEGEN_BIN):
-	$(GO_NOMOD) get github.com/jenkins-x/jx/cmd/codegen
-
 generate-client: codegen-clientset fmt ## Generate the client
 
 codegen-clientset: ## Generate the k8s types and clients
 	@echo "Generating Kubernetes Clients for pkg/apis/lighthouse/v1alpha1 in pkg/client for lighthouse.jenkins.io:v1alpha1"
 	./hack/update-codegen.sh
-
 
 verify-code-unchanged: ## Verify the generated/formatting of code is up to date
 	$(eval CHANGED = $(shell git ls-files --modified --others --exclude-standard))
