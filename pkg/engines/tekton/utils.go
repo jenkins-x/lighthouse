@@ -83,13 +83,16 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 		env[v1alpha1.PullPullRefEnv] = strings.Join(batchedRefsVals, " ")
 	}
 	if len(lj.Spec.PipelineRunParams) > 0 {
+		payload := map[string]interface{}{
+			"Refs": lj.Spec.Refs,
+		}
 		for _, param := range lj.Spec.PipelineRunParams {
 			parsedTemplate, err := template.New(param.Name).Parse(param.ValueTemplate)
 			if err != nil {
 				return nil, err
 			}
 			var msgBuffer bytes.Buffer
-			err = parsedTemplate.Execute(&msgBuffer, lj.Spec.Refs)
+			err = parsedTemplate.Execute(&msgBuffer, payload)
 			if err != nil {
 				return nil, err
 			}
