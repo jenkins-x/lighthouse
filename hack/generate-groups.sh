@@ -42,6 +42,25 @@ GENERATOR_VERSION=v0.17.6
 
 PREFIX=${GOBIN:-${GOPATH}/bin}
 
+# turn off module mode before running the generators
+# https://github.com/kubernetes/code-generator/issues/69
+# we also need to populate vendor
+readonly REPO_ROOT_DIR="${REPO_ROOT_DIR:-$(git rev-parse --show-toplevel 2> /dev/null)}"
+
+go mod vendor
+
+export GO111MODULE="off"
+
+# fake being in a gopath
+FAKE_GOPATH="$(mktemp -d)"
+trap 'rm -rf ${FAKE_GOPATH} && rm -rf ${REPO_ROOT_DIR}/vendor' EXIT
+
+FAKE_REPOPATH="${FAKE_GOPATH}/src/github.com/jenkins-x/lighthouse"
+mkdir -p "$(dirname "${FAKE_REPOPATH}")" && ln -s "${REPO_ROOT_DIR}" "${FAKE_REPOPATH}"
+
+export GOPATH="${FAKE_GOPATH}"
+cd "${FAKE_REPOPATH}"
+
 function codegen::join() { local IFS="$1"; shift; echo "$*"; }
 
 # enumerate group versions
@@ -57,25 +76,28 @@ done
 
 if [ "${GENS}" = "all" ] || grep -qw "deepcopy" <<<"${GENS}"; then
   echo "Generating deepcopy funcs for ${GROUPS_WITH_VERSIONS}"
-  GO111MODULE=off "${PREFIX}/deepcopy-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" -O zz_generated.deepcopy --bounding-dirs "${APIS_PKG}" "$@"
+  "${PREFIX}/deepcopy-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" -O zz_generated.deepcopy --bounding-dirs "${APIS_PKG}" "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "client" <<<"${GENS}"; then
   echo "Generating clientset for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}"
-  GO111MODULE=off "${PREFIX}/client-gen" --clientset-name "${CLIENTSET_NAME_VERSIONED:-versioned}" --input-base "" --input "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}" "$@"
+  "${PREFIX}/client-gen" --clientset-name "${CLIENTSET_NAME_VERSIONED:-versioned}" --input-base "" --input "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}" "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "lister" <<<"${GENS}"; then
   echo "Generating listers for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/listers"
-  GO111MODULE=off "${PREFIX}/lister-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/listers" "$@"
+  "${PREFIX}/lister-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/listers" "$@"
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "informer" <<<"${GENS}"; then
   echo "Generating informers for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/informers"
-  GO111MODULE=off "${PREFIX}/informer-gen" \
+  "${PREFIX}/informer-gen" \
            --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" \
            --versioned-clientset-package "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}/${CLIENTSET_NAME_VERSIONED:-versioned}" \
            --listers-package "${OUTPUT_PKG}/listers" \
            --output-package "${OUTPUT_PKG}/informers" \
            "$@"
 fi
+
+export GO111MODULE="on"
+cd $REPO_ROOT_DIR
