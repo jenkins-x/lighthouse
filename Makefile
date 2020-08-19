@@ -22,7 +22,8 @@ GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
 GOTEST := $(GO) test
 
-VERSION ?= $(shell echo "$$(git describe --abbrev=0 --tags 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
+REV := $(shell git rev-parse --short HEAD 2> /dev/null || echo 'unknown')
+VERSION ?= $(shell echo "$$(git for-each-ref refs/tags/ --count=1 --sort=-version:refname --format='%(refname:short)' 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
 GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 
