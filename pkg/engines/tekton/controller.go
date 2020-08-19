@@ -9,7 +9,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	tektonclient "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -26,7 +25,6 @@ type LighthouseJobReconciler struct {
 	client       client.Client
 	logger       *logrus.Entry
 	scheme       *runtime.Scheme
-	tektonClient tektonclient.Interface
 	dashboardURL string
 	namespace    string
 }
