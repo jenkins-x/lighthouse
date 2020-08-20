@@ -1,0 +1,102 @@
+apiVersion: lighthouse.jenkins.io/v1alpha1
+kind: LighthouseJob
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/job: github
+  labels:
+    created-by-lighthouse: "true"
+    lighthouse.jenkins-x.io/branch: PR-813
+    lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
+    lighthouse.jenkins-x.io/context: github
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    lighthouse.jenkins-x.io/job: github
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.pull: "813"
+    lighthouse.jenkins-x.io/refs.repo: lighthouse
+    lighthouse.jenkins-x.io/type: presubmit
+  name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+  namespace: jx
+  resourceVersion: '5'
+spec:
+  agent: tekton-pipeline
+  context: github
+  job: github
+  namespace: jx
+  pipeline_run_spec:
+    pipelineRef:
+      apiVersion: tekton.dev/v1beta1
+      name: jenkins-x-charts-jx-build-templ-wbbx6-7
+    podTemplate:
+      schedulerName: ""
+    resources:
+      - name: jenkins-x-charts-jx-build-templ-wbbx6
+        resourceRef:
+          apiVersion: tekton.dev/v1beta1
+          name: jenkins-x-charts-jx-build-templ-wbbx6
+    serviceAccountName: tekton-bot
+    timeout: 240h0m0s
+  refs:
+    base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
+    base_ref: master
+    base_sha: e8d56b5ee9671599c75644af574a251dd3b94a5c
+    clone_uri: https://github.com/jenkins-x/lighthouse.git
+    org: jenkins-x
+    pulls:
+    - author: abayer
+      author_link: https://github.com/abayer
+      commit_link: https://github.com/jenkins-x/lighthouse/pull/813/commits/dd64c739442d505cf5381e2a14b60968e8a0d86e
+      link: https://github.com/jenkins-x/lighthouse/pull/813.diff
+      number: 813
+      sha: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    repo: lighthouse
+    repo_link: https://github.com/jenkins-x/lighthouse
+  rerun_command: /test github
+  type: presubmit
+status:
+  activity:
+    baseSHA: e8d56b5ee9671599c75644af574a251dd3b94a5c
+    branch: PR-813
+    buildId: "7828158075477027098"
+    context: github
+    gitURL: https://github.com/jenkins-x/lighthouse.git
+    jobId: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    lastCommitSHA: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    owner: jenkins-x
+    repo: lighthouse
+    stages:
+      - name: jenkins-x-jx-pr-7463-unit-wbf7v-18-ci
+        startTime: "2020-07-20T20:15:20Z"
+        status: running
+        steps:
+          - completionTime: "2020-07-20T20:15:37Z"
+            name: setup-builder-home
+            startTime: "2020-07-20T20:15:37Z"
+            status: success
+          - completionTime: "2020-07-20T20:15:48Z"
+            name: git-merge
+            startTime: "2020-07-20T20:15:37Z"
+            status: success
+          - completionTime: "2020-07-20T20:15:51Z"
+            name: init-jx
+            startTime: "2020-07-20T20:15:48Z"
+            status: success
+          - name: build
+            startTime: "2020-07-20T20:15:31Z"
+            status: running
+          - name: unit-test
+            startTime: "2020-07-20T20:15:31Z"
+            status: running
+          - completionTime: "2020-07-20T20:15:37Z"
+            name: git-source-jenkins-x-jx-pr-7463-unit-wbf7v-vrx5d
+            startTime: "2020-07-20T20:15:34Z"
+            status: success
+    startTime: "2020-07-20T20:15:20Z"
+    status: running
+    steps: null
+  description: "Pipeline running stage(s): jenkins-x-jx-pr-7463-unit-wbf7v-..."
+  lastCommitSHA: dd64c739442d505cf5381e2a14b60968e8a0d86e
+  lastReportState: running
+  reportURL: https://example.com/#/namespaces/jx/pipelineruns/f46327af-b47e-11ea-b797-9256b7b8d9b0
+  startTime: null
+  state: running

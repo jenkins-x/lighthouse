@@ -3,23 +3,18 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
 
-	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	lhinformers "github.com/jenkins-x/lighthouse/pkg/client/informers/externalversions"
+	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/foghorn"
-	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
-	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type options struct {
 	namespace string
-
-	dryRun bool
 }
 
 func (o *options) Validate() error {
@@ -28,7 +23,6 @@ func (o *options) Validate() error {
 
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
-	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to mutate any real-world state.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
 
 	err := fs.Parse(args)
@@ -42,9 +36,10 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 func main() {
 	logrusutil.ComponentInit("lighthouse-foghorn")
 
-	defer interrupts.WaitForGracefulShutdown()
-
-	stopCh := util.Stopper()
+	scheme := runtime.NewScheme()
+	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
+		logrus.WithError(err).Fatal("Failed to register scheme")
+	}
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 	if err := o.Validate(); err != nil {
@@ -56,28 +51,22 @@ func main() {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}
 
-	lhClient, err := clientset.NewForConfig(cfg)
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Namespace: o.namespace})
 	if err != nil {
-		logrus.WithError(err).Fatal("Could not create Lighthouse API client")
+		logrus.WithError(err).Fatal("Unable to start manager")
 	}
-	kubeClient, err := kubernetes.NewForConfig(cfg)
+
+	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace)
 	if err != nil {
-		logrus.WithError(err).Fatal("Could not create Kubernetes API client")
+		logrus.WithError(err).Fatal("Unable to instantiate reconciler")
 	}
-	lhInformerFactory := lhinformers.NewSharedInformerFactoryWithOptions(lhClient, time.Minute*30, lhinformers.WithNamespace(o.namespace))
-
-	controller, err := foghorn.NewController(kubeClient,
-		lhClient,
-		lhInformerFactory.Lighthouse().V1alpha1().LighthouseJobs(),
-		o.namespace,
-		nil)
-
-	if err != nil {
-		logrus.WithError(err).Fatal("Error creating controller")
+	if err = reconciler.SetupWithManager(mgr); err != nil {
+		logrus.WithError(err).Fatal("Unable to create controller")
 	}
-	lhInformerFactory.Start(stopCh)
 
-	if err = controller.Run(2, stopCh); err != nil {
-		logrus.WithError(err).Fatal("Error running controller")
+	defer reconciler.ConfigMapWatcher.Stop()
+
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		logrus.WithError(err).Fatal("Problem running manager")
 	}
 }
