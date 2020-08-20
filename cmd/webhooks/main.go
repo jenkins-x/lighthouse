@@ -8,15 +8,9 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/webhook"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	// HealthPath is the URL path for the HTTP endpoint that returns Health status.
-	HealthPath = "/Health"
-	// ReadyPath URL path for the HTTP endpoint that returns Ready status.
-	ReadyPath = "/Ready"
 )
 
 type options struct {
@@ -78,12 +72,13 @@ func main() {
 		controller.ConfigMapWatcher.Stop()
 	}()
 
+	health := util.NewHealth()
 	mux := http.NewServeMux()
-	mux.Handle(HealthPath, http.HandlerFunc(controller.Health))
-	mux.Handle(ReadyPath, http.HandlerFunc(controller.Ready))
 
 	mux.Handle("/", http.HandlerFunc(controller.DefaultHandler))
 	mux.Handle(o.path, http.HandlerFunc(controller.HandleWebhookRequests))
+
+	health.ServeReady()
 
 	logrus.Infof("Lighthouse is now listening on path %s and port %d for WebHooks", o.path, o.port)
 	err = http.ListenAndServe(":"+strconv.Itoa(o.port), mux)

@@ -1,0 +1,6 @@
+{{- if .Values.buildNumbers.enable }}
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ template "buildnumbers.name" . }}
+{{- end }}

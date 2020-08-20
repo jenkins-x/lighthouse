@@ -26,16 +26,18 @@ type LighthouseJobReconciler struct {
 	logger       *logrus.Entry
 	scheme       *runtime.Scheme
 	dashboardURL string
+	buildNumURL  string
 	namespace    string
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, dashboardURL string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, dashboardURL string, buildNumURL string, namespace string) *LighthouseJobReconciler {
 	return &LighthouseJobReconciler{
 		client:       client,
 		logger:       logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
 		scheme:       scheme,
 		dashboardURL: dashboardURL,
+		buildNumURL:  buildNumURL,
 		namespace:    namespace,
 	}
 }
@@ -93,7 +95,7 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	if len(pipelineRunList.Items) == 0 {
 		if job.Status.State == lighthousev1alpha1.TriggeredState {
 			// construct a pipeline run
-			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.client)
+			pipelineRun, err := makePipelineRun(ctx, job, r.buildNumURL, r.namespace, r.logger, r.client)
 			if err != nil {
 				r.logger.Errorf("Failed to make pipeline run: %s", err)
 				return ctrl.Result{}, err

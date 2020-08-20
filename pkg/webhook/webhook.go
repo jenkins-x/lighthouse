@@ -77,22 +77,6 @@ func (o *WebhooksController) CleanupGitClientDir() {
 	}
 }
 
-// Health returns either HTTP 204 if the service is healthy, otherwise nothing ('cos it's dead).
-func (o *WebhooksController) Health(w http.ResponseWriter, r *http.Request) {
-	logrus.Debug("Health check")
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// Ready returns either HTTP 204 if the service is Ready to serve requests, otherwise HTTP 503.
-func (o *WebhooksController) Ready(w http.ResponseWriter, r *http.Request) {
-	logrus.Debug("Ready check")
-	if o.isReady() {
-		w.WriteHeader(http.StatusNoContent)
-	} else {
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}
-}
-
 // DefaultHandler responds to requests without a specific handler
 func (o *WebhooksController) DefaultHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path

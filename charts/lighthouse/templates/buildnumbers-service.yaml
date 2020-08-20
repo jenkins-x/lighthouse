@@ -1,0 +1,25 @@
+{{- if .Values.buildNumbers.enable }}
+apiVersion: v1
+kind: Service
+metadata:
+{{- if .Values.buildNumbers.service.name }}
+  name: {{ .Values.buildNumbers.service.name }}
+{{- else }}
+  name: {{ template "buildnumbers.name" . }}
+{{- end }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+{{- if .Values.buildNumbers.service.annotations }}
+  annotations:
+{{ toYaml .Values.buildNumbers.service.annotations | indent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.buildNumbers.service.type }}
+  ports:
+  - port: {{ .Values.buildNumbers.service.externalPort }}
+    targetPort: {{ .Values.buildNumbers.service.internalPort }}
+    protocol: TCP
+    name: http
+  selector:
+    app: {{ template "buildnumbers.name" . }}
+{{- end }}

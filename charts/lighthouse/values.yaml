@@ -54,7 +54,8 @@ webhooks:
       cpu: 80m
       memory: 128Mi
   probe:
-    path: /
+    port: 8081
+    path: /healthz
   livenessProbe:
     initialDelaySeconds: 60
     periodSeconds: 10
@@ -172,3 +173,36 @@ configMaps:
   # configUpdater:
   #   orgAndRepo: foo/bar
   #   path: a/b/c
+
+buildNumbers:
+  enable: false
+  replicaCount: 1
+  image:
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-build-numbers"
+    tag: "{{ .Values.image.tag }}"
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 80m
+      memory: 128Mi
+  probe:
+    port: 8081
+    path: /healthz
+  livenessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readinessProbe:
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  terminationGracePeriodSeconds: 30
+  service:
+    name: lighthouse-build-numbers
+    type: ClusterIP
+    externalPort: 80
+    internalPort: 8080

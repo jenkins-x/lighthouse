@@ -1,0 +1,18 @@
+{{- /*
+Only create the "lighthouse-build-numbers" ConfigMap on install, so that we don't overwrite it on upgrade.
+*/ -}}
+{{- if and .Values.buildNumbers.enable (or (not .Release.IsUpgrade) .Values.configMaps.config) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lighthouse-build-numbers
+  labels:
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+data:
+  buildNums.json: |
+    {
+      Number: {}
+    }
+{{- end }}

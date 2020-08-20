@@ -1,0 +1,61 @@
+{{- if .Values.buildNumbers.enable }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "buildnumbers.name" . }}
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app: {{ template "buildnumbers.name" . }}
+spec:
+  replicas: {{ .Values.buildNumbers.replicaCount }}
+  selector:
+    matchLabels:
+      draft: {{ default "draft-app" .Values.draft }}
+      app: {{ template "buildnumbers.name" . }}
+  template:
+    metadata:
+      labels:
+        draft: {{ default "draft-app" .Values.draft }}
+        app: {{ template "buildnumbers.name" . }}
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ template "buildnumbers.name" . }}
+      containers:
+      - name: {{ template "buildnumbers.name" . }}
+        image: {{ tpl .Values.buildNumbers.image.repository . }}:{{ tpl .Values.buildNumbers.image.tag . }}
+        imagePullPolicy: {{ tpl .Values.buildNumbers.image.pullPolicy . }}
+        args:
+          - "--namespace={{ .Release.Namespace }}"
+          - "--port={{ .Values.buildNumbers.service.internalPort }}"
+{{- if hasKey .Values "env" }}
+        env:
+{{- range $pkey, $pval := .Values.env }}
+          - name: {{ $pkey }}
+            value: {{ quote $pval }}
+{{- end }}
+{{- end }}
+        ports:
+        - containerPort: {{ .Values.buildNumbers.internalPort }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.buildNumbers.probe.path }}
+            port: {{ .Values.buildNumbers.probe.port }}
+          initialDelaySeconds: {{ .Values.buildNumbers.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.buildNumbers.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.buildNumbers.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.buildNumbers.livenessProbe.timeoutSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.buildNumbers.probe.path }}/ready
+            port: {{ .Values.buildNumbers.probe.port }}
+          periodSeconds: {{ .Values.buildNumbers.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.buildNumbers.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.buildNumbers.readinessProbe.timeoutSeconds }}
+        resources:
+{{ toYaml .Values.buildNumbers.resources | indent 12 }}
+      terminationGracePeriodSeconds: {{ .Values.buildNumbers.terminationGracePeriodSeconds }}
+{{- end }}

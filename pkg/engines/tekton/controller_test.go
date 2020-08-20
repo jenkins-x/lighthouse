@@ -75,7 +75,7 @@ func TestReconcile(t *testing.T) {
 			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
 			c := fake.NewFakeClientWithScheme(scheme, state...)
-			reconciler := NewLighthouseJobReconciler(c, scheme, dashboardBaseURL, ns)
+			reconciler := NewLighthouseJobReconciler(c, scheme, dashboardBaseURL, "", ns)
 
 			// invoke reconcile
 			_, err = reconciler.Reconcile(ctrl.Request{

@@ -33,6 +33,9 @@ spec:
 {{- if ne .Values.tektoncontroller.dashboardURL "" }}
           - "--dashboard-url={{ .Values.tektoncontroller.dashboardURL}}"
 {{- end }}
+{{- if .Values.buildNumbers.enable }}
+          - "--build-num-url=http://{{ .Values.buildNumbers.service.name }}/"
+{{- end }}
         ports:
           - name: metrics
             containerPort: 8080

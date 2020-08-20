@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/engines"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -32,7 +33,16 @@ const (
 var reProwExtraRef = regexp.MustCompile(`PROW_EXTRA_GIT_REF_(\d+)`)
 
 // generateBuildID generates a unique build ID for consistency with Prow behavior
-func generateBuildID() string {
+func generateBuildID(lj v1alpha1.LighthouseJob, buildNumURL string) string {
+	if buildNumURL != "" {
+		nameKey := fmt.Sprintf("%s-%s-%s-%s", lj.Spec.Refs.Org, lj.Spec.Refs.Repo, lj.Spec.GetBranch(), lj.Spec.Context)
+		buildID, err := engines.GetBuildID(nameKey, buildNumURL)
+		if err != nil {
+			logrus.WithError(err).Errorf("failure getting build number for key %s at URL %s", nameKey, buildNumURL)
+		} else {
+			return buildID
+		}
+	}
 	return fmt.Sprintf("%d", utilrand.Int())
 }
 
@@ -42,13 +52,13 @@ func trimDashboardURL(base string) string {
 
 // makePipeline creates a PipelineRun and substitutes LighthouseJob managed pipeline resources with ResourceSpec instead of ResourceRef
 // so that we don't have to take care of potentially dangling created pipeline resources.
-func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, c client.Client) (*tektonv1beta1.PipelineRun, error) {
+func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, buildNumURL string, namespace string, logger *logrus.Entry, c client.Client) (*tektonv1beta1.PipelineRun, error) {
 	// First validate.
 	if lj.Spec.PipelineRunSpec == nil {
 		return nil, errors.New("no PipelineSpec defined")
 	}
 
-	buildID := generateBuildID()
+	buildID := generateBuildID(lj, buildNumURL)
 	if buildID == "" {
 		return nil, errors.New("empty BuildID in status")
 	}

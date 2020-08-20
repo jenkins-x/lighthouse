@@ -48,6 +48,29 @@ Current chart version is `0.1.0-SNAPSHOT`
 
 | Key | Type | Description | Default |
 |-----|------|-------------|---------|
+| `buildNumbers.enable` | bool |  | `false` |
+| `buildNumbers.image.pullPolicy` | string |  | `"{{ .Values.image.pullPolicy }}"` |
+| `buildNumbers.image.repository` | string |  | `"{{ .Values.image.parentRepository }}/lighthouse-build-numbers"` |
+| `buildNumbers.image.tag` | string |  | `"{{ .Values.image.tag }}"` |
+| `buildNumbers.livenessProbe.initialDelaySeconds` | int |  | `60` |
+| `buildNumbers.livenessProbe.periodSeconds` | int |  | `10` |
+| `buildNumbers.livenessProbe.successThreshold` | int |  | `1` |
+| `buildNumbers.livenessProbe.timeoutSeconds` | int |  | `1` |
+| `buildNumbers.probe.path` | string |  | `"/healthz"` |
+| `buildNumbers.probe.port` | int |  | `8081` |
+| `buildNumbers.readinessProbe.periodSeconds` | int |  | `10` |
+| `buildNumbers.readinessProbe.successThreshold` | int |  | `1` |
+| `buildNumbers.readinessProbe.timeoutSeconds` | int |  | `1` |
+| `buildNumbers.replicaCount` | int |  | `1` |
+| `buildNumbers.resources.limits.cpu` | string |  | `"100m"` |
+| `buildNumbers.resources.limits.memory` | string |  | `"256Mi"` |
+| `buildNumbers.resources.requests.cpu` | string |  | `"80m"` |
+| `buildNumbers.resources.requests.memory` | string |  | `"128Mi"` |
+| `buildNumbers.service.externalPort` | int |  | `80` |
+| `buildNumbers.service.internalPort` | int |  | `8080` |
+| `buildNumbers.service.name` | string |  | `"lighthouse-build-numbers"` |
+| `buildNumbers.service.type` | string |  | `"ClusterIP"` |
+| `buildNumbers.terminationGracePeriodSeconds` | int |  | `30` |
 | `cluster.crds.create` | bool |  | `true` |
 | `clusterName` | string |  | `""` |
 | `configMaps.config` | string |  | `nil` |
@@ -134,7 +157,8 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `webhooks.livenessProbe.periodSeconds` | int |  | `10` |
 | `webhooks.livenessProbe.successThreshold` | int |  | `1` |
 | `webhooks.livenessProbe.timeoutSeconds` | int |  | `1` |
-| `webhooks.probe.path` | string |  | `"/"` |
+| `webhooks.probe.path` | string |  | `"/healthz"` |
+| `webhooks.probe.port` | int |  | `8081` |
 | `webhooks.readinessProbe.periodSeconds` | int |  | `10` |
 | `webhooks.readinessProbe.successThreshold` | int |  | `1` |
 | `webhooks.readinessProbe.timeoutSeconds` | int |  | `1` |
