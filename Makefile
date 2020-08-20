@@ -163,3 +163,11 @@ verify-code-unchanged: ## Verify the generated/formatting of code is up to date
 			git diff; \
       		exit 1; \
       	fi
+
+CONTROLLER_GEN := $(GOPATH)/bin/controller-gen
+$(CONTROLLER_GEN):
+	pushd /tmp; $(GO) get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0; popd
+
+# Generate manifests e.g. CRD, RBAC etc.
+crd-manifests: $(CONTROLLER_GEN)
+	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
