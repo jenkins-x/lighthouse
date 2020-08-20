@@ -18,7 +18,6 @@ import (
 type options struct {
 	namespace    string
 	dashboardURL string
-	dryRun       bool
 }
 
 func (o *options) Validate() error {
@@ -27,7 +26,6 @@ func (o *options) Validate() error {
 
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
-	fs.BoolVar(&o.dryRun, "dry-run", true, "Whether to mutate any real-world state.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
 	fs.StringVar(&o.dashboardURL, "dashboard-url", "", "The base URL for the Tekton Dashboard to link to for build reports")
 	err := fs.Parse(args)
