@@ -26,7 +26,7 @@ type WebhookTestSuite struct {
 	KubeClient     kubernetes.Interface
 	SCMCLient      scm.Client
 	GitClient      git.Client
-	WebhookOptions *Options
+	WebhookOptions *WebhooksController
 	TestRepo       scm.Repository
 }
 
@@ -151,7 +151,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 		return []byte(token)
 	})
 	util.AddAuthToSCMClient(scmClient, token, false)
-	suite.WebhookOptions = &Options{
+	suite.WebhookOptions = &WebhooksController{
 		server: &Server{
 			ConfigAgent: configAgent,
 			Plugins:     pluginAgent,

@@ -6,16 +6,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
-	"github.com/jenkins-x/lighthouse/pkg/cmd/helper"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
-	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -23,73 +20,37 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/spf13/cobra"
 )
 
-const (
-	// HealthPath is the URL path for the HTTP endpoint that returns health status.
-	HealthPath = "/health"
-	// ReadyPath URL path for the HTTP endpoint that returns ready status.
-	ReadyPath = "/ready"
-)
+// WebhooksController holds the command line arguments
+type WebhooksController struct {
+	ConfigMapWatcher *watcher.ConfigMapWatcher
 
-// Options holds the command line arguments
-type Options struct {
-	BindAddress string
-	Path        string
-	Port        int
-	JSONLog     bool
-
-	namespace        string
-	pluginFilename   string
-	configFilename   string
-	server           *Server
-	botName          string
-	gitServerURL     string
-	configMapWatcher *watcher.ConfigMapWatcher
-	gitClient        git.Client
-	launcher         launcher.PipelineLauncher
+	path           string
+	namespace      string
+	pluginFilename string
+	configFilename string
+	server         *Server
+	botName        string
+	gitServerURL   string
+	gitClient      git.Client
+	launcher       launcher.PipelineLauncher
 }
 
-// NewCmdWebhook creates the command
-func NewCmdWebhook() *cobra.Command {
-	options := Options{}
-
-	cmd := &cobra.Command{
-		Use:   "lighthouse",
-		Short: "Runs the lighthouse webhook handler",
-		Run: func(cmd *cobra.Command, args []string) {
-			err := options.Run()
-			helper.CheckErr(err)
-		},
+// NewWebhooksController creates and configures the controller
+func NewWebhooksController(path, namespace, botName, pluginFilename, configFilename string) (*WebhooksController, error) {
+	o := &WebhooksController{
+		path:           path,
+		namespace:      namespace,
+		pluginFilename: pluginFilename,
+		configFilename: configFilename,
+		botName:        botName,
 	}
-
-	cmd.Flags().BoolVarP(&options.JSONLog, "json", "", true, "Enable JSON logging")
-	cmd.Flags().IntVarP(&options.Port, "port", "", 8080, "The TCP port to listen on.")
-	cmd.Flags().StringVarP(&options.BindAddress, "bind", "", "",
-		"The interface address to bind to (by default, will listen on all interfaces/addresses).")
-	cmd.Flags().StringVarP(&options.Path, "path", "", "/hook",
-		"The path to listen on for requests to trigger a pipeline run.")
-	cmd.Flags().StringVar(&options.pluginFilename, "plugin-file", "", "Path to the plugins.yaml file. If not specified it is loaded from the 'plugins' ConfigMap")
-	cmd.Flags().StringVar(&options.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
-	cmd.Flags().StringVar(&options.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
-	cmd.Flags().StringVar(&options.namespace, "namespace", "", "The namespace to listen in")
-	return cmd
-}
-
-// Run will implement this command
-func (o *Options) Run() error {
-	if o.JSONLog {
-		logrus.SetFormatter(logrusutil.CreateDefaultFormatter())
-	}
-
 	var err error
 	o.server, err = o.createHookServer()
 	if err != nil {
-		return errors.Wrapf(err, "failed to create Hook Server")
+		return nil, errors.Wrapf(err, "failed to create Hook Server")
 	}
-	defer o.configMapWatcher.Stop()
 
 	cfg := o.server.ConfigAgent.Config
 	o.gitServerURL = util.GetGitServer(cfg)
@@ -97,39 +58,33 @@ func (o *Options) Run() error {
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}
-	defer func() {
-		err := gitClient.Clean()
-		if err != nil {
-			logrus.WithError(err).Fatal("Error cleaning the git client.")
-		}
-	}()
-
 	o.gitClient = gitClient
 
 	_, _, lhClient, _, err := clients.GetAPIClients()
 	if err != nil {
-		return errors.Wrap(err, "Error creating kubernetes resource clients.")
+		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
 	o.launcher = launcher.NewLauncher(lhClient, o.namespace)
-	mux := http.NewServeMux()
-	mux.Handle(HealthPath, http.HandlerFunc(o.health))
-	mux.Handle(ReadyPath, http.HandlerFunc(o.ready))
 
-	mux.Handle("/", http.HandlerFunc(o.defaultHandler))
-	mux.Handle(o.Path, http.HandlerFunc(o.handleWebHookRequests))
-
-	logrus.Infof("Lighthouse is now listening on path %s and port %d for WebHooks", o.Path, o.Port)
-	return http.ListenAndServe(":"+strconv.Itoa(o.Port), mux)
+	return o, nil
 }
 
-// health returns either HTTP 204 if the service is healthy, otherwise nothing ('cos it's dead).
-func (o *Options) health(w http.ResponseWriter, r *http.Request) {
+// CleanupGitClientDir cleans up the git client's working directory
+func (o *WebhooksController) CleanupGitClientDir() {
+	err := o.gitClient.Clean()
+	if err != nil {
+		logrus.WithError(err).Fatal("Error cleaning the git client.")
+	}
+}
+
+// Health returns either HTTP 204 if the service is healthy, otherwise nothing ('cos it's dead).
+func (o *WebhooksController) Health(w http.ResponseWriter, r *http.Request) {
 	logrus.Debug("Health check")
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// ready returns either HTTP 204 if the service is ready to serve requests, otherwise HTTP 503.
-func (o *Options) ready(w http.ResponseWriter, r *http.Request) {
+// Ready returns either HTTP 204 if the service is Ready to serve requests, otherwise HTTP 503.
+func (o *WebhooksController) Ready(w http.ResponseWriter, r *http.Request) {
 	logrus.Debug("Ready check")
 	if o.isReady() {
 		w.WriteHeader(http.StatusNoContent)
@@ -138,10 +93,11 @@ func (o *Options) ready(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (o *Options) defaultHandler(w http.ResponseWriter, r *http.Request) {
+// DefaultHandler responds to requests without a specific handler
+func (o *WebhooksController) DefaultHandler(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	if path == o.Path || strings.HasPrefix(path, o.Path+"/") {
-		o.handleWebHookRequests(w, r)
+	if path == o.path || strings.HasPrefix(path, o.path+"/") {
+		o.HandleWebhookRequests(w, r)
 		return
 	}
 	path = strings.TrimPrefix(path, "/")
@@ -151,13 +107,13 @@ func (o *Options) defaultHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, fmt.Sprintf("unknown path %s", path), 404)
 }
 
-func (o *Options) isReady() bool {
+func (o *WebhooksController) isReady() bool {
 	// TODO a better readiness check
 	return true
 }
 
-// handle request for pipeline runs
-func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) {
+// HandleWebhookRequests handles incoming events
+func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		// liveness probe etc
 		logrus.WithField("method", r.Method).Debug("invalid http method so returning 200")
@@ -259,7 +215,7 @@ func (o *Options) handleWebHookRequests(w http.ResponseWriter, r *http.Request) 
 }
 
 // ProcessWebHook process a webhook
-func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.Entry, string, error) {
+func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.Entry, string, error) {
 	repository := webhook.Repository()
 	fields := map[string]interface{}{
 		"Namespace": repository.Namespace,
@@ -400,16 +356,16 @@ func (o *Options) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook) (*logrus.
 	return l, fmt.Sprintf("unknown hook %s", webhook.Kind()), nil
 }
 
-func (o *Options) secretFn(webhook scm.Webhook) (string, error) {
+func (o *WebhooksController) secretFn(webhook scm.Webhook) (string, error) {
 	return util.HMACToken(), nil
 }
 
-func (o *Options) createHookServer() (*Server, error) {
+func (o *WebhooksController) createHookServer() (*Server, error) {
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
 
 	var err error
-	o.configMapWatcher, err = watcher.SetupConfigMapWatchers(o.namespace, configAgent, pluginAgent)
+	o.ConfigMapWatcher, err = watcher.SetupConfigMapWatchers(o.namespace, configAgent, pluginAgent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}

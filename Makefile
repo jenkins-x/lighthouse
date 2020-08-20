@@ -3,7 +3,7 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
 PROJECT := github.com/jenkins-x/lighthouse
 
-WEBHOOKS_EXECUTABLE := lighthouse
+WEBHOOKS_EXECUTABLE := webhooks
 KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
 GCJOBS_EXECUTABLE := gc-jobs
