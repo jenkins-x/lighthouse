@@ -69,6 +69,9 @@ const (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:shortName=lhjob
+// +kubebuilder:subresource:status
 
 // LighthouseJob contains the arguments to create a Jenkins X Pipeline and to report on it
 type LighthouseJob struct {
@@ -102,6 +105,7 @@ type LighthouseJobStatus struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // LighthouseJobList represents a list of pipeline options
 type LighthouseJobList struct {
