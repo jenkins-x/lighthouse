@@ -17,7 +17,7 @@ hmacToken: ""
 # Declare variables to be passed into your templates.
 image:
   parentRepository: gcr.io/jenkinsxio
-  tag: 0.0.749
+  tag: 0.0.752
   pullPolicy: IfNotPresent
 
 # define environment variables here as a map of key: value
