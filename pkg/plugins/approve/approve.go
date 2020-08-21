@@ -663,14 +663,6 @@ func optionsForRepo(config *plugins.Configuration, org, repo string) *plugins.Ap
 		// Return an empty config, and use plugin defaults
 		return &plugins.Approve{}
 	}()
-	if a.DeprecatedImplicitSelfApprove == nil && a.RequireSelfApproval == nil && config.UseDeprecatedSelfApprove {
-		no := false
-		a.DeprecatedImplicitSelfApprove = &no
-	}
-	if a.DeprecatedReviewActsAsApprove == nil && a.IgnoreReviewState == nil && config.UseDeprecatedReviewApprove {
-		no := false
-		a.DeprecatedReviewActsAsApprove = &no
-	}
 	return a
 }
 
