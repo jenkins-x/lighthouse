@@ -19,12 +19,10 @@ package jobutil
 import (
 	"reflect"
 	"testing"
-	"text/template"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/util"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
 
@@ -472,55 +470,6 @@ func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
 		}
-	}
-}
-
-func TestJobURL(t *testing.T) {
-	var testCases = []struct {
-		name     string
-		plank    config.Plank
-		pj       v1alpha1.LighthouseJob
-		expected string
-	}{
-		{
-			name: "non-decorated job uses template",
-			plank: config.Plank{
-				Controller: config.Controller{
-					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
-				},
-			},
-			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: config.PeriodicJob}},
-			expected: "periodic",
-		},
-		{
-			name: "non-decorated job with broken template gives empty string",
-			plank: config.Plank{
-				Controller: config.Controller{
-					JobURLTemplate: template.Must(template.New("test").Parse("{{.Garbage}}")),
-				},
-			},
-			pj:       v1alpha1.LighthouseJob{},
-			expected: "",
-		},
-		{
-			name: "decorated job without prefix uses template",
-			plank: config.Plank{
-				Controller: config.Controller{
-					JobURLTemplate: template.Must(template.New("test").Parse("{{.Spec.Type}}")),
-				},
-			},
-			pj:       v1alpha1.LighthouseJob{Spec: v1alpha1.LighthouseJobSpec{Type: config.PeriodicJob}},
-			expected: "periodic",
-		},
-	}
-
-	logger := logrus.New()
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			if actual, expected := JobURL(testCase.plank, testCase.pj, logger.WithField("name", testCase.name)), testCase.expected; actual != expected {
-				t.Errorf("%s: expected URL to be %q but got %q", testCase.name, expected, actual)
-			}
-		})
 	}
 }
 

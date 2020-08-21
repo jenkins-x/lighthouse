@@ -342,10 +342,8 @@ Plank is config for the plank controller.
 
 | Variable Name | Stanza | Type | Required | Description |
 |---|---|---|---|---|
-|  |  | [Controller](#Controller) | Yes |  |
-| PodPendingTimeoutString | `pod_pending_timeout` | string | No | PodPendingTimeoutString compiles into PodPendingTimeout at load time. |
-| PodPendingTimeout | `-` | time.Duration | Yes | PodPendingTimeout is after how long the controller will perform a garbage<br />collection on pending pods. Defaults to one day. |
-| JobURLPrefix | `job_url_prefix` | string | No | // DefaultDecorationConfig are defaults for shared fields for LighthouseJobs<br />		// that request to have their PodSpecs decorated<br />		DefaultDecorationConfig *builder.DecorationConfig `json:"default_decoration_config,omitempty"`<br /><br />JobURLPrefix is the host and path prefix under<br />which job details will be viewable |
+| ReportTemplateString | `report_template` | string | No | ReportTemplateString compiles into ReportTemplate at load time. |
+| ReportTemplate | `-` | *template.Template | No | ReportTemplate is compiled at load time from ReportTemplateString. It<br />will be passed a builder.PipelineOptions and can provide an optional blurb below<br />the test failures comment. |
 
 ## Policy
 
