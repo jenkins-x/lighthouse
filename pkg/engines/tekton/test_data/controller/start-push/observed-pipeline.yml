@@ -1,0 +1,44 @@
+# Note that this doesn't need to match the run we're actually expecting, just has to have the git-clone task.
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: jenkins-x-charts-jx-build-templ-wbbx6-7
+  namespace: jx
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: The git repository URL to clone from.
+    - name: branch-name
+      type: string
+      description: The git branch to clone.
+  workspaces:
+    - name: shared-data
+      description: |
+        This workspace will receive the cloned git repo and be passed
+        to the next Task for the repo's README.md file to be read.
+  tasks:
+    - name: fetch-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.branch-name)
+    - name: cat-readme
+      runAfter: ["fetch-repo"]  # Wait until the clone is done before reading the readme.
+      workspaces:
+        - name: source
+          workspace: shared-data
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - image: zshusers/zsh:4.3.15
+            script: |
+              #!/usr/bin/env zsh
+              cat $(workspaces.source.path)/README.md

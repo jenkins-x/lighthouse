@@ -33,6 +33,7 @@ func TestReconcile(t *testing.T) {
 		"start-pullrequest",
 		"update-job",
 		"start-batch-pullrequest",
+		"start-push",
 	}
 
 	for _, tc := range testCases {
