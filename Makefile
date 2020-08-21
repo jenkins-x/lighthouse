@@ -172,7 +172,7 @@ crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
 
 .PHONY: docs
-docs: crds-docs plugins-docs
+docs: crds-docs config-docs plugins-docs
 
 .PHONY: plugins-docs
 crds-docs:
@@ -180,6 +180,18 @@ crds-docs:
 		--input-file ../pkg/apis/lighthouse/v1alpha1/types.go \
 		--title "Lighthouse (v1alpha1)" \
 		--output-path ../docs/crds
+
+.PHONY: config-docs
+config-docs:
+	cd hack && go run struct-docs.go \
+		--input-file ../pkg/config/branch_protection.go \
+		--input-file ../pkg/config/config.go \
+		--input-file ../pkg/config/constants.go \
+		--input-file ../pkg/config/githuboauth.go \
+		--input-file ../pkg/config/jobs.go \
+		--input-file ../pkg/config/keeper.go \
+		--title "Lighthouse config" \
+		--output-path ../docs/config
 
 .PHONY: plugins-docs
 plugins-docs:
