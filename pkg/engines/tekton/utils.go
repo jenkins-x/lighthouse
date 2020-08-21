@@ -111,7 +111,7 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 				if len(lj.Spec.Refs.Pulls) > 0 {
 					env[paramNames.revParam] = lj.Spec.Refs.Pulls[0].SHA
 				} else {
-					env[paramNames.revParam] = "master"
+					env[paramNames.revParam] = lj.Spec.Refs.BaseRef
 				}
 			}
 			if paramNames.baseRevisionParam != "" {
