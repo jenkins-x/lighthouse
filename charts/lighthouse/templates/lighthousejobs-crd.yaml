@@ -1,18 +1,3 @@
 {{- if .Values.cluster.crds.create }}
-apiVersion: apiextensions.k8s.io/v1beta1
-kind: CustomResourceDefinition
-metadata:
-  name: lighthousejobs.lighthouse.jenkins.io
-spec:
-  group: lighthouse.jenkins.io
-  names:
-    kind: LighthouseJob
-    singular: lighthousejob
-    plural: lighthousejobs
-    shortNames:
-      - lhjob
-  scope: Namespaced
-  subresources:
-    status: {}
-  version: v1alpha1
+{{ .Files.Get "config/lighthousejobs.lighthouse.jenkins.io.yaml" }}
 {{- end -}}
