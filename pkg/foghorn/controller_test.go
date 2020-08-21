@@ -45,8 +45,6 @@ func TestReconcile(t *testing.T) {
 		ProwConfig: config.ProwConfig{
 			Keeper:                 config.Keeper{},
 			Plank:                  config.Plank{},
-			Sinker:                 config.Sinker{},
-			Deck:                   config.Deck{},
 			BranchProtection:       config.BranchProtection{},
 			Orgs:                   nil,
 			Gerrit:                 config.Gerrit{},

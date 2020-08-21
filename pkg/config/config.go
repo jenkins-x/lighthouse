@@ -73,8 +73,6 @@ type JobConfig struct {
 type ProwConfig struct {
 	Keeper           Keeper                `json:"tide,omitempty"`
 	Plank            Plank                 `json:"plank,omitempty"`
-	Sinker           Sinker                `json:"sinker,omitempty"`
-	Deck             Deck                  `json:"deck,omitempty"`
 	BranchProtection BranchProtection      `json:"branch-protection,omitempty"`
 	Orgs             map[string]org.Config `json:"orgs,omitempty"`
 	Gerrit           Gerrit                `json:"gerrit,omitempty"`
@@ -230,90 +228,6 @@ type JenkinsOperator struct {
 	// LabelSelector is used so different jenkins-operator replicas
 	// can use their own configuration.
 	LabelSelector labels.Selector `json:"-"`
-}
-
-// Sinker is config for the sinker controller.
-type Sinker struct {
-	// ResyncPeriodString compiles into ResyncPeriod at load time.
-	ResyncPeriodString string `json:"resync_period,omitempty"`
-	// ResyncPeriod is how often the controller will perform a garbage
-	// collection. Defaults to one hour.
-	ResyncPeriod time.Duration `json:"-"`
-	// MaxLighthouseJobAgeString compiles into MaxLighthouseJobAge at load time.
-	MaxLighthouseJobAgeString string `json:"max_lighthouseJob_age,omitempty"`
-	// MaxLighthouseJobAge is how old a LighthouseJob can be before it is garbage-collected.
-	// Defaults to one week.
-	MaxLighthouseJobAge time.Duration `json:"-"`
-	// MaxPodAgeString compiles into MaxPodAge at load time.
-	MaxPodAgeString string `json:"max_pod_age,omitempty"`
-	// MaxPodAge is how old a Pod can be before it is garbage-collected.
-	// Defaults to one day.
-	MaxPodAge time.Duration `json:"-"`
-}
-
-// Spyglass holds config for Spyglass
-type Spyglass struct {
-	// Viewers is a map of Regexp strings to viewer names that defines which sets
-	// of artifacts need to be consumed by which viewers. The keys are compiled
-	// and stored in RegexCache at load time.
-	Viewers map[string][]string `json:"viewers,omitempty"`
-	// RegexCache is a map of viewer regexp strings to their compiled equivalents.
-	RegexCache map[string]*regexp.Regexp `json:"-"`
-	// SizeLimit is the max size artifact in bytes that Spyglass will attempt to
-	// read in entirety. This will only affect viewers attempting to use
-	// artifact.ReadAll(). To exclude outlier artifacts, set this limit to
-	// expected file size + variance. To include all artifacts with high
-	// probability, use 2*maximum observed artifact size.
-	SizeLimit int64 `json:"size_limit,omitempty"`
-}
-
-// Deck holds config for deck.
-type Deck struct {
-	// Spyglass specifies which viewers will be used for which artifacts when viewing a job in Deck
-	Spyglass Spyglass `json:"spyglass,omitempty"`
-	// KeeperUpdatePeriodString compiles into KeeperUpdatePeriod at load time.
-	KeeperUpdatePeriodString string `json:"tide_update_period,omitempty"`
-	// KeeperUpdatePeriod specifies how often Deck will fetch status from Keeper. Defaults to 10s.
-	KeeperUpdatePeriod time.Duration `json:"-"`
-	// HiddenRepos is a list of orgs and/or repos that should not be displayed by Deck.
-	HiddenRepos []string `json:"hidden_repos,omitempty"`
-	// ExternalAgentLogs ensures external agents can expose
-	// their logs in prow.
-	ExternalAgentLogs []ExternalAgentLog `json:"external_agent_logs,omitempty"`
-	// Branding of the frontend
-	Branding *Branding `json:"branding,omitempty"`
-}
-
-// ExternalAgentLog ensures an external agent like Jenkins can expose
-// its logs in prow.
-type ExternalAgentLog struct {
-	// Agent is an external prow agent that supports exposing
-	// logs via deck.
-	Agent string `json:"agent,omitempty"`
-	// SelectorString compiles into Selector at load time.
-	SelectorString string `json:"selector,omitempty"`
-	// Selector can be used in prow deployments where the workload has
-	// been sharded between controllers of the same agent. For more info
-	// see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
-	Selector labels.Selector `json:"-"`
-	// URLTemplateString compiles into URLTemplate at load time.
-	URLTemplateString string `json:"url_template,omitempty"`
-	// URLTemplate is compiled at load time from URLTemplateString. It
-	// will be passed a builder.PipelineOptions and the generated URL should provide
-	// logs for the PipelineOptions.
-	URLTemplate *template.Template `json:"-"`
-}
-
-// Branding holds branding configuration for deck.
-type Branding struct {
-	// Logo is the location of the logo that will be loaded in deck.
-	Logo string `json:"logo,omitempty"`
-	// Favicon is the location of the favicon that will be loaded in deck.
-	Favicon string `json:"favicon,omitempty"`
-	// BackgroundColor is the color of the background.
-	BackgroundColor string `json:"background_color,omitempty"`
-	// HeaderColor is the color of the header.
-	HeaderColor string `json:"header_color,omitempty"`
 }
 
 // PubsubSubscriptions maps GCP projects to a list of Topics.
@@ -864,62 +778,6 @@ func parseProwConfig(c *Config) error {
 		}
 	}
 
-	for i, agentToTmpl := range c.Deck.ExternalAgentLogs {
-		urlTemplate, err := template.New(agentToTmpl.Agent).Parse(agentToTmpl.URLTemplateString)
-		if err != nil {
-			return fmt.Errorf("parsing template for agent %q: %v", agentToTmpl.Agent, err)
-		}
-		c.Deck.ExternalAgentLogs[i].URLTemplate = urlTemplate
-		// we need to validate selectors used by deck since these are not
-		// sent to the api server.
-		s, err := labels.Parse(c.Deck.ExternalAgentLogs[i].SelectorString)
-		if err != nil {
-			return fmt.Errorf("error parsing selector %q: %v", c.Deck.ExternalAgentLogs[i].SelectorString, err)
-		}
-		c.Deck.ExternalAgentLogs[i].Selector = s
-	}
-
-	if c.Deck.KeeperUpdatePeriodString == "" {
-		c.Deck.KeeperUpdatePeriod = time.Second * 10
-	} else {
-		period, err := time.ParseDuration(c.Deck.KeeperUpdatePeriodString)
-		if err != nil {
-			return fmt.Errorf("cannot parse duration for deck.tide_update_period: %v", err)
-		}
-		c.Deck.KeeperUpdatePeriod = period
-	}
-
-	if c.Deck.Spyglass.SizeLimit == 0 {
-		c.Deck.Spyglass.SizeLimit = 100e6
-	} else if c.Deck.Spyglass.SizeLimit <= 0 {
-		return fmt.Errorf("invalid value for deck.spyglass.size_limit, must be >=0")
-	}
-
-	c.Deck.Spyglass.RegexCache = make(map[string]*regexp.Regexp)
-	for k := range c.Deck.Spyglass.Viewers {
-		r, err := regexp.Compile(k)
-		if err != nil {
-			return fmt.Errorf("cannot compile regexp %s, err: %v", k, err)
-		}
-		c.Deck.Spyglass.RegexCache[k] = r
-	}
-
-	// Map old viewer names to the new ones for backwards compatibility.
-	// TODO(Katharine, #10274): remove this, eventually.
-	oldViewers := map[string]string{
-		"build-log-viewer": "buildlog",
-		"metadata-viewer":  "metadata",
-		"junit-viewer":     "junit",
-	}
-
-	for re, viewers := range c.Deck.Spyglass.Viewers {
-		for i, v := range viewers {
-			if rename, ok := oldViewers[v]; ok {
-				c.Deck.Spyglass.Viewers[re][i] = rename
-			}
-		}
-	}
-
 	if c.PushGateway.IntervalString == "" {
 		c.PushGateway.Interval = time.Minute
 	} else {
@@ -928,36 +786,6 @@ func parseProwConfig(c *Config) error {
 			return fmt.Errorf("cannot parse duration for push_gateway.interval: %v", err)
 		}
 		c.PushGateway.Interval = interval
-	}
-
-	if c.Sinker.ResyncPeriodString == "" {
-		c.Sinker.ResyncPeriod = time.Hour
-	} else {
-		resyncPeriod, err := time.ParseDuration(c.Sinker.ResyncPeriodString)
-		if err != nil {
-			return fmt.Errorf("cannot parse duration for sinker.resync_period: %v", err)
-		}
-		c.Sinker.ResyncPeriod = resyncPeriod
-	}
-
-	if c.Sinker.MaxLighthouseJobAgeString == "" {
-		c.Sinker.MaxLighthouseJobAge = 7 * 24 * time.Hour
-	} else {
-		maxLighthouseJobAge, err := time.ParseDuration(c.Sinker.MaxLighthouseJobAgeString)
-		if err != nil {
-			return fmt.Errorf("cannot parse duration for max_lighthouseJob_age: %v", err)
-		}
-		c.Sinker.MaxLighthouseJobAge = maxLighthouseJobAge
-	}
-
-	if c.Sinker.MaxPodAgeString == "" {
-		c.Sinker.MaxPodAge = 24 * time.Hour
-	} else {
-		maxPodAge, err := time.ParseDuration(c.Sinker.MaxPodAgeString)
-		if err != nil {
-			return fmt.Errorf("cannot parse duration for max_pod_age: %v", err)
-		}
-		c.Sinker.MaxPodAge = maxPodAge
 	}
 
 	if c.Keeper.SyncPeriodString == "" {

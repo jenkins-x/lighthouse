@@ -3,14 +3,11 @@
 - [Branch](#Branch)
 - [BranchProtection](#BranchProtection)
 - [Brancher](#Brancher)
-- [Branding](#Branding)
 - [ChangedFilesProvider](#ChangedFilesProvider)
 - [Config](#Config)
 - [ContextPolicy](#ContextPolicy)
 - [Controller](#Controller)
 - [Cookie](#Cookie)
-- [Deck](#Deck)
-- [ExternalAgentLog](#ExternalAgentLog)
 - [Gerrit](#Gerrit)
 - [GitHubOptions](#GitHubOptions)
 - [GithubOAuthConfig](#GithubOAuthConfig)
@@ -46,8 +43,6 @@
 - [Reporter](#Reporter)
 - [Restrictions](#Restrictions)
 - [ReviewPolicy](#ReviewPolicy)
-- [Sinker](#Sinker)
-- [Spyglass](#Spyglass)
 - [UtilityConfig](#UtilityConfig)
 
 
@@ -81,17 +76,6 @@ Brancher is for shared code between jobs that only run against certain<br />bran
 | Branches | `branches` | []string | No | Only run against these branches. Default is all branches. |
 | re |  | *regexp.Regexp | No | We'll set these when we load it. |
 | reSkip |  | *regexp.Regexp | No |  |
-
-## Branding
-
-Branding holds branding configuration for deck.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Logo | `logo` | string | No | Logo is the location of the logo that will be loaded in deck. |
-| Favicon | `favicon` | string | No | Favicon is the location of the favicon that will be loaded in deck. |
-| BackgroundColor | `background_color` | string | No | BackgroundColor is the color of the background. |
-| HeaderColor | `header_color` | string | No | HeaderColor is the color of the header. |
 
 ## ChangedFilesProvider
 
@@ -138,31 +122,6 @@ Cookie holds the secret returned from github that authenticates the user who aut
 | Variable Name | Stanza | Type | Required | Description |
 |---|---|---|---|---|
 | Secret | `secret` | string | No |  |
-
-## Deck
-
-Deck holds config for deck.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Spyglass | `spyglass` | [Spyglass](#Spyglass) | No | Spyglass specifies which viewers will be used for which artifacts when viewing a job in Deck |
-| KeeperUpdatePeriodString | `tide_update_period` | string | No | KeeperUpdatePeriodString compiles into KeeperUpdatePeriod at load time. |
-| KeeperUpdatePeriod | `-` | time.Duration | Yes | KeeperUpdatePeriod specifies how often Deck will fetch status from Keeper. Defaults to 10s. |
-| HiddenRepos | `hidden_repos` | []string | No | HiddenRepos is a list of orgs and/or repos that should not be displayed by Deck. |
-| ExternalAgentLogs | `external_agent_logs` | [][ExternalAgentLog](#ExternalAgentLog) | No | ExternalAgentLogs ensures external agents can expose<br />their logs in prow. |
-| Branding | `branding` | *[Branding](#Branding) | No | Branding of the frontend |
-
-## ExternalAgentLog
-
-ExternalAgentLog ensures an external agent like Jenkins can expose<br />its logs in prow.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Agent | `agent` | string | No | Agent is an external prow agent that supports exposing<br />logs via deck. |
-| SelectorString | `selector` | string | No | SelectorString compiles into Selector at load time. |
-| Selector | `-` | labels.Selector | Yes | Selector can be used in prow deployments where the workload has<br />been sharded between controllers of the same agent. For more info<br />see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors |
-| URLTemplateString | `url_template` | string | No | URLTemplateString compiles into URLTemplate at load time. |
-| URLTemplate | `-` | *template.Template | No | URLTemplate is compiled at load time from URLTemplateString. It<br />will be passed a builder.PipelineOptions and the generated URL should provide<br />logs for the PipelineOptions. |
 
 ## Gerrit
 
@@ -456,8 +415,6 @@ ProwConfig is config for all prow controllers
 |---|---|---|---|---|
 | Keeper | `tide` | [Keeper](#Keeper) | No |  |
 | Plank | `plank` | [Plank](#Plank) | No |  |
-| Sinker | `sinker` | [Sinker](#Sinker) | No |  |
-| Deck | `deck` | [Deck](#Deck) | No |  |
 | BranchProtection | `branch-protection` | [BranchProtection](#BranchProtection) | No |  |
 | Orgs | `orgs` | map[string]org.Config | No |  |
 | Gerrit | `gerrit` | [Gerrit](#Gerrit) | No |  |
@@ -551,29 +508,6 @@ ReviewPolicy specifies github approval/review criteria.<br />Any nil values inhe
 | DismissStale | `dismiss_stale_reviews` | *bool | No | DismissStale overrides whether new commits automatically dismiss old reviews if set |
 | RequireOwners | `require_code_owner_reviews` | *bool | No | RequireOwners overrides whether CODEOWNERS must approve PRs if set |
 | Approvals | `required_approving_review_count` | *int | No | Approvals overrides the number of approvals required if set (set to 0 to disable) |
-
-## Sinker
-
-Sinker is config for the sinker controller.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| ResyncPeriodString | `resync_period` | string | No | ResyncPeriodString compiles into ResyncPeriod at load time. |
-| ResyncPeriod | `-` | time.Duration | Yes | ResyncPeriod is how often the controller will perform a garbage<br />collection. Defaults to one hour. |
-| MaxLighthouseJobAgeString | `max_lighthouseJob_age` | string | No | MaxLighthouseJobAgeString compiles into MaxLighthouseJobAge at load time. |
-| MaxLighthouseJobAge | `-` | time.Duration | Yes | MaxLighthouseJobAge is how old a LighthouseJob can be before it is garbage-collected.<br />Defaults to one week. |
-| MaxPodAgeString | `max_pod_age` | string | No | MaxPodAgeString compiles into MaxPodAge at load time. |
-| MaxPodAge | `-` | time.Duration | Yes | MaxPodAge is how old a Pod can be before it is garbage-collected.<br />Defaults to one day. |
-
-## Spyglass
-
-Spyglass holds config for Spyglass
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Viewers | `viewers` | map[string][]string | No | Viewers is a map of Regexp strings to viewer names that defines which sets<br />of artifacts need to be consumed by which viewers. The keys are compiled<br />and stored in RegexCache at load time. |
-| RegexCache | `-` | map[string]*regexp.Regexp | No | RegexCache is a map of viewer regexp strings to their compiled equivalents. |
-| SizeLimit | `size_limit` | int64 | No | SizeLimit is the max size artifact in bytes that Spyglass will attempt to<br />read in entirety. This will only affect viewers attempting to use<br />artifact.ReadAll(). To exclude outlier artifacts, set this limit to<br />expected file size + variance. To include all artifacts with high<br />probability, use 2*maximum observed artifact size. |
 
 ## UtilityConfig
 
