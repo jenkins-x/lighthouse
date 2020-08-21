@@ -18,7 +18,6 @@ limitations under the License.
 package jobutil
 
 import (
-	"bytes"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -182,29 +181,6 @@ func LighthouseJobFields(pj *v1alpha1.LighthouseJob) logrus.Fields {
 		fields[scmprovider.OrgLogField] = pj.Spec.Refs.Org
 	}
 	return fields
-}
-
-// JobURL returns the expected URL for LighthouseJobStatus.
-//
-// TODO(fejta): consider moving default JobURLTemplate and JobURLPrefix out of plank
-func JobURL(plank config.Plank, pj v1alpha1.LighthouseJob, log *logrus.Entry) string {
-	/*	if pj.Spec.DecorationConfig != nil && plank.GetJobURLPrefix(pj.Spec.Refs) != "" {
-			spec := downwardapi.NewJobSpec(pj.Spec, pj.Status.BuildID, pj.Name)
-			gcsConfig := pj.Spec.DecorationConfig.GCSConfiguration
-			_, gcsPath, _ := gcsupload.PathsForJob(gcsConfig, &spec, "")
-
-			prefix, _ := url.Parse(plank.GetJobURLPrefix(pj.Spec.Refs))
-			prefix.Path = path.Join(prefix.Path, gcsConfig.Bucket, gcsPath)
-			return prefix.String()
-		}
-	*/
-	var b bytes.Buffer
-	if err := plank.JobURLTemplate.Execute(&b, &pj); err != nil {
-		log.WithFields(LighthouseJobFields(&pj)).Errorf("error executing URL template: %v", err)
-	} else {
-		return b.String()
-	}
-	return ""
 }
 
 // LabelsAndAnnotationsForSpec returns a minimal set of labels to add to LighthouseJobs or its owned resources.

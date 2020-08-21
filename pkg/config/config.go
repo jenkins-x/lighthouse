@@ -189,19 +189,13 @@ type Controller struct {
 
 // Plank is config for the plank controller.
 type Plank struct {
-	Controller `json:",inline"`
-	// PodPendingTimeoutString compiles into PodPendingTimeout at load time.
-	PodPendingTimeoutString string `json:"pod_pending_timeout,omitempty"`
-	// PodPendingTimeout is after how long the controller will perform a garbage
-	// collection on pending pods. Defaults to one day.
-	PodPendingTimeout time.Duration `json:"-"`
-	/*	// DefaultDecorationConfig are defaults for shared fields for LighthouseJobs
-		// that request to have their PodSpecs decorated
-		DefaultDecorationConfig *builder.DecorationConfig `json:"default_decoration_config,omitempty"`
-	*/
-	// JobURLPrefix is the host and path prefix under
-	// which job details will be viewable
-	JobURLPrefix string `json:"job_url_prefix,omitempty"`
+
+	// ReportTemplateString compiles into ReportTemplate at load time.
+	ReportTemplateString string `json:"report_template,omitempty"`
+	// ReportTemplate is compiled at load time from ReportTemplateString. It
+	// will be passed a builder.PipelineOptions and can provide an optional blurb below
+	// the test failures comment.
+	ReportTemplate *template.Template `json:"-"`
 }
 
 // Gerrit is config for the gerrit controller.
@@ -480,9 +474,6 @@ func (c *Config) finalizeAndValidate() (*Config, error) {
 	if err := c.finalizeJobConfig(); err != nil {
 		return nil, err
 	}
-	if err := c.validateComponentConfig(); err != nil {
-		return nil, err
-	}
 	if err := c.validateJobConfig(); err != nil {
 		return nil, err
 	}
@@ -560,14 +551,6 @@ func (c *Config) finalizeJobConfig() error {
 		c.OwnersDirExcludes = c.OwnersDirBlacklist
 	}
 
-	return nil
-}
-
-// validateComponentConfig validates the infrastructure component configuration
-func (c *Config) validateComponentConfig() error {
-	if _, err := url.Parse(c.Plank.JobURLPrefix); c.Plank.JobURLPrefix != "" && err != nil {
-		return fmt.Errorf("plank declares an invalid job URL prefix %q: %v", c.Plank.JobURLPrefix, err)
-	}
 	return nil
 }
 
@@ -732,19 +715,11 @@ func Path(value string) string {
 }
 
 func parseProwConfig(c *Config) error {
-	if err := ValidateController(&c.Plank.Controller); err != nil {
-		return fmt.Errorf("validating plank config: %v", err)
+	reportTmpl, err := template.New("Report").Parse(c.Plank.ReportTemplateString)
+	if err != nil {
+		return fmt.Errorf("parsing template: %v", err)
 	}
-
-	if c.Plank.PodPendingTimeoutString == "" {
-		c.Plank.PodPendingTimeout = 24 * time.Hour
-	} else {
-		podPendingTimeout, err := time.ParseDuration(c.Plank.PodPendingTimeoutString)
-		if err != nil {
-			return fmt.Errorf("cannot parse duration for plank.pod_pending_timeout: %v", err)
-		}
-		c.Plank.PodPendingTimeout = podPendingTimeout
-	}
+	c.Plank.ReportTemplate = reportTmpl
 
 	if c.Gerrit.TickIntervalString == "" {
 		c.Gerrit.TickInterval = time.Minute
