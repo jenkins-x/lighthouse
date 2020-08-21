@@ -28,7 +28,7 @@ GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 
 .PHONY: all
-all: build test check
+all: docs build test check
 
 .PHONY: test
 test: 
@@ -168,6 +168,22 @@ CONTROLLER_GEN := $(GOPATH)/bin/controller-gen
 $(CONTROLLER_GEN):
 	pushd /tmp; $(GO) get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0; popd
 
-# Generate manifests e.g. CRD, RBAC etc.
 crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
+
+.PHONY: docs
+docs: crds-docs plugins-docs
+
+.PHONY: plugins-docs
+crds-docs:
+	cd hack && go run struct-docs.go \
+		--input-file ../pkg/apis/lighthouse/v1alpha1/types.go \
+		--title "Lighthouse (v1alpha1)" \
+		--output-path ../docs/crds
+
+.PHONY: plugins-docs
+plugins-docs:
+	cd hack && go run struct-docs.go \
+		--input-file ../pkg/plugins/config.go \
+		--title "Plugins config" \
+		--output-path ../docs/plugins

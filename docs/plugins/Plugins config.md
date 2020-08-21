@@ -29,10 +29,8 @@ Approve specifies a configuration for a single approve.<br /><br />The configura
 |---|---|---|---|---|
 | Repos | `repos` | []string | No | Repos is either of the form org/repos or just org. |
 | IssueRequired | `issue_required` | bool | No | IssueRequired indicates if an associated issue is required for approval in<br />the specified repos. |
-| DeprecatedImplicitSelfApprove | `implicit_self_approve` | *bool | No | TODO(fejta): delete in June 2019 |
 | RequireSelfApproval | `require_self_approval` | *bool | No | RequireSelfApproval requires PR authors to explicitly approve their PRs.<br />Otherwise the plugin assumes the author of the PR approves the changes in the PR. |
 | LgtmActsAsApprove | `lgtm_acts_as_approve` | bool | No | LgtmActsAsApprove indicates that the lgtm command should be used to<br />indicate approval |
-| DeprecatedReviewActsAsApprove | `review_acts_as_approve` | *bool | No | ReviewActsAsApprove should be replaced with its non-deprecated inverse: ignore_review_state.<br />TODO(fejta): delete in June 2019 |
 | IgnoreReviewState | `ignore_review_state` | *bool | No | IgnoreReviewState causes the approve plugin to ignore the GitHub review state. Otherwise:<br />* an APPROVE github review is equivalent to leaving an "/approve" message.<br />* A REQUEST_CHANGES github review is equivalent to leaving an /approve cancel" message. |
 
 ## Blockade
@@ -84,8 +82,6 @@ ConfigUpdater contains the configuration for the config-updater plugin.
 | Variable Name | Stanza | Type | Required | Description |
 |---|---|---|---|---|
 | Maps | `maps` | map[string][ConfigMapSpec](#ConfigMapSpec) | No | A map of filename => ConfigMapSpec.<br />Whenever a commit changes filename, prow will update the corresponding configmap.<br />map[string]ConfigMapSpec{ "/my/path.yaml": {Name: "foo", Namespace: "otherNamespace" }}<br />will result in replacing the foo configmap whenever path.yaml changes |
-| ConfigFile | `config_file` | string | No | The location of the prow configuration file inside the repository<br />where the config-updater plugin is enabled. This needs to be relative<br />to the root of the repository, eg. "prow/config.yaml" will match<br />github.com/kubernetes/test-infra/prow/config.yaml assuming the config-updater<br />plugin is enabled for kubernetes/test-infra. Defaults to "prow/config.yaml". |
-| PluginFile | `plugin_file` | string | No | The location of the prow plugin configuration file inside the repository<br />where the config-updater plugin is enabled. This needs to be relative<br />to the root of the repository, eg. "prow/plugins.yaml" will match<br />github.com/kubernetes/test-infra/prow/plugins.yaml assuming the config-updater<br />plugin is enabled for kubernetes/test-infra. Defaults to "prow/plugins.yaml". |
 | GZIP | `gzip` | bool | Yes | If GZIP is true then files will be gzipped before insertion into<br />their corresponding configmap |
 
 ## Configuration
@@ -98,8 +94,6 @@ Configuration is the top-level serialization target for plugin Configuration.
 | ExternalPlugins | `external_plugins` | map[string][][ExternalPlugin](#ExternalPlugin) | No | ExternalPlugins is a map of repositories (eg "k/k") to lists of<br />external plugins. |
 | Owners | `owners` | [Owners](#Owners) | No | Owners contains configuration related to handling OWNERS files. |
 | Approve | `approve` | [][Approve](#Approve) | No | Built-in plugins specific configuration. |
-| UseDeprecatedSelfApprove | `use_deprecated_2018_implicit_self_approve_default_migrate_before_july_2019` | bool | No |  |
-| UseDeprecatedReviewApprove | `use_deprecated_2018_review_acts_as_approve_default_migrate_before_july_2019` | bool | No |  |
 | Blockades | `blockades` | [][Blockade](#Blockade) | No |  |
 | Cat | `cat` | [Cat](#Cat) | No |  |
 | CherryPickUnapproved | `cherry_pick_unapproved` | [CherryPickUnapproved](#CherryPickUnapproved) | No |  |
@@ -170,10 +164,9 @@ Owners contains configuration related to handling OWNERS files.
 
 | Variable Name | Stanza | Type | Required | Description |
 |---|---|---|---|---|
-| MDYAMLRepos | `mdyamlrepos` | []string | No | MDYAMLRepos is a list of org and org/repo strings specifying the repos that support YAML<br />OWNERS config headers at the top of markdown (*.md) files. These headers function just like<br />the config in an OWNERS file, but only apply to the file itself instead of the entire<br />directory and all sub-directories.<br />The yaml header must be at the start of the file and be bracketed with "---" like so:<br /><br />		---<br />		approvers:<br />		- mikedanese<br />		- thockin<br /><br />		--- |
+| MDYAMLRepos | `mdyamlrepos` | []string | No | MDYAMLRepos is a list of org and org/repo strings specifying the repos that support YAML<br />OWNERS config headers at the top of markdown (*.md) files. These headers function just like<br />the config in an OWNERS file, but only apply to the file itself instead of the entire<br />directory and all sub-directories.<br />The yaml header must be at the start of the file and be bracketed with "---" like so:<br /><br />		---<br />		approvers:<br />		- mikedanese<br />		- thockin<br />		--- |
 | SkipCollaborators | `skip_collaborators` | []string | No | SkipCollaborators disables collaborator cross-checks and forces both<br />the approve and lgtm plugins to use solely OWNERS files for access<br />control in the provided repos. |
 | LabelsExcludeList | `labels_excludes` | []string | No | LabelsExcludeList holds a list of labels that should not be present in any<br />OWNERS file, preventing their automatic addition by the owners-label plugin.<br />This check is performed by the verify-owners plugin. |
-| LabelsBlackList | `labels_blacklist` | []string | No | LabelsBlackList is DEPRECATED in favor of LabelsExcludeList |
 
 ## RequireMatchingLabel
 
