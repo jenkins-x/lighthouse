@@ -19,8 +19,6 @@ data:
     branch-protection:
       orgs: {}
       protect-tested-repos: true
-    deck:
-      spyglass: {}
     gerrit: {}
     github:
       LinkURL: null
@@ -42,7 +40,6 @@ data:
 {{- end }}
     push_gateway:
       serve_metrics: false
-    sinker: {}
     tide:
       context_options:
         from-branch-protection: true
