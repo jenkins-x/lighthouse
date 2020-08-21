@@ -51,23 +51,21 @@ type Configuration struct {
 	Owners Owners `json:"owners,omitempty"`
 
 	// Built-in plugins specific configuration.
-	Approve                    []Approve              `json:"approve,omitempty"`
-	UseDeprecatedSelfApprove   bool                   `json:"use_deprecated_2018_implicit_self_approve_default_migrate_before_july_2019,omitempty"`
-	UseDeprecatedReviewApprove bool                   `json:"use_deprecated_2018_review_acts_as_approve_default_migrate_before_july_2019,omitempty"`
-	Blockades                  []Blockade             `json:"blockades,omitempty"`
-	Cat                        Cat                    `json:"cat,omitempty"`
-	CherryPickUnapproved       CherryPickUnapproved   `json:"cherry_pick_unapproved,omitempty"`
-	ConfigUpdater              ConfigUpdater          `json:"config_updater,omitempty"`
-	Heart                      Heart                  `json:"heart,omitempty"`
-	Label                      Label                  `json:"label,omitempty"`
-	Lgtm                       []Lgtm                 `json:"lgtm,omitempty"`
-	RepoMilestone              map[string]Milestone   `json:"repo_milestone,omitempty"`
-	RequireMatchingLabel       []RequireMatchingLabel `json:"require_matching_label,omitempty"`
-	RequireSIG                 RequireSIG             `json:"requiresig,omitempty"`
-	SigMention                 SigMention             `json:"sigmention,omitempty"`
-	Size                       Size                   `json:"size,omitempty"`
-	Triggers                   []Trigger              `json:"triggers,omitempty"`
-	Welcome                    []Welcome              `json:"welcome,omitempty"`
+	Approve              []Approve              `json:"approve,omitempty"`
+	Blockades            []Blockade             `json:"blockades,omitempty"`
+	Cat                  Cat                    `json:"cat,omitempty"`
+	CherryPickUnapproved CherryPickUnapproved   `json:"cherry_pick_unapproved,omitempty"`
+	ConfigUpdater        ConfigUpdater          `json:"config_updater,omitempty"`
+	Heart                Heart                  `json:"heart,omitempty"`
+	Label                Label                  `json:"label,omitempty"`
+	Lgtm                 []Lgtm                 `json:"lgtm,omitempty"`
+	RepoMilestone        map[string]Milestone   `json:"repo_milestone,omitempty"`
+	RequireMatchingLabel []RequireMatchingLabel `json:"require_matching_label,omitempty"`
+	RequireSIG           RequireSIG             `json:"requiresig,omitempty"`
+	SigMention           SigMention             `json:"sigmention,omitempty"`
+	Size                 Size                   `json:"size,omitempty"`
+	Triggers             []Trigger              `json:"triggers,omitempty"`
+	Welcome              []Welcome              `json:"welcome,omitempty"`
 }
 
 // ExternalPlugin holds configuration for registering an external
@@ -96,23 +94,17 @@ type Owners struct {
 		approvers:
 		- mikedanese
 		- thockin
-
 		---
 	*/
 	MDYAMLRepos []string `json:"mdyamlrepos,omitempty"`
-
 	// SkipCollaborators disables collaborator cross-checks and forces both
 	// the approve and lgtm plugins to use solely OWNERS files for access
 	// control in the provided repos.
 	SkipCollaborators []string `json:"skip_collaborators,omitempty"`
-
 	// LabelsExcludeList holds a list of labels that should not be present in any
 	// OWNERS file, preventing their automatic addition by the owners-label plugin.
 	// This check is performed by the verify-owners plugin.
 	LabelsExcludeList []string `json:"labels_excludes,omitempty"`
-
-	// LabelsBlackList is DEPRECATED in favor of LabelsExcludeList
-	LabelsBlackList []string `json:"labels_blacklist,omitempty"`
 }
 
 // MDYAMLEnabled returns a boolean denoting if the passed repo supports YAML OWNERS config headers
@@ -201,20 +193,12 @@ type Approve struct {
 	// IssueRequired indicates if an associated issue is required for approval in
 	// the specified repos.
 	IssueRequired bool `json:"issue_required,omitempty"`
-
-	// TODO(fejta): delete in June 2019
-	DeprecatedImplicitSelfApprove *bool `json:"implicit_self_approve,omitempty"`
 	// RequireSelfApproval requires PR authors to explicitly approve their PRs.
 	// Otherwise the plugin assumes the author of the PR approves the changes in the PR.
 	RequireSelfApproval *bool `json:"require_self_approval,omitempty"`
-
 	// LgtmActsAsApprove indicates that the lgtm command should be used to
 	// indicate approval
 	LgtmActsAsApprove bool `json:"lgtm_acts_as_approve,omitempty"`
-
-	// ReviewActsAsApprove should be replaced with its non-deprecated inverse: ignore_review_state.
-	// TODO(fejta): delete in June 2019
-	DeprecatedReviewActsAsApprove *bool `json:"review_acts_as_approve,omitempty"`
 	// IgnoreReviewState causes the approve plugin to ignore the GitHub review state. Otherwise:
 	// * an APPROVE github review is equivalent to leaving an "/approve" message.
 	// * A REQUEST_CHANGES github review is equivalent to leaving an /approve cancel" message.
@@ -248,10 +232,7 @@ func warnDeprecated(last *time.Time, freq time.Duration, msg string) {
 
 // HasSelfApproval checks if it has self-approval
 func (a Approve) HasSelfApproval() bool {
-	if a.DeprecatedImplicitSelfApprove != nil {
-		warnDeprecated(&warnImplicitSelfApprove, 5*time.Minute, "Please update plugins.yaml to use require_self_approval instead of the deprecated implicit_self_approve before June 2019")
-		return *a.DeprecatedImplicitSelfApprove
-	} else if a.RequireSelfApproval != nil {
+	if a.RequireSelfApproval != nil {
 		return !*a.RequireSelfApproval
 	}
 	return true
@@ -259,10 +240,7 @@ func (a Approve) HasSelfApproval() bool {
 
 // ConsiderReviewState checks if the rewview state is active
 func (a Approve) ConsiderReviewState() bool {
-	if a.DeprecatedReviewActsAsApprove != nil {
-		warnDeprecated(&warnReviewActsAsApprove, 5*time.Minute, "Please update plugins.yaml to use ignore_review_state instead of the deprecated review_acts_as_approve before June 2019")
-		return *a.DeprecatedReviewActsAsApprove
-	} else if a.IgnoreReviewState != nil {
+	if a.IgnoreReviewState != nil {
 		return !*a.IgnoreReviewState
 	}
 	return true
@@ -379,18 +357,6 @@ type ConfigUpdater struct {
 	// map[string]ConfigMapSpec{ "/my/path.yaml": {Name: "foo", Namespace: "otherNamespace" }}
 	// will result in replacing the foo configmap whenever path.yaml changes
 	Maps map[string]ConfigMapSpec `json:"maps,omitempty"`
-	// The location of the prow configuration file inside the repository
-	// where the config-updater plugin is enabled. This needs to be relative
-	// to the root of the repository, eg. "prow/config.yaml" will match
-	// github.com/kubernetes/test-infra/prow/config.yaml assuming the config-updater
-	// plugin is enabled for kubernetes/test-infra. Defaults to "prow/config.yaml".
-	ConfigFile string `json:"config_file,omitempty"`
-	// The location of the prow plugin configuration file inside the repository
-	// where the config-updater plugin is enabled. This needs to be relative
-	// to the root of the repository, eg. "prow/plugins.yaml" will match
-	// github.com/kubernetes/test-infra/prow/plugins.yaml assuming the config-updater
-	// plugin is enabled for kubernetes/test-infra. Defaults to "prow/plugins.yaml".
-	PluginFile string `json:"plugin_file,omitempty"`
 	// If GZIP is true then files will be gzipped before insertion into
 	// their corresponding configmap
 	GZIP bool `json:"gzip"`
@@ -583,18 +549,8 @@ func (c *Configuration) EnabledReposForExternalPlugin(plugin string) (orgs, repo
 // SetDefaults sets default options for config updating
 func (c *ConfigUpdater) SetDefaults() {
 	if len(c.Maps) == 0 {
-		cf := c.ConfigFile
-		if cf == "" {
-			cf = "prow/config.yaml"
-		} else {
-			logrus.Warnf(`config_file is deprecated, please switch to "maps": {"%s": "config"} before July 2018`, cf)
-		}
-		pf := c.PluginFile
-		if pf == "" {
-			pf = "prow/plugins.yaml"
-		} else {
-			logrus.Warnf(`plugin_file is deprecated, please switch to "maps": {"%s": "plugins"} before July 2018`, pf)
-		}
+		cf := "prow/config.yaml"
+		pf := "prow/plugins.yaml"
 		c.Maps = map[string]ConfigMapSpec{
 			cf: {
 				Name: "config",
@@ -630,9 +586,6 @@ func (c *Configuration) setDefaults() {
 	}
 	if c.SigMention.Regexp == "" {
 		c.SigMention.Regexp = `(?m)@kubernetes/sig-([\w-]*)-(misc|test-failures|bugs|feature-requests|proposals|pr-reviews|api-reviews)`
-	}
-	if c.Owners.LabelsExcludeList == nil {
-		c.Owners.LabelsExcludeList = c.Owners.LabelsBlackList
 	}
 	if c.Owners.LabelsExcludeList == nil {
 		c.Owners.LabelsExcludeList = []string{labels.Approved, labels.LGTM}

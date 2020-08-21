@@ -241,14 +241,13 @@ type DecorationConfig struct {
 	// a job. Only applicable if decorating the PodSpec.
 	GracePeriod *Duration `json:"grace_period,omitempty"`
 
-	/*
-		// UtilityImages holds pull specs for utility container
-		// images used to decorate a PodSpec.
-		UtilityImages *UtilityImages `json:"utility_images,omitempty"`
-		// GCSConfiguration holds options for pushing logs and
-		// artifacts to GCS from a job.
-		GCSConfiguration *GCSConfiguration `json:"gcs_configuration,omitempty"`
-	*/
+	// // UtilityImages holds pull specs for utility container
+	// // images used to decorate a PodSpec.
+	// UtilityImages *UtilityImages `json:"utility_images,omitempty"`
+	// // GCSConfiguration holds options for pushing logs and
+	// // artifacts to GCS from a job.
+	// GCSConfiguration *GCSConfiguration `json:"gcs_configuration,omitempty"`
+
 	// GCSCredentialsSecret is the name of the Kubernetes secret
 	// that holds GCS push credentials.
 	GCSCredentialsSecret string `json:"gcs_credentials_secret,omitempty"`

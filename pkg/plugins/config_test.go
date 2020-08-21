@@ -118,54 +118,6 @@ func TestSetDefault_Maps(t *testing.T) {
 				"world.yaml": {Name: "you-cm", Namespaces: []string{""}},
 			},
 		},
-		{
-			name: "deprecated config",
-			config: ConfigUpdater{
-				ConfigFile: "foo.yaml",
-			},
-			expected: map[string]ConfigMapSpec{
-				"foo.yaml":          {Name: "config", Namespaces: []string{""}},
-				"prow/plugins.yaml": {Name: "plugins", Namespaces: []string{""}},
-			},
-		},
-		{
-			name: "deprecated plugins",
-			config: ConfigUpdater{
-				PluginFile: "bar.yaml",
-			},
-			expected: map[string]ConfigMapSpec{
-				"bar.yaml":         {Name: "plugins", Namespaces: []string{""}},
-				"prow/config.yaml": {Name: "config", Namespaces: []string{""}},
-			},
-		},
-		{
-			name: "deprecated both",
-			config: ConfigUpdater{
-				ConfigFile: "foo.yaml",
-				PluginFile: "bar.yaml",
-			},
-			expected: map[string]ConfigMapSpec{
-				"foo.yaml": {Name: "config", Namespaces: []string{""}},
-				"bar.yaml": {Name: "plugins", Namespaces: []string{""}},
-			},
-		},
-		{
-			name: "both current and deprecated",
-			config: ConfigUpdater{
-				Maps: map[string]ConfigMapSpec{
-					"config.yaml":        {Name: "overwrite-config"},
-					"plugins.yaml":       {Name: "overwrite-plugins"},
-					"unconflicting.yaml": {Name: "ignored"},
-				},
-				ConfigFile: "config.yaml",
-				PluginFile: "plugins.yaml",
-			},
-			expected: map[string]ConfigMapSpec{
-				"config.yaml":        {Name: "overwrite-config", Namespaces: []string{""}},
-				"plugins.yaml":       {Name: "overwrite-plugins", Namespaces: []string{""}},
-				"unconflicting.yaml": {Name: "ignored", Namespaces: []string{""}},
-			},
-		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

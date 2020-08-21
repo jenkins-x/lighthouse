@@ -59,9 +59,9 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		msg := fmt.Sprintf(
 			"The main configuration is kept in sync with '%s/%s'.\nThe plugin configuration is kept in sync with '%s/%s'.",
 			enabledRepos[0],
-			config.ConfigUpdater.ConfigFile,
+			"prow/config.yaml",
 			enabledRepos[0],
-			config.ConfigUpdater.PluginFile,
+			"prow/plugins.yaml",
 		)
 		configInfo = map[string]string{"": msg}
 	}
