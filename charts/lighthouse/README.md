@@ -89,7 +89,7 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `hook.ingress.tls.secretName` | string |  | `""` |
 | `image.parentRepository` | string |  | `"gcr.io/jenkinsxio"` |
 | `image.pullPolicy` | string |  | `"IfNotPresent"` |
-| `image.tag` | string |  | `"0.0.64"` |
+| `image.tag` | string |  | `"0.0.749"` |
 | `keeper.datadog.enabled` | string |  | `"true"` |
 | `keeper.image.repository` | string |  | `"{{ .Values.image.parentRepository }}/lighthouse-keeper"` |
 | `keeper.image.tag` | string |  | `"{{ .Values.image.tag }}"` |
@@ -123,6 +123,7 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `tektoncontroller.resources.limits.memory` | string |  | `"256Mi"` |
 | `tektoncontroller.resources.requests.cpu` | string |  | `"80m"` |
 | `tektoncontroller.resources.requests.memory` | string |  | `"128Mi"` |
+| `tektoncontroller.service.annotations` | object |  | `{}` |
 | `tektoncontroller.terminationGracePeriodSeconds` | int |  | `180` |
 | `user` | string |  | `""` |
 | `vault.enabled` | bool |  | `false` |

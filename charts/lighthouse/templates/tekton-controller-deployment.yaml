@@ -33,6 +33,9 @@ spec:
 {{- if ne .Values.tektoncontroller.dashboardURL "" }}
           - "--dashboard-url={{ .Values.tektoncontroller.dashboardURL}}"
 {{- end }}
+        ports:
+          - name: metrics
+            containerPort: 8080
         env:
           - name: "LOGRUS_FORMAT"
             value: "{{ .Values.logFormat }}"
