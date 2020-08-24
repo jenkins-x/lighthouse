@@ -24,7 +24,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
@@ -286,23 +285,6 @@ func (pa *ConfigAgent) Set(pc *Configuration) {
 	pa.mut.Lock()
 	defer pa.mut.Unlock()
 	pa.configuration = pc
-}
-
-// Start starts polling path for plugin config. If the first attempt fails,
-// then start returns the error. Future errors will halt updates but not stop.
-func (pa *ConfigAgent) Start(path string) error {
-	if err := pa.Load(path); err != nil {
-		return err
-	}
-	ticker := time.Tick(1 * time.Minute)
-	go func() {
-		for range ticker {
-			if err := pa.Load(path); err != nil {
-				logrus.WithField("path", path).WithError(err).Error("Error loading plugin config.")
-			}
-		}
-	}()
-	return nil
 }
 
 // GenericCommentHandlers returns a map of plugin names to handlers for the repo.
