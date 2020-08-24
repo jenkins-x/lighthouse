@@ -9,10 +9,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	lhclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 type options struct {
@@ -48,7 +48,7 @@ func main() {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 
-	cfg, err := clients.GetConfig("", "")
+	cfg, err := clientcmd.BuildConfigFromFlags("", "")
 	if err != nil {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}
