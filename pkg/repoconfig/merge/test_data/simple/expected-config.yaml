@@ -6,7 +6,6 @@ branch-protection:
           required_status_checks:
             contexts:
             - lint
-gerrit: {}
 github:
   LinkURL: null
 owners_dir_blacklist:

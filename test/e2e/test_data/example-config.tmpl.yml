@@ -7,7 +7,6 @@ branch-protection:
             contexts:
             - pr-build
   protect-tested-repos: true
-gerrit: {}
 github:
   LinkURL: null
 owners_dir_excludes:

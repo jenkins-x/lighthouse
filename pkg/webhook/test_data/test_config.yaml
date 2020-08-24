@@ -65,7 +65,6 @@ branch-protection:
             contexts:
             - pr-build
   protect-tested-repos: true
-gerrit: {}
 owners_dir_excludes:
   default: null
   repos: null

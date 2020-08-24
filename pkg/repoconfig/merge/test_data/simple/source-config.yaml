@@ -1,5 +1,4 @@
 branch-protection: {}
-gerrit: {}
 github:
   LinkURL: null
 owners_dir_blacklist:

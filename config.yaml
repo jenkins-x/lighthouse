@@ -21,7 +21,6 @@ branch-protection:
             contexts:
               - pr-build
   protect-tested-repos: true
-gerrit: {}
 owners_dir_blacklist:
   default: null
   repos: null
