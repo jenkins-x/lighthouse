@@ -23,6 +23,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
@@ -215,7 +216,7 @@ func failedStatusForMetapipelineCreation(context string, err error) *scm.StatusI
 
 // RunAndSkipJobs executes the config.Presubmits that are requested and posts skipped statuses
 // for the reporting jobs that are skipped
-func RunAndSkipJobs(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmit, skippedJobs []config.Presubmit, eventGUID string, elideSkippedContexts bool) error {
+func RunAndSkipJobs(c Client, pr *scm.PullRequest, requestedJobs []job.Presubmit, skippedJobs []job.Presubmit, eventGUID string, elideSkippedContexts bool) error {
 	if err := validateContextOverlap(requestedJobs, skippedJobs); err != nil {
 		c.Logger.WithError(err).Warn("Could not run or skip requested jobs, overlapping contexts.")
 		return err
@@ -230,7 +231,7 @@ func RunAndSkipJobs(c Client, pr *scm.PullRequest, requestedJobs []config.Presub
 }
 
 // validateContextOverlap ensures that there will be no overlap in contexts between a set of jobs running and a set to skip
-func validateContextOverlap(toRun, toSkip []config.Presubmit) error {
+func validateContextOverlap(toRun, toSkip []job.Presubmit) error {
 	requestedContexts := sets.NewString()
 	for _, job := range toRun {
 		requestedContexts.Insert(job.Context)
@@ -247,7 +248,7 @@ func validateContextOverlap(toRun, toSkip []config.Presubmit) error {
 }
 
 // runRequested executes the config.Presubmits that are requested
-func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmit, eventGUID string) error {
+func runRequested(c Client, pr *scm.PullRequest, requestedJobs []job.Presubmit, eventGUID string) error {
 	baseSHA, err := c.SCMProviderClient.GetRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, "heads/"+pr.Base.Ref)
 	if err != nil {
 		return err
@@ -270,7 +271,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []config.Presubmi
 }
 
 // skipRequested posts skipped statuses for the config.Presubmits that are requested
-func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []config.Presubmit) error {
+func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []job.Presubmit) error {
 	var errors []error
 	for _, job := range skippedJobs {
 		if job.SkipReport {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -78,7 +78,7 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 
 	// filter on job agent
-	if job.Spec.Agent != config.TektonPipelineAgent {
+	if job.Spec.Agent != configjob.TektonPipelineAgent {
 		return ctrl.Result{}, nil
 	}
 

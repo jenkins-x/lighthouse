@@ -23,7 +23,7 @@ import (
 	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/trigger"
@@ -69,7 +69,7 @@ func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) e
 	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.Config.GetPresubmits(e.Repo), honorOkToTest)
 }
 
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, presubmits []config.Presubmit, honorOkToTest bool) error {
+func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, presubmits []job.Presubmit, honorOkToTest bool) error {
 	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
 		return nil
 	}
@@ -106,7 +106,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		log.Warn(resp)
 		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
-	triggerWillHandle := func(p config.Presubmit) bool {
+	triggerWillHandle := func(p job.Presubmit) bool {
 		for _, presubmit := range filteredPresubmits {
 			if p.Name == presubmit.Name && p.Context == presubmit.Context {
 				return true
@@ -148,7 +148,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	return nil
 }
 
-func statusExists(job config.Presubmit, statuses []*scm.Status) bool {
+func statusExists(job job.Presubmit, statuses []*scm.Status) bool {
 	for _, status := range statuses {
 		if status.Label == job.Context {
 			return true
@@ -157,7 +157,7 @@ func statusExists(job config.Presubmit, statuses []*scm.Status) bool {
 	return false
 }
 
-func isSuccess(job config.Presubmit, statuses []*scm.Status) bool {
+func isSuccess(job job.Presubmit, statuses []*scm.Status) bool {
 	for _, status := range statuses {
 		if status.Label == job.Context && status.State == scm.StateSuccess {
 			return true

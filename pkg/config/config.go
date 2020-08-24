@@ -30,7 +30,9 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/config/org"
+	"github.com/jenkins-x/lighthouse/pkg/config/util"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/robfig/cron.v2"
 	v1 "k8s.io/api/core/v1"
@@ -51,22 +53,15 @@ const (
 	gcsCredentialsMountPath = "/secrets/gcs"
 )
 
+var jobNameRegex = regexp.MustCompile(`^[A-Za-z0-9-._]+$`)
+
+// JobConfig is a type alias for job.Config
+type JobConfig = job.Config
+
 // Config is a read-only snapshot of the config.
 type Config struct {
 	JobConfig
 	ProwConfig
-}
-
-// JobConfig is config for all prow jobs
-type JobConfig struct {
-	// Presets apply to all job types.
-	Presets []Preset `json:"presets,omitempty"`
-	// Full repo name (such as "kubernetes/kubernetes") -> list of jobs.
-	Presubmits  map[string][]Presubmit  `json:"presubmits,omitempty"`
-	Postsubmits map[string][]Postsubmit `json:"postsubmits,omitempty"`
-
-	// Periodics are not associated with any repo.
-	Periodics []Periodic `json:"periodics,omitempty"`
 }
 
 // ProwConfig is config for all prow controllers
@@ -289,7 +284,7 @@ func loadConfigFromFiles(prowConfig, jobConfig string) (*Config, error) {
 
 	if !stat.IsDir() {
 		// still support a single file
-		var jc JobConfig
+		var jc job.Config
 		if err := yamlToConfig(jobConfig, &jc); err != nil {
 			return nil, err
 		}
@@ -333,7 +328,7 @@ func loadConfigFromFiles(prowConfig, jobConfig string) (*Config, error) {
 		}
 		uniqueBasenames.Insert(base)
 
-		var subConfig JobConfig
+		var subConfig job.Config
 		if err := yamlToConfig(path, &subConfig); err != nil {
 			return err
 		}
@@ -356,15 +351,15 @@ func yamlToConfig(path string, nc interface{}) error {
 	if err := yaml.Unmarshal(b, nc); err != nil {
 		return fmt.Errorf("error unmarshaling %s: %v", path, err)
 	}
-	var jc *JobConfig
+	var jc *job.Config
 	switch v := nc.(type) {
-	case *JobConfig:
+	case *job.Config:
 		jc = v
 	case *Config:
 		jc = &v.JobConfig
 	}
 	for rep := range jc.Presubmits {
-		fix := func(job *Presubmit) {
+		fix := func(job *job.Presubmit) {
 			job.SourcePath = path
 		}
 		for i := range jc.Presubmits[rep] {
@@ -372,7 +367,7 @@ func yamlToConfig(path string, nc interface{}) error {
 		}
 	}
 	for rep := range jc.Postsubmits {
-		fix := func(job *Postsubmit) {
+		fix := func(job *job.Postsubmit) {
 			job.SourcePath = path
 		}
 		for i := range jc.Postsubmits[rep] {
@@ -380,7 +375,7 @@ func yamlToConfig(path string, nc interface{}) error {
 		}
 	}
 
-	fix := func(job *Periodic) {
+	fix := func(job *job.Periodic) {
 		job.SourcePath = path
 	}
 	for i := range jc.Periodics {
@@ -389,13 +384,13 @@ func yamlToConfig(path string, nc interface{}) error {
 	return nil
 }
 
-// mergeConfig merges two JobConfig together
+// mergeConfig merges two job.Config together
 // It will try to merge:
 //	- Presubmits
 //	- Postsubmits
 // 	- Periodics
 //	- PodPresets
-func (c *Config) mergeJobConfig(jc JobConfig) error {
+func (c *Config) mergeJobConfig(jc job.Config) error {
 	// Merge everything
 	// *** Presets ***
 	c.Presets = append(c.Presets, jc.Presets...)
@@ -417,7 +412,7 @@ func (c *Config) mergeJobConfig(jc JobConfig) error {
 
 	// *** Presubmits ***
 	if c.Presubmits == nil {
-		c.Presubmits = make(map[string][]Presubmit)
+		c.Presubmits = make(map[string][]job.Presubmit)
 	}
 	for repo, jobs := range jc.Presubmits {
 		c.Presubmits[repo] = append(c.Presubmits[repo], jobs...)
@@ -425,7 +420,7 @@ func (c *Config) mergeJobConfig(jc JobConfig) error {
 
 	// *** Postsubmits ***
 	if c.Postsubmits == nil {
-		c.Postsubmits = make(map[string][]Postsubmit)
+		c.Postsubmits = make(map[string][]job.Postsubmit)
 	}
 	for repo, jobs := range jc.Postsubmits {
 		c.Postsubmits[repo] = append(c.Postsubmits[repo], jobs...)
@@ -434,14 +429,14 @@ func (c *Config) mergeJobConfig(jc JobConfig) error {
 	return nil
 }
 
-func setPresubmitDecorationDefaults(c *Config, ps *Presubmit) {
+func setPresubmitDecorationDefaults(c *Config, ps *job.Presubmit) {
 	/*	if ps.Decorate {
 			ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
 		}
 	*/
 }
 
-func setPostsubmitDecorationDefaults(c *Config, ps *Postsubmit) {
+func setPostsubmitDecorationDefaults(c *Config, ps *job.Postsubmit) {
 	/*
 		if ps.Decorate {
 			ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
@@ -450,7 +445,7 @@ func setPostsubmitDecorationDefaults(c *Config, ps *Postsubmit) {
 	*/
 }
 
-func setPeriodicDecorationDefaults(c *Config, ps *Periodic) {
+func setPeriodicDecorationDefaults(c *Config, ps *job.Periodic) {
 	/*
 		if ps.Decorate {
 			ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
@@ -471,7 +466,7 @@ func (c *Config) finalizeAndValidate() (*Config, error) {
 
 // finalizeJobConfig mutates and fixes entries for jobspecs
 func (c *Config) finalizeJobConfig() error {
-	if c.decorationRequested() {
+	if c.DecorationRequested() {
 		/*		if c.Plank.DefaultDecorationConfig == nil {
 					return errors.New("no default decoration config provided for plank")
 				}
@@ -503,35 +498,33 @@ func (c *Config) finalizeJobConfig() error {
 	}
 
 	// Ensure that regexes are valid and set defaults.
-	for _, vs := range c.Presubmits {
-		c.defaultPresubmitFields(vs)
-		if err := SetPresubmitRegexes(vs); err != nil {
-			return fmt.Errorf("could not set regex: %v", err)
-		}
-	}
-	for _, js := range c.Postsubmits {
-		c.defaultPostsubmitFields(js)
-		if err := SetPostsubmitRegexes(js); err != nil {
-			return fmt.Errorf("could not set regex: %v", err)
-		}
-	}
-
-	c.defaultPeriodicFields(c.Periodics)
-
-	for _, v := range c.AllPresubmits(nil) {
-		if err := resolvePresets(v.Name, v.Labels, v.Spec, c.Presets); err != nil {
-			return err
+	for _, ps := range c.Presubmits {
+		for i := range ps {
+			ps[i].SetDefaults(c.PodNamespace)
+			if err := ps[i].SetRegexes(); err != nil {
+				return fmt.Errorf("could not set regex: %v", err)
+			}
+			if err := resolvePresets(ps[i].Name, ps[i].Labels, ps[i].Spec, c.Presets); err != nil {
+				return err
+			}
 		}
 	}
 
-	for _, v := range c.AllPostsubmits(nil) {
-		if err := resolvePresets(v.Name, v.Labels, v.Spec, c.Presets); err != nil {
-			return err
+	for _, ps := range c.Postsubmits {
+		for i := range ps {
+			ps[i].SetDefaults(c.PodNamespace)
+			if err := ps[i].SetRegexes(); err != nil {
+				return fmt.Errorf("could not set regex: %v", err)
+			}
+			if err := resolvePresets(ps[i].Name, ps[i].Labels, ps[i].Spec, c.Presets); err != nil {
+				return err
+			}
 		}
 	}
 
-	for _, v := range c.AllPeriodics() {
-		if err := resolvePresets(v.Name, v.Labels, v.Spec, c.Presets); err != nil {
+	for i := range c.Periodics {
+		c.Periodics[i].SetDefaults(c.PodNamespace)
+		if err := resolvePresets(c.Periodics[i].Name, c.Periodics[i].Labels, c.Periodics[i].Spec, c.Presets); err != nil {
 			return err
 		}
 	}
@@ -543,9 +536,7 @@ func (c *Config) finalizeJobConfig() error {
 	return nil
 }
 
-var jobNameRegex = regexp.MustCompile(`^[A-Za-z0-9-._]+$`)
-
-func validateJobBase(v JobBase, jobType PipelineKind, podNamespace string) error {
+func validateJobBase(v job.Base, jobType PipelineKind, podNamespace string) error {
 	if !jobNameRegex.MatchString(v.Name) {
 		return fmt.Errorf("name: must match regex %q", jobNameRegex.String())
 	}
@@ -577,7 +568,7 @@ func (c *Config) validateJobConfig() error {
 
 	// Validate presubmits.
 	// Checking that no duplicate job in prow config exists on the same org / repo / branch.
-	validPresubmits := map[orgRepoJobName][]Presubmit{}
+	validPresubmits := map[orgRepoJobName][]job.Presubmit{}
 	for repo, jobs := range c.Presubmits {
 		for _, job := range jobs {
 			repoJobName := orgRepoJobName{repo, job.Name}
@@ -590,18 +581,20 @@ func (c *Config) validateJobConfig() error {
 		}
 	}
 
-	for _, v := range c.AllPresubmits(nil) {
-		if err := validateJobBase(v.JobBase, PresubmitJob, c.PodNamespace); err != nil {
-			return fmt.Errorf("invalid presubmit job %s: %v", v.Name, err)
-		}
-		if err := validateTriggering(v); err != nil {
-			return err
+	for _, ps := range c.Presubmits {
+		for _, j := range ps {
+			if err := validateJobBase(j.Base, PresubmitJob, c.PodNamespace); err != nil {
+				return fmt.Errorf("invalid presubmit job %s: %v", j.Name, err)
+			}
+			if err := validateTriggering(j); err != nil {
+				return err
+			}
 		}
 	}
 
 	// Validate postsubmits.
 	// Checking that no duplicate job in prow config exists on the same org / repo / branch.
-	validPostsubmits := map[orgRepoJobName][]Postsubmit{}
+	validPostsubmits := map[orgRepoJobName][]job.Postsubmit{}
 	for repo, jobs := range c.Postsubmits {
 		for _, job := range jobs {
 			repoJobName := orgRepoJobName{repo, job.Name}
@@ -614,24 +607,27 @@ func (c *Config) validateJobConfig() error {
 		}
 	}
 
-	for _, j := range c.AllPostsubmits(nil) {
-		if err := validateJobBase(j.JobBase, PostsubmitJob, c.PodNamespace); err != nil {
-			return fmt.Errorf("invalid postsubmit job %s: %v", j.Name, err)
+	for _, ps := range c.Postsubmits {
+		for _, j := range ps {
+			if err := validateJobBase(j.Base, PostsubmitJob, c.PodNamespace); err != nil {
+				return fmt.Errorf("invalid postsubmit job %s: %v", j.Name, err)
+			}
 		}
 	}
 
 	// validate no duplicated periodics
 	validPeriodics := sets.NewString()
 	// Ensure that the periodic durations are valid and specs exist.
-	for _, p := range c.AllPeriodics() {
+	for _, p := range c.Periodics {
 		if validPeriodics.Has(p.Name) {
 			return fmt.Errorf("duplicated periodic job : %s", p.Name)
 		}
 		validPeriodics.Insert(p.Name)
-		if err := validateJobBase(p.JobBase, PeriodicJob, c.PodNamespace); err != nil {
+		if err := validateJobBase(p.Base, PeriodicJob, c.PodNamespace); err != nil {
 			return fmt.Errorf("invalid periodic job %s: %v", p.Name, err)
 		}
 	}
+
 	// Set the interval on the periodic jobs. It doesn't make sense to do this
 	// for child jobs.
 	for j, p := range c.Periodics {
@@ -648,7 +644,7 @@ func (c *Config) validateJobConfig() error {
 			if err != nil {
 				return fmt.Errorf("cannot parse duration for %s: %v", c.Periodics[j].Name, err)
 			}
-			c.Periodics[j].interval = d
+			c.Periodics[j].SetInterval(d)
 		}
 	}
 
@@ -656,9 +652,9 @@ func (c *Config) validateJobConfig() error {
 }
 
 // GetPostsubmits lets return all the post submits
-func (c *Config) GetPostsubmits(repository scm.Repository) []Postsubmit {
-	fullNames := c.fullNames(repository)
-	var answer []Postsubmit
+func (c *Config) GetPostsubmits(repository scm.Repository) []job.Postsubmit {
+	fullNames := util.FullNames(repository)
+	var answer []job.Postsubmit
 	for _, fn := range fullNames {
 		answer = append(answer, c.Postsubmits[fn]...)
 	}
@@ -666,41 +662,13 @@ func (c *Config) GetPostsubmits(repository scm.Repository) []Postsubmit {
 }
 
 // GetPresubmits lets return all the pre submits for the given repo
-func (c *Config) GetPresubmits(repository scm.Repository) []Presubmit {
-	fullNames := c.fullNames(repository)
-	var answer []Presubmit
+func (c *Config) GetPresubmits(repository scm.Repository) []job.Presubmit {
+	fullNames := util.FullNames(repository)
+	var answer []job.Presubmit
 	for _, fn := range fullNames {
 		answer = append(answer, c.Presubmits[fn]...)
 	}
 	return answer
-}
-
-func (c *Config) fullNames(repository scm.Repository) []string {
-	owner := repository.Namespace
-	name := repository.Name
-	fullName := repository.FullName
-	if fullName == "" {
-		fullName = scm.Join(owner, name)
-	}
-	fullNames := []string{fullName}
-	lowerOwner := strings.ToLower(owner)
-	if lowerOwner != owner {
-		fullNames = append(fullNames, scm.Join(lowerOwner, name))
-	}
-	return fullNames
-}
-
-// DefaultConfigPath will be used if a --config-path is unset
-const DefaultConfigPath = "/etc/config/config.yaml"
-
-// Path returns the value for the component's configPath if provided
-// explicitly or default otherwise.
-func Path(value string) string {
-	if value != "" {
-		return value
-	}
-	logrus.Warningf("defaulting to %s until 15 July 2019, please migrate", DefaultConfigPath)
-	return DefaultConfigPath
 }
 
 func parseProwConfig(c *Config) error {
@@ -810,32 +778,6 @@ func parseProwConfig(c *Config) error {
 	return nil
 }
 
-func (c *JobConfig) decorationRequested() bool {
-	for _, vs := range c.Presubmits {
-		for i := range vs {
-			if vs[i].Decorate {
-				return true
-			}
-		}
-	}
-
-	for _, js := range c.Postsubmits {
-		for i := range js {
-			if js[i].Decorate {
-				return true
-			}
-		}
-	}
-
-	for i := range c.Periodics {
-		if c.Periodics[i].Decorate {
-			return true
-		}
-	}
-
-	return false
-}
-
 func validateLabels(labels map[string]string) error {
 	for label, value := range labels {
 		for _, prowLabel := range Labels() {
@@ -853,8 +795,8 @@ func validateLabels(labels map[string]string) error {
 	return nil
 }
 
-func validateAgent(v JobBase, podNamespace string) error {
-	agents := sets.NewString(AvailablePipelineAgentTypes()...)
+func validateAgent(v job.Base, podNamespace string) error {
+	agents := sets.NewString(job.AvailablePipelineAgentTypes()...)
 	agent := v.Agent
 	switch {
 	case !agents.Has(agent):
@@ -882,9 +824,9 @@ func validateAgent(v JobBase, podNamespace string) error {
 	return nil
 }
 
-func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, presets []Preset) error {
+func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, presets []job.Preset) error {
 	for _, preset := range presets {
-		if err := mergePreset(preset, labels, spec); err != nil {
+		if err := job.MergePreset(preset, labels, spec); err != nil {
 			return fmt.Errorf("job %s failed to merge presets: %v", name, err)
 		}
 	}
@@ -939,7 +881,7 @@ func validatePodSpec(jobType PipelineKind, spec *v1.PodSpec) error {
 	return nil
 }
 
-func validateTriggering(job Presubmit) error {
+func validateTriggering(job job.Presubmit) error {
 	if job.AlwaysRun && job.RunIfChanged != "" {
 		return fmt.Errorf("job %s is set to always run but also declares run_if_changed targets, which are mutually exclusive", job.Name)
 	}
@@ -972,139 +914,6 @@ func ValidateController(c *Controller) error {
 	}
 	if c.MaxGoroutines <= 0 {
 		return fmt.Errorf("controller has invalid max_goroutines (%d), it needs to be a positive number", c.MaxGoroutines)
-	}
-	return nil
-}
-
-// DefaultTriggerFor returns the default regexp string used to match comments
-// that should trigger the job with this name.
-func DefaultTriggerFor(name string) string {
-	return fmt.Sprintf(`(?m)^/test( | .* )%s,?($|\s.*)`, name)
-}
-
-// DefaultRerunCommandFor returns the default rerun command for the job with
-// this name.
-func DefaultRerunCommandFor(name string) string {
-	return fmt.Sprintf("/test %s", name)
-}
-
-// defaultJobBase configures common parameters, currently Agent and Namespace.
-func (c *ProwConfig) defaultJobBase(base *JobBase) {
-	if base.Agent == "" { // Use the Jenkins X type by default
-		base.Agent = JenkinsXAgent
-	}
-	if base.Namespace == nil || *base.Namespace == "" {
-		s := c.PodNamespace
-		base.Namespace = &s
-	}
-	if base.Cluster == "" {
-		base.Cluster = "default"
-	}
-}
-
-func (c *ProwConfig) defaultPresubmitFields(js []Presubmit) {
-	for i := range js {
-		c.defaultJobBase(&js[i].JobBase)
-		if js[i].Context == "" {
-			js[i].Context = js[i].Name
-		}
-		// Default the values of Trigger and RerunCommand if both fields are
-		// specified. Otherwise let validation fail as both or neither should have
-		// been specified.
-		if js[i].Trigger == "" && js[i].RerunCommand == "" {
-			js[i].Trigger = DefaultTriggerFor(js[i].Name)
-			js[i].RerunCommand = DefaultRerunCommandFor(js[i].Name)
-		}
-	}
-}
-
-func (c *ProwConfig) defaultPostsubmitFields(js []Postsubmit) {
-	for i := range js {
-		c.defaultJobBase(&js[i].JobBase)
-		if js[i].Context == "" {
-			js[i].Context = js[i].Name
-		}
-	}
-}
-
-func (c *ProwConfig) defaultPeriodicFields(js []Periodic) {
-	for i := range js {
-		c.defaultJobBase(&js[i].JobBase)
-	}
-}
-
-// SetPresubmitRegexes compiles and validates all the regular expressions for
-// the provided presubmits.
-func SetPresubmitRegexes(js []Presubmit) error {
-	for i, j := range js {
-		if re, err := regexp.Compile(j.Trigger); err == nil {
-			js[i].re = re
-		} else {
-			return fmt.Errorf("could not compile trigger regex for %s: %v", j.Name, err)
-		}
-		if !js[i].re.MatchString(j.RerunCommand) {
-			return fmt.Errorf("for job %s, rerun command \"%s\" does not match trigger \"%s\"", j.Name, j.RerunCommand, j.Trigger)
-		}
-		b, err := setBrancherRegexes(j.Brancher)
-		if err != nil {
-			return fmt.Errorf("could not set branch regexes for %s: %v", j.Name, err)
-		}
-		js[i].Brancher = b
-
-		c, err := setChangeRegexes(j.RegexpChangeMatcher)
-		if err != nil {
-			return fmt.Errorf("could not set change regexes for %s: %v", j.Name, err)
-		}
-		js[i].RegexpChangeMatcher = c
-	}
-	return nil
-}
-
-// setBrancherRegexes compiles and validates all the regular expressions for
-// the provided branch specifiers.
-func setBrancherRegexes(br Brancher) (Brancher, error) {
-	if len(br.Branches) > 0 {
-		if re, err := regexp.Compile(strings.Join(br.Branches, `|`)); err == nil {
-			br.re = re
-		} else {
-			return br, fmt.Errorf("could not compile positive branch regex: %v", err)
-		}
-	}
-	if len(br.SkipBranches) > 0 {
-		if re, err := regexp.Compile(strings.Join(br.SkipBranches, `|`)); err == nil {
-			br.reSkip = re
-		} else {
-			return br, fmt.Errorf("could not compile negative branch regex: %v", err)
-		}
-	}
-	return br, nil
-}
-
-func setChangeRegexes(cm RegexpChangeMatcher) (RegexpChangeMatcher, error) {
-	if cm.RunIfChanged != "" {
-		re, err := regexp.Compile(cm.RunIfChanged)
-		if err != nil {
-			return cm, fmt.Errorf("could not compile run_if_changed regex: %v", err)
-		}
-		cm.reChanges = re
-	}
-	return cm, nil
-}
-
-// SetPostsubmitRegexes compiles and validates all the regular expressions for
-// the provided postsubmits.
-func SetPostsubmitRegexes(ps []Postsubmit) error {
-	for i, j := range ps {
-		b, err := setBrancherRegexes(j.Brancher)
-		if err != nil {
-			return fmt.Errorf("could not set branch regexes for %s: %v", j.Name, err)
-		}
-		ps[i].Brancher = b
-		c, err := setChangeRegexes(j.RegexpChangeMatcher)
-		if err != nil {
-			return fmt.Errorf("could not set change regexes for %s: %v", j.Name, err)
-		}
-		ps[i].RegexpChangeMatcher = c
 	}
 	return nil
 }

@@ -21,6 +21,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -284,10 +285,10 @@ func TestHandlePullRequest(t *testing.T) {
 			Logger:            logrus.WithField("plugin", PluginName),
 		}
 
-		presubmits := map[string][]config.Presubmit{
+		presubmits := map[string][]job.Presubmit{
 			"org/repo": {
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "jib",
 					},
 					AlwaysRun: true,

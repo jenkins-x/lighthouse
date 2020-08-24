@@ -22,6 +22,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -32,15 +33,15 @@ import (
 func TestPostsubmitSpec(t *testing.T) {
 	tests := []struct {
 		name     string
-		p        config.Postsubmit
+		p        job.Postsubmit
 		refs     v1alpha1.Refs
 		expected v1alpha1.LighthouseJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
-			p: config.Postsubmit{
-				JobBase: config.JobBase{
-					UtilityConfig: config.UtilityConfig{
+			p: job.Postsubmit{
+				Base: job.Base{
+					UtilityConfig: job.UtilityConfig{
 						PathAlias: "foo",
 						CloneURI:  "bar",
 					},
@@ -70,9 +71,9 @@ func TestPostsubmitSpec(t *testing.T) {
 		},
 		{
 			name: "job overrides take precedence over controller defaults",
-			p: config.Postsubmit{
-				JobBase: config.JobBase{
-					UtilityConfig: config.UtilityConfig{
+			p: job.Postsubmit{
+				Base: job.Base{
+					UtilityConfig: job.UtilityConfig{
 						PathAlias: "foo",
 						CloneURI:  "bar",
 					},
@@ -103,15 +104,15 @@ func TestPostsubmitSpec(t *testing.T) {
 func TestPresubmitSpec(t *testing.T) {
 	tests := []struct {
 		name     string
-		p        config.Presubmit
+		p        job.Presubmit
 		refs     v1alpha1.Refs
 		expected v1alpha1.LighthouseJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
-			p: config.Presubmit{
-				JobBase: config.JobBase{
-					UtilityConfig: config.UtilityConfig{
+			p: job.Presubmit{
+				Base: job.Base{
+					UtilityConfig: job.UtilityConfig{
 						PathAlias: "foo",
 						CloneURI:  "bar",
 					},
@@ -141,9 +142,9 @@ func TestPresubmitSpec(t *testing.T) {
 		},
 		{
 			name: "job overrides take precedence over controller defaults",
-			p: config.Presubmit{
-				JobBase: config.JobBase{
-					UtilityConfig: config.UtilityConfig{
+			p: job.Presubmit{
+				Base: job.Base{
+					UtilityConfig: job.UtilityConfig{
 						PathAlias: "foo",
 						CloneURI:  "bar",
 					},
@@ -174,15 +175,15 @@ func TestPresubmitSpec(t *testing.T) {
 func TestBatchSpec(t *testing.T) {
 	tests := []struct {
 		name     string
-		p        config.Presubmit
+		p        job.Presubmit
 		refs     v1alpha1.Refs
 		expected v1alpha1.LighthouseJobSpec
 	}{
 		{
 			name: "can override path alias and cloneuri",
-			p: config.Presubmit{
-				JobBase: config.JobBase{
-					UtilityConfig: config.UtilityConfig{
+			p: job.Presubmit{
+				Base: job.Base{
+					UtilityConfig: job.UtilityConfig{
 						PathAlias: "foo",
 						CloneURI:  "bar",
 					},
@@ -212,9 +213,9 @@ func TestBatchSpec(t *testing.T) {
 		},
 		{
 			name: "job overrides take precedence over controller defaults",
-			p: config.Presubmit{
-				JobBase: config.JobBase{
-					UtilityConfig: config.UtilityConfig{
+			p: job.Presubmit{
+				Base: job.Base{
+					UtilityConfig: job.UtilityConfig{
 						PathAlias: "foo",
 						CloneURI:  "bar",
 					},
@@ -520,12 +521,12 @@ func TestCreateRefs(t *testing.T) {
 func TestSpecFromJobBase(t *testing.T) {
 	testCases := []struct {
 		name    string
-		jobBase config.JobBase
+		jobBase job.Base
 		verify  func(v1alpha1.LighthouseJobSpec) error
 	}{
 		{
 			name:    "Verify reporter config gets copied",
-			jobBase: config.JobBase{
+			jobBase: job.Base{
 				/*				ReporterConfig: &v1alpha1.ReporterConfig{
 									Slack: &v1alpha1.SlackReporterConfig{
 										Channel: "my-channel",

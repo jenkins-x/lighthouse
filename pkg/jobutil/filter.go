@@ -21,7 +21,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -39,11 +39,11 @@ var OkToTestRe = regexp.MustCompile(`(?m)^/(?:lh-)?ok-to-test\s*$`)
 //  - we know that the presubmit is forced to run
 //  - what the default behavior should be if the presubmit
 //    runs conditionally and does not match trigger conditions
-type Filter func(p config.Presubmit) (shouldRun bool, forcedToRun bool, defaultBehavior bool)
+type Filter func(p job.Presubmit) (shouldRun bool, forcedToRun bool, defaultBehavior bool)
 
 // CommandFilter builds a filter for `/test foo`
 func CommandFilter(body string) Filter {
-	return func(p config.Presubmit) (bool, bool, bool) {
+	return func(p job.Presubmit) (bool, bool, bool) {
 		return p.TriggerMatches(body), p.TriggerMatches(body), true
 	}
 }
@@ -52,7 +52,7 @@ func CommandFilter(body string) Filter {
 // Pipelines that explicitly match `/test all` in their trigger regex will be
 // handled by a commandFilter for the comment in question.
 func TestAllFilter() Filter {
-	return func(p config.Presubmit) (bool, bool, bool) {
+	return func(p job.Presubmit) (bool, bool, bool) {
 		return !p.NeedsExplicitTrigger(), false, false
 	}
 }
@@ -60,7 +60,7 @@ func TestAllFilter() Filter {
 // AggregateFilter builds a filter that evaluates the child filters in order
 // and returns the first match
 func AggregateFilter(filters []Filter) Filter {
-	return func(presubmit config.Presubmit) (bool, bool, bool) {
+	return func(presubmit job.Presubmit) (bool, bool, bool) {
 		for _, filter := range filters {
 			if shouldRun, forced, defaults := filter(presubmit); shouldRun {
 				return shouldRun, forced, defaults
@@ -72,11 +72,11 @@ func AggregateFilter(filters []Filter) Filter {
 
 // FilterPresubmits determines which presubmits should run and which should be skipped
 // by evaluating the user-provided filter.
-func FilterPresubmits(filter Filter, changes config.ChangedFilesProvider, branch string, presubmits []config.Presubmit, logger *logrus.Entry) ([]config.Presubmit, []config.Presubmit, error) {
+func FilterPresubmits(filter Filter, changes job.ChangedFilesProvider, branch string, presubmits []job.Presubmit, logger *logrus.Entry) ([]job.Presubmit, []job.Presubmit, error) {
 
-	var toTrigger []config.Presubmit
+	var toTrigger []job.Presubmit
 	var namesToTrigger []string
-	var toSkipSuperset []config.Presubmit
+	var toSkipSuperset []job.Presubmit
 	for _, presubmit := range presubmits {
 		matches, forced, defaults := filter(presubmit)
 		if !matches {
@@ -108,12 +108,12 @@ func FilterPresubmits(filter Filter, changes config.ChangedFilesProvider, branch
 // post skipped contexts for, given a set of presubmits we're triggering. We don't
 // want to skip a job that posts a context that will be written to by a job we just
 // identified for triggering or the skipped context will override the triggered one
-func determineSkippedPresubmits(toTrigger, toSkipSuperset []config.Presubmit, logger *logrus.Entry) []config.Presubmit {
+func determineSkippedPresubmits(toTrigger, toSkipSuperset []job.Presubmit, logger *logrus.Entry) []job.Presubmit {
 	triggeredContexts := sets.NewString()
 	for _, presubmit := range toTrigger {
 		triggeredContexts.Insert(presubmit.Context)
 	}
-	var toSkip []config.Presubmit
+	var toSkip []job.Presubmit
 	for _, presubmit := range toSkipSuperset {
 		if triggeredContexts.Has(presubmit.Context) {
 			logger.WithFields(logrus.Fields{"context": presubmit.Context, "job": presubmit.Name}).Debug("Not skipping job as context will be created by a triggered job.")
@@ -126,7 +126,7 @@ func determineSkippedPresubmits(toTrigger, toSkipSuperset []config.Presubmit, lo
 
 // RetestFilter builds a filter for `/retest`
 func RetestFilter(failedContexts, allContexts sets.String) Filter {
-	return func(p config.Presubmit) (bool, bool, bool) {
+	return func(p job.Presubmit) (bool, bool, bool) {
 		return failedContexts.Has(p.Context) || (!p.NeedsExplicitTrigger() && !allContexts.Has(p.Context)), false, true
 	}
 }

@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -10,7 +11,7 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 	cases := []struct {
 		name                 string
 		bpOrgs               map[string]Org
-		presubmits           []Presubmit
+		presubmits           []job.Presubmit
 		skipUnknownContexts  bool
 		fromBranchProtection bool
 
@@ -20,44 +21,44 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 	}{
 		{
 			name: "basic",
-			presubmits: []Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "always-run",
 						SkipReport: false,
 					},
 				},
 				{
-					RegexpChangeMatcher: RegexpChangeMatcher{
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
 						RunIfChanged: "foo",
 					},
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "run-if-changed",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "not-always",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "skip-report",
 						SkipReport: true,
 					},
-					Brancher: Brancher{
+					Brancher: job.Brancher{
 						SkipBranches: []string{"master"},
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "optional",
 						SkipReport: false,
 					},
@@ -70,44 +71,44 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 		},
 		{
 			name: "from branch protection",
-			presubmits: []Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "always-run",
 						SkipReport: false,
 					},
 				},
 				{
-					RegexpChangeMatcher: RegexpChangeMatcher{
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
 						RunIfChanged: "foo",
 					},
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "run-if-changed",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "not-always",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "skip-report",
 						SkipReport: true,
 					},
-					Brancher: Brancher{
+					Brancher: job.Brancher{
 						SkipBranches: []string{"master"},
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "optional",
 						SkipReport: false,
 					},
@@ -138,44 +139,44 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 		},
 		{
 			name: "from branch protection with unknown context",
-			presubmits: []Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "always-run",
 						SkipReport: false,
 					},
 				},
 				{
-					RegexpChangeMatcher: RegexpChangeMatcher{
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
 						RunIfChanged: "foo",
 					},
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "run-if-changed",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "not-always",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "skip-report",
 						SkipReport: true,
 					},
-					Brancher: Brancher{
+					Brancher: job.Brancher{
 						SkipBranches: []string{"master"},
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "optional",
 						SkipReport: false,
 					},
@@ -207,44 +208,44 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 		},
 		{
 			name: "from branch protection skipping unknown context",
-			presubmits: []Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "always-run",
 						SkipReport: false,
 					},
 				},
 				{
-					RegexpChangeMatcher: RegexpChangeMatcher{
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
 						RunIfChanged: "foo",
 					},
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "run-if-changed",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "not-always",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "skip-report",
 						SkipReport: true,
 					},
-					Brancher: Brancher{
+					Brancher: job.Brancher{
 						SkipBranches: []string{"master"},
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "optional",
 						SkipReport: false,
 					},
@@ -280,14 +281,14 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			if err := SetPresubmitRegexes(tc.presubmits); err != nil {
+			if err := job.SetPresubmitRegexes(tc.presubmits); err != nil {
 				t.Fatalf("could not set regexes: %v", err)
 			}
-			presubmits := map[string][]Presubmit{
+			presubmits := map[string][]job.Presubmit{
 				"o/r": tc.presubmits,
 			}
 			cfg := Config{
-				JobConfig: JobConfig{
+				JobConfig: job.Config{
 					Presubmits: presubmits,
 				},
 				ProwConfig: ProwConfig{

@@ -2,8 +2,6 @@
 
 - [Branch](#Branch)
 - [BranchProtection](#BranchProtection)
-- [Brancher](#Brancher)
-- [ChangedFilesProvider](#ChangedFilesProvider)
 - [Config](#Config)
 - [ContextPolicy](#ContextPolicy)
 - [Controller](#Controller)
@@ -11,7 +9,6 @@
 - [GitHubOptions](#GitHubOptions)
 - [GithubOAuthConfig](#GithubOAuthConfig)
 - [JenkinsOperator](#JenkinsOperator)
-- [JobBase](#JobBase)
 - [JobConfig](#JobConfig)
 - [Keeper](#Keeper)
 - [KeeperContextPolicy](#KeeperContextPolicy)
@@ -23,26 +20,18 @@
 - [KeeperRepoContextPolicy](#KeeperRepoContextPolicy)
 - [Org](#Org)
 - [OwnersDirExcludes](#OwnersDirExcludes)
-- [Periodic](#Periodic)
 - [PipelineKind](#PipelineKind)
-- [PipelineRunParam](#PipelineRunParam)
 - [Plank](#Plank)
 - [Policy](#Policy)
-- [Postsubmit](#Postsubmit)
-- [Preset](#Preset)
-- [Presubmit](#Presubmit)
 - [ProviderConfig](#ProviderConfig)
 - [ProwConfig](#ProwConfig)
 - [PubsubSubscriptions](#PubsubSubscriptions)
 - [PullRequestMergeType](#PullRequestMergeType)
 - [PushGateway](#PushGateway)
 - [QueryMap](#QueryMap)
-- [RegexpChangeMatcher](#RegexpChangeMatcher)
 - [Repo](#Repo)
-- [Reporter](#Reporter)
 - [Restrictions](#Restrictions)
 - [ReviewPolicy](#ReviewPolicy)
-- [UtilityConfig](#UtilityConfig)
 
 
 ## Branch
@@ -64,23 +53,6 @@ BranchProtection specifies the global branch protection policy
 | Orgs | `orgs` | map[string][Org](#Org) | No | Orgs holds branch protection options for orgs by name |
 | AllowDisabledPolicies | `allow_disabled_policies` | bool | No | AllowDisabledPolicies allows a child to disable all protection even if the<br />branch has inherited protection options from a parent. |
 | AllowDisabledJobPolicies | `allow_disabled_job_policies` | bool | No | AllowDisabledJobPolicies allows a branch to choose to opt out of branch protection<br />even if Prow has registered required jobs for that branch. |
-
-## Brancher
-
-Brancher is for shared code between jobs that only run against certain<br />branches. An empty brancher runs against all branches.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| SkipBranches | `skip_branches` | []string | No | Do not run against these branches. Default is no branches. |
-| Branches | `branches` | []string | No | Only run against these branches. Default is all branches. |
-| re |  | *regexp.Regexp | No | We'll set these when we load it. |
-| reSkip |  | *regexp.Regexp | No |  |
-
-## ChangedFilesProvider
-
-ChangedFilesProvider returns a slice of modified files.
-
-
 
 ## Config
 
@@ -154,36 +126,11 @@ JenkinsOperator is config for the jenkins-operator controller.
 | LabelSelectorString | `label_selector` | string | No | LabelSelectorString compiles into LabelSelector at load time.<br />If set, this option needs to match --label-selector used by<br />the desired jenkins-operator. This option is considered<br />invalid when provided with a single jenkins-operator config.<br /><br />For label selector syntax, see below:<br />https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors |
 | LabelSelector | `-` | labels.Selector | Yes | LabelSelector is used so different jenkins-operator replicas<br />can use their own configuration. |
 
-## JobBase
-
-JobBase contains attributes common to all job types
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Name | `name` | string | Yes | The name of the job. Must match regex [A-Za-z0-9-._]+<br />e.g. pull-test-infra-bazel-build |
-| Labels | `labels` | map[string]string | No | Labels are added to LighthouseJobs and pods created for this job. |
-| Annotations | `annotations` | map[string]string | No | Annotations are unused by prow itself, but provide a space to configure other automation. |
-| MaxConcurrency | `max_concurrency` | int | No | MaximumConcurrency of this job, 0 implies no limit. |
-| Agent | `agent` | string | Yes | Agent that will take care of running this job. |
-| Cluster | `cluster` | string | No | Cluster is the alias of the cluster to run this job in.<br />(Default: kube.DefaultClusterAlias) |
-| Namespace | `namespace` | *string | No | Namespace is the namespace in which pods schedule.<br />  nil: results in config.PodNamespace (aka pod default)<br />  empty: results in config.LighthouseJobNamespace (aka same as LighthouseJob) |
-| ErrorOnEviction | `error_on_eviction` | bool | No | ErrorOnEviction indicates that the LighthouseJob should be completed and given<br />the ErrorState status if the pod that is executing the job is evicted.<br />If this field is unspecified or false, a new pod will be created to replace<br />the evicted one. |
-| SourcePath | `-` | string | Yes | SourcePath contains the path where this job is defined |
-| Spec | `spec` | *v1.PodSpec | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
-| PipelineRunSpec | `pipeline_run_spec` | *tektonv1beta1.PipelineRunSpec | No | PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline |
-| PipelineRunParams | `pipeline_run_params` | [][PipelineRunParam](#PipelineRunParam) | No | PipelineRunParams are the params used by the pipeline run |
-|  |  | [UtilityConfig](#UtilityConfig) | Yes |  |
-
 ## JobConfig
 
-JobConfig is config for all prow jobs
+JobConfig is a type alias for job.Config
 
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Presets | `presets` | [][Preset](#Preset) | No | Presets apply to all job types. |
-| Presubmits | `presubmits` | map[string][][Presubmit](#Presubmit) | No | Full repo name (such as "kubernetes/kubernetes") -> list of jobs. |
-| Postsubmits | `postsubmits` | map[string][][Postsubmit](#Postsubmit) | No |  |
-| Periodics | `periodics` | [][Periodic](#Periodic) | No | Periodics are not associated with any repo. |
+
 
 ## Keeper
 
@@ -298,32 +245,11 @@ OwnersDirExcludes is used to configure which directories to ignore when<br />sea
 | Repos | `repos` | map[string][]string | No | Repos configures a directory blacklist per repo (or org) |
 | Default | `default` | []string | No | Default configures a default blacklist for repos (or orgs) not<br />specifically configured |
 
-## Periodic
-
-Periodic runs on a timer.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-|  |  | [JobBase](#JobBase) | Yes |  |
-| Interval | `interval` | string | Yes | (deprecated)Interval to wait between two runs of the job. |
-| Cron | `cron` | string | Yes | Cron representation of job trigger time |
-| Tags | `tags` | []string | No | Tags for config entries |
-| interval |  | time.Duration | Yes |  |
-
 ## PipelineKind
 
 PipelineKind specifies how the job is triggered.
 
 
-
-## PipelineRunParam
-
-PipelineRunParam represents a param used by the pipeline run
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Name | `name` | string | No | Name is the name of the param |
-| ValueTemplate | `value_template` | string | No | ValueTemplate is the template used to build the value from well know variables |
 
 ## Plank
 
@@ -346,43 +272,6 @@ Policy for the config/org/repo/branch.<br />When merging policies, a nil value r
 | Restrictions | `restrictions` | *[Restrictions](#Restrictions) | No | Restrictions limits who can merge |
 | RequiredPullRequestReviews | `required_pull_request_reviews` | *[ReviewPolicy](#ReviewPolicy) | No | RequiredPullRequestReviews specifies github approval/review criteria. |
 | Exclude | `exclude` | []string | No | Exclude specifies a set of regular expressions which identify branches<br />that should be excluded from the protection policy |
-
-## Postsubmit
-
-Postsubmit runs on push events.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-|  |  | [JobBase](#JobBase) | Yes |  |
-|  |  | [RegexpChangeMatcher](#RegexpChangeMatcher) | Yes |  |
-|  |  | [Brancher](#Brancher) | Yes |  |
-|  |  | [Reporter](#Reporter) | Yes | TODO(krzyzacy): Move existing `Report` into `Skip_Report` once this is deployed |
-
-## Preset
-
-Preset is intended to match the k8s' PodPreset feature, and may be removed<br />if that feature goes beta.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Labels | `labels` | map[string]string | No |  |
-| Env | `env` | []v1.EnvVar | No |  |
-| Volumes | `volumes` | []v1.Volume | No |  |
-| VolumeMounts | `volumeMounts` | []v1.VolumeMount | No |  |
-
-## Presubmit
-
-Presubmit runs on PRs.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-|  |  | [JobBase](#JobBase) | Yes |  |
-| AlwaysRun | `always_run` | bool | Yes | AlwaysRun automatically for every PR, or only when a comment triggers it. |
-| Optional | `optional` | bool | No | Optional indicates that the job's status context should not be required for merge. |
-| Trigger | `trigger` | string | No | Trigger is the regular expression to trigger the job.<br />e.g. `@k8s-bot e2e test this`<br />RerunCommand must also be specified if this field is specified.<br />(Default: `(?m)^/test (?:.*? )?<job name>(?: .*?)?$`) |
-| RerunCommand | `rerun_command` | string | No | The RerunCommand to give users. Must match Trigger.<br />Trigger must also be specified if this field is specified.<br />(Default: `/test <job name>`) |
-|  |  | [Brancher](#Brancher) | Yes |  |
-|  |  | [RegexpChangeMatcher](#RegexpChangeMatcher) | Yes |  |
-|  |  | [Reporter](#Reporter) | Yes |  |
 
 ## ProviderConfig
 
@@ -448,15 +337,6 @@ QueryMap is a struct mapping from "org/repo" -> KeeperQueries that<br />apply to
 | cache |  | map[string][KeeperQueries](#KeeperQueries) | No |  |
 |  |  | sync.Mutex | Yes |  |
 
-## RegexpChangeMatcher
-
-RegexpChangeMatcher is for code shared between jobs that run only when certain files are changed.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| RunIfChanged | `run_if_changed` | string | No | RunIfChanged defines a regex used to select which subset of file changes should trigger this job.<br />If any file in the changeset matches this regex, the job will be triggered |
-| reChanges |  | *regexp.Regexp | No |  |
-
 ## Repo
 
 Repo holds protection policy overrides for all branches in a repo, as well as specific branch overrides.
@@ -465,15 +345,6 @@ Repo holds protection policy overrides for all branches in a repo, as well as sp
 |---|---|---|---|---|
 |  |  | [Policy](#Policy) | Yes |  |
 | Branches | `branches` | map[string][Branch](#Branch) | No |  |
-
-## Reporter
-
-Reporter keeps various details for status reporting
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Context | `context` | string | No | Context is the name of the GitHub status context for the job.<br />Defaults: the same as the name of the job. |
-| SkipReport | `skip_report` | bool | No | SkipReport skips commenting and setting status on GitHub. |
 
 ## Restrictions
 
@@ -494,17 +365,5 @@ ReviewPolicy specifies github approval/review criteria.<br />Any nil values inhe
 | DismissStale | `dismiss_stale_reviews` | *bool | No | DismissStale overrides whether new commits automatically dismiss old reviews if set |
 | RequireOwners | `require_code_owner_reviews` | *bool | No | RequireOwners overrides whether CODEOWNERS must approve PRs if set |
 | Approvals | `required_approving_review_count` | *int | No | Approvals overrides the number of approvals required if set (set to 0 to disable) |
-
-## UtilityConfig
-
-UtilityConfig holds decoration metadata, such as how to clone and additional containers/etc
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Decorate | `decorate` | bool | No | Decorate determines if we decorate the PodSpec or not |
-| PathAlias | `path_alias` | string | No | PathAlias is the location under <root-dir>/src<br />where the repository under test is cloned. If this<br />is not set, <root-dir>/src/github.com/org/repo will<br />be used as the default. |
-| CloneURI | `clone_uri` | string | No | CloneURI is the URI that is used to clone the<br />repository. If unset, will default to<br />`https://github.com/org/repo.git`. |
-| SkipSubmodules | `skip_submodules` | bool | No | SkipSubmodules determines if submodules should be<br />cloned when the job is run. Defaults to true. |
-| CloneDepth | `clone_depth` | int | No | CloneDepth is the depth of the clone that will be used.<br />A depth of zero will do a full clone. |
 
 

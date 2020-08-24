@@ -22,6 +22,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
@@ -139,30 +140,30 @@ func TestHandlePE(t *testing.T) {
 			Config:            &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}},
 			Logger:            logrus.WithField("plugin", PluginName),
 		}
-		postsubmits := map[string][]config.Postsubmit{
+		postsubmits := map[string][]job.Postsubmit{
 			"org/repo": {
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "pass-butter",
 					},
-					RegexpChangeMatcher: config.RegexpChangeMatcher{
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
 						RunIfChanged: "\\.sh$",
 					},
 				},
 			},
 			"org2/repo2": {
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "pass-salt",
 					},
 				},
 			},
 			"org3/repo3": {
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "pass-pepper",
 					},
-					Brancher: config.Brancher{
+					Brancher: job.Brancher{
 						Branches: []string{"release/v1.14"},
 					},
 				},

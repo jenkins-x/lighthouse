@@ -25,11 +25,10 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	"github.com/jenkins-x/lighthouse/pkg/config"
 )
 
 const (
@@ -44,7 +43,7 @@ const (
 type fakeClient struct {
 	comments   []string
 	statuses   map[string]*scm.StatusInput
-	presubmits map[string]config.Presubmit
+	presubmits map[string]job.Presubmit
 	jobs       sets.String
 }
 
@@ -158,7 +157,7 @@ func (c *fakeClient) QuoteAuthorForComment(author string) string {
 	return author
 }
 
-func (c *fakeClient) presubmitForContext(org, repo, context string) *config.Presubmit {
+func (c *fakeClient) presubmitForContext(org, repo, context string) *job.Presubmit {
 	p, ok := c.presubmits[context]
 	if !ok {
 		return nil
@@ -216,7 +215,7 @@ func TestHandle(t *testing.T) {
 		state         string
 		comment       string
 		contexts      map[string]*scm.StatusInput
-		presubmits    map[string]config.Presubmit
+		presubmits    map[string]job.Presubmit
 		user          string
 		number        int
 		expected      map[string]*scm.StatusInput
@@ -491,9 +490,9 @@ func TestHandle(t *testing.T) {
 					State: scm.StateFailure,
 				},
 			},
-			presubmits: map[string]config.Presubmit{
+			presubmits: map[string]job.Presubmit{
 				"prow-job": {
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "prow-job",
 					},
 				},

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	configutil "github.com/jenkins-x/lighthouse/pkg/config/util"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
@@ -86,7 +87,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	if err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
-	o.configPath = config.Path(o.configPath)
+	o.configPath = configutil.PathOrDefault(o.configPath)
 	return o
 }
 

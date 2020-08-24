@@ -188,7 +188,6 @@ config-docs:
 		--input-file ../pkg/config/config.go \
 		--input-file ../pkg/config/constants.go \
 		--input-file ../pkg/config/githuboauth.go \
-		--input-file ../pkg/config/jobs.go \
 		--input-file ../pkg/config/keeper.go \
 		--title "Lighthouse config" \
 		--output-path ../docs/config

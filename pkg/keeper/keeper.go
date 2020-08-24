@@ -34,6 +34,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
@@ -671,7 +672,7 @@ func pickSmallestPassingNumber(log *logrus.Entry, spc scmProviderClient, prs []P
 // accumulateBatch returns a list of PRs that can be merged after passing batch
 // testing, if any exist. It also returns a list of PRs currently being batch
 // tested.
-func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, log *logrus.Entry) ([]PullRequest, []PullRequest) {
+func accumulateBatch(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, log *logrus.Entry) ([]PullRequest, []PullRequest) {
 	log.Debug("accumulating PRs for batch testing")
 	if len(presubmits) == 0 {
 		log.Debug("no presubmits configured, no batch can be triggered")
@@ -764,9 +765,9 @@ func accumulateBatch(presubmits map[int][]config.Presubmit, prs []PullRequest, p
 
 // accumulate returns the supplied PRs sorted into three buckets based on their
 // accumulated state across the presubmits.
-func accumulate(presubmits map[int][]config.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]config.Presubmit) {
+func accumulate(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]job.Presubmit) {
 
-	missingTests = map[int][]config.Presubmit{}
+	missingTests = map[int][]job.Presubmit{}
 	for _, pr := range prs {
 		// Accumulate the best result for each job (Passing > Pending > Failing/Unknown)
 		// We can ignore the baseSHA here because the subPool only contains PipelineActivitys with the correct baseSHA
@@ -1099,7 +1100,7 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 	return true, err
 }
 
-func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Presubmit, prs []PullRequest) error {
+func (c *DefaultController) trigger(sp subpool, presubmits map[int][]job.Presubmit, prs []PullRequest) error {
 	refs := v1alpha1.Refs{
 		Org:      sp.org,
 		Repo:     sp.repo,
@@ -1161,7 +1162,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]config.Pres
 	return nil
 }
 
-func (c *DefaultController) takeAction(sp subpool, batchPending, successes, pendings, missings, batchMerges []PullRequest, missingSerialTests map[int][]config.Presubmit) (Action, []PullRequest, error) {
+func (c *DefaultController) takeAction(sp subpool, batchPending, successes, pendings, missings, batchMerges []PullRequest, missingSerialTests map[int][]job.Presubmit) (Action, []PullRequest, error) {
 	// Merge the batch!
 	if len(batchMerges) > 0 {
 		return MergeBatch, batchMerges, c.mergePRs(sp, batchMerges)
@@ -1215,7 +1216,7 @@ type changeCacheKey struct {
 
 // prChanges gets the files changed by the PR, either from the cache or by
 // querying GitHub.
-func (c *changedFilesAgent) prChanges(pr *PullRequest) config.ChangedFilesProvider {
+func (c *changedFilesAgent) prChanges(pr *PullRequest) job.ChangedFilesProvider {
 	return func() ([]string, error) {
 		cacheKey := changeCacheKey{
 			org:    string(pr.Repository.Owner.Login),
@@ -1268,13 +1269,13 @@ func (c *changedFilesAgent) prune() {
 	c.nextChangeCache = make(map[changeCacheKey][]string)
 }
 
-func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]config.Presubmit, error) {
-	presubmits := make(map[int][]config.Presubmit, len(sp.prs))
-	record := func(num int, job config.Presubmit) {
+func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubmit, error) {
+	presubmits := make(map[int][]job.Presubmit, len(sp.prs))
+	record := func(num int, j job.Presubmit) {
 		if jobs, ok := presubmits[num]; ok {
-			presubmits[num] = append(jobs, job)
+			presubmits[num] = append(jobs, j)
 		} else {
-			presubmits[num] = []config.Presubmit{job}
+			presubmits[num] = []job.Presubmit{j}
 		}
 	}
 
@@ -1424,7 +1425,7 @@ type subpool struct {
 	cc contextChecker
 	// presubmit contains all required presubmits for each PR
 	// in this subpool
-	presubmits map[int][]config.Presubmit
+	presubmits map[int][]job.Presubmit
 }
 
 func poolKey(org, repo, branch string) string {

@@ -21,6 +21,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"k8s.io/apimachinery/pkg/util/diff"
 )
 
@@ -304,51 +305,51 @@ func TestApply(test *testing.T) {
 func TestBranchRequirements(t *testing.T) {
 	cases := []struct {
 		name                            string
-		config                          []Presubmit
+		config                          []job.Presubmit
 		masterExpected, otherExpected   []string
 		masterOptional, otherOptional   []string
 		masterIfPresent, otherIfPresent []string
 	}{
 		{
 			name: "basic",
-			config: []Presubmit{
+			config: []job.Presubmit{
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "always-run",
 						SkipReport: false,
 					},
 				},
 				{
-					RegexpChangeMatcher: RegexpChangeMatcher{
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
 						RunIfChanged: "foo",
 					},
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "run-if-changed",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: false,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "not-always",
 						SkipReport: false,
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "skip-report",
 						SkipReport: true,
 					},
-					Brancher: Brancher{
+					Brancher: job.Brancher{
 						SkipBranches: []string{"master"},
 					},
 				},
 				{
 					AlwaysRun: true,
-					Reporter: Reporter{
+					Reporter: job.Reporter{
 						Context:    "optional",
 						SkipReport: false,
 					},
@@ -365,10 +366,10 @@ func TestBranchRequirements(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		if err := SetPresubmitRegexes(tc.config); err != nil {
+		if err := job.SetPresubmitRegexes(tc.config); err != nil {
 			t.Fatalf("could not set regexes: %v", err)
 		}
-		presubmits := map[string][]Presubmit{
+		presubmits := map[string][]job.Presubmit{
 			"o/r": tc.config,
 		}
 		masterActual, masterActualIfPresent, masterOptional := BranchRequirements("o", "r", "master", presubmits)
@@ -618,14 +619,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 						},
 					},
 				},
-				JobConfig: JobConfig{
-					Presubmits: map[string][]Presubmit{
+				JobConfig: job.Config{
+					Presubmits: map[string][]job.Presubmit{
 						"org/repo": {
 							{
-								JobBase: JobBase{
+								Base: job.Base{
 									Name: "required presubmit",
 								},
-								Reporter: Reporter{
+								Reporter: job.Reporter{
 									Context: "required presubmit",
 								},
 								AlwaysRun: true,
@@ -652,14 +653,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 						},
 					},
 				},
-				JobConfig: JobConfig{
-					Presubmits: map[string][]Presubmit{
+				JobConfig: job.Config{
+					Presubmits: map[string][]job.Presubmit{
 						"org/repo": {
 							{
-								JobBase: JobBase{
+								Base: job.Base{
 									Name: "required presubmit",
 								},
-								Reporter: Reporter{
+								Reporter: job.Reporter{
 									Context: "required presubmit",
 								},
 								AlwaysRun: true,
@@ -688,14 +689,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 						},
 					},
 				},
-				JobConfig: JobConfig{
-					Presubmits: map[string][]Presubmit{
+				JobConfig: job.Config{
+					Presubmits: map[string][]job.Presubmit{
 						"org/repo": {
 							{
-								JobBase: JobBase{
+								Base: job.Base{
 									Name: "required presubmit",
 								},
-								Reporter: Reporter{
+								Reporter: job.Reporter{
 									Context: "required presubmit",
 								},
 								AlwaysRun: true,
@@ -717,14 +718,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 						},
 					},
 				},
-				JobConfig: JobConfig{
-					Presubmits: map[string][]Presubmit{
+				JobConfig: job.Config{
+					Presubmits: map[string][]job.Presubmit{
 						"org/repo": {
 							{
-								JobBase: JobBase{
+								Base: job.Base{
 									Name: "optional presubmit",
 								},
-								Reporter: Reporter{
+								Reporter: job.Reporter{
 									Context: "optional presubmit",
 								},
 								AlwaysRun: true,
@@ -750,14 +751,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 						},
 					},
 				},
-				JobConfig: JobConfig{
-					Presubmits: map[string][]Presubmit{
+				JobConfig: job.Config{
+					Presubmits: map[string][]job.Presubmit{
 						"org/repo": {
 							{
-								JobBase: JobBase{
+								Base: job.Base{
 									Name: "optional presubmit",
 								},
-								Reporter: Reporter{
+								Reporter: job.Reporter{
 									Context: "optional presubmit",
 								},
 								AlwaysRun: true,
@@ -789,14 +790,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 						},
 					},
 				},
-				JobConfig: JobConfig{
-					Presubmits: map[string][]Presubmit{
+				JobConfig: job.Config{
+					Presubmits: map[string][]job.Presubmit{
 						"org/repo": {
 							{
-								JobBase: JobBase{
+								Base: job.Base{
 									Name: "required presubmit",
 								},
-								Reporter: Reporter{
+								Reporter: job.Reporter{
 									Context: "required presubmit",
 								},
 								AlwaysRun: true,

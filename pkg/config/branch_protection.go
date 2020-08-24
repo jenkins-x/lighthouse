@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -298,7 +299,7 @@ func (c *Config) GetPolicy(org, repo, branch string, b Branch) (*Policy, error) 
 //  - contexts that are always required to be present
 //  - contexts that are required, _if_ present
 //  - contexts that are always optional
-func BranchRequirements(org, repo, branch string, presubmits map[string][]Presubmit) ([]string, []string, []string) {
+func BranchRequirements(org, repo, branch string, presubmits map[string][]job.Presubmit) ([]string, []string, []string) {
 	jobs, ok := presubmits[org+"/"+repo]
 	if !ok {
 		return nil, nil, nil
