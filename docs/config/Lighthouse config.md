@@ -8,7 +8,6 @@
 - [ContextPolicy](#ContextPolicy)
 - [Controller](#Controller)
 - [Cookie](#Cookie)
-- [Gerrit](#Gerrit)
 - [GitHubOptions](#GitHubOptions)
 - [GithubOAuthConfig](#GithubOAuthConfig)
 - [JenkinsOperator](#JenkinsOperator)
@@ -122,16 +121,6 @@ Cookie holds the secret returned from github that authenticates the user who aut
 | Variable Name | Stanza | Type | Required | Description |
 |---|---|---|---|---|
 | Secret | `secret` | string | No |  |
-
-## Gerrit
-
-Gerrit is config for the gerrit controller.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| TickIntervalString | `tick_interval` | string | No | TickInterval is how often we do a sync with binded gerrit instance |
-| TickInterval | `-` | time.Duration | Yes |  |
-| RateLimit | `ratelimit` | int | No | RateLimit defines how many changes to query per gerrit API call<br />default is 5 |
 
 ## GitHubOptions
 
@@ -415,7 +404,6 @@ ProwConfig is config for all prow controllers
 | Plank | `plank` | [Plank](#Plank) | No |  |
 | BranchProtection | `branch-protection` | [BranchProtection](#BranchProtection) | No |  |
 | Orgs | `orgs` | map[string]org.Config | No |  |
-| Gerrit | `gerrit` | [Gerrit](#Gerrit) | No |  |
 | JenkinsOperators | `jenkins_operators` | [][JenkinsOperator](#JenkinsOperator) | No | TODO: Move this out of the main config. |
 | LighthouseJobNamespace | `prowjob_namespace` | string | No | LighthouseJobNamespace is the namespace in the cluster that prow<br />components will use for looking up LighthouseJobs. The namespace<br />needs to exist and will not be created by prow.<br />Defaults to "default". |
 | PodNamespace | `pod_namespace` | string | No | PodNamespace is the namespace in the cluster that prow<br />components will use for looking up Pods owned by LighthouseJobs.<br />The namespace needs to exist and will not be created by prow.<br />Defaults to "default". |
