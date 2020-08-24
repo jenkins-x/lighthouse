@@ -45,15 +45,16 @@ data:
         required-if-present-contexts: []
         skip-unknown-contexts: false
       merge_method: {}
-      queries:
-      - labels:
-        - approved
-        missingLabels:
-        - do-not-merge
-        - do-not-merge/hold
-        - do-not-merge/work-in-progress
-        - needs-ok-to-test
-        - needs-rebase
-        repos: []
+      queries: []
+      # Example configuration for a query
+      # - labels:
+      #   - approved
+      #   missingLabels:
+      #   - do-not-merge
+      #   - do-not-merge/hold
+      #   - do-not-merge/work-in-progress
+      #   - needs-ok-to-test
+      #   repos:
+      #   - org/repo
 {{- end }}
 {{- end }}

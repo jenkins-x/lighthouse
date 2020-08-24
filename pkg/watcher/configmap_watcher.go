@@ -50,9 +50,9 @@ func SetupConfigMapWatchers(ns string, configAgent *config.Agent, pluginAgent *p
 			if text != "" {
 				loadedConfig, err := config.LoadYAMLConfig([]byte(text))
 				if err != nil {
-					logrus.WithError(err).Error("Error processing the prow Config YAML")
+					logrus.WithError(err).Error("Error processing the Lighthouse Config YAML")
 				} else {
-					logrus.Info("updating the prow core configuration")
+					logrus.Info("updating the Lighthouse core configuration")
 					configAgent.Set(loadedConfig)
 				}
 			}
@@ -67,12 +67,12 @@ func SetupConfigMapWatchers(ns string, configAgent *config.Agent, pluginAgent *p
 	if pluginAgent != nil {
 		onPluginsYamlChange := func(text string) {
 			if text != "" {
-				config, err := pluginAgent.LoadYAMLConfig([]byte(text))
+				loadedConfig, err := pluginAgent.LoadYAMLConfig([]byte(text))
 				if err != nil {
-					logrus.WithError(err).Error("Error processing the prow Plugins YAML")
+					logrus.WithError(err).Error("Error processing the Lighthouse Plugins YAML")
 				} else {
-					logrus.Info("updating the prow plugins configuration")
-					pluginAgent.Set(config)
+					logrus.Info("updating the Lighthouse plugins configuration")
+					pluginAgent.Set(loadedConfig)
 				}
 			}
 		}
