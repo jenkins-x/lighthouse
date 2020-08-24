@@ -25,6 +25,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -32,7 +33,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
@@ -58,13 +58,13 @@ type scmProviderClient interface {
 
 type overrideClient interface {
 	scmProviderClient
-	presubmitForContext(org, repo, context string) *config.Presubmit
+	presubmitForContext(org, repo, context string) *job.Presubmit
 	createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
 }
 
 type client struct {
 	spc      scmProviderClient
-	jc       config.JobConfig
+	jc       job.Config
 	lhClient lighthouseclient.LighthouseJobInterface
 }
 
@@ -117,7 +117,7 @@ func (c client) QuoteAuthorForComment(author string) string {
 	return c.spc.QuoteAuthorForComment(author)
 }
 
-func (c client) presubmitForContext(org, repo, context string) *config.Presubmit {
+func (c client) presubmitForContext(org, repo, context string) *job.Presubmit {
 	for _, p := range c.jc.AllPresubmits([]string{org + "/" + repo}) {
 		if p.Context == context {
 			return &p

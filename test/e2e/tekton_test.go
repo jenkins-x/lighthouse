@@ -15,7 +15,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	. "github.com/onsi/ginkgo"
@@ -105,13 +105,13 @@ func ChatOpsTests() bool {
 				"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-batch-merge/0.2/git-batch-merge.yaml")
 
 			By(fmt.Sprintf("creating and populating Lighthouse config for %s", repo.Clone))
-			cfg, pluginCfg, err := ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, config.TektonPipelineAgent)
+			cfg, pluginCfg, err := ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, job.TektonPipelineAgent)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(cfg).ShouldNot(BeNil())
 			Expect(pluginCfg).ShouldNot(BeNil())
 
 			cfg.Presubmits[repoFullName][0].PipelineRunSpec = generatePipelineRunSpec()
-			cfg.Presubmits[repoFullName][0].PipelineRunParams = []config.PipelineRunParam{
+			cfg.Presubmits[repoFullName][0].PipelineRunParams = []job.PipelineRunParam{
 				{
 					Name:          "batch-refs",
 					ValueTemplate: "{{ range $i, $v := .Refs.Pulls }}{{if $i}} {{end}}{{ $v.Ref }}{{ end }}",

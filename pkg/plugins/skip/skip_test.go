@@ -21,18 +21,17 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/config"
 )
 
 func TestSkipStatus(t *testing.T) {
 	tests := []struct {
 		name string
 
-		presubmits     []config.Presubmit
+		presubmits     []job.Presubmit
 		sha            string
 		event          *scmprovider.GenericCommentEvent
 		prChanges      map[int][]*scm.Change
@@ -43,19 +42,19 @@ func TestSkipStatus(t *testing.T) {
 		{
 			name: "required contexts should not be skipped regardless of their state",
 
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "passing-tests",
 					},
 				},
 				{
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "failed-tests",
 					},
 				},
 				{
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "pending-tests",
 					},
 				},
@@ -102,16 +101,16 @@ func TestSkipStatus(t *testing.T) {
 		{
 			name: "optional contexts that have failed or are pending should be skipped",
 
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "failed-tests",
 					},
 				},
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "pending-tests",
 					},
 				},
@@ -152,16 +151,16 @@ func TestSkipStatus(t *testing.T) {
 		{
 			name: "optional contexts that have failed or are pending should be skipped, with prefix",
 
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "failed-tests",
 					},
 				},
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "pending-tests",
 					},
 				},
@@ -202,10 +201,10 @@ func TestSkipStatus(t *testing.T) {
 		{
 			name: "optional contexts that have not posted a context should not be skipped",
 
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "untriggered-tests",
 					},
 				},
@@ -226,10 +225,10 @@ func TestSkipStatus(t *testing.T) {
 		{
 			name: "optional contexts that have succeeded should not be skipped",
 
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "succeeded-tests",
 					},
 				},
@@ -260,12 +259,12 @@ func TestSkipStatus(t *testing.T) {
 		{
 			name: "optional tests that have failed but will be handled by trigger should not be skipped",
 
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					Optional:     true,
 					Trigger:      `(?m)^/test (?:.*? )?job(?: .*?)?$`,
 					RerunCommand: "/test job",
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "failed-tests",
 					},
 				},
@@ -296,16 +295,16 @@ func TestSkipStatus(t *testing.T) {
 		{
 			name: "no contexts should be skipped if the combined status is success",
 
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "failed-tests",
 					},
 				},
 				{
 					Optional: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "pending-tests",
 					},
 				},
@@ -344,7 +343,7 @@ func TestSkipStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := config.SetPresubmitRegexes(test.presubmits); err != nil {
+			if err := job.SetPresubmitRegexes(test.presubmits); err != nil {
 				t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
 			}
 

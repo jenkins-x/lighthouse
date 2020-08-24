@@ -21,7 +21,7 @@ import (
 	"net/url"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
@@ -214,7 +214,7 @@ func TrustedPullRequest(spc scmProviderClient, trigger *plugins.Trigger, author,
 // buildAll ensures that all builds that should run and will be required are built
 func buildAll(c Client, pr *scm.PullRequest, eventGUID string, elideSkippedContexts bool) error {
 	org, repo, number, branch := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Number, pr.Base.Ref
-	changes := config.NewGitHubDeferredChangedFilesProvider(c.SCMProviderClient, org, repo, number)
+	changes := job.NewGitHubDeferredChangedFilesProvider(c.SCMProviderClient, org, repo, number)
 	toTest, toSkip, err := jobutil.FilterPresubmits(jobutil.TestAllFilter(), changes, branch, c.Config.GetPresubmits(pr.Base.Repo), c.Logger)
 	if err != nil {
 		return err

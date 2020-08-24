@@ -24,6 +24,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
@@ -56,7 +57,7 @@ type testcase struct {
 	AddedLabels          []string
 	RemovedLabels        []string
 	StartsExactly        string
-	Presubmits           map[string][]config.Presubmit
+	Presubmits           map[string][]job.Presubmit
 	IssueLabels          []string
 	IgnoreOkToTest       bool
 	ElideSkippedContexts bool
@@ -275,14 +276,14 @@ func TestHandleGenericComment(t *testing.T) {
 				Body:   "Nice weather outside, right?",
 				State:  "open",
 				IsPR:   true,
-				Presubmits: map[string][]config.Presubmit{
+				Presubmits: map[string][]job.Presubmit{
 					"org/repo": {
 						{
-							JobBase: config.JobBase{
+							Base: job.Base{
 								Name: "jab",
 							},
-							Brancher: config.Brancher{Branches: []string{"master"}},
-							Reporter: config.Reporter{
+							Brancher: job.Brancher{Branches: []string{"master"}},
+							Reporter: job.Reporter{
 								Context: "pull-jab",
 							},
 							Trigger:      "Nice weather outside, right?",
@@ -303,25 +304,25 @@ func TestHandleGenericComment(t *testing.T) {
 			State:       "open",
 			IsPR:        true,
 			ShouldBuild: false,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "job",
 						},
 						AlwaysRun: false,
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-job",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?job(?: .*?)?$`,
 						RerunCommand: `/test job`,
 					},
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jib",
 						},
 						AlwaysRun: false,
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jib",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
@@ -340,20 +341,20 @@ func TestHandleGenericComment(t *testing.T) {
 			Branch: "other",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "job",
 						},
 						AlwaysRun: true,
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							SkipReport: true,
 							Context:    "pull-job",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?job(?: .*?)?$`,
 						RerunCommand: `/test job`,
-						Brancher:     config.Brancher{Branches: []string{"master"}},
+						Brancher:     job.Brancher{Branches: []string{"master"}},
 					},
 				},
 			},
@@ -364,16 +365,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/retest",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							SkipReport: true,
 							Context:    "pull-jab",
 						},
@@ -391,16 +392,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/retest",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jib",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jib",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
@@ -417,16 +418,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/lh-retest",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jib",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jib",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
@@ -443,16 +444,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test jub",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jub",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jub",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jub(?: .*?)?$`,
@@ -469,16 +470,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/retest",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jib",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED2",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jib",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
@@ -495,16 +496,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/retest",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jib",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED2",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jib",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
@@ -522,16 +523,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/ok-to-test",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jab",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jab(?: .*?)?$`,
@@ -552,25 +553,25 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test jab",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						Brancher: config.Brancher{Branches: []string{"master"}},
-						Reporter: config.Reporter{
+						Brancher: job.Brancher{Branches: []string{"master"}},
+						Reporter: job.Reporter{
 							Context: "pull-jab",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jab(?: .*?)?$`,
 						RerunCommand: `/test jab`,
 					},
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						Brancher: config.Brancher{Branches: []string{"release"}},
-						Reporter: config.Reporter{
+						Brancher: job.Brancher{Branches: []string{"release"}},
+						Reporter: job.Reporter{
 							Context: "pull-jab",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jab(?: .*?)?$`,
@@ -588,25 +589,25 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test jab",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						Brancher: config.Brancher{Branches: []string{"master"}},
-						Reporter: config.Reporter{
+						Brancher: job.Brancher{Branches: []string{"master"}},
+						Reporter: job.Reporter{
 							Context: "pull-jab",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jab(?: .*?)?$`,
 						RerunCommand: `/test jab`,
 					},
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						Brancher: config.Brancher{Branches: []string{"release"}},
-						Reporter: config.Reporter{
+						Brancher: job.Brancher{Branches: []string{"release"}},
+						Reporter: job.Reporter{
 							Context: "pull-jab",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jab(?: .*?)?$`,
@@ -624,25 +625,25 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test jab",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						Brancher: config.Brancher{Branches: []string{"master"}},
-						Reporter: config.Reporter{
+						Brancher: job.Brancher{Branches: []string{"master"}},
+						Reporter: job.Reporter{
 							Context: "pull-jab",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jab(?: .*?)?$`,
 						RerunCommand: `/test jab`,
 					},
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jab",
 						},
-						Brancher: config.Brancher{Branches: []string{"release"}},
-						Reporter: config.Reporter{
+						Brancher: job.Brancher{Branches: []string{"release"}},
+						Reporter: job.Reporter{
 							Context: "pull-jab",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jab(?: .*?)?$`,
@@ -660,16 +661,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/retest",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jeb",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED2",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jeb",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jeb(?: .*?)?$`,
@@ -686,16 +687,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/retest",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jeb",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED2",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jeb",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jeb(?: .*?)?$`,
@@ -713,16 +714,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test pull-jeb",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jeb",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED2",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jeb",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jeb(?: .*?)?$`,
@@ -738,16 +739,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test all",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jub",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jub",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jub(?: .*?)?$`,
@@ -764,16 +765,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test all",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jub",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED2",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jub",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jub(?: .*?)?$`,
@@ -789,16 +790,16 @@ func TestHandleGenericComment(t *testing.T) {
 			Body:   "/test all",
 			State:  "open",
 			IsPR:   true,
-			Presubmits: map[string][]config.Presubmit{
+			Presubmits: map[string][]job.Presubmit{
 				"org/repo": {
 					{
-						JobBase: config.JobBase{
+						Base: job.Base{
 							Name: "jub",
 						},
-						RegexpChangeMatcher: config.RegexpChangeMatcher{
+						RegexpChangeMatcher: job.RegexpChangeMatcher{
 							RunIfChanged: "CHANGED2",
 						},
-						Reporter: config.Reporter{
+						Reporter: job.Reporter{
 							Context: "pull-jub",
 						},
 						Trigger:      `(?m)^/test (?:.*? )?jub(?: .*?)?$`,
@@ -881,26 +882,26 @@ func TestHandleGenericComment(t *testing.T) {
 			}
 			presubmits := tc.Presubmits
 			if presubmits == nil {
-				presubmits = map[string][]config.Presubmit{
+				presubmits = map[string][]job.Presubmit{
 					"org/repo": {
 						{
-							JobBase: config.JobBase{
+							Base: job.Base{
 								Name: "job",
 							},
 							AlwaysRun: true,
-							Reporter: config.Reporter{
+							Reporter: job.Reporter{
 								Context: "pull-job",
 							},
 							Trigger:      `(?m)^/test (?:.*? )?job(?: .*?)?$`,
 							RerunCommand: `/test job`,
-							Brancher:     config.Brancher{Branches: []string{"master"}},
+							Brancher:     job.Brancher{Branches: []string{"master"}},
 						},
 						{
-							JobBase: config.JobBase{
+							Base: job.Base{
 								Name: "jib",
 							},
 							AlwaysRun: false,
-							Reporter: config.Reporter{
+							Reporter: job.Reporter{
 								Context: "pull-jib",
 							},
 							Trigger:      `(?m)^/test (?:.*? )?jib(?: .*?)?$`,
@@ -988,27 +989,27 @@ func TestRetestFilter(t *testing.T) {
 		name           string
 		failedContexts sets.String
 		allContexts    sets.String
-		presubmits     []config.Presubmit
+		presubmits     []job.Presubmit
 		expected       [][]bool
 	}{
 		{
 			name:           "retest filter matches jobs that produce contexts which have failed",
 			failedContexts: sets.NewString("failed"),
 			allContexts:    sets.NewString("failed", "succeeded"),
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "failed",
 					},
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "failed",
 					},
 				},
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "succeeded",
 					},
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "succeeded",
 					},
 				},
@@ -1019,21 +1020,21 @@ func TestRetestFilter(t *testing.T) {
 			name:           "retest filter matches jobs that would run automatically and haven't yet ",
 			failedContexts: sets.NewString(),
 			allContexts:    sets.NewString("finished"),
-			presubmits: []config.Presubmit{
+			presubmits: []job.Presubmit{
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "finished",
 					},
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "finished",
 					},
 				},
 				{
-					JobBase: config.JobBase{
+					Base: job.Base{
 						Name: "not-yet-run",
 					},
 					AlwaysRun: true,
-					Reporter: config.Reporter{
+					Reporter: job.Reporter{
 						Context: "not-yet-run",
 					},
 				},
@@ -1047,7 +1048,7 @@ func TestRetestFilter(t *testing.T) {
 			if len(testCase.presubmits) != len(testCase.expected) {
 				t.Fatalf("%s: have %d presubmits but only %d expected filter outputs", testCase.name, len(testCase.presubmits), len(testCase.expected))
 			}
-			if err := config.SetPresubmitRegexes(testCase.presubmits); err != nil {
+			if err := job.SetPresubmitRegexes(testCase.presubmits); err != nil {
 				t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
 			}
 			filter := jobutil.RetestFilter(testCase.failedContexts, testCase.allContexts)

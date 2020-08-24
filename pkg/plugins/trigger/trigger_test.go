@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
@@ -83,8 +83,8 @@ func TestRunAndSkipJobs(t *testing.T) {
 	var testCases = []struct {
 		name string
 
-		requestedJobs        []config.Presubmit
-		skippedJobs          []config.Presubmit
+		requestedJobs        []job.Presubmit
+		skippedJobs          []job.Presubmit
 		elideSkippedContexts bool
 		jobCreationErrs      sets.String // job names which fail creation
 
@@ -97,31 +97,31 @@ func TestRunAndSkipJobs(t *testing.T) {
 		},
 		{
 			name: "all requested jobs get run",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
 			expectedJobs: sets.NewString("first", "second"),
 		},
 		{
 			name: "failure on job creation bubbles up but doesn't stop others from starting",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
 			jobCreationErrs: sets.NewString("first"),
 			expectedJobs:    sets.NewString("second"),
@@ -134,16 +134,16 @@ func TestRunAndSkipJobs(t *testing.T) {
 		},
 		{
 			name: "all skipped jobs get skipped",
-			skippedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			skippedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
 			expectedStatuses: []*scm.StatusInput{{
 				State: scm.StateSuccess,
@@ -157,31 +157,31 @@ func TestRunAndSkipJobs(t *testing.T) {
 		},
 		{
 			name: "all skipped jobs get ignored if skipped statuses are elided",
-			skippedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			skippedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
 			elideSkippedContexts: true,
 		},
 		{
 			name: "skipped jobs with skip report get ignored",
-			skippedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			skippedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context", SkipReport: true},
+				Reporter: job.Reporter{Context: "second-context", SkipReport: true},
 			}},
 			expectedStatuses: []*scm.StatusInput{{
 				State: scm.StateSuccess,
@@ -191,48 +191,48 @@ func TestRunAndSkipJobs(t *testing.T) {
 		},
 		{
 			name: "overlap between jobs callErrors and has no external action",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
-			skippedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			skippedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}},
 			expectedErr: true,
 		},
 		{
 			name: "disjoint sets of jobs get triggered and skipped correctly",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
-			skippedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			skippedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "third",
 				},
-				Reporter: config.Reporter{Context: "third-context"},
+				Reporter: job.Reporter{Context: "third-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "fourth",
 				},
-				Reporter: config.Reporter{Context: "fourth-context"},
+				Reporter: job.Reporter{Context: "fourth-context"},
 			}},
 			expectedJobs: sets.NewString("first", "second"),
 			expectedStatuses: []*scm.StatusInput{{
@@ -247,27 +247,27 @@ func TestRunAndSkipJobs(t *testing.T) {
 		},
 		{
 			name: "disjoint sets of jobs get triggered and skipped correctly, even if one creation fails",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
-			skippedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			skippedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "third",
 				},
-				Reporter: config.Reporter{Context: "third-context"},
+				Reporter: job.Reporter{Context: "third-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "fourth",
 				},
-				Reporter: config.Reporter{Context: "fourth-context"},
+				Reporter: job.Reporter{Context: "fourth-context"},
 			}},
 			jobCreationErrs: sets.NewString("first"),
 			expectedJobs:    sets.NewString("second"),
@@ -288,16 +288,16 @@ func TestRunAndSkipJobs(t *testing.T) {
 		},
 		{
 			name: "jobs that fail to run have status",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
 			jobCreationErrs: sets.NewString("first", "second"),
 			expectedStatuses: []*scm.StatusInput{{
@@ -370,7 +370,7 @@ func TestRunRequested(t *testing.T) {
 	var testCases = []struct {
 		name string
 
-		requestedJobs   []config.Presubmit
+		requestedJobs   []job.Presubmit
 		jobCreationErrs sets.String // job names which fail creation
 
 		expectedJobs sets.String // by name
@@ -381,31 +381,31 @@ func TestRunRequested(t *testing.T) {
 		},
 		{
 			name: "all requested jobs get run",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
 			expectedJobs: sets.NewString("first", "second"),
 		},
 		{
 			name: "failure on job creation bubbles up but doesn't stop others from starting",
-			requestedJobs: []config.Presubmit{{
-				JobBase: config.JobBase{
+			requestedJobs: []job.Presubmit{{
+				Base: job.Base{
 					Name: "first",
 				},
-				Reporter: config.Reporter{Context: "first-context"},
+				Reporter: job.Reporter{Context: "first-context"},
 			}, {
-				JobBase: config.JobBase{
+				Base: job.Base{
 					Name: "second",
 				},
-				Reporter: config.Reporter{Context: "second-context"},
+				Reporter: job.Reporter{Context: "second-context"},
 			}},
 			jobCreationErrs: sets.NewString("first"),
 			expectedJobs:    sets.NewString("second"),
@@ -465,40 +465,40 @@ func TestRunRequested(t *testing.T) {
 func TestValidateContextOverlap(t *testing.T) {
 	var testCases = []struct {
 		name          string
-		toRun, toSkip []config.Presubmit
+		toRun, toSkip []job.Presubmit
 		expectedErr   bool
 	}{
 		{
 			name:   "empty inputs mean no error",
-			toRun:  []config.Presubmit{},
-			toSkip: []config.Presubmit{},
+			toRun:  []job.Presubmit{},
+			toSkip: []job.Presubmit{},
 		},
 		{
 			name:   "disjoint sets mean no error",
-			toRun:  []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}},
-			toSkip: []config.Presubmit{{Reporter: config.Reporter{Context: "bar"}}},
+			toRun:  []job.Presubmit{{Reporter: job.Reporter{Context: "foo"}}},
+			toSkip: []job.Presubmit{{Reporter: job.Reporter{Context: "bar"}}},
 		},
 		{
 			name:   "complex disjoint sets mean no error",
-			toRun:  []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}, {Reporter: config.Reporter{Context: "otherfoo"}}},
-			toSkip: []config.Presubmit{{Reporter: config.Reporter{Context: "bar"}}, {Reporter: config.Reporter{Context: "otherbar"}}},
+			toRun:  []job.Presubmit{{Reporter: job.Reporter{Context: "foo"}}, {Reporter: job.Reporter{Context: "otherfoo"}}},
+			toSkip: []job.Presubmit{{Reporter: job.Reporter{Context: "bar"}}, {Reporter: job.Reporter{Context: "otherbar"}}},
 		},
 		{
 			name:        "overlapping sets error",
-			toRun:       []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}, {Reporter: config.Reporter{Context: "otherfoo"}}},
-			toSkip:      []config.Presubmit{{Reporter: config.Reporter{Context: "bar"}}, {Reporter: config.Reporter{Context: "otherfoo"}}},
+			toRun:       []job.Presubmit{{Reporter: job.Reporter{Context: "foo"}}, {Reporter: job.Reporter{Context: "otherfoo"}}},
+			toSkip:      []job.Presubmit{{Reporter: job.Reporter{Context: "bar"}}, {Reporter: job.Reporter{Context: "otherfoo"}}},
 			expectedErr: true,
 		},
 		{
 			name:        "identical sets error",
-			toRun:       []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}, {Reporter: config.Reporter{Context: "otherfoo"}}},
-			toSkip:      []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}, {Reporter: config.Reporter{Context: "otherfoo"}}},
+			toRun:       []job.Presubmit{{Reporter: job.Reporter{Context: "foo"}}, {Reporter: job.Reporter{Context: "otherfoo"}}},
+			toSkip:      []job.Presubmit{{Reporter: job.Reporter{Context: "foo"}}, {Reporter: job.Reporter{Context: "otherfoo"}}},
 			expectedErr: true,
 		},
 		{
 			name:        "superset callErrors",
-			toRun:       []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}, {Reporter: config.Reporter{Context: "otherfoo"}}},
-			toSkip:      []config.Presubmit{{Reporter: config.Reporter{Context: "foo"}}, {Reporter: config.Reporter{Context: "otherfoo"}}, {Reporter: config.Reporter{Context: "thirdfoo"}}},
+			toRun:       []job.Presubmit{{Reporter: job.Reporter{Context: "foo"}}, {Reporter: job.Reporter{Context: "otherfoo"}}},
+			toSkip:      []job.Presubmit{{Reporter: job.Reporter{Context: "foo"}}, {Reporter: job.Reporter{Context: "otherfoo"}}, {Reporter: job.Reporter{Context: "thirdfoo"}}},
 			expectedErr: true,
 		},
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	uuid "github.com/satori/go.uuid"
@@ -85,7 +86,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string, prRefFmt string) v1alpha1.R
 // NewPresubmit converts a config.Presubmit into a builder.PipelineOptions.
 // The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a gitprovider.EventGUID label.
-func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eventGUID string, prRefFmt string) v1alpha1.LighthouseJob {
+func NewPresubmit(pr *scm.PullRequest, baseSHA string, job job.Presubmit, eventGUID string, prRefFmt string) v1alpha1.LighthouseJob {
 	refs := createRefs(pr, baseSHA, prRefFmt)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
@@ -100,45 +101,45 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job config.Presubmit, eve
 }
 
 // PresubmitSpec initializes a PipelineOptionsSpec for a given presubmit job.
-func PresubmitSpec(p config.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.JobBase)
+func PresubmitSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(p.Base)
 	pjs.Type = config.PresubmitJob
 	pjs.Context = p.Context
 	pjs.RerunCommand = p.RerunCommand
-	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
+	pjs.Refs = completePrimaryRefs(refs, p.Base)
 
 	return pjs
 }
 
 // PostsubmitSpec initializes a PipelineOptionsSpec for a given postsubmit job.
-func PostsubmitSpec(p config.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.JobBase)
+func PostsubmitSpec(p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(p.Base)
 	pjs.Type = config.PostsubmitJob
 	pjs.Context = p.Context
-	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
+	pjs.Refs = completePrimaryRefs(refs, p.Base)
 
 	return pjs
 }
 
 // PeriodicSpec initializes a PipelineOptionsSpec for a given periodic job.
-func PeriodicSpec(p config.Periodic) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.JobBase)
+func PeriodicSpec(p job.Periodic) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(p.Base)
 	pjs.Type = config.PeriodicJob
 
 	return pjs
 }
 
 // BatchSpec initializes a PipelineOptionsSpec for a given batch job and ref spec.
-func BatchSpec(p config.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.JobBase)
+func BatchSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(p.Base)
 	pjs.Type = config.BatchJob
 	pjs.Context = p.Context
-	pjs.Refs = completePrimaryRefs(refs, p.JobBase)
+	pjs.Refs = completePrimaryRefs(refs, p.Base)
 
 	return pjs
 }
 
-func specFromJobBase(jb config.JobBase) v1alpha1.LighthouseJobSpec {
+func specFromJobBase(jb job.Base) v1alpha1.LighthouseJobSpec {
 	var namespace string
 	if jb.Namespace != nil {
 		namespace = *jb.Namespace
@@ -153,7 +154,7 @@ func specFromJobBase(jb config.JobBase) v1alpha1.LighthouseJobSpec {
 	}
 }
 
-func completePrimaryRefs(refs v1alpha1.Refs, jb config.JobBase) *v1alpha1.Refs {
+func completePrimaryRefs(refs v1alpha1.Refs, jb job.Base) *v1alpha1.Refs {
 	if jb.PathAlias != "" {
 		refs.PathAlias = jb.PathAlias
 	}

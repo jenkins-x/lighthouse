@@ -2,6 +2,7 @@ package merge
 
 import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 )
@@ -11,10 +12,10 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 	repoKey := repoOwner + "/" + repoName
 	if len(repoConfig.Spec.Presubmits) > 0 {
 		if cfg.Presubmits == nil {
-			cfg.Presubmits = map[string][]config.Presubmit{}
+			cfg.Presubmits = map[string][]job.Presubmit{}
 		}
 
-		var ps []config.Presubmit
+		var ps []job.Presubmit
 		for _, p := range repoConfig.Spec.Presubmits {
 			ps = append(ps, ToPresubmit(p))
 		}
@@ -22,10 +23,10 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 	}
 	if len(repoConfig.Spec.Postsubmits) > 0 {
 		if cfg.Postsubmits == nil {
-			cfg.Postsubmits = map[string][]config.Postsubmit{}
+			cfg.Postsubmits = map[string][]job.Postsubmit{}
 		}
 
-		var ps []config.Postsubmit
+		var ps []job.Postsubmit
 		for _, p := range repoConfig.Spec.Postsubmits {
 			ps = append(ps, ToPostsubmit(p))
 		}

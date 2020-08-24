@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -145,7 +146,7 @@ type LighthouseJobSpec struct {
 	// https://github.com/tektoncd/pipeline
 	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
 	// PipelineRunParams are the params used by the pipeline run
-	PipelineRunParams []config.PipelineRunParam `json:"pipeline_run_params,omitempty"`
+	PipelineRunParams []job.PipelineRunParam `json:"pipeline_run_params,omitempty"`
 	// PodSpec provides the basis for running the test under a Kubernetes agent
 	PodSpec *corev1.PodSpec `json:"pod_spec,omitempty"`
 }

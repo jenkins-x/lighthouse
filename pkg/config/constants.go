@@ -70,18 +70,4 @@ const (
 
 	// DefaultClusterAlias specifies the default context for resources owned by jobs (pods/builds).
 	DefaultClusterAlias = "default"
-
-	// JenkinsXAgent is the agent type for running Jenkins X pipelines
-	JenkinsXAgent = "jenkins-x"
-
-	// LegacyDefaultAgent is a backwards compatible way of dealing with legacy cases of "tekton" as the default agent, but meaning Jenkins X
-	LegacyDefaultAgent = "tekton"
-
-	// TektonPipelineAgent is the agent type for running Tekton Pipeline pipelines
-	TektonPipelineAgent = "tekton-pipeline"
 )
-
-// AvailablePipelineAgentTypes returns a slice of all available pipeline agent types
-func AvailablePipelineAgentTypes() []string {
-	return []string{JenkinsXAgent, LegacyDefaultAgent, TektonPipelineAgent}
-}

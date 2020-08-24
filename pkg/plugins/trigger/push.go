@@ -19,12 +19,12 @@ package trigger
 import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 )
 
-func listPushEventChanges(pe scm.PushHook) config.ChangedFilesProvider {
+func listPushEventChanges(pe scm.PushHook) job.ChangedFilesProvider {
 	return func() ([]string, error) {
 		changed := make(map[string]bool)
 		for _, commit := range pe.Commits {

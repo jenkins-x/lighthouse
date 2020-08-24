@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
@@ -41,7 +42,7 @@ func TestReconcile(t *testing.T) {
 	}()
 	configAgent := &config.Agent{}
 	configAgent.Set(&config.Config{
-		JobConfig: config.JobConfig{},
+		JobConfig: job.Config{},
 		ProwConfig: config.ProwConfig{
 			Keeper:                 config.Keeper{},
 			Plank:                  config.Plank{},

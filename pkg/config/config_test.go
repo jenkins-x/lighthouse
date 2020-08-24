@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/config/secret"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
@@ -32,7 +33,7 @@ import (
 
 func TestDefaultJobBase(t *testing.T) {
 	bar := "bar"
-	filled := JobBase{
+	filled := job.Base{
 		Agent:     "foo",
 		Namespace: &bar,
 		Cluster:   "build",
@@ -40,19 +41,19 @@ func TestDefaultJobBase(t *testing.T) {
 	cases := []struct {
 		name     string
 		config   ProwConfig
-		base     func(j *JobBase)
-		expected func(j *JobBase)
+		base     func(j *job.Base)
+		expected func(j *job.Base)
 	}{
 		{
 			name: "no changes when fields are already set",
 		},
 		{
 			name: "empty agent results in kubernetes",
-			base: func(j *JobBase) {
+			base: func(j *job.Base) {
 				j.Agent = ""
 			},
-			expected: func(j *JobBase) {
-				j.Agent = string(JenkinsXAgent)
+			expected: func(j *job.Base) {
+				j.Agent = string(job.JenkinsXAgent)
 			},
 		},
 		{
@@ -61,10 +62,10 @@ func TestDefaultJobBase(t *testing.T) {
 				PodNamespace:           "pod-namespace",
 				LighthouseJobNamespace: "wrong",
 			},
-			base: func(j *JobBase) {
+			base: func(j *job.Base) {
 				j.Namespace = nil
 			},
-			expected: func(j *JobBase) {
+			expected: func(j *job.Base) {
 				p := "pod-namespace"
 				j.Namespace = &p
 			},
@@ -75,21 +76,21 @@ func TestDefaultJobBase(t *testing.T) {
 				PodNamespace:           "new-pod-namespace",
 				LighthouseJobNamespace: "still-wrong",
 			},
-			base: func(j *JobBase) {
+			base: func(j *job.Base) {
 				var empty string
 				j.Namespace = &empty
 			},
-			expected: func(j *JobBase) {
+			expected: func(j *job.Base) {
 				p := "new-pod-namespace"
 				j.Namespace = &p
 			},
 		},
 		{
 			name: "empty cluster becomes DefaultClusterAlias",
-			base: func(j *JobBase) {
+			base: func(j *job.Base) {
 				j.Cluster = ""
 			},
-			expected: func(j *JobBase) {
+			expected: func(j *job.Base) {
 				j.Cluster = DefaultClusterAlias
 			},
 		},
@@ -105,7 +106,7 @@ func TestDefaultJobBase(t *testing.T) {
 			if tc.expected != nil {
 				tc.expected(&expected)
 			}
-			tc.config.defaultJobBase(&actual)
+			actual.SetDefaults(tc.config.PodNamespace)
 			if !reflect.DeepEqual(actual, expected) {
 				t.Errorf("expected %#v\n!=\nactual %#v", expected, actual)
 			}
@@ -114,9 +115,9 @@ func TestDefaultJobBase(t *testing.T) {
 }
 
 func TestValidateAgent(t *testing.T) {
-	k := string(JenkinsXAgent)
+	k := string(job.JenkinsXAgent)
 	ns := "default"
-	base := JobBase{
+	base := job.Base{
 		Agent:     k,
 		Namespace: &ns,
 		Spec:      &v1.PodSpec{},
@@ -124,12 +125,12 @@ func TestValidateAgent(t *testing.T) {
 
 	cases := []struct {
 		name string
-		base func(j *JobBase)
+		base func(j *job.Base)
 		pass bool
 	}{
 		{
 			name: "reject unknown agent",
-			base: func(j *JobBase) {
+			base: func(j *job.Base) {
 				j.Agent = "random-agent"
 			},
 		},
@@ -194,7 +195,7 @@ func TestValidateLabels(t *testing.T) {
 }
 
 func TestValidateJobBase(t *testing.T) {
-	ka := string(JenkinsXAgent)
+	ka := string(job.JenkinsXAgent)
 	goodSpec := v1.PodSpec{
 		Containers: []v1.Container{
 			{},
@@ -203,12 +204,12 @@ func TestValidateJobBase(t *testing.T) {
 	ns := "target-namespace"
 	cases := []struct {
 		name string
-		base JobBase
+		base job.Base
 		pass bool
 	}{
 		{
 			name: "valid kubernetes job",
-			base: JobBase{
+			base: job.Base{
 				Name:      "name",
 				Agent:     ka,
 				Spec:      &goodSpec,
@@ -218,7 +219,7 @@ func TestValidateJobBase(t *testing.T) {
 		},
 		{
 			name: "invalid concurrency",
-			base: JobBase{
+			base: job.Base{
 				Name:           "name",
 				MaxConcurrency: -1,
 				Agent:          ka,
@@ -972,75 +973,75 @@ presubmits:
 func TestBrancher_Intersects(t *testing.T) {
 	testCases := []struct {
 		name   string
-		a, b   Brancher
+		a, b   job.Brancher
 		result bool
 	}{
 		{
 			name: "TwodifferentBranches",
-			a: Brancher{
+			a: job.Brancher{
 				Branches: []string{"a"},
 			},
-			b: Brancher{
+			b: job.Brancher{
 				Branches: []string{"b"},
 			},
 		},
 		{
 			name: "Opposite",
-			a: Brancher{
+			a: job.Brancher{
 				SkipBranches: []string{"b"},
 			},
-			b: Brancher{
+			b: job.Brancher{
 				Branches: []string{"b"},
 			},
 		},
 		{
 			name:   "BothRunOnAllBranches",
-			a:      Brancher{},
-			b:      Brancher{},
+			a:      job.Brancher{},
+			b:      job.Brancher{},
 			result: true,
 		},
 		{
 			name: "RunsOnAllBranchesAndSpecified",
-			a:    Brancher{},
-			b: Brancher{
+			a:    job.Brancher{},
+			b: job.Brancher{
 				Branches: []string{"b"},
 			},
 			result: true,
 		},
 		{
 			name: "SkipBranchesAndSet",
-			a: Brancher{
+			a: job.Brancher{
 				SkipBranches: []string{"a", "b", "c"},
 			},
-			b: Brancher{
+			b: job.Brancher{
 				Branches: []string{"a"},
 			},
 		},
 		{
 			name: "SkipBranchesAndSet",
-			a: Brancher{
+			a: job.Brancher{
 				Branches: []string{"c"},
 			},
-			b: Brancher{
+			b: job.Brancher{
 				Branches: []string{"a"},
 			},
 		},
 		{
 			name: "BothSkipBranches",
-			a: Brancher{
+			a: job.Brancher{
 				SkipBranches: []string{"a", "b", "c"},
 			},
-			b: Brancher{
+			b: job.Brancher{
 				SkipBranches: []string{"d", "e", "f"},
 			},
 			result: true,
 		},
 		{
 			name: "BothSkipCommonBranches",
-			a: Brancher{
+			a: job.Brancher{
 				SkipBranches: []string{"a", "b", "c"},
 			},
-			b: Brancher{
+			b: job.Brancher{
 				SkipBranches: []string{"b", "e", "f"},
 			},
 			result: true,

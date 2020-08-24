@@ -116,7 +116,7 @@ LighthouseJobSpec the spec of a pipeline request
 | RerunCommand | `rerun_command` | string | No | RerunCommand is the command a user would write to<br />trigger this job on their pull request |
 | MaxConcurrency | `max_concurrency` | int | No | MaxConcurrency restricts the total number of instances<br />of this job that can run in parallel at once |
 | PipelineRunSpec | `pipeline_run_spec` | *tektonv1beta1.PipelineRunSpec | No | PipelineRunSpec provides the basis for running the test as a Tekton Pipeline<br />https://github.com/tektoncd/pipeline |
-| PipelineRunParams | `pipeline_run_params` | []config.PipelineRunParam | No | PipelineRunParams are the params used by the pipeline run |
+| PipelineRunParams | `pipeline_run_params` | []job.PipelineRunParam | No | PipelineRunParams are the params used by the pipeline run |
 | PodSpec | `pod_spec` | *corev1.PodSpec | No | PodSpec provides the basis for running the test under a Kubernetes agent |
 
 ## LighthouseJobStatus

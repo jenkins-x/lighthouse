@@ -20,10 +20,10 @@ import (
 	"fmt"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -144,7 +144,7 @@ type SCMProviderClient interface {
 // If a comment that we get matches more than one of the above patterns, we
 // consider the set of matching presubmits the union of the results from the
 // matching cases.
-func FilterPresubmits(honorOkToTest bool, scmClient SCMProviderClient, body string, pr *scm.PullRequest, presubmits []config.Presubmit, logger *logrus.Entry) ([]config.Presubmit, []config.Presubmit, error) {
+func FilterPresubmits(honorOkToTest bool, scmClient SCMProviderClient, body string, pr *scm.PullRequest, presubmits []job.Presubmit, logger *logrus.Entry) ([]job.Presubmit, []job.Presubmit, error) {
 	org, repo, sha := pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Sha
 
 	contextGetter := func() (sets.String, sets.String, error) {
@@ -162,7 +162,7 @@ func FilterPresubmits(honorOkToTest bool, scmClient SCMProviderClient, body stri
 	}
 
 	number, branch := pr.Number, pr.Base.Ref
-	changes := config.NewGitHubDeferredChangedFilesProvider(scmClient, org, repo, number)
+	changes := job.NewGitHubDeferredChangedFilesProvider(scmClient, org, repo, number)
 	return jobutil.FilterPresubmits(filter, changes, branch, presubmits, logger)
 }
 
