@@ -271,6 +271,13 @@ func (in *LighthouseJobSpec) DeepCopyInto(out *LighthouseJobSpec) {
 		*out = new(v1.PodSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.AdditionalFields != nil {
+		in, out := &in.AdditionalFields, &out.AdditionalFields
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

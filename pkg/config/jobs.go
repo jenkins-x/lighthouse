@@ -117,6 +117,9 @@ type JobBase struct {
 	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
 	// PipelineRunParams are the params used by the pipeline run
 	PipelineRunParams []PipelineRunParam `json:"pipeline_run_params,omitempty"`
+	// AdditionalFields is a string/string map for specifying additional fields. This can be used by agent implementations
+	// for configuration that's not baked into the spec.
+	AdditionalFields map[string]string `json:"additional_fields,omitempty"`
 
 	UtilityConfig
 }

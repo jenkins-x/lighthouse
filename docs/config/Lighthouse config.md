@@ -172,6 +172,7 @@ JobBase contains attributes common to all job types
 | Spec | `spec` | *v1.PodSpec | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
 | PipelineRunSpec | `pipeline_run_spec` | *tektonv1beta1.PipelineRunSpec | No | PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline |
 | PipelineRunParams | `pipeline_run_params` | [][PipelineRunParam](#PipelineRunParam) | No | PipelineRunParams are the params used by the pipeline run |
+| AdditionalFields | `additional_fields` | map[string]string | No | AdditionalFields is a string/string map for specifying additional fields. This can be used by agent implementations<br />for configuration that's not baked into the spec. |
 |  |  | [UtilityConfig](#UtilityConfig) | Yes |  |
 
 ## JobConfig

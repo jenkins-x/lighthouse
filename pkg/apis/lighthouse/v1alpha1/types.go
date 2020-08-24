@@ -148,6 +148,9 @@ type LighthouseJobSpec struct {
 	PipelineRunParams []config.PipelineRunParam `json:"pipeline_run_params,omitempty"`
 	// PodSpec provides the basis for running the test under a Kubernetes agent
 	PodSpec *corev1.PodSpec `json:"pod_spec,omitempty"`
+	// AdditionalFields is a string/string map for specifying additional fields. This can be used by agent implementations
+	// for configuration that's not baked into the spec.
+	AdditionalFields map[string]string `json:"additional_fields,omitempty"`
 }
 
 // GetBranch returns the branch name corresponding to the refs on this spec.

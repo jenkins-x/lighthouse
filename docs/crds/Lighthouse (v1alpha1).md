@@ -118,6 +118,7 @@ LighthouseJobSpec the spec of a pipeline request
 | PipelineRunSpec | `pipeline_run_spec` | *tektonv1beta1.PipelineRunSpec | No | PipelineRunSpec provides the basis for running the test as a Tekton Pipeline<br />https://github.com/tektoncd/pipeline |
 | PipelineRunParams | `pipeline_run_params` | []config.PipelineRunParam | No | PipelineRunParams are the params used by the pipeline run |
 | PodSpec | `pod_spec` | *corev1.PodSpec | No | PodSpec provides the basis for running the test under a Kubernetes agent |
+| AdditionalFields | `additional_fields` | map[string]string | No | AdditionalFields is a string/string map for specifying additional fields. This can be used by agent implementations<br />for configuration that's not baked into the spec. |
 
 ## LighthouseJobStatus
 
