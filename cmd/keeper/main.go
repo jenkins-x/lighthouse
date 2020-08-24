@@ -31,6 +31,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/sirupsen/logrus"
 )
 
@@ -102,11 +103,12 @@ func main() {
 	}
 
 	configAgent := &config.Agent{}
-	if err := configAgent.Start(o.configPath, o.jobConfigPath); err != nil {
-		logrus.WithError(err).Fatal("Error starting config agent.")
+	cfgMapWatcher, err := watcher.SetupConfigMapWatchers(o.namespace, configAgent, nil)
+	if err != nil {
+		logrus.WithError(err).Fatal("error starting config map watcher")
 	}
+	defer cfgMapWatcher.Stop()
 
-	var err error
 	botName := o.botName
 	if botName == "" {
 		botName = util.GetBotName(configAgent.Config)

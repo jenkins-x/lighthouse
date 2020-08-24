@@ -21,7 +21,7 @@ spec:
     metadata:
 {{- if .Values.keeper.datadog.enabled }}
       annotations:
-        ad.datadoghq.com/keeper.logs: '[{"source":"prow","service":"tide"}]'
+        ad.datadoghq.com/keeper.logs: '[{"source":"lighthouse","service":"keeper"}]'
 {{- end }}
       labels:
         draft: {{ default "draft-app" .Values.draft }}
@@ -85,20 +85,14 @@ spec:
 {{- end }}
         resources:
 {{ toYaml .Values.keeper.resources | indent 10 }}
-        volumeMounts:
-        - name: config
-          mountPath: /etc/config
-          readOnly: true
 {{- if .Values.githubApp.enabled }}
+        volumeMounts:
         - name: githubapp-tokens
           mountPath: /secrets/githubapp/tokens
           readOnly: true
 {{- end }}
-      volumes:
-      - name: config
-        configMap:
-          name: config
 {{- if .Values.githubApp.enabled }}
+      volumes:
       - name: githubapp-tokens
         secret:
           secretName: tide-githubapp-tokens
