@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set -x
 
 export BB_USERNAME="jenkins-x-bdd"
 export BB_OWNER="jxbdd"
