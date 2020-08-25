@@ -21,6 +21,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"k8s.io/apimachinery/pkg/util/diff"
 )
@@ -32,274 +33,12 @@ var (
 	no  = &n
 )
 
-func normalize(policy *Policy) {
+func normalize(policy *branchprotection.Policy) {
 	if policy == nil || policy.RequiredStatusChecks == nil {
 		return
 	}
 	sort.Strings(policy.RequiredStatusChecks.Contexts)
 	sort.Strings(policy.Exclude)
-}
-
-func TestSelectBool(t *testing.T) {
-	cases := []struct {
-		name     string
-		parent   *bool
-		child    *bool
-		expected *bool
-	}{
-		{
-			name: "default is nil",
-		},
-		{
-			name:     "use child if set",
-			child:    yes,
-			expected: yes,
-		},
-		{
-			name:     "child overrides parent",
-			child:    yes,
-			parent:   no,
-			expected: yes,
-		},
-		{
-			name:     "use parent if child unset",
-			parent:   no,
-			expected: no,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual := selectBool(tc.parent, tc.child)
-			if !reflect.DeepEqual(actual, tc.expected) {
-				t.Errorf("actual %v != expected %v", actual, tc.expected)
-			}
-		})
-	}
-}
-
-func TestSelectInt(t *testing.T) {
-	one := 1
-	two := 2
-	cases := []struct {
-		name     string
-		parent   *int
-		child    *int
-		expected *int
-	}{
-		{
-			name: "default is nil",
-		},
-		{
-			name:     "use child if set",
-			child:    &one,
-			expected: &one,
-		},
-		{
-			name:     "child overrides parent",
-			child:    &one,
-			parent:   &two,
-			expected: &one,
-		},
-		{
-			name:     "use parent if child unset",
-			parent:   &two,
-			expected: &two,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual := selectInt(tc.parent, tc.child)
-			if !reflect.DeepEqual(actual, tc.expected) {
-				t.Errorf("actual %v != expected %v", actual, tc.expected)
-			}
-		})
-	}
-}
-
-func TestUnionStrings(t *testing.T) {
-	cases := []struct {
-		name     string
-		parent   []string
-		child    []string
-		expected []string
-	}{
-		{
-			name: "empty list",
-		},
-		{
-			name:     "all parent items",
-			parent:   []string{"hi", "there"},
-			expected: []string{"hi", "there"},
-		},
-		{
-			name:     "all child items",
-			child:    []string{"hi", "there"},
-			expected: []string{"hi", "there"},
-		},
-		{
-			name:     "both child and parent items, no duplicates",
-			child:    []string{"hi", "world"},
-			parent:   []string{"hi", "there"},
-			expected: []string{"hi", "there", "world"},
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual := unionStrings(tc.parent, tc.child)
-			sort.Strings(actual)
-			sort.Strings(tc.expected)
-			if !reflect.DeepEqual(actual, tc.expected) {
-				t.Errorf("actual %v != expected %v", actual, tc.expected)
-			}
-		})
-	}
-}
-
-func TestApply(test *testing.T) {
-	t := true
-	f := false
-	basic := Policy{
-		Protect: &t,
-	}
-	ebasic := Policy{
-		Protect: &t,
-	}
-	cases := []struct {
-		name     string
-		parent   Policy
-		child    Policy
-		expected Policy
-	}{
-		{
-			name:     "nil child",
-			parent:   basic,
-			expected: ebasic,
-		},
-		{
-			name: "merge parent and child",
-			parent: Policy{
-				Protect: &t,
-			},
-			child: Policy{
-				Admins: &f,
-			},
-			expected: Policy{
-				Protect: &t,
-				Admins:  &f,
-			},
-		},
-		{
-			name: "child overrides parent",
-			parent: Policy{
-				Protect: &t,
-			},
-			child: Policy{
-				Protect: &f,
-			},
-			expected: Policy{
-				Protect: &f,
-			},
-		},
-		{
-			name: "append strings",
-			parent: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Contexts: []string{"hello", "world"},
-				},
-			},
-			child: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Contexts: []string{"world", "of", "thrones"},
-				},
-			},
-			expected: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Contexts: []string{"hello", "of", "thrones", "world"},
-				},
-			},
-		},
-		{
-			name: "merge struct",
-			parent: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Contexts: []string{"hi"},
-				},
-			},
-			child: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Strict: &t,
-				},
-			},
-			expected: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Contexts: []string{"hi"},
-					Strict:   &t,
-				},
-			},
-		},
-		{
-			name: "nil child struct",
-			parent: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Strict: &f,
-				},
-			},
-			child: Policy{
-				Protect: &t,
-			},
-			expected: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Strict: &f,
-				},
-				Protect: &t,
-			},
-		},
-		{
-			name: "nil parent struct",
-			child: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Strict: &f,
-				},
-			},
-			parent: Policy{
-				Protect: &t,
-			},
-			expected: Policy{
-				RequiredStatusChecks: &ContextPolicy{
-					Strict: &f,
-				},
-				Protect: &t,
-			},
-		},
-		{
-			name: "merge exclusion strings",
-			child: Policy{
-				Exclude: []string{"foo*"},
-			},
-			parent: Policy{
-				Exclude: []string{"bar*"},
-			},
-			expected: Policy{
-				Exclude: []string{"bar*", "foo*"},
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		test.Run(tc.name, func(test *testing.T) {
-			defer func() {
-				if r := recover(); r != nil {
-					test.Errorf("unexpected panic: %s", r)
-				}
-			}()
-			actual := tc.parent.Apply(tc.child)
-			normalize(&actual)
-			normalize(&tc.expected)
-			if !reflect.DeepEqual(actual, tc.expected) {
-				test.Errorf("bad merged policy:\n%s", diff.ObjectReflectDiff(tc.expected, actual))
-			}
-		})
-	}
 }
 
 func TestBranchRequirements(t *testing.T) {
@@ -366,8 +105,10 @@ func TestBranchRequirements(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		if err := job.SetPresubmitRegexes(tc.config); err != nil {
-			t.Fatalf("could not set regexes: %v", err)
+		for i := range tc.config {
+			if err := tc.config[i].SetRegexes(); err != nil {
+				t.Fatalf("could not set regexes: %v", err)
+			}
 		}
 		presubmits := map[string][]job.Presubmit{
 			"o/r": tc.config,
@@ -400,7 +141,7 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 		name     string
 		config   Config
 		err      bool
-		expected *Policy
+		expected *branchprotection.Policy
 	}{
 		{
 			name: "unprotected by default",
@@ -409,11 +150,11 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "undefined org not protected",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Policy: Policy{
+					BranchProtection: branchprotection.Config{
+						Policy: branchprotection.Policy{
 							Protect: yes,
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"unknown": {},
 						},
 					},
@@ -424,26 +165,26 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "protect via config default",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Policy: Policy{
+					BranchProtection: branchprotection.Config{
+						Policy: branchprotection.Policy{
 							Protect: yes,
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {},
 						},
 					},
 				},
 			},
-			expected: &Policy{Protect: yes},
+			expected: &branchprotection.Policy{Protect: yes},
 		},
 		{
 			name: "protect via org default",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Orgs: map[string]Org{
+					BranchProtection: branchprotection.Config{
+						Orgs: map[string]branchprotection.Org{
 							"org": {
-								Policy: Policy{
+								Policy: branchprotection.Policy{
 									Protect: yes,
 								},
 							},
@@ -451,18 +192,18 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 					},
 				},
 			},
-			expected: &Policy{Protect: yes},
+			expected: &branchprotection.Policy{Protect: yes},
 		},
 		{
 			name: "protect via repo default",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Orgs: map[string]Org{
+					BranchProtection: branchprotection.Config{
+						Orgs: map[string]branchprotection.Org{
 							"org": {
-								Repos: map[string]Repo{
+								Repos: map[string]branchprotection.Repo{
 									"repo": {
-										Policy: Policy{
+										Policy: branchprotection.Policy{
 											Protect: yes,
 										},
 									},
@@ -472,20 +213,20 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 					},
 				},
 			},
-			expected: &Policy{Protect: yes},
+			expected: &branchprotection.Policy{Protect: yes},
 		},
 		{
 			name: "protect specific branch",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Orgs: map[string]Org{
+					BranchProtection: branchprotection.Config{
+						Orgs: map[string]branchprotection.Org{
 							"org": {
-								Repos: map[string]Repo{
+								Repos: map[string]branchprotection.Repo{
 									"repo": {
-										Branches: map[string]Branch{
+										Branches: map[string]branchprotection.Branch{
 											"branch": {
-												Policy: Policy{
+												Policy: branchprotection.Policy{
 													Protect: yes,
 												},
 											},
@@ -497,37 +238,37 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 					},
 				},
 			},
-			expected: &Policy{Protect: yes},
+			expected: &branchprotection.Policy{Protect: yes},
 		},
 		{
 			name: "ignore other org settings",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Policy: Policy{
+					BranchProtection: branchprotection.Config{
+						Policy: branchprotection.Policy{
 							Protect: no,
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"other": {
-								Policy: Policy{Protect: yes},
+								Policy: branchprotection.Policy{Protect: yes},
 							},
 							"org": {},
 						},
 					},
 				},
 			},
-			expected: &Policy{Protect: no},
+			expected: &branchprotection.Policy{Protect: no},
 		},
 		{
 			name: "defined branches must make a protection decision",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Orgs: map[string]Org{
+					BranchProtection: branchprotection.Config{
+						Orgs: map[string]branchprotection.Org{
 							"org": {
-								Repos: map[string]Repo{
+								Repos: map[string]branchprotection.Repo{
 									"repo": {
-										Branches: map[string]Branch{
+										Branches: map[string]branchprotection.Branch{
 											"branch": {},
 										},
 									},
@@ -543,14 +284,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "pushers require protection",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Policy: Policy{
+					BranchProtection: branchprotection.Config{
+						Policy: branchprotection.Policy{
 							Protect: no,
-							Restrictions: &Restrictions{
+							Restrictions: &branchprotection.Restrictions{
 								Teams: []string{"oncall"},
 							},
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {},
 						},
 					},
@@ -562,14 +303,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "required contexts require protection",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Policy: Policy{
+					BranchProtection: branchprotection.Config{
+						Policy: branchprotection.Policy{
 							Protect: no,
-							RequiredStatusChecks: &ContextPolicy{
+							RequiredStatusChecks: &branchprotection.ContextPolicy{
 								Contexts: []string{"test-foo"},
 							},
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {},
 						},
 					},
@@ -581,17 +322,17 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "child policy with defined parent can disable protection",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
+					BranchProtection: branchprotection.Config{
 						AllowDisabledPolicies: true,
-						Policy: Policy{
+						Policy: branchprotection.Policy{
 							Protect: yes,
-							Restrictions: &Restrictions{
+							Restrictions: &branchprotection.Restrictions{
 								Teams: []string{"oncall"},
 							},
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {
-								Policy: Policy{
+								Policy: branchprotection.Policy{
 									Protect: no,
 								},
 							},
@@ -599,7 +340,7 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 					},
 				},
 			},
-			expected: &Policy{
+			expected: &branchprotection.Policy{
 				Protect: no,
 			},
 		},
@@ -607,14 +348,14 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "Make required presubmits required",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Policy: Policy{
+					BranchProtection: branchprotection.Config{
+						Policy: branchprotection.Policy{
 							Protect: yes,
-							RequiredStatusChecks: &ContextPolicy{
+							RequiredStatusChecks: &branchprotection.ContextPolicy{
 								Contexts: []string{"cla"},
 							},
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {},
 						},
 					},
@@ -635,9 +376,9 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 					},
 				},
 			},
-			expected: &Policy{
+			expected: &branchprotection.Policy{
 				Protect: yes,
-				RequiredStatusChecks: &ContextPolicy{
+				RequiredStatusChecks: &branchprotection.ContextPolicy{
 					Contexts: []string{"required presubmit", "cla"},
 				},
 			},
@@ -646,9 +387,9 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "ProtectTested opts into protection",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
+					BranchProtection: branchprotection.Config{
 						ProtectTested: true,
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {},
 						},
 					},
@@ -669,9 +410,9 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 					},
 				},
 			},
-			expected: &Policy{
+			expected: &branchprotection.Policy{
 				Protect: yes,
-				RequiredStatusChecks: &ContextPolicy{
+				RequiredStatusChecks: &branchprotection.ContextPolicy{
 					Contexts: []string{"required presubmit"},
 				},
 			},
@@ -680,11 +421,11 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "required presubmits require protection",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
-						Policy: Policy{
+					BranchProtection: branchprotection.Config{
+						Policy: branchprotection.Policy{
 							Protect: no,
 						},
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {},
 						},
 					},
@@ -711,9 +452,9 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "Optional presubmits do not force protection",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
+					BranchProtection: branchprotection.Config{
 						ProtectTested: true,
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {},
 						},
 					},
@@ -740,11 +481,11 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 			name: "Explicit configuration takes precedence over ProtectTested",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
+					BranchProtection: branchprotection.Config{
 						ProtectTested: true,
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {
-								Policy: Policy{
+								Policy: branchprotection.Policy{
 									Protect: yes,
 								},
 							},
@@ -768,20 +509,20 @@ func TestConfig_GetBranchProtection(t *testing.T) {
 					},
 				},
 			},
-			expected: &Policy{Protect: yes},
+			expected: &branchprotection.Policy{Protect: yes},
 		},
 		{
 			name: "Explicit non-configuration takes precedence over ProtectTested",
 			config: Config{
 				ProwConfig: ProwConfig{
-					BranchProtection: BranchProtection{
+					BranchProtection: branchprotection.Config{
 						AllowDisabledJobPolicies: true,
 						ProtectTested:            true,
-						Orgs: map[string]Org{
+						Orgs: map[string]branchprotection.Org{
 							"org": {
-								Repos: map[string]Repo{
+								Repos: map[string]branchprotection.Repo{
 									"repo": {
-										Policy: Policy{
+										Policy: branchprotection.Policy{
 											Protect: no,
 										},
 									},

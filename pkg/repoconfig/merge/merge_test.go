@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig/merge"
@@ -52,7 +53,7 @@ func TestMergeRepositoryConfig(t *testing.T) {
 						},
 					},
 					Keeper: &repoconfig.Keeper{
-						Query: &config.KeeperQuery{
+						Query: &keeper.Query{
 							Labels:        []string{"mylabel"},
 							MissingLabels: []string{"foo", "bar"},
 						},

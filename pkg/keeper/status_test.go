@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
@@ -209,7 +210,7 @@ func TestExpectedStatus(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Logf("Test Case: %q\n", tc.name)
-		secondQuery := config.KeeperQuery{
+		secondQuery := keeper.Query{
 			Orgs:      []string{""},
 			Labels:    []string{"1", "2", "3", "4", "5", "6", "7"}, // lots of requirements
 			Milestone: "v1.0",
@@ -218,8 +219,8 @@ func TestExpectedStatus(t *testing.T) {
 			secondQuery.ExcludedBranches = tc.branchExcludeList
 			secondQuery.IncludedBranches = tc.branchIncludeList
 		}
-		queriesByRepo := config.KeeperQueries{
-			config.KeeperQuery{
+		queriesByRepo := keeper.Queries{
+			keeper.Query{
 				Orgs:             []string{""},
 				ExcludedBranches: tc.branchExcludeList,
 				IncludedBranches: tc.branchIncludeList,
@@ -274,7 +275,7 @@ func TestExpectedStatus(t *testing.T) {
 		}
 		blocks.Repo[blockers.OrgRepo{Org: "", Repo: ""}] = items
 
-		state, desc := expectedStatus(queriesByRepo, &pr, pool, &config.KeeperContextPolicy{}, blocks, "fake")
+		state, desc := expectedStatus(queriesByRepo, &pr, pool, &keeper.ContextPolicy{}, blocks, "fake")
 		if state != tc.state {
 			t.Errorf("Expected status state %q, but got %q.", string(tc.state), string(state))
 		}
@@ -409,26 +410,26 @@ func TestTargetUrl(t *testing.T) {
 	testcases := []struct {
 		name   string
 		pr     *PullRequest
-		config config.Keeper
+		config keeper.Config
 
 		expectedURL string
 	}{
 		{
 			name:        "no config",
 			pr:          &PullRequest{},
-			config:      config.Keeper{},
+			config:      keeper.Config{},
 			expectedURL: "",
 		},
 		{
 			name:        "keeper overview config",
 			pr:          &PullRequest{},
-			config:      config.Keeper{TargetURL: "tide.com"},
+			config:      keeper.Config{TargetURL: "tide.com"},
 			expectedURL: "tide.com",
 		},
 		{
 			name:        "PR dashboard config and overview config",
 			pr:          &PullRequest{},
-			config:      config.Keeper{TargetURL: "tide.com", PRStatusBaseURL: "pr.status.com"},
+			config:      keeper.Config{TargetURL: "tide.com", PRStatusBaseURL: "pr.status.com"},
 			expectedURL: "tide.com",
 		},
 		{
@@ -442,7 +443,7 @@ func TestTargetUrl(t *testing.T) {
 				},
 				HeadRefName: "head",
 			},
-			config:      config.Keeper{PRStatusBaseURL: "pr.status.com"},
+			config:      keeper.Config{PRStatusBaseURL: "pr.status.com"},
 			expectedURL: "pr.status.com?query=is%3Apr+repo%3Aorg%2Frepo+author%3Aauthor+head%3Ahead",
 		},
 	}

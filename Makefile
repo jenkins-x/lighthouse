@@ -184,11 +184,8 @@ crds-docs:
 .PHONY: config-docs
 config-docs:
 	cd hack && go run struct-docs.go \
-		--input-file ../pkg/config/branch_protection.go \
 		--input-file ../pkg/config/config.go \
-		--input-file ../pkg/config/constants.go \
 		--input-file ../pkg/config/githuboauth.go \
-		--input-file ../pkg/config/keeper.go \
 		--title "Lighthouse config" \
 		--output-path ../docs/config
 

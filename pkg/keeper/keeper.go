@@ -35,6 +35,7 @@ import (
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
@@ -691,7 +692,7 @@ func accumulateBatch(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs 
 	}
 	states := make(map[string]*accState)
 	for _, pj := range pjs {
-		if pj.Spec.Type != config.BatchJob {
+		if pj.Spec.Type != job.BatchJob {
 			continue
 		}
 		// First validate the batch job's refs.
@@ -773,7 +774,7 @@ func accumulate(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs []v1a
 		// We can ignore the baseSHA here because the subPool only contains PipelineActivitys with the correct baseSHA
 		psStates := make(map[string]simpleState)
 		for _, pj := range pjs {
-			if pj.Spec.Type != config.PresubmitJob {
+			if pj.Spec.Type != job.PresubmitJob {
 				continue
 			}
 			if len(pj.Spec.Refs.Pulls) == 0 || pj.Spec.Refs.Pulls[0].Number != int(pr.Number) {
@@ -889,18 +890,18 @@ func (c *DefaultController) pickBatch(sp subpool, cc contextChecker) ([]PullRequ
 	return res, nil
 }
 
-func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method config.PullRequestMergeType) (config.PullRequestMergeType, error) {
+func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method keeper.PullRequestMergeType) (keeper.PullRequestMergeType, error) {
 	labelCount := 0
 	for _, prlabel := range pr.Labels.Nodes {
 		switch string(prlabel.Name) {
 		case squash:
-			method = config.MergeSquash
+			method = keeper.MergeSquash
 			labelCount++
 		case rebase:
-			method = config.MergeRebase
+			method = keeper.MergeRebase
 			labelCount++
 		case merge:
-			method = config.MergeMerge
+			method = keeper.MergeMerge
 			labelCount++
 		}
 		if labelCount > 1 {
@@ -910,7 +911,7 @@ func checkMergeLabels(pr PullRequest, squash, rebase, merge string, method confi
 	return method, nil
 }
 
-func (c *DefaultController) prepareMergeDetails(commitTemplates config.KeeperMergeCommitTemplate, pr PullRequest, mergeMethod config.PullRequestMergeType) scmprovider.MergeDetails {
+func (c *DefaultController) prepareMergeDetails(commitTemplates keeper.MergeCommitTemplate, pr PullRequest, mergeMethod keeper.PullRequestMergeType) scmprovider.MergeDetails {
 	ghMergeDetails := scmprovider.MergeDetails{
 		SHA:         string(pr.HeadRefOID),
 		MergeMethod: string(mergeMethod),
@@ -1472,7 +1473,7 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 		sps[fn].prs = append(sps[fn].prs, pr)
 	}
 	for _, pj := range pjs {
-		if pj.Spec.Type != config.PresubmitJob && pj.Spec.Type != config.BatchJob {
+		if pj.Spec.Type != job.PresubmitJob && pj.Spec.Type != job.BatchJob {
 			continue
 		}
 		fn := poolKey(pj.Spec.Refs.Org, pj.Spec.Refs.Repo, pj.Spec.Refs.BaseRef)
@@ -1641,8 +1642,8 @@ func orgRepoQueryString(orgs, repos []string, orgExceptions map[string]sets.Stri
 	return strings.Join(toks, " ")
 }
 
-func reposToQueries(queries config.KeeperQueries) map[string][]config.KeeperQuery {
-	queryMap := make(map[string][]config.KeeperQuery)
+func reposToQueries(queries keeper.Queries) map[string][]keeper.Query {
+	queryMap := make(map[string][]keeper.Query)
 	// Create a map of each repo to the relevant queries
 	for _, q := range queries {
 		for _, repo := range q.Repos {
@@ -1652,7 +1653,7 @@ func reposToQueries(queries config.KeeperQueries) map[string][]config.KeeperQuer
 	return queryMap
 }
 
-func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries config.KeeperQueries, start, end time.Time) ([]PullRequest, error) {
+func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Queries, start, end time.Time) ([]PullRequest, error) {
 	var relevantPRs []PullRequest
 
 	queryMap := reposToQueries(queries)

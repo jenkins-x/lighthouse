@@ -33,6 +33,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
@@ -64,6 +65,12 @@ func testPullsMatchList(t *testing.T, test string, actual []PullRequest, expecte
 		if !found {
 			t.Errorf("For case %s, found PR %d but shouldn't have.", test, n1)
 		}
+	}
+}
+
+func clearCompiledRegexes(presubmits []job.Presubmit) {
+	for i := range presubmits {
+		presubmits[i].ClearCompiledRegexes()
 	}
 }
 
@@ -235,7 +242,7 @@ func TestAccumulateBatch(t *testing.T) {
 					Spec: v1alpha1.LighthouseJobSpec{
 						Job:     pj.job,
 						Context: pj.job,
-						Type:    config.BatchJob,
+						Type:    job.BatchJob,
 						Refs:    new(v1alpha1.Refs),
 					},
 					Status: v1alpha1.LighthouseJobStatus{State: pj.state},
@@ -474,7 +481,7 @@ func TestAccumulate(t *testing.T) {
 					Spec: v1alpha1.LighthouseJobSpec{
 						Job:     pj.job,
 						Context: pj.job,
-						Type:    config.PresubmitJob,
+						Type:    job.PresubmitJob,
 						Refs:    &v1alpha1.Refs{Pulls: []v1alpha1.Pull{{Number: pj.prNumber, SHA: pj.sha}}},
 					},
 					Status: v1alpha1.LighthouseJobStatus{State: pj.state},
@@ -660,52 +667,52 @@ func TestDividePool(t *testing.T) {
 		},
 	}
 	testPJs := []struct {
-		jobType config.PipelineKind
+		jobType job.PipelineKind
 		org     string
 		repo    string
 		baseRef string
 		baseSHA string
 	}{
 		{
-			jobType: config.PresubmitJob,
+			jobType: job.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: config.BatchJob,
+			jobType: job.BatchJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: config.PeriodicJob,
+			jobType: job.PeriodicJob,
 		},
 		{
-			jobType: config.PresubmitJob,
+			jobType: job.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "patch",
 			baseSHA: "123",
 		},
 		{
-			jobType: config.PresubmitJob,
+			jobType: job.PresubmitJob,
 			org:     "k",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "abc",
 		},
 		{
-			jobType: config.PresubmitJob,
+			jobType: job.PresubmitJob,
 			org:     "o",
 			repo:    "t-i",
 			baseRef: "master",
 			baseSHA: "123",
 		},
 		{
-			jobType: config.PresubmitJob,
+			jobType: job.PresubmitJob,
 			org:     "k",
 			repo:    "other",
 			baseRef: "master",
@@ -765,7 +772,7 @@ func TestDividePool(t *testing.T) {
 			}
 		}
 		for _, pj := range sp.ljs {
-			if pj.Spec.Type != config.PresubmitJob && pj.Spec.Type != config.BatchJob {
+			if pj.Spec.Type != job.PresubmitJob && pj.Spec.Type != job.BatchJob {
 				t.Errorf("PJ with bad type in subpool %s: %+v", name, pj)
 			}
 			if pj.Spec.Refs.Org != sp.org || pj.Spec.Refs.Repo != sp.repo || pj.Spec.Refs.BaseRef != sp.branch || pj.Spec.Refs.BaseSHA != sp.sha {
@@ -879,7 +886,7 @@ func TestPickBatch(t *testing.T) {
 	ca := &config.Agent{}
 	ca.Set(&config.Config{
 		ProwConfig: config.ProwConfig{
-			Keeper: config.Keeper{
+			Keeper: keeper.Config{
 				BatchSizeLimitMap: map[string]int{"*": 5},
 			},
 		},
@@ -889,7 +896,7 @@ func TestPickBatch(t *testing.T) {
 		gc:     gc,
 		config: ca.Config,
 	}
-	prs, err := c.pickBatch(sp, &config.KeeperContextPolicy{})
+	prs, err := c.pickBatch(sp, &keeper.ContextPolicy{})
 	if err != nil {
 		t.Fatalf("Error from pickBatch: %v", err)
 	}
@@ -918,15 +925,15 @@ func TestCheckMergeLabels(t *testing.T) {
 		name string
 
 		pr        PullRequest
-		method    config.PullRequestMergeType
-		expected  config.PullRequestMergeType
+		method    keeper.PullRequestMergeType
+		expected  keeper.PullRequestMergeType
 		expectErr bool
 	}{
 		{
 			name:      "default method without PR label override",
 			pr:        PullRequest{},
-			method:    config.MergeMerge,
-			expected:  config.MergeMerge,
+			method:    keeper.MergeMerge,
+			expected:  keeper.MergeMerge,
 			expectErr: false,
 		},
 		{
@@ -936,8 +943,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					Nodes []struct{ Name githubql.String }
 				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String("sig/testing")}}},
 			},
-			method:    config.MergeMerge,
-			expected:  config.MergeMerge,
+			method:    keeper.MergeMerge,
+			expected:  keeper.MergeMerge,
 			expectErr: false,
 		},
 		{
@@ -947,8 +954,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					Nodes []struct{ Name githubql.String }
 				}{Nodes: []struct{ Name githubql.String }{{Name: githubql.String(squashLabel)}}},
 			},
-			method:    config.MergeMerge,
-			expected:  config.MergeSquash,
+			method:    keeper.MergeMerge,
+			expected:  keeper.MergeSquash,
 			expectErr: false,
 		},
 		{
@@ -961,8 +968,8 @@ func TestCheckMergeLabels(t *testing.T) {
 					{Name: githubql.String(rebaseLabel)}},
 				},
 			},
-			method:    config.MergeMerge,
-			expected:  config.MergeSquash,
+			method:    keeper.MergeMerge,
+			expected:  keeper.MergeSquash,
 			expectErr: true,
 		},
 	}
@@ -1333,7 +1340,7 @@ func TestTakeAction(t *testing.T) {
 			sp := subpool{
 				log:        logrus.WithField("component", "keeper"),
 				presubmits: tc.presubmits,
-				cc:         &config.KeeperContextPolicy{},
+				cc:         &keeper.ContextPolicy{},
 				org:        "o",
 				repo:       "r",
 				branch:     "master",
@@ -1432,7 +1439,7 @@ func TestTakeAction(t *testing.T) {
 						fgc.combinedStatus[pjSha][activity.Spec.Context].status)
 				}
 				numCreated++
-				if activity.Spec.Type == config.BatchJob {
+				if activity.Spec.Type == job.BatchJob {
 					batchJobs = append(batchJobs, activity)
 				}
 			}
@@ -1688,8 +1695,8 @@ func TestSync(t *testing.T) {
 			ca := &config.Agent{}
 			ca.Set(&config.Config{
 				ProwConfig: config.ProwConfig{
-					Keeper: config.Keeper{
-						Queries:            []config.KeeperQuery{{}},
+					Keeper: keeper.Config{
+						Queries:            []keeper.Query{{}},
 						MaxGoroutines:      4,
 						StatusUpdatePeriod: time.Second * 0,
 					},
@@ -1754,7 +1761,7 @@ func TestFilterSubpool(t *testing.T) {
 	}
 
 	trueVar := true
-	cc := &config.KeeperContextPolicy{
+	cc := &keeper.ContextPolicy{
 		RequiredContexts:    []string{"pj-a", "pj-b", "other-a"},
 		OptionalContexts:    []string{"keeper", "pj-c"},
 		SkipUnknownContexts: &trueVar,
@@ -2083,7 +2090,7 @@ func TestIsPassing(t *testing.T) {
 	testCases := []struct {
 		name             string
 		passing          bool
-		config           config.KeeperContextPolicy
+		config           keeper.ContextPolicy
 		combinedContexts map[string]commitStatus
 	}{
 		{
@@ -2099,7 +2106,7 @@ func TestIsPassing(t *testing.T) {
 		{
 			name:    "passing (trust combined status)",
 			passing: true,
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts:    []string{"c1", "c2", "c3"},
 				SkipUnknownContexts: &no,
 			},
@@ -2108,7 +2115,7 @@ func TestIsPassing(t *testing.T) {
 		{
 			name:    "failing because of missing required check c3",
 			passing: false,
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 			},
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), statusContext: toCommitStatus(failure, "")},
@@ -2117,7 +2124,7 @@ func TestIsPassing(t *testing.T) {
 			name:             "failing because of failed context c2",
 			passing:          false,
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(failure, "")},
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 				OptionalContexts: []string{"c4"},
 			},
@@ -2127,7 +2134,7 @@ func TestIsPassing(t *testing.T) {
 			passing: true,
 
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, "")},
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts: []string{"c1", "c2", "c3"},
 				OptionalContexts: []string{"c4"},
 			},
@@ -2135,7 +2142,7 @@ func TestIsPassing(t *testing.T) {
 		{
 			name:    "skipping unknown contexts - failing because of missing required context c3",
 			passing: false,
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts:    []string{"c1", "c2", "c3"},
 				SkipUnknownContexts: &yes,
 			},
@@ -2145,7 +2152,7 @@ func TestIsPassing(t *testing.T) {
 			name:             "skipping unknown contexts - failing because c2 is failing",
 			passing:          false,
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(failure, "")},
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts:    []string{"c1", "c2"},
 				OptionalContexts:    []string{"c4"},
 				SkipUnknownContexts: &yes,
@@ -2155,7 +2162,7 @@ func TestIsPassing(t *testing.T) {
 			name:             "skipping unknown contexts - passing because c4 is optional",
 			passing:          true,
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, "")},
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts:    []string{"c1", "c3"},
 				OptionalContexts:    []string{"c4"},
 				SkipUnknownContexts: &yes,
@@ -2166,7 +2173,7 @@ func TestIsPassing(t *testing.T) {
 			passing: true,
 
 			combinedContexts: map[string]commitStatus{"c1": toCommitStatus(success, ""), "c2": toCommitStatus(success, ""), "c3": toCommitStatus(success, ""), "c4": toCommitStatus(failure, ""), "c5": toCommitStatus(failure, "")},
-			config: config.KeeperContextPolicy{
+			config: keeper.ContextPolicy{
 				RequiredContexts:    []string{"c1", "c3"},
 				OptionalContexts:    []string{"c4"},
 				SkipUnknownContexts: &yes,
@@ -2436,7 +2443,7 @@ func TestPresubmitsByPull(t *testing.T) {
 		c.changedFiles.prune()
 		// for equality we need to clear the compiled regexes
 		for _, jobs := range presubmits {
-			job.ClearCompiledRegexes(jobs)
+			clearCompiledRegexes(jobs)
 		}
 		if !equality.Semantic.DeepEqual(presubmits, tc.expectedPresubmits) {
 			t.Errorf("got incorrect presubmit mapping: %v\n", diff.ObjectReflectDiff(tc.expectedPresubmits, presubmits))
@@ -2463,13 +2470,13 @@ func TestPrepareMergeDetails(t *testing.T) {
 
 	testCases := []struct {
 		name        string
-		tpl         config.KeeperMergeCommitTemplate
+		tpl         keeper.MergeCommitTemplate
 		pr          PullRequest
-		mergeMethod config.PullRequestMergeType
+		mergeMethod keeper.PullRequestMergeType
 		expected    scmprovider.MergeDetails
 	}{{
 		name:        "No commit template",
-		tpl:         config.KeeperMergeCommitTemplate{},
+		tpl:         keeper.MergeCommitTemplate{},
 		pr:          pr,
 		mergeMethod: "merge",
 		expected: scmprovider.MergeDetails{
@@ -2478,7 +2485,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "No commit template fields",
-		tpl: config.KeeperMergeCommitTemplate{
+		tpl: keeper.MergeCommitTemplate{
 			Title: nil,
 			Body:  nil,
 		},
@@ -2490,7 +2497,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "Static commit template",
-		tpl: config.KeeperMergeCommitTemplate{
+		tpl: keeper.MergeCommitTemplate{
 			Title: getTemplate("CommitTitle", "static title"),
 			Body:  getTemplate("CommitBody", "static body"),
 		},
@@ -2504,7 +2511,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "Commit template uses PullRequest fields",
-		tpl: config.KeeperMergeCommitTemplate{
+		tpl: keeper.MergeCommitTemplate{
 			Title: getTemplate("CommitTitle", "{{ .Number }}: {{ .Title }}"),
 			Body:  getTemplate("CommitBody", "{{ .HeadRefOID }} - {{ .Body }}"),
 		},
@@ -2518,7 +2525,7 @@ func TestPrepareMergeDetails(t *testing.T) {
 		},
 	}, {
 		name: "Commit template uses nonexistent fields",
-		tpl: config.KeeperMergeCommitTemplate{
+		tpl: keeper.MergeCommitTemplate{
 			Title: getTemplate("CommitTitle", "{{ .Hello }}"),
 			Body:  getTemplate("CommitBody", "{{ .World }}"),
 		},
@@ -2579,7 +2586,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			}},
 			pjs: []v1alpha1.LighthouseJob{{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: config.PresubmitJob,
+					Type: job.PresubmitJob,
 					Refs: &v1alpha1.Refs{
 						Pulls: []v1alpha1.Pull{{
 							Number: 1,
@@ -2602,7 +2609,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			}},
 			pjs: []v1alpha1.LighthouseJob{{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: config.PresubmitJob,
+					Type: job.PresubmitJob,
 					Refs: &v1alpha1.Refs{
 						Pulls: []v1alpha1.Pull{{
 							Number: 1,
@@ -2625,7 +2632,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			pjs: []v1alpha1.LighthouseJob{
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2638,7 +2645,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2651,7 +2658,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2691,7 +2698,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 			pjs: []v1alpha1.LighthouseJob{
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2704,7 +2711,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2717,7 +2724,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 1,
@@ -2730,7 +2737,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 2,
@@ -2743,7 +2750,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 2,
@@ -2756,7 +2763,7 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				},
 				{
 					Spec: v1alpha1.LighthouseJobSpec{
-						Type: config.PresubmitJob,
+						Type: job.PresubmitJob,
 						Refs: &v1alpha1.Refs{
 							Pulls: []v1alpha1.Pull{{
 								Number: 2,
@@ -2809,16 +2816,16 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 }
 
 func TestReposToQueries(t *testing.T) {
-	firstQuery := config.KeeperQuery{
+	firstQuery := keeper.Query{
 		Repos:  []string{"a", "b"},
 		Labels: []string{"first-label"},
 	}
-	secondQuery := config.KeeperQuery{
+	secondQuery := keeper.Query{
 		Repos:  []string{"b", "c"},
 		Labels: []string{"second-label"},
 	}
 
-	queries := config.KeeperQueries{
+	queries := keeper.Queries{
 		firstQuery,
 		secondQuery,
 	}

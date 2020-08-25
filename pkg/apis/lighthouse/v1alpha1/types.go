@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -120,7 +119,7 @@ type LighthouseJobList struct {
 type LighthouseJobSpec struct {
 	// Type is the type of job and informs how
 	// the jobs is triggered
-	Type config.PipelineKind `json:"type,omitempty"`
+	Type job.PipelineKind `json:"type,omitempty"`
 	// Agent is what should run this job, if anything.
 	Agent string `json:"agent,omitempty"`
 	// Namespace defines where to create pods/resources.
@@ -154,10 +153,10 @@ type LighthouseJobSpec struct {
 // GetBranch returns the branch name corresponding to the refs on this spec.
 func (s *LighthouseJobSpec) GetBranch() string {
 	branch := s.Refs.BaseRef
-	if s.Type == config.PostsubmitJob {
+	if s.Type == job.PostsubmitJob {
 		return branch
 	}
-	if s.Type == config.BatchJob {
+	if s.Type == job.BatchJob {
 		return "batch"
 	}
 	if len(s.Refs.Pulls) > 0 {
@@ -175,7 +174,7 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 
 	env[JobSpecEnv] = fmt.Sprintf("type:%s", s.Type)
 
-	if s.Type == config.PeriodicJob {
+	if s.Type == job.PeriodicJob {
 		return env
 	}
 
@@ -185,7 +184,7 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 	env[PullBaseShaEnv] = s.Refs.BaseSHA
 	env[PullRefsEnv] = s.Refs.String()
 
-	if s.Type == config.PostsubmitJob || s.Type == config.BatchJob {
+	if s.Type == job.PostsubmitJob || s.Type == job.BatchJob {
 		return env
 	}
 

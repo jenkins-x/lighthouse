@@ -1,7 +1,7 @@
 package merge
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
 )
 
@@ -21,7 +21,7 @@ func CombineConfigs(a, b *repoconfig.RepositoryConfig) *repoconfig.RepositoryCon
 	}
 	if b.Spec.BranchProtection != nil {
 		if a.Spec.BranchProtection == nil {
-			a.Spec.BranchProtection = &config.ContextPolicy{}
+			a.Spec.BranchProtection = &branchprotection.ContextPolicy{}
 		}
 		for _, s := range b.Spec.BranchProtection.Contexts {
 			a.Spec.BranchProtection.Contexts = append(a.Spec.BranchProtection.Contexts, s)

@@ -22,17 +22,7 @@
  * THE SOFTWARE.
  */
 
-package config
-
-// PullRequestMergeType inidicates the type of the pull request
-type PullRequestMergeType string
-
-// Possible types of merges for the GitHub merge API
-const (
-	MergeMerge  PullRequestMergeType = "merge"
-	MergeRebase PullRequestMergeType = "rebase"
-	MergeSquash PullRequestMergeType = "squash"
-)
+package job
 
 // PipelineKind specifies how the job is triggered.
 type PipelineKind string
@@ -47,27 +37,4 @@ const (
 	PeriodicJob PipelineKind = "periodic"
 	// BatchJob tests multiple unmerged PRs at the same time.
 	BatchJob PipelineKind = "batch"
-)
-
-const (
-	// LighthouseJobTypeLabel is added in resources created by lighthouse and
-	// carries the job type (presubmit, postsubmit, periodic, batch)
-	// that the pod is running.
-	LighthouseJobTypeLabel = "lighthouse.jenkins-x.io/type"
-
-	// LighthouseJobIDLabel is added in resources created by lighthouse and
-	// carries the ID of the LighthouseJob that the pod is fulfilling.
-	// We also name resources after the LighthouseJob that spawned them but
-	// this allows for multiple resources to be linked to one
-	// LighthouseJob.
-	LighthouseJobIDLabel = "lighthouse.jenkins-x.io/id"
-
-	// CreatedByLighthouse is added on resources created by Lighthosue.
-	// Since resources often live in another cluster/namespace,
-	// the k8s garbage collector would immediately delete these
-	// resources
-	CreatedByLighthouse = "created-by-lighthouse"
-
-	// DefaultClusterAlias specifies the default context for resources owned by jobs (pods/builds).
-	DefaultClusterAlias = "default"
 )

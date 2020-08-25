@@ -2,6 +2,7 @@ package merge
 
 import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoconfig"
@@ -35,11 +36,11 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 
 	if repoConfig.Spec.BranchProtection != nil {
 		if cfg.BranchProtection.Orgs == nil {
-			cfg.BranchProtection.Orgs = map[string]config.Org{}
+			cfg.BranchProtection.Orgs = map[string]branchprotection.Org{}
 		}
 		org := cfg.BranchProtection.Orgs[repoOwner]
 		if org.Repos == nil {
-			org.Repos = map[string]config.Repo{}
+			org.Repos = map[string]branchprotection.Repo{}
 		}
 		repo := org.Repos[repoName]
 		repo.RequiredStatusChecks = repoConfig.Spec.BranchProtection

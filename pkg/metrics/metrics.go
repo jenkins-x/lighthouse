@@ -28,14 +28,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 )
 
 const metricsPort = 9090
 
 // ExposeMetrics chooses whether to serve or push metrics for the service
-func ExposeMetrics(component string, pushGateway config.PushGateway) {
+func ExposeMetrics(component string, pushGateway lighthouse.PushGateway) {
 	if pushGateway.Endpoint != "" {
 		pushMetrics(component, pushGateway.Endpoint, pushGateway.Interval)
 		if pushGateway.ServeMetrics {

@@ -106,7 +106,7 @@ LighthouseJobSpec the spec of a pipeline request
 
 | Variable Name | Stanza | Type | Required | Description |
 |---|---|---|---|---|
-| Type | `type` | config.PipelineKind | No | Type is the type of job and informs how<br />the jobs is triggered |
+| Type | `type` | job.PipelineKind | No | Type is the type of job and informs how<br />the jobs is triggered |
 | Agent | `agent` | string | No | Agent is what should run this job, if anything. |
 | Namespace | `namespace` | string | No | Namespace defines where to create pods/resources. |
 | Job | `job` | string | No | Job is the name of the job |

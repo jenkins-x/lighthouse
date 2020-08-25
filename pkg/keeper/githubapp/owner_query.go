@@ -3,19 +3,19 @@ package githubapp
 import (
 	"strings"
 
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/sirupsen/logrus"
 )
 
 // OwnerQueries separates keeper queries by the owner
 type OwnerQueries struct {
 	Owner   string
-	Queries config.KeeperQueries
+	Queries keeper.Queries
 }
 
 // SplitKeeperQueries splits the keeper queries into a sequence of owner queries
-func SplitKeeperQueries(queries config.KeeperQueries) map[string]config.KeeperQueries {
-	answer := map[string]config.KeeperQueries{}
+func SplitKeeperQueries(queries keeper.Queries) map[string]keeper.Queries {
+	answer := map[string]keeper.Queries{}
 	for _, q1 := range queries {
 		for org, repos := range SplitRepositories(q1.Repos) {
 			q := q1

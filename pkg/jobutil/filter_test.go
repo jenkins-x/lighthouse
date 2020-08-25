@@ -85,8 +85,10 @@ func TestTestAllFilter(t *testing.T) {
 			if len(testCase.presubmits) != len(testCase.expected) {
 				t.Fatalf("%s: have %d presubmits but only %d expected filter outputs", testCase.name, len(testCase.presubmits), len(testCase.expected))
 			}
-			if err := job.SetPresubmitRegexes(testCase.presubmits); err != nil {
-				t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+			for i := range testCase.presubmits {
+				if err := testCase.presubmits[i].SetRegexes(); err != nil {
+					t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+				}
 			}
 			filter := TestAllFilter()
 			for i, presubmit := range testCase.presubmits {
@@ -141,8 +143,10 @@ func TestCommandFilter(t *testing.T) {
 			if len(testCase.presubmits) != len(testCase.expected) {
 				t.Fatalf("%s: have %d presubmits but only %d expected filter outputs", testCase.name, len(testCase.presubmits), len(testCase.expected))
 			}
-			if err := job.SetPresubmitRegexes(testCase.presubmits); err != nil {
-				t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+			for i := range testCase.presubmits {
+				if err := testCase.presubmits[i].SetRegexes(); err != nil {
+					t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+				}
 			}
 			filter := CommandFilter(testCase.body)
 			for i, presubmit := range testCase.presubmits {
@@ -816,8 +820,10 @@ func TestPresubmitFilter(t *testing.T) {
 			if len(testCase.presubmits) != len(testCase.expected) {
 				t.Fatalf("%s: have %d presubmits but only %d expected filter outputs", testCase.name, len(testCase.presubmits), len(testCase.expected))
 			}
-			if err := job.SetPresubmitRegexes(testCase.presubmits); err != nil {
-				t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+			for i := range testCase.presubmits {
+				if err := testCase.presubmits[i].SetRegexes(); err != nil {
+					t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+				}
 			}
 			fsg := &fakeContextGetter{
 				errors: map[orgRepoRef]error{},
