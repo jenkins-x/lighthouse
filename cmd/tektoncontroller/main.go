@@ -5,13 +5,13 @@ import (
 	"os"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	tektonengine "github.com/jenkins-x/lighthouse/pkg/engines/tekton"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -52,7 +52,7 @@ func main() {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 
-	cfg, err := clientcmd.BuildConfigFromFlags("", "")
+	cfg, err := clients.GetConfig("", "")
 	if err != nil {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}
