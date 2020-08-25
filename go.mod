@@ -5,7 +5,6 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/go-stack/stack v1.8.0
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.4.1
 	github.com/gorilla/sessions v1.2.0
 	github.com/hashicorp/go-multierror v1.1.0
@@ -18,7 +17,6 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
 	github.com/shurcooL/githubv4 v0.0.0-20191102174205-af46314aec7b
 	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.6.1
 	github.com/tektoncd/pipeline v0.14.2
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
