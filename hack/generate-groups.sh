@@ -74,19 +74,21 @@ for GVs in ${GROUPS_WITH_VERSIONS}; do
   done
 done
 
+# All generators expect a mandatory boilerplate file as input. Since we don't add any boilerplate we use process substitution '<( )' to pass a dummy empty file.
+# See also https://github.com/kubernetes/code-generator/issues/6
 if [ "${GENS}" = "all" ] || grep -qw "deepcopy" <<<"${GENS}"; then
   echo "Generating deepcopy funcs for ${GROUPS_WITH_VERSIONS}"
-  "${PREFIX}/deepcopy-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" -O zz_generated.deepcopy --bounding-dirs "${APIS_PKG}" "$@"
+  "${PREFIX}/deepcopy-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" -O zz_generated.deepcopy --bounding-dirs "${APIS_PKG}" --go-header-file <(echo "")
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "client" <<<"${GENS}"; then
   echo "Generating clientset for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}"
-  "${PREFIX}/client-gen" --clientset-name "${CLIENTSET_NAME_VERSIONED:-versioned}" --input-base "" --input "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}" "$@"
+  "${PREFIX}/client-gen" --clientset-name "${CLIENTSET_NAME_VERSIONED:-versioned}" --input-base "" --input "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}" --go-header-file <(echo "")
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "lister" <<<"${GENS}"; then
   echo "Generating listers for ${GROUPS_WITH_VERSIONS} at ${OUTPUT_PKG}/listers"
-  "${PREFIX}/lister-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/listers" "$@"
+  "${PREFIX}/lister-gen" --input-dirs "$(codegen::join , "${FQ_APIS[@]}")" --output-package "${OUTPUT_PKG}/listers" --go-header-file <(echo "")
 fi
 
 if [ "${GENS}" = "all" ] || grep -qw "informer" <<<"${GENS}"; then
@@ -96,7 +98,7 @@ if [ "${GENS}" = "all" ] || grep -qw "informer" <<<"${GENS}"; then
            --versioned-clientset-package "${OUTPUT_PKG}/${CLIENTSET_PKG_NAME:-clientset}/${CLIENTSET_NAME_VERSIONED:-versioned}" \
            --listers-package "${OUTPUT_PKG}/listers" \
            --output-package "${OUTPUT_PKG}/informers" \
-           "$@"
+           --go-header-file <(echo "")
 fi
 
 export GO111MODULE="on"

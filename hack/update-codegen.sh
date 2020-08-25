@@ -28,5 +28,4 @@ readonly REPO_NAME="${REPO_NAME:-$(basename ${REPO_ROOT_DIR} 2> /dev/null)}"
 # not having dependency cycle.
 bash ${REPO_ROOT_DIR}/hack/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/jenkins-x/lighthouse/pkg/client github.com/jenkins-x/lighthouse/pkg/apis \
-  "lighthouse:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+  "lighthouse:v1alpha1"
