@@ -28,7 +28,7 @@ GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 
 .PHONY: all
-all: docs build test check
+all: build test check docs
 
 .PHONY: test
 test: 
