@@ -8,9 +8,6 @@ branch-protection:
             - lint
 github:
   LinkURL: null
-owners_dir_blacklist:
-  default: null
-  repos: null
 plank: {}
 postsubmits:
   myorg/myowner:

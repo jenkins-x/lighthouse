@@ -295,7 +295,7 @@ func TestValidConfigLoading(t *testing.T) {
 			jobConfigs: []string{
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: knative-build
   spec:
   name: foo`,
@@ -308,7 +308,7 @@ periodics:
 			jobConfigs: []string{
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: foo
   spec:
@@ -322,7 +322,7 @@ periodics:
 			jobConfigs: []string{
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   name: foo
   spec:
     containers:
@@ -335,7 +335,7 @@ periodics:
 			jobConfigs: []string{
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: foo
   spec:
@@ -343,7 +343,7 @@ periodics:
     - image: alpine`,
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: bar
   spec:
@@ -357,7 +357,7 @@ periodics:
 			jobConfigs: []string{
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: foo
   spec:
@@ -365,7 +365,7 @@ periodics:
     - image: alpine`,
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: foo
   spec:
@@ -687,7 +687,7 @@ presets:
     value: fejtaverse`,
 			jobConfigs: []string{
 				`periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: foo
   labels:
@@ -697,7 +697,7 @@ presets:
     - image: alpine`,
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: bar
   labels:
@@ -733,7 +733,7 @@ presets:
   - name: baz
     value: fejtaverse
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: foo
   labels:
@@ -743,7 +743,7 @@ periodics:
     - image: alpine`,
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: bar
   labels:
@@ -785,7 +785,7 @@ presets:
   - name: k8s
     value: kubernetes
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: foo
   labels:
@@ -796,7 +796,7 @@ periodics:
     - image: alpine`,
 				`
 periodics:
-- interval: 10m
+- cron: '* * * * *'
   agent: tekton
   name: bar
   labels:

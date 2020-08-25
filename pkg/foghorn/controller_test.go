@@ -57,7 +57,6 @@ func TestReconcile(t *testing.T) {
 			LogLevel:               "",
 			PushGateway:            lighthouse.PushGateway{},
 			OwnersDirExcludes:      nil,
-			OwnersDirBlacklist:     nil,
 			PubSubSubscriptions:    nil,
 			GitHubOptions:          lighthouse.GitHubOptions{},
 			ProviderConfig: &lighthouse.ProviderConfig{
