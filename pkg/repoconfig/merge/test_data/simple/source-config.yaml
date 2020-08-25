@@ -1,9 +1,6 @@
 branch-protection: {}
 github:
   LinkURL: null
-owners_dir_blacklist:
-  default: null
-  repos: null
 plank: {}
 presubmits: {}
 push_gateway:

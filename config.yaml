@@ -21,9 +21,6 @@ branch-protection:
             contexts:
               - pr-build
   protect-tested-repos: true
-owners_dir_blacklist:
-  default: null
-  repos: null
 plank: {}
 pod_namespace: jx
 postsubmits:

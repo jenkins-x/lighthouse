@@ -57,8 +57,6 @@ type Config struct {
 	// OwnersDirExcludes is used to configure which directories to ignore when
 	// searching for OWNERS{,_ALIAS} files in a repo.
 	OwnersDirExcludes *OwnersDirExcludes `json:"owners_dir_excludes,omitempty"`
-	// OwnersDirBlacklist is DEPRECATED in favor of OwnersDirExcludes
-	OwnersDirBlacklist *OwnersDirExcludes `json:"owners_dir_blacklist,omitempty"`
 	// Pub/Sub Subscriptions that we want to listen to
 	PubSubSubscriptions PubsubSubscriptions `json:"pubsub_subscriptions,omitempty"`
 	// GitHubOptions allows users to control how prow applications display GitHub website links.
@@ -104,9 +102,6 @@ func (c *Config) Parse() error {
 		if c.LogLevel == "" {
 			c.LogLevel = "info"
 		}
-	}
-	if c.OwnersDirExcludes == nil {
-		c.OwnersDirExcludes = c.OwnersDirBlacklist
 	}
 	return nil
 }

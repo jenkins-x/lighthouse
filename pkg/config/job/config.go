@@ -18,7 +18,6 @@ package job
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
 	"gopkg.in/robfig/cron.v2"
@@ -205,21 +204,13 @@ func (c *Config) Validate(lh lighthouse.Config) error {
 	}
 	// Set the interval on the periodic jobs. It doesn't make sense to do this
 	// for child jobs.
-	for j, p := range c.Periodics {
-		if p.Cron != "" && p.Interval != "" {
-			return fmt.Errorf("cron and interval cannot be both set in periodic %s", p.Name)
-		} else if p.Cron == "" && p.Interval == "" {
-			return fmt.Errorf("cron and interval cannot be both empty in periodic %s", p.Name)
-		} else if p.Cron != "" {
+	for _, p := range c.Periodics {
+		if p.Cron != "" {
 			if _, err := cron.Parse(p.Cron); err != nil {
 				return fmt.Errorf("invalid cron string %s in periodic %s: %v", p.Cron, p.Name, err)
 			}
 		} else {
-			d, err := time.ParseDuration(c.Periodics[j].Interval)
-			if err != nil {
-				return fmt.Errorf("cannot parse duration for %s: %v", c.Periodics[j].Name, err)
-			}
-			c.Periodics[j].SetInterval(d)
+			return fmt.Errorf("cron cannot be empty in periodic %s", p.Name)
 		}
 	}
 	return nil

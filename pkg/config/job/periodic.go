@@ -16,35 +16,16 @@ limitations under the License.
 
 package job
 
-import (
-	"time"
-)
-
 // Periodic runs on a timer.
 type Periodic struct {
 	Base
-
-	// (deprecated)Interval to wait between two runs of the job.
-	Interval string `json:"interval"`
 	// Cron representation of job trigger time
 	Cron string `json:"cron"`
 	// Tags for config entries
 	Tags []string `json:"tags,omitempty"`
-
-	interval time.Duration
 }
 
 // SetDefaults initializes default values
 func (p *Periodic) SetDefaults(namespace string) {
 	p.Base.SetDefaults(namespace)
-}
-
-// SetInterval updates interval, the frequency duration it runs.
-func (p *Periodic) SetInterval(d time.Duration) {
-	p.interval = d
-}
-
-// GetInterval returns interval, the frequency duration it runs.
-func (p *Periodic) GetInterval() time.Duration {
-	return p.interval
 }
