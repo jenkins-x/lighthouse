@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set -x
 
 export GL_USERNAME="jenkins-x-bot-test"
 export GL_OWNER="jxbdd"

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set -x
 
 export GHE_USERNAME="dev1"
 export GHE_EMAIL="jenkins-x@googlegroups.com"

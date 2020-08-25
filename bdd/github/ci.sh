@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set -x
 
 export GH_USERNAME="lighthouse-bot-test"
 export GH_EMAIL="jenkins-x@googlegroups.com"
