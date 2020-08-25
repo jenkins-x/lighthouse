@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set -x
 
 # Error out if required environment variables aren't set.
 missingEnvVarMessages=()
@@ -90,7 +89,7 @@ kubectl config set-context --current --namespace=lh-test
 curl https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.14.2/release.yaml | sed -E "s/namespace\: tekton-pipelines/namespace: lh-test/" > install-tekton.yml
 kubectl apply -f install-tekton.yml
 
-# HMAC token is just a random 42 byte hex string we'll be using in Lighthosue and the webhook
+# HMAC token is just a random 42 byte hex string we'll be using in Lighthouse and the webhook
 E2E_HMAC_TOKEN=$(tr -dc 'A-F0-9' < /dev/urandom | head -c42)
 export E2E_HMAC_TOKEN
 
