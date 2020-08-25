@@ -22,20 +22,19 @@
  * THE SOFTWARE.
  */
 
-package job
+package keeper
 
+// PullRequestMergeType inidicates the type of the pull request
+type PullRequestMergeType string
+
+// Possible types of merges for the GitHub merge API
 const (
-	// JenkinsXAgent is the agent type for running Jenkins X pipelines
-	JenkinsXAgent = "jenkins-x"
-
-	// LegacyDefaultAgent is a backwards compatible way of dealing with legacy cases of "tekton" as the default agent, but meaning Jenkins X
-	LegacyDefaultAgent = "tekton"
-
-	// TektonPipelineAgent is the agent type for running Tekton Pipeline pipelines
-	TektonPipelineAgent = "tekton-pipeline"
+	MergeMerge  PullRequestMergeType = "merge"
+	MergeRebase PullRequestMergeType = "rebase"
+	MergeSquash PullRequestMergeType = "squash"
 )
 
-// AvailablePipelineAgentTypes returns a slice of all available pipeline agent types
-func AvailablePipelineAgentTypes() []string {
-	return []string{JenkinsXAgent, LegacyDefaultAgent, TektonPipelineAgent}
+// IsValid checks that the merge type is valid
+func (c PullRequestMergeType) IsValid() bool {
+	return c == MergeMerge || c == MergeRebase || c == MergeSquash
 }

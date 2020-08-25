@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +23,7 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 
 	record.Name = pr.Name
 
-	record.JobID = pr.Labels[config.LighthouseJobIDLabel]
+	record.JobID = pr.Labels[job.LighthouseJobIDLabel]
 	record.BaseSHA = pr.Labels[util.BaseSHALabel]
 	record.Repo = pr.Labels[util.RepoLabel]
 	record.Context = pr.Labels[util.ContextLabel]

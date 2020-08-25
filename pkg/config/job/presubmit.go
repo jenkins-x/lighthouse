@@ -26,29 +26,22 @@ import (
 // Presubmit runs on PRs.
 type Presubmit struct {
 	Base
-
+	Brancher
+	RegexpChangeMatcher
+	Reporter
 	// AlwaysRun automatically for every PR, or only when a comment triggers it.
 	AlwaysRun bool `json:"always_run"`
-
 	// Optional indicates that the job's status context should not be required for merge.
 	Optional bool `json:"optional,omitempty"`
-
 	// Trigger is the regular expression to trigger the job.
 	// e.g. `@k8s-bot e2e test this`
 	// RerunCommand must also be specified if this field is specified.
 	// (Default: `(?m)^/test (?:.*? )?<job name>(?: .*?)?$`)
 	Trigger string `json:"trigger,omitempty"`
-
 	// The RerunCommand to give users. Must match Trigger.
 	// Trigger must also be specified if this field is specified.
 	// (Default: `/test <job name>`)
 	RerunCommand string `json:"rerun_command,omitempty"`
-
-	Brancher
-
-	RegexpChangeMatcher
-
-	Reporter
 
 	// We'll set these when we load it.
 	//re *regexp.Regexp // from Trigger.
@@ -90,6 +83,13 @@ func (p *Presubmit) SetRegexes() error {
 	}
 	p.RegexpChangeMatcher = c
 	return nil
+}
+
+// ClearCompiledRegexes compiles and validates all the regular expressions
+func (p *Presubmit) ClearCompiledRegexes() {
+	p.Brancher.re = nil
+	p.Brancher.reSkip = nil
+	p.RegexpChangeMatcher.reChanges = nil
 }
 
 // CouldRun determines if the presubmit could run against a specific
@@ -150,4 +150,18 @@ func (p Presubmit) TriggerMatches(body string) bool {
 // ContextRequired checks whether a context is required from github points of view (required check).
 func (p Presubmit) ContextRequired() bool {
 	return !p.Optional && !p.SkipReport
+}
+
+// Validate validates job base
+func (p *Presubmit) Validate(podNamespace string) error {
+	if err := p.Base.Validate(PresubmitJob, podNamespace); err != nil {
+		return fmt.Errorf("invalid presubmit job %s: %v", p.Name, err)
+	}
+	if p.AlwaysRun && p.RunIfChanged != "" {
+		return fmt.Errorf("job %s is set to always run but also declares run_if_changed targets, which are mutually exclusive", p.Name)
+	}
+	if !p.SkipReport && p.Context == "" {
+		return fmt.Errorf("job %s is set to report but has no context configured", p.Name)
+	}
+	return nil
 }

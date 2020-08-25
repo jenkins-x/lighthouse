@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,7 @@ func TestSplitKeeperQueries(t *testing.T) {
 	assertOwnerQueries(t, results["rawlingsj"], "rawlingj", 2, 1, " for file %s", prowConfig)
 }
 
-func assertOwnerQueries(t *testing.T, ownerQueries config.KeeperQueries, owner string, expectedQueryCount int, expectedRepoCount int, format string, args ...interface{}) {
+func assertOwnerQueries(t *testing.T, ownerQueries keeper.Queries, owner string, expectedQueryCount int, expectedRepoCount int, format string, args ...interface{}) {
 	message := fmt.Sprintf(format, args...)
 	require.NotNil(t, ownerQueries, "ownerQueries should not be nil for owner %s %s", owner, message)
 	assert.Equal(t, len(ownerQueries), expectedQueryCount, "query count for owner %s %s", owner, message)

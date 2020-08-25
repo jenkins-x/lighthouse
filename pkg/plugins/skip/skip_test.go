@@ -343,10 +343,11 @@ func TestSkipStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if err := job.SetPresubmitRegexes(test.presubmits); err != nil {
-				t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
+			for i := range test.presubmits {
+				if err := test.presubmits[i].SetRegexes(); err != nil {
+					t.Fatalf("%s: could not set presubmit regexes: %v", test.name, err)
+				}
 			}
-
 			fspc := &fake.SCMClient{
 				IssueComments: make(map[int][]*scm.Comment),
 				PullRequests: map[int]*scm.PullRequest{

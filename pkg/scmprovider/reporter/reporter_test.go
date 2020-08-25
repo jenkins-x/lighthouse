@@ -22,7 +22,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 )
 
 func TestParsePRComment(t *testing.T) {
@@ -227,36 +227,36 @@ func TestShouldReport(t *testing.T) {
 	var testcases = []struct {
 		name       string
 		lhj        *v1alpha1.LighthouseJob
-		validTypes []config.PipelineKind
+		validTypes []job.PipelineKind
 		report     bool
 	}{
 		{
 			name: "should report presubmit job",
 			lhj: &v1alpha1.LighthouseJob{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: config.PresubmitJob,
+					Type: job.PresubmitJob,
 				},
 			},
-			validTypes: []config.PipelineKind{config.PresubmitJob},
+			validTypes: []job.PipelineKind{job.PresubmitJob},
 			report:     true,
 		},
 		{
 			name: "should not report postsubmit job",
 			lhj: &v1alpha1.LighthouseJob{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: config.PostsubmitJob,
+					Type: job.PostsubmitJob,
 				},
 			},
-			validTypes: []config.PipelineKind{config.PresubmitJob},
+			validTypes: []job.PipelineKind{job.PresubmitJob},
 		},
 		{
 			name: "should report postsubmit job if told to",
 			lhj: &v1alpha1.LighthouseJob{
 				Spec: v1alpha1.LighthouseJobSpec{
-					Type: config.PostsubmitJob,
+					Type: job.PostsubmitJob,
 				},
 			},
-			validTypes: []config.PipelineKind{config.PresubmitJob, config.PostsubmitJob},
+			validTypes: []job.PipelineKind{job.PresubmitJob, job.PostsubmitJob},
 			report:     true,
 		},
 	}

@@ -91,7 +91,7 @@ func TestDefaultJobBase(t *testing.T) {
 				j.Cluster = ""
 			},
 			expected: func(j *job.Base) {
-				j.Cluster = DefaultClusterAlias
+				j.Cluster = job.DefaultClusterAlias
 			},
 		},
 	}
@@ -142,7 +142,7 @@ func TestValidateAgent(t *testing.T) {
 			if tc.base != nil {
 				tc.base(&jb)
 			}
-			switch err := validateAgent(jb, ns); {
+			switch err := jb.ValidateAgent(ns); {
 			case err == nil && !tc.pass:
 				t.Error("validation failed to raise an error")
 			case err != nil && tc.pass:
@@ -165,7 +165,7 @@ func TestValidateLabels(t *testing.T) {
 		{
 			name: "reject reserved label",
 			labels: map[string]string{
-				Labels()[0]: "anything",
+				job.Labels()[0]: "anything",
 			},
 		},
 		{
@@ -184,7 +184,7 @@ func TestValidateLabels(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			switch err := validateLabels(tc.labels); {
+			switch err := job.ValidateLabels(tc.labels); {
 			case err == nil && !tc.pass:
 				t.Error("validation failed to raise an error")
 			case err != nil && tc.pass:
@@ -231,7 +231,7 @@ func TestValidateJobBase(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			switch err := validateJobBase(tc.base, PresubmitJob, ns); {
+			switch err := tc.base.Validate(job.PresubmitJob, ns); {
 			case err == nil && !tc.pass:
 				t.Error("validation failed to raise an error")
 			case err != nil && tc.pass:

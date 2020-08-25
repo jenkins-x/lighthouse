@@ -1,7 +1,8 @@
 package repoconfig
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,7 +29,7 @@ type RepositoryConfigSpec struct {
 	Plugins []string `json:"plugins,omitempty"`
 
 	// BranchProtections to configure branch protection
-	BranchProtection *config.ContextPolicy `json:"branchProtection,omitempty"`
+	BranchProtection *branchprotection.ContextPolicy `json:"branchProtection,omitempty"`
 
 	// PluginConfig the configuration for the plugins
 	PluginConfig *PluginConfig `json:"pluginConfig,omitempty"`
@@ -48,7 +49,7 @@ type RepositoryConfigList struct {
 // Keeper for keeper specific queries
 type Keeper struct {
 	// Query the query to add for the repository
-	Query *config.KeeperQuery `json:"query,omitempty"`
+	Query *keeper.Query `json:"query,omitempty"`
 }
 
 // PluginConfig configuration for plugins

@@ -26,8 +26,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
-
-	"github.com/jenkins-x/lighthouse/pkg/config"
 )
 
 func TestPostsubmitSpec(t *testing.T) {
@@ -48,7 +46,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				},
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.PostsubmitJob,
+				Type: job.PostsubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -62,7 +60,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.PostsubmitJob,
+				Type: job.PostsubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
@@ -84,7 +82,7 @@ func TestPostsubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.PostsubmitJob,
+				Type: job.PostsubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -119,7 +117,7 @@ func TestPresubmitSpec(t *testing.T) {
 				},
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.PresubmitJob,
+				Type: job.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -133,7 +131,7 @@ func TestPresubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.PresubmitJob,
+				Type: job.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
@@ -155,7 +153,7 @@ func TestPresubmitSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.PresubmitJob,
+				Type: job.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -190,7 +188,7 @@ func TestBatchSpec(t *testing.T) {
 				},
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.BatchJob,
+				Type: job.BatchJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -204,7 +202,7 @@ func TestBatchSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.BatchJob,
+				Type: job.BatchJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "fancy",
 					CloneURI:  "cats",
@@ -226,7 +224,7 @@ func TestBatchSpec(t *testing.T) {
 				CloneURI:  "cats",
 			},
 			expected: v1alpha1.LighthouseJobSpec{
-				Type: config.BatchJob,
+				Type: job.BatchJob,
 				Refs: &v1alpha1.Refs{
 					PathAlias: "foo",
 					CloneURI:  "bar",
@@ -256,13 +254,13 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "periodic job, no extra labels",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: config.PeriodicJob,
+				Type: job.PeriodicJob,
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				config.CreatedByLighthouse:    "true",
-				util.LighthouseJobAnnotation:  "job",
-				config.LighthouseJobTypeLabel: "periodic",
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job",
+				job.LighthouseJobTypeLabel:   "periodic",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -272,16 +270,16 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "periodic job, extra labels",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: config.PeriodicJob,
+				Type: job.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
 			},
 			expectedLabels: map[string]string{
-				config.CreatedByLighthouse:    "true",
-				util.LighthouseJobAnnotation:  "job",
-				config.LighthouseJobTypeLabel: "periodic",
-				"extra":                       "stuff",
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job",
+				job.LighthouseJobTypeLabel:   "periodic",
+				"extra":                      "stuff",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -291,7 +289,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "presubmit job",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: config.PresubmitJob,
+				Type: job.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					Org:     "org",
 					Repo:    "repo",
@@ -307,16 +305,16 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				config.CreatedByLighthouse:    "true",
-				util.LighthouseJobAnnotation:  "job",
-				config.LighthouseJobTypeLabel: "presubmit",
-				util.OrgLabel:                 "org",
-				util.RepoLabel:                "repo",
-				util.PullLabel:                "1",
-				util.BranchLabel:              "PR-1",
-				util.ContextLabel:             "pr-build",
-				util.BaseSHALabel:             "abcd1234",
-				util.LastCommitSHALabel:       "1234abcd",
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job",
+				job.LighthouseJobTypeLabel:   "presubmit",
+				util.OrgLabel:                "org",
+				util.RepoLabel:               "repo",
+				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
+				util.ContextLabel:            "pr-build",
+				util.BaseSHALabel:            "abcd1234",
+				util.LastCommitSHALabel:      "1234abcd",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -326,7 +324,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "non-github presubmit job",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: config.PresubmitJob,
+				Type: job.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					Org:     "https://some-gerrit-instance.foo.com",
 					Repo:    "some/invalid/repo",
@@ -341,15 +339,15 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				config.CreatedByLighthouse:    "true",
-				util.LighthouseJobAnnotation:  "job",
-				config.LighthouseJobTypeLabel: "presubmit",
-				util.OrgLabel:                 "some-gerrit-instance.foo.com",
-				util.RepoLabel:                "repo",
-				util.PullLabel:                "1",
-				util.BranchLabel:              "PR-1",
-				util.BaseSHALabel:             "abcd1234",
-				util.LastCommitSHALabel:       "1234abcd",
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job",
+				job.LighthouseJobTypeLabel:   "presubmit",
+				util.OrgLabel:                "some-gerrit-instance.foo.com",
+				util.RepoLabel:               "repo",
+				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
+				util.BaseSHALabel:            "abcd1234",
+				util.LastCommitSHALabel:      "1234abcd",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -358,7 +356,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "job with name too long to fit in a label",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
-				Type: config.PresubmitJob,
+				Type: job.PresubmitJob,
 				Refs: &v1alpha1.Refs{
 					Org:      "org",
 					Repo:     "repo",
@@ -374,15 +372,15 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 			labels: map[string]string{},
 			expectedLabels: map[string]string{
-				config.CreatedByLighthouse:    "true",
-				util.LighthouseJobAnnotation:  "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
-				config.LighthouseJobTypeLabel: "presubmit",
-				util.OrgLabel:                 "org",
-				util.RepoLabel:                "repo",
-				util.PullLabel:                "1",
-				util.BranchLabel:              "PR-1",
-				util.BaseSHALabel:             "abcd1234",
-				util.LastCommitSHALabel:       "1234abcd",
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-l",
+				job.LighthouseJobTypeLabel:   "presubmit",
+				util.OrgLabel:                "org",
+				util.RepoLabel:               "repo",
+				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
+				util.BaseSHALabel:            "abcd1234",
+				util.LastCommitSHALabel:      "1234abcd",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
@@ -393,7 +391,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			name: "periodic job, extra labels, extra annotations",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: config.PeriodicJob,
+				Type: job.PeriodicJob,
 			},
 			labels: map[string]string{
 				"extra": "stuff",
@@ -402,10 +400,10 @@ func TestNewLighthouseJob(t *testing.T) {
 				"extraannotation": "foo",
 			},
 			expectedLabels: map[string]string{
-				config.CreatedByLighthouse:    "true",
-				util.LighthouseJobAnnotation:  "job",
-				config.LighthouseJobTypeLabel: "periodic",
-				"extra":                       "stuff",
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job",
+				job.LighthouseJobTypeLabel:   "periodic",
+				"extra":                      "stuff",
 			},
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
@@ -440,7 +438,7 @@ func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 			name: "job without annotation",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: config.PeriodicJob,
+				Type: job.PeriodicJob,
 			},
 			annotations: nil,
 			expectedAnnotations: map[string]string{
@@ -451,7 +449,7 @@ func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 			name: "job with annotation",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
-				Type: config.PeriodicJob,
+				Type: job.PeriodicJob,
 			},
 			annotations: map[string]string{
 				"annotation": "foo",

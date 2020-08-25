@@ -1048,8 +1048,10 @@ func TestRetestFilter(t *testing.T) {
 			if len(testCase.presubmits) != len(testCase.expected) {
 				t.Fatalf("%s: have %d presubmits but only %d expected filter outputs", testCase.name, len(testCase.presubmits), len(testCase.expected))
 			}
-			if err := job.SetPresubmitRegexes(testCase.presubmits); err != nil {
-				t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+			for i := range testCase.presubmits {
+				if err := testCase.presubmits[i].SetRegexes(); err != nil {
+					t.Fatalf("%s: could not set presubmit regexes: %v", testCase.name, err)
+				}
 			}
 			filter := jobutil.RetestFilter(testCase.failedContexts, testCase.allContexts)
 			for i, presubmit := range testCase.presubmits {

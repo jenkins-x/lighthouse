@@ -3,14 +3,16 @@ package config
 import (
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigGetKeeperContextPolicy(t *testing.T) {
 	cases := []struct {
 		name                 string
-		bpOrgs               map[string]Org
+		bpOrgs               map[string]branchprotection.Org
 		presubmits           []job.Presubmit
 		skipUnknownContexts  bool
 		fromBranchProtection bool
@@ -116,13 +118,13 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 				},
 			},
 			fromBranchProtection: true,
-			bpOrgs: map[string]Org{
+			bpOrgs: map[string]branchprotection.Org{
 				"o": {
-					Policy: Policy{},
-					Repos: map[string]Repo{
+					Policy: branchprotection.Policy{},
+					Repos: map[string]branchprotection.Repo{
 						"r": {
-							Policy: Policy{
-								RequiredStatusChecks: &ContextPolicy{
+							Policy: branchprotection.Policy{
+								RequiredStatusChecks: &branchprotection.ContextPolicy{
 									Contexts: []string{
 										"always-run",
 										"run-if-changed",
@@ -184,13 +186,13 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 				},
 			},
 			fromBranchProtection: true,
-			bpOrgs: map[string]Org{
+			bpOrgs: map[string]branchprotection.Org{
 				"o": {
-					Policy: Policy{},
-					Repos: map[string]Repo{
+					Policy: branchprotection.Policy{},
+					Repos: map[string]branchprotection.Repo{
 						"r": {
-							Policy: Policy{
-								RequiredStatusChecks: &ContextPolicy{
+							Policy: branchprotection.Policy{
+								RequiredStatusChecks: &branchprotection.ContextPolicy{
 									Contexts: []string{
 										"always-run",
 										"run-if-changed",
@@ -253,13 +255,13 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 				},
 			},
 			fromBranchProtection: true,
-			bpOrgs: map[string]Org{
+			bpOrgs: map[string]branchprotection.Org{
 				"o": {
-					Policy: Policy{},
-					Repos: map[string]Repo{
+					Policy: branchprotection.Policy{},
+					Repos: map[string]branchprotection.Repo{
 						"r": {
-							Policy: Policy{
-								RequiredStatusChecks: &ContextPolicy{
+							Policy: branchprotection.Policy{
+								RequiredStatusChecks: &branchprotection.ContextPolicy{
 									Contexts: []string{
 										"always-run",
 										"run-if-changed",
@@ -280,9 +282,10 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-
-			if err := job.SetPresubmitRegexes(tc.presubmits); err != nil {
-				t.Fatalf("could not set regexes: %v", err)
+			for i := range tc.presubmits {
+				if err := tc.presubmits[i].SetRegexes(); err != nil {
+					t.Fatalf("could not set regexes: %v", err)
+				}
 			}
 			presubmits := map[string][]job.Presubmit{
 				"o/r": tc.presubmits,
@@ -292,9 +295,9 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 					Presubmits: presubmits,
 				},
 				ProwConfig: ProwConfig{
-					Keeper: Keeper{
-						ContextOptions: KeeperContextPolicyOptions{
-							KeeperContextPolicy: KeeperContextPolicy{
+					Keeper: keeper.Config{
+						ContextOptions: keeper.ContextPolicyOptions{
+							ContextPolicy: keeper.ContextPolicy{
 								SkipUnknownContexts:  &tc.skipUnknownContexts,
 								FromBranchProtection: &tc.fromBranchProtection,
 							},
@@ -303,7 +306,7 @@ func TestConfigGetKeeperContextPolicy(t *testing.T) {
 				},
 			}
 			if tc.bpOrgs != nil {
-				cfg.ProwConfig.BranchProtection = BranchProtection{
+				cfg.ProwConfig.BranchProtection = branchprotection.Config{
 					ProtectTested: true,
 					Orgs:          tc.bpOrgs,
 				}

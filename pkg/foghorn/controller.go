@@ -11,6 +11,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -138,7 +139,7 @@ func (r *LighthouseJobReconciler) updateJobStatusForActivity(activity *lighthous
 	}
 }
 
-func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.ActivityRecord, job *lighthousev1alpha1.LighthouseJob) {
+func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.ActivityRecord, j *lighthousev1alpha1.LighthouseJob) {
 	sha := activity.LastCommitSHA
 
 	owner := activity.Owner
@@ -181,18 +182,18 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 		return
 	}
 
-	switch scm.ToState(job.Status.LastReportState) {
+	switch scm.ToState(j.Status.LastReportState) {
 	// already completed - avoid reporting again if a promotion happens after a PR has merged and the pipeline updates status
 	case scm.StateFailure, scm.StateError, scm.StateSuccess, scm.StateCanceled:
 		return
 	}
 
-	r.logger.WithFields(fields).Warnf("last report: %s, current: %s, last desc: %s, current: %s", job.Status.LastReportState, statusInfo.scmStatus.String(),
-		job.Status.Description, statusInfo.description)
+	r.logger.WithFields(fields).Warnf("last report: %s, current: %s, last desc: %s, current: %s", j.Status.LastReportState, statusInfo.scmStatus.String(),
+		j.Status.Description, statusInfo.description)
 
 	// Check if state and running stages haven't changed and return if they haven't
-	if scm.ToState(job.Status.LastReportState) == statusInfo.scmStatus &&
-		job.Status.Description == statusInfo.description {
+	if scm.ToState(j.Status.LastReportState) == statusInfo.scmStatus &&
+		j.Status.Description == statusInfo.description {
 		return
 	}
 
@@ -210,7 +211,7 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 		State:  statusInfo.scmStatus,
 		Label:  pipelineContext,
 		Desc:   statusInfo.description,
-		Target: job.Status.ReportURL,
+		Target: j.Status.ReportURL,
 	}
 	scmClient, _, _, _, err := util.GetSCMClient(owner, r.jobConfig.Config)
 	if err != nil {
@@ -225,14 +226,14 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 		return
 	}
 
-	err = reporter.Report(scmClient, r.jobConfig.Config().Plank.ReportTemplate, job, []config.PipelineKind{config.PresubmitJob})
+	err = reporter.Report(scmClient, r.jobConfig.Config().Plank.ReportTemplate, j, []job.PipelineKind{job.PresubmitJob})
 	if err != nil {
 		// For now, we're just going to ignore failures here.
 		r.logger.WithFields(fields).WithError(err).Warnf("failed to update comments on the PR")
 	}
 	r.logger.WithFields(fields).Info("reported git status")
-	job.Status.Description = statusInfo.description
-	job.Status.LastReportState = statusInfo.scmStatus.String()
+	j.Status.Description = statusInfo.description
+	j.Status.LastReportState = statusInfo.scmStatus.String()
 }
 
 type reportStatusInfo struct {

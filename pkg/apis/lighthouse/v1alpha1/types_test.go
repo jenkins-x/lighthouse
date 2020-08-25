@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 )
 
 func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
@@ -18,20 +18,20 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 		{
 			name: "periodic",
 			spec: &v1alpha1.LighthouseJobSpec{
-				Type:      config.PeriodicJob,
+				Type:      job.PeriodicJob,
 				Namespace: "jx",
 				Job:       "some-job",
 			},
 			env: map[string]string{
 				v1alpha1.JobNameEnv: "some-job",
-				v1alpha1.JobTypeEnv: string(config.PeriodicJob),
-				v1alpha1.JobSpecEnv: fmt.Sprintf("type:%s", config.PeriodicJob),
+				v1alpha1.JobTypeEnv: string(job.PeriodicJob),
+				v1alpha1.JobSpecEnv: fmt.Sprintf("type:%s", job.PeriodicJob),
 			},
 		},
 		{
 			name: "postsubmit",
 			spec: &v1alpha1.LighthouseJobSpec{
-				Type:      config.PostsubmitJob,
+				Type:      job.PostsubmitJob,
 				Namespace: "jx",
 				Job:       "some-release-job",
 				Refs: &v1alpha1.Refs{
@@ -44,8 +44,8 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 			},
 			env: map[string]string{
 				v1alpha1.JobNameEnv:     "some-release-job",
-				v1alpha1.JobTypeEnv:     string(config.PostsubmitJob),
-				v1alpha1.JobSpecEnv:     fmt.Sprintf("type:%s", config.PostsubmitJob),
+				v1alpha1.JobTypeEnv:     string(job.PostsubmitJob),
+				v1alpha1.JobSpecEnv:     fmt.Sprintf("type:%s", job.PostsubmitJob),
 				v1alpha1.RepoNameEnv:    "some-repo",
 				v1alpha1.RepoOwnerEnv:   "some-org",
 				v1alpha1.PullBaseRefEnv: "master",
@@ -56,7 +56,7 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 		{
 			name: "presubmit",
 			spec: &v1alpha1.LighthouseJobSpec{
-				Type:      config.PresubmitJob,
+				Type:      job.PresubmitJob,
 				Namespace: "jx",
 				Job:       "some-pr-job",
 				Refs: &v1alpha1.Refs{
@@ -75,8 +75,8 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 			},
 			env: map[string]string{
 				v1alpha1.JobNameEnv:     "some-pr-job",
-				v1alpha1.JobTypeEnv:     string(config.PresubmitJob),
-				v1alpha1.JobSpecEnv:     fmt.Sprintf("type:%s", config.PresubmitJob),
+				v1alpha1.JobTypeEnv:     string(job.PresubmitJob),
+				v1alpha1.JobSpecEnv:     fmt.Sprintf("type:%s", job.PresubmitJob),
 				v1alpha1.RepoNameEnv:    "some-repo",
 				v1alpha1.RepoOwnerEnv:   "some-org",
 				v1alpha1.PullBaseRefEnv: "master",
@@ -89,7 +89,7 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 		{
 			name: "batch",
 			spec: &v1alpha1.LighthouseJobSpec{
-				Type:      config.BatchJob,
+				Type:      job.BatchJob,
 				Namespace: "jx",
 				Job:       "some-pr-job",
 				Refs: &v1alpha1.Refs{
@@ -112,8 +112,8 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 			},
 			env: map[string]string{
 				v1alpha1.JobNameEnv:     "some-pr-job",
-				v1alpha1.JobTypeEnv:     string(config.BatchJob),
-				v1alpha1.JobSpecEnv:     fmt.Sprintf("type:%s", config.BatchJob),
+				v1alpha1.JobTypeEnv:     string(job.BatchJob),
+				v1alpha1.JobSpecEnv:     fmt.Sprintf("type:%s", job.BatchJob),
 				v1alpha1.RepoNameEnv:    "some-repo",
 				v1alpha1.RepoOwnerEnv:   "some-org",
 				v1alpha1.PullBaseRefEnv: "master",

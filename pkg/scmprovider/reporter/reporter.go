@@ -25,7 +25,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
@@ -45,7 +45,7 @@ type SCMProviderClient interface {
 }
 
 // ShouldReport determines whether this LighthouseJob is of a type to be reporting back.
-func ShouldReport(lhj *v1alpha1.LighthouseJob, validTypes []config.PipelineKind) bool {
+func ShouldReport(lhj *v1alpha1.LighthouseJob, validTypes []job.PipelineKind) bool {
 	valid := false
 	for _, t := range validTypes {
 		if lhj.Spec.Type == t {
@@ -62,7 +62,7 @@ func ShouldReport(lhj *v1alpha1.LighthouseJob, validTypes []config.PipelineKind)
 
 // Report is creating/updating/removing report comments in the SCM provider based on the state of
 // the provided LighthouseJob.
-func Report(spc SCMProviderClient, reportTemplate *template.Template, lhj *v1alpha1.LighthouseJob, validTypes []config.PipelineKind) error {
+func Report(spc SCMProviderClient, reportTemplate *template.Template, lhj *v1alpha1.LighthouseJob, validTypes []job.PipelineKind) error {
 	if spc == nil {
 		return fmt.Errorf("trying to report lhj %s, but found empty SCM provider client", lhj.ObjectMeta.Name)
 	}

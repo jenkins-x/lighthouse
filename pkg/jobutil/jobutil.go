@@ -25,7 +25,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -103,7 +102,7 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job job.Presubmit, eventG
 // PresubmitSpec initializes a PipelineOptionsSpec for a given presubmit job.
 func PresubmitSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.Base)
-	pjs.Type = config.PresubmitJob
+	pjs.Type = job.PresubmitJob
 	pjs.Context = p.Context
 	pjs.RerunCommand = p.RerunCommand
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
@@ -114,7 +113,7 @@ func PresubmitSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSp
 // PostsubmitSpec initializes a PipelineOptionsSpec for a given postsubmit job.
 func PostsubmitSpec(p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.Base)
-	pjs.Type = config.PostsubmitJob
+	pjs.Type = job.PostsubmitJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
 
@@ -124,7 +123,7 @@ func PostsubmitSpec(p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJob
 // PeriodicSpec initializes a PipelineOptionsSpec for a given periodic job.
 func PeriodicSpec(p job.Periodic) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.Base)
-	pjs.Type = config.PeriodicJob
+	pjs.Type = job.PeriodicJob
 
 	return pjs
 }
@@ -132,7 +131,7 @@ func PeriodicSpec(p job.Periodic) v1alpha1.LighthouseJobSpec {
 // BatchSpec initializes a PipelineOptionsSpec for a given batch job and ref spec.
 func BatchSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(p.Base)
-	pjs.Type = config.BatchJob
+	pjs.Type = job.BatchJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
 
@@ -211,14 +210,14 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 		}).Info("Cannot use full context name, will truncate.")
 	}
 	labels := map[string]string{
-		config.CreatedByLighthouse:    "true",
-		config.LighthouseJobTypeLabel: string(spec.Type),
-		util.LighthouseJobAnnotation:  jobNameForLabel,
+		job.CreatedByLighthouseLabel: "true",
+		job.LighthouseJobTypeLabel:   string(spec.Type),
+		util.LighthouseJobAnnotation: jobNameForLabel,
 	}
 	if contextNameForLabel != "" {
 		labels[util.ContextLabel] = contextNameForLabel
 	}
-	if spec.Type != config.PeriodicJob && spec.Refs != nil {
+	if spec.Type != job.PeriodicJob && spec.Refs != nil {
 		labels[util.OrgLabel] = strings.ToLower(spec.Refs.Org)
 		labels[util.RepoLabel] = spec.Refs.Repo
 		labels[util.BranchLabel] = spec.GetBranch()
@@ -272,7 +271,7 @@ func LabelsAndAnnotationsForJob(lj v1alpha1.LighthouseJob, buildID string) (map[
 	if extraLabels = lj.ObjectMeta.Labels; extraLabels == nil {
 		extraLabels = map[string]string{}
 	}
-	extraLabels[config.LighthouseJobIDLabel] = lj.ObjectMeta.Name
+	extraLabels[job.LighthouseJobIDLabel] = lj.ObjectMeta.Name
 	if buildID != "" {
 		extraLabels[util.BuildNumLabel] = buildID
 	}

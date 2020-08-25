@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
 	"github.com/jenkins-x/lighthouse/pkg/git/localgit"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
@@ -158,7 +159,7 @@ func getTestClient(
 			},
 			config: &prowConf.Config{
 				ProwConfig: prowConf.ProwConfig{
-					OwnersDirExcludes: &prowConf.OwnersDirExcludes{
+					OwnersDirExcludes: &lighthouse.OwnersDirExcludes{
 						Repos:   ownersDirExcludesByRepo,
 						Default: ownersDirExcludesDefault,
 					},

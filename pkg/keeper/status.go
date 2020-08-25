@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/pkg/errors"
@@ -107,7 +108,7 @@ func (sc *statusController) shutdown() {
 // Note: an empty diff can be returned if the reason that the PR does not match
 // the KeeperQuery is unknown. This can happen if this function's logic
 // does not match GitHub's and does not indicate that the PR matches the query.
-func requirementDiff(pr *PullRequest, q *config.KeeperQuery, cc contextChecker) (string, int) {
+func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (string, int) {
 	const maxLabelChars = 50
 	var desc string
 	var diff int
@@ -233,7 +234,7 @@ func requirementDiff(pr *PullRequest, q *config.KeeperQuery, cc contextChecker) 
 // in order to generate a diff for the status description. We choose the query
 // for the repo that the PR is closest to meeting (as determined by the number
 // of unmet/violated requirements).
-func expectedStatus(queryMap *config.QueryMap, pr *PullRequest, pool map[string]PullRequest, cc contextChecker, blocks blockers.Blockers, providerType string) (string, string) {
+func expectedStatus(queryMap *keeper.QueryMap, pr *PullRequest, pool map[string]PullRequest, cc contextChecker, blocks blockers.Blockers, providerType string) (string, string) {
 	if _, ok := pool[prKey(pr)]; !ok {
 		// if the branch is blocked forget checking for a diff
 		blockingIssues := blocks.GetApplicable(string(pr.Repository.Owner.Login), string(pr.Repository.Name), string(pr.BaseRef.Name))
@@ -455,12 +456,12 @@ func (sc *statusController) search() []PullRequest {
 	if sc.spc.SupportsGraphQL() {
 		prs, err = graphQLSearch(sc.spc.Query, sc.logger, query, sc.LatestPR.Time, now)
 	} else {
-		kq := config.KeeperQuery{}
+		kq := keeper.Query{}
 		for _, r := range repos.List() {
 			kq.Repos = append(kq.Repos, r)
 		}
 
-		prs, err = restAPISearch(sc.spc, sc.logger, config.KeeperQueries{kq}, sc.LatestPR.Time, now)
+		prs, err = restAPISearch(sc.spc, sc.logger, keeper.Queries{kq}, sc.LatestPR.Time, now)
 	}
 	log.WithField("duration", time.Since(now).String()).Debugf("Found %d open PRs.", len(prs))
 	if err != nil {
