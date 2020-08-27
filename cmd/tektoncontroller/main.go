@@ -62,7 +62,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.dashboardURL, o.namespace)
+	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.namespace)
 	if err = reconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}
