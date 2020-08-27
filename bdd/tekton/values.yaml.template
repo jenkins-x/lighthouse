@@ -20,6 +20,14 @@ engines:
   jx: false
   tekton: true
 
-createIngress: true
+webhooks:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+      - hook.{{ .Env.EXTERNAL_IP }}.nip.io
 
-domainName: {{ .Env.EXTERNAL_IP }}.nip.io
+  # we need this for the tests
+  serviceName: hook
+  ingressName: hook

@@ -1,17 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-{{- if .Values.webhooks.service.name }}
-  name: {{ .Values.webhooks.service.name }}
-{{- else }}
-  name: {{ template "webhooks.name" . }}
-{{- end }}
+  name: {{ default (include "webhooks.name" .) .Values.webhooks.serviceName }}
   labels:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
-{{- if .Values.webhooks.service.annotations }}
   annotations:
-{{ toYaml .Values.webhooks.service.annotations | indent 4 }}
-{{- end }}
+    {{- toYaml .Values.webhooks.service.annotations | nindent 4 }}
 spec:
   type: {{ .Values.webhooks.service.type }}
   ports:

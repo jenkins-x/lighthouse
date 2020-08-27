@@ -1,0 +1,18 @@
+{{- if .Values.webhooks.ingress.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ default (include "webhooks.name" .) .Values.webhooks.ingressName }}
+  annotations:
+    {{- toYaml .Values.webhooks.ingress.annotations | nindent 4 }}
+spec:
+  rules:
+  {{- range .Values.webhooks.ingress.hosts }}
+  - host: {{ . | quote }}
+    http:
+      paths:
+        - backend:
+            serviceName: {{ default (include "webhooks.name" $) $.Values.webhooks.serviceName }}
+            servicePort: {{ $.Values.webhooks.service.externalPort }}
+  {{- end }}
+{{- end }}
