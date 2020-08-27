@@ -83,9 +83,9 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `image.pullPolicy` | string | Image pull policy | `"IfNotPresent"` |
 | `image.tag` | string | Docker images tag | `"0.0.750"` |
 | `keeper.datadog.enabled` | string | Enables datadog | `"true"` |
+| `keeper.image.pullPolicy` | string | Template for computing the keeper controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `keeper.image.repository` | string | Template for computing the keeper controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-keeper"` |
 | `keeper.image.tag` | string | Template for computing the keeper controller docker image tag | `"{{ .Values.image.tag }}"` |
-| `keeper.imagePullPolicy` | string |  | `"IfNotPresent"` |
 | `keeper.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":120,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `keeper.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `keeper.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |

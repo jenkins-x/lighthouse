@@ -32,7 +32,7 @@ spec:
       containers:
       - name: {{ template "keeper.name" . }}
         image: {{ tpl .Values.keeper.image.repository . }}:{{ tpl .Values.keeper.image.tag . }}
-        imagePullPolicy: {{ .Values.keeper.imagePullPolicy }}
+        imagePullPolicy: {{ tpl .Values.keeper.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
         ports:

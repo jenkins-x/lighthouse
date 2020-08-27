@@ -206,7 +206,8 @@ keeper:
     # keeper.image.tag -- Template for computing the keeper controller docker image tag
     tag: "{{ .Values.image.tag }}"
 
-  imagePullPolicy: IfNotPresent
+    # keeper.image.pullPolicy -- Template for computing the keeper controller docker image pull policy
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
 
   # keeper.service -- Service settings for the webhooks controller
   service:
