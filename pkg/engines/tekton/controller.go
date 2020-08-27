@@ -23,6 +23,7 @@ var apiGVStr = lighthousev1alpha1.SchemeGroupVersion.String()
 // LighthouseJobReconciler reconciles a LighthouseJob object
 type LighthouseJobReconciler struct {
 	client       client.Client
+	apiReader    client.Reader
 	logger       *logrus.Entry
 	scheme       *runtime.Scheme
 	dashboardURL string
@@ -30,9 +31,10 @@ type LighthouseJobReconciler struct {
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, dashboardURL string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, namespace string) *LighthouseJobReconciler {
 	return &LighthouseJobReconciler{
 		client:       client,
+		apiReader:    apiReader,
 		logger:       logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
 		scheme:       scheme,
 		dashboardURL: dashboardURL,
@@ -93,7 +95,7 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	if len(pipelineRunList.Items) == 0 {
 		if job.Status.State == lighthousev1alpha1.TriggeredState {
 			// construct a pipeline run
-			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.client)
+			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.apiReader)
 			if err != nil {
 				r.logger.Errorf("Failed to make pipeline run: %s", err)
 				return ctrl.Result{}, err

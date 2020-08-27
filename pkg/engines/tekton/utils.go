@@ -42,7 +42,7 @@ func trimDashboardURL(base string) string {
 
 // makePipeline creates a PipelineRun and substitutes LighthouseJob managed pipeline resources with ResourceSpec instead of ResourceRef
 // so that we don't have to take care of potentially dangling created pipeline resources.
-func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, c client.Client) (*tektonv1beta1.PipelineRun, error) {
+func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, c client.Reader) (*tektonv1beta1.PipelineRun, error) {
 	// First validate.
 	if lj.Spec.PipelineRunSpec == nil {
 		return nil, errors.New("no PipelineSpec defined")
@@ -144,7 +144,7 @@ type gitTaskParamNames struct {
 	baseRevisionParam string
 }
 
-func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.PipelineRun, c client.Client) (*gitTaskParamNames, error) {
+func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.PipelineRun, c client.Reader) (*gitTaskParamNames, error) {
 	if pr == nil {
 		return nil, errors.New("provided PipelineRun is nil")
 	}
