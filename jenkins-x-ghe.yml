@@ -138,5 +138,15 @@ pipelineConfig:
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=$(inputs.params.version)
 
+              - name: build-and-push-strobe
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/Dockerfile.strobe
+                  - --destination=gcr.io/jenkinsxio/lighthouse-strobe:$(inputs.params.version)
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=$(inputs.params.version)
+
               - command: bdd/ghe/ci.sh
                 name: runci

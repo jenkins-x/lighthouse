@@ -17,6 +17,7 @@ require (
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
 	github.com/shurcooL/githubv4 v0.0.0-20191102174205-af46314aec7b
 	github.com/sirupsen/logrus v1.6.0
+	github.com/spf13/cobra v0.0.6
 	github.com/stretchr/testify v1.6.1
 	github.com/tektoncd/pipeline v0.14.2
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d

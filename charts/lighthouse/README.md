@@ -95,6 +95,13 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `lighthouseJobNamespace` | string | Namespace where `LighthouseJob`s and `Pod`s are created | Deployment namespace |
 | `logFormat` | string | Log format | `"json"` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
+| `strobe.concurrencyPolicy` | string | Drives the job's concurrency policy | `"Forbid"` |
+| `strobe.failedJobsHistoryLimit` | int | Drives the failed jobs history limit | `1` |
+| `strobe.image.pullPolicy` | string | Template for computing the sync job docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `strobe.image.repository` | string | Template for computing the sync job docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-strobe"` |
+| `strobe.image.tag` | string | Template for computing the sync job docker image tag | `"{{ .Values.image.tag }}"` |
+| `strobe.schedule` | string | Cron expression to periodically sync periodic jobs | `"0/5 * * * *"` |
+| `strobe.successfulJobsHistoryLimit` | int | Drives the successful jobs history limit | `1` |
 | `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
 | `tektoncontroller.dashboardURL` | string | Tekton dashboard URL | `""` |
 | `tektoncontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |

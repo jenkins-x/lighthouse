@@ -1,0 +1,48 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "strobe.name" . }}
+  labels:
+    app: {{ template "strobe.name" . }}
+spec:
+  concurrencyPolicy: {{ .Values.strobe.concurrencyPolicy }}
+  failedJobsHistoryLimit: {{ .Values.strobe.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ template "strobe.name" . }}
+            release: {{ .Release.Name }}
+        spec:
+          volumes:
+            - name: config
+              configMap:
+                name: config
+          containers:
+            - image: {{ tpl .Values.strobe.image.repository . }}:{{ tpl .Values.strobe.image.tag . }}
+              imagePullPolicy: {{ tpl .Values.strobe.image.pullPolicy . }}
+              args:
+                - sync
+                - --namespace={{ .Release.Namespace }}
+                - --config-path=/etc/config/config.yaml
+                - --service-account={{ template "strobe.name" . }}
+                - --tag={{ tpl .Values.strobe.image.tag . }}
+              name: {{ template "strobe.name" . }}
+              resources: {}
+              terminationMessagePath: /dev/termination-log
+              terminationMessagePolicy: File
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/config
+                  readOnly: true
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          serviceAccountName: {{ template "strobe.name" . }}
+  successfulJobsHistoryLimit: {{ .Values.strobe.successfulJobsHistoryLimit }}
+  schedule: {{ .Values.strobe.schedule | quote }}
+  startingDeadlineSeconds: 4000
+  suspend: false

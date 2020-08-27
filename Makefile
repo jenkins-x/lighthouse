@@ -8,12 +8,14 @@ KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
 GCJOBS_EXECUTABLE := gc-jobs
 TEKTONCONTROLLER_EXECUTABLE := lighthouse-tekton-controller
+STROBE_EXECUTABLE := strobe
 
 WEBHOOKS_MAIN_SRC_FILE=cmd/webhooks/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
 GCJOBS_MAIN_SRC_FILE=cmd/gc/main.go
 TEKTONCONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
+STROBE_MAIN_SRC_FILE=cmd/strobe/main.go
 
 DOCKER_REGISTRY := jenkinsxio
 DOCKER_IMAGE_NAME := lighthouse
@@ -76,7 +78,7 @@ clean:
 	rm -rf bin build release
 
 .PHONY: build
-build: webhooks keeper foghorn tekton-controller gc-jobs
+build: webhooks keeper foghorn tekton-controller gc-jobs strobe
 
 .PHONY: webhooks
 webhooks:
@@ -98,6 +100,10 @@ gc-jobs:
 tekton-controller:
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTONCONTROLLER_EXECUTABLE) $(TEKTONCONTROLLER_MAIN_SRC_FILE)
 
+.PHONY: strobe
+strobe:
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(STROBE_EXECUTABLE) $(STROBE_MAIN_SRC_FILE)
+
 .PHONY: compile-e2e
 compile-e2e:
 	$(GOTEST) -run=nope -failfast -short -ldflags "$(GO_LDFLAGS)" ./test/...
@@ -112,7 +118,7 @@ mod: build
 	$(GO) mod tidy
 
 .PHONY: build-linux
-build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux
+build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-strobe-linux
 
 .PHONY: build-webhooks-linux
 build-webhooks-linux:
@@ -133,6 +139,10 @@ build-gc-jobs-linux:
 .PHONY: build-tekton-controller-linux
 build-tekton-controller-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTONCONTROLLER_EXECUTABLE) $(TEKTONCONTROLLER_MAIN_SRC_FILE)
+
+.PHONY: build-strobe-linux
+build-strobe-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(STROBE_EXECUTABLE) $(STROBE_MAIN_SRC_FILE)
 
 .PHONY: container
 container: 
