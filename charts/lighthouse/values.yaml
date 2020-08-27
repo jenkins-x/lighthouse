@@ -1,16 +1,37 @@
 git:
+  # git.kind -- Git SCM provider (`github`, `gitlab`, `stash`)
   kind: github
-  name: github
+
+  # git.server -- Git server URL
   server: ""
 
+# lighthouseJobNamespace -- Namespace where `LighthouseJob`s and `Pod`s are created
+# @default -- Deployment namespace
 lighthouseJobNamespace: ""
 
 githubApp:
+  # githubApp.enabled -- Enables GitHub app authentication
   enabled: false
+
+  # githubApp.username -- GitHub app user name 
   username:  "jenkins-x[bot]"
+
+# user -- Git user name (used when GitHub app authentication is not enabled)
+user: ""
+
+# oauthToken -- Git token (used when GitHub app authentication is not enabled)
+oauthToken: ""
 
 # hmacToken -- Secret used for webhooks
 hmacToken: ""
+
+# logFormat -- Log format
+logFormat: "json"
+
+cluster:
+  crds:
+    # cluster.crds.create -- Create custom resource definitions
+    create: true
 
 image:
   # image.parentRepository -- Docker registry to pull images from
@@ -27,15 +48,30 @@ env:
   JX_DEFAULT_IMAGE: ""
 
 gcJobs:
+  # gcJobs.maxAge -- Max age from which `LighthouseJob`s will be deleted
   maxAge: 168h
-  image:
-    repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
-    tag: "{{ .Values.image.tag }}"
-    pullPolicy: "{{ .Values.image.pullPolicy }}"
+
+  # gcJobs.schedule -- Cron expression to periodically delete `LighthouseJob`s
   schedule: "0/30 * * * *"
+
+  # gcJobs.failedJobsHistoryLimit -- Drives the failed jobs history limit
   failedJobsHistoryLimit: 1
+
+  # gcJobs.successfulJobsHistoryLimit -- Drives the successful jobs history limit
   successfulJobsHistoryLimit: 3
+
+  # gcJobs.concurrencyPolicy -- Drives the job's concurrency policy
   concurrencyPolicy: Forbid
+
+  image:
+    # gcJobs.image.repository -- Template for computing the gc job docker image repository
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
+
+    # gcJobs.image.tag -- Template for computing the gc job docker image tag
+    tag: "{{ .Values.image.tag }}"
+
+    # gcJobs.image.pullPolicy -- Template for computing the gc job docker image pull policy
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
 
 webhooks:
   # webhooks.replicaCount -- Number of replicas
@@ -45,14 +81,22 @@ webhooks:
   terminationGracePeriodSeconds: 180
 
   image:
+    # webhooks.image.repository -- Template for computing the webhooks controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-webhooks"
+
+    # webhooks.image.tag -- Template for computing the webhooks controller docker image tag
     tag: "{{ .Values.image.tag }}"
+
+    # webhooks.image.pullPolicy -- Template for computing the webhooks controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
+
+  # webhooks.service -- Service settings for the webhooks controller
   service:
     name: hook
     type: ClusterIP
     externalPort: 80
     internalPort: 8080
+    annotations: {}
 
   resources:
     # webhooks.resources.limits -- Resource limits applied to the webhooks pods
@@ -65,13 +109,18 @@ webhooks:
       cpu: 80m
       memory: 128Mi
 
+  # webhooks.probe -- Liveness and readiness probes settings
   probe:
     path: /
+
+  # webhooks.livenessProbe -- Liveness probe configuration
   livenessProbe:
     initialDelaySeconds: 60
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 1
+
+  # webhooks.readinessProbe -- Readiness probe configuration
   readinessProbe:
     periodSeconds: 10
     successThreshold: 1
@@ -85,8 +134,13 @@ foghorn:
   terminationGracePeriodSeconds: 180
 
   image:
+    # foghorn.image.repository -- Template for computing the foghorn controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-foghorn"
+
+    # foghorn.image.tag -- Template for computing the foghorn controller docker image tag
     tag: "{{ .Values.image.tag }}"
+
+    # foghorn.image.pullPolicy -- Template for computing the foghorn controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
 
   resources:
@@ -99,8 +153,6 @@ foghorn:
     requests:
       cpu: 80m
       memory: 128Mi
-
-  reportURLBase: ""
 
 tektoncontroller:
   # tektoncontroller.dashboardURL -- Tekton dashboard URL
@@ -119,7 +171,7 @@ tektoncontroller:
     # tektoncontroller.image.tag -- Template for computing the tekton controller docker image tag
     tag: "{{ .Values.image.tag }}"
 
-    # tektoncontroller.image.repository -- Template for computing the tekton controller docker image pull policy
+    # tektoncontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
 
   resources:
@@ -133,11 +185,12 @@ tektoncontroller:
       cpu: 80m
       memory: 128Mi
 
+  # tektoncontroller.service -- Service settings for the tekton controller
   service:
-    # tektoncontroller.resoserviceurces.annotations -- Annotations to be applied of tekton controller service
     annotations: {}
 
 keeper:
+  # keeper.statusContextLabel -- Label used to report status to git provider
   statusContextLabel: "Lighthouse Merge Status"
 
   # keeper.replicaCount -- Number of replicas
@@ -146,21 +199,20 @@ keeper:
   # keeper.terminationGracePeriodSeconds -- Termination grace period for keeper pods
   terminationGracePeriodSeconds: 30
 
-  livenessProbe:
-    initialDelaySeconds: 120
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 1
-  readinessProbe:
-    periodSeconds: 10
-    successThreshold: 1
-    timeoutSeconds: 1
-  probe:
-    path: /
   image:
+    # keeper.image.repository -- Template for computing the keeper controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-keeper"
+
+    # keeper.image.tag -- Template for computing the keeper controller docker image tag
     tag: "{{ .Values.image.tag }}"
+
   imagePullPolicy: IfNotPresent
+
+  # keeper.service -- Service settings for the webhooks controller
+  service:
+    type: ClusterIP
+    externalPort: 80
+    internalPort: 8888
 
   resources:
     # keeper.resources.limits -- Resource limits applied to the keeper pods
@@ -173,26 +225,26 @@ keeper:
       cpu: 100m
       memory: 128Mi
 
-  service:
-    type: ClusterIP
-    externalPort: 80
-    internalPort: 8888
+  # keeper.probe -- Liveness and readiness probes settings
+  probe:
+    path: /
+
+  # keeper.livenessProbe -- Liveness probe configuration
+  livenessProbe:
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  # keeper.readinessProbe -- Readiness probe configuration
+  readinessProbe:
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
   datadog:
+    # keeper.datadog.enabled -- Enables datadog
     enabled: "true"
-
-vault:
-  enabled: false
-
-clusterName: ""
-
-user: ""
-
-logFormat: "json"
-
-cluster:
-  crds:
-    # cluster.crds.create -- Create custom resource definitions
-    create: true
 
 engines:
   # engines.jx -- Enables the jx engine
@@ -201,11 +253,15 @@ engines:
   # engines.tekton -- Enables the tekton engine
   tekton: false
 
+
+# createIngress -- Enables ingress creation
 createIngress: false
 
+# domainName -- Domain name used to create ingresses
 domainName: ""
 
 hook:
+  # hook.ingress -- Hook ingress settings
   ingress:
     class: nginx
     annotations:
@@ -213,9 +269,16 @@ hook:
       secretName: ""
 
 configMaps:
+  # configMaps.create -- Enables creation of `config.yaml` and `plugins.yaml` config maps
   create: false
+
+  # configMaps.config -- Raw `config.yaml` content
   config: null
+
+  # configMaps.plugins -- Raw `plugins.yaml` content
   plugins: null
+
+  # configMaps.configUpdater -- Settings used to configure the `config-updater` plugin
   configUpdater:
     orgAndRepo: ""
     path: ""
