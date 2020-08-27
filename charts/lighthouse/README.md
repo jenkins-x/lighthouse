@@ -98,15 +98,19 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `lighthouseJobNamespace` | string | Namespace where `LighthouseJob`s and `Pod`s are created | Deployment namespace |
 | `logFormat` | string | Log format | `"json"` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
+| `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
 | `tektoncontroller.dashboardURL` | string | Tekton dashboard URL | `""` |
 | `tektoncontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `tektoncontroller.image.repository` | string | Template for computing the tekton controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"` |
 | `tektoncontroller.image.tag` | string | Template for computing the tekton controller docker image tag | `"{{ .Values.image.tag }}"` |
+| `tektoncontroller.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the tekton controller pods | `{}` |
+| `tektoncontroller.podAnnotations` | object | Annotations applied to the tekton controller pods | `{}` |
 | `tektoncontroller.replicaCount` | int | Number of replicas | `1` |
 | `tektoncontroller.resources.limits` | object | Resource limits applied to the tekton controller pods | `{"cpu":"100m","memory":"256Mi"}` |
 | `tektoncontroller.resources.requests` | object | Resource requests applied to the tekton controller pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `tektoncontroller.service` | object | Service settings for the tekton controller | `{"annotations":{}}` |
 | `tektoncontroller.terminationGracePeriodSeconds` | int | Termination grace period for tekton controller pods | `180` |
+| `tektoncontroller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods | `[]` |
 | `user` | string | Git user name (used when GitHub app authentication is not enabled) | `""` |
 | `webhooks.image.pullPolicy` | string | Template for computing the webhooks controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `webhooks.image.repository` | string | Template for computing the webhooks controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-webhooks"` |

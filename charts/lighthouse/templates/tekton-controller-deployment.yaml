@@ -18,48 +18,34 @@ spec:
       labels:
         draft: {{ default "draft-app" .Values.draft }}
         app: {{ template "tektoncontroller.name" . }}
-{{- if .Values.podAnnotations }}
       annotations:
-{{ toYaml .Values.podAnnotations | indent 8 }}
-{{- end }}
+        {{- toYaml .Values.tektoncontroller.podAnnotations | nindent 8 }}
     spec:
       serviceAccountName: {{ template "tektoncontroller.name" . }}
       containers:
       - name: {{ template "tektoncontroller.name" . }}
-        image: {{ tpl .Values.tektoncontroller.image.repository . }}:{{ tpl .Values.tektoncontroller.image.tag . }}
+        image: {{ printf "%s:%s" (tpl .Values.tektoncontroller.image.repository .) (tpl .Values.tektoncontroller.image.tag .) }}
         imagePullPolicy: {{ tpl .Values.tektoncontroller.image.pullPolicy . }}
         args:
-          - "--namespace={{ .Release.Namespace }}"
-{{- if ne .Values.tektoncontroller.dashboardURL "" }}
-          - "--dashboard-url={{ .Values.tektoncontroller.dashboardURL}}"
-{{- end }}
+          - --namespace={{ .Release.Namespace }}
+          - --dashboard-url={{ .Values.tektoncontroller.dashboardURL }}
         ports:
           - name: metrics
             containerPort: 8080
         env:
           - name: "LOGRUS_FORMAT"
             value: "{{ .Values.logFormat }}"
-{{- if hasKey .Values "env" }}
-{{- range $pkey, $pval := .Values.env }}
+          {{- range $pkey, $pval := .Values.env }}
           - name: {{ $pkey }}
             value: {{ quote $pval }}
-{{- end }}
-{{- end }}
-{{- with .Values.tektoncontroller.resources }}
+          {{- end }}
         resources:
-{{ toYaml . | indent 12 }}
-{{- end }}
+          {{- toYaml .Values.tektoncontroller.resources | nindent 12 }}
       terminationGracePeriodSeconds: {{ .Values.tektoncontroller.terminationGracePeriodSeconds }}
-{{- with .Values.tektoncontroller.nodeSelector }}
       nodeSelector:
-{{ toYaml . | indent 8 }}
-{{- end }}
-{{- with .Values.tektoncontroller.affinity }}
+        {{- toYaml .Values.tektoncontroller.nodeSelector | nindent 8 }}
       affinity:
-{{ toYaml . | indent 8 }}
-{{- end }}
-{{- with .Values.tektoncontroller.tolerations }}
+        {{- toYaml .Values.tektoncontroller.affinity | nindent 8 }}
       tolerations:
-{{ toYaml . | indent 8 }}
-{{- end }}
+        {{- toYaml .Values.tektoncontroller.tolerations | nindent 8 }}
 {{- end }}
