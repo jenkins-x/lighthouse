@@ -53,8 +53,6 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `configMaps.configUpdater` | object | Settings used to configure the `config-updater` plugin | `{"orgAndRepo":"","path":""}` |
 | `configMaps.create` | bool | Enables creation of `config.yaml` and `plugins.yaml` config maps | `false` |
 | `configMaps.plugins` | string | Raw `plugins.yaml` content | `nil` |
-| `createIngress` | bool | Enables ingress creation | `false` |
-| `domainName` | string | Domain name used to create ingresses | `""` |
 | `engines.jx` | bool | Enables the jx engine | `true` |
 | `engines.tekton` | bool | Enables the tekton engine | `false` |
 | `env` | object | Environment variables | `{"JX_DEFAULT_IMAGE":""}` |
@@ -78,7 +76,6 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `githubApp.enabled` | bool | Enables GitHub app authentication | `false` |
 | `githubApp.username` | string | GitHub app user name  | `"jenkins-x[bot]"` |
 | `hmacToken` | string | Secret used for webhooks | `""` |
-| `hook.ingress` | object | Hook ingress settings | `{"annotations":null,"class":"nginx","tls":{"secretName":""}}` |
 | `image.parentRepository` | string | Docker registry to pull images from | `"gcr.io/jenkinsxio"` |
 | `image.pullPolicy` | string | Image pull policy | `"IfNotPresent"` |
 | `image.tag` | string | Docker images tag | `"0.0.750"` |
@@ -115,13 +112,18 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `webhooks.image.pullPolicy` | string | Template for computing the webhooks controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `webhooks.image.repository` | string | Template for computing the webhooks controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-webhooks"` |
 | `webhooks.image.tag` | string | Template for computing the webhooks controller docker image tag | `"{{ .Values.image.tag }}"` |
+| `webhooks.ingress.annotations` | object | Webhooks ingress annotations | `{}` |
+| `webhooks.ingress.enabled` | bool | Enable webhooks ingress | `false` |
+| `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
+| `webhooks.ingressName` | string | Allows overriding the ingress name, this is here for compatibility reasons and a regular user should not need it | `nil` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `webhooks.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.replicaCount` | int | Number of replicas | `2` |
 | `webhooks.resources.limits` | object | Resource limits applied to the webhooks pods | `{"cpu":"100m","memory":"256Mi"}` |
 | `webhooks.resources.requests` | object | Resource requests applied to the webhooks pods | `{"cpu":"80m","memory":"128Mi"}` |
-| `webhooks.service` | object | Service settings for the webhooks controller | `{"annotations":{},"externalPort":80,"internalPort":8080,"name":"hook","type":"ClusterIP"}` |
+| `webhooks.service` | object | Service settings for the webhooks controller | `{"annotations":{},"externalPort":80,"internalPort":8080,"type":"ClusterIP"}` |
+| `webhooks.serviceName` | string | Allows overriding the service name, this is here for compatibility reasons, regular users should clear this out | `"hook"` |
 | `webhooks.terminationGracePeriodSeconds` | int | Termination grace period for webhooks pods | `180` |
 
 You can look directly at the [values.yaml](./values.yaml) file to look at the options and their default values.
