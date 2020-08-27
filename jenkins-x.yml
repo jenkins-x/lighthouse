@@ -45,6 +45,7 @@ pipelineConfig:
             args:
             - check
             - generate-client
+            - crd-manifests
             - docs
             - verify-code-unchanged
             dir: /workspace/source

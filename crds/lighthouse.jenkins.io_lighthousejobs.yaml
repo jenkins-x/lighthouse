@@ -5286,6 +5286,13 @@ spec:
                         type: boolean
                       hostNetwork:
                         type: boolean
+                      imagePullSecrets:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                          type: object
+                        type: array
                       nodeSelector:
                         additionalProperties:
                           type: string
@@ -6318,6 +6325,13 @@ spec:
                               type: boolean
                             hostNetwork:
                               type: boolean
+                            imagePullSecrets:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                type: object
+                              type: array
                             nodeSelector:
                               additionalProperties:
                                 type: string

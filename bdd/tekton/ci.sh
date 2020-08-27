@@ -86,7 +86,7 @@ kubectl create namespace lh-test
 kubectl config set-context --current --namespace=lh-test
 
 # Download the Tekton v0.14.2 release YAML, switch the namespace in it, and apply it.
-curl https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.14.2/release.yaml | sed -E "s/namespace\: tekton-pipelines/namespace: lh-test/" > install-tekton.yml
+curl https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.15.2/release.yaml | sed -E "s/namespace\: tekton-pipelines/namespace: lh-test/" > install-tekton.yml
 kubectl apply -f install-tekton.yml
 
 # HMAC token is just a random 42 byte hex string we'll be using in Lighthouse and the webhook
