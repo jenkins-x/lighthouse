@@ -49,96 +49,75 @@ Current chart version is `0.1.0-SNAPSHOT`
 | Key | Type | Description | Default |
 |-----|------|-------------|---------|
 | `cluster.crds.create` | bool | Create custom resource definitions | `true` |
-| `clusterName` | string |  | `""` |
-| `configMaps.config` | string |  | `nil` |
-| `configMaps.configUpdater.orgAndRepo` | string |  | `""` |
-| `configMaps.configUpdater.path` | string |  | `""` |
-| `configMaps.create` | bool |  | `false` |
-| `configMaps.plugins` | string |  | `nil` |
-| `createIngress` | bool |  | `false` |
-| `domainName` | string |  | `""` |
+| `configMaps.config` | string | Raw `config.yaml` content | `nil` |
+| `configMaps.configUpdater` | object | Settings used to configure the `config-updater` plugin | `{"orgAndRepo":"","path":""}` |
+| `configMaps.create` | bool | Enables creation of `config.yaml` and `plugins.yaml` config maps | `false` |
+| `configMaps.plugins` | string | Raw `plugins.yaml` content | `nil` |
+| `createIngress` | bool | Enables ingress creation | `false` |
+| `domainName` | string | Domain name used to create ingresses | `""` |
 | `engines.jx` | bool | Enables the jx engine | `true` |
 | `engines.tekton` | bool | Enables the tekton engine | `false` |
 | `env` | object | Environment variables | `{"JX_DEFAULT_IMAGE":""}` |
-| `foghorn.image.pullPolicy` | string |  | `"{{ .Values.image.pullPolicy }}"` |
-| `foghorn.image.repository` | string |  | `"{{ .Values.image.parentRepository }}/lighthouse-foghorn"` |
-| `foghorn.image.tag` | string |  | `"{{ .Values.image.tag }}"` |
+| `foghorn.image.pullPolicy` | string | Template for computing the foghorn controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `foghorn.image.repository` | string | Template for computing the foghorn controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-foghorn"` |
+| `foghorn.image.tag` | string | Template for computing the foghorn controller docker image tag | `"{{ .Values.image.tag }}"` |
 | `foghorn.replicaCount` | int | Number of replicas | `1` |
-| `foghorn.reportURLBase` | string |  | `""` |
 | `foghorn.resources.limits` | object | Resource limits applied to the foghorn pods | `{"cpu":"100m","memory":"256Mi"}` |
 | `foghorn.resources.requests` | object | Resource requests applied to the foghorn pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `foghorn.terminationGracePeriodSeconds` | int | Termination grace period for foghorn pods | `180` |
-| `gcJobs.concurrencyPolicy` | string |  | `"Forbid"` |
-| `gcJobs.failedJobsHistoryLimit` | int |  | `1` |
-| `gcJobs.image.pullPolicy` | string |  | `"{{ .Values.image.pullPolicy }}"` |
-| `gcJobs.image.repository` | string |  | `"{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"` |
-| `gcJobs.image.tag` | string |  | `"{{ .Values.image.tag }}"` |
-| `gcJobs.maxAge` | string |  | `"168h"` |
-| `gcJobs.schedule` | string |  | `"0/30 * * * *"` |
-| `gcJobs.successfulJobsHistoryLimit` | int |  | `3` |
-| `git.kind` | string |  | `"github"` |
-| `git.name` | string |  | `"github"` |
-| `git.server` | string |  | `""` |
-| `githubApp.enabled` | bool |  | `false` |
-| `githubApp.username` | string |  | `"jenkins-x[bot]"` |
+| `gcJobs.concurrencyPolicy` | string | Drives the job's concurrency policy | `"Forbid"` |
+| `gcJobs.failedJobsHistoryLimit` | int | Drives the failed jobs history limit | `1` |
+| `gcJobs.image.pullPolicy` | string | Template for computing the gc job docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `gcJobs.image.repository` | string | Template for computing the gc job docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"` |
+| `gcJobs.image.tag` | string | Template for computing the gc job docker image tag | `"{{ .Values.image.tag }}"` |
+| `gcJobs.maxAge` | string | Max age from which `LighthouseJob`s will be deleted | `"168h"` |
+| `gcJobs.schedule` | string | Cron expression to periodically delete `LighthouseJob`s | `"0/30 * * * *"` |
+| `gcJobs.successfulJobsHistoryLimit` | int | Drives the successful jobs history limit | `3` |
+| `git.kind` | string | Git SCM provider (`github`, `gitlab`, `stash`) | `"github"` |
+| `git.server` | string | Git server URL | `""` |
+| `githubApp.enabled` | bool | Enables GitHub app authentication | `false` |
+| `githubApp.username` | string | GitHub app user name  | `"jenkins-x[bot]"` |
 | `hmacToken` | string | Secret used for webhooks | `""` |
-| `hook.ingress.annotations` | string |  | `nil` |
-| `hook.ingress.class` | string |  | `"nginx"` |
-| `hook.ingress.tls.secretName` | string |  | `""` |
+| `hook.ingress` | object | Hook ingress settings | `{"annotations":null,"class":"nginx","tls":{"secretName":""}}` |
 | `image.parentRepository` | string | Docker registry to pull images from | `"gcr.io/jenkinsxio"` |
 | `image.pullPolicy` | string | Image pull policy | `"IfNotPresent"` |
 | `image.tag` | string | Docker images tag | `"0.0.750"` |
-| `keeper.datadog.enabled` | string |  | `"true"` |
-| `keeper.image.repository` | string |  | `"{{ .Values.image.parentRepository }}/lighthouse-keeper"` |
-| `keeper.image.tag` | string |  | `"{{ .Values.image.tag }}"` |
+| `keeper.datadog.enabled` | string | Enables datadog | `"true"` |
+| `keeper.image.repository` | string | Template for computing the keeper controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-keeper"` |
+| `keeper.image.tag` | string | Template for computing the keeper controller docker image tag | `"{{ .Values.image.tag }}"` |
 | `keeper.imagePullPolicy` | string |  | `"IfNotPresent"` |
-| `keeper.livenessProbe.initialDelaySeconds` | int |  | `120` |
-| `keeper.livenessProbe.periodSeconds` | int |  | `10` |
-| `keeper.livenessProbe.successThreshold` | int |  | `1` |
-| `keeper.livenessProbe.timeoutSeconds` | int |  | `1` |
-| `keeper.probe.path` | string |  | `"/"` |
-| `keeper.readinessProbe.periodSeconds` | int |  | `10` |
-| `keeper.readinessProbe.successThreshold` | int |  | `1` |
-| `keeper.readinessProbe.timeoutSeconds` | int |  | `1` |
+| `keeper.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":120,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
+| `keeper.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
+| `keeper.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `keeper.replicaCount` | int | Number of replicas | `1` |
 | `keeper.resources.limits` | object | Resource limits applied to the keeper pods | `{"cpu":"400m","memory":"512Mi"}` |
 | `keeper.resources.requests` | object | Resource requests applied to the keeper pods | `{"cpu":"100m","memory":"128Mi"}` |
-| `keeper.service.externalPort` | int |  | `80` |
-| `keeper.service.internalPort` | int |  | `8888` |
-| `keeper.service.type` | string |  | `"ClusterIP"` |
-| `keeper.statusContextLabel` | string |  | `"Lighthouse Merge Status"` |
+| `keeper.service` | object | Service settings for the webhooks controller | `{"externalPort":80,"internalPort":8888,"type":"ClusterIP"}` |
+| `keeper.statusContextLabel` | string | Label used to report status to git provider | `"Lighthouse Merge Status"` |
 | `keeper.terminationGracePeriodSeconds` | int | Termination grace period for keeper pods | `30` |
-| `lighthouseJobNamespace` | string |  | `""` |
-| `logFormat` | string |  | `"json"` |
+| `lighthouseJobNamespace` | string | Namespace where `LighthouseJob`s and `Pod`s are created | Deployment namespace |
+| `logFormat` | string | Log format | `"json"` |
+| `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
 | `tektoncontroller.dashboardURL` | string | Tekton dashboard URL | `""` |
-| `tektoncontroller.image.pullPolicy` | string |  | `"{{ .Values.image.pullPolicy }}"` |
-| `tektoncontroller.image.repository` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"` |
+| `tektoncontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `tektoncontroller.image.repository` | string | Template for computing the tekton controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"` |
 | `tektoncontroller.image.tag` | string | Template for computing the tekton controller docker image tag | `"{{ .Values.image.tag }}"` |
 | `tektoncontroller.replicaCount` | int | Number of replicas | `1` |
 | `tektoncontroller.resources.limits` | object | Resource limits applied to the tekton controller pods | `{"cpu":"100m","memory":"256Mi"}` |
 | `tektoncontroller.resources.requests` | object | Resource requests applied to the tekton controller pods | `{"cpu":"80m","memory":"128Mi"}` |
-| `tektoncontroller.service.annotations` | object |  | `{}` |
+| `tektoncontroller.service` | object | Service settings for the tekton controller | `{"annotations":{}}` |
 | `tektoncontroller.terminationGracePeriodSeconds` | int | Termination grace period for tekton controller pods | `180` |
-| `user` | string |  | `""` |
-| `vault.enabled` | bool |  | `false` |
-| `webhooks.image.pullPolicy` | string |  | `"{{ .Values.image.pullPolicy }}"` |
-| `webhooks.image.repository` | string |  | `"{{ .Values.image.parentRepository }}/lighthouse-webhooks"` |
-| `webhooks.image.tag` | string |  | `"{{ .Values.image.tag }}"` |
-| `webhooks.livenessProbe.initialDelaySeconds` | int |  | `60` |
-| `webhooks.livenessProbe.periodSeconds` | int |  | `10` |
-| `webhooks.livenessProbe.successThreshold` | int |  | `1` |
-| `webhooks.livenessProbe.timeoutSeconds` | int |  | `1` |
-| `webhooks.probe.path` | string |  | `"/"` |
-| `webhooks.readinessProbe.periodSeconds` | int |  | `10` |
-| `webhooks.readinessProbe.successThreshold` | int |  | `1` |
-| `webhooks.readinessProbe.timeoutSeconds` | int |  | `1` |
+| `user` | string | Git user name (used when GitHub app authentication is not enabled) | `""` |
+| `webhooks.image.pullPolicy` | string | Template for computing the webhooks controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `webhooks.image.repository` | string | Template for computing the webhooks controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-webhooks"` |
+| `webhooks.image.tag` | string | Template for computing the webhooks controller docker image tag | `"{{ .Values.image.tag }}"` |
+| `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
+| `webhooks.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
+| `webhooks.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.replicaCount` | int | Number of replicas | `2` |
 | `webhooks.resources.limits` | object | Resource limits applied to the webhooks pods | `{"cpu":"100m","memory":"256Mi"}` |
 | `webhooks.resources.requests` | object | Resource requests applied to the webhooks pods | `{"cpu":"80m","memory":"128Mi"}` |
-| `webhooks.service.externalPort` | int |  | `80` |
-| `webhooks.service.internalPort` | int |  | `8080` |
-| `webhooks.service.name` | string |  | `"hook"` |
-| `webhooks.service.type` | string |  | `"ClusterIP"` |
+| `webhooks.service` | object | Service settings for the webhooks controller | `{"annotations":{},"externalPort":80,"internalPort":8080,"name":"hook","type":"ClusterIP"}` |
 | `webhooks.terminationGracePeriodSeconds` | int | Termination grace period for webhooks pods | `180` |
 
 You can look directly at the [values.yaml](./values.yaml) file to look at the options and their default values.
