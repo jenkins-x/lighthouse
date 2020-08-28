@@ -128,9 +128,6 @@ webhooks:
     successThreshold: 1
     timeoutSeconds: 1
 
-  # webhooks.ingressName -- (string) Allows overriding the ingress name, this is here for compatibility reasons and a regular user should not need it
-  ingressName: null
-
   ingress:
     # webhooks.ingress.enabled -- Enable webhooks ingress
     enabled: false
