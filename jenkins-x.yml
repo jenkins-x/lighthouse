@@ -196,23 +196,6 @@ pipelineConfig:
                 - release
                 dir: /workspace/source/charts/lighthouse
 
-              - name: update-jx
-                image: gcr.io/jenkinsxio/builder-go
-                command: jx
-                args:
-                  - step
-                  - create
-                  - pr
-                  - go
-                  - --name
-                  - github.com/jenkins-x/lighthouse
-                  - --version
-                  - $VERSION
-                  - --build
-                  - "\"make mod\""
-                  - --repo
-                  - https://github.com/jenkins-x/jx.git
-
               - name: update-lighthouse-jx
                 image: gcr.io/jenkinsxio/builder-go
                 command: jx
