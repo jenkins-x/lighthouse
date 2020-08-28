@@ -2,7 +2,10 @@
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: {{ default (include "webhooks.name" .) .Values.webhooks.ingressName }}
+  name: {{ template "webhooks.name" . }}
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    app: {{ template "webhooks.name" . }}
   annotations:
     {{- toYaml .Values.webhooks.ingress.annotations | nindent 4 }}
 spec:

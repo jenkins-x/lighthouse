@@ -115,7 +115,6 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `webhooks.ingress.annotations` | object | Webhooks ingress annotations | `{}` |
 | `webhooks.ingress.enabled` | bool | Enable webhooks ingress | `false` |
 | `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
-| `webhooks.ingressName` | string | Allows overriding the ingress name, this is here for compatibility reasons and a regular user should not need it | `nil` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `webhooks.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |

@@ -30,4 +30,3 @@ webhooks:
 
   # we need this for the tests
   serviceName: hook
-  ingressName: hook
