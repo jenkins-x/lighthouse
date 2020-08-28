@@ -1,0 +1,136 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: lh-release-pipeline
+spec:
+  params:
+    - name: version
+      type: string
+      description: The version to release, without a leading "v"
+    - name: previous-version
+      type: string
+      description: The previous version, without a leading "v"
+    - name: revision
+      type: string
+      description: The revision to tag and release
+  workspaces:
+    - name: source
+  tasks:
+    - name: fetch-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: source
+      params:
+        - name: url
+          value: "https://github.com/jenkins-x/lighthouse.git"
+        - name: revision
+          value: $(params.revision)
+        - name: subdirectory
+          value: ""
+        - name: depth
+          value: "0"
+    - name: build-binaries
+      taskRef:
+        name: lh-build-binaries
+      runAfter:
+        - fetch-repo
+      workspaces:
+        - name: source
+          workspace: source
+    - name: build-and-push-webhooks
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-webhooks:$(params.version)
+        - name: DOCKERFILE
+          value: ./Dockerfile.webhooks
+    - name: build-and-push-foghorn
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-foghorn:$(params.version)
+        - name: DOCKERFILE
+          value: ./Dockerfile.foghorn
+    - name: build-and-push-keeper
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-keeper:$(params.version)
+        - name: DOCKERFILE
+          value: ./Dockerfile.keeper
+    - name: build-and-push-tekton-controller
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-tekton-controller:$(params.version)
+        - name: DOCKERFILE
+          value: ./Dockerfile.tektoncontroller
+    - name: build-and-push-gcjobs
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-gc-jobs:$(params.version)
+        - name: DOCKERFILE
+          value: ./Dockerfile.gcJobs
+    - name: helm-release
+      runAfter:
+        - build-and-push-gcjobs
+        - build-and-push-webhooks
+        - build-and-push-keeper
+        - build-and-push-foghorn
+        - build-and-push-tekton-controller
+      taskRef:
+        name: lh-helm-release
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: version
+          value: $(params.version)
+    - name: github-release
+      runAfter:
+        - helm-release
+      taskRef:
+        name: create-github-release
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: revision
+          value: $(params.revision)
+        - name: release-tag
+          value: "v$(params.version)"
+        - name: previous-release-tag
+          value: "v$(params.previous-version)"

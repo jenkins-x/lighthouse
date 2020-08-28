@@ -16,4 +16,5 @@ for lh_pod in $(kubectl get pod -l app=lighthouse-webhooks -o jsonpath='{.items[
   kubectl logs --tail=-1 "${lh_pod}" > extra-logs/lh.${lh_cnt}.log
 done
 
-jx step stash -c lighthouse-tests -p "extra-logs/*.log" --bucket-url gs://jx-prod-logs
+# TODO: Create a bucket, make sure our GCP creds can write to it
+gsutil rsync -d -r "${PWD}/extra-logs" "gs://BUCKET_TO_BE_DETERMINED/lighthouse-pr-logs/PR-${PR_NUMBER}/${CONTEXT}/${BUILD_ID}/"

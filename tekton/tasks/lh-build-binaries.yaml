@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lh-build-binaries
+spec:
+  workspaces:
+    - name: source
+      mountPath: /workspace/src/github.com/jenkins-x/lighthouse
+  steps:
+    - name: make-binaries
+      resources:
+        requests:
+          cpu: 1
+          memory: 2048Mi
+        limits:
+          cpu: 4
+          memory: 6144Mi
+      workingDir: $(workspaces.source.path)
+      image: golang:1.13.8
+      command:
+        - make
+      args:
+        - build-linux
+      env:
+        - name: GOPATH
+          value: /workspace
+        - name: GO111MODULE
+          value: "on"

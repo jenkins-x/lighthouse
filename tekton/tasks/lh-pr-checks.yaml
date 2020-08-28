@@ -1,0 +1,56 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lh-pr-checks
+spec:
+  workspaces:
+    - name: source
+      mountPath: /workspace/src/github.com/jenkins-x/lighthouse
+  stepTemplate:
+    env:
+      - name: GOPATH
+        value: /workspace
+      - name: GO111MODULE
+        value: "on"
+    resources:
+      requests:
+        cpu: 1
+        memory: 2048Mi
+      limits:
+        cpu: 4
+        memory: 6144Mi
+
+  steps:
+    - name: init-helm
+      workingDir: $(workspaces.source.path)
+      image: alpine/helm:2.12.3
+      command:
+        - helm
+      args:
+        - init
+        - --client-only
+    - name: helm-lint
+      image: gcr.io/jenkinsxio/builder-go:2.1.113-737
+      command:
+        - make
+      args:
+        - build
+      workingDir: $(workspaces.source.path)/charts/lighthouse
+    - name: lint-checks
+      image: gcr.io/jenkinsxio/builder-go:2.1.113-737
+      command:
+        - make
+      args:
+        - check
+        - generate-client
+        - docs
+        - verify-code-unchanged
+      workingDir: $(workspaces.source.path)
+    - name: unit-test-and-build
+      image: gcr.io/jenkinsxio/builder-go:2.1.113-737
+      command:
+        - make
+      args:
+        - build-linux
+        - test
+      workingDir: $(workspaces.source.path)

@@ -1,0 +1,34 @@
+# This pipeline will be run on merges to master if there are changes in the "tekton/pipelines" or "tekton/tasks"
+# directories.
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: lh-update-tekton-resources-pipeline
+spec:
+  workspaces:
+    - name: source
+  tasks:
+    - name: fetch-repo
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: source
+      params:
+        - name: url
+          value: "https://github.com/jenkins-x/lighthouse.git"
+        - name: revision
+          value: master
+        - name: subdirectory
+          value: ""
+        - name: depth
+          value: "0"
+    - name: update-resources
+      taskRef:
+        name: lh-update-tekton-resources
+      runAfter:
+        - fetch-repo
+      workspaces:
+        - name: source
+          workspace: source

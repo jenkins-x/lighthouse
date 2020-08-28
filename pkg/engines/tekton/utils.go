@@ -22,6 +22,7 @@ import (
 
 const (
 	controllerName          = "tekton-controller"
+	contextNameParam        = "CONTEXT_NAME"
 	gitCloneCatalogTaskName = "git-clone"
 	gitCloneURLParam        = "url"
 	gitCloneRevisionParam   = "revision"
@@ -79,6 +80,10 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 	env := lj.Spec.GetEnvVars()
 	env[v1alpha1.BuildIDEnv] = buildID
 	env[v1alpha1.RepoURLEnv] = lj.Spec.Refs.CloneURI
+	env[contextNameParam] = lj.Spec.Context
+	if env[contextNameParam] == "" {
+		env[contextNameParam] = lj.Spec.Job
+	}
 	var batchedRefsVals []string
 	for _, pull := range lj.Spec.Refs.Pulls {
 		if pull.Ref != "" {

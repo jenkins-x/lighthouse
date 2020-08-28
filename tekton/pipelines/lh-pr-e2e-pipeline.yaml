@@ -1,0 +1,132 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: lh-pr-e2e-pipeline
+spec:
+  params:
+    - name: CONTEXT_NAME
+      type: string
+    - name: BUILD_ID
+      type: string
+    - name: PULL_NUMBER
+      type: string
+    - name: gitKind
+      type: string
+    - name: gitServer
+      type: string
+    - name: batch-refs
+      type: string
+  workspaces:
+    - name: source
+  tasks:
+    - name: fetch-repo
+      taskRef:
+        name: git-batch-merge
+      workspaces:
+        - name: output
+          workspace: source
+      params:
+        - name: url
+          value: "https://github.com/jenkins-x/lighthouse.git"
+        - name: batchedRefs
+          value: $(params.batch-refs)
+        - name: subdirectory
+          value: ""
+        - name: depth
+          value: "0"
+    - name: build-binaries
+      taskRef:
+        name: lh-build-binaries
+      runAfter:
+        - fetch-repo
+      workspaces:
+        - name: source
+          workspace: source
+    - name: build-and-push-webhooks
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-webhooks:0.0.0-SNAPSHOT-$(params.BUILD_ID)
+        - name: DOCKERFILE
+          value: ./Dockerfile.webhooks
+    - name: build-and-push-foghorn
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-foghorn:0.0.0-SNAPSHOT-$(params.BUILD_ID)
+        - name: DOCKERFILE
+          value: ./Dockerfile.foghorn
+    - name: build-and-push-keeper
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-keeper:0.0.0-SNAPSHOT-$(params.BUILD_ID)
+        - name: DOCKERFILE
+          value: ./Dockerfile.keeper
+    - name: build-and-push-tekton-controller
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-tekton-controller:0.0.0-SNAPSHOT-$(params.BUILD_ID)
+        - name: DOCKERFILE
+          value: ./Dockerfile.tektoncontroller
+    - name: build-and-push-gcjobs
+      taskRef:
+        name: kaniko
+      runAfter:
+        - build-binaries
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: IMAGE
+          value: gcr.io/jenkinsxio/lighthouse-gc-jobs:0.0.0-SNAPSHOT-$(params.BUILD_ID)
+        - name: DOCKERFILE
+          value: ./Dockerfile.gcJobs
+    - name: run-e2e
+      runAfter:
+        - build-and-push-gcjobs
+        - build-and-push-webhooks
+        - build-and-push-keeper
+        - build-and-push-foghorn
+        - build-and-push-tekton-controller
+      taskRef:
+        name: lh-run-e2e-tests
+      workspaces:
+        - name: source
+          workspace: source
+      params:
+        - name: context
+          value: $(params.CONTEXT_NAME)
+        - name: build_id
+          value: $(params.BUILD_ID)
+        - name: gitKind
+          value: $(params.gitKind)
+        - name: gitServer
+          value: $(params.gitServer)
+        - name: prNumber
+          value: $(params.PULL_NUMBER)

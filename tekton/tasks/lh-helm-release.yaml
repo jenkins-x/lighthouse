@@ -1,0 +1,48 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lh-pr-checks
+spec:
+  params:
+    - name: version
+      type: string
+  workspaces:
+    - name: source
+      mountPath: /workspace/src/github.com/jenkins-x/lighthouse
+
+  stepTemplate:
+    env:
+      - name: GOPATH
+        value: /workspace
+      - name: GO111MODULE
+        value: "on"
+      - name: VERSION
+        value: $(params.version)
+      - name: CHARTMUSEUM_USER
+        valueFrom:
+          secretKeyRef:
+            name: jenkins-x-chartmuseum
+            key: BASIC_AUTH_USER
+      - name: CHARTMUSEUM_PASS
+        valueFrom:
+          secretKeyRef:
+            name: jenkins-x-chartmuseum
+            key: BASIC_AUTH_PASS
+
+  steps:
+    - name: init-helm
+      workingDir: $(workspaces.source.path)
+      image: alpine/helm:2.12.3
+      command:
+        - helm
+      args:
+        - init
+        - --client-only
+    - name: helm-lint
+      image: gcr.io/jenkinsxio/builder-go:2.1.113-737
+      command:
+        - make
+      args:
+        - build
+        - release
+      workingDir: $(workspaces.source.path)/charts/lighthouse

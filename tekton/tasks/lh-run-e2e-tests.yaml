@@ -1,0 +1,91 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lh-run-e2e-tests
+spec:
+  params:
+    - name: context
+      description: the e2e context
+    - name: build_id
+      description: the unique build ID
+    - name: gitKind
+      description: Git provider kind
+    - name: gitServer
+      description: Git provider base URL
+    - name: prNumber
+      description: PR number being built
+  workspaces:
+    - name: source
+      mountPath: /workspace/src/github.com/jenkins-x/lighthouse
+  volumes:
+    - name: sa
+      secret:
+        secretName: bdd-secret
+        items:
+          - key: bdd-credentials.json
+            path: bdd/sa.json
+  steps:
+    - name: run-e2e
+      resources:
+        requests:
+          cpu: 500m
+          memory: 256Mi
+        limits:
+          cpu: 1000m
+          memory: 2048Mi
+      volumeMounts:
+        - mountPath: /secrets
+          name: sa
+      workingDir: $(workspaces.source.path)
+      image: gcr.io/jenkinsxio/builder-go:2.1.113-737
+      command:
+        - ./bdd/$(params.context)/ci.sh # TODO: Archiving away the captured logfiles somewhere needs to change
+      env:
+        - name: GOPATH
+          value: /workspace
+        - name: GO111MODULE
+          value: "on"
+        - name: VERSION
+          value: 0.0.0-SNAPSHOT-$(params.build_id)
+        - name: CHARTMUSEUM_USER
+          valueFrom:
+            secretKeyRef:
+              name: jenkins-x-chartmuseum
+              key: BASIC_AUTH_USER
+        - name: CHARTMUSEUM_PASS
+          valueFrom:
+            secretKeyRef:
+              name: jenkins-x-chartmuseum
+              key: BASIC_AUTH_PASS
+        - name: E2E_PRIMARY_SCM_USER
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-bot-test-$(params.context)
+              key: username
+        - name: E2E_PRIMARY_SCM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-bot-test-$(params.context)
+              key: password
+        - name: E2E_APPROVER_SCM_USER
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-bot-test-approver-$(params.context)
+              key: username
+        - name: E2E_APPROVER_SCM_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-bot-test-approver-$(params.context)
+              key: password
+        - name: GKE_SA
+          value: /secrets/bdd/sa.json
+        - name: E2E_GIT_KIND
+          value: $(params.gitKind)
+        - name: E2E_GIT_SERVER
+          value: $(params.gitServer)
+        - name: PR_NUMBER
+          value: $(params.prNumber)
+        - name: BUILD_ID
+          value: $(params.build_id)
+        - name: CONTEXT
+          value: $(params.context)

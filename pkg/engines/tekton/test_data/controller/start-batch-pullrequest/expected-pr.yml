@@ -28,6 +28,8 @@ spec:
   params:
     - name: BUILD_ID
       value: "7828158075477027098"
+    - name: CONTEXT_NAME
+      value: github
     - name: JOB_NAME
       value: github
     - name: JOB_SPEC

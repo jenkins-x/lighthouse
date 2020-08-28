@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lh-update-tekton-resources
+spec:
+  workspaces:
+    - name: source
+      mountPath: /workspace/src/github.com/jenkins-x/lighthouse
+  steps:
+    - name: update-tasks
+      workingDir: $(workspaces.source.path)
+      image: gcr.io/jenkinsxio/builder-go:2.1.113-737
+      command:
+        - kubectl
+      args:
+        - apply
+        - "-f"
+        - ./tekton/tasks/*.yaml
+    - name: update-pipelines
+      workingDir: $(workspaces.source.path)
+      image: gcr.io/jenkinsxio/builder-go:2.1.113-737
+      command:
+        - kubectl
+      args:
+        - apply
+        - "-f"
+        - ./tekton/pipelines/*.yaml
