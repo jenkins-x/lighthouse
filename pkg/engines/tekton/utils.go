@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilrand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -29,12 +29,18 @@ const (
 	gitMergeBatchRefsParam  = "batchedRefs"
 )
 
-var reProwExtraRef = regexp.MustCompile(`PROW_EXTRA_GIT_REF_(\d+)`)
-
-// generateBuildID generates a unique build ID for consistency with Prow behavior
-func generateBuildID() string {
-	return fmt.Sprintf("%d", utilrand.Int())
+type buildIDGenerator interface {
+	GenerateBuildID() string
 }
+
+type epochBuildIDGenerator struct{}
+
+// GenerateBuildID returns a string representation of milliseconds since epoch
+func (e *epochBuildIDGenerator) GenerateBuildID() string {
+	return strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
+}
+
+var reProwExtraRef = regexp.MustCompile(`PROW_EXTRA_GIT_REF_(\d+)`)
 
 func trimDashboardURL(base string) string {
 	return strings.TrimSuffix(strings.TrimSuffix(base, "#"), "/")
@@ -42,13 +48,13 @@ func trimDashboardURL(base string) string {
 
 // makePipeline creates a PipelineRun and substitutes LighthouseJob managed pipeline resources with ResourceSpec instead of ResourceRef
 // so that we don't have to take care of potentially dangling created pipeline resources.
-func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, c client.Reader) (*tektonv1beta1.PipelineRun, error) {
+func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, idGen buildIDGenerator, c client.Reader) (*tektonv1beta1.PipelineRun, error) {
 	// First validate.
 	if lj.Spec.PipelineRunSpec == nil {
 		return nil, errors.New("no PipelineSpec defined")
 	}
 
-	buildID := generateBuildID()
+	buildID := idGen.GenerateBuildID()
 	if buildID == "" {
 		return nil, errors.New("empty BuildID in status")
 	}

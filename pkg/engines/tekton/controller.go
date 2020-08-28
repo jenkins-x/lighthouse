@@ -26,6 +26,7 @@ type LighthouseJobReconciler struct {
 	apiReader    client.Reader
 	logger       *logrus.Entry
 	scheme       *runtime.Scheme
+	idGenerator  buildIDGenerator
 	dashboardURL string
 	namespace    string
 }
@@ -39,6 +40,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 		scheme:       scheme,
 		dashboardURL: dashboardURL,
 		namespace:    namespace,
+		idGenerator:  &epochBuildIDGenerator{},
 	}
 }
 
@@ -95,7 +97,7 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	if len(pipelineRunList.Items) == 0 {
 		if job.Status.State == lighthousev1alpha1.TriggeredState {
 			// construct a pipeline run
-			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.apiReader)
+			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.idGenerator, r.apiReader)
 			if err != nil {
 				r.logger.Errorf("Failed to make pipeline run: %s", err)
 				return ctrl.Result{}, err
