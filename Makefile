@@ -172,26 +172,30 @@ crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
 
 .PHONY: docs
-docs: crds-docs config-docs plugins-docs
+docs: job-docs plugins-docs config-docs crds-docs
 
-.PHONY: plugins-docs
-crds-docs:
-	cd hack && go run struct-docs.go \
-		--input-file ../pkg/apis/lighthouse/v1alpha1/types.go \
-		--title "Lighthouse (v1alpha1)" \
-		--output-path ../docs/crds
+DOCS_GEN := bin/gen-docs
+$(DOCS_GEN):
+	$(GO) build -o bin/gen-docs ./hack/struct-docs.go
+
+	pushd /tmp; $(GO) get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0; popd
+
+.PHONY: crds-docs
+crds-docs: $(DOCS_GEN)
+	rm -rf ./docs/crds
+	$(DOCS_GEN) --input=./pkg/apis/lighthouse/v1alpha1/... --root=LighthouseJob --output=./docs/crds
 
 .PHONY: config-docs
-config-docs:
-	cd hack && go run struct-docs.go \
-		--input-file ../pkg/config/config.go \
-		--input-file ../pkg/config/githuboauth.go \
-		--title "Lighthouse config" \
-		--output-path ../docs/config
+config-docs: $(DOCS_GEN)
+	rm -rf ./docs/config/lighthouse
+	$(DOCS_GEN) --input=./pkg/config/lighthouse/... --root=Config --output=./docs/config/lighthouse
 
 .PHONY: plugins-docs
-plugins-docs:
-	cd hack && go run struct-docs.go \
-		--input-file ../pkg/plugins/config.go \
-		--title "Plugins config" \
-		--output-path ../docs/plugins
+plugins-docs: $(DOCS_GEN)
+	rm -rf ./docs/config/plugins
+	$(DOCS_GEN) --input=./pkg/plugins/... --root=Configuration --output=./docs/config/plugins
+
+.PHONY: job-docs
+job-docs: $(DOCS_GEN)
+	rm -rf ./docs/config/jobs
+	$(DOCS_GEN) --input=./pkg/config/job/... --root=Config --output=./docs/config/jobs
