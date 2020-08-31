@@ -21,11 +21,8 @@ import "fmt"
 // Postsubmit runs on push events.
 type Postsubmit struct {
 	Base
-
 	RegexpChangeMatcher
-
 	Brancher
-
 	// TODO(krzyzacy): Move existing `Report` into `Skip_Report` once this is deployed
 	Reporter
 }
