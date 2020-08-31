@@ -30,12 +30,22 @@ clean:
 .PHONY: snapshot
 snapshot: update-version release
 
+# TODO: Gotta figure out the right way to get the git creds in here securely
 release: clean
 	helm dependency build
 	helm lint
 	helm init --client-only
 	helm package .
-	@curl --fail -u $(CHARTMUSEUM_USER):$(CHARTMUSEUM_PASS) --data-binary "@$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz" $(CHART_REPO)/api/charts
+	git clone https://github.com/lighthouse-chatops/charts.git
+	pushd charts
+	git checkout gh-pages
+	mv ../"@$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz" lighthouse
+	helm repo index . --url https://lighthouse-chatops.github.com/charts
+	git add -i
+	git commit -av
+	git push origin gh-pages
+	popd
+	rm -rf charts
 	rm -rf ${NAME}*.tgz%
 
 update-version:
@@ -57,4 +67,13 @@ tag: update-version
 	git push origin v$(VERSION)
 
 delete-from-chartmuseum:
-	@curl --fail -u $(CHARTMUSEUM_USER):$(CHARTMUSEUM_PASS) -X DELETE $(CHART_REPO)/api/charts/$(NAME)/$(VERSION)
+	git clone https://github.com/lighthouse-chatops/charts.git
+	pushd charts
+	git checkout gh-pages
+	rm lighthouse/"@$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz"
+	helm repo index . --url https://lighthouse-chatops.github.com/charts
+	git add -i
+	git commit -av
+	git push origin gh-pages
+	popd
+	rm -rf charts
