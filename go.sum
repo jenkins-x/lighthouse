@@ -576,8 +576,8 @@ github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/U
 github.com/jenkins-x/go-scm v1.5.65/go.mod h1:MgGRkJScE/rJ30J/bXYqduN5sDPZqZFITJopsnZmTOw=
 github.com/jenkins-x/go-scm v1.5.79/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
 github.com/jenkins-x/go-scm v1.5.117/go.mod h1:PCT338UhP/pQ0IeEeMEf/hoLTYKcH7qjGEKd7jPkeYg=
-github.com/jenkins-x/go-scm v1.5.157 h1:tFMkxUNOxy7rEV+Hb3a82AHGRKAy81zlOrsnW4gVMBw=
-github.com/jenkins-x/go-scm v1.5.157/go.mod h1:Gt1dJz1rH47GbMlL47mWkibKHAM5+htwzOpsGmEbvfg=
+github.com/jenkins-x/go-scm v1.5.158 h1:Z6D4TYN1cIUdhB839fcsHJsKgMuDY8RwzYW5MbMbcco=
+github.com/jenkins-x/go-scm v1.5.158/go.mod h1:Gt1dJz1rH47GbMlL47mWkibKHAM5+htwzOpsGmEbvfg=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jinzhu/gorm v0.0.0-20170316141641-572d0a0ab1eb/go.mod h1:Vla75njaFJ8clLU1W44h34PjIkijhjHIYnZxMqCdxqo=
 github.com/jinzhu/gorm v1.9.12/go.mod h1:vhTjlKSJUTWNtcbQtrMBFCxy7eXTzeCAzfL5fBZT/Qs=
