@@ -38,7 +38,7 @@ image:
   parentRepository: gcr.io/jenkinsxio
 
   # image.tag -- Docker images tag
-  tag: 0.0.750
+  tag: 0.0.783
 
   # image.pullPolicy -- Image pull policy
   pullPolicy: IfNotPresent
