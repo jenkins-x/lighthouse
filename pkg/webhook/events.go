@@ -43,8 +43,8 @@ type Server struct {
 
 const failedCommentCoerceFmt = "Could not coerce %s event to a GenericCommentEvent. Unknown 'action': %q."
 
-// HandleIssueCommentEvent handle comment events
-func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHook) {
+// handleIssueCommentEvent handle comment events
+func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHook) {
 	l = l.WithFields(logrus.Fields{
 		scmprovider.OrgLogField:  ic.Repo.Namespace,
 		scmprovider.RepoLogField: ic.Repo.Name,
@@ -89,8 +89,8 @@ func (s *Server) HandleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 	)
 }
 
-// HandlePullRequestCommentEvent handles pull request comments events
-func (s *Server) HandlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullRequestCommentHook) {
+// handlePullRequestCommentEvent handles pull request comments events
+func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullRequestCommentHook) {
 	l = l.WithFields(logrus.Fields{
 		scmprovider.OrgLogField:  pc.Repo.Namespace,
 		scmprovider.RepoLogField: pc.Repo.Name,
@@ -138,8 +138,8 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 	}
 }
 
-// HandlePushEvent handles a push event
-func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
+// handlePushEvent handles a push event
+func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	repo := pe.Repository()
 	l = l.WithFields(logrus.Fields{
 		scmprovider.OrgLogField:  repo.Namespace,
@@ -163,8 +163,8 @@ func (s *Server) HandlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 }
 
-// HandlePullRequestEvent handles a pull request event
-func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook) {
+// handlePullRequestEvent handles a pull request event
+func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook) {
 	l = l.WithFields(logrus.Fields{
 		scmprovider.OrgLogField:  pr.Repo.Namespace,
 		scmprovider.RepoLogField: pr.Repo.Name,
@@ -220,13 +220,13 @@ func (s *Server) HandlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	)
 }
 
-// HandleBranchEvent handles a branch event
-func (s *Server) HandleBranchEvent(entry *logrus.Entry, hook *scm.BranchHook) {
+// handleBranchEvent handles a branch event
+func (s *Server) handleBranchEvent(entry *logrus.Entry, hook *scm.BranchHook) {
 	// TODO
 }
 
-// HandleReviewEvent handles a PR review event
-func (s *Server) HandleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
+// handleReviewEvent handles a PR review event
+func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 	l = l.WithFields(logrus.Fields{
 		scmprovider.OrgLogField:  re.Repo.Namespace,
 		scmprovider.RepoLogField: re.Repo.Name,
