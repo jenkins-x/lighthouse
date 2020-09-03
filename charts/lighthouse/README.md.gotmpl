@@ -1,11 +1,3 @@
-{{ define "chart.valuesTable" }}
-| Key | Type | Description | Default |
-|-----|------|-------------|---------|
-{{- range .Values }}
-| `{{ .Key }}` | {{ .Type }} | {{ .Description }} | {{ .Default }} |
-{{- end }}
-{{ end }}
-
 # Lighthouse
 
 This chart bootstraps installation of [Lighthouse](https://github.com/jenkins-x/lighthouse).
@@ -27,6 +19,7 @@ helm repo update
 
 # Helm v2
 helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
+
 # Helm v3
 helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
 ```
@@ -42,13 +35,18 @@ To uninstall the chart, simply delete the release.
 
 # Helm v2
 helm delete --purge my-lighthouse
+
 # Helm v3
 helm uninstall my-lighthouse --namespace lighthouse
 ```
 
-## Version
-
-{{ template "chart.versionLine" . }}
+{{ define "chart.valuesTable" }}
+| Key | Type | Description | Default |
+|-----|------|-------------|---------|
+{{- range .Values }}
+| `{{ .Key }}` | {{ .Type }} | {{ .Description }} | {{ .Default }} |
+{{- end }}
+{{ end }}
 
 {{ template "chart.valuesSection" . }}
 

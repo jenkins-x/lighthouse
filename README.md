@@ -1,114 +1,160 @@
 # Lighthouse
 
-A lightweight ChatOps based webhook handler which can trigger Jenkins X Pipelines and Tekton Pipelines based on webhooks from multiple git providers such as: GitHub, GitHub Enterprise, BitBucket Server and GitLab
+Lighthouse is a lightweight ChatOps based webhook handler which can trigger Jenkins X Pipelines, Tekton Pipelines or Jenkins Jobs based on webhooks from multiple git providers such as GitHub, GitHub Enterprise, BitBucket Server and GitLab.
 
-## Installing without Jenkins X
+<!-- MarkdownTOC autolink="true" indent="  " -->
 
-See [the install guide](https://github.com/jenkins-x/lighthouse/blob/master/docs/INSTALL.md).
+- [Installing](#installing)
+- [Background](#background)
+  - [Comparisons to Prow](#comparisons-to-prow)
+  - [Porting Prow commands](#porting-prow-commands)
+- [Development](#development)
+  - [Building](#building)
+  - [Environment variables](#environment-variables)
+  - [Testing](#testing)
+  - [Debugging Lighthouse](#debugging-lighthouse)
+  - [Using a local go-scm](#using-a-local-go-scm)
 
-## Building
+<!-- /MarkdownTOC -->
 
-To build the code clone git then type:
+## Installing
 
-    make build
-    
-Then to run it:
+Lighthouse is bundled and released as [Helm Chart](https://helm.sh/docs/topics/charts/).
+You find the install instruction in the Chart's [README](./charts/lighthouse/README.md).
 
-    ./bin/lighthouse
+Depending on the pipeline engine you want to use, you can find more detailed instructions in one of the following documents:
 
-## Environment variables
+- [Lighthouse + Tekton](./docs/install_lighthouse_with_tekton.md)
+- [Lighthouse + Jenkins](./docs/install_lighthouse_with_jenkins.md)
 
-The following environment variables are used:
+## Background
+
+Lighthouse derived originally from [Prow](https://github.com/kubernetes/test-infra/tree/master/prow) and started with a copy of its essential code.
+
+Currently, Lighthouse supports the standard [Prow plugins](https://github.com/jenkins-x/lighthouse/tree/master/pkg/plugins) and handles push webhooks to branches to then trigger a pipeline execution on the agent of your choice.
+
+Lighthouse uses the same `config.yaml` and `plugins.yaml` for configuration than Prow.
+
+### Comparisons to Prow
+
+Lighthouse reuses the Prow plugin source code and a bunch of [plugins from Prow](https://github.com/jenkins-x/lighthouse/tree/master/pkg/plugins)
+
+Its got a few differences though:
+
+- rather than being GitHub specific Lighthouse uses [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) so it can support any Git provider
+- Lighthouse does not use a `ProwJob` CRD; instead, it has its own `LighthouseJob` CRD.
+
+### Porting Prow commands
+
+If there are any prow commands you want which we've not yet ported over, it is relatively easy to port Prow plugins.
+
+We've reused the prow plugin code and configuration code; so it is mostly a case of switching imports of `k8s.io/test-infra/prow` to `github.com/jenkins-x/lighthouse/pkg/prow`, then modifying the GitHub client structs from, say, `github.PullRequest` to `scm.PullRequest`.
+
+Most of the GitHub structs map 1-1 to the [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) equivalents (e.g. Issue, Commit, PullRequest).
+However, the go-scm API does tend to return slices to pointers to resources by default.
+There are some naming differences in different parts of the API as well.
+For exmaple, compare the `githubClient` API for [Prow lgtm](https://github.com/kubernetes/test-infra/blob/344024d30165cda6f4691cc178f25b16f1a1f5af/prow/plugins/lgtm/lgtm.go#L134-L150) versus the [Lighthouse lgtm](https://github.com/jenkins-x/lighthouse/blob/master/pkg/prow/plugins/lgtm/lgtm.go#L135-L150).
+
+## Development
+
+### Building
+
+To build the code, [fork and clone](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo) this git repository, then type:
+
+```bash
+make build
+```
+
+`make build` will build all relevant Lighthouse binaries natively for your OS which you then can run locally.
+For example, to run the webhook controller, you would type:
+
+```bash
+./bin/webhooks
+```
+
+To see which other Make rules are available, run:
+
+```bash
+make help
+```
+
+### Environment variables
+
+While Prow only supports GitHub as SCM provider, Lighthouse supports several Git SCM providers.
+Lighthouse achieves the abstraction over the SCM provider using the [go-scm](https://github.com/jenkins-x/go-scm) library.
+To configure your SCM, go-scm uses the following environment variables :
 
 | Name  |  Description |
 | ------------- | ------------- |
 | `GIT_KIND` | the kind of git server: `github, bitbucket, gitea, stash` |
-| `GIT_SERVER` | the URL of the server if not using the public hosted git providers: https://github.com or https://bitbucket.org https://gitlab.com |
+| `GIT_SERVER` | the URL of the server if not using the public hosted git providers: [https://github.com](https://github.com), [https://bitbucket.org] or [https://gitlab.com](https://gitlab.com) |
 | `GIT_USER` | the git user (bot name) to use on git operations |
-| `GIT_TOKEN` | the git token to perform operations on git (add comments, labels etc) |
+| `GIT_TOKEN` | the git token to perform operations on git (add comments, labels etc.) |
 | `HMAC_TOKEN` | the token sent from the git provider in webhooks |
-| `JX_SERVICE_ACCOUNT` | the service account to use for generated pipelines |
 
+### Testing
 
-## Features 
+To run the unit tests, type:
 
-Currently Lighthouse supports the common [Prow plugins](https://github.com/jenkins-x/lighthouse/tree/master/pkg/plugins) and handles push webhooks to branches to then trigger Jenkins X pipelines. 
-    
-Lighthouse uses the same `config.yaml` and `plugins.yaml` file structure from Prow so that we can easily migrate from `prow <-> lighthouse`. 
-
-This also means we get to reuse the clean generation of Prow configuration from the `SourceRepository`, `SourceRepositoryGroup` and `Scheduler` CRDs integrated into [jx boot](https://jenkins-x.io/getting-started/boot/). e.g. here's the [default scheduler configuration](https://github.com/jenkins-x/jenkins-x-boot-config/blob/master/env/templates/default-scheduler.yaml) which is used for any project imported into your Jenkins X cluster; without you having to touch the actual prow configuration files. You can create many schedulers and associate them to different `SourceRepository` resources.   
-
-We can also reuse Prow's capability of defining many separate pipelines on a repository (for PRs or releases) via having separate `contexts`. Then on a Pull Request we can use `/test something` or `/test all` to trigger pipelines and use the `/ok-to-test` and `/approve` or `/lgtm` commands 
-
-
-## Comparisons to Prow
-
-Lighthouse is very prow-like and currently reuses the Prow plugin source code and a bunch of [plugins from Prow](https://github.com/jenkins-x/lighthouse/tree/master/pkg/plugins)
-
-Its got a few differences though:
-
-* rather than be GitHub specific lighthouse uses [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) so it can support any git provider 
-* lighthouse is mostly like `hook` from Prow; an auto scaling webhook handler - to keep the footprint small
-* lighthouse is also very light. In Jenkins X we have about 10 pods related to prow; with lighthouse we have just 1 along with the tekton controller itself. That one lighthouse pod could easily be auto scaled too from 0 to many as it starts up very quickly.
-* lighthouse focuses purely on Tekton pipelines so it does not require a `ProwJob` CRD; instead a push webhook to a release or pull request branch can trigger zero to many `PipelineRun` CRDs instead
-
-
-## Porting Prow commands
-
-If there are any prow commands you want which we've not yet ported over, its relatively easy to port prow plugins. 
-
-We've reused the prow plugin code and configuration code; so its mostly a case of switching imports of `k8s.io/test-infra/prow` to `github.com/jenkins-x/lighthouse/pkg/prow` - then modifying the github client structs from, say, `github.PullRequest` to `scm.PullRequest`.
-
-Most of the github structs map 1-1 with the [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) equivalents (e.g. Issue, Commit, PullRequest) though the go-scm API does tend to return slices to pointers to resources by default. There are some naming differences at different parts of the API though.
-
-e.g. compare the `githubClient` API for the [prow lgtm](https://github.com/kubernetes/test-infra/blob/344024d30165cda6f4691cc178f25b16f1a1f5af/prow/plugins/lgtm/lgtm.go#L134-L150) versus the [lighthouse lgtm](https://github.com/jenkins-x/lighthouse/blob/master/pkg/prow/plugins/lgtm/lgtm.go#L135-L150).
-
-All the prow plugin related code lives in the [tree of packages](https://github.com/jenkins-x/lighthouse/tree/master/pkg). Mostly all we've done is switch to using [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) and switch out the current prow agents and instead use a single `tekton` agent using the [PlumberClient](https://github.com/jenkins-x/lighthouse/blob/master/pkg/plumber/interface.go#L3-L6) to trigger pipelines.
-
-## Testing Lighthouse
-
-If you want to hack on lighthouse; such as to try it out with a specific git provider from [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) you can run it locally via:
-
-    make build
-    
-Then to run it:
-
-    ./bin/lighthouse
-    
-Then if you want to test it out with a git provider running on the cloud or inside Kubernetes you can use [ngrok](https://ngrok.com/) to setup a tunnel to your laptop. e.g.:
-
-    ngrok http 8080
-    
-Now you can use your personal ngrok URL to register a webhook handler with your git provider. *NOTE* remember to append `/hook` to the generated ngrok URL. e.g. something like: https://7cc3b3ac.ngrok.io/hook
-
-Any events that happen on your git provider should then trigger your local lighthouse.
-
-## Debugging Lighthouse
-
-You can setup a remote debugger for lighthouse using [delve](https://github.com/go-delve/delve/blob/master/Documentation/installation/README.md) via:
-
-``` 
-dlv --listen=:2345 --headless=true --api-version=2 exec ./bin/lighthouse -- $*        
+```bash
+make test
 ```
 
-You can then debug from your go based IDE (e.g. GoLand / IDEA / VS Code).
+For development purposes, it is also nice to start an instance of the binary you want to work.
+Provided you have a connection to a cluster with Lighthouse installed, the locally started controller will join the cluster, and you can test your development changes directly in-cluster.
 
-## Using a local go-scm
+For example to run the webhook controller locally:
 
-If you are hacking on support for a specific git provider you may find yourself hacking on the lighthouse code or the [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) code together.
+```bash
+make build
+GIT_TOKEN=<git-token> ./bin/webhooks -namespace <namespace> -bot-name <git-bot-user>
+```
 
-Go modules lets you easily swap out the version of a dependency with a local copy of the code; so you can edit code in lighthouse and [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) at the same time.
+In the case of the webhook controller, you can also test webhook deliveries locally using a [ngrok](https://ngrok.com/) tunnel.
+Install [ngrok](https://ngrok.com/) and start a new tunnel:
+
+```bash
+$ ngrok http 8080
+ngrok by @inconshreveable                                                                                                                                                                     (Ctrl+C to quit)
+
+Session Status                online
+Account                       ***
+Version                       2.3.35
+Region                        United States (us)
+Web Interface                 http://127.0.0.1:4040
+Forwarding                    http://e289dd1e1245.ngrok.io -> http://localhost:8080
+Forwarding                    https://e289dd1e1245.ngrok.io -> http://localhost:8080
+
+Connections                   ttl     opn     rt1     rt5     p50     p90
+                              0       0       0.00    0.00    0.00    0.00
+```
+  
+Now you can use your ngrok URL to register a webhook handler with your Git provider.
+
+**NOTE** Remember to append `/hook` to the generated ngrok URL.
+ In the case of the above example ht<span>tp://e289dd1e1245.ngrok.io/hook
+
+Any events that happen on your Git provider are now sent to your local webhook instance.
+
+### Debugging Lighthouse
+
+You can setup a remote debugger for Lighthouse using [delve](https://github.com/go-delve/delve/blob/master/Documentation/installation/README.md) via:
+
+```bash
+dlv --listen=:2345 --headless=true --api-version=2 exec ./bin/lighthouse -- $*  
+```
+
+You can then debug from your Go-based IDE (e.g. GoLand / IDEA / VS Code).
+
+### Using a local go-scm
+
+If you are hacking on support for a specific Git provider, you may find yourself working on the Lighthouse code and the [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) code together.
+Go modules lets you easily swap out the version of a dependency with a local copy of the code; so you can edit code in Lighthouse and [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) at the same time.
 
 Just add this line to the end of your [go.mod](https://github.com/jenkins-x/lighthouse/blob/master/go.mod) file:
 
-```
+```bash
 replace github.com/jenkins-x/go-scm => /workspace/go/src/github.com/jenkins-x/go-scm
 ```  
 
 Using the exact path to where you cloned [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm).
-
-Then if you do:
-
-    make build
-
-It will uses your local [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) source.                                                                                              

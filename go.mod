@@ -2,6 +2,8 @@ module github.com/jenkins-x/lighthouse
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible
+	github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46
+	github.com/bwmarrin/snowflake v0.0.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/go-stack/stack v1.8.0

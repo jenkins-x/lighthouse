@@ -34,9 +34,12 @@ const (
 
 	// TektonPipelineAgent is the agent type for running Tekton Pipeline pipelines
 	TektonPipelineAgent = "tekton-pipeline"
+
+	// JenkinsAgent is the agent type for running Jenkins pipelines
+	JenkinsAgent = "jenkins"
 )
 
 // AvailablePipelineAgentTypes returns a slice of all available pipeline agent types
 func AvailablePipelineAgentTypes() []string {
-	return []string{JenkinsXAgent, LegacyDefaultAgent, TektonPipelineAgent}
+	return []string{JenkinsXAgent, LegacyDefaultAgent, TektonPipelineAgent, JenkinsAgent}
 }

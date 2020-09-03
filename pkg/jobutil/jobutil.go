@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -33,6 +35,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
+
+// lighthouseClient a minimalistic lighthouse client required by the aborter
+type lighthouseClient interface {
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.LighthouseJob, err error)
+}
 
 // NewLighthouseJob initializes a LighthouseJob out of a LighthouseJobSpec.
 func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotations map[string]string) v1alpha1.LighthouseJob {
@@ -107,6 +114,12 @@ func PresubmitSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSp
 	pjs.RerunCommand = p.RerunCommand
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
 
+	if p.JenkinsSpec != nil {
+		pjs.JenkinsSpec = &v1alpha1.JenkinsSpec{
+			BranchSourceJob: p.JenkinsSpec.BranchSourceJob,
+		}
+	}
+
 	return pjs
 }
 
@@ -116,6 +129,12 @@ func PostsubmitSpec(p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJob
 	pjs.Type = job.PostsubmitJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
+
+	if p.JenkinsSpec != nil {
+		pjs.JenkinsSpec = &v1alpha1.JenkinsSpec{
+			BranchSourceJob: p.JenkinsSpec.BranchSourceJob,
+		}
+	}
 
 	return pjs
 }
@@ -167,18 +186,22 @@ func completePrimaryRefs(refs v1alpha1.Refs, jb job.Base) *v1alpha1.Refs {
 }
 
 // LighthouseJobFields extracts logrus fields from a LighthouseJob useful for logging.
-func LighthouseJobFields(pj *v1alpha1.LighthouseJob) logrus.Fields {
+func LighthouseJobFields(lighthouseJob *v1alpha1.LighthouseJob) logrus.Fields {
 	fields := make(logrus.Fields)
-	fields["name"] = pj.ObjectMeta.Name
-	fields["job"] = pj.Spec.Job
-	fields["type"] = pj.Spec.Type
-	if len(pj.ObjectMeta.Labels[scmprovider.EventGUID]) > 0 {
-		fields[scmprovider.EventGUID] = pj.ObjectMeta.Labels[scmprovider.EventGUID]
+	fields["name"] = lighthouseJob.ObjectMeta.Name
+	fields["job"] = lighthouseJob.Spec.Job
+	fields["type"] = lighthouseJob.Spec.Type
+	if len(lighthouseJob.ObjectMeta.Labels[scmprovider.EventGUID]) > 0 {
+		fields[scmprovider.EventGUID] = lighthouseJob.ObjectMeta.Labels[scmprovider.EventGUID]
 	}
-	if pj.Spec.Refs != nil && len(pj.Spec.Refs.Pulls) == 1 {
-		fields[scmprovider.PrLogField] = pj.Spec.Refs.Pulls[0].Number
-		fields[scmprovider.RepoLogField] = pj.Spec.Refs.Repo
-		fields[scmprovider.OrgLogField] = pj.Spec.Refs.Org
+	if lighthouseJob.Spec.Refs != nil && len(lighthouseJob.Spec.Refs.Pulls) == 1 {
+		fields[scmprovider.PrLogField] = lighthouseJob.Spec.Refs.Pulls[0].Number
+		fields[scmprovider.RepoLogField] = lighthouseJob.Spec.Refs.Repo
+		fields[scmprovider.OrgLogField] = lighthouseJob.Spec.Refs.Org
+	}
+
+	if lighthouseJob.Spec.JenkinsSpec != nil {
+		fields["github_based_job"] = lighthouseJob.Spec.JenkinsSpec.BranchSourceJob
 	}
 	return fields
 }
@@ -276,4 +299,45 @@ func LabelsAndAnnotationsForJob(lj v1alpha1.LighthouseJob, buildID string) (map[
 		extraLabels[util.BuildNumLabel] = buildID
 	}
 	return LabelsAndAnnotationsForSpec(lj.Spec, extraLabels, nil)
+}
+
+// PartitionActive separates the provided prowjobs into pending and triggered
+// and returns them inside channels so that they can be consumed in parallel
+// by different goroutines. Complete prowjobs are filtered out. Controller
+// loops need to handle pending jobs first so they can conform to maximum
+// concurrency requirements that different jobs may have.
+func PartitionActive(pjs []v1alpha1.LighthouseJob) (pending, triggered, aborted chan v1alpha1.LighthouseJob) {
+	// Size channels correctly.
+	pendingCount, triggeredCount, abortedCount := 0, 0, 0
+	for _, pj := range pjs {
+		switch pj.Status.State {
+		case v1alpha1.PendingState:
+			pendingCount++
+		case v1alpha1.TriggeredState:
+			triggeredCount++
+		case v1alpha1.AbortedState:
+			abortedCount++
+		}
+	}
+	pending = make(chan v1alpha1.LighthouseJob, pendingCount)
+	triggered = make(chan v1alpha1.LighthouseJob, triggeredCount)
+	aborted = make(chan v1alpha1.LighthouseJob, abortedCount)
+
+	// Partition the jobs into the two separate channels.
+	for _, pj := range pjs {
+		switch pj.Status.State {
+		case v1alpha1.PendingState:
+			pending <- pj
+		case v1alpha1.TriggeredState:
+			triggered <- pj
+		case v1alpha1.AbortedState:
+			if !pj.Complete() {
+				aborted <- pj
+			}
+		}
+	}
+	close(pending)
+	close(triggered)
+	close(aborted)
+	return pending, triggered, aborted
 }

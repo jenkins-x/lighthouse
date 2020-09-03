@@ -1,6 +1,7 @@
 # Package github.com/jenkins-x/lighthouse/pkg/config/job
 
 - [Config](#Config)
+- [JenkinsSpec](#JenkinsSpec)
 - [Periodic](#Periodic)
 - [PipelineRunParam](#PipelineRunParam)
 - [Postsubmit](#Postsubmit)
@@ -18,6 +19,14 @@ Config is config for all prow jobs
 | `presubmits` | map[string][][Presubmit](./github-com-jenkins-x-lighthouse-pkg-config-job.md#Presubmit) | No | Full repo name (such as "kubernetes/kubernetes") -> list of jobs. |
 | `postsubmits` | map[string][][Postsubmit](./github-com-jenkins-x-lighthouse-pkg-config-job.md#Postsubmit) | No |  |
 | `periodics` | [][Periodic](./github-com-jenkins-x-lighthouse-pkg-config-job.md#Periodic) | No | Periodics are not associated with any repo. |
+
+## JenkinsSpec
+
+JenkinsSpec holds optional Jenkins job config
+
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `branch_source_job` | bool | No | Job is managed by the GH branch source plugin<br />and requires a specific path |
 
 ## Periodic
 
@@ -82,6 +91,7 @@ Postsubmit runs on push events.
 | `branches` | []string | No | Only run against these branches. Default is all branches. |
 | `context` | string | No | Context is the name of the GitHub status context for the job.<br />Defaults: the same as the name of the job. |
 | `skip_report` | bool | No | SkipReport skips commenting and setting status on GitHub. |
+| `jenkins_spec` | *[JenkinsSpec](./github-com-jenkins-x-lighthouse-pkg-config-job.md#JenkinsSpec) | No |  |
 
 ## Preset
 
@@ -126,5 +136,6 @@ Presubmit runs on PRs.
 | `optional` | bool | No | Optional indicates that the job's status context should not be required for merge. |
 | `trigger` | string | No | Trigger is the regular expression to trigger the job.<br />e.g. `@k8s-bot e2e test this`<br />RerunCommand must also be specified if this field is specified.<br />(Default: `(?m)^/test (?:.*? )?<job name>(?: .*?)?$`) |
 | `rerun_command` | string | No | The RerunCommand to give users. Must match Trigger.<br />Trigger must also be specified if this field is specified.<br />(Default: `/test <job name>`) |
+| `jenkins_spec` | *[JenkinsSpec](./github-com-jenkins-x-lighthouse-pkg-config-job.md#JenkinsSpec) | No |  |
 
 
