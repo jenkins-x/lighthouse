@@ -266,6 +266,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	} else {
 		owners = entry.owners.filterCollaborators(collaborators)
 	}
+	c.logger.Warnf("AND OWNERS IS: %+v", owners)
 	return owners, nil
 }
 

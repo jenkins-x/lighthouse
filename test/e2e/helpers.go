@@ -98,12 +98,13 @@ func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (
 	kind := GitKind()
 	serverURL := os.Getenv(GitServerEnvVar)
 
-	client, err := factory.NewClient(kind, serverURL, "")
-
 	token, err := tokenFunc()
 	if err != nil {
 		return nil, nil, "", err
 	}
+
+	client, err := factory.NewClient(kind, serverURL, token)
+
 	util.AddAuthToSCMClient(client, token, false)
 
 	spc := scmprovider.ToClient(client, userFunc())
@@ -375,6 +376,16 @@ func CreateWebHook(scmClient *scm.Client, repo *scm.Repository, hmacToken string
 		Target:       fmt.Sprintf("http://%s/hook", targetURL),
 		Secret:       hmacToken,
 		NativeEvents: []string{"*"},
+	}
+	if scmClient.Driver.String() == "gitea" {
+		input.Events.Issue = true
+		input.Events.PullRequest = true
+		input.Events.Branch = true
+		input.Events.IssueComment = true
+		input.Events.PullRequestComment = true
+		input.Events.Push = true
+		input.Events.ReviewComment = true
+		input.Events.Tag = true
 	}
 	_, _, err = scmClient.Repositories.CreateHook(context.Background(), repo.Namespace+"/"+repo.Name, input)
 
