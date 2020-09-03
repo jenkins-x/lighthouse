@@ -1,19 +1,3 @@
-/*
-Copyright 2017 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package lighthouse
 
 import (
@@ -22,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-// JenkinsOperator is config for the jenkins-operator controller.
-type JenkinsOperator struct {
+// JenkinsConfig is config for the Jenkins controller.
+type JenkinsConfig struct {
 	Controller `json:",inline"`
 	// LabelSelectorString compiles into LabelSelector at load time.
 	// If set, this option needs to match --label-selector used by
@@ -39,7 +23,7 @@ type JenkinsOperator struct {
 }
 
 // Parse initializes and validates the Config
-func (c *JenkinsOperator) Parse() error {
+func (c *JenkinsConfig) Parse() error {
 	if err := c.Controller.Parse(); err != nil {
 		return fmt.Errorf("validating jenkins_operators config: %v", err)
 	}

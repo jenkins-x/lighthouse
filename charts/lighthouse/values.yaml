@@ -213,6 +213,56 @@ tektoncontroller:
   service:
     annotations: {}
 
+jenkinscontroller:
+  # jenkinscontroller.jenkinsURL -- The URL of the Jenkins instance
+  jenkinsURL:
+
+  # jenkinscontroller.jenkinsUser -- The username for the Jenkins user
+  jenkinsUser:
+
+  # jenkinscontroller.jenkinsToken -- The token for authenticating the Jenkins user
+  jenkinsToken:
+
+  # jenkinscontroller.terminationGracePeriodSeconds -- Termination grace period for tekton controller pods
+  terminationGracePeriodSeconds: 180
+
+  image:
+    # jenkinscontroller.image.repository -- Template for computing the Jenkins controller docker image repository
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"
+
+    # jenkinscontroller.image.tag -- Template for computing the tekton controller docker image tag
+    tag: "{{ .Values.image.tag }}"
+
+    # jenkinscontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+
+  # jenkinscontroller.podAnnotations -- Annotations applied to the tekton controller pods
+  podAnnotations: {}
+
+  # jenkinscontroller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the tekton controller pods
+  nodeSelector: {}
+
+  # jenkinscontroller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods
+  affinity: {}
+
+  # jenkinscontroller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods
+  tolerations: []
+
+  resources:
+    # jenkinscontroller.resources.limits -- Resource limits applied to the tekton controller pods
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+    # jenkinscontroller.resources.requests -- Resource requests applied to the tekton controller pods
+    requests:
+      cpu: 80m
+      memory: 128Mi
+
+  # jenkinscontroller.service -- Service settings for the tekton controller
+  service:
+    annotations: {}
+
 keeper:
   # keeper.statusContextLabel -- Label used to report status to git provider
   statusContextLabel: "Lighthouse Merge Status"
@@ -277,6 +327,9 @@ engines:
 
   # engines.tekton -- Enables the tekton engine
   tekton: false
+
+  # engines.jenkins -- Enables the Jenkins engine
+  jenkins: false
 
 configMaps:
   # configMaps.create -- Enables creation of `config.yaml` and `plugins.yaml` config maps

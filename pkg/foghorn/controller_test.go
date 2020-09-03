@@ -51,7 +51,7 @@ func TestReconcile(t *testing.T) {
 			Plank:                  lighthouse.Plank{},
 			BranchProtection:       branchprotection.Config{},
 			Orgs:                   nil,
-			JenkinsOperators:       nil,
+			Jenkinses:              nil,
 			LighthouseJobNamespace: "",
 			PodNamespace:           "",
 			LogLevel:               "",

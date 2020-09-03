@@ -3,7 +3,7 @@
 - [Config](#Config)
 - [GitHubOptions](#GitHubOptions)
 - [InRepoConfig](#InRepoConfig)
-- [JenkinsOperator](#JenkinsOperator)
+- [JenkinsConfig](#JenkinsConfig)
 - [OwnersDirExcludes](#OwnersDirExcludes)
 - [Plank](#Plank)
 - [ProviderConfig](#ProviderConfig)
@@ -22,7 +22,7 @@ Config is config for all lighthouse controllers
 | `branch-protection` | [Config](./github-com-jenkins-x-lighthouse-pkg-config-branchprotection.md#Config) | No |  |
 | `orgs` | map[string][Config](./github-com-jenkins-x-lighthouse-pkg-config-org.md#Config) | No |  |
 | `in_repo_config` | [InRepoConfig](./github-com-jenkins-x-lighthouse-pkg-config-lighthouse.md#InRepoConfig) | Yes |  |
-| `jenkins_operators` | [][JenkinsOperator](./github-com-jenkins-x-lighthouse-pkg-config-lighthouse.md#JenkinsOperator) | No | TODO: Move this out of the main config. |
+| `jenkinses` | [][JenkinsConfig](./github-com-jenkins-x-lighthouse-pkg-config-lighthouse.md#JenkinsConfig) | No | TODO: Move this out of the main config. |
 | `prowjob_namespace` | string | No | LighthouseJobNamespace is the namespace in the cluster that prow<br />components will use for looking up LighthouseJobs. The namespace<br />needs to exist and will not be created by prow.<br />Defaults to "default". |
 | `pod_namespace` | string | No | PodNamespace is the namespace in the cluster that prow<br />components will use for looking up Pods owned by LighthouseJobs.<br />The namespace needs to exist and will not be created by prow.<br />Defaults to "default". |
 | `log_level` | string | No | LogLevel enables dynamically updating the log level of the<br />standard logger that is used by all prow components.<br /><br />Valid values:<br /><br />"debug", "info", "warn", "warning", "error", "fatal", "panic"<br /><br />Defaults to "info". |
@@ -48,9 +48,9 @@ InRepoConfig to enable configuration inside the source code of a repository<br /
 |---|---|---|---|
 | `enabled` | map[string]*bool | No | Enabled describes whether InRepoConfig is enabled for a given repository. This can<br />be set globally, per org or per repo using '*', 'org' or 'org/repo' as key. The<br />narrowest match always takes precedence. |
 
-## JenkinsOperator
+## JenkinsConfig
 
-JenkinsOperator is config for the jenkins-operator controller.
+JenkinsConfig is config for the Jenkins controller.
 
 | Stanza | Type | Required | Description |
 |---|---|---|---|

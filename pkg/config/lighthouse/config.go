@@ -35,7 +35,7 @@ type Config struct {
 	InRepoConfig     InRepoConfig            `json:"in_repo_config"`
 
 	// TODO: Move this out of the main config.
-	JenkinsOperators []JenkinsOperator `json:"jenkins_operators,omitempty"`
+	Jenkinses []JenkinsConfig `json:"jenkinses,omitempty"`
 	// LighthouseJobNamespace is the namespace in the cluster that prow
 	// components will use for looking up LighthouseJobs. The namespace
 	// needs to exist and will not be created by prow.
@@ -73,15 +73,15 @@ func (c *Config) Parse() error {
 	if err := c.Plank.Parse(); err != nil {
 		return err
 	}
-	for i := range c.JenkinsOperators {
-		if err := c.JenkinsOperators[i].Parse(); err != nil {
+	for i := range c.Jenkinses {
+		if err := c.Jenkinses[i].Parse(); err != nil {
 			return err
 		}
 		// TODO: Invalidate overlapping selectors more
-		if len(c.JenkinsOperators) > 1 && c.JenkinsOperators[i].LabelSelectorString == "" {
+		if len(c.Jenkinses) > 1 && c.Jenkinses[i].LabelSelectorString == "" {
 			return errors.New("selector overlap: cannot use an empty label_selector with multiple selectors")
 		}
-		if len(c.JenkinsOperators) == 1 && c.JenkinsOperators[0].LabelSelectorString != "" {
+		if len(c.Jenkinses) == 1 && c.Jenkinses[0].LabelSelectorString != "" {
 			return errors.New("label_selector is invalid when used for a single jenkins-operator")
 		}
 	}

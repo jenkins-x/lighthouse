@@ -20,15 +20,20 @@
 
 ## Objective
 
-The objective of this instructions is to create a sample project where pull requests merge by GitOps commands like `lgtm` or `approve`, placed as comments on pull requests of your SCM provider.
+The objective of these instructions is to create a sample project where pull requests merge by GitOps commands like `lgtm` or `approve`, placed as comments on pull requests of your SCM provider.
 Also, each time a pull request merges, a Tekton Pipeline is triggered to build the `master` of your project.
 This is achieved by using Lighthouse and Tekton Pipelines together.
 
 The configuration of Lighthouse will be managed in a dedicated repository which itself is managed via GitOps.
 Changes to the configuration in this repository will automatically synchronize to the in-cluster configuration of Lighthouse.
 
+---
+
+**NOTE**:
 The examples are using GitHub as SCM provider, but you can choose any of the Lighthouse supported SCM providers.
-Just modify the examples accordingly.
+In this case you need to modify the relevant settings accordingly.
+
+---
 
 ## Prerequisite
 
@@ -129,7 +134,7 @@ After the installation, any changes merged into the _master_ branch of this conf
     repo_name=lighthouse-config
     GITHUB_TOKEN=<oauthtoken-bot-user>
 
-    gh repo create $repo_name
+    gh repo create $repo_name --public -y
     gh api -X PUT repos/$bot_user/$repo_name/collaborators/$approver
     git push origin master
     ```
@@ -145,33 +150,63 @@ After the installation, any changes merged into the _master_ branch of this conf
     kubectl create cm plugins -n $install_namepsace --from-file=plugins.yaml
     ```
 
+- Configure the Helm chart repository
+
+    ```bash
+    helm repo add lighthouse http://chartmuseum.jenkins-x.io
+    helm repo update
+    ```
+
 - Install Lighthouse using Helm.
 
     ```bash
+    install_namepsace=lighthouse
     bot_user=<github-username-of-bot-user>
-    GITHUB_TOKEN=<oauthtoken-bot-user>
+    bot_token=<oauthtoken-bot-user>
     webhook_secret=<generated-webhook-secret>
     tekton_dash_url=<tekton-url>
     domain=<k8s-cluster-domain>
   
-    helm repo add lighthouse http://chartmuseum.jenkins-x.io
-    helm repo update
-    helm install -n $install_namepsace lighthouse lighthouse/lighthouse \
-      --set git.kind=github \
-      --set git.name=github \
-      --set git.server=https://github.com \
-      --set hmacToken=$webhook_secret \
-      --set user=$bot_user \
-      --set oauthToken=$GITHUB_TOKEN \
-      --set engines.tekton=true \
-      --set tektoncontroller.dashboardURL=$tekton_dash_url \
-      --set createIngress=true \
-      --set domainName=$domain
+    helm install lighthouse lighthouse/lighthouse -n ${install_namespace} -f <(cat <<EOF
+    git:
+      kind: github
+      name: github
+      server: https://github.com
+
+    user: "${bot_user}"
+    oauthToken: "${bot_token}"
+    hmacToken: "${webhook_secret}"
+
+    cluster:
+      crds:
+        create: true
+
+    tektoncontroller:
+      dashboardURL: $tekton_dash_url
+
+    engines:
+      jx: false
+      tekton: true
+
+    configMaps:
+      create: true
+  
+    webhooks:
+      ingress:
+        enabled: true
+        annotations:
+          kubernetes.io/ingress.class: "nginx"
+        hosts:
+        - "$install_namespace.$domain"
+    EOF
+    )
     ```
 
 - Last but not least, make sure that any events in the configuration repository are propagated to Lighthouse via a webhook.
 
     ```bash
+    GITHUB_TOKEN=<oauthtoken-bot-user>
+
     install_namepsace=lighthouse
     bot_user=<github-username-of-bot-user>
     repo_name=lighthouse-config
@@ -244,7 +279,9 @@ Now that we have Lighthouse installed, we can create a sample project and config
 - Push the code to GitHub.
 
     ```bash
-    gh repo create $repo_name
+    GITHUB_TOKEN=<oauthtoken-bot-user>
+
+    gh repo create $repo_name --public -y
     gh api -X PUT repos/$bot_user/$repo_name/collaborators/$approver
     git push origin master
     ```

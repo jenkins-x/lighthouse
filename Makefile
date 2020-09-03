@@ -1,4 +1,5 @@
-# Make does not offer a recursive wildcard function, so here's one:
+# Make
+ does not offer a recursive wildcard function, so here's one:
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
 PROJECT := github.com/jenkins-x/lighthouse
@@ -6,14 +7,16 @@ PROJECT := github.com/jenkins-x/lighthouse
 WEBHOOKS_EXECUTABLE := webhooks
 KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
-GCJOBS_EXECUTABLE := gc-jobs
-TEKTONCONTROLLER_EXECUTABLE := lighthouse-tekton-controller
+GC_JOBS_EXECUTABLE := gc-jobs
+TEKTON_CONTROLLER_EXECUTABLE := lighthouse-tekton-controller
+JENKINS_CONTROLLER_EXECUTABLE := jenkins-controller
 
 WEBHOOKS_MAIN_SRC_FILE=cmd/webhooks/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
-GCJOBS_MAIN_SRC_FILE=cmd/gc/main.go
-TEKTONCONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
+GC_JOBS_MAIN_SRC_FILE=cmd/gc/main.go
+TEKTON_CONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
+JENKINS_CONTROLLER_MAIN_SRC_FILE=cmd/jenkins/main.go
 
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
@@ -25,35 +28,101 @@ GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 
 .PHONY: all
-all: build test check docs
+all: build test check docs ## Default rule, builds all binaries, runs tests and format checks
+
+.PHONY: build
+build: build-webhooks build-keeper build-foghorn build-tekton-controller build-gc-jobs build-jenkins-controller ## Builds all Lighthouse binaries native to your machine
+
+.PHONY: build-webhooks
+build-webhooks: ## Build the webhooks controller binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
+
+.PHONY: build-keeper
+build-keeper: ## Build the keeper controller binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
+
+.PHONY: build-foghorn
+build-foghorn: ## Build the foghorn controller binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
+
+.PHONY: build-gc-jobs
+build-gc-jobs: ## Build the GC jobs binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE) $(GC_JOBS_MAIN_SRC_FILE)
+
+.PHONY: build-tekton-controller
+build-tekton-controller: ## Build the Tekton controller binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTON_CONTROLLER_EXECUTABLE) $(TEKTON_CONTROLLER_MAIN_SRC_FILE)
+
+.PHONY: build-jenkins-controller
+build-jenkins-controller: ## Build the Jenkins controller binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
+
+.PHONY: build-linux
+build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
+
+.PHONY: build-webhooks-linux ## Build the webhook controller binary for Linux
+build-webhooks-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
+
+.PHONY: build-keeper-linux
+build-keeper-linux: ## Build the keeper controller binary for Linux
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
+
+.PHONY: build-foghorn-linux
+build-foghorn-linux: ## Build the foghorn controller binary for Linux
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
+
+.PHONY: build-gc-jobs-linux
+build-gc-jobs-linux: ## Build the GC jobs binary for Linux
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE) $(GC_JOBS_MAIN_SRC_FILE)
+
+.PHONY: build-tekton-controller-linux
+build-tekton-controller-linux: ## Build the Tekton controller binary for Linux
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTON_CONTROLLER_EXECUTABLE) $(TEKTON_CONTROLLER_MAIN_SRC_FILE)
+
+.PHONY: build-jenkins-controller-linux
+build-jenkins-controller-linux: ## Build the Jenkins controller binary for Linux
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
 
 .PHONY: test
-test: 
+test: ## Runs the unit tests
 	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) -short ./pkg/... ./cmd/...
 
-.PHONY: check
-check: fmt lint sec
+.PHONY: compile-e2e
+compile-e2e:
+	$(GOTEST) -run=nope -failfast -short -ldflags "$(GO_LDFLAGS)" ./test/...
 
-get-fmt-deps: ## Install test dependencies
+.PHONY: run-e2e-tests
+run-e2e-tests:
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) --count=1 -v ./test/...
+
+.PHONY: clean
+clean: ## Deletes the generated build directories
+	rm -rf bin build
+
+.PHONY: check
+check: fmt lint sec ## Runs Go format check as well as security checks
+
+get-fmt-deps:
 	$(GO_NOMOD) get golang.org/x/tools/cmd/goimports
 
 .PHONY: importfmt
-importfmt: get-fmt-deps
+importfmt: get-fmt-deps ## Checks the import format of the Go source files
 	@echo "FORMATTING IMPORTS"
 	@goimports -w $(GO_DEPENDENCIES)
 
-.PHONY: fmt
+.PHONY: fmt ## Checks Go source files are formatted properly
 fmt: importfmt
 	@echo "FORMATTING SOURCE"
 	FORMATTED=`$(GO) fmt ./...`
-	@([[ ! -z "$(FORMATTED)" ]] && printf "Fixed unformatted files:\n$(FORMATTED)") || true
+	@([[ ! -z "$(FORMATTED)" ]] && printf "Fixed un-formatted files:\n$(FORMATTED)") || true
 
 GOLINT := $(GOPATH)/bin/golint
 $(GOLINT):
 	$(GO_NOMOD) get -u golang.org/x/lint/golint
 
 .PHONY: lint
-lint: $(GOLINT)
+lint: $(GOLINT) ## Runs 'go vet' anf 'go lint'
 	@echo "VETTING"
 	$(GO) vet ./...
 	@echo "LINTING"
@@ -64,80 +133,22 @@ $(GOSEC):
 	$(GO_NOMOD) get -u github.com/securego/gosec/cmd/gosec
 
 .PHONY: sec
-sec: $(GOSEC)
+sec: $(GOSEC) ## Runs gosec to check for potential security issues in the Go source
 	@echo "SECURITY SCANNING"
 	$(GOSEC) -quiet -fmt=csv ./...
 
-.PHONY: clean
-clean:
-	rm -rf bin build release
-
-.PHONY: build
-build: webhooks keeper foghorn tekton-controller gc-jobs
-
-.PHONY: webhooks
-webhooks:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
-
-.PHONY: keeper
-keeper:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
-
-.PHONY: foghorn
-foghorn:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
-
-.PHONY: gc-jobs
-gc-jobs:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(GCJOBS_EXECUTABLE) $(GCJOBS_MAIN_SRC_FILE)
-
-.PHONY: tekton-controller
-tekton-controller:
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTONCONTROLLER_EXECUTABLE) $(TEKTONCONTROLLER_MAIN_SRC_FILE)
-
-.PHONY: compile-e2e
-compile-e2e:
-	$(GOTEST) -run=nope -failfast -short -ldflags "$(GO_LDFLAGS)" ./test/...
-
-.PHONY: run-e2e-tests
-run-e2e-tests:
-	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) --count=1 -v ./test/...
-
 .PHONY: mod
-mod: build
+mod: build ## Run 'go mod tidy' to clean up the modules file
 	echo "tidying the go module"
 	$(GO) mod tidy
 
-.PHONY: build-linux
-build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux
+generate-client: codegen-clientset fmt ## Generate the K8s types and clients
 
-.PHONY: build-webhooks-linux
-build-webhooks-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
-
-.PHONY: build-keeper-linux
-build-keeper-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
-
-.PHONY: build-foghorn-linux
-build-foghorn-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
-
-.PHONY: build-gc-jobs-linux
-build-gc-jobs-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(GCJOBS_EXECUTABLE) $(GCJOBS_MAIN_SRC_FILE)
-
-.PHONY: build-tekton-controller-linux
-build-tekton-controller-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTONCONTROLLER_EXECUTABLE) $(TEKTONCONTROLLER_MAIN_SRC_FILE)
-
-generate-client: codegen-clientset fmt ## Generate the client
-
-codegen-clientset: ## Generate the k8s types and clients
+codegen-clientset:
 	@echo "Generating Kubernetes Clients for pkg/apis/lighthouse/v1alpha1 in pkg/client for lighthouse.jenkins.io:v1alpha1"
 	./hack/update-codegen.sh
 
-verify-code-unchanged: ## Verify the generated/formatting of code is up to date
+verify-code-unchanged:
 	$(eval CHANGED = $(shell git ls-files --modified --others --exclude-standard))
 	@if [ "$(CHANGED)" == "" ]; \
       	then \
@@ -157,7 +168,7 @@ crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
 
 .PHONY: docs
-docs: job-docs plugins-docs config-docs crds-docs
+docs: job-docs plugins-docs config-docs crds-docs ## Builds generated docs
 
 DOCS_GEN := bin/gen-docs
 $(DOCS_GEN):

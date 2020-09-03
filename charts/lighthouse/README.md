@@ -1,5 +1,3 @@
-
-
 # Lighthouse
 
 This chart bootstraps installation of [Lighthouse](https://github.com/jenkins-x/lighthouse).
@@ -21,6 +19,7 @@ helm repo update
 
 # Helm v2
 helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
+
 # Helm v3
 helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
 ```
@@ -36,13 +35,10 @@ To uninstall the chart, simply delete the release.
 
 # Helm v2
 helm delete --purge my-lighthouse
+
 # Helm v3
 helm uninstall my-lighthouse --namespace lighthouse
 ```
-
-## Version
-
-Current chart version is `0.1.0-SNAPSHOT`
 
 ## Values
 
@@ -53,6 +49,7 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `configMaps.configUpdater` | object | Settings used to configure the `config-updater` plugin | `{"orgAndRepo":"","path":""}` |
 | `configMaps.create` | bool | Enables creation of `config.yaml` and `plugins.yaml` config maps | `false` |
 | `configMaps.plugins` | string | Raw `plugins.yaml` content | `nil` |
+| `engines.jenkins` | bool | Enables the Jenkins engine | `false` |
 | `engines.jx` | bool | Enables the jx engine | `true` |
 | `engines.tekton` | bool | Enables the tekton engine | `false` |
 | `env` | object | Environment variables | `{"JX_DEFAULT_IMAGE":""}` |
@@ -79,6 +76,20 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `image.parentRepository` | string | Docker registry to pull images from | `"gcr.io/jenkinsxio"` |
 | `image.pullPolicy` | string | Image pull policy | `"IfNotPresent"` |
 | `image.tag` | string | Docker images tag | `"0.0.750"` |
+| `jenkinscontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
+| `jenkinscontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `jenkinscontroller.image.repository` | string | Template for computing the Jenkins controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"` |
+| `jenkinscontroller.image.tag` | string | Template for computing the tekton controller docker image tag | `"{{ .Values.image.tag }}"` |
+| `jenkinscontroller.jenkinsToken` | string | The token for authenticating the Jenkins user | `nil` |
+| `jenkinscontroller.jenkinsURL` | string | The URL of the Jenkins instance | `nil` |
+| `jenkinscontroller.jenkinsUser` | string | The username for the Jenkins user | `nil` |
+| `jenkinscontroller.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the tekton controller pods | `{}` |
+| `jenkinscontroller.podAnnotations` | object | Annotations applied to the tekton controller pods | `{}` |
+| `jenkinscontroller.resources.limits` | object | Resource limits applied to the tekton controller pods | `{"cpu":"100m","memory":"256Mi"}` |
+| `jenkinscontroller.resources.requests` | object | Resource requests applied to the tekton controller pods | `{"cpu":"80m","memory":"128Mi"}` |
+| `jenkinscontroller.service` | object | Service settings for the tekton controller | `{"annotations":{}}` |
+| `jenkinscontroller.terminationGracePeriodSeconds` | int | Termination grace period for tekton controller pods | `180` |
+| `jenkinscontroller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods | `[]` |
 | `keeper.datadog.enabled` | string | Enables datadog | `"true"` |
 | `keeper.image.pullPolicy` | string | Template for computing the keeper controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `keeper.image.repository` | string | Template for computing the keeper controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-keeper"` |

@@ -1,0 +1,61 @@
+{{- if .Values.engines.jenkins }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "jenkinscontroller.name" . }}
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app: {{ template "jenkinscontroller.name" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      draft: {{ default "draft-app" .Values.draft }}
+      app: {{ template "jenkinscontroller.name" . }}
+  template:
+    metadata:
+      labels:
+        draft: {{ default "draft-app" .Values.draft }}
+        app: {{ template "jenkinscontroller.name" . }}
+      annotations:
+        {{- toYaml .Values.jenkinscontroller.podAnnotations | nindent 8 }}
+    spec:
+      serviceAccountName: {{ template "jenkinscontroller.name" . }}
+      containers:
+      - name: {{ template "jenkinscontroller.name" . }}
+        image: {{ printf "%s:%s" (tpl .Values.jenkinscontroller.image.repository .) (tpl .Values.jenkinscontroller.image.tag .) }}
+        imagePullPolicy: {{ tpl .Values.jenkinscontroller.image.pullPolicy . }}
+        args:
+          - --namespace={{ .Release.Namespace }}
+          - --jenkins-url={{ required "A valid Jenkins URK is required!" .Values.jenkinscontroller.jenkinsURL }}
+          - --jenkins-user={{ required "A valid Jenkins username is required!" .Values.jenkinscontroller.jenkinsUser }}
+          - --jenkins-token-file=/var/jenkins/token
+        ports:
+          - name: logs
+            containerPort: 8080
+        env:
+          - name: "LOGRUS_FORMAT"
+            value: "{{ .Values.logFormat }}"
+          {{- range $pkey, $pval := .Values.env }}
+          - name: {{ $pkey }}
+            value: {{ quote $pval }}
+          {{- end }}
+        resources:
+          {{- toYaml .Values.jenkinscontroller.resources | nindent 12 }}
+        volumeMounts:
+          - mountPath: "/var/jenkins"
+            name: jenkins-token
+            readOnly: true
+      volumes:
+        - name: jenkins-token
+          secret:
+            secretName: lighthouse-jenkins-token
+      terminationGracePeriodSeconds: {{ .Values.jenkinscontroller.terminationGracePeriodSeconds }}
+      nodeSelector:
+        {{- toYaml .Values.jenkinscontroller.nodeSelector | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.jenkinscontroller.affinity | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.jenkinscontroller.tolerations | nindent 8 }}
+{{- end }}

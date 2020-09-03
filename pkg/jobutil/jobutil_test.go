@@ -20,6 +20,9 @@ import (
 	"reflect"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -556,5 +559,100 @@ func TestSpecFromJobBase(t *testing.T) {
 				t.Fatalf("Verification failed: %v", err)
 			}
 		})
+	}
+}
+
+func TestPartitionActive(t *testing.T) {
+	tests := []struct {
+		lighthouseJobs []v1alpha1.LighthouseJob
+
+		pending   sets.String
+		triggered sets.String
+		aborted   sets.String
+	}{
+		{
+			lighthouseJobs: []v1alpha1.LighthouseJob{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "foo",
+					},
+					Status: v1alpha1.LighthouseJobStatus{
+						State: v1alpha1.TriggeredState,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "bar",
+					},
+					Status: v1alpha1.LighthouseJobStatus{
+						State: v1alpha1.PendingState,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "baz",
+					},
+					Status: v1alpha1.LighthouseJobStatus{
+						State: v1alpha1.SuccessState,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "error",
+					},
+					Status: v1alpha1.LighthouseJobStatus{
+						State: v1alpha1.ErrorState,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "bak",
+					},
+					Status: v1alpha1.LighthouseJobStatus{
+						State: v1alpha1.PendingState,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "aborted",
+					},
+					Status: v1alpha1.LighthouseJobStatus{
+						State: v1alpha1.AbortedState,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "aborted-and-completed",
+					},
+					Status: v1alpha1.LighthouseJobStatus{
+						State:          v1alpha1.AbortedState,
+						CompletionTime: &[]metav1.Time{metav1.Now()}[0],
+					},
+				},
+			},
+			pending:   sets.NewString("bar", "bak"),
+			triggered: sets.NewString("foo"),
+			aborted:   sets.NewString("aborted"),
+		},
+	}
+
+	for i, test := range tests {
+		t.Logf("test run #%d", i)
+		pendingCh, triggeredCh, abortedCh := PartitionActive(test.lighthouseJobs)
+		for job := range pendingCh {
+			if !test.pending.Has(job.Name) {
+				t.Errorf("didn't find pending job %#v", job)
+			}
+		}
+		for job := range triggeredCh {
+			if !test.triggered.Has(job.Name) {
+				t.Errorf("didn't find triggered job %#v", job)
+			}
+		}
+		for job := range abortedCh {
+			if !test.aborted.Has(job.Name) {
+				t.Errorf("didn't find aborted job %#v", job)
+			}
+		}
 	}
 }

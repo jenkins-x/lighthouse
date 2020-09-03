@@ -56,5 +56,9 @@ data:
       #   - needs-ok-to-test
       #   repos:
       #   - org/repo
+    {{- if .Values.engines.jenkins }}
+    jenkinses:
+    - {}
+    {{- end }}
 {{- end }}
 {{- end }}
