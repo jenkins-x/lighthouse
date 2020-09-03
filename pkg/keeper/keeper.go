@@ -1558,16 +1558,22 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 	return sps, nil
 }
 
+// GraphQLAuthor represents the author in the GitHub GraphQL layout
+type GraphQLAuthor struct {
+	Login githubql.String
+}
+
+// GraphQLBaseRef represents the author in the GitHub GraphQL layout
+type GraphQLBaseRef struct {
+	Name   githubql.String
+	Prefix githubql.String
+}
+
 // PullRequest holds graphql data about a PR, including its commits and their contexts.
 type PullRequest struct {
-	Number githubql.Int
-	Author struct {
-		Login githubql.String
-	}
-	BaseRef struct {
-		Name   githubql.String
-		Prefix githubql.String
-	}
+	Number      githubql.Int
+	Author      GraphQLAuthor
+	BaseRef     GraphQLBaseRef
 	HeadRefName githubql.String `graphql:"headRefName"`
 	HeadRefOID  githubql.String `graphql:"headRefOid"`
 	Mergeable   githubql.MergeableState
@@ -1832,18 +1838,15 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 }
 
 func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequest {
-	author := struct {
-		Login githubql.String
-	}{
-		Login: githubql.String(scmPR.Author.Login),
-	}
+	author := GraphQLAuthor{Login: githubql.String(scmPR.Author.Login)}
 
-	baseRef := struct {
-		Name   githubql.String
-		Prefix githubql.String
-	}{
+	baseRef := GraphQLBaseRef{
 		Name:   githubql.String(scmPR.Target),
 		Prefix: githubql.String(strings.TrimSuffix(scmPR.Base.Ref, scmPR.Target)),
+	}
+
+	if baseRef.Prefix == "" {
+		baseRef.Prefix = "refs/heads/"
 	}
 
 	mergeable := githubql.MergeableStateUnknown

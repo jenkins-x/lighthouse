@@ -33,7 +33,14 @@ func AddAuthToSCMClient(client *scm.Client, token string, isGitHubApp bool) {
 		client.Client.Transport = tr
 		return
 	}
-	if client.Driver.String() == "gitlab" || client.Driver.String() == "bitbucketcloud" {
+	if client.Driver.String() == "gitea" {
+		client.Client = &http.Client{
+			Transport: &transport.Authorization{
+				Scheme:      "token",
+				Credentials: token,
+			},
+		}
+	} else if client.Driver.String() == "gitlab" || client.Driver.String() == "bitbucketcloud" {
 		client.Client = &http.Client{
 			Transport: &transport.PrivateToken{
 				Token: token,
