@@ -37,8 +37,11 @@ var (
 	stageRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?(remove-)?stage (alpha|beta|stable)\s*$`)
 )
 
+const pluginName = "stage"
+
 func init() {
-	plugins.RegisterGenericCommentHandler("stage", stageHandleGenericComment, help)
+	plugins.RegisterHelpProvider(pluginName, help)
+	plugins.RegisterGenericCommentHandler(pluginName, stageHandleGenericComment)
 }
 
 func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

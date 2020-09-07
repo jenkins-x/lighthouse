@@ -282,7 +282,7 @@ func TestHandlePullRequest(t *testing.T) {
 			SCMProviderClient: g,
 			LauncherClient:    fakeLauncher,
 			Config:            &config.Config{},
-			Logger:            logrus.WithField("plugin", PluginName),
+			Logger:            logrus.WithField("plugin", pluginName),
 		}
 
 		presubmits := map[string][]job.Presubmit{

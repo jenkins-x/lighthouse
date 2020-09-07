@@ -34,14 +34,15 @@ import (
 )
 
 const (
-	// PluginName is the name of the trigger plugin
-	PluginName = "trigger"
+	// pluginName is the name of the trigger plugin
+	pluginName = "trigger"
 )
 
 func init() {
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent, helpProvider)
-	plugins.RegisterPullRequestHandler(PluginName, handlePullRequest, helpProvider)
-	plugins.RegisterPushEventHandler(PluginName, handlePush, helpProvider)
+	plugins.RegisterHelpProvider(pluginName, helpProvider)
+	plugins.RegisterGenericCommentHandler(pluginName, handleGenericCommentEvent)
+	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
+	plugins.RegisterPushEventHandler(pluginName, handlePush)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

@@ -50,7 +50,8 @@ const (
 )
 
 func init() {
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest, helpProvider)
+	plugins.RegisterHelpProvider(pluginName, helpProvider)
+	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

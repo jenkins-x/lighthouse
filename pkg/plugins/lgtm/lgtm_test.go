@@ -348,7 +348,7 @@ func TestLGTMComment(t *testing.T) {
 				SCMProviderClient:   fc,
 				PullRequestComments: fc.PullRequestComments[5],
 			}
-			if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+			if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
 				t.Fatalf("didn't expect error from lgtmComment: %v", err)
 			}
 			if err := fakeClient.PopulateFakeLabelsFromComments("org", "repo", 5, fakeLabel, tc.hasLGTM && tc.shouldToggle); err != nil {
@@ -509,7 +509,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
-		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
 			t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
 			continue
 		}
@@ -706,7 +706,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
-		if err := handlePullRequestReview(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+		if err := handlePullRequestReview(fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
 			t.Errorf("For case %s, didn't expect error from pull request review: %v", tc.name, err)
 			continue
 		}
@@ -1102,7 +1102,7 @@ func TestAddTreeHashComment(t *testing.T) {
 			commit := &scm.Commit{}
 			commit.Tree.Sha = treeSHA
 			fc.Commits[SHA] = commit
-			handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), &fakePruner{})
+			handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{})
 			found := false
 			for _, body := range fc.PullRequestCommentsAdded {
 				if addLGTMLabelNotificationRe.MatchString(body) {
@@ -1157,7 +1157,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		SCMProviderClient:   fc,
 		PullRequestComments: fc.PullRequestComments[101],
 	}
-	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), fp)
+	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), fp)
 	found := false
 	for _, body := range fc.PullRequestCommentsDeleted {
 		if addLGTMLabelNotificationRe.MatchString(body) {

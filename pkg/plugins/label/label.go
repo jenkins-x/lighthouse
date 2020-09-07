@@ -41,7 +41,8 @@ var (
 )
 
 func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
+	plugins.RegisterHelpProvider(pluginName, helpProvider)
+	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
 }
 
 func configString(labels []string) string {

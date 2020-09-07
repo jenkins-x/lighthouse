@@ -133,7 +133,7 @@ func TestWipLabel(t *testing.T) {
 				hasLabel: tc.hasLabel,
 			}
 
-			if err := handle(fakeClient, logrus.WithField("plugin", PluginName), e); err != nil {
+			if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e); err != nil {
 				t.Fatalf("For case %s, didn't expect error from wip: %v", tc.name, err)
 			}
 

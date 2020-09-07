@@ -101,7 +101,7 @@ func TestHandle(t *testing.T) {
 				return tc.hasLabel
 			}
 
-			if err := handle(scmprovider.ToTestClient(client), logrus.WithField("plugin", PluginName), e, hasLabel); err != nil {
+			if err := handle(scmprovider.ToTestClient(client), logrus.WithField("plugin", pluginName), e, hasLabel); err != nil {
 				t.Fatalf("For case %s, didn't expect error from hold: %v", tc.name, err)
 			}
 

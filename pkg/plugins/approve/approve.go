@@ -95,9 +95,10 @@ type state struct {
 }
 
 func init() {
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent, helpProvider)
-	plugins.RegisterReviewEventHandler(PluginName, handleReviewEvent, helpProvider)
-	plugins.RegisterPullRequestHandler(PluginName, handlePullRequestEvent, helpProvider)
+	plugins.RegisterHelpProvider(PluginName, helpProvider)
+	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent)
+	plugins.RegisterReviewEventHandler(PluginName, handleReviewEvent)
+	plugins.RegisterPullRequestHandler(PluginName, handlePullRequestEvent)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

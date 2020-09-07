@@ -34,8 +34,7 @@ import (
 )
 
 const (
-	// PluginName defines this plugin's registered name.
-	PluginName = labels.LGTM
+	pluginName = labels.LGTM
 )
 
 var (
@@ -59,11 +58,12 @@ type commentPruner interface {
 }
 
 func init() {
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent, helpProvider)
-	plugins.RegisterPullRequestHandler(PluginName, func(pc plugins.Agent, pe scm.PullRequestHook) error {
+	plugins.RegisterHelpProvider(pluginName, helpProvider)
+	plugins.RegisterGenericCommentHandler(pluginName, handleGenericCommentEvent)
+	plugins.RegisterPullRequestHandler(pluginName, func(pc plugins.Agent, pe scm.PullRequestHook) error {
 		return handlePullRequestEvent(pc, pe)
-	}, helpProvider)
-	plugins.RegisterReviewEventHandler(PluginName, handlePullRequestReviewEvent, helpProvider)
+	})
+	plugins.RegisterReviewEventHandler(pluginName, handlePullRequestReviewEvent)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
