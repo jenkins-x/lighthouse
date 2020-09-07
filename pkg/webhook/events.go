@@ -99,6 +99,16 @@ func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 		"url":                    pc.Comment.Link,
 	})
 	l.Infof("PR comment %s.", pc.Action)
+	for p, h := range s.Plugins.PullRequestCommentHandlers(pc.Repo.Namespace, pc.Repo.Name) {
+		s.wg.Add(1)
+		go func(p string, h plugins.PullRequestCommentHandler) {
+			defer s.wg.Done()
+			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+			if err := h(agent, pc); err != nil {
+				agent.Logger.WithError(err).Error("Error handling IssueCommentEvent.")
+			}
+		}(p, h)
+	}
 
 	s.handleGenericComment(
 		l,

@@ -96,9 +96,10 @@ type state struct {
 
 func init() {
 	plugins.RegisterHelpProvider(PluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent)
 	plugins.RegisterReviewEventHandler(PluginName, handleReviewEvent)
 	plugins.RegisterPullRequestHandler(PluginName, handlePullRequestEvent)
+	plugins.RegisterIssueCommentHandler(PluginName, handleIssueCommentEvent)
+	plugins.RegisterPullRequestCommentHandler(PluginName, handlePullRequestCommentEvent)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -146,44 +147,67 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	return pluginHelp, nil
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
-	baseURL, err := url.Parse(ce.IssueLink)
+func handleIssueCommentEvent(pc plugins.Agent, ce scm.IssueCommentHook) error {
+	if ce.Action != scm.ActionCreate || !ce.Issue.PullRequest {
+		return nil
+	}
+	baseURL, err := url.Parse(ce.Issue.Link)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse URL %s", ce.Link)
+		return errors.Wrapf(err, "failed to parse URL %s", ce.Comment.Link)
 	}
 	baseURL.Path = ""
 	baseURL.RawQuery = ""
-	return handleGenericComment(
+	return handleComment(
 		pc.Logger,
 		pc.SCMProviderClient,
 		pc.OwnersClient,
 		baseURL,
 		pc.PluginConfig,
-		&ce,
+		ce.Repository(),
+		ce.Comment,
+		ce.Issue.Number,
 	)
 }
 
-func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersClient, serverURL *url.URL, config *plugins.Configuration, ce *scmprovider.GenericCommentEvent) error {
-	if ce.Action != scm.ActionCreate || !ce.IsPR || ce.IssueState == "closed" {
+func handlePullRequestCommentEvent(pc plugins.Agent, ce scm.PullRequestCommentHook) error {
+	if ce.Action != scm.ActionCreate || ce.PullRequest.State == "closed" {
 		return nil
 	}
+	baseURL, err := url.Parse(ce.PullRequest.Link)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse URL %s", ce.Comment.Link)
+	}
+	baseURL.Path = ""
+	baseURL.RawQuery = ""
+	return handleComment(
+		pc.Logger,
+		pc.SCMProviderClient,
+		pc.OwnersClient,
+		baseURL,
+		pc.PluginConfig,
+		ce.Repository(),
+		ce.Comment,
+		ce.PullRequest.Number,
+	)
+}
 
+func handleComment(log *logrus.Entry, spc scmProviderClient, oc ownersClient, serverURL *url.URL, config *plugins.Configuration, r scm.Repository, c scm.Comment, number int) error {
 	botName, err := spc.BotName()
 	if err != nil {
 		return err
 	}
 
-	opts := optionsForRepo(config, ce.Repo.Namespace, ce.Repo.Name)
-	if !isApprovalCommand(botName, opts.LgtmActsAsApprove, &comment{Body: ce.Body, Author: ce.Author.Login}) {
+	opts := optionsForRepo(config, r.Namespace, r.Name)
+	if !isApprovalCommand(botName, opts.LgtmActsAsApprove, &comment{Body: c.Body, Author: c.Author.Login}) {
 		return nil
 	}
 
-	pr, err := spc.GetPullRequest(ce.Repo.Namespace, ce.Repo.Name, ce.Number)
+	pr, err := spc.GetPullRequest(r.Namespace, r.Name, number)
 	if err != nil {
 		return err
 	}
 
-	repo, err := oc.LoadRepoOwners(ce.Repo.Namespace, ce.Repo.Name, pr.Base.Ref)
+	repo, err := oc.LoadRepoOwners(r.Namespace, r.Name, pr.Base.Ref)
 	if err != nil {
 		return err
 	}
@@ -195,14 +219,14 @@ func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersCli
 		serverURL,
 		opts,
 		&state{
-			org:       ce.Repo.Namespace,
-			repo:      ce.Repo.Name,
+			org:       r.Namespace,
+			repo:      r.Name,
 			branch:    pr.Base.Ref,
-			number:    ce.Number,
-			body:      ce.IssueBody,
-			author:    ce.IssueAuthor.Login,
-			assignees: ce.Assignees,
-			htmlURL:   ce.IssueLink,
+			number:    pr.Number,
+			body:      pr.Body,
+			author:    pr.Author.Login,
+			assignees: pr.Assignees,
+			htmlURL:   pr.Link,
 		},
 	)
 }

@@ -45,6 +45,7 @@ var (
 	issueHandlers              = map[string]IssueHandler{}
 	issueCommentHandlers       = map[string]IssueCommentHandler{}
 	pullRequestHandlers        = map[string]PullRequestHandler{}
+	pullRequestCommentHandlers = map[string]PullRequestCommentHandler{}
 	pushEventHandlers          = map[string]PushEventHandler{}
 	reviewEventHandlers        = map[string]ReviewEventHandler{}
 	reviewCommentEventHandlers = map[string]ReviewCommentEventHandler{}
@@ -79,6 +80,14 @@ type IssueCommentHandler func(Agent, scm.IssueCommentHook) error
 // RegisterIssueCommentHandler registers a plugin's scm.Comment handler.
 func RegisterIssueCommentHandler(name string, fn IssueCommentHandler) {
 	issueCommentHandlers[name] = fn
+}
+
+// PullRequestCommentHandler defines the function contract for a scm.Comment handler.
+type PullRequestCommentHandler func(Agent, scm.PullRequestCommentHook) error
+
+// RegisterPullRequestCommentHandler registers a plugin's scm.Comment handler.
+func RegisterPullRequestCommentHandler(name string, fn PullRequestCommentHandler) {
+	pullRequestCommentHandlers[name] = fn
 }
 
 // PullRequestHandler defines the function contract for a scm.PullRequest handler.
@@ -320,6 +329,21 @@ func (pa *ConfigAgent) IssueCommentHandlers(owner, repo string) map[string]Issue
 	hs := map[string]IssueCommentHandler{}
 	for _, p := range pa.getPlugins(owner, repo) {
 		if h, ok := issueCommentHandlers[p]; ok {
+			hs[p] = h
+		}
+	}
+
+	return hs
+}
+
+// PullRequestCommentHandlers returns a map of plugin names to handlers for the repo.
+func (pa *ConfigAgent) PullRequestCommentHandlers(owner, repo string) map[string]PullRequestCommentHandler {
+	pa.mut.Lock()
+	defer pa.mut.Unlock()
+
+	hs := map[string]PullRequestCommentHandler{}
+	for _, p := range pa.getPlugins(owner, repo) {
+		if h, ok := pullRequestCommentHandlers[p]; ok {
 			hs[p] = h
 		}
 	}

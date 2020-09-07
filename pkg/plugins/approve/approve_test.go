@@ -1309,7 +1309,7 @@ func (fro fakeRepoOwners) RequiredReviewers(path string) sets.String {
 func TestHandleGenericComment(t *testing.T) {
 	tests := []struct {
 		name              string
-		commentEvent      scmprovider.GenericCommentEvent
+		commentEvent      scm.PullRequestCommentHook
 		lgtmActsAsApprove bool
 		expectHandle      bool
 		expectState       *state
@@ -1317,17 +1317,20 @@ func TestHandleGenericComment(t *testing.T) {
 	}{
 		{
 			name: "valid approve command",
-			commentEvent: scmprovider.GenericCommentEvent{
+			commentEvent: scm.PullRequestCommentHook{
 				Action: scm.ActionCreate,
-				IsPR:   true,
-				Body:   "/approve",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				Comment: scm.Comment{
+					Body: "/approve",
+					Author: scm.User{
+						Login: "author",
+					},
 				},
-				IssueBody: "Fix everything",
-				IssueAuthor: scm.User{
-					Login: "P.R. Author",
+				PullRequest: scm.PullRequest{
+					Number: 1,
+					Body:   "Fix everything",
+					Author: scm.User{
+						Login: "P.R. Author",
+					},
 				},
 			},
 			expectHandle: true,
@@ -1344,79 +1347,81 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "not comment created",
-			commentEvent: scmprovider.GenericCommentEvent{
+			commentEvent: scm.PullRequestCommentHook{
 				Action: scm.ActionUpdate,
-				IsPR:   true,
-				Body:   "/approve",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				Comment: scm.Comment{
+					Body: "/approve",
+					Author: scm.User{
+						Login: "author",
+					},
 				},
-			},
-			expectHandle: false,
-		},
-		{
-			name: "not PR",
-			commentEvent: scmprovider.GenericCommentEvent{
-				Action: scm.ActionUpdate,
-				IsPR:   false,
-				Body:   "/approve",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				PullRequest: scm.PullRequest{
+					Number: 1,
 				},
 			},
 			expectHandle: false,
 		},
 		{
 			name: "closed PR",
-			commentEvent: scmprovider.GenericCommentEvent{
+			commentEvent: scm.PullRequestCommentHook{
 				Action: scm.ActionCreate,
-				IsPR:   true,
-				Body:   "/approve",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				Comment: scm.Comment{
+					Body: "/approve",
+					Author: scm.User{
+						Login: "author",
+					},
 				},
-				IssueState: "closed",
+				PullRequest: scm.PullRequest{
+					Number: 1,
+					State:  "closed",
+				},
 			},
 			expectHandle: false,
 		},
 		{
 			name: "no approve command",
-			commentEvent: scmprovider.GenericCommentEvent{
+			commentEvent: scm.PullRequestCommentHook{
 				Action: scm.ActionCreate,
-				IsPR:   true,
-				Body:   "stuff",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				Comment: scm.Comment{
+					Body: "stuff",
+					Author: scm.User{
+						Login: "author",
+					},
+				},
+				PullRequest: scm.PullRequest{
+					Number: 1,
 				},
 			},
 			expectHandle: false,
 		},
 		{
 			name: "lgtm without lgtmActsAsApprove",
-			commentEvent: scmprovider.GenericCommentEvent{
+			commentEvent: scm.PullRequestCommentHook{
 				Action: scm.ActionCreate,
-				IsPR:   true,
-				Body:   "/lgtm",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				Comment: scm.Comment{
+					Body: "/lgtm",
+					Author: scm.User{
+						Login: "author",
+					},
+				},
+				PullRequest: scm.PullRequest{
+					Number: 1,
 				},
 			},
 			expectHandle: false,
 		},
 		{
 			name: "lgtm with lgtmActsAsApprove",
-			commentEvent: scmprovider.GenericCommentEvent{
+			commentEvent: scm.PullRequestCommentHook{
 				Action: scm.ActionCreate,
-				IsPR:   true,
-				Body:   "/lgtm",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				Comment: scm.Comment{
+					Body: "/lgtm",
+					Author: scm.User{
+						Login: "author",
+					},
+				},
+				PullRequest: scm.PullRequest{
+					Number: 1,
 				},
 			},
 			lgtmActsAsApprove: true,
@@ -1424,17 +1429,20 @@ func TestHandleGenericComment(t *testing.T) {
 		},
 		{
 			name: "valid approve command with prefix",
-			commentEvent: scmprovider.GenericCommentEvent{
+			commentEvent: scm.PullRequestCommentHook{
 				Action: scm.ActionCreate,
-				IsPR:   true,
-				Body:   "/lh-approve",
-				Number: 1,
-				Author: scm.User{
-					Login: "author",
+				Comment: scm.Comment{
+					Body: "/lh-approve",
+					Author: scm.User{
+						Login: "author",
+					},
 				},
-				IssueBody: "Fix everything",
-				IssueAuthor: scm.User{
-					Login: "P.R. Author",
+				PullRequest: scm.PullRequest{
+					Number: 1,
+					Body:   "Fix everything",
+					Author: scm.User{
+						Login: "P.R. Author",
+					},
 				},
 			},
 			expectHandle: true,
@@ -1493,7 +1501,7 @@ func TestHandleGenericComment(t *testing.T) {
 				Repos:             []string{test.commentEvent.Repo.Namespace},
 				LgtmActsAsApprove: test.lgtmActsAsApprove,
 			})
-			err := handleGenericComment(
+			err := handleComment(
 				logrus.WithField("plugin", "approve"),
 				fakeClient,
 				fakeOwnersClient{},
@@ -1502,7 +1510,9 @@ func TestHandleGenericComment(t *testing.T) {
 					Host:   "github.com",
 				},
 				config,
-				&test.commentEvent,
+				test.commentEvent.Repository(),
+				test.commentEvent.Comment,
+				test.commentEvent.PullRequest.Number,
 			)
 
 			if test.expectHandle && !handled {
