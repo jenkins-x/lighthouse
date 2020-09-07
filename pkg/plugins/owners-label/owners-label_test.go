@@ -193,7 +193,7 @@ func TestHandle(t *testing.T) {
 			Repo:        basicPR.Base.Repo,
 		}
 
-		err := handle(fakeClient, foc, logrus.WithField("plugin", PluginName), pre)
+		err := handle(fakeClient, foc, logrus.WithField("plugin", pluginName), pre)
 		if err != nil {
 			t.Errorf("[%s] unexpected error from handle: %v", tc.name, err)
 			continue

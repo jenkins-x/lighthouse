@@ -55,6 +55,11 @@ var (
 // plugins. It takes into account the plugins configuration and enabled repositories.
 type HelpProvider func(config *Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error)
 
+// RegisterHelpProvider registers a plugin's help provider.
+func RegisterHelpProvider(name string, fn HelpProvider) {
+	pluginHelp[name] = fn
+}
+
 // HelpProviders returns the map of registered plugins with their associated HelpProvider.
 func HelpProviders() map[string]HelpProvider {
 	return pluginHelp
@@ -64,8 +69,7 @@ func HelpProviders() map[string]HelpProvider {
 type IssueHandler func(Agent, scm.Issue) error
 
 // RegisterIssueHandler registers a plugin's scm.Issue handler.
-func RegisterIssueHandler(name string, fn IssueHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterIssueHandler(name string, fn IssueHandler) {
 	issueHandlers[name] = fn
 }
 
@@ -73,8 +77,7 @@ func RegisterIssueHandler(name string, fn IssueHandler, help HelpProvider) {
 type IssueCommentHandler func(Agent, scm.IssueCommentHook) error
 
 // RegisterIssueCommentHandler registers a plugin's scm.Comment handler.
-func RegisterIssueCommentHandler(name string, fn IssueCommentHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterIssueCommentHandler(name string, fn IssueCommentHandler) {
 	issueCommentHandlers[name] = fn
 }
 
@@ -82,8 +85,7 @@ func RegisterIssueCommentHandler(name string, fn IssueCommentHandler, help HelpP
 type PullRequestHandler func(Agent, scm.PullRequestHook) error
 
 // RegisterPullRequestHandler registers a plugin's scm.PullRequest handler.
-func RegisterPullRequestHandler(name string, fn PullRequestHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterPullRequestHandler(name string, fn PullRequestHandler) {
 	pullRequestHandlers[name] = fn
 }
 
@@ -91,8 +93,7 @@ func RegisterPullRequestHandler(name string, fn PullRequestHandler, help HelpPro
 type StatusEventHandler func(Agent, scm.Status) error
 
 // RegisterStatusEventHandler registers a plugin's scm.Status handler.
-func RegisterStatusEventHandler(name string, fn StatusEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterStatusEventHandler(name string, fn StatusEventHandler) {
 	statusEventHandlers[name] = fn
 }
 
@@ -100,8 +101,7 @@ func RegisterStatusEventHandler(name string, fn StatusEventHandler, help HelpPro
 type PushEventHandler func(Agent, scm.PushHook) error
 
 // RegisterPushEventHandler registers a plugin's scm.PushHook handler.
-func RegisterPushEventHandler(name string, fn PushEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterPushEventHandler(name string, fn PushEventHandler) {
 	pushEventHandlers[name] = fn
 }
 
@@ -109,8 +109,7 @@ func RegisterPushEventHandler(name string, fn PushEventHandler, help HelpProvide
 type ReviewEventHandler func(Agent, scm.ReviewHook) error
 
 // RegisterReviewEventHandler registers a plugin's ReviewHook handler.
-func RegisterReviewEventHandler(name string, fn ReviewEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterReviewEventHandler(name string, fn ReviewEventHandler) {
 	reviewEventHandlers[name] = fn
 }
 
@@ -118,8 +117,7 @@ func RegisterReviewEventHandler(name string, fn ReviewEventHandler, help HelpPro
 type ReviewCommentEventHandler func(Agent, scm.PullRequestCommentHook) error
 
 // RegisterReviewCommentEventHandler registers a plugin's scm.PullRequestCommentHook handler.
-func RegisterReviewCommentEventHandler(name string, fn ReviewCommentEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterReviewCommentEventHandler(name string, fn ReviewCommentEventHandler) {
 	reviewCommentEventHandlers[name] = fn
 }
 
@@ -127,8 +125,7 @@ func RegisterReviewCommentEventHandler(name string, fn ReviewCommentEventHandler
 type GenericCommentHandler func(Agent, scmprovider.GenericCommentEvent) error
 
 // RegisterGenericCommentHandler registers a plugin's scm.Comment handler.
-func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help HelpProvider) {
-	pluginHelp[name] = help
+func RegisterGenericCommentHandler(name string, fn GenericCommentHandler) {
 	genericCommentHandlers[name] = fn
 }
 

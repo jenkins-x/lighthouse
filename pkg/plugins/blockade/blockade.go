@@ -57,7 +57,8 @@ type pruneClient interface {
 }
 
 func init() {
-	plugins.RegisterPullRequestHandler(PluginName, handlePullRequest, helpProvider)
+	plugins.RegisterHelpProvider(PluginName, helpProvider)
+	plugins.RegisterPullRequestHandler(PluginName, handlePullRequest)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

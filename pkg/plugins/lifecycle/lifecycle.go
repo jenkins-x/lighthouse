@@ -33,8 +33,11 @@ var (
 	lifecycleRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?(remove-)?lifecycle (active|frozen|stale|rotten)\s*$`)
 )
 
+const pluginName = "lifecycle"
+
 func init() {
-	plugins.RegisterGenericCommentHandler("lifecycle", lifecycleHandleGenericComment, help)
+	plugins.RegisterHelpProvider(pluginName, help)
+	plugins.RegisterGenericCommentHandler(pluginName, lifecycleHandleGenericComment)
 }
 
 func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

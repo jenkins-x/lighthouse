@@ -878,7 +878,7 @@ func TestHandleGenericComment(t *testing.T) {
 				SCMProviderClient: g,
 				LauncherClient:    fakeLauncher,
 				Config:            fakeConfig,
-				Logger:            logrus.WithField("plugin", PluginName),
+				Logger:            logrus.WithField("plugin", pluginName),
 			}
 			presubmits := tc.Presubmits
 			if presubmits == nil {

@@ -34,8 +34,7 @@ import (
 )
 
 const (
-	// PluginName defines this plugin's registered name.
-	PluginName = "hold"
+	pluginName = "hold"
 )
 
 var (
@@ -46,7 +45,8 @@ var (
 type hasLabelFunc func(label string, issueLabels []*scm.Label) bool
 
 func init() {
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericComment, helpProvider)
+	plugins.RegisterHelpProvider(pluginName, helpProvider)
+	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

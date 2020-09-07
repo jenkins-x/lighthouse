@@ -43,7 +43,8 @@ const (
 )
 
 func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
+	plugins.RegisterHelpProvider(pluginName, helpProvider)
+	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {

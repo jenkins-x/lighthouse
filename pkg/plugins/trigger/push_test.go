@@ -138,7 +138,7 @@ func TestHandlePE(t *testing.T) {
 			SCMProviderClient: g,
 			LauncherClient:    fakeLauncher,
 			Config:            &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}},
-			Logger:            logrus.WithField("plugin", PluginName),
+			Logger:            logrus.WithField("plugin", pluginName),
 		}
 		postsubmits := map[string][]job.Postsubmit{
 			"org/repo": {
