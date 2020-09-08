@@ -127,14 +127,18 @@ func (c client) presubmitForContext(org, repo, context string) *job.Presubmit {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The override plugin allows repo admins to force a github status context to pass",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The override plugin allows repo admins to force a github status context to pass",
-	}
+	pluginHelp := &pluginhelp.PluginHelp{}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/override [context]",
 		Description: "Forces a github status context to green (one per line).",

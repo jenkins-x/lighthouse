@@ -38,15 +38,19 @@ var (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The assign plugin assigns or requests reviews from users. Specific users can be assigned with the command '/assign @user1' or have reviews requested of them with the command '/cc @user1'. If no user is specified the commands default to targeting the user who created the command. Assignments and requested reviews can be removed in the same way that they are added by prefixing the commands with 'un'.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The assign plugin assigns or requests reviews from users. Specific users can be assigned with the command '/assign @user1' or have reviews requested of them with the command '/cc @user1'. If no user is specified the commands default to targeting the user who created the command. Assignments and requested reviews can be removed in the same way that they are added by prefixing the commands with 'un'.",
-	}
+	pluginHelp := &pluginhelp.PluginHelp{}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/[un]assign [[@]<username>...]",
 		Description: "Assigns an assignee to the PR",

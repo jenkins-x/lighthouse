@@ -51,8 +51,14 @@ type scmProviderClient interface {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -61,7 +67,6 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	}
 
 	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
 		Config: func() map[string]string {
 			configMap := make(map[string]string)
 			for _, repo := range enabledRepos {

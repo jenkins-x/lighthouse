@@ -57,8 +57,14 @@ type pruneClient interface {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(PluginName, helpProvider)
-	plugins.RegisterPullRequestHandler(PluginName, handlePullRequest)
+	plugins.RegisterPlugin(
+		PluginName,
+		plugins.Plugin{
+			Description:        "The blockade plugin blocks pull requests from merging if they touch specific files. The plugin applies the '" + labels.BlockedPaths + "' label to pull requests that touch files that match a blockade's block regular expression and none of the corresponding exception regular expressions.",
+			HelpProvider:       helpProvider,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -79,11 +85,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 		blockConfig[repo] = buf.String()
 	}
-	return &pluginhelp.PluginHelp{
-			Description: "The blockade plugin blocks pull requests from merging if they touch specific files. The plugin applies the '" + labels.BlockedPaths + "' label to pull requests that touch files that match a blockade's block regular expression and none of the corresponding exception regular expressions.",
-			Config:      blockConfig,
-		},
-		nil
+	return &pluginhelp.PluginHelp{Config: blockConfig}, nil
 }
 
 type blockCalc func([]*scm.Change, []blockade) summary

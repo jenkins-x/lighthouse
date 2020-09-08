@@ -57,15 +57,20 @@ type scmProviderClient interface {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description: `The sigmention plugin responds to SIG (Special Interest Group) GitHub team mentions like '@kubernetes/sig-testing-bugs'. The plugin responds in two ways:
+<ol><li> The appropriate 'sig/*' and 'kind/*' labels are applied to the issue or pull request. In this case 'sig/testing' and 'kind/bug'.</li>
+<li> If the user who mentioned the GitHub team is not a member of the organization that owns the repository the bot will create a comment that repeats the mention. This is necessary because non-member mentions do not trigger GitHub notifications.</li></ol>`,
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	return &pluginhelp.PluginHelp{
-			Description: `The sigmention plugin responds to SIG (Special Interest Group) GitHub team mentions like '@kubernetes/sig-testing-bugs'. The plugin responds in two ways:
-<ol><li> The appropriate 'sig/*' and 'kind/*' labels are applied to the issue or pull request. In this case 'sig/testing' and 'kind/bug'.</li>
-<li> If the user who mentioned the GitHub team is not a member of the organization that owns the repository the bot will create a comment that repeats the mention. This is necessary because non-member mentions do not trigger GitHub notifications.</li></ol>`,
 			Config: map[string]string{
 				"": fmt.Sprintf("Labels added by the plugin are triggered by mentions of GitHub teams matching the following regexp:\n%s", config.SigMention.Regexp),
 			},

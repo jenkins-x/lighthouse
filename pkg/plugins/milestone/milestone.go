@@ -52,8 +52,14 @@ type scmProviderClient interface {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -62,7 +68,6 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	}
 
 	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
 		Config: func(repos []string) map[string]string {
 			configMap := make(map[string]string)
 			for _, repo := range repos {

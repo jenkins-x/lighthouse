@@ -32,15 +32,18 @@ const (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "The owners-label plugin automatically adds labels to PRs based on the files they touch. Specifically, the 'labels' sections of OWNERS files are used to determine which labels apply to the changes.",
+			HelpProvider:       helpProvider,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{
-			Description: "The owners-label plugin automatically adds labels to PRs based on the files they touch. Specifically, the 'labels' sections of OWNERS files are used to determine which labels apply to the changes.",
-		},
-		nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 type ownersClient interface {

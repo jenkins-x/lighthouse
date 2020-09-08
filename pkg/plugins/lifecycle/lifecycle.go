@@ -36,14 +36,18 @@ var (
 const pluginName = "lifecycle"
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, help)
-	plugins.RegisterGenericCommentHandler(pluginName, lifecycleHandleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "Close, reopen, flag and/or unflag an issue or PR as frozen/stale/rotten",
+			HelpProvider:          help,
+			GenericCommentHandler: lifecycleHandleGenericComment,
+		},
+	)
 }
 
 func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "Close, reopen, flag and/or unflag an issue or PR as frozen/stale/rotten",
-	}
+	pluginHelp := &pluginhelp.PluginHelp{}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/close",
 		Description: "Closes an issue or PR.",

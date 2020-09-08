@@ -56,15 +56,19 @@ var (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
-	}
+	pluginHelp := &pluginhelp.PluginHelp{}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/(pony) [pony]",
 		Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",

@@ -38,15 +38,20 @@ const (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "Label PRs against a release branch which do not have the `cherry-pick-approved` label with the `do-not-merge/cherry-pick-not-approved` label.",
+			HelpProvider:       helpProvider,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// Only the 'Config' and Description' fields are necessary because this
 	// plugin does not react to any commands.
 	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "Label PRs against a release branch which do not have the `cherry-pick-approved` label with the `do-not-merge/cherry-pick-not-approved` label.",
 		Config: map[string]string{
 			"": fmt.Sprintf(
 				"The cherry-pick-unapproved plugin treats PRs against branch names satisfying the regular expression `%s` as cherry-pick PRs and adds the following comment:\n%s",

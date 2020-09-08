@@ -49,15 +49,19 @@ type event struct {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           labels.Shrug,
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: labels.Shrug,
-	}
+	pluginHelp := &pluginhelp.PluginHelp{}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/[un]shrug",
 		Description: labels.Shrug,

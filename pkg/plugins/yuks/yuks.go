@@ -43,15 +43,19 @@ const (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The yuks plugin comments with jokes in response to the `/joke` command.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The yuks plugin comments with jokes in response to the `/joke` command.",
-	}
+	pluginHelp := &pluginhelp.PluginHelp{}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/joke",
 		Description: "Tells a joke.",
