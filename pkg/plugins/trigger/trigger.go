@@ -39,10 +39,18 @@ const (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericCommentEvent)
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
-	plugins.RegisterPushEventHandler(pluginName, handlePush)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
+<br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
+<br>The '/retest' command can be used to rerun jobs that have reported failure.`,
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericCommentEvent,
+			PullRequestHandler:    handlePullRequest,
+			PushEventHandler:      handlePush,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -65,9 +73,6 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		configInfo[orgRepo] = fmt.Sprintf("The trusted GitHub organization for this repository is %q.", org)
 	}
 	pluginHelp := &pluginhelp.PluginHelp{
-		Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
-<br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
-<br>The '/retest' command can be used to rerun jobs that have reported failure.`,
 		Config: configInfo,
 	}
 	pluginHelp.AddCommand(pluginhelp.Command{

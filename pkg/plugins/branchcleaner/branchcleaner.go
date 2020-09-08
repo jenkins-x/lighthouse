@@ -31,13 +31,18 @@ const (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "The branchcleaner plugin automatically deletes source branches for merged PRs between two branches on the same repository. This is helpful to keep repos that don't allow forking clean.",
+			HelpProvider:       helpProvider,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{
-		Description: "The branchcleaner plugin automatically deletes source branches for merged PRs between two branches on the same repository. This is helpful to keep repos that don't allow forking clean."}, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {

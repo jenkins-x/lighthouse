@@ -45,14 +45,19 @@ var defaultSizes = plugins.Size{
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "The size plugin manages the 'size/*' labels, maintaining the appropriate label on each pull request as it is updated. Generated files identified by the config file '.generated_files' at the repo root are ignored. Labels are applied based on the total number of lines of changes (additions and deletions).",
+			HelpProvider:       helpProvider,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	sizes := sizesOrDefault(config.Size)
 	return &pluginhelp.PluginHelp{
-			Description: "The size plugin manages the 'size/*' labels, maintaining the appropriate label on each pull request as it is updated. Generated files identified by the config file '.generated_files' at the repo root are ignored. Labels are applied based on the total number of lines of changes (additions and deletions).",
 			Config: map[string]string{
 				"": fmt.Sprintf(`The plugin has the following thresholds:<ul>
 <li>size/XS:  0-%d</li>

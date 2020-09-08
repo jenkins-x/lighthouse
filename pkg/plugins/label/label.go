@@ -41,8 +41,14 @@ var (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The label plugin provides commands that add or remove certain types of labels. Labels of the following types can be manipulated: 'area/*', 'committee/*', 'kind/*', 'language/*', 'priority/*', 'sig/*', 'triage/*', and 'wg/*'. More labels can be configured to be used via the /label command.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func configString(labels []string) string {
@@ -58,7 +64,6 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	labels = append(labels, defaultLabels...)
 	labels = append(labels, config.Label.AdditionalLabels...)
 	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The label plugin provides commands that add or remove certain types of labels. Labels of the following types can be manipulated: 'area/*', 'committee/*', 'kind/*', 'language/*', 'priority/*', 'sig/*', 'triage/*', and 'wg/*'. More labels can be configured to be used via the /label command.",
 		Config: map[string]string{
 			"": configString(labels),
 		},

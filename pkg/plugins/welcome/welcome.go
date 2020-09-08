@@ -45,8 +45,14 @@ type PRInfo struct {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "The welcome plugin posts a welcoming message when it detects a user's first contribution to a repo.",
+			HelpProvider:       helpProvider,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -66,11 +72,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	}
 
 	// The {WhoCanUse, Usage, Examples} fields are omitted because this plugin is not triggered with commands.
-	return &pluginhelp.PluginHelp{
-			Description: "The welcome plugin posts a welcoming message when it detects a user's first contribution to a repo.",
-			Config:      welcomeConfig,
-		},
-		nil
+	return &pluginhelp.PluginHelp{Config: welcomeConfig}, nil
 }
 
 type scmProviderClient interface {

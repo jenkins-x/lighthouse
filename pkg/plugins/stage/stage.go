@@ -40,15 +40,19 @@ var (
 const pluginName = "stage"
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, help)
-	plugins.RegisterGenericCommentHandler(pluginName, stageHandleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "Label the stage of an issue as alpha/beta/stable",
+			HelpProvider:          help,
+			GenericCommentHandler: stageHandleGenericComment,
+		},
+	)
 }
 
 func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "Label the stage of an issue as alpha/beta/stable",
-	}
+	pluginHelp := &pluginhelp.PluginHelp{}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/[remove-]stage <alpha|beta|stable>",
 		Description: "Labels the stage of an issue as alpha/beta/stable",

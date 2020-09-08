@@ -51,13 +51,18 @@ const (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
 		Config: map[string]string{
 			"": fmt.Sprintf("The cat plugin uses an api key for thecatapi.com stored in %s.", config.Cat.KeyPath),
 		},

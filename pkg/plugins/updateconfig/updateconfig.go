@@ -50,8 +50,14 @@ const (
 )
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "The config-updater plugin automatically redeploys configuration and plugin configuration files when they change. The plugin watches for pull request merges that modify either of the config files and updates the cluster's configmap resources in response.",
+			HelpProvider:       helpProvider,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -66,11 +72,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		)
 		configInfo = map[string]string{"": msg}
 	}
-	return &pluginhelp.PluginHelp{
-			Description: "The config-updater plugin automatically redeploys configuration and plugin configuration files when they change. The plugin watches for pull request merges that modify either of the config files and updates the cluster's configmap resources in response.",
-			Config:      configInfo,
-		},
-		nil
+	return &pluginhelp.PluginHelp{Config: configInfo}, nil
 }
 
 type scmProviderClient interface {

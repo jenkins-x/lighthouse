@@ -58,12 +58,18 @@ type commentPruner interface {
 }
 
 func init() {
-	plugins.RegisterHelpProvider(pluginName, helpProvider)
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericCommentEvent)
-	plugins.RegisterPullRequestHandler(pluginName, func(pc plugins.Agent, pe scm.PullRequestHook) error {
-		return handlePullRequestEvent(pc, pe)
-	})
-	plugins.RegisterReviewEventHandler(pluginName, handlePullRequestReviewEvent)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
+			HelpProvider:          helpProvider,
+			GenericCommentHandler: handleGenericCommentEvent,
+			PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
+				return handlePullRequestEvent(pc, pe)
+			},
+			ReviewEventHandler: handlePullRequestReviewEvent,
+		},
+	)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -99,10 +105,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 			configInfo[orgRepo] = strings.Join(configInfoStrings, "\n")
 		}
 	}
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
-		Config:      configInfo,
-	}
+	pluginHelp := &pluginhelp.PluginHelp{Config: configInfo}
 	pluginHelp.AddCommand(pluginhelp.Command{
 		Usage:       "/lgtm [cancel] or GitHub Review action",
 		Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
