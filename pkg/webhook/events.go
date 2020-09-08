@@ -53,20 +53,22 @@ func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		"url":                    ic.Comment.Link,
 	})
 	l.Infof("Issue comment %s.", ic.Action)
-	for p, h := range s.Plugins.IssueCommentHandlers(ic.Repo.Namespace, ic.Repo.Name) {
-		s.wg.Add(1)
-		go func(p string, h plugins.IssueCommentHandler) {
-			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
-			agent.InitializeCommentPruner(
-				ic.Repo.Namespace,
-				ic.Repo.Name,
-				ic.Issue.Number,
-			)
-			if err := h(agent, ic); err != nil {
-				agent.Logger.WithError(err).Error("Error handling IssueCommentEvent.")
-			}
-		}(p, h)
+	for p, h := range s.Plugins.GetPlugins(ic.Repo.Namespace, ic.Repo.Name) {
+		if h.IssueCommentHandler != nil {
+			s.wg.Add(1)
+			go func(p string, h plugins.IssueCommentHandler) {
+				defer s.wg.Done()
+				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+				agent.InitializeCommentPruner(
+					ic.Repo.Namespace,
+					ic.Repo.Name,
+					ic.Issue.Number,
+				)
+				if err := h(agent, ic); err != nil {
+					agent.Logger.WithError(err).Error("Error handling IssueCommentEvent.")
+				}
+			}(p, h.IssueCommentHandler)
+		}
 	}
 
 	s.handleGenericComment(
@@ -121,20 +123,22 @@ func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 }
 
 func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCommentEvent) {
-	for p, h := range s.Plugins.GenericCommentHandlers(ce.Repo.Namespace, ce.Repo.Name) {
-		s.wg.Add(1)
-		go func(p string, h plugins.GenericCommentHandler) {
-			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
-			agent.InitializeCommentPruner(
-				ce.Repo.Namespace,
-				ce.Repo.Name,
-				ce.Number,
-			)
-			if err := h(agent, *ce); err != nil {
-				agent.Logger.WithError(err).Error("Error handling GenericCommentEvent.")
-			}
-		}(p, h)
+	for p, h := range s.Plugins.GetPlugins(ce.Repo.Namespace, ce.Repo.Name) {
+		if h.GenericCommentHandler != nil {
+			s.wg.Add(1)
+			go func(p string, h plugins.GenericCommentHandler) {
+				defer s.wg.Done()
+				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+				agent.InitializeCommentPruner(
+					ce.Repo.Namespace,
+					ce.Repo.Name,
+					ce.Number,
+				)
+				if err := h(agent, *ce); err != nil {
+					agent.Logger.WithError(err).Error("Error handling GenericCommentEvent.")
+				}
+			}(p, h.GenericCommentHandler)
+		}
 	}
 }
 
@@ -149,16 +153,18 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	})
 	l.Info("Push event.")
 	c := 0
-	for p, h := range s.Plugins.PushEventHandlers(repo.Namespace, repo.Name) {
-		s.wg.Add(1)
-		c++
-		go func(p string, h plugins.PushEventHandler) {
-			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
-			if err := h(agent, *pe); err != nil {
-				agent.Logger.WithError(err).Error("Error handling PushEvent.")
-			}
-		}(p, h)
+	for p, h := range s.Plugins.GetPlugins(repo.Namespace, repo.Name) {
+		if h.PushEventHandler != nil {
+			s.wg.Add(1)
+			c++
+			go func(p string, h plugins.PushEventHandler) {
+				defer s.wg.Done()
+				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+				if err := h(agent, *pe); err != nil {
+					agent.Logger.WithError(err).Error("Error handling PushEvent.")
+				}
+			}(p, h.PushEventHandler)
+		}
 	}
 	l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 }
@@ -179,21 +185,23 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	if repo.Name == "" {
 		repo = pr.Repo
 	}
-	for p, h := range s.Plugins.PullRequestHandlers(repo.Namespace, repo.Name) {
-		s.wg.Add(1)
-		c++
-		go func(p string, h plugins.PullRequestHandler) {
-			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
-			agent.InitializeCommentPruner(
-				pr.Repo.Namespace,
-				pr.Repo.Name,
-				pr.PullRequest.Number,
-			)
-			if err := h(agent, *pr); err != nil {
-				agent.Logger.WithError(err).Error("Error handling PullRequestEvent.")
-			}
-		}(p, h)
+	for p, h := range s.Plugins.GetPlugins(repo.Namespace, repo.Name) {
+		if h.PullRequestHandler != nil {
+			s.wg.Add(1)
+			c++
+			go func(p string, h plugins.PullRequestHandler) {
+				defer s.wg.Done()
+				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+				agent.InitializeCommentPruner(
+					pr.Repo.Namespace,
+					pr.Repo.Name,
+					pr.PullRequest.Number,
+				)
+				if err := h(agent, *pr); err != nil {
+					agent.Logger.WithError(err).Error("Error handling PullRequestEvent.")
+				}
+			}(p, h.PullRequestHandler)
+		}
 	}
 	l.WithField("count", strconv.Itoa(c)).Info("number of PR handlers")
 
@@ -236,20 +244,22 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 		"url":                    re.Review.Link,
 	})
 	l.Infof("Review %s.", re.Action)
-	for p, h := range s.Plugins.ReviewEventHandlers(re.PullRequest.Base.Repo.Namespace, re.PullRequest.Base.Repo.Name) {
-		s.wg.Add(1)
-		go func(p string, h plugins.ReviewEventHandler) {
-			defer s.wg.Done()
-			agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
-			agent.InitializeCommentPruner(
-				re.Repo.Namespace,
-				re.Repo.Name,
-				re.PullRequest.Number,
-			)
-			if err := h(agent, re); err != nil {
-				agent.Logger.WithError(err).Error("Error handling ReviewEvent.")
-			}
-		}(p, h)
+	for p, h := range s.Plugins.GetPlugins(re.PullRequest.Base.Repo.Namespace, re.PullRequest.Base.Repo.Name) {
+		if h.ReviewEventHandler != nil {
+			s.wg.Add(1)
+			go func(p string, h plugins.ReviewEventHandler) {
+				defer s.wg.Done()
+				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+				agent.InitializeCommentPruner(
+					re.Repo.Namespace,
+					re.Repo.Name,
+					re.PullRequest.Number,
+				)
+				if err := h(agent, re); err != nil {
+					agent.Logger.WithError(err).Error("Error handling ReviewEvent.")
+				}
+			}(p, h.ReviewEventHandler)
+		}
 	}
 	action := re.Action
 	if !actionRelatesToPullRequestComment(action, l) {
