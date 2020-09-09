@@ -37,8 +37,7 @@ const pluginName = "lifecycle"
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "Close, reopen, flag and/or unflag an issue or PR as frozen/stale/rotten",
-		HelpProvider: help,
+		Description: "Close, reopen, flag and/or unflag an issue or PR as frozen/stale/rotten",
 		Commands: []plugins.Command{{
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
 			GenericCommentHandler: lifecycleHandleGenericComment,
@@ -67,10 +66,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 type lifecycleClient interface {

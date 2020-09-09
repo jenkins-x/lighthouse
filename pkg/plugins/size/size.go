@@ -28,7 +28,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/genfiles"
 	"github.com/jenkins-x/lighthouse/pkg/gitattributes"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
@@ -49,17 +48,16 @@ func init() {
 		pluginName,
 		plugins.Plugin{
 			Description:        "The size plugin manages the 'size/*' labels, maintaining the appropriate label on each pull request as it is updated. Generated files identified by the config file '.generated_files' at the repo root are ignored. Labels are applied based on the total number of lines of changes (additions and deletions).",
-			HelpProvider:       helpProvider,
+			ConfigHelpProvider: configHelp,
 			PullRequestHandler: handlePullRequest,
 		},
 	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	sizes := sizesOrDefault(config.Size)
-	return &pluginhelp.PluginHelp{
-			Config: map[string]string{
-				"": fmt.Sprintf(`The plugin has the following thresholds:<ul>
+	return map[string]string{
+			"": fmt.Sprintf(`The plugin has the following thresholds:<ul>
 <li>size/XS:  0-%d</li>
 <li>size/S:   %d-%d</li>
 <li>size/M:   %d-%d</li>
@@ -67,7 +65,6 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 <li>size/XL:  %d-%d</li>
 <li>size/XXL: %d+</li>
 </ul>`, sizes.S-1, sizes.S, sizes.M-1, sizes.M, sizes.L-1, sizes.L, sizes.Xl-1, sizes.Xl, sizes.Xxl-1, sizes.Xxl),
-			},
 		},
 		nil
 }

@@ -127,8 +127,7 @@ func (c client) presubmitForContext(org, repo, context string) *job.Presubmit {
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The override plugin allows repo admins to force a github status context to pass",
-		HelpProvider: helpProvider,
+		Description: "The override plugin allows repo admins to force a github status context to pass",
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
@@ -147,10 +146,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {

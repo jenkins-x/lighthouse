@@ -43,7 +43,7 @@ var (
 		Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
 <br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
 <br>The '/retest' command can be used to rerun jobs that have reported failure.`,
-		HelpProvider:       helpProvider,
+		ConfigHelpProvider: configHelp,
 		PullRequestHandler: handlePullRequest,
 		PushEventHandler:   handlePush,
 		Commands: []plugins.Command{{
@@ -78,7 +78,7 @@ func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	configInfo := map[string]string{}
 	for _, orgRepo := range enabledRepos {
 		parts := strings.Split(orgRepo, "/")
@@ -97,7 +97,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 		configInfo[orgRepo] = fmt.Sprintf("The trusted GitHub organization for this repository is %q.", org)
 	}
-	return &pluginhelp.PluginHelp{Config: configInfo}, nil
+	return configInfo, nil
 }
 
 type scmProviderClient interface {

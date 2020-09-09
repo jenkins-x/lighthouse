@@ -46,8 +46,8 @@ var (
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
-		HelpProvider: helpProvider,
+		Description:        "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
+		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
@@ -73,25 +73,19 @@ func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	msgForTeam := func(team plugins.Milestone) string {
 		return fmt.Sprintf(milestoneTeamMsg, team.MaintainersTeam, team.MaintainersID)
 	}
-
-	pluginHelp := &pluginhelp.PluginHelp{
-		Config: func() map[string]string {
-			configMap := make(map[string]string)
-			for _, repo := range enabledRepos {
-				team, exists := config.RepoMilestone[repo]
-				if exists {
-					configMap[repo] = msgForTeam(team)
-				}
-			}
-			configMap[""] = msgForTeam(config.RepoMilestone[""])
-			return configMap
-		}(),
+	configMap := make(map[string]string)
+	for _, repo := range enabledRepos {
+		team, exists := config.RepoMilestone[repo]
+		if exists {
+			configMap[repo] = msgForTeam(team)
+		}
 	}
-	return pluginHelp, nil
+	configMap[""] = msgForTeam(config.RepoMilestone[""])
+	return configMap, nil
 }
 
 func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {

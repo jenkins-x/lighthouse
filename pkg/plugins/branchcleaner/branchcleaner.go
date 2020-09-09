@@ -22,7 +22,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
@@ -35,14 +34,9 @@ func init() {
 		pluginName,
 		plugins.Plugin{
 			Description:        "The branchcleaner plugin automatically deletes source branches for merged PRs between two branches on the same repository. This is helpful to keep repos that don't allow forking clean.",
-			HelpProvider:       helpProvider,
 			PullRequestHandler: handlePullRequest,
 		},
 	)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {

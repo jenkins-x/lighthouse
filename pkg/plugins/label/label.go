@@ -42,8 +42,8 @@ var (
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The label plugin provides commands that add or remove certain types of labels. Labels of the following types can be manipulated: 'area/*', 'committee/*', 'kind/*', 'language/*', 'priority/*', 'sig/*', 'triage/*', and 'wg/*'. More labels can be configured to be used via the /label command.",
-		HelpProvider: helpProvider,
+		Description:        "The label plugin provides commands that add or remove certain types of labels. Labels of the following types can be manipulated: 'area/*', 'committee/*', 'kind/*', 'language/*', 'priority/*', 'sig/*', 'triage/*', and 'wg/*'. More labels can be configured to be used via the /label command.",
+		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Help: []pluginhelp.Command{{
@@ -69,16 +69,14 @@ func configString(labels []string) string {
 	return fmt.Sprintf("The label plugin will work on %s and %s labels.", strings.Join(formattedLabels[:len(formattedLabels)-1], ", "), formattedLabels[len(formattedLabels)-1])
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	labels := []string{}
 	labels = append(labels, defaultLabels...)
 	labels = append(labels, config.Label.AdditionalLabels...)
-	pluginHelp := &pluginhelp.PluginHelp{
-		Config: map[string]string{
+	return map[string]string{
 			"": configString(labels),
 		},
-	}
-	return pluginHelp, nil
+		nil
 }
 
 func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {

@@ -31,7 +31,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/sirupsen/logrus"
 )
@@ -61,13 +60,13 @@ func init() {
 		PluginName,
 		plugins.Plugin{
 			Description:        "The blockade plugin blocks pull requests from merging if they touch specific files. The plugin applies the '" + labels.BlockedPaths + "' label to pull requests that touch files that match a blockade's block regular expression and none of the corresponding exception regular expressions.",
-			HelpProvider:       helpProvider,
+			ConfigHelpProvider: configHelp,
 			PullRequestHandler: handlePullRequest,
 		},
 	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	// The {WhoCanUse, Usage, Examples} fields are omitted because this plugin cannot be triggered manually.
 	blockConfig := map[string]string{}
 	for _, repo := range enabledRepos {
@@ -85,7 +84,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 		blockConfig[repo] = buf.String()
 	}
-	return &pluginhelp.PluginHelp{Config: blockConfig}, nil
+	return blockConfig, nil
 }
 
 type blockCalc func([]*scm.Change, []blockade) summary

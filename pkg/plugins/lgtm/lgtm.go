@@ -59,8 +59,8 @@ type commentPruner interface {
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
-		HelpProvider: helpProvider,
+		Description:        "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
+		ConfigHelpProvider: configHelp,
 		PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
 			return handlePullRequestEvent(pc, pe)
 		},
@@ -86,7 +86,7 @@ func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	configInfo := map[string]string{}
 	for _, orgRepo := range enabledRepos {
 		parts := strings.Split(orgRepo, "/")
@@ -119,8 +119,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 			configInfo[orgRepo] = strings.Join(configInfoStrings, "\n")
 		}
 	}
-	pluginHelp := &pluginhelp.PluginHelp{Config: configInfo}
-	return pluginHelp, nil
+	return configInfo, nil
 }
 
 // optionsForRepo gets the plugins.Lgtm struct that is applicable to the indicated repo.

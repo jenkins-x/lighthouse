@@ -58,8 +58,7 @@ by commenting with the ` + "`/remove-good-first-issue`" + ` command.
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The help plugin provides commands that add or remove the '" + labels.Help + "' and the '" + labels.GoodFirstIssue + "' labels from issues.",
-		HelpProvider: helpProvider,
+		Description: "The help plugin provides commands that add or remove the '" + labels.Help + "' and the '" + labels.GoodFirstIssue + "' labels from issues.",
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
@@ -78,11 +77,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {

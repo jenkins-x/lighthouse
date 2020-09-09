@@ -559,12 +559,12 @@ func TestHelpProvider(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			pluginHelp, err := helpProvider(c.config, c.enabledRepos)
+			pluginHelp, err := configHelp(c.config, c.enabledRepos)
 			if err != nil && !c.err {
 				t.Fatalf("helpProvider error: %v", err)
 			}
 			for _, msg := range c.configInfoIncludes {
-				if !strings.Contains(pluginHelp.Config[""], msg) {
+				if !strings.Contains(pluginHelp[""], msg) {
 					t.Fatalf("helpProvider.Config error mismatch: didn't get %v, but wanted it", msg)
 				}
 			}

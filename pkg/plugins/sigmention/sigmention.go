@@ -26,7 +26,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -72,8 +71,8 @@ func init() {
 	plugins.RegisterPlugin(
 		pluginName,
 		plugins.Plugin{
-			Description:  description,
-			HelpProvider: helpProvider,
+			Description:        description,
+			ConfigHelpProvider: configHelp,
 			Commands: []plugins.Command{
 				sigmentionCommand,
 			},
@@ -81,11 +80,9 @@ func init() {
 	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{
-			Config: map[string]string{
-				"": fmt.Sprintf("Labels added by the plugin are triggered by mentions of GitHub teams matching the following regexp:\n%s", config.SigMention.Regexp),
-			},
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
+	return map[string]string{
+			"": fmt.Sprintf("Labels added by the plugin are triggered by mentions of GitHub teams matching the following regexp:\n%s", config.SigMention.Regexp),
 		},
 		nil
 }

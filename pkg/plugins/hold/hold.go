@@ -46,8 +46,7 @@ type hasLabelFunc func(label string, issueLabels []*scm.Label) bool
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The hold plugin allows anyone to add or remove the '" + labels.Hold + "' Label from a pull request in order to temporarily prevent the PR from merging without withholding approval.",
-		HelpProvider: helpProvider,
+		Description: "The hold plugin allows anyone to add or remove the '" + labels.Hold + "' Label from a pull request in order to temporarily prevent the PR from merging without withholding approval.",
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
@@ -64,11 +63,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {
