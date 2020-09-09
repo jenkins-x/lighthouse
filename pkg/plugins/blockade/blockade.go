@@ -36,8 +36,7 @@ import (
 )
 
 const (
-	// PluginName defines this plugin's registered name.
-	PluginName = "blockade"
+	pluginName = "blockade"
 )
 
 var blockedPathsBody = fmt.Sprintf("Adding label: `%s` because PR changes a protected file.", labels.BlockedPaths)
@@ -57,7 +56,7 @@ type pruneClient interface {
 
 func init() {
 	plugins.RegisterPlugin(
-		PluginName,
+		pluginName,
 		plugins.Plugin{
 			Description:        "The blockade plugin blocks pull requests from merging if they touch specific files. The plugin applies the '" + labels.BlockedPaths + "' label to pull requests that touch files that match a blockade's block regular expression and none of the corresponding exception regular expressions.",
 			ConfigHelpProvider: configHelp,

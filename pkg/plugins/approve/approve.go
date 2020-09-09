@@ -40,8 +40,7 @@ import (
 )
 
 const (
-	// PluginName defines this plugin's registered name.
-	PluginName = "approve"
+	pluginName = "approve"
 
 	approveCommand  = "APPROVE"
 	cancelArgument  = "cancel"
@@ -120,7 +119,7 @@ var (
 )
 
 func init() {
-	plugins.RegisterPlugin(PluginName, plugin)
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
