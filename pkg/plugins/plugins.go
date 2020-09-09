@@ -53,7 +53,7 @@ type Command struct {
 	GenericCommentHandler GenericCommentHandler
 }
 
-// InvokeHandler performs command checks (filter, then regex if any) the calls the handler wiith the match (if any)
+// InvokeHandler performs command checks (filter, then regex if any) the calls the handler with the match (if any)
 func (cmd Command) InvokeHandler(ce *scmprovider.GenericCommentEvent, handler func([]string) error) error {
 	if cmd.GenericCommentHandler == nil || (cmd.Filter != nil && !cmd.Filter(*ce)) {
 		return nil
@@ -74,6 +74,27 @@ func (cmd Command) InvokeHandler(ce *scmprovider.GenericCommentEvent, handler fu
 	return nil
 }
 
+// InvokeCommandHandler performs command checks (filter, then regex if any) the calls the handler with the match (if any)
+func (cmd Command) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(GenericCommentHandler, *scmprovider.GenericCommentEvent, []string) error) error {
+	if cmd.GenericCommentHandler == nil || (cmd.Filter != nil && !cmd.Filter(*ce)) {
+		return nil
+	}
+	if cmd.Regex != nil {
+		max := cmd.MaxMatches
+		if max == 0 {
+			max = -1
+		}
+		for _, m := range cmd.Regex.FindAllStringSubmatch(ce.Body, max) {
+			if err := handler(cmd.GenericCommentHandler, ce, m); err != nil {
+				return err
+			}
+		}
+	} else {
+		return handler(cmd.GenericCommentHandler, ce, nil)
+	}
+	return nil
+}
+
 // Plugin defines a plugin and its handlers
 type Plugin struct {
 	Description        string
@@ -90,6 +111,16 @@ type Plugin struct {
 func (plugin Plugin) InvokeCommand(ce *scmprovider.GenericCommentEvent, handler func([]string) error) error {
 	for _, cmd := range plugin.Commands {
 		if err := cmd.InvokeHandler(ce, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// InvokeCommandHandler calls InvokeHandler on all commands
+func (plugin Plugin) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(GenericCommentHandler, *scmprovider.GenericCommentEvent, []string) error) error {
+	for _, cmd := range plugin.Commands {
+		if err := cmd.InvokeCommandHandler(ce, handler); err != nil {
 			return err
 		}
 	}
