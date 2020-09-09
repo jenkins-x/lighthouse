@@ -1,6 +1,9 @@
 FROM alpine:3.10
+
 RUN apk add --update --no-cache ca-certificates git
-COPY ./bin/foghorn /foghorn
+
 RUN mkdir /jxhome
 ENV JX_HOME /jxhome
+
+COPY ./bin/foghorn /foghorn
 ENTRYPOINT ["/foghorn"]

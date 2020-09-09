@@ -15,9 +15,6 @@ FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
 GCJOBS_MAIN_SRC_FILE=cmd/gc/main.go
 TEKTONCONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
 
-DOCKER_REGISTRY := jenkinsxio
-DOCKER_IMAGE_NAME := lighthouse
-
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
 GOTEST := $(GO) test
@@ -134,18 +131,6 @@ build-gc-jobs-linux:
 build-tekton-controller-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTONCONTROLLER_EXECUTABLE) $(TEKTONCONTROLLER_MAIN_SRC_FILE)
 
-.PHONY: container
-container: 
-	docker-compose build $(DOCKER_IMAGE_NAME)
-
-.PHONY: production-container
-production-container:
-	docker build --rm -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME) .
-
-.PHONY: push-container
-push-container: production-container
-	docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME)
-
 generate-client: codegen-clientset fmt ## Generate the client
 
 codegen-clientset: ## Generate the k8s types and clients
@@ -199,3 +184,7 @@ plugins-docs: $(DOCS_GEN)
 job-docs: $(DOCS_GEN)
 	rm -rf ./docs/config/jobs
 	$(DOCS_GEN) --input=./pkg/config/job/... --root=Config --output=./docs/config/jobs
+
+.PHONY: help
+help: ## Prints this help
+	@grep -E '^[^.]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-40s\033[0m %s\n", $$1, $$2}'
