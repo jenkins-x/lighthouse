@@ -27,14 +27,13 @@ import (
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
+	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
-	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "override"
@@ -126,30 +125,35 @@ func (c client) presubmitForContext(org, repo, context string) *job.Presubmit {
 	return nil
 }
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The override plugin allows repo admins to force a github status context to pass",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The override plugin allows repo admins to force a github status context to pass",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter: func(e scmprovider.GenericCommentEvent) bool {
+				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
+			},
+			Help: []pluginhelp.Command{{
+				Usage:       "/override [context]",
+				Description: "Forces a github status context to green (one per line).",
+				Featured:    false,
+				WhoCanUse:   "Repo administrators",
+				Examples:    []string{"/override pull-repo-whatever", "/override ci/circleci", "/override deleted-job", "/lh-override some-job"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/override [context]",
-		Description: "Forces a github status context to green (one per line).",
-		Featured:    false,
-		WhoCanUse:   "Repo administrators",
-		Examples:    []string{"/override pull-repo-whatever", "/override ci/circleci", "/override deleted-job", "/lh-override some-job"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	c := client{
 		spc:      pc.SCMProviderClient,
 		lhClient: pc.LighthouseClient,
@@ -189,11 +193,6 @@ func formatList(list []string) string {
 }
 
 func handle(oc overrideClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-
-	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
-		return nil
-	}
-
 	mat := overrideRe.FindAllStringSubmatch(e.Body, -1)
 	if len(mat) == 0 {
 		return nil // no /override commands given in the comment

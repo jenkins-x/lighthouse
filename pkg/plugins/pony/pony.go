@@ -55,28 +55,31 @@ var (
 	match = regexp.MustCompile(`(?mi)^/(?:lh-)?(?:pony)(?: +(.+?))?\s*$`)
 )
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Help: []pluginhelp.Command{{
+				Usage:       "/(pony) [pony]",
+				Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
+				Featured:    false,
+				WhoCanUse:   "Anyone",
+				Examples:    []string{"/pony", "/pony Twilight Sparkle", "/lh-pony"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/(pony) [pony]",
-		Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
-		Featured:    false,
-		WhoCanUse:   "Anyone",
-		Examples:    []string{"/pony", "/pony Twilight Sparkle", "/lh-pony"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 var client = http.Client{}
@@ -122,15 +125,11 @@ func (h realHerd) readPony(tags string) (string, error) {
 	return formatURLs(a.Pony.Representations.Small, a.Pony.Representations.Full), nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e, ponyURL)
 }
 
 func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, p herd) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
 	// Make sure they are requesting a pony
 	mat := match.FindStringSubmatch(e.Body)
 	if mat == nil {

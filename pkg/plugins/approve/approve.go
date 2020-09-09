@@ -94,20 +94,33 @@ type state struct {
 	htmlURL   string
 }
 
-func init() {
-	plugins.RegisterPlugin(
-		PluginName,
-		plugins.Plugin{
-			Description: `The approve plugin implements a pull request approval process that manages the '` + labels.Approved + `' label and an approval notification comment. Approval is achieved when the set of users that have approved the PR is capable of approving every file changed by the PR. A user is able to approve a file if their username or an alias they belong to is listed in the 'approvers' section of an OWNERS file in the directory of the file or higher in the directory tree.
+var (
+	plugin = plugins.Plugin{
+		Description: `The approve plugin implements a pull request approval process that manages the '` + labels.Approved + `' label and an approval notification comment. Approval is achieved when the set of users that have approved the PR is capable of approving every file changed by the PR. A user is able to approve a file if their username or an alias they belong to is listed in the 'approvers' section of an OWNERS file in the directory of the file or higher in the directory tree.
 <br>
 <br>Per-repo configuration may be used to require that PRs link to an associated issue before approval is granted. It may also be used to specify that the PR authors implicitly approve their own PRs.
 <br>For more information see <a href="https://git.github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve/approvers/README.md">here</a>.`,
-			HelpProvider:          helpProvider,
+		HelpProvider:       helpProvider,
+		ReviewEventHandler: handleReviewEvent,
+		PullRequestHandler: handlePullRequestEvent,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericCommentEvent,
-			ReviewEventHandler:    handleReviewEvent,
-			PullRequestHandler:    handlePullRequestEvent,
-		},
-	)
+			Filter: func(e scmprovider.GenericCommentEvent) bool {
+				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState == "closed")
+			},
+			Help: []pluginhelp.Command{{
+				Usage:       "/approve [no-issue|cancel]",
+				Description: "Approves a pull request",
+				Featured:    true,
+				WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
+				Examples:    []string{"/approve", "/approve no-issue", "/lh-approve"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(PluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -138,20 +151,10 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 		approveConfig[repo] = fmt.Sprintf("Pull requests %s require an associated issue.<br>Pull request authors %s implicitly approve their own PRs.<br>The /lgtm [cancel] command(s) %s act as approval.<br>A GitHub approved or changes requested review %s act as approval or cancel respectively.", doNot(opts.IssueRequired), doNot(opts.HasSelfApproval()), willNot(opts.LgtmActsAsApprove), willNot(opts.ConsiderReviewState()))
 	}
-	pluginHelp := &pluginhelp.PluginHelp{
-		Config: approveConfig,
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/approve [no-issue|cancel]",
-		Description: "Approves a pull request",
-		Featured:    true,
-		WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
-		Examples:    []string{"/approve", "/approve no-issue", "/lh-approve"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{Config: approveConfig}, nil
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(_ []string, pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
 	baseURL, err := url.Parse(ce.IssueLink)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse URL %s", ce.Link)
@@ -169,10 +172,6 @@ func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEv
 }
 
 func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersClient, serverURL *url.URL, config *plugins.Configuration, ce *scmprovider.GenericCommentEvent) error {
-	if ce.Action != scm.ActionCreate || !ce.IsPR || ce.IssueState == "closed" {
-		return nil
-	}
-
 	botName, err := spc.BotName()
 	if err != nil {
 		return err

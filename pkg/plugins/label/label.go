@@ -40,15 +40,25 @@ var (
 	nonExistentLabelOnIssue = "Those labels are not set on the issue: `%v`"
 )
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The label plugin provides commands that add or remove certain types of labels. Labels of the following types can be manipulated: 'area/*', 'committee/*', 'kind/*', 'language/*', 'priority/*', 'sig/*', 'triage/*', and 'wg/*'. More labels can be configured to be used via the /label command.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The label plugin provides commands that add or remove certain types of labels. Labels of the following types can be manipulated: 'area/*', 'committee/*', 'kind/*', 'language/*', 'priority/*', 'sig/*', 'triage/*', and 'wg/*'. More labels can be configured to be used via the /label command.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Help: []pluginhelp.Command{{
+				Usage:       "/[remove-](area|committee|kind|language|priority|sig|triage|wg|label) <target>",
+				Description: "Applies or removes a label from one of the recognized types of labels.",
+				Featured:    false,
+				WhoCanUse:   "Anyone can trigger this command on a PR.",
+				Examples:    []string{"/kind bug", "/remove-area prow", "/sig testing", "/language zh"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func configString(labels []string) string {
@@ -68,17 +78,10 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 			"": configString(labels),
 		},
 	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/[remove-](area|committee|kind|language|priority|sig|triage|wg|label) <target>",
-		Description: "Applies or removes a label from one of the recognized types of labels.",
-		Featured:    false,
-		WhoCanUse:   "Anyone can trigger this command on a PR.",
-		Examples:    []string{"/kind bug", "/remove-area prow", "/sig testing", "/language zh"},
-	})
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
 }
 

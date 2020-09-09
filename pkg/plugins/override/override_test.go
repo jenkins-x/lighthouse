@@ -560,7 +560,9 @@ func TestHandle(t *testing.T) {
 				tc.jobs = sets.String{}
 			}
 
-			err := handle(&fc, log, &event)
+			err := plugin.InvokeCommand(&event, func(match []string) error {
+				return handle(&fc, log, &event)
+			})
 			switch {
 			case err != nil:
 				if !tc.err {

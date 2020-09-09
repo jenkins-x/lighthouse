@@ -49,28 +49,31 @@ const (
 	pluginName    = "dog"
 )
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The dog plugin adds a dog image to an issue or PR in response to the `/woof` command.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The dog plugin adds a dog image to an issue or PR in response to the `/woof` command.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Help: []pluginhelp.Command{{
+				Usage:       "/(lh-)?(woof|bark|this-is-{fine|not-fine|unbearable})",
+				Description: "Add a dog image to the issue or PR",
+				Featured:    false,
+				WhoCanUse:   "Anyone",
+				Examples:    []string{"/woof", "/bark", "this-is-{fine|not-fine|unbearable}"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/(lh-)?(woof|bark|this-is-{fine|not-fine|unbearable})",
-		Description: "Add a dog image to the issue or PR",
-		Featured:    false,
-		WhoCanUse:   "Anyone",
-		Examples:    []string{"/woof", "/bark", "this-is-{fine|not-fine|unbearable}"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {
@@ -136,15 +139,11 @@ func (u realPack) readDog(dogURL string) (string, error) {
 	return FormatURL(dogURL)
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e, dogURL)
+func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+	return handle(match, pc.SCMProviderClient, pc.Logger, &e, dogURL)
 }
 
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, p pack) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
+func handle(_ []string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, p pack) error {
 	// Make sure they are requesting a dog
 	mat := match.FindStringSubmatch(e.Body)
 	url := ""

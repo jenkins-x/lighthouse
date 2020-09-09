@@ -215,7 +215,9 @@ func TestLabel(t *testing.T) {
 				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 				Author:     scm.User{Login: "Alice"},
 			}
-			err := handle(fakeSCMProviderClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
+			err := plugin.InvokeCommand(e, func(match []string) error {
+				return handle(match, fakeSCMProviderClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
+			})
 			if err != nil {
 				t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
 			}

@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -29,7 +30,7 @@ import (
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/config"
-	git2 "github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
@@ -41,29 +42,58 @@ import (
 
 var (
 	plugins = map[string]Plugin{}
-	// pluginHelp                 = map[string]HelpProvider{}
-	// genericCommentHandlers     = map[string]GenericCommentHandler{}
-	// issueHandlers              = map[string]IssueHandler{}
-	// issueCommentHandlers       = map[string]IssueCommentHandler{}
-	// pullRequestHandlers        = map[string]PullRequestHandler{}
-	// pushEventHandlers          = map[string]PushEventHandler{}
-	// reviewEventHandlers        = map[string]ReviewEventHandler{}
-	// reviewCommentEventHandlers = map[string]ReviewCommentEventHandler{}
-	// statusEventHandlers        = map[string]StatusEventHandler{}
 )
+
+// Command defines a plugin command sent through a comment
+type Command struct {
+	Help                  []pluginhelp.Command
+	Regex                 *regexp.Regexp
+	MaxMatches            int
+	Filter                func(e scmprovider.GenericCommentEvent) bool
+	GenericCommentHandler GenericCommentHandler
+}
+
+// InvokeHandler performs command checks (filter, then regex if any) the calls the handler wiith the match (if any)
+func (cmd Command) InvokeHandler(ce *scmprovider.GenericCommentEvent, handler func([]string) error) error {
+	if cmd.GenericCommentHandler == nil || (cmd.Filter != nil && !cmd.Filter(*ce)) {
+		return nil
+	}
+	if cmd.Regex != nil {
+		max := cmd.MaxMatches
+		if max == 0 {
+			max = -1
+		}
+		for _, m := range cmd.Regex.FindAllStringSubmatch(ce.Body, max) {
+			if err := handler(m); err != nil {
+				return err
+			}
+		}
+	} else {
+		return handler(nil)
+	}
+	return nil
+}
 
 // Plugin defines a plugin and its handlers
 type Plugin struct {
-	Description               string
-	HelpProvider              HelpProvider
-	GenericCommentHandler     GenericCommentHandler
-	IssueHandler              IssueHandler
-	IssueCommentHandler       IssueCommentHandler
-	PullRequestHandler        PullRequestHandler
-	PushEventHandler          PushEventHandler
-	ReviewEventHandler        ReviewEventHandler
-	ReviewCommentEventHandler ReviewCommentEventHandler
-	StatusEventHandler        StatusEventHandler
+	Description        string
+	HelpProvider       HelpProvider
+	IssueHandler       IssueHandler
+	PullRequestHandler PullRequestHandler
+	PushEventHandler   PushEventHandler
+	ReviewEventHandler ReviewEventHandler
+	StatusEventHandler StatusEventHandler
+	Commands           []Command
+}
+
+// InvokeCommand calls InvokeHandler on all commands
+func (plugin Plugin) InvokeCommand(ce *scmprovider.GenericCommentEvent, handler func([]string) error) error {
+	for _, cmd := range plugin.Commands {
+		if err := cmd.InvokeHandler(ce, handler); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // RegisterPlugin registers a plugin.
@@ -97,7 +127,7 @@ type ReviewEventHandler func(Agent, scm.ReviewHook) error
 type ReviewCommentEventHandler func(Agent, scm.PullRequestCommentHook) error
 
 // GenericCommentHandler defines the function contract for a scm.Comment handler.
-type GenericCommentHandler func(Agent, scmprovider.GenericCommentEvent) error
+type GenericCommentHandler func([]string, Agent, scmprovider.GenericCommentEvent) error
 
 // HelpProviders returns the map of registered plugins with their associated HelpProvider.
 func HelpProviders() map[string]HelpProvider {
@@ -108,6 +138,11 @@ func HelpProviders() map[string]HelpProvider {
 				h, err := v.HelpProvider(config, enabledRepos)
 				if h != nil {
 					h.Description = v.Description
+				}
+				for _, c := range v.Commands {
+					for _, hh := range c.Help {
+						h.AddCommand(hh)
+					}
 				}
 				return h, err
 			}
@@ -120,7 +155,7 @@ func HelpProviders() map[string]HelpProvider {
 type Agent struct {
 	SCMProviderClient *scmprovider.Client
 	LauncherClient    launcher.PipelineLauncher
-	GitClient         git2.Client
+	GitClient         git.Client
 	KubernetesClient  kubernetes.Interface
 	LighthouseClient  lighthouseclient.LighthouseJobInterface
 	ServerURL         *url.URL
@@ -193,7 +228,7 @@ type ClientAgent struct {
 	SCMProviderClient *scm.Client
 
 	KubernetesClient kubernetes.Interface
-	GitClient        git2.Client
+	GitClient        git.Client
 	LauncherClient   launcher.PipelineLauncher
 	LighthouseClient lighthouseclient.LighthouseJobInterface
 
@@ -332,9 +367,6 @@ func EventsForPlugin(name string) []string {
 	if p, ok := plugins[name]; ok && p.IssueHandler != nil {
 		events = append(events, "issue")
 	}
-	if p, ok := plugins[name]; ok && p.IssueCommentHandler != nil {
-		events = append(events, "issue_comment")
-	}
 	if p, ok := plugins[name]; ok && p.PullRequestHandler != nil {
 		events = append(events, "pull_request")
 	}
@@ -344,14 +376,8 @@ func EventsForPlugin(name string) []string {
 	if p, ok := plugins[name]; ok && p.ReviewEventHandler != nil {
 		events = append(events, "pull_request_review")
 	}
-	if p, ok := plugins[name]; ok && p.ReviewCommentEventHandler != nil {
-		events = append(events, "pull_request_review_comment")
-	}
 	if p, ok := plugins[name]; ok && p.StatusEventHandler != nil {
 		events = append(events, "status")
-	}
-	if p, ok := plugins[name]; ok && p.GenericCommentHandler != nil {
-		events = append(events, "GenericCommentEvent (any event for user text)")
 	}
 	return events
 }

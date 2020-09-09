@@ -363,7 +363,9 @@ Available variants:
 		Number:     5,
 		IssueState: "open",
 	}
-	if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, &realClowder{url: ts.URL + "/?format=json"}, func() {}); err != nil {
+	if err := plugin.InvokeCommand(e, func(match []string) error {
+		return handle(match, fakeClient, logrus.WithField("plugin", pluginName), e, &realClowder{url: ts.URL + "/?format=json"}, func() {})
+	}); err != nil {
 		t.Errorf("didn't expect error: %v", err)
 		return
 	}
@@ -482,7 +484,9 @@ func TestCats(t *testing.T) {
 				IssueState: tc.state,
 				IsPR:       tc.pr,
 			}
-			err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakeClowder("tubbs"), func() {})
+			err := plugin.InvokeCommand(e, func(match []string) error {
+				return handle(match, fakeClient, logrus.WithField("plugin", pluginName), e, fakeClowder("tubbs"), func() {})
+			})
 			if !tc.shouldError && err != nil {
 				t.Fatalf("%s: didn't expect error: %v", tc.name, err)
 			} else if tc.shouldError && err == nil {

@@ -38,19 +38,44 @@ const (
 	pluginName = "trigger"
 )
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
+var (
+	plugin = plugins.Plugin{
+		Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
 <br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
 <br>The '/retest' command can be used to rerun jobs that have reported failure.`,
-			HelpProvider:          helpProvider,
+		HelpProvider:       helpProvider,
+		PullRequestHandler: handlePullRequest,
+		PushEventHandler:   handlePush,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericCommentEvent,
-			PullRequestHandler:    handlePullRequest,
-			PushEventHandler:      handlePush,
-		},
-	)
+			Filter: func(e scmprovider.GenericCommentEvent) bool {
+				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState != "open")
+			},
+			Help: []pluginhelp.Command{{
+				Usage:       "/ok-to-test",
+				Description: "Marks a PR as 'trusted' and starts tests.",
+				Featured:    false,
+				WhoCanUse:   "Members of the trusted organization for the repo.",
+				Examples:    []string{"/ok-to-test", "/lh-ok-to-test"},
+			}, {
+				Usage:       "/test (<job name>|all)",
+				Description: "Manually starts a/all test job(s).",
+				Featured:    true,
+				WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
+				Examples:    []string{"/test all", "/test pull-bazel-test", "/lh-test all"},
+			}, {
+				Usage:       "/retest",
+				Description: "Rerun test jobs that have failed.",
+				Featured:    true,
+				WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
+				Examples:    []string{"/retest", "/lh-retest"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -72,31 +97,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 		configInfo[orgRepo] = fmt.Sprintf("The trusted GitHub organization for this repository is %q.", org)
 	}
-	pluginHelp := &pluginhelp.PluginHelp{
-		Config: configInfo,
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/ok-to-test",
-		Description: "Marks a PR as 'trusted' and starts tests.",
-		Featured:    false,
-		WhoCanUse:   "Members of the trusted organization for the repo.",
-		Examples:    []string{"/ok-to-test", "/lh-ok-to-test"},
-	})
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/test (<job name>|all)",
-		Description: "Manually starts a/all test job(s).",
-		Featured:    true,
-		WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-		Examples:    []string{"/test all", "/test pull-bazel-test", "/lh-test all"},
-	})
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/retest",
-		Description: "Rerun test jobs that have failed.",
-		Featured:    true,
-		WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-		Examples:    []string{"/retest", "/lh-retest"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{Config: configInfo}, nil
 }
 
 type scmProviderClient interface {
@@ -152,7 +153,7 @@ func handlePullRequest(pc plugins.Agent, pr scm.PullRequestHook) error {
 	return handlePR(getClient(pc), pc.PluginConfig.TriggerFor(org, repo), pr)
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(_ []string, pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
 	return handleGenericComment(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc)
 }
 
