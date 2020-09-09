@@ -51,8 +51,8 @@ const (
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
-		HelpProvider: helpProvider,
+		Description:        "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
+		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
@@ -72,11 +72,9 @@ func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{
-			Config: map[string]string{
-				"": fmt.Sprintf("The cat plugin uses an api key for thecatapi.com stored in %s.", config.Cat.KeyPath),
-			},
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
+	return map[string]string{
+			"": fmt.Sprintf("The cat plugin uses an api key for thecatapi.com stored in %s.", config.Cat.KeyPath),
 		},
 		nil
 }

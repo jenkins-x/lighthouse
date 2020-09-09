@@ -396,7 +396,7 @@ func TestHelpProvider(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := helpProvider(c.config, c.enabledRepos)
+			_, err := configHelp(c.config, c.enabledRepos)
 			if err != nil && !c.err {
 				t.Fatalf("helpProvider error: %v", err)
 			}

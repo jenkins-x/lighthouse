@@ -50,8 +50,7 @@ type event struct {
 
 var (
 	plugin = plugins.Plugin{
-		Description:  labels.Shrug,
-		HelpProvider: helpProvider,
+		Description: labels.Shrug,
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
@@ -68,11 +67,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {

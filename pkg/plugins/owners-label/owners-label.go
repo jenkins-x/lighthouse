@@ -22,7 +22,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -36,14 +35,9 @@ func init() {
 		pluginName,
 		plugins.Plugin{
 			Description:        "The owners-label plugin automatically adds labels to PRs based on the files they touch. Specifically, the 'labels' sections of OWNERS files are used to determine which labels apply to the changes.",
-			HelpProvider:       helpProvider,
 			PullRequestHandler: handlePullRequest,
 		},
 	)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 type ownersClient interface {

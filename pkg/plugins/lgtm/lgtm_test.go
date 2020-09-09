@@ -1229,17 +1229,17 @@ func TestHelpProvider(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			pluginHelp, err := helpProvider(c.config, c.enabledRepos)
+			pluginHelp, err := configHelp(c.config, c.enabledRepos)
 			if err != nil && !c.err {
 				t.Fatalf("helpProvider error: %v", err)
 			}
 			for _, msg := range c.configInfoExcludes {
-				if strings.Contains(pluginHelp.Config["org2/repo"], msg) {
+				if strings.Contains(pluginHelp["org2/repo"], msg) {
 					t.Fatalf("helpProvider.Config error mismatch: got %v, but didn't want it", msg)
 				}
 			}
 			for _, msg := range c.configInfoIncludes {
-				if !strings.Contains(pluginHelp.Config["org2/repo"], msg) {
+				if !strings.Contains(pluginHelp["org2/repo"], msg) {
 					t.Fatalf("helpProvider.Config error mismatch: didn't get %v, but wanted it", msg)
 				}
 			}

@@ -41,8 +41,7 @@ const pluginName = "stage"
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "Label the stage of an issue as alpha/beta/stable",
-		HelpProvider: help,
+		Description: "Label the stage of an issue as alpha/beta/stable",
 		Commands: []plugins.Command{{
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
 			Regex:                 stageRe,
@@ -60,11 +59,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 type stageClient interface {

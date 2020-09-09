@@ -77,7 +77,7 @@ func (cmd Command) InvokeHandler(ce *scmprovider.GenericCommentEvent, handler fu
 // Plugin defines a plugin and its handlers
 type Plugin struct {
 	Description        string
-	HelpProvider       HelpProvider
+	ConfigHelpProvider ConfigHelpProvider
 	IssueHandler       IssueHandler
 	PullRequestHandler PullRequestHandler
 	PushEventHandler   PushEventHandler
@@ -104,6 +104,9 @@ func RegisterPlugin(name string, plugin Plugin) {
 // HelpProvider defines the function type that construct a pluginhelp.PluginHelp for enabled
 // plugins. It takes into account the plugins configuration and enabled repositories.
 type HelpProvider func(config *Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error)
+
+// ConfigHelpProvider defines the function type that constructs help about a plugin configuration.
+type ConfigHelpProvider func(config *Configuration, enabledRepos []string) (map[string]string, error)
 
 // IssueHandler defines the function contract for a scm.Issue handler.
 type IssueHandler func(Agent, scm.Issue) error
@@ -133,19 +136,24 @@ type GenericCommentHandler func([]string, Agent, scmprovider.GenericCommentEvent
 func HelpProviders() map[string]HelpProvider {
 	pluginHelp := make(map[string]HelpProvider)
 	for k, v := range plugins {
-		if v.HelpProvider != nil {
-			pluginHelp[k] = func(config *Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-				h, err := v.HelpProvider(config, enabledRepos)
-				if h != nil {
-					h.Description = v.Description
-				}
-				for _, c := range v.Commands {
-					for _, hh := range c.Help {
-						h.AddCommand(hh)
-					}
-				}
-				return h, err
+		pluginHelp[k] = func(config *Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+			var err error
+			h := &pluginhelp.PluginHelp{
+				Description: v.Description,
 			}
+			if v.ConfigHelpProvider != nil {
+				h.Config, err = v.ConfigHelpProvider(config, enabledRepos)
+			}
+			if h != nil {
+				h.Description = v.Description
+			}
+			for _, c := range v.Commands {
+				for _, cc := range c.Help {
+					h.AddCommand(cc)
+				}
+			}
+			h.Events = EventsForPlugin(v)
+			return h, err
 		}
 	}
 	return pluginHelp
@@ -362,22 +370,25 @@ func (pa *ConfigAgent) GetPlugins(owner, repo string) map[string]Plugin {
 }
 
 // EventsForPlugin returns the registered events for the passed plugin.
-func EventsForPlugin(name string) []string {
+func EventsForPlugin(plugin Plugin) []string {
 	var events []string
-	if p, ok := plugins[name]; ok && p.IssueHandler != nil {
+	if plugin.IssueHandler != nil {
 		events = append(events, "issue")
 	}
-	if p, ok := plugins[name]; ok && p.PullRequestHandler != nil {
+	if plugin.PullRequestHandler != nil {
 		events = append(events, "pull_request")
 	}
-	if p, ok := plugins[name]; ok && p.PushEventHandler != nil {
+	if plugin.PushEventHandler != nil {
 		events = append(events, "push")
 	}
-	if p, ok := plugins[name]; ok && p.ReviewEventHandler != nil {
+	if plugin.ReviewEventHandler != nil {
 		events = append(events, "pull_request_review")
 	}
-	if p, ok := plugins[name]; ok && p.StatusEventHandler != nil {
+	if plugin.StatusEventHandler != nil {
 		events = append(events, "status")
+	}
+	if plugin.Commands != nil && len(plugin.Commands) > 0 {
+		events = append(events, "GenericCommentEvent (any event for user text)")
 	}
 	return events
 }

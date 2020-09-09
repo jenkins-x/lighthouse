@@ -57,8 +57,7 @@ var (
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
-		HelpProvider: helpProvider,
+		Description: "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
@@ -75,11 +74,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 var client = http.Client{}

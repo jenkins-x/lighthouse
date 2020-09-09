@@ -48,8 +48,7 @@ type scmProviderClient interface {
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The skip plugin allows users to clean up GitHub stale commit statuses for non-blocking jobs on a PR.",
-		HelpProvider: helpProvider,
+		Description: "The skip plugin allows users to clean up GitHub stale commit statuses for non-blocking jobs on a PR.",
 		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
@@ -69,10 +68,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {

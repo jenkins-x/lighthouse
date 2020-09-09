@@ -44,8 +44,7 @@ const (
 
 var (
 	plugin = plugins.Plugin{
-		Description:  "The yuks plugin comments with jokes in response to the `/joke` command.",
-		HelpProvider: helpProvider,
+		Description: "The yuks plugin comments with jokes in response to the `/joke` command.",
 		Commands: []plugins.Command{{
 			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
 			Regex:                 match,
@@ -63,11 +62,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {

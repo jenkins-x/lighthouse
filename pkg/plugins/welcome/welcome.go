@@ -26,7 +26,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -49,13 +48,13 @@ func init() {
 		pluginName,
 		plugins.Plugin{
 			Description:        "The welcome plugin posts a welcoming message when it detects a user's first contribution to a repo.",
-			HelpProvider:       helpProvider,
+			ConfigHelpProvider: configHelp,
 			PullRequestHandler: handlePullRequest,
 		},
 	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	welcomeConfig := map[string]string{}
 	for _, repo := range enabledRepos {
 		parts := strings.Split(repo, "/")
@@ -72,7 +71,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	}
 
 	// The {WhoCanUse, Usage, Examples} fields are omitted because this plugin is not triggered with commands.
-	return &pluginhelp.PluginHelp{Config: welcomeConfig}, nil
+	return welcomeConfig, nil
 }
 
 type scmProviderClient interface {
