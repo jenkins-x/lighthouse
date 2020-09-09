@@ -150,7 +150,7 @@ func TestCalculateBlocks(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		blockades := compileApplicableBlockades("org", "repo", logrus.WithField("plugin", PluginName), tc.config)
+		blockades := compileApplicableBlockades("org", "repo", logrus.WithField("plugin", pluginName), tc.config)
 		sum := calculateBlocks(tc.changes, blockades)
 		if !reflect.DeepEqual(sum, tc.expectedSummary) {
 			t.Errorf("[%s] Expected summary: %#v, actual summary: %#v.", tc.name, tc.expectedSummary, sum)
@@ -325,7 +325,7 @@ func TestHandle(t *testing.T) {
 				Number: 1,
 			},
 		}
-		if err := handle(fakeSCMProviderClient, logrus.WithField("plugin", PluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {
+		if err := handle(fakeSCMProviderClient, logrus.WithField("plugin", pluginName), tc.config, &fakePruner{}, calcF, pre); err != nil {
 			t.Errorf("[%s] Unexpected error from handle: %v.", tc.name, err)
 			continue
 		}
