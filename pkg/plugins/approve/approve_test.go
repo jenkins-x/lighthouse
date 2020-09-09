@@ -1493,17 +1493,19 @@ func TestHandleGenericComment(t *testing.T) {
 				Repos:             []string{test.commentEvent.Repo.Namespace},
 				LgtmActsAsApprove: test.lgtmActsAsApprove,
 			})
-			err := handleGenericComment(
-				logrus.WithField("plugin", "approve"),
-				fakeClient,
-				fakeOwnersClient{},
-				&url.URL{
-					Scheme: "https",
-					Host:   "github.com",
-				},
-				config,
-				&test.commentEvent,
-			)
+			err := plugin.InvokeCommand(&test.commentEvent, func(match []string) error {
+				return handleGenericComment(
+					logrus.WithField("plugin", "approve"),
+					fakeClient,
+					fakeOwnersClient{},
+					&url.URL{
+						Scheme: "https",
+						Host:   "github.com",
+					},
+					config,
+					&test.commentEvent,
+				)
+			})
 
 			if test.expectHandle && !handled {
 				t.Errorf("%s: expected call to handleFunc, but it wasn't called", test.name)

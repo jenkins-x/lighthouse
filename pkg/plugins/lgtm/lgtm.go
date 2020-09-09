@@ -57,19 +57,33 @@ type commentPruner interface {
 	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
 }
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
-			HelpProvider:          helpProvider,
-			GenericCommentHandler: handleGenericCommentEvent,
-			PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
-				return handlePullRequestEvent(pc, pe)
-			},
-			ReviewEventHandler: handlePullRequestReviewEvent,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
+		HelpProvider: helpProvider,
+		PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
+			return handlePullRequestEvent(pc, pe)
 		},
-	)
+		ReviewEventHandler: handlePullRequestReviewEvent,
+		Commands: []plugins.Command{{
+			Filter: func(e scmprovider.GenericCommentEvent) bool {
+				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
+			},
+			// No regex, the handler will take care of it
+			GenericCommentHandler: handleGenericCommentEvent,
+			Help: []pluginhelp.Command{{
+				Usage:       "/lgtm [cancel] or GitHub Review action",
+				Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
+				Featured:    true,
+				WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
+				Examples:    []string{"/lgtm", "/lgtm cancel", "<a href=\"https://help.github.com/articles/about-pull-request-reviews/\">'Approve' or 'Request Changes'</a>"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -106,13 +120,6 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 	}
 	pluginHelp := &pluginhelp.PluginHelp{Config: configInfo}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/lgtm [cancel] or GitHub Review action",
-		Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
-		Featured:    true,
-		WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
-		Examples:    []string{"/lgtm", "/lgtm cancel", "<a href=\"https://help.github.com/articles/about-pull-request-reviews/\">'Approve' or 'Request Changes'</a>"},
-	})
 	return pluginHelp, nil
 }
 
@@ -162,7 +169,7 @@ type reviewCtx struct {
 	number                             int
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	cp, err := pc.CommentPruner()
 	if err != nil {
 		return err
@@ -201,11 +208,6 @@ func handleGenericComment(spc scmProviderClient, config *plugins.Configuration, 
 		repo:        e.Repo,
 		assignees:   e.Assignees,
 		number:      e.Number,
-	}
-
-	// Only consider open PRs and new comments.
-	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
-		return nil
 	}
 
 	// If we create an "/lgtm" comment, add lgtm if necessary.

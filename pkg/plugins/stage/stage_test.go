@@ -222,7 +222,9 @@ func TestStageLabels(t *testing.T) {
 				Body:   tc.body,
 				Action: scm.ActionCreate,
 			}
-			err := handle(fc, logrus.WithField("plugin", "fake-lifecyle"), e)
+			err := plugin.InvokeCommand(e, func(match []string) error {
+				return handle(match, fc, logrus.WithField("plugin", "fake-lifecyle"), e)
+			})
 			switch {
 			case err != nil:
 				t.Errorf("%s: unexpected error: %v", tc.name, err)

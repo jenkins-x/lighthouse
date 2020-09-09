@@ -53,23 +53,6 @@ func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		"url":                    ic.Comment.Link,
 	})
 	l.Infof("Issue comment %s.", ic.Action)
-	for p, h := range s.Plugins.GetPlugins(ic.Repo.Namespace, ic.Repo.Name) {
-		if h.IssueCommentHandler != nil {
-			s.wg.Add(1)
-			go func(p string, h plugins.IssueCommentHandler) {
-				defer s.wg.Done()
-				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
-				agent.InitializeCommentPruner(
-					ic.Repo.Namespace,
-					ic.Repo.Name,
-					ic.Issue.Number,
-				)
-				if err := h(agent, ic); err != nil {
-					agent.Logger.WithError(err).Error("Error handling IssueCommentEvent.")
-				}
-			}(p, h.IssueCommentHandler)
-		}
-	}
 
 	s.handleGenericComment(
 		l,
@@ -124,20 +107,26 @@ func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 
 func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCommentEvent) {
 	for p, h := range s.Plugins.GetPlugins(ce.Repo.Namespace, ce.Repo.Name) {
-		if h.GenericCommentHandler != nil {
-			s.wg.Add(1)
-			go func(p string, h plugins.GenericCommentHandler) {
-				defer s.wg.Done()
-				agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
-				agent.InitializeCommentPruner(
-					ce.Repo.Namespace,
-					ce.Repo.Name,
-					ce.Number,
-				)
-				if err := h(agent, *ce); err != nil {
-					agent.Logger.WithError(err).Error("Error handling GenericCommentEvent.")
-				}
-			}(p, h.GenericCommentHandler)
+		for _, cmd := range h.Commands {
+			err := cmd.InvokeHandler(ce, func(match []string) error {
+				s.wg.Add(1)
+				go func(p string, h plugins.GenericCommentHandler, m []string) {
+					defer s.wg.Done()
+					agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
+					agent.InitializeCommentPruner(
+						ce.Repo.Namespace,
+						ce.Repo.Name,
+						ce.Number,
+					)
+					if err := h(m, agent, *ce); err != nil {
+						agent.Logger.WithError(err).Error("Error handling GenericCommentEvent.")
+					}
+				}(p, cmd.GenericCommentHandler, match)
+				return nil
+			})
+			if err != nil {
+				l.WithError(err).Error("Error invoking command handler")
+			}
 		}
 	}
 }

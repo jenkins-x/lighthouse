@@ -56,28 +56,33 @@ by commenting with the ` + "`/remove-good-first-issue`" + ` command.
 `
 )
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The help plugin provides commands that add or remove the '" + labels.Help + "' and the '" + labels.GoodFirstIssue + "' labels from issues.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The help plugin provides commands that add or remove the '" + labels.Help + "' and the '" + labels.GoodFirstIssue + "' labels from issues.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter: func(e scmprovider.GenericCommentEvent) bool {
+				return !(e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
+			},
+			Help: []pluginhelp.Command{{
+				Usage:       "/[remove-](help|good-first-issue)",
+				Description: "Applies or removes the '" + labels.Help + "' and '" + labels.GoodFirstIssue + "' labels to an issue.",
+				Featured:    false,
+				WhoCanUse:   "Anyone can trigger this command on a PR.",
+				Examples:    []string{"/help", "/remove-help", "/good-first-issue", "/remove-good-first-issue"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/[remove-](help|good-first-issue)",
-		Description: "Applies or removes the '" + labels.Help + "' and '" + labels.GoodFirstIssue + "' labels to an issue.",
-		Featured:    false,
-		WhoCanUse:   "Anyone can trigger this command on a PR.",
-		Examples:    []string{"/help", "/remove-help", "/good-first-issue", "/remove-good-first-issue"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {
@@ -93,20 +98,15 @@ type commentPruner interface {
 	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	cp, err := pc.CommentPruner()
 	if err != nil {
 		return err
 	}
-	return handle(pc.SCMProviderClient, pc.Logger, cp, &e)
+	return handle(match, pc.SCMProviderClient, pc.Logger, cp, &e)
 }
 
-func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmprovider.GenericCommentEvent) error {
-	// Only consider open issues and new comments.
-	if e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
-		return nil
-	}
-
+func handle(_ []string, spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmprovider.GenericCommentEvent) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	commentAuthor := e.Author.Login

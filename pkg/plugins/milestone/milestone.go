@@ -51,15 +51,27 @@ type scmProviderClient interface {
 	QuoteAuthorForComment(string) string
 }
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:                 milestoneRegex,
+			Help: []pluginhelp.Command{{
+				Usage:       "/milestone <version> or /milestone clear",
+				Description: "Updates the milestone for an issue or PR",
+				Featured:    false,
+				WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/milestone' command.",
+				Examples:    []string{"/milestone v1.10", "/milestone v1.9", "/milestone clear", "/lh-milestone clear"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -80,18 +92,11 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 			return configMap
 		}(enabledRepos),
 	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/milestone <version> or /milestone clear",
-		Description: "Updates the milestone for an issue or PR",
-		Featured:    false,
-		WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/milestone' command.",
-		Examples:    []string{"/milestone v1.10", "/milestone v1.9", "/milestone clear", "/lh-milestone clear"},
-	})
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+	return handle(match, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
 }
 
 func buildMilestoneMap(milestones []scmprovider.Milestone) map[string]int {
@@ -101,16 +106,8 @@ func buildMilestoneMap(milestones []scmprovider.Milestone) map[string]int {
 	}
 	return m
 }
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
 
-	milestoneMatch := milestoneRegex.FindStringSubmatch(e.Body)
-	if len(milestoneMatch) != 2 {
-		return nil
-	}
-
+func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
@@ -143,7 +140,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		log.WithError(err).Errorf("Error listing the milestones in the %s/%s repo", org, repo)
 		return err
 	}
-	proposedMilestone := milestoneMatch[1]
+	proposedMilestone := match[1]
 
 	// special case, if the clear keyword is used
 	if proposedMilestone == clearKeyword {

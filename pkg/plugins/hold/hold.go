@@ -44,28 +44,31 @@ var (
 
 type hasLabelFunc func(label string, issueLabels []*scm.Label) bool
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The hold plugin allows anyone to add or remove the '" + labels.Hold + "' Label from a pull request in order to temporarily prevent the PR from merging without withholding approval.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The hold plugin allows anyone to add or remove the '" + labels.Hold + "' Label from a pull request in order to temporarily prevent the PR from merging without withholding approval.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Help: []pluginhelp.Command{{
+				Usage:       "/hold [cancel]",
+				Description: "Adds or removes the `" + labels.Hold + "` Label which is used to indicate that the PR should not be automatically merged.",
+				Featured:    false,
+				WhoCanUse:   "Anyone can use the /hold command to add or remove the '" + labels.Hold + "' Label.",
+				Examples:    []string{"/hold", "/hold cancel"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/hold [cancel]",
-		Description: "Adds or removes the `" + labels.Hold + "` Label which is used to indicate that the PR should not be automatically merged.",
-		Featured:    false,
-		WhoCanUse:   "Anyone can use the /hold command to add or remove the '" + labels.Hold + "' Label.",
-		Examples:    []string{"/hold", "/hold cancel"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {
@@ -74,20 +77,17 @@ type scmProviderClient interface {
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	hasLabel := func(label string, labels []*scm.Label) bool {
 		return scmprovider.HasLabel(label, labels)
 	}
-	return handle(pc.SCMProviderClient, pc.Logger, &e, hasLabel)
+	return handle(match, pc.SCMProviderClient, pc.Logger, &e, hasLabel)
 }
 
 // handle drives the pull request to the desired state. If any user adds
 // a /hold directive, we want to add a label if one does not already exist.
 // If they add /hold cancel, we want to remove the label if it exists.
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, f hasLabelFunc) error {
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
+func handle(_ []string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, f hasLabelFunc) error {
 	needsLabel := false
 	if labelRe.MatchString(e.Body) {
 		needsLabel = true

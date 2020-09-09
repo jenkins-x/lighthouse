@@ -145,7 +145,9 @@ func TestMilestoneStatus(t *testing.T) {
 				repoMilestone["org/repo"] = plugins.Milestone{MaintainersID: maintainersID, MaintainersTeam: maintainersName}
 			}
 
-			if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
+			if err := plugin.InvokeCommand(e, func(match []string) error {
+				return handle(match, fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone)
+			}); err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
 

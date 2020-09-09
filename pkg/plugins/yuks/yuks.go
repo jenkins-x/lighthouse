@@ -42,28 +42,32 @@ const (
 	pluginName = "yuks"
 )
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The yuks plugin comments with jokes in response to the `/joke` command.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The yuks plugin comments with jokes in response to the `/joke` command.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:                 match,
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Help: []pluginhelp.Command{{
+				Usage:       "/joke",
+				Description: "Tells a joke.",
+				Featured:    false,
+				WhoCanUse:   "Anyone can use the `/joke` command.",
+				Examples:    []string{"/joke", "/lh-joke"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/joke",
-		Description: "Tells a joke.",
-		Featured:    false,
-		WhoCanUse:   "Anyone can use the `/joke` command.",
-		Examples:    []string{"/joke", "/lh-joke"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {
@@ -104,20 +108,11 @@ func (url realJoke) readJoke() (string, error) {
 	return a.Joke, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e, jokeURL)
 }
 
 func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, j joker) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-	// Make sure they are requesting a joke
-	if !match.MatchString(e.Body) {
-		return nil
-	}
-
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number

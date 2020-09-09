@@ -48,28 +48,31 @@ type event struct {
 	htmlurl       string
 }
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           labels.Shrug,
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  labels.Shrug,
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Help: []pluginhelp.Command{{
+				Usage:       "/[un]shrug",
+				Description: labels.Shrug,
+				Featured:    false,
+				WhoCanUse:   "Anyone, " + labels.Shrug,
+				Examples:    []string{"/shrug", "/unshrug"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/[un]shrug",
-		Description: labels.Shrug,
-		Featured:    false,
-		WhoCanUse:   "Anyone, " + labels.Shrug,
-		Examples:    []string{"/shrug", "/unshrug"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 type scmProviderClient interface {
@@ -80,15 +83,11 @@ type scmProviderClient interface {
 	QuoteAuthorForComment(string) string
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e)
 }
 
 func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-
 	wantShrug := false
 	if shrugRe.MatchString(e.Body) {
 		wantShrug = true

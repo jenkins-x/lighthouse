@@ -44,6 +44,25 @@ var (
 	}
 )
 
+var (
+	plugin = plugins.Plugin{
+		Description:  "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
+			GenericCommentHandler: handleGenericComment,
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:                 statusRegex,
+			Help: []pluginhelp.Command{{
+				Usage:       "/status (approved-for-milestone|in-progress|in-review)",
+				Description: "Applies the 'status/' label to a PR.",
+				Featured:    false,
+				WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/status' command. This team is specified in the config by providing the GitHub team's ID.",
+				Examples:    []string{"/status approved-for-milestone", "/status in-progress", "/status in-review", "/lh-status in-review"},
+			}},
+		}},
+	}
+)
+
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	AddLabel(owner, repo string, number int, label string, pr bool) error
@@ -51,14 +70,7 @@ type scmProviderClient interface {
 }
 
 func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
-			HelpProvider:          helpProvider,
-			GenericCommentHandler: handleGenericComment,
-		},
-	)
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
@@ -79,30 +91,14 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 			return configMap
 		}(),
 	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/status (approved-for-milestone|in-progress|in-review)",
-		Description: "Applies the 'status/' label to a PR.",
-		Featured:    false,
-		WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/status' command. This team is specified in the config by providing the GitHub team's ID.",
-		Examples:    []string{"/status approved-for-milestone", "/status in-progress", "/status in-review", "/lh-status in-review"},
-	})
 	return pluginHelp, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+	return handle(match, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
 }
 
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-
-	statusMatches := statusRegex.FindAllStringSubmatch(e.Body, -1)
-	if len(statusMatches) == 0 {
-		return nil
-	}
-
+func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
@@ -130,14 +126,12 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		return spc.CreateComment(org, repo, e.Number, e.IsPR, msg)
 	}
 
-	for _, statusMatch := range statusMatches {
-		sLabel, validStatus := statusMap[strings.TrimSpace(statusMatch[1])]
-		if !validStatus {
-			continue
-		}
+	sLabel, validStatus := statusMap[strings.TrimSpace(match[1])]
+	if validStatus {
 		if err := spc.AddLabel(org, repo, e.Number, sLabel, e.IsPR); err != nil {
 			log.WithError(err).Errorf("Error adding the label %q to %s/%s#%d.", sLabel, org, repo, e.Number)
 		}
 	}
+
 	return nil
 }

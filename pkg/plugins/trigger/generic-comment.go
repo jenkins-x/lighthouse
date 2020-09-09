@@ -35,12 +35,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	repo := gc.Repo.Name
 	number := gc.Number
 	commentAuthor := gc.Author.Login
-	// Only take action when a comment is first created,
-	// when it belongs to a PR,
-	// and the PR is open.
-	if gc.Action != scm.ActionCreate || !gc.IsPR || gc.IssueState != "open" {
-		return nil
-	}
+
 	// Skip comments not germane to this plugin
 	if !jobutil.RetestRe.MatchString(gc.Body) && !jobutil.OkToTestRe.MatchString(gc.Body) && !jobutil.TestAllRe.MatchString(gc.Body) {
 		matched := false

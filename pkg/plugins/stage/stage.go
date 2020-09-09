@@ -39,28 +39,32 @@ var (
 
 const pluginName = "stage"
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "Label the stage of an issue as alpha/beta/stable",
-			HelpProvider:          help,
+var (
+	plugin = plugins.Plugin{
+		Description:  "Label the stage of an issue as alpha/beta/stable",
+		HelpProvider: help,
+		Commands: []plugins.Command{{
+			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:                 stageRe,
 			GenericCommentHandler: stageHandleGenericComment,
-		},
-	)
+			Help: []pluginhelp.Command{{
+				Usage:       "/[remove-]stage <alpha|beta|stable>",
+				Description: "Labels the stage of an issue as alpha/beta/stable",
+				Featured:    false,
+				WhoCanUse:   "Anyone can trigger this command.",
+				Examples:    []string{"/stage alpha", "/remove-stage alpha"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
 	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/[remove-]stage <alpha|beta|stable>",
-		Description: "Labels the stage of an issue as alpha/beta/stable",
-		Featured:    false,
-		WhoCanUse:   "Anyone can trigger this command.",
-		Examples:    []string{"/stage alpha", "/remove-stage alpha"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
 type stageClient interface {
@@ -69,22 +73,12 @@ type stageClient interface {
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-func stageHandleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e)
+func stageHandleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+	return handle(match, pc.SCMProviderClient, pc.Logger, &e)
 }
 
-func handle(gc stageClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-
-	for _, mat := range stageRe.FindAllStringSubmatch(e.Body, -1) {
-		if err := handleOne(gc, log, e, mat); err != nil {
-			return err
-		}
-	}
-	return nil
+func handle(match []string, gc stageClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
+	return handleOne(gc, log, e, match)
 }
 
 func handleOne(gc stageClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, mat []string) error {

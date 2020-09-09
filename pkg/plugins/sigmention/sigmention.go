@@ -56,15 +56,27 @@ type scmProviderClient interface {
 	QuoteAuthorForComment(string) string
 }
 
+var (
+	sigmentionCommand = plugins.Command{
+		// TODO help
+		Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+		GenericCommentHandler: handleGenericComment,
+	}
+)
+
 func init() {
+	description := `The sigmention plugin responds to SIG (Special Interest Group) GitHub team mentions like '@kubernetes/sig-testing-bugs'. The plugin responds in two ways:
+<ol><li> The appropriate 'sig/*' and 'kind/*' labels are applied to the issue or pull request. In this case 'sig/testing' and 'kind/bug'.</li>
+<li> If the user who mentioned the GitHub team is not a member of the organization that owns the repository the bot will create a comment that repeats the mention. This is necessary because non-member mentions do not trigger GitHub notifications.</li></ol>`
+
 	plugins.RegisterPlugin(
 		pluginName,
 		plugins.Plugin{
-			Description: `The sigmention plugin responds to SIG (Special Interest Group) GitHub team mentions like '@kubernetes/sig-testing-bugs'. The plugin responds in two ways:
-<ol><li> The appropriate 'sig/*' and 'kind/*' labels are applied to the issue or pull request. In this case 'sig/testing' and 'kind/bug'.</li>
-<li> If the user who mentioned the GitHub team is not a member of the organization that owns the repository the bot will create a comment that repeats the mention. This is necessary because non-member mentions do not trigger GitHub notifications.</li></ol>`,
-			HelpProvider:          helpProvider,
-			GenericCommentHandler: handleGenericComment,
+			Description:  description,
+			HelpProvider: helpProvider,
+			Commands: []plugins.Command{
+				sigmentionCommand,
+			},
 		},
 	)
 }
@@ -78,7 +90,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.SigMention.Re)
 }
 
@@ -89,9 +101,6 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		return err
 	}
 	if e.Author.Login == botName {
-		return nil
-	}
-	if e.Action != scm.ActionCreate {
 		return nil
 	}
 

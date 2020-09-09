@@ -46,43 +46,41 @@ type scmProviderClient interface {
 	QuoteAuthorForComment(string) string
 }
 
-func init() {
-	plugins.RegisterPlugin(
-		pluginName,
-		plugins.Plugin{
-			Description:           "The skip plugin allows users to clean up GitHub stale commit statuses for non-blocking jobs on a PR.",
-			HelpProvider:          helpProvider,
+var (
+	plugin = plugins.Plugin{
+		Description:  "The skip plugin allows users to clean up GitHub stale commit statuses for non-blocking jobs on a PR.",
+		HelpProvider: helpProvider,
+		Commands: []plugins.Command{{
 			GenericCommentHandler: handleGenericComment,
-		},
-	)
+			Filter: func(e scmprovider.GenericCommentEvent) bool {
+				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
+			},
+			Regex: skipRe,
+			Help: []pluginhelp.Command{{
+				Usage:       "/skip",
+				Description: "Cleans up GitHub stale commit statuses for non-blocking jobs on a PR.",
+				Featured:    false,
+				WhoCanUse:   "Anyone can trigger this command on a PR.",
+				Examples:    []string{"/skip", "/lh-skip"},
+			}},
+		}},
+	}
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	pluginHelp := &pluginhelp.PluginHelp{}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/skip",
-		Description: "Cleans up GitHub stale commit statuses for non-blocking jobs on a PR.",
-		Featured:    false,
-		WhoCanUse:   "Anyone can trigger this command on a PR.",
-		Examples:    []string{"/skip", "/lh-skip"},
-	})
-	return pluginHelp, nil
+	return &pluginhelp.PluginHelp{}, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	honorOkToTest := trigger.HonorOkToTest(pc.PluginConfig.TriggerFor(e.Repo.Namespace, e.Repo.Name))
 	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.Config.GetPresubmits(e.Repo), honorOkToTest)
 }
 
 func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, presubmits []job.Presubmit, honorOkToTest bool) error {
-	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
-		return nil
-	}
-
-	if !skipRe.MatchString(e.Body) {
-		return nil
-	}
-
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number
