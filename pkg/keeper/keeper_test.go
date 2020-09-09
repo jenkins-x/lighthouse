@@ -734,7 +734,7 @@ func TestDividePool(t *testing.T) {
 		npr.Repository.Name = githubql.String(p.repo)
 		npr.Repository.Owner.Login = githubql.String(p.org)
 		npr.Repository.URL = githubql.String(fmt.Sprintf("https://github.com/%s/%s.git", p.org, p.repo))
-		pulls[prKey(&npr)] = npr
+		pulls[npr.prKey()] = npr
 	}
 	var pjs []v1alpha1.LighthouseJob
 	for _, pj := range testPJs {
