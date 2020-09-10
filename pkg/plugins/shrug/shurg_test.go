@@ -21,6 +21,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
@@ -81,10 +82,16 @@ func TestShrugComment(t *testing.T) {
 			Number: 5,
 			Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 		}
+		agent := plugins.Agent{
+			SCMProviderClient: &fakeClient.Client,
+			Logger:            logrus.WithField("plugin", pluginName),
+		}
 		if tc.hasShrug {
 			fc.IssueLabelsAdded = []string{"org/repo#5:" + labels.Shrug}
 		}
-		if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e); err != nil {
+		if err := plugin.InvokeCommandHandler(e, func(handler plugins.GenericCommentHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			return handler(match, agent, *e)
+		}); err != nil {
 			t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
 			continue
 		}

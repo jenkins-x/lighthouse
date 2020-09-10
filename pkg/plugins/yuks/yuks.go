@@ -37,18 +37,19 @@ var (
 )
 
 const (
-	// Previously: https://tambal.azurewebsites.net/joke/random
 	jokeURL    = realJoke("https://icanhazdadjoke.com")
 	pluginName = "yuks"
 )
 
-var (
-	plugin = plugins.Plugin{
+func createPlugin(j joker) plugins.Plugin {
+	return plugins.Plugin{
 		Description: "The yuks plugin comments with jokes in response to the `/joke` command.",
 		Commands: []plugins.Command{{
-			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:                 match,
-			GenericCommentHandler: handleGenericComment,
+			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:  match,
+			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return joke(pc.SCMProviderClient, pc.Logger, &e, j)
+			},
 			Help: []pluginhelp.Command{{
 				Usage:       "/joke",
 				Description: "Tells a joke.",
@@ -58,10 +59,10 @@ var (
 			}},
 		}},
 	}
-)
+}
 
 func init() {
-	plugins.RegisterPlugin(pluginName, plugin)
+	plugins.RegisterPlugin(pluginName, createPlugin(jokeURL))
 }
 
 type scmProviderClient interface {
@@ -102,15 +103,7 @@ func (url realJoke) readJoke() (string, error) {
 	return a.Joke, nil
 }
 
-func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e, jokeURL)
-}
-
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, j joker) error {
-	org := e.Repo.Namespace
-	repo := e.Repo.Name
-	number := e.Number
-
+func joke(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, j joker) error {
 	for i := 0; i < 10; i++ {
 		resp, err := j.readJoke()
 		if err != nil {
@@ -118,7 +111,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		}
 		if simple.MatchString(resp) {
 			log.Infof("Commenting with \"%s\".", resp)
-			return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
+			return spc.CreateComment(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 		}
 
 		log.Errorf("joke contains invalid characters: %v", resp)
