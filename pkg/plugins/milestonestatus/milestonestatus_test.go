@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -34,9 +34,6 @@ func formatLabels(labels ...string) []string {
 	r := []string{}
 	for _, l := range labels {
 		r = append(r, fmt.Sprintf("%s/%s#%d:%s", "org", "repo", 1, l))
-	}
-	if len(r) == 0 {
-		return nil
 	}
 	return r
 }
@@ -134,7 +131,9 @@ func TestMilestoneStatus(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			fakeClient := &fake.SCMClient{IssueComments: make(map[int][]*scm.Comment)}
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
+
 			e := &scmprovider.GenericCommentEvent{
 				Action: scm.ActionCreate,
 				Body:   tc.body,
@@ -142,15 +141,19 @@ func TestMilestoneStatus(t *testing.T) {
 				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 				Author: scm.User{Login: tc.commenter},
 			}
-
 			repoMilestone := map[string]plugins.Milestone{"": {MaintainersID: 0}}
-
 			if !tc.noRepoMaintainer {
 				repoMilestone["org/repo"] = plugins.Milestone{MaintainersID: 42}
 			}
-
-			if err := plugin.InvokeCommand(e, func(match []string) error {
-				return handle(match, fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone)
+			agent := plugins.Agent{
+				SCMProviderClient: &fakeClient.Client,
+				Logger:            logrus.WithField("plugin", pluginName),
+				PluginConfig: &plugins.Configuration{
+					RepoMilestone: repoMilestone,
+				},
+			}
+			if err := plugin.InvokeCommandHandler(e, func(handler plugins.GenericCommentHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+				return handler(match, agent, *e)
 			}); err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
@@ -158,13 +161,13 @@ func TestMilestoneStatus(t *testing.T) {
 			// Check that the correct labels were added.
 			expectLabels := formatLabels(tc.expectedNewLabels...)
 			sort.Strings(expectLabels)
-			sort.Strings(fakeClient.IssueLabelsAdded)
-			if !reflect.DeepEqual(expectLabels, fakeClient.IssueLabelsAdded) {
-				t.Errorf("(%s): Expected issue to end with labels %q, but ended with %q.", tc.name, expectLabels, fakeClient.IssueLabelsAdded)
+			sort.Strings(fc.IssueLabelsAdded)
+			if !reflect.DeepEqual(expectLabels, fc.IssueLabelsAdded) {
+				t.Errorf("(%s): Expected issue to end with labels %q, but ended with %q.", tc.name, expectLabels, fc.IssueLabelsAdded)
 			}
 
 			// Check that a comment was left iff one should have been left.
-			comments := len(fakeClient.IssueComments[1])
+			comments := len(fc.IssueComments[1])
 			if tc.shouldComment && comments != 1 {
 				t.Errorf("(%s): 1 comment should have been made, but %d comments were made.", tc.name, comments)
 			} else if !tc.shouldComment && comments != 0 {
