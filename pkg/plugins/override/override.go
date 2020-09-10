@@ -25,6 +25,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
@@ -55,69 +56,18 @@ type scmProviderClient interface {
 	QuoteAuthorForComment(string) string
 }
 
-type overrideClient interface {
-	scmProviderClient
-	presubmitForContext(org, repo, context string) *job.Presubmit
-	createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
-}
-
-type client struct {
-	spc      scmProviderClient
-	jc       job.Config
-	lhClient lighthouseclient.LighthouseJobInterface
-}
-
-func (c client) createOverrideJob(job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
+func createOverrideJob(lhClient lighthouseclient.LighthouseJobInterface, job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
 	overrideStatus := job.Status
-	createdJob, err := c.lhClient.Create(job)
+	createdJob, err := lhClient.Create(job)
 	if err != nil {
 		return nil, err
 	}
 	createdJob.Status = overrideStatus
-	return c.lhClient.UpdateStatus(createdJob)
+	return lhClient.UpdateStatus(createdJob)
 }
 
-func (c client) ProviderType() string {
-	return c.spc.ProviderType()
-}
-
-func (c client) PRRefFmt() string {
-	return c.spc.PRRefFmt()
-}
-
-func (c client) IsOrgAdmin(org, user string) (bool, error) {
-	return c.spc.IsOrgAdmin(org, user)
-}
-
-func (c client) CreateComment(owner, repo string, number int, pr bool, comment string) error {
-	return c.spc.CreateComment(owner, repo, number, pr, comment)
-}
-func (c client) CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error) {
-	return c.spc.CreateStatus(org, repo, ref, s)
-}
-
-func (c client) GetRef(org, repo, ref string) (string, error) {
-	return c.spc.GetRef(org, repo, ref)
-}
-
-func (c client) GetPullRequest(org, repo string, number int) (*scm.PullRequest, error) {
-	return c.spc.GetPullRequest(org, repo, number)
-}
-
-func (c client) ListStatuses(org, repo, ref string) ([]*scm.Status, error) {
-	return c.spc.ListStatuses(org, repo, ref)
-}
-
-func (c client) HasPermission(org, repo, user string, role ...string) (bool, error) {
-	return c.spc.HasPermission(org, repo, user, role...)
-}
-
-func (c client) QuoteAuthorForComment(author string) string {
-	return c.spc.QuoteAuthorForComment(author)
-}
-
-func (c client) presubmitForContext(org, repo, context string) *job.Presubmit {
-	for _, p := range c.jc.AllPresubmits([]string{org + "/" + repo}) {
+func presubmitForContext(jc config.JobConfig, org, repo, context string) *job.Presubmit {
+	for _, p := range jc.AllPresubmits([]string{org + "/" + repo}) {
 		if p.Context == context {
 			return &p
 		}
@@ -129,9 +79,12 @@ var (
 	plugin = plugins.Plugin{
 		Description: "The override plugin allows repo admins to force a github status context to pass",
 		Commands: []plugins.Command{{
-			GenericCommentHandler: handleGenericComment,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
+			},
+			Regex: overrideRe,
+			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match, pc.SCMProviderClient, pc.LighthouseClient, pc.Config.JobConfig, pc.Logger, e)
 			},
 			Help: []pluginhelp.Command{{
 				Usage:       "/override [context]",
@@ -146,17 +99,6 @@ var (
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
-}
-
-func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	c := client{
-		spc:      pc.SCMProviderClient,
-		lhClient: pc.LighthouseClient,
-	}
-	if pc.Config != nil {
-		c.jc = pc.Config.JobConfig
-	}
-	return handle(c, pc.Logger, &e)
 }
 
 func authorized(spc scmProviderClient, log *logrus.Entry, org, repo, user string) bool {
@@ -187,46 +129,39 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(oc overrideClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	mat := overrideRe.FindAllStringSubmatch(e.Body, -1)
-	if len(mat) == 0 {
-		return nil // no /override commands given in the comment
-	}
-
+func handle(match []string, spc scmProviderClient, lhClient lighthouseclient.LighthouseJobInterface, jc config.JobConfig, log *logrus.Entry, e scmprovider.GenericCommentEvent) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number
 	user := e.Author.Login
 
 	overrides := sets.NewString()
-	for _, m := range mat {
-		if m[1] == "" {
-			resp := "/override requires a failed status context to operate on, but none was given"
-			log.Debug(resp)
-			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
-		}
-		overrides.Insert(m[2])
+	if match[1] == "" {
+		resp := "/override requires a failed status context to operate on, but none was given"
+		log.Debug(resp)
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 	}
+	overrides.Insert(match[2])
 
-	if !authorized(oc, log, org, repo, user) {
+	if !authorized(spc, log, org, repo, user) {
 		resp := fmt.Sprintf("%s unauthorized: /override is restricted to repo administrators", user)
 		log.Debug(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 	}
 
-	pr, err := oc.GetPullRequest(org, repo, number)
+	pr, err := spc.GetPullRequest(org, repo, number)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get PR #%d in %s/%s", number, org, repo)
 		log.WithError(err).Warn(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 	}
 
 	sha := pr.Head.Sha
-	statuses, err := oc.ListStatuses(org, repo, sha)
+	statuses, err := spc.ListStatuses(org, repo, sha)
 	if err != nil {
 		resp := fmt.Sprintf("Cannot get commit statuses for PR #%d in %s/%s", number, org, repo)
 		log.WithError(err).Warn(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 	}
 
 	contexts := sets.NewString()
@@ -244,7 +179,7 @@ The following unknown contexts were given:
 Only the following contexts were expected:
 %s`, formatList(unknown.List()), formatList(contexts.List()))
 		log.Debug(resp)
-		return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
+		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 	}
 
 	done := sets.String{}
@@ -255,7 +190,7 @@ Only the following contexts were expected:
 		}
 		msg := fmt.Sprintf("Overrode contexts on behalf of %s: %s", user, strings.Join(done.List(), ", "))
 		log.Info(msg)
-		err := oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), msg))
+		err := spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), msg))
 		if err != nil {
 			log.WithError(err).Warn("Failed to create the comment")
 		}
@@ -266,15 +201,15 @@ Only the following contexts were expected:
 			continue
 		}
 		// First create the overridden prow result if necessary
-		if pre := oc.presubmitForContext(org, repo, status.Label); pre != nil {
-			baseSHA, err := oc.GetRef(org, repo, "heads/"+pr.Base.Ref)
+		if pre := presubmitForContext(jc, org, repo, status.Label); pre != nil {
+			baseSHA, err := spc.GetRef(org, repo, "heads/"+pr.Base.Ref)
 			if err != nil {
 				resp := fmt.Sprintf("Cannot get base ref of PR")
 				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
+				return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 			}
 
-			pj := jobutil.NewPresubmit(pr, baseSHA, *pre, e.GUID, oc.PRRefFmt())
+			pj := jobutil.NewPresubmit(pr, baseSHA, *pre, e.GUID, spc.PRRefFmt())
 			now := metav1.Now()
 			pj.Status = v1alpha1.LighthouseJobStatus{
 				State:          v1alpha1.SuccessState,
@@ -283,10 +218,10 @@ Only the following contexts were expected:
 				CompletionTime: &now,
 			}
 			log.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new override LighthouseJob.")
-			if _, err := oc.createOverrideJob(&pj); err != nil {
+			if _, err := createOverrideJob(lhClient, &pj); err != nil {
 				resp := fmt.Sprintf("Failed to create override job for %s", status.Label)
 				log.WithError(err).Warn(resp)
-				return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
+				return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 			}
 		}
 		statusInput := &scm.StatusInput{
@@ -295,10 +230,10 @@ Only the following contexts were expected:
 			Target: status.Target,
 			Desc:   description(user),
 		}
-		if _, err := oc.CreateStatus(org, repo, sha, statusInput); err != nil {
+		if _, err := spc.CreateStatus(org, repo, sha, statusInput); err != nil {
 			resp := fmt.Sprintf("Cannot update PR status for context %s", statusInput.Label)
 			log.WithError(err).Warn(resp)
-			return oc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, oc.QuoteAuthorForComment(user), resp))
+			return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 		}
 		done.Insert(status.Label)
 	}
