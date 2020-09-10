@@ -34,7 +34,8 @@ var (
 	stageBeta   = "stage/beta"
 	stageStable = "stage/stable"
 	stageLabels = []string{stageAlpha, stageBeta, stageStable}
-	stageRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?(remove-)?stage (alpha|beta|stable)\s*$`)
+	stageRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?stage (alpha|beta|stable)\s*$`)
+	unstageRe   = regexp.MustCompile(`(?mi)^/(?:lh-)?remove-stage (alpha|beta|stable)\s*$`)
 )
 
 const pluginName = "stage"
@@ -43,15 +44,30 @@ var (
 	plugin = plugins.Plugin{
 		Description: "Label the stage of an issue as alpha/beta/stable",
 		Commands: []plugins.Command{{
-			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:                 stageRe,
-			GenericCommentHandler: stageHandleGenericComment,
+			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:  stageRe,
+			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return stage(pc.SCMProviderClient, pc.Logger, &e, match[1])
+			},
 			Help: []pluginhelp.Command{{
-				Usage:       "/[remove-]stage <alpha|beta|stable>",
+				Usage:       "/stage <alpha|beta|stable>",
 				Description: "Labels the stage of an issue as alpha/beta/stable",
 				Featured:    false,
 				WhoCanUse:   "Anyone can trigger this command.",
-				Examples:    []string{"/stage alpha", "/remove-stage alpha"},
+				Examples:    []string{"/stage alpha"},
+			}},
+		}, {
+			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:  unstageRe,
+			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return unstage(pc.SCMProviderClient, pc.Logger, &e, match[1])
+			},
+			Help: []pluginhelp.Command{{
+				Usage:       "/remove-stage <alpha|beta|stable>",
+				Description: "Removes the stage label of an issue as alpha/beta/stable",
+				Featured:    false,
+				WhoCanUse:   "Anyone can trigger this command.",
+				Examples:    []string{"/remove-stage alpha"},
 			}},
 		}},
 	}
@@ -61,53 +77,52 @@ func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-type stageClient interface {
+type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-func stageHandleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(match, pc.SCMProviderClient, pc.Logger, &e)
-}
-
-func handle(match []string, gc stageClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	return handleOne(gc, log, e, match)
-}
-
-func handleOne(gc stageClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, mat []string) error {
-	org := e.Repo.Namespace
-	repo := e.Repo.Name
-	number := e.Number
-
-	remove := mat[1] != ""
-	cmd := mat[2]
-	lbl := "stage/" + cmd
+func unstage(gc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, stage string) error {
+	lbl := "stage/" + stage
 
 	// Let's start simple and allow anyone to add/remove alpha, beta and stable labels.
 	// Adjust if we find evidence of the community abusing these labels.
-	labels, err := gc.GetIssueLabels(org, repo, number, e.IsPR)
+	labels, err := gc.GetIssueLabels(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR)
+	if err != nil {
+		log.WithError(err).Errorf("Failed to get labels.")
+		return err
+	}
+
+	// If the label exists and we asked for it to be removed, remove it.
+	if scmprovider.HasLabel(lbl, labels) {
+		return gc.RemoveLabel(e.Repo.Namespace, e.Repo.Name, e.Number, lbl, e.IsPR)
+	}
+	return nil
+}
+
+func stage(gc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, stage string) error {
+	lbl := "stage/" + stage
+
+	// Let's start simple and allow anyone to add/remove alpha, beta and stable labels.
+	// Adjust if we find evidence of the community abusing these labels.
+	labels, err := gc.GetIssueLabels(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR)
 	if err != nil {
 		log.WithError(err).Errorf("Failed to get labels.")
 	}
 
-	// If the label exists and we asked for it to be removed, remove it.
-	if scmprovider.HasLabel(lbl, labels) && remove {
-		return gc.RemoveLabel(org, repo, number, lbl, e.IsPR)
-	}
-
 	// If the label does not exist and we asked for it to be added,
 	// remove other existing stage labels and add it.
-	if !scmprovider.HasLabel(lbl, labels) && !remove {
+	if !scmprovider.HasLabel(lbl, labels) {
 		for _, label := range stageLabels {
-			if label != lbl && scmprovider.HasLabel(label, labels) {
-				if err := gc.RemoveLabel(org, repo, number, label, e.IsPR); err != nil {
+			if lbl != label && scmprovider.HasLabel(label, labels) {
+				if err := gc.RemoveLabel(e.Repo.Namespace, e.Repo.Name, e.Number, label, e.IsPR); err != nil {
 					log.WithError(err).Errorf("GitHub failed to remove the following label: %s", label)
 				}
 			}
 		}
 
-		if err := gc.AddLabel(org, repo, number, lbl, e.IsPR); err != nil {
+		if err := gc.AddLabel(e.Repo.Namespace, e.Repo.Name, e.Number, lbl, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to add the following label: %s", lbl)
 		}
 	}
