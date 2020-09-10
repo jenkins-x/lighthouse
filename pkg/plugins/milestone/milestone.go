@@ -56,9 +56,11 @@ var (
 		Description:        "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
 		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
-			GenericCommentHandler: handleGenericComment,
-			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:                 milestoneRegex,
+			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match[1], pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+			},
+			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:  milestoneRegex,
 			Help: []pluginhelp.Command{{
 				Usage:       "/milestone <version> or /milestone clear",
 				Description: "Updates the milestone for an issue or PR",
@@ -89,10 +91,6 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 	return configMap, nil
 }
 
-func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(match, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
-}
-
 func buildMilestoneMap(milestones []scmprovider.Milestone) map[string]int {
 	m := make(map[string]int)
 	for _, ms := range milestones {
@@ -101,7 +99,7 @@ func buildMilestoneMap(milestones []scmprovider.Milestone) map[string]int {
 	return m
 }
 
-func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
+func handle(mileStone string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
@@ -134,10 +132,9 @@ func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprov
 		log.WithError(err).Errorf("Error listing the milestones in the %s/%s repo", org, repo)
 		return err
 	}
-	proposedMilestone := match[1]
 
 	// special case, if the clear keyword is used
-	if proposedMilestone == clearKeyword {
+	if mileStone == clearKeyword {
 		if err := spc.ClearMilestone(org, repo, e.Number); err != nil {
 			log.WithError(err).Errorf("Error clearing the milestone for %s/%s#%d.", org, repo, e.Number)
 		}
@@ -145,7 +142,7 @@ func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprov
 	}
 
 	milestoneMap := buildMilestoneMap(milestones)
-	milestoneNumber, ok := milestoneMap[proposedMilestone]
+	milestoneNumber, ok := milestoneMap[mileStone]
 	if !ok {
 		slice := make([]string, 0, len(milestoneMap))
 		for k := range milestoneMap {
@@ -158,7 +155,7 @@ func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprov
 	}
 
 	if err := spc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {
-		log.WithError(err).Errorf("Error adding the milestone %s to %s/%s#%d.", proposedMilestone, org, repo, e.Number)
+		log.WithError(err).Errorf("Error adding the milestone %s to %s/%s#%d.", mileStone, org, repo, e.Number)
 	}
 
 	return nil
