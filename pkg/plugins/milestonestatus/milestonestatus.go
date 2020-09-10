@@ -49,9 +49,11 @@ var (
 		Description:        "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
 		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
-			GenericCommentHandler: handleGenericComment,
-			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:                 statusRegex,
+			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match[1], pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+			},
+			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Regex:  statusRegex,
 			Help: []pluginhelp.Command{{
 				Usage:       "/status (approved-for-milestone|in-progress|in-review)",
 				Description: "Applies the 'status/' label to a PR.",
@@ -88,11 +90,7 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 	return configMap, nil
 }
 
-func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(match, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
-}
-
-func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
+func handle(mileStone string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
@@ -120,7 +118,7 @@ func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprov
 		return spc.CreateComment(org, repo, e.Number, e.IsPR, msg)
 	}
 
-	sLabel, validStatus := statusMap[strings.TrimSpace(match[1])]
+	sLabel, validStatus := statusMap[strings.TrimSpace(mileStone)]
 	if validStatus {
 		if err := spc.AddLabel(org, repo, e.Number, sLabel, e.IsPR); err != nil {
 			log.WithError(err).Errorf("Error adding the label %q to %s/%s#%d.", sLabel, org, repo, e.Number)
