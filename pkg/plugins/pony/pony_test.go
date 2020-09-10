@@ -28,6 +28,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
@@ -224,8 +225,13 @@ func TestHttpResponse(t *testing.T) {
 				Number:     5,
 				IssueState: "open",
 			}
-			err = plugin.InvokeCommand(e, func(match []string) error {
-				return handle(fakeClient, logrus.WithField("plugin", pluginName), e, realHerd(ts.URL+testcase.path))
+			agent := plugins.Agent{
+				SCMProviderClient: &fakeClient.Client,
+				Logger:            logrus.WithField("plugin", pluginName),
+			}
+			plugin := createPlugin(realHerd(ts.URL + testcase.path))
+			err = plugin.InvokeCommandHandler(e, func(handler plugins.GenericCommentHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+				return handler(match, agent, *e)
 			})
 			if err != nil {
 				t.Errorf("tc %s: For comment %s, didn't expect error: %v", testcase.name, testcase.comment, err)
@@ -320,8 +326,13 @@ func TestPonies(t *testing.T) {
 			IssueState: tc.state,
 			IsPR:       tc.pr,
 		}
-		err := plugin.InvokeCommand(e, func(match []string) error {
-			return handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakeHerd("pone"))
+		agent := plugins.Agent{
+			SCMProviderClient: &fakeClient.Client,
+			Logger:            logrus.WithField("plugin", pluginName),
+		}
+		plugin := createPlugin(fakeHerd("pone"))
+		err := plugin.InvokeCommandHandler(e, func(handler plugins.GenericCommentHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			return handler(match, agent, *e)
 		})
 		if err != nil {
 			t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
