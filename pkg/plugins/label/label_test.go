@@ -358,7 +358,6 @@ func TestLabel(t *testing.T) {
 			expectedNewLabels:     []string{},
 			expectedRemovedLabels: formatLabels("priority/low", "priority/high", "kind/api-server", "area/infra"),
 			commenter:             orgMember,
-			expectedBotComment:    true,
 		},
 		{
 			name:                  "Add and Remove Label at the same time",
@@ -488,7 +487,18 @@ func TestLabel(t *testing.T) {
 				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 				Author: scm.User{Login: tc.commenter},
 			}
-			err := handle(fakeClient, logrus.WithField("plugin", pluginName), tc.extraLabels, e)
+			agent := plugins.Agent{
+				SCMProviderClient: &fakeClient.Client,
+				Logger:            logrus.WithField("plugin", pluginName),
+				PluginConfig: &plugins.Configuration{
+					Label: plugins.Label{
+						AdditionalLabels: tc.extraLabels,
+					},
+				},
+			}
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.GenericCommentHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+				return handler(match, agent, *e)
+			})
 			if err != nil {
 				t.Fatalf("didn't expect error from label test: %v", err)
 			}
