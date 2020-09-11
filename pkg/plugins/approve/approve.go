@@ -50,7 +50,7 @@ const (
 
 var (
 	associatedIssueRegexFormat = `(?:%s/[^/]+/issues/|#)(\d+)`
-	commandRegex               = regexp.MustCompile(`(?m)^/([^\s]+)[\t ]*([^\n\r]*)`)
+	commandRegex               = regexp.MustCompile(`(?mi)^/(?:lh-)?(lgtm|approve)(?:\s+(no-issue|cancel))?.*$`)
 	notificationRegex          = regexp.MustCompile(`(?is)^\[` + approvers.ApprovalNotificationName + `\] *?([^\n]*)(?:\n\n(.*))?`)
 
 	// deprecatedBotNames are the names of the bots that previously handled approvals.
@@ -103,10 +103,11 @@ var (
 		ReviewEventHandler: handleReviewEvent,
 		PullRequestHandler: handlePullRequestEvent,
 		Commands: []plugins.Command{{
-			GenericCommentHandler: handleGenericCommentEvent,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState == "closed")
 			},
+			Regex:                 commandRegex,
+			GenericCommentHandler: handleGenericCommentEvent,
 			Help: []pluginhelp.Command{{
 				Usage:       "/approve [no-issue|cancel]",
 				Description: "Approves a pull request",
