@@ -348,8 +348,15 @@ func TestLGTMComment(t *testing.T) {
 				SCMProviderClient:   fc,
 				PullRequestComments: fc.PullRequestComments[5],
 			}
-			if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
-				t.Fatalf("didn't expect error from lgtmComment: %v", err)
+			cmd := plugin.Commands[0]
+			matches, err := cmd.GetMatches(e)
+			if err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
+			for _, m := range matches {
+				if err := handleGenericComment(m[1] == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
+					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+				}
 			}
 			if err := fakeClient.PopulateFakeLabelsFromComments("org", "repo", 5, fakeLabel, tc.hasLGTM && tc.shouldToggle); err != nil {
 				t.Fatalf("Failure populating labels from comments: %v", err)
@@ -509,9 +516,16 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
-		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
-			t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
-			continue
+		cmd := plugin.Commands[0]
+		matches, err := cmd.GetMatches(e)
+		if err != nil {
+			t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+		}
+		for _, m := range matches {
+			if err := handleGenericComment(m[1] == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
+				t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
+				continue
+			}
 		}
 		deleted := false
 		for _, body := range fc.PullRequestCommentsDeleted {
