@@ -95,6 +95,21 @@ func (cmd Command) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, han
 	return nil
 }
 
+// GetMatches returns command matches
+func (cmd Command) GetMatches(ce *scmprovider.GenericCommentEvent) ([][]string, error) {
+	if cmd.Filter != nil && !cmd.Filter(*ce) {
+		return nil, nil
+	}
+	if cmd.Regex != nil {
+		max := cmd.MaxMatches
+		if max == 0 {
+			max = -1
+		}
+		return cmd.Regex.FindAllStringSubmatch(ce.Body, max), nil
+	}
+	return nil, errors.New("regex cannot be nil")
+}
+
 // Plugin defines a plugin and its handlers
 type Plugin struct {
 	Description        string
@@ -213,7 +228,7 @@ type Agent struct {
 	Logger *logrus.Entry
 
 	// may be nil if not initialized
-	commentPruner *commentpruner.EventClient
+	Commentpruner *commentpruner.EventClient
 }
 
 // NewAgent bootstraps a new Agent struct from the passed dependencies.
@@ -246,7 +261,7 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 // InitializeCommentPruner attaches a commentpruner.EventClient to the agent to handle
 // pruning comments.
 func (a *Agent) InitializeCommentPruner(org, repo string, pr int) {
-	a.commentPruner = commentpruner.NewEventClient(
+	a.Commentpruner = commentpruner.NewEventClient(
 		a.SCMProviderClient, a.Logger.WithField("client", "commentpruner"),
 		org, repo, pr,
 	)
@@ -255,10 +270,10 @@ func (a *Agent) InitializeCommentPruner(org, repo string, pr int) {
 // CommentPruner will return the commentpruner.EventClient attached to the agent or an error
 // if one is not attached.
 func (a *Agent) CommentPruner() (*commentpruner.EventClient, error) {
-	if a.commentPruner == nil {
+	if a.Commentpruner == nil {
 		return nil, errors.New("comment pruner client never initialized")
 	}
-	return a.commentPruner, nil
+	return a.Commentpruner, nil
 }
 
 // ClientAgent contains the various clients that are attached to the Agent.
