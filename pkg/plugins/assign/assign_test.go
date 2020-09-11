@@ -413,16 +413,24 @@ func TestAssignAndReview(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fc := newFakeClient([]string{"hello-world", "allow_underscore", "cjwagner", "merlin", "kubernetes/sig-testing-misc"})
 			e := scmprovider.GenericCommentEvent{
+				Action: scm.ActionCreate,
 				Body:   tc.body,
 				Author: scm.User{Login: tc.commenter},
 				Repo:   scm.Repository{Name: "repo", Namespace: "org"},
 				Number: 5,
 			}
-			if err := handle(newAssignHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
-				t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+			cmd := plugin.Commands[0]
+			matches, err := cmd.GetMatches(&e)
+			if err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
-			if err := handle(newReviewHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
-				t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+			for _, m := range matches {
+				if err := handle(m[1] != "un", m[2], m[3], newAssignHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
+					t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+				}
+				if err := handle(m[1] != "un", m[2], m[3], newReviewHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
+					t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+				}
 			}
 
 			if tc.commented != fc.commented {
