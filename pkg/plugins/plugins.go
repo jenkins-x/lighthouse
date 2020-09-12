@@ -50,7 +50,7 @@ type Command struct {
 	Regex                 *regexp.Regexp
 	MaxMatches            int
 	Filter                func(e scmprovider.GenericCommentEvent) bool
-	GenericCommentHandler GenericCommentHandler
+	GenericCommentHandler CommandEventHandler
 }
 
 // InvokeHandler performs command checks (filter, then regex if any) the calls the handler with the match (if any)
@@ -75,7 +75,7 @@ func (cmd Command) InvokeHandler(ce *scmprovider.GenericCommentEvent, handler fu
 }
 
 // InvokeCommandHandler performs command checks (filter, then regex if any) the calls the handler with the match (if any)
-func (cmd Command) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(GenericCommentHandler, *scmprovider.GenericCommentEvent, []string) error) error {
+func (cmd Command) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(CommandEventHandler, *scmprovider.GenericCommentEvent, []string) error) error {
 	if cmd.GenericCommentHandler == nil || (cmd.Filter != nil && !cmd.Filter(*ce)) {
 		return nil
 	}
@@ -112,14 +112,15 @@ func (cmd Command) GetMatches(ce *scmprovider.GenericCommentEvent) ([][]string, 
 
 // Plugin defines a plugin and its handlers
 type Plugin struct {
-	Description        string
-	ConfigHelpProvider ConfigHelpProvider
-	IssueHandler       IssueHandler
-	PullRequestHandler PullRequestHandler
-	PushEventHandler   PushEventHandler
-	ReviewEventHandler ReviewEventHandler
-	StatusEventHandler StatusEventHandler
-	Commands           []Command
+	Description           string
+	ConfigHelpProvider    ConfigHelpProvider
+	IssueHandler          IssueHandler
+	PullRequestHandler    PullRequestHandler
+	PushEventHandler      PushEventHandler
+	ReviewEventHandler    ReviewEventHandler
+	StatusEventHandler    StatusEventHandler
+	GenericCommentHandler GenericCommentHandler
+	Commands              []Command
 }
 
 // InvokeCommand calls InvokeHandler on all commands
@@ -133,7 +134,7 @@ func (plugin Plugin) InvokeCommand(ce *scmprovider.GenericCommentEvent, handler 
 }
 
 // InvokeCommandHandler calls InvokeHandler on all commands
-func (plugin Plugin) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(GenericCommentHandler, *scmprovider.GenericCommentEvent, []string) error) error {
+func (plugin Plugin) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(CommandEventHandler, *scmprovider.GenericCommentEvent, []string) error) error {
 	for _, cmd := range plugin.Commands {
 		if err := cmd.InvokeCommandHandler(ce, handler); err != nil {
 			return err
@@ -157,9 +158,6 @@ type ConfigHelpProvider func(config *Configuration, enabledRepos []string) (map[
 // IssueHandler defines the function contract for a scm.Issue handler.
 type IssueHandler func(Agent, scm.Issue) error
 
-// IssueCommentHandler defines the function contract for a scm.Comment handler.
-type IssueCommentHandler func(Agent, scm.IssueCommentHook) error
-
 // PullRequestHandler defines the function contract for a scm.PullRequest handler.
 type PullRequestHandler func(Agent, scm.PullRequestHook) error
 
@@ -172,11 +170,11 @@ type PushEventHandler func(Agent, scm.PushHook) error
 // ReviewEventHandler defines the function contract for a ReviewHook handler.
 type ReviewEventHandler func(Agent, scm.ReviewHook) error
 
-// ReviewCommentEventHandler defines the function contract for a scm.PullRequestCommentHook handler.
-type ReviewCommentEventHandler func(Agent, scm.PullRequestCommentHook) error
-
 // GenericCommentHandler defines the function contract for a scm.Comment handler.
-type GenericCommentHandler func([]string, Agent, scmprovider.GenericCommentEvent) error
+type GenericCommentHandler func(Agent, scmprovider.GenericCommentEvent) error
+
+// CommandEventHandler defines the function contract for a command handler.
+type CommandEventHandler func([]string, Agent, scmprovider.GenericCommentEvent) error
 
 // HelpProviders returns the map of registered plugins with their associated HelpProvider.
 func HelpProviders() map[string]HelpProvider {

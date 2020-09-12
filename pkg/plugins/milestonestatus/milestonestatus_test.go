@@ -152,7 +152,7 @@ func TestMilestoneStatus(t *testing.T) {
 					RepoMilestone: repoMilestone,
 				},
 			}
-			if err := plugin.InvokeCommandHandler(e, func(handler plugins.GenericCommentHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			if err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
 				return handler(match, agent, *e)
 			}); err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)

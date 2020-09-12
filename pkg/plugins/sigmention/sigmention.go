@@ -55,14 +55,6 @@ type scmProviderClient interface {
 	QuoteAuthorForComment(string) string
 }
 
-var (
-	sigmentionCommand = plugins.Command{
-		// TODO help
-		Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-		GenericCommentHandler: handleGenericComment,
-	}
-)
-
 func init() {
 	description := `The sigmention plugin responds to SIG (Special Interest Group) GitHub team mentions like '@kubernetes/sig-testing-bugs'. The plugin responds in two ways:
 <ol><li> The appropriate 'sig/*' and 'kind/*' labels are applied to the issue or pull request. In this case 'sig/testing' and 'kind/bug'.</li>
@@ -71,11 +63,9 @@ func init() {
 	plugins.RegisterPlugin(
 		pluginName,
 		plugins.Plugin{
-			Description:        description,
-			ConfigHelpProvider: configHelp,
-			Commands: []plugins.Command{
-				sigmentionCommand,
-			},
+			Description:           description,
+			ConfigHelpProvider:    configHelp,
+			GenericCommentHandler: handleGenericComment,
 		},
 	)
 }
@@ -87,7 +77,7 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 		nil
 }
 
-func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.SigMention.Re)
 }
 
@@ -117,15 +107,15 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	if err != nil {
 		return err
 	}
-	RepoLabelsExisting := map[string]string{}
+	repoLabelsExisting := map[string]string{}
 	for _, l := range repoLabels {
-		RepoLabelsExisting[strings.ToLower(l.Name)] = l.Name
+		repoLabelsExisting[strings.ToLower(l.Name)] = l.Name
 	}
 
 	var nonexistent, toRepeat []string
 	for _, sigMatch := range sigMatches {
 		sigLabel := strings.ToLower("sig" + "/" + sigMatch[1])
-		sigLabel, ok := RepoLabelsExisting[sigLabel]
+		sigLabel, ok := repoLabelsExisting[sigLabel]
 		if !ok {
 			nonexistent = append(nonexistent, "sig/"+sigMatch[1])
 			continue
