@@ -496,7 +496,7 @@ func TestLabel(t *testing.T) {
 					},
 				},
 			}
-			err := plugin.InvokeCommandHandler(e, func(handler plugins.GenericCommentHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
 				return handler(match, agent, *e)
 			})
 			if err != nil {
