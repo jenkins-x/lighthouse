@@ -36,21 +36,6 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	number := gc.Number
 	commentAuthor := gc.Author.Login
 
-	// Skip comments not germane to this plugin
-	if !jobutil.RetestRe.MatchString(gc.Body) && !jobutil.OkToTestRe.MatchString(gc.Body) && !jobutil.TestAllRe.MatchString(gc.Body) {
-		matched := false
-		for _, presubmit := range c.Config.GetPresubmits(gc.Repo) {
-			matched = matched || presubmit.TriggerMatches(gc.Body)
-			if matched {
-				break
-			}
-		}
-		if !matched {
-			c.Logger.Debug("Comment doesn't match any triggering regex, skipping.")
-			return nil
-		}
-	}
-
 	// Skip bot comments.
 	botName, err := c.SCMProviderClient.BotName()
 	if err != nil {
