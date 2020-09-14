@@ -3,5 +3,5 @@ dependencies:
   owner: jenkins-x
   repo: go-scm
   url: https://github.com/jenkins-x/go-scm
-  version: 1.5.164
+  version: 1.5.165
   versionURL: ""
