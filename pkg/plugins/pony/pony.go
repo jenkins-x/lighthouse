@@ -59,10 +59,11 @@ func createPlugin(h herd) plugins.Plugin {
 				Optional: true,
 			},
 			Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, h)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, h)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 }

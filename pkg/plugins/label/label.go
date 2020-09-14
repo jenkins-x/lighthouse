@@ -45,10 +45,11 @@ var (
 				Pattern: ".*",
 			},
 			Description: "Applies or removes a label from one of the recognized types of labels.",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match.Prefix != "", match.Name, match.Arg, pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handle(match.Prefix != "", match.Name, match.Arg, pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 )

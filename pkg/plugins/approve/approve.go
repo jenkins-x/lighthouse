@@ -26,15 +26,14 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/approve/approvers"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -99,7 +98,6 @@ var (
 <br>Per-repo configuration may be used to require that PRs link to an associated issue before approval is granted. It may also be used to specify that the PR authors implicitly approve their own PRs.
 <br>For more information see <a href="https://git.github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve/approvers/README.md">here</a>.`,
 		ConfigHelpProvider: configHelp,
-		ReceiveBotComments: true,
 		ReviewEventHandler: handleReviewEvent,
 		PullRequestHandler: handlePullRequestEvent,
 		Commands: []plugins.Command{{
@@ -111,10 +109,9 @@ var (
 			Description: "Approves a pull request",
 			Featured:    true,
 			WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState == "closed")
-			},
-			Handler: handleGenericCommentEvent,
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.NotIssueState("closed")),
 		}},
 	}
 )

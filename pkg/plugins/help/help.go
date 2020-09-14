@@ -58,16 +58,15 @@ var (
 			Name:        "help|good-first-issue",
 			Description: "Applies or removes the '" + labels.Help + "' and '" + labels.GoodFirstIssue + "' labels to an issue.",
 			WhoCanUse:   "Anyone can trigger this command on a PR.",
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
-			},
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				cp, err := pc.CommentPruner()
-				if err != nil {
-					return err
-				}
-				return handle(match.Prefix != "", match.Name, pc.SCMProviderClient, pc.Logger, cp, &e)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					cp, err := pc.CommentPruner()
+					if err != nil {
+						return err
+					}
+					return handle(match.Prefix != "", match.Name, pc.SCMProviderClient, pc.Logger, cp, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IsNotPR(), plugins.IssueState("open")),
 		}},
 	}
 )

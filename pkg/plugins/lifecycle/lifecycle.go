@@ -42,30 +42,29 @@ var (
 			},
 			Description: "Flags an issue or PR as frozen/stale/rotten",
 			WhoCanUse:   "Anyone can trigger this command.",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handleOne(match.Prefix != "", "lifecycle/"+match.Arg, pc.SCMProviderClient, pc.Logger, &e)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handleOne(match.Prefix != "", "lifecycle/"+match.Arg, pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}, {
 			Name:        "close",
 			Description: "Closes an issue or PR.",
 			WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return e.Action == scm.ActionCreate && e.IssueState == "open"
-			},
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handleClose(pc.SCMProviderClient, pc.Logger, &e)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handleClose(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IssueState("open")),
 		}, {
 			Name:        "reopen",
 			Description: "Reopens an issue or PR",
 			WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return e.Action == scm.ActionCreate && e.IssueState == "closed"
-			},
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handleReopen(pc.SCMProviderClient, pc.Logger, &e)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handleReopen(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IssueState("closed")),
 		}},
 	}
 )

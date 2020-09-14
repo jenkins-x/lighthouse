@@ -45,10 +45,11 @@ func createPlugin(j joker) plugins.Plugin {
 		Commands: []plugins.Command{{
 			Name:        "joke",
 			Description: "Tells a joke.",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return joke(pc.SCMProviderClient, pc.Logger, &e, j)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return joke(pc.SCMProviderClient, pc.Logger, &e, j)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 }

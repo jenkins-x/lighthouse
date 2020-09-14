@@ -10,7 +10,6 @@ import (
 type Plugin struct {
 	Description           string
 	ExcludedProviders     sets.String
-	ReceiveBotComments    bool
 	ConfigHelpProvider    ConfigHelpProvider
 	IssueHandler          IssueHandler
 	PullRequestHandler    PullRequestHandler

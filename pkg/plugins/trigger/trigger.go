@@ -49,14 +49,9 @@ var (
 			Name:        "ok-to-test",
 			Description: "Marks a PR as 'trusted' and starts tests.",
 			WhoCanUse:   "Members of the trusted organization for the repo.",
-			Handler:     handleGenericCommentEvent,
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState != "open")
-			},
-			// Help: pluginhelp.Command{
-			// 	// Usage:     "/ok-to-test",
-			// 	Examples: []string{"/ok-to-test", "/lh-ok-to-test"},
-			// },
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
 		}, {
 			Name: "test",
 			Arg: &plugins.CommandArg{
@@ -64,18 +59,16 @@ var (
 			},
 			Description: "Manually starts a/all test job(s).",
 			Featured:    true,
-			Handler:     handleGenericCommentEvent,
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState != "open")
-			},
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
 		}, {
 			Name:        "retest",
 			Description: "Rerun test jobs that have failed.",
 			Featured:    true,
-			Handler:     handleGenericCommentEvent,
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState != "open")
-			},
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
 		}},
 	}
 )

@@ -59,7 +59,6 @@ var (
 	plugin = plugins.Plugin{
 		Description:        "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
 		ConfigHelpProvider: configHelp,
-		ReceiveBotComments: true,
 		PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
 			return handlePullRequestEvent(pc, pe)
 		},
@@ -72,16 +71,15 @@ var (
 			},
 			Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
 			WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
-			},
-			Handler: func(m plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				cp, err := pc.CommentPruner()
-				if err != nil {
-					return err
-				}
-				return handleGenericComment(m.Arg == "cancel", pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
-			},
+			Action: plugins.
+				Invoke(func(m plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					cp, err := pc.CommentPruner()
+					if err != nil {
+						return err
+					}
+					return handleGenericComment(m.Arg == "cancel", pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
 		}},
 	}
 )

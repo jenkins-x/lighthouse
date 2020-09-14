@@ -35,17 +35,19 @@ var (
 		Commands: []plugins.Command{{
 			Name:        "shrug",
 			Description: "Adds the " + labels.Shrug + " label",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return addLabel(pc.SCMProviderClient, pc.Logger, &e)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return addLabel(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}, {
 			Name:        "unshrug",
 			Description: "Removes the " + labels.Shrug + " label",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return removeLabel(pc.SCMProviderClient, pc.Logger, &e)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return removeLabel(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 )
