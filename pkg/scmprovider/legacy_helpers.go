@@ -198,12 +198,6 @@ func (m MissingUsers) Error() string {
 	return fmt.Sprintf("could not %s the following user(s): %s.", m.action, strings.Join(m.Users, ", "))
 }
 
-// Milestone is a milestone defined on a github repository
-type Milestone struct {
-	Title  string `json:"title"`
-	Number int    `json:"number"`
-}
-
 // HasLabel checks if label is in the label set "issueLabels".
 func HasLabel(label string, issueLabels []*scm.Label) bool {
 	for _, l := range issueLabels {
