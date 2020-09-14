@@ -43,29 +43,6 @@ var (
 	plugins = map[string]Plugin{}
 )
 
-// Plugin defines a plugin and its handlers
-type Plugin struct {
-	Description           string
-	ConfigHelpProvider    ConfigHelpProvider
-	IssueHandler          IssueHandler
-	PullRequestHandler    PullRequestHandler
-	PushEventHandler      PushEventHandler
-	ReviewEventHandler    ReviewEventHandler
-	StatusEventHandler    StatusEventHandler
-	GenericCommentHandler GenericCommentHandler
-	Commands              []Command
-}
-
-// InvokeCommandHandler calls InvokeHandler on all commands
-func (plugin Plugin) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(CommandEventHandler, *scmprovider.GenericCommentEvent, CommandMatch) error) error {
-	for _, cmd := range plugin.Commands {
-		if err := cmd.InvokeCommandHandler(ce, handler); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // RegisterPlugin registers a plugin.
 func RegisterPlugin(name string, plugin Plugin) {
 	plugins[name] = plugin
@@ -104,21 +81,7 @@ func HelpProviders() map[string]HelpProvider {
 	pluginHelp := make(map[string]HelpProvider)
 	for k, v := range plugins {
 		pluginHelp[k] = func(config *Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-			var err error
-			h := &pluginhelp.PluginHelp{
-				Description: v.Description,
-			}
-			if v.ConfigHelpProvider != nil {
-				h.Config, err = v.ConfigHelpProvider(config, enabledRepos)
-			}
-			if h != nil {
-				h.Description = v.Description
-			}
-			for _, c := range v.Commands {
-				h.AddCommand(c.GetHelp())
-			}
-			h.Events = EventsForPlugin(v)
-			return h, err
+			return v.GetHelp(config, enabledRepos)
 		}
 	}
 	return pluginHelp
@@ -321,39 +284,15 @@ func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 }
 
 // GetPlugins returns a map of plugin names to plugins for the repo.
-func (pa *ConfigAgent) GetPlugins(owner, repo string) map[string]Plugin {
+func (pa *ConfigAgent) GetPlugins(owner, repo, provider string) map[string]Plugin {
 	pa.mut.Lock()
 	defer pa.mut.Unlock()
 
 	hs := map[string]Plugin{}
 	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := plugins[p]; ok {
+		if h, ok := plugins[p]; ok && !plugins[p].IsProviderExcluded(provider) {
 			hs[p] = h
 		}
 	}
 	return hs
-}
-
-// EventsForPlugin returns the registered events for the passed plugin.
-func EventsForPlugin(plugin Plugin) []string {
-	var events []string
-	if plugin.IssueHandler != nil {
-		events = append(events, "issue")
-	}
-	if plugin.PullRequestHandler != nil {
-		events = append(events, "pull_request")
-	}
-	if plugin.PushEventHandler != nil {
-		events = append(events, "push")
-	}
-	if plugin.ReviewEventHandler != nil {
-		events = append(events, "pull_request_review")
-	}
-	if plugin.StatusEventHandler != nil {
-		events = append(events, "status")
-	}
-	if plugin.GenericCommentHandler != nil {
-		events = append(events, "GenericCommentEvent (any event for user text)")
-	}
-	return events
 }
