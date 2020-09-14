@@ -43,6 +43,10 @@ type Server struct {
 
 const failedCommentCoerceFmt = "Could not coerce %s event to a GenericCommentEvent. Unknown 'action': %q."
 
+func (s *Server) getPlugins(org, repo string) map[string]plugins.Plugin {
+	return s.Plugins.GetPlugins(org, repo, s.ClientAgent.SCMProviderClient.Driver.String())
+}
+
 // handleIssueCommentEvent handle comment events
 func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHook) {
 	l = l.WithFields(logrus.Fields{
@@ -106,7 +110,7 @@ func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 }
 
 func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCommentEvent) {
-	for p, h := range s.Plugins.GetPlugins(ce.Repo.Namespace, ce.Repo.Name) {
+	for p, h := range s.getPlugins(ce.Repo.Namespace, ce.Repo.Name) {
 		if h.GenericCommentHandler != nil {
 			s.wg.Add(1)
 			go func(p string, h plugins.GenericCommentHandler) {
@@ -152,7 +156,7 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	})
 	l.Info("Push event.")
 	c := 0
-	for p, h := range s.Plugins.GetPlugins(repo.Namespace, repo.Name) {
+	for p, h := range s.getPlugins(pe.Repo.Namespace, pe.Repo.Name) {
 		if h.PushEventHandler != nil {
 			s.wg.Add(1)
 			c++
@@ -168,7 +172,6 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 }
 
-// handlePullRequestEvent handles a pull request event
 func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook) {
 	l = l.WithFields(logrus.Fields{
 		scmprovider.OrgLogField:  pr.Repo.Namespace,
@@ -184,7 +187,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	if repo.Name == "" {
 		repo = pr.Repo
 	}
-	for p, h := range s.Plugins.GetPlugins(repo.Namespace, repo.Name) {
+	for p, h := range s.getPlugins(repo.Namespace, repo.Name) {
 		if h.PullRequestHandler != nil {
 			s.wg.Add(1)
 			c++
@@ -243,7 +246,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 		"url":                    re.Review.Link,
 	})
 	l.Infof("Review %s.", re.Action)
-	for p, h := range s.Plugins.GetPlugins(re.PullRequest.Base.Repo.Namespace, re.PullRequest.Base.Repo.Name) {
+	for p, h := range s.getPlugins(re.PullRequest.Base.Repo.Namespace, re.PullRequest.Base.Repo.Name) {
 		if h.ReviewEventHandler != nil {
 			s.wg.Add(1)
 			go func(p string, h plugins.ReviewEventHandler) {
