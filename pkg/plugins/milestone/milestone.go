@@ -44,10 +44,10 @@ var (
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	ClearMilestone(org, repo string, num int) error
-	SetMilestone(org, repo string, issueNum, milestoneNum int) error
+	ClearMilestone(org, repo string, num int, isPR bool) error
+	SetMilestone(org, repo string, issueNum, milestoneNum int, isPR bool) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
-	ListMilestones(org, repo string) ([]scmprovider.Milestone, error)
+	ListMilestones(org, repo string) ([]*scm.Milestone, error)
 	QuoteAuthorForComment(string) string
 }
 
@@ -91,7 +91,7 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 	return configMap, nil
 }
 
-func buildMilestoneMap(milestones []scmprovider.Milestone) map[string]int {
+func buildMilestoneMap(milestones []*scm.Milestone) map[string]int {
 	m := make(map[string]int)
 	for _, ms := range milestones {
 		m[ms.Title] = ms.Number
@@ -135,7 +135,7 @@ func handle(mileStone string, spc scmProviderClient, log *logrus.Entry, e *scmpr
 
 	// special case, if the clear keyword is used
 	if mileStone == clearKeyword {
-		if err := spc.ClearMilestone(org, repo, e.Number); err != nil {
+		if err := spc.ClearMilestone(org, repo, e.Number, e.IsPR); err != nil {
 			log.WithError(err).Errorf("Error clearing the milestone for %s/%s#%d.", org, repo, e.Number)
 		}
 		return nil
@@ -154,7 +154,7 @@ func handle(mileStone string, spc scmProviderClient, log *logrus.Entry, e *scmpr
 		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg))
 	}
 
-	if err := spc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {
+	if err := spc.SetMilestone(org, repo, e.Number, milestoneNumber, e.IsPR); err != nil {
 		log.WithError(err).Errorf("Error adding the milestone %s to %s/%s#%d.", mileStone, org, repo, e.Number)
 	}
 

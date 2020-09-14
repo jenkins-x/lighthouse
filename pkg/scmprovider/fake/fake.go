@@ -486,13 +486,13 @@ func (f *SCMClient) ListCollaborators(org, repo string) ([]scm.User, error) {
 }
 
 // ClearMilestone removes the milestone
-func (f *SCMClient) ClearMilestone(org, repo string, issueNum int) error {
+func (f *SCMClient) ClearMilestone(org, repo string, issueNum int, isPR bool) error {
 	f.Milestone = 0
 	return nil
 }
 
 // SetMilestone sets the milestone.
-func (f *SCMClient) SetMilestone(org, repo string, issueNum, milestoneNum int) error {
+func (f *SCMClient) SetMilestone(org, repo string, issueNum, milestoneNum int, isPR bool) error {
 	if milestoneNum < 0 {
 		return fmt.Errorf("Milestone Numbers Cannot Be Negative")
 	}
@@ -501,10 +501,10 @@ func (f *SCMClient) SetMilestone(org, repo string, issueNum, milestoneNum int) e
 }
 
 // ListMilestones lists milestones.
-func (f *SCMClient) ListMilestones(org, repo string) ([]scmprovider.Milestone, error) {
-	milestones := []scmprovider.Milestone{}
+func (f *SCMClient) ListMilestones(org, repo string) ([]*scm.Milestone, error) {
+	milestones := []*scm.Milestone{}
 	for k, v := range f.MilestoneMap {
-		milestones = append(milestones, scmprovider.Milestone{Title: k, Number: v})
+		milestones = append(milestones, &scm.Milestone{Title: k, Number: v})
 	}
 	return milestones, nil
 }

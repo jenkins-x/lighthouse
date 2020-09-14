@@ -86,31 +86,16 @@ type SCMClient interface {
 	RequestReview(string, string, int, []string) error
 	UnrequestReview(string, string, int, []string) error
 
-	// Functions not yet implemented
-	ClearMilestone(string, string, int) error
-	SetMilestone(string, string, int, int) error
-	ListMilestones(string, string) ([]Milestone, error)
+	// Functions implemented in milestones.go
+	ClearMilestone(string, string, int, bool) error
+	SetMilestone(string, string, int, int, bool) error
+	ListMilestones(string, string) ([]*scm.Milestone, error)
 }
 
 // Client represents an interface that prow plugins expect on top of go-scm
 type Client struct {
 	client  *scm.Client
 	botName string
-}
-
-// ClearMilestone clears milestone
-func (c *Client) ClearMilestone(org, repo string, num int) error {
-	return scm.ErrNotSupported
-}
-
-// SetMilestone sets milestone
-func (c *Client) SetMilestone(org, repo string, issueNum, milestoneNum int) error {
-	return scm.ErrNotSupported
-}
-
-// ListMilestones list milestones
-func (c *Client) ListMilestones(org, repo string) ([]Milestone, error) {
-	return nil, scm.ErrNotSupported
 }
 
 // BotName returns the bot name
