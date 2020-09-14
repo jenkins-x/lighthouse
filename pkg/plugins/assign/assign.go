@@ -18,45 +18,34 @@ package assign
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "assign"
 
 var (
-	match = regexp.MustCompile(`(?mi)^/(?:lh-)?(un)?(cc|assign)(( @?(?:")?[-/\w]+?)*(?:")?)\s*$`)
-)
-
-var (
 	plugin = plugins.Plugin{
 		Description: "The assign plugin assigns or requests reviews from users. Specific users can be assigned with the command '/assign @user1' or have reviews requested of them with the command '/cc @user1'. If no user is specified the commands default to targeting the user who created the command. Assignments and requested reviews can be removed in the same way that they are added by prefixing the commands with 'un'.",
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  match,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handleGenericComment(match[1] != "un", match[2], match[3], pc, e)
+			Prefix: "un",
+			Name:   "cc|assign",
+			Arg: &plugins.CommandArg{
+				Pattern:  `@?"?[-/\w]+"?(?:[ \t]+@?"?[-/\w]+"?)*`,
+				Optional: true,
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/[un]assign [[@]<username>...]",
-				Description: "Assigns an assignee to the PR",
-				Featured:    true,
-				WhoCanUse:   "Anyone can use the command, but the target user must be an org member, a repo collaborator, or should have previously commented on the issue or PR.",
-				Examples:    []string{"/assign", "/unassign", "/assign @k8s-ci-robot", "/lh-assign"},
-			}, {
-				Usage:       "/[un]cc [[@]<username>...]",
-				Description: "Requests a review from the user(s).",
-				Featured:    true,
-				WhoCanUse:   "Anyone can use the command, but the target user must be a member of the org that owns the repository.",
-				Examples:    []string{"/cc", "/uncc", "/cc @k8s-ci-robot", "/lh-cc"},
-			}},
+			Description: "Assigns an assignee to the PR or issue or requests a review from the user(s)",
+			Featured:    true,
+			WhoCanUse:   "Anyone can use the command, but the target user must be an org member, a repo collaborator, or should have previously commented on the issue or PR.",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handleGenericComment(match.Prefix != "un", match.Name, match.Arg, pc, e)
+			},
 		}},
 	}
 )

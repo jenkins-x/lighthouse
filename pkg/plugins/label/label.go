@@ -18,14 +18,12 @@ package label
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
@@ -33,8 +31,6 @@ const pluginName = "label"
 
 var (
 	defaultLabels           = []string{"kind", "priority", "area"}
-	labelRegex              = regexp.MustCompile(`(?m)^/(?:lh-)?(area|committee|kind|language|priority|sig|triage|wg|label)\s*(.*)$`)
-	removeLabelRegex        = regexp.MustCompile(`(?m)^/(?:lh-)?remove-(area|committee|kind|language|priority|sig|triage|wg|label)\s*(.*)$`)
 	nonExistentLabelOnIssue = "Those labels are not set on the issue: `%v`"
 )
 
@@ -43,31 +39,16 @@ var (
 		Description:        "The label plugin provides commands that add or remove certain types of labels. Labels of the following types can be manipulated: 'area/*', 'committee/*', 'kind/*', 'language/*', 'priority/*', 'sig/*', 'triage/*', and 'wg/*'. More labels can be configured to be used via the /label command.",
 		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  labelRegex,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(false, match[1], match[2], pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
+			Prefix: "remove-",
+			Name:   "area|committee|kind|language|priority|sig|triage|wg|label",
+			Arg: &plugins.CommandArg{
+				Pattern: ".*",
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/(area|committee|kind|language|priority|sig|triage|wg|label) <target>",
-				Description: "Applies a label from one of the recognized types of labels.",
-				Featured:    false,
-				WhoCanUse:   "Anyone can trigger this command on a PR.",
-				Examples:    []string{"/kind bug", "/remove-area prow", "/sig testing", "/language zh"},
-			}},
-		}, {
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  removeLabelRegex,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(true, match[1], match[2], pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
+			Description: "Applies or removes a label from one of the recognized types of labels.",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match.Prefix != "", match.Name, match.Arg, pc.SCMProviderClient, pc.Logger, pc.PluginConfig.Label.AdditionalLabels, &e)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/remove-(area|committee|kind|language|priority|sig|triage|wg|label) <target>",
-				Description: "Removes a label from one of the recognized types of labels.",
-				Featured:    false,
-				WhoCanUse:   "Anyone can trigger this command on a PR.",
-				Examples:    []string{"/kind bug", "/remove-area prow", "/sig testing", "/language zh"},
-			}},
 		}},
 	}
 )

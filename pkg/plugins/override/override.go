@@ -28,7 +28,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -79,20 +78,18 @@ var (
 	plugin = plugins.Plugin{
 		Description: "The override plugin allows repo admins to force a github status context to pass",
 		Commands: []plugins.Command{{
+			Name: "override",
+			Arg: &plugins.CommandArg{
+				Pattern: `[^\r\n]+`,
+			},
+			Description: "Forces a github status context to green (one per line).",
+			WhoCanUse:   "Repo administrators",
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
 			},
-			Regex: overrideRe,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match, pc.SCMProviderClient, pc.LighthouseClient, pc.Config.JobConfig, pc.Logger, e)
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match.Arg, pc.SCMProviderClient, pc.LighthouseClient, pc.Config.JobConfig, pc.Logger, e)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/override [context]",
-				Description: "Forces a github status context to green (one per line).",
-				Featured:    false,
-				WhoCanUse:   "Repo administrators",
-				Examples:    []string{"/override pull-repo-whatever", "/override ci/circleci", "/override deleted-job", "/lh-override some-job"},
-			}},
 		}},
 	}
 )
@@ -129,19 +126,19 @@ func formatList(list []string) string {
 	return strings.Join(lines, "\n")
 }
 
-func handle(match []string, spc scmProviderClient, lhClient lighthouseclient.LighthouseJobInterface, jc config.JobConfig, log *logrus.Entry, e scmprovider.GenericCommentEvent) error {
+func handle(context string, spc scmProviderClient, lhClient lighthouseclient.LighthouseJobInterface, jc config.JobConfig, log *logrus.Entry, e scmprovider.GenericCommentEvent) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number
 	user := e.Author.Login
 
 	overrides := sets.NewString()
-	if match[1] == "" {
+	if context == "" {
 		resp := "/override requires a failed status context to operate on, but none was given"
 		log.Debug(resp)
 		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 	}
-	overrides.Insert(match[2])
+	overrides.Insert(context)
 
 	if !authorized(spc, log, org, repo, user) {
 		resp := fmt.Sprintf("%s unauthorized: /override is restricted to repo administrators", user)

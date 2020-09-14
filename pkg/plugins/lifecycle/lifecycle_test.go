@@ -232,12 +232,12 @@ func TestAddLifecycleLabels(t *testing.T) {
 				Action: scm.ActionCreate,
 			}
 			cmd := plugin.Commands[0]
-			matches, err := cmd.GetMatches(e)
+			matches, err := cmd.FilterAndGetMatches(e)
 			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
 			for _, m := range matches {
-				if err := handleOne(m[1] != "", "lifecycle/"+m[2], fc, logrus.WithField("plugin", pluginName), e); err != nil {
+				if err := handleOne(m.Prefix != "", "lifecycle/"+m.Arg, fc, logrus.WithField("plugin", pluginName), e); err != nil {
 					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
 				}
 			}

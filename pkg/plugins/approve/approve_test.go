@@ -1493,7 +1493,7 @@ func TestHandleGenericComment(t *testing.T) {
 				Repos:             []string{test.commentEvent.Repo.Namespace},
 				LgtmActsAsApprove: test.lgtmActsAsApprove,
 			})
-			err := plugin.InvokeCommand(&test.commentEvent, func(match []string) error {
+			err := plugin.InvokeCommandHandler(&test.commentEvent, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, _ plugins.CommandMatch) error {
 				return handleGenericComment(
 					logrus.WithField("plugin", "approve"),
 					fakeClient,

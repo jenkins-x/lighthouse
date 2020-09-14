@@ -20,11 +20,9 @@ package skip
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/trigger"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
@@ -32,10 +30,6 @@ import (
 )
 
 const pluginName = "skip"
-
-var (
-	skipRe = regexp.MustCompile(`(?mi)^/(?:lh-)?skip\s*$`)
-)
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
@@ -50,18 +44,12 @@ var (
 	plugin = plugins.Plugin{
 		Description: "The skip plugin allows users to clean up GitHub stale commit statuses for non-blocking jobs on a PR.",
 		Commands: []plugins.Command{{
-			GenericCommentHandler: handleGenericComment,
+			Name:        "skip",
+			Description: "Cleans up GitHub stale commit statuses for non-blocking jobs on a PR.",
+			Handler:     handleGenericComment,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
 			},
-			Regex: skipRe,
-			Help: []pluginhelp.Command{{
-				Usage:       "/skip",
-				Description: "Cleans up GitHub stale commit statuses for non-blocking jobs on a PR.",
-				Featured:    false,
-				WhoCanUse:   "Anyone can trigger this command on a PR.",
-				Examples:    []string{"/skip", "/lh-skip"},
-			}},
 		}},
 	}
 )
@@ -70,7 +58,7 @@ func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func handleGenericComment(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	honorOkToTest := trigger.HonorOkToTest(pc.PluginConfig.TriggerFor(e.Repo.Namespace, e.Repo.Name))
 	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.Config.GetPresubmits(e.Repo), honorOkToTest)
 }

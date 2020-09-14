@@ -32,7 +32,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/approve/approvers"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
@@ -103,18 +102,18 @@ var (
 		ReviewEventHandler: handleReviewEvent,
 		PullRequestHandler: handlePullRequestEvent,
 		Commands: []plugins.Command{{
+			Name: "lgtm|approve",
+			Arg: &plugins.CommandArg{
+				Pattern:  "no-issue|cancel",
+				Optional: true,
+			},
+			Description: "Approves a pull request",
+			Featured:    true,
+			WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState == "closed")
 			},
-			Regex:                 commandRegex,
-			GenericCommentHandler: handleGenericCommentEvent,
-			Help: []pluginhelp.Command{{
-				Usage:       "/approve [no-issue|cancel]",
-				Description: "Approves a pull request",
-				Featured:    true,
-				WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
-				Examples:    []string{"/approve", "/approve no-issue", "/lh-approve"},
-			}},
+			Handler: handleGenericCommentEvent,
 		}},
 	}
 )
@@ -154,7 +153,7 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 	return approveConfig, nil
 }
 
-func handleGenericCommentEvent(_ []string, pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(_ plugins.CommandMatch, pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
 	baseURL, err := url.Parse(ce.IssueLink)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse URL %s", ce.Link)

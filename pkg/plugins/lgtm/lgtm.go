@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 )
@@ -38,14 +37,14 @@ const (
 )
 
 var (
+	// LGTMLabel is the name of the lgtm label applied by the lgtm plugin
+	LGTMLabel                  = labels.LGTM
+	match                      = regexp.MustCompile(`(?mi)^/(?:lh-)?lgtm(?: no-issue)?(?:\s+(cancel))?\s*$`)
+	removeLGTMLabelNoti        = "New changes are detected. LGTM label has been removed."
 	addLGTMLabelNotification   = "LGTM label has been added.  <details>Git tree hash: %s</details>"
 	addLGTMLabelNotificationRe = regexp.MustCompile(fmt.Sprintf(addLGTMLabelNotification, "(.*)"))
 	configInfoReviewActsAsLgtm = `Reviews of "approve" or "request changes" act as adding or removing LGTM.`
 	configInfoStoreTreeHash    = `Squashing commits does not remove LGTM.`
-	// LGTMLabel is the name of the lgtm label applied by the lgtm plugin
-	LGTMLabel           = labels.LGTM
-	match               = regexp.MustCompile(`(?mi)^/(?:lh-)?lgtm(?: no-issue)?(?:\s+(cancel))?\s*$`)
-	removeLGTMLabelNoti = "New changes are detected. LGTM label has been removed."
 )
 
 func configInfoStickyLgtmTeam(team string) string {
@@ -65,24 +64,23 @@ var (
 		},
 		ReviewEventHandler: handlePullRequestReviewEvent,
 		Commands: []plugins.Command{{
+			Name: "lgtm",
+			Arg: &plugins.CommandArg{
+				Pattern:  "no-issue|cancel",
+				Optional: true,
+			},
+			Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
+			WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
 			},
-			Regex: match,
-			GenericCommentHandler: func(m []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Handler: func(m plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				cp, err := pc.CommentPruner()
 				if err != nil {
 					return err
 				}
-				return handleGenericComment(m[1] == "cancel", pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
+				return handleGenericComment(m.Arg == "cancel", pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/lgtm [cancel] or GitHub Review action",
-				Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
-				Featured:    true,
-				WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
-				Examples:    []string{"/lgtm", "/lgtm cancel", "<a href=\"https://help.github.com/articles/about-pull-request-reviews/\">'Approve' or 'Request Changes'</a>"},
-			}},
 		}},
 	}
 )

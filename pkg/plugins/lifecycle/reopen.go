@@ -99,6 +99,7 @@ func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.Gener
 		}
 		return err
 	}
+
 	// Add a comment after reopening the issue to leave an audit trail of who
 	// asked to reopen it.
 	return spc.CreateComment(

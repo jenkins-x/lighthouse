@@ -420,15 +420,15 @@ func TestAssignAndReview(t *testing.T) {
 				Number: 5,
 			}
 			cmd := plugin.Commands[0]
-			matches, err := cmd.GetMatches(&e)
+			matches, err := cmd.FilterAndGetMatches(&e)
 			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
 			for _, m := range matches {
-				if err := handle(m[1] != "un", m[2], m[3], newAssignHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
+				if err := handle(m.Prefix != "un", m.Name, m.Arg, newAssignHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
 					t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
 				}
-				if err := handle(m[1] != "un", m[2], m[3], newReviewHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
+				if err := handle(m.Prefix != "un", m.Name, m.Arg, newReviewHandler(e, fc, logrus.WithField("plugin", pluginName))); err != nil {
 					t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
 				}
 			}

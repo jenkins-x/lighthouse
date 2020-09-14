@@ -429,7 +429,7 @@ func TestHandle(t *testing.T) {
 					},
 				},
 			}
-			err := plugin.InvokeCommandHandler(&event, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			err := plugin.InvokeCommandHandler(&event, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 				return handler(match, agent, event)
 			})
 			switch {

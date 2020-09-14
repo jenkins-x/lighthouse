@@ -937,14 +937,14 @@ func TestHandleGenericComment(t *testing.T) {
 			// In some cases handleGenericComment can be called twice for the same event.
 			// For instance on Issue/PR creation and modification.
 			// Let's call it twice to ensure idempotency.
-			if err := plugin.InvokeCommand(&event, func(match []string) error {
-				return handleGenericComment(c, trigger, event)
+			if err := plugin.InvokeCommandHandler(&event, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, _ plugins.CommandMatch) error {
+				return handleGenericComment(c, trigger, *e)
 			}); err != nil {
 				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 			}
 			validate(tc.name, fakeLauncher, g, tc, t)
-			if err := plugin.InvokeCommand(&event, func(match []string) error {
-				return handleGenericComment(c, trigger, event)
+			if err := plugin.InvokeCommandHandler(&event, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, _ plugins.CommandMatch) error {
+				return handleGenericComment(c, trigger, *e)
 			}); err != nil {
 				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 			}

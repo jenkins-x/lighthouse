@@ -230,7 +230,7 @@ func TestHttpResponse(t *testing.T) {
 				Logger:            logrus.WithField("plugin", pluginName),
 			}
 			plugin := createPlugin(realHerd(ts.URL + testcase.path))
-			err = plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			err = plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 				return handler(match, agent, *e)
 			})
 			if err != nil {
@@ -331,7 +331,7 @@ func TestPonies(t *testing.T) {
 			Logger:            logrus.WithField("plugin", pluginName),
 		}
 		plugin := createPlugin(fakeHerd("pone"))
-		err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+		err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 			return handler(match, agent, *e)
 		})
 		if err != nil {

@@ -118,9 +118,9 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 			}(p, h.GenericCommentHandler)
 		}
 		for _, cmd := range h.Commands {
-			err := cmd.InvokeHandler(ce, func(match []string) error {
+			err := cmd.InvokeCommandHandler(ce, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 				s.wg.Add(1)
-				go func(p string, h plugins.CommandEventHandler, m []string) {
+				go func(p string, h plugins.CommandEventHandler, m plugins.CommandMatch) {
 					defer s.wg.Done()
 					agent := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", p))
 					agent.InitializeCommentPruner(
@@ -131,7 +131,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 					if err := h(m, agent, *ce); err != nil {
 						agent.Logger.WithError(err).Error("Error handling GenericCommentEvent.")
 					}
-				}(p, cmd.GenericCommentHandler, match)
+				}(p, handler, match)
 				return nil
 			})
 			if err != nil {

@@ -27,12 +27,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 var (
-	match  = regexp.MustCompile(`(?mi)^/(?:lh-)?joke\s*$`)
 	simple = regexp.MustCompile(`^[\w?'!., ]+$`)
 )
 
@@ -45,18 +43,12 @@ func createPlugin(j joker) plugins.Plugin {
 	return plugins.Plugin{
 		Description: "The yuks plugin comments with jokes in response to the `/joke` command.",
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  match,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Name:        "joke",
+			Description: "Tells a joke.",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return joke(pc.SCMProviderClient, pc.Logger, &e, j)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/joke",
-				Description: "Tells a joke.",
-				Featured:    false,
-				WhoCanUse:   "Anyone can use the `/joke` command.",
-				Examples:    []string{"/joke", "/lh-joke"},
-			}},
 		}},
 	}
 }
