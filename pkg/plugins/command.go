@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 )
@@ -51,6 +52,99 @@ type CommandMatch struct {
 	Arg    string
 }
 
+// CommandInvoker defines a plugin command handler and the condition needed for the handler to be invoked
+type CommandInvoker struct {
+	Condition func(scmprovider.GenericCommentEvent) bool
+	Handler   CommandEventHandler
+}
+
+// Invoke creates a CommandAction from a handler and a condition
+func Invoke(handler CommandEventHandler) CommandInvoker {
+	return CommandInvoker{
+		Condition: Always,
+		Handler:   handler,
+	}
+}
+
+// Always is a condition that always evaluates to true
+func Always(_ scmprovider.GenericCommentEvent) bool {
+	return true
+}
+
+// Never is a condition that always evaluates to false
+func Never(_ scmprovider.GenericCommentEvent) bool {
+	return false
+}
+
+// Not negates a condition
+func Not(condition ConditionFunc) ConditionFunc {
+	return func(e scmprovider.GenericCommentEvent) bool {
+		return !condition(e)
+	}
+}
+
+// When creates a CommandAction from an existing CommandAction and a condition (combining conditions with AND)
+func (action CommandInvoker) When(conditions ...ConditionFunc) CommandInvoker {
+	return CommandInvoker{
+		Condition: func(e scmprovider.GenericCommentEvent) bool {
+			if !action.Condition(e) {
+				return false
+			}
+			for _, condition := range conditions {
+				if !condition(e) {
+					return false
+				}
+			}
+			return true
+		},
+		Handler: action.Handler,
+	}
+}
+
+// ConditionFunc defines a condition used for invoking commands
+type ConditionFunc func(scmprovider.GenericCommentEvent) bool
+
+// Action returns a ConditionFunc that checks event action
+func Action(actions ...scm.Action) ConditionFunc {
+	return func(e scmprovider.GenericCommentEvent) bool {
+		for _, a := range actions {
+			if e.Action == a {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// IsPR returns a ConditionFunc that checks if event concerns a pull request
+func IsPR() ConditionFunc {
+	return func(e scmprovider.GenericCommentEvent) bool {
+		return e.IsPR
+	}
+}
+
+// IsNotPR returns a ConditionFunc that checks if event doesn't concerns a pull request
+func IsNotPR() ConditionFunc {
+	return Not(IsPR())
+}
+
+// IssueState returns a ConditionFunc that checks event issue state
+func IssueState(states ...string) ConditionFunc {
+	return func(e scmprovider.GenericCommentEvent) bool {
+		for _, s := range states {
+			if e.IssueState == s {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// NotIssueState returns a ConditionFunc that checks event issue state
+func NotIssueState(states ...string) ConditionFunc {
+	return Not(IssueState(states...))
+}
+
 // Command defines a plugin command sent through a comment
 type Command struct {
 	Prefix      string
@@ -60,14 +154,13 @@ type Command struct {
 	Featured    bool
 	WhoCanUse   string
 	MaxMatches  int
-	Filter      func(e scmprovider.GenericCommentEvent) bool
-	Handler     CommandEventHandler
+	Action      CommandInvoker
 	regex       *regexp.Regexp
 }
 
 // InvokeCommandHandler performs command checks (filter, then regex if any) the calls the handler with the match (if any)
 func (cmd Command) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(CommandEventHandler, *scmprovider.GenericCommentEvent, CommandMatch) error) error {
-	if cmd.Handler == nil || (cmd.Filter != nil && !cmd.Filter(*ce)) {
+	if cmd.Action.Handler == nil || (cmd.Action.Condition != nil && !cmd.Action.Condition(*ce)) {
 		return nil
 	}
 	regex := cmd.GetRegex()
@@ -77,7 +170,7 @@ func (cmd Command) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, han
 			max = -1
 		}
 		for _, m := range regex.FindAllStringSubmatch(ce.Body, max) {
-			if err := handler(cmd.Handler, ce, cmd.createMatch(m)); err != nil {
+			if err := handler(cmd.Action.Handler, ce, cmd.createMatch(m)); err != nil {
 				return err
 			}
 		}
@@ -123,7 +216,7 @@ func (cmd Command) GetMatches(content string) ([]CommandMatch, error) {
 
 // FilterAndGetMatches filters the event and returns command matches
 func (cmd Command) FilterAndGetMatches(event *scmprovider.GenericCommentEvent) ([]CommandMatch, error) {
-	if cmd.Handler == nil || (cmd.Filter != nil && !cmd.Filter(*event)) {
+	if cmd.Action.Handler == nil || (cmd.Action.Condition != nil && !cmd.Action.Condition(*event)) {
 		return nil, nil
 	}
 	return cmd.GetMatches(event.Body)

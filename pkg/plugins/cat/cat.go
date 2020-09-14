@@ -58,8 +58,9 @@ var (
 				Optional: true,
 			},
 			Description: "Add a cat image to the issue or PR",
-			Handler:     handleGenericComment,
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Action: plugins.
+				Invoke(handleGenericComment).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 )

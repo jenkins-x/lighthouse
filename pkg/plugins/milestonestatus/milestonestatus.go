@@ -52,10 +52,11 @@ var (
 			},
 			Description: "Applies the 'status/' label to a PR.",
 			WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/status' command. This team is specified in the config by providing the GitHub team's ID.",
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
-			},
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 )

@@ -44,20 +44,22 @@ var (
 				Pattern: "alpha|beta|stable",
 			},
 			Description: "Labels the stage of an issue as alpha/beta/stable",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return stage(pc.SCMProviderClient, pc.Logger, &e, match.Arg)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return stage(pc.SCMProviderClient, pc.Logger, &e, match.Arg)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}, {
 			Name: "remove-stage",
 			Arg: &plugins.CommandArg{
 				Pattern: "alpha|beta|stable",
 			},
 			Description: "Removes the stage label of an issue as alpha/beta/stable",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return unstage(pc.SCMProviderClient, pc.Logger, &e, match.Arg)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return unstage(pc.SCMProviderClient, pc.Logger, &e, match.Arg)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 )

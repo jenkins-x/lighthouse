@@ -84,12 +84,11 @@ var (
 			},
 			Description: "Forces a github status context to green (one per line).",
 			WhoCanUse:   "Repo administrators",
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
-			},
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match.Arg, pc.SCMProviderClient, pc.LighthouseClient, pc.Config.JobConfig, pc.Logger, e)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handle(match.Arg, pc.SCMProviderClient, pc.LighthouseClient, pc.Config.JobConfig, pc.Logger, e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
 		}},
 	}
 )

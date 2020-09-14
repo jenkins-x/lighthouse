@@ -46,10 +46,9 @@ var (
 		Commands: []plugins.Command{{
 			Name:        "skip",
 			Description: "Cleans up GitHub stale commit statuses for non-blocking jobs on a PR.",
-			Handler:     handleGenericComment,
-			Filter: func(e scmprovider.GenericCommentEvent) bool {
-				return !(!e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate)
-			},
+			Action: plugins.
+				Invoke(handleGenericComment).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
 		}},
 	}
 )

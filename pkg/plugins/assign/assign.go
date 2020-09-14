@@ -21,10 +21,9 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "assign"
@@ -42,10 +41,11 @@ var (
 			Description: "Assigns an assignee to the PR or issue or requests a review from the user(s)",
 			Featured:    true,
 			WhoCanUse:   "Anyone can use the command, but the target user must be an org member, a repo collaborator, or should have previously commented on the issue or PR.",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handleGenericComment(match.Prefix != "un", match.Name, match.Arg, pc, e)
-			},
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handleGenericComment(match.Prefix != "un", match.Name, match.Arg, pc, e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 )

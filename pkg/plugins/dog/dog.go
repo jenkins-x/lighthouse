@@ -50,31 +50,35 @@ func createPlugin(p pack) plugins.Plugin {
 		Commands: []plugins.Command{{
 			Name:        "woof|bark",
 			Description: "Add a dog image to the issue or PR",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(pc.SCMProviderClient, pc.Logger, &e, p)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handle(pc.SCMProviderClient, pc.Logger, &e, p)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}, {
 			Name:        "this-is-fine",
 			Description: "Add a dog image to the issue or PR",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return formatURLAndSendResponse(pc.SCMProviderClient, &e, fineURL)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return formatURLAndSendResponse(pc.SCMProviderClient, &e, fineURL)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}, {
 			Name:        "this-is-not-fine",
 			Description: "Add a dog image to the issue or PR",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return formatURLAndSendResponse(pc.SCMProviderClient, &e, notFineURL)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return formatURLAndSendResponse(pc.SCMProviderClient, &e, notFineURL)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}, {
 			Name:        "this-is-unbearable",
 			Description: "Add a dog image to the issue or PR",
-			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return formatURLAndSendResponse(pc.SCMProviderClient, &e, unbearableURL)
-			},
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return formatURLAndSendResponse(pc.SCMProviderClient, &e, unbearableURL)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
 		}},
 	}
 }
