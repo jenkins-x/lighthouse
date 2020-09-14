@@ -101,12 +101,12 @@ func TestHandle(t *testing.T) {
 				return tc.hasLabel
 			}
 			cmd := plugin.Commands[0]
-			matches, err := cmd.GetMatches(e)
+			matches, err := cmd.FilterAndGetMatches(e)
 			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
 			for _, m := range matches {
-				if err := handle(m[1] == "cancel", scmprovider.ToTestClient(client), logrus.WithField("plugin", pluginName), e, hasLabel); err != nil {
+				if err := handle(m.Arg == "cancel", scmprovider.ToTestClient(client), logrus.WithField("plugin", pluginName), e, hasLabel); err != nil {
 					t.Fatalf("For case %s, didn't expect error from hold: %v", tc.name, err)
 				}
 			}

@@ -349,12 +349,12 @@ func TestLGTMComment(t *testing.T) {
 				PullRequestComments: fc.PullRequestComments[5],
 			}
 			cmd := plugin.Commands[0]
-			matches, err := cmd.GetMatches(e)
+			matches, err := cmd.FilterAndGetMatches(e)
 			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
 			for _, m := range matches {
-				if err := handleGenericComment(m[1] == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
+				if err := handleGenericComment(m.Arg == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
 					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
 				}
 			}
@@ -517,12 +517,12 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			PullRequestComments: fc.PullRequestComments[5],
 		}
 		cmd := plugin.Commands[0]
-		matches, err := cmd.GetMatches(e)
+		matches, err := cmd.FilterAndGetMatches(e)
 		if err != nil {
 			t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 		}
 		for _, m := range matches {
-			if err := handleGenericComment(m[1] == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
+			if err := handleGenericComment(m.Arg == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
 				t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
 				continue
 			}

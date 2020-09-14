@@ -195,7 +195,7 @@ func TestCloseComment(t *testing.T) {
 				IssueAuthor: scm.User{Login: "author"},
 			}
 			cmd := plugin.Commands[1]
-			matches, err := cmd.GetMatches(e)
+			matches, err := cmd.FilterAndGetMatches(e)
 			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}

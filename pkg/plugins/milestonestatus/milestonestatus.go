@@ -20,21 +20,18 @@ package milestonestatus
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "milestonestatus"
 
 var (
-	statusRegex      = regexp.MustCompile(`(?m)^/(?:lh-)?status\s+(.+)$`)
 	mustBeAuthorized = "You must be a member of the [%s/%s](https://github.com/orgs/%s/teams/%s/members) GitHub team to add status labels. If you believe you should be able to issue the /status command, please contact your %s and have them propose you as an additional delegate for this responsibility."
 	milestoneTeamMsg = "The milestone maintainers team is the GitHub team %q with ID: %d."
 	statusMap        = map[string]string{
@@ -49,18 +46,16 @@ var (
 		Description:        "The milestonestatus plugin allows members of the milestone maintainers GitHub team to specify the 'status/*' label that should apply to a pull request.",
 		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match[1], pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+			Name: "status",
+			Arg: &plugins.CommandArg{
+				Pattern: ".+",
+			},
+			Description: "Applies the 'status/' label to a PR.",
+			WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/status' command. This team is specified in the config by providing the GitHub team's ID.",
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
 			},
 			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  statusRegex,
-			Help: []pluginhelp.Command{{
-				Usage:       "/status (approved-for-milestone|in-progress|in-review)",
-				Description: "Applies the 'status/' label to a PR.",
-				Featured:    false,
-				WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/status' command. This team is specified in the config by providing the GitHub team's ID.",
-				Examples:    []string{"/status approved-for-milestone", "/status in-progress", "/status in-review", "/lh-status in-review"},
-			}},
 		}},
 	}
 )

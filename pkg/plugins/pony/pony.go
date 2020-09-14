@@ -23,10 +23,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -51,26 +49,20 @@ const (
 	pluginName = "pony"
 )
 
-var (
-	match = regexp.MustCompile(`(?mi)^/(?:lh-)?pony(?: +(.+))?\s*$`)
-)
-
 func createPlugin(h herd) plugins.Plugin {
 	return plugins.Plugin{
 		Description: "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  match,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match[1], pc.SCMProviderClient, pc.Logger, &e, h)
+			Name: "pony",
+			Arg: &plugins.CommandArg{
+				Pattern:  ".+",
+				Optional: true,
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/pony [pony]",
-				Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
-				Featured:    false,
-				WhoCanUse:   "Anyone",
-				Examples:    []string{"/pony", "/pony Twilight Sparkle", "/lh-pony"},
-			}},
+			Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, h)
+			},
 		}},
 	}
 }

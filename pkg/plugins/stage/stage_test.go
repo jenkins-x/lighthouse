@@ -203,7 +203,7 @@ func TestStageLabels(t *testing.T) {
 				SCMProviderClient: &fakeClient.Client,
 				Logger:            logrus.WithField("plugin", pluginName),
 			}
-			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 				return handler(match, agent, *e)
 			})
 			switch {

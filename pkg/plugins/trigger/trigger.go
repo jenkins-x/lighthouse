@@ -18,7 +18,6 @@ package trigger
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -27,7 +26,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -48,44 +46,36 @@ var (
 		PullRequestHandler: handlePullRequest,
 		PushEventHandler:   handlePush,
 		Commands: []plugins.Command{{
-			GenericCommentHandler: handleGenericCommentEvent,
+			Name:        "ok-to-test",
+			Description: "Marks a PR as 'trusted' and starts tests.",
+			WhoCanUse:   "Members of the trusted organization for the repo.",
+			Handler:     handleGenericCommentEvent,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState != "open")
 			},
-			Regex: jobutil.OkToTestRe,
-			Help: []pluginhelp.Command{{
-				Usage:       "/ok-to-test",
-				Description: "Marks a PR as 'trusted' and starts tests.",
-				Featured:    false,
-				WhoCanUse:   "Members of the trusted organization for the repo.",
-				Examples:    []string{"/ok-to-test", "/lh-ok-to-test"},
-			}},
+			// Help: pluginhelp.Command{
+			// 	// Usage:     "/ok-to-test",
+			// 	Examples: []string{"/ok-to-test", "/lh-ok-to-test"},
+			// },
 		}, {
-			GenericCommentHandler: handleGenericCommentEvent,
+			Name: "test",
+			Arg: &plugins.CommandArg{
+				Pattern: `[-\w]+(?:,[-\w]+)*`,
+			},
+			Description: "Manually starts a/all test job(s).",
+			Featured:    true,
+			Handler:     handleGenericCommentEvent,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState != "open")
 			},
-			Regex: regexp.MustCompile(`(?m)^/(?:lh-)?test\s+([-\w]+(?:,[-\w]+)*)\s*$`),
-			Help: []pluginhelp.Command{{
-				Usage:       "/test (<job name>|all)",
-				Description: "Manually starts a/all test job(s).",
-				Featured:    true,
-				WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-				Examples:    []string{"/test all", "/test pull-bazel-test", "/lh-test all"},
-			}},
 		}, {
-			GenericCommentHandler: handleGenericCommentEvent,
+			Name:        "retest",
+			Description: "Rerun test jobs that have failed.",
+			Featured:    true,
+			Handler:     handleGenericCommentEvent,
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return !(e.Action != scm.ActionCreate || !e.IsPR || e.IssueState != "open")
 			},
-			Regex: jobutil.RetestRe,
-			Help: []pluginhelp.Command{{
-				Usage:       "/retest",
-				Description: "Rerun test jobs that have failed.",
-				Featured:    true,
-				WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-				Examples:    []string{"/retest", "/lh-retest"},
-			}},
 		}},
 	}
 )
@@ -169,7 +159,7 @@ func handlePullRequest(pc plugins.Agent, pr scm.PullRequestHook) error {
 	return handlePR(getClient(pc), pc.PluginConfig.TriggerFor(org, repo), pr)
 }
 
-func handleGenericCommentEvent(_ []string, pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(_ plugins.CommandMatch, pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
 	return handleGenericComment(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc)
 }
 

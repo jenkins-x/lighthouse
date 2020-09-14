@@ -19,13 +19,10 @@ limitations under the License.
 package stage
 
 import (
-	"regexp"
-
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
@@ -34,8 +31,6 @@ var (
 	stageBeta   = "stage/beta"
 	stageStable = "stage/stable"
 	stageLabels = []string{stageAlpha, stageBeta, stageStable}
-	stageRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?stage (alpha|beta|stable)\s*$`)
-	unstageRe   = regexp.MustCompile(`(?mi)^/(?:lh-)?remove-stage (alpha|beta|stable)\s*$`)
 )
 
 const pluginName = "stage"
@@ -44,31 +39,25 @@ var (
 	plugin = plugins.Plugin{
 		Description: "Label the stage of an issue as alpha/beta/stable",
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  stageRe,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return stage(pc.SCMProviderClient, pc.Logger, &e, match[1])
+			Name: "stage",
+			Arg: &plugins.CommandArg{
+				Pattern: "alpha|beta|stable",
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/stage <alpha|beta|stable>",
-				Description: "Labels the stage of an issue as alpha/beta/stable",
-				Featured:    false,
-				WhoCanUse:   "Anyone can trigger this command.",
-				Examples:    []string{"/stage alpha"},
-			}},
+			Description: "Labels the stage of an issue as alpha/beta/stable",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return stage(pc.SCMProviderClient, pc.Logger, &e, match.Arg)
+			},
 		}, {
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  unstageRe,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return unstage(pc.SCMProviderClient, pc.Logger, &e, match[1])
+			Name: "remove-stage",
+			Arg: &plugins.CommandArg{
+				Pattern: "alpha|beta|stable",
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/remove-stage <alpha|beta|stable>",
-				Description: "Removes the stage label of an issue as alpha/beta/stable",
-				Featured:    false,
-				WhoCanUse:   "Anyone can trigger this command.",
-				Examples:    []string{"/remove-stage alpha"},
-			}},
+			Description: "Removes the stage label of an issue as alpha/beta/stable",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return unstage(pc.SCMProviderClient, pc.Logger, &e, match.Arg)
+			},
 		}},
 	}
 )

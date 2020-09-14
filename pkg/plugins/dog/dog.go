@@ -29,16 +29,11 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 var (
-	match           = regexp.MustCompile(`(?mi)^/(?:lh-)?(woof|bark)\s*$`)
-	fineRegex       = regexp.MustCompile(`(?mi)^/(?:lh-)?this-is-fine\s*$`)
-	notFineRegex    = regexp.MustCompile(`(?mi)^/(?:lh-)?this-is-not-fine\s*$`)
-	unbearableRegex = regexp.MustCompile(`(?mi)^/(?:lh-)?this-is-unbearable\s*$`)
-	filetypes       = regexp.MustCompile(`(?i)\.(jpg|gif|png)$`)
+	filetypes = regexp.MustCompile(`(?i)\.(jpg|gif|png)$`)
 )
 
 const (
@@ -53,57 +48,33 @@ func createPlugin(p pack) plugins.Plugin {
 	return plugins.Plugin{
 		Description: "The dog plugin adds a dog image to an issue or PR in response to the `/woof` command.",
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  match,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Name:        "woof|bark",
+			Description: "Add a dog image to the issue or PR",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return handle(pc.SCMProviderClient, pc.Logger, &e, p)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/(lh-)?(woof|bark)",
-				Description: "Add a dog image to the issue or PR",
-				Featured:    false,
-				WhoCanUse:   "Anyone",
-				Examples:    []string{"/woof", "/bark"},
-			}},
 		}, {
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  fineRegex,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Name:        "this-is-fine",
+			Description: "Add a dog image to the issue or PR",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return formatURLAndSendResponse(pc.SCMProviderClient, &e, fineURL)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/(lh-)?this-is-fine",
-				Description: "Add a dog image to the issue or PR",
-				Featured:    false,
-				WhoCanUse:   "Anyone",
-				Examples:    []string{"/this-is-fine", "/lh-this-is-fine"},
-			}},
 		}, {
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  notFineRegex,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Name:        "this-is-not-fine",
+			Description: "Add a dog image to the issue or PR",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return formatURLAndSendResponse(pc.SCMProviderClient, &e, notFineURL)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/(lh-)?this-is-not-fine",
-				Description: "Add a dog image to the issue or PR",
-				Featured:    false,
-				WhoCanUse:   "Anyone",
-				Examples:    []string{"/this-is-not-fine", "/lh-this-is-not-fine"},
-			}},
 		}, {
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  unbearableRegex,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Name:        "this-is-unbearable",
+			Description: "Add a dog image to the issue or PR",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return formatURLAndSendResponse(pc.SCMProviderClient, &e, unbearableURL)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/(lh-)?this-is-unbearable",
-				Description: "Add a dog image to the issue or PR",
-				Featured:    false,
-				WhoCanUse:   "Anyone",
-				Examples:    []string{"/this-is-unbearable", "/lh-this-is-unbearable"},
-			}},
 		}},
 	}
 }

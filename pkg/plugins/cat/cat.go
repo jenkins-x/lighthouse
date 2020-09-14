@@ -30,14 +30,12 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	match          = regexp.MustCompile(`(?mi)^/(?:lh-)?meow(vie)?(?: (.+))?\s*$`)
 	grumpyKeywords = regexp.MustCompile(`(?mi)^(no|grumpy)\s*$`)
 	meow           = &realClowder{
 		url: "https://api.thecatapi.com/v1/images/search?format=json&results_per_page=1",
@@ -54,16 +52,14 @@ var (
 		Description:        "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
 		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
-			GenericCommentHandler: handleGenericComment,
-			Filter:                func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:                 match,
-			Help: []pluginhelp.Command{{
-				Description: "Add a cat image to the issue or PR",
-				Usage:       "/meow(vie) [CATegory]",
-				Featured:    false,
-				WhoCanUse:   "Anyone",
-				Examples:    []string{"/meow", "/meow caturday", "/meowvie clothes", "/lh-meow"},
-			}},
+			Name: "meow|meowvie",
+			Arg: &plugins.CommandArg{
+				Pattern:  `.+`,
+				Optional: true,
+			},
+			Description: "Add a cat image to the issue or PR",
+			Handler:     handleGenericComment,
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
 		}},
 	}
 )
@@ -183,9 +179,10 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 	return a.Format()
 }
 
-func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(
-		match,
+		match.Name == "meowvie",
+		match.Arg,
 		pc.SCMProviderClient,
 		pc.Logger,
 		&e,
@@ -194,13 +191,7 @@ func handleGenericComment(match []string, pc plugins.Agent, e scmprovider.Generi
 	)
 }
 
-func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, c clowder, setKey func()) error {
-	// Parse match
-	category, movieCat, err := parseMatch(match)
-	if err != nil {
-		return err
-	}
-
+func handle(movieCat bool, category string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, c clowder, setKey func()) error {
 	// Now that we know this is a relevant event we can set the key.
 	setKey()
 
@@ -228,14 +219,4 @@ func handle(match []string, spc scmProviderClient, log *logrus.Entry, e *scmprov
 	}
 
 	return errors.New("could not find a valid cat image")
-}
-
-func parseMatch(mat []string) (string, bool, error) {
-	if len(mat) != 3 {
-		err := fmt.Errorf("expected 3 capture groups in regexp match, but got %d", len(mat))
-		return "", false, err
-	}
-	category := strings.TrimSpace(mat[2])
-	movieCat := len(mat[1]) > 0 // "vie" suffix is present.
-	return category, movieCat, nil
 }

@@ -17,22 +17,16 @@ limitations under the License.
 package lifecycle
 
 import (
-	"regexp"
-
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 var (
 	lifecycleLabels = []string{labels.LifecycleActive, labels.LifecycleFrozen, labels.LifecycleStale, labels.LifecycleRotten}
-	lifecycleRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?(remove-)?lifecycle (active|frozen|stale|rotten)\s*$`)
-	closeRe         = regexp.MustCompile(`(?mi)^/(?:lh-)?close\s*$`)
-	reopenRe        = regexp.MustCompile(`(?mi)^/(?:lh-)?reopen\s*$`)
 )
 
 const pluginName = "lifecycle"
@@ -41,48 +35,37 @@ var (
 	plugin = plugins.Plugin{
 		Description: "Close, reopen, flag and/or unflag an issue or PR as frozen/stale/rotten",
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  lifecycleRe,
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handleOne(match[1] != "", "lifecycle/"+match[2], pc.SCMProviderClient, pc.Logger, &e)
+			Prefix: "remove-",
+			Name:   "lifecycle",
+			Arg: &plugins.CommandArg{
+				Pattern: "frozen|stale|rotten",
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/[remove-]lifecycle <frozen|stale|rotten>",
-				Description: "Flags an issue or PR as frozen/stale/rotten",
-				Featured:    false,
-				WhoCanUse:   "Anyone can trigger this command.",
-				Examples:    []string{"/lifecycle frozen", "/remove-lifecycle stale", "/lh-lifecyle rotten"},
-			}},
+			Description: "Flags an issue or PR as frozen/stale/rotten",
+			WhoCanUse:   "Anyone can trigger this command.",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handleOne(match.Prefix != "", "lifecycle/"+match.Arg, pc.SCMProviderClient, pc.Logger, &e)
+			},
 		}, {
+			Name:        "close",
+			Description: "Closes an issue or PR.",
+			WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return e.Action == scm.ActionCreate && e.IssueState == "open"
 			},
-			Regex: closeRe,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return handleClose(pc.SCMProviderClient, pc.Logger, &e)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/close",
-				Description: "Closes an issue or PR.",
-				Featured:    false,
-				WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-				Examples:    []string{"/close", "/lh-close"},
-			}},
 		}, {
+			Name:        "reopen",
+			Description: "Reopens an issue or PR",
+			WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
 			Filter: func(e scmprovider.GenericCommentEvent) bool {
 				return e.Action == scm.ActionCreate && e.IssueState == "closed"
 			},
-			Regex: reopenRe,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return handleReopen(pc.SCMProviderClient, pc.Logger, &e)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/reopen",
-				Description: "Reopens an issue or PR",
-				Featured:    false,
-				WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-				Examples:    []string{"/reopen", "/lh-reopen"},
-			}},
 		}},
 	}
 )

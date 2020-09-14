@@ -89,7 +89,7 @@ func TestShrugComment(t *testing.T) {
 		if tc.hasShrug {
 			fc.IssueLabelsAdded = []string{"org/repo#5:" + labels.Shrug}
 		}
-		if err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+		if err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 			return handler(match, agent, *e)
 		}); err != nil {
 			t.Errorf("For case %s, didn't expect error: %v", tc.name, err)

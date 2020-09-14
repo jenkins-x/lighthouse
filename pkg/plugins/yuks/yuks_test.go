@@ -73,7 +73,7 @@ func TestJokesMedium(t *testing.T) {
 		Logger:            logrus.WithField("plugin", pluginName),
 	}
 	plugin := createPlugin(realJoke(ts.URL))
-	if err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+	if err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 		return handler(match, agent, *e)
 	}); err != nil {
 		t.Errorf("didn't expect error: %v", err)
@@ -174,7 +174,7 @@ func TestJokes(t *testing.T) {
 				Logger:            logrus.WithField("plugin", pluginName),
 			}
 			plugin := createPlugin(tc.joke)
-			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 				return handler(match, agent, *e)
 			})
 			if !tc.shouldError && err != nil {

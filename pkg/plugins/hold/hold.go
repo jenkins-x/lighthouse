@@ -22,23 +22,17 @@ package hold
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const (
 	pluginName = "hold"
-)
-
-var (
-	match = regexp.MustCompile(`(?mi)^/(?:lh-)?hold(?:\s+(cancel))?\s*$`)
 )
 
 type hasLabelFunc func(label string, issueLabels []*scm.Label) bool
@@ -47,18 +41,16 @@ var (
 	plugin = plugins.Plugin{
 		Description: "The hold plugin allows anyone to add or remove the '" + labels.Hold + "' Label from a pull request in order to temporarily prevent the PR from merging without withholding approval.",
 		Commands: []plugins.Command{{
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handleGenericComment(match[1] == "cancel", pc, e)
+			Name:        "hold",
+			Description: "Adds or removes the `" + labels.Hold + "` Label which is used to indicate that the PR should not be automatically merged.",
+			Arg: &plugins.CommandArg{
+				Pattern:  "cancel",
+				Optional: true,
+			},
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handleGenericComment(match.Arg == "cancel", pc, e)
 			},
 			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  match,
-			Help: []pluginhelp.Command{{
-				Usage:       "/hold [cancel]",
-				Description: "Adds or removes the `" + labels.Hold + "` Label which is used to indicate that the PR should not be automatically merged.",
-				Featured:    false,
-				WhoCanUse:   "Anyone can use the /hold command to add or remove the '" + labels.Hold + "' Label.",
-				Examples:    []string{"/hold", "/hold cancel"},
-			}},
 		}},
 	}
 )

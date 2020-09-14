@@ -230,7 +230,7 @@ func TestHttpResponse(t *testing.T) {
 			Logger:            logrus.WithField("plugin", pluginName),
 		}
 		plugin := createPlugin(realPack(ts.URL))
-		err = plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+		err = plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 			return handler(match, agent, *e)
 		})
 		if err != nil {
@@ -357,7 +357,7 @@ func TestDogs(t *testing.T) {
 				Logger:            logrus.WithField("plugin", pluginName),
 			}
 			plugin := createPlugin(fakePack("http://127.0.0.1"))
-			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match []string) error {
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 				return handler(match, agent, *e)
 			})
 			if err != nil {

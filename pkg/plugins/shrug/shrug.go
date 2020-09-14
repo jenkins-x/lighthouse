@@ -18,65 +18,34 @@ package shrug
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "shrug"
 
 var (
-	shrugRe   = regexp.MustCompile(`(?mi)^/(?:lh-)?shrug\s*$`)
-	unshrugRe = regexp.MustCompile(`(?mi)^/(?:lh-)?unshrug\s*$`)
-)
-
-type event struct {
-	org           string
-	repo          string
-	number        int
-	prAuthor      string
-	commentAuthor string
-	body          string
-	assignees     []scm.User
-	hasLabel      func(label string) (bool, error)
-	htmlurl       string
-}
-
-var (
 	plugin = plugins.Plugin{
 		Description: labels.Shrug,
 		Commands: []plugins.Command{{
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  shrugRe,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Name:        "shrug",
+			Description: "Adds the " + labels.Shrug + " label",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return addLabel(pc.SCMProviderClient, pc.Logger, &e)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/shrug",
-				Description: "Adds the " + labels.Shrug + " label",
-				Featured:    false,
-				WhoCanUse:   "Anyone, " + labels.Shrug,
-				Examples:    []string{"/shrug", "/lh-shrug"},
-			}},
 		}, {
-			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  unshrugRe,
-			GenericCommentHandler: func(_ []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+			Name:        "unshrug",
+			Description: "Removes the " + labels.Shrug + " label",
+			Filter:      func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
+			Handler: func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 				return removeLabel(pc.SCMProviderClient, pc.Logger, &e)
 			},
-			Help: []pluginhelp.Command{{
-				Usage:       "/unshrug",
-				Description: "Removes the " + labels.Shrug + " label",
-				Featured:    false,
-				WhoCanUse:   "Anyone, " + labels.Shrug,
-				Examples:    []string{"/unshrug", "/lh-unshrug"},
-			}},
 		}},
 	}
 )

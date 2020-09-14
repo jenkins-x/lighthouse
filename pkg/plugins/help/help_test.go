@@ -216,12 +216,12 @@ func TestLabel(t *testing.T) {
 				Author:     scm.User{Login: "Alice"},
 			}
 			cmd := plugin.Commands[0]
-			matches, err := cmd.GetMatches(e)
+			matches, err := cmd.FilterAndGetMatches(e)
 			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
 			for _, m := range matches {
-				if err := handle(m[1], &fakeSCMProviderClient.Client, logrus.WithField("plugin", pluginName), &fakePruner{}, e); err != nil {
+				if err := handle(m.Prefix != "", m.Name, &fakeSCMProviderClient.Client, logrus.WithField("plugin", pluginName), &fakePruner{}, e); err != nil {
 					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
 				}
 			}

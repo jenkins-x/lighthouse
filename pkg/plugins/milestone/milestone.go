@@ -20,7 +20,6 @@ package milestone
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -28,14 +27,12 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "milestone"
 
 var (
-	milestoneRegex   = regexp.MustCompile(`(?m)^/(?:lh-)?milestone\s+(.+?)\s*$`)
 	mustBeAuthorized = "You must be a member of the [%s/%s](https://github.com/orgs/%s/teams/%s/members) GitHub team to set the milestone. If you believe you should be able to issue the /milestone command, please contact your %s and have them propose you as an additional delegate for this responsibility."
 	invalidMilestone = "The provided milestone is not valid for this repository. Milestones in this repository: [%s]\n\nUse `/milestone %s` to clear the milestone."
 	milestoneTeamMsg = "The milestone maintainers team is the GitHub team %q with ID: %d."
@@ -56,18 +53,16 @@ var (
 		Description:        "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
 		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
-			GenericCommentHandler: func(match []string, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-				return handle(match[1], pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+			Name: "milestone",
+			Arg: &plugins.CommandArg{
+				Pattern: ".+?",
+			},
+			Description: "Updates the milestone for an issue or PR",
+			WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/milestone' command.",
+			Handler: func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
 			},
 			Filter: func(e scmprovider.GenericCommentEvent) bool { return e.Action == scm.ActionCreate },
-			Regex:  milestoneRegex,
-			Help: []pluginhelp.Command{{
-				Usage:       "/milestone <version> or /milestone clear",
-				Description: "Updates the milestone for an issue or PR",
-				Featured:    false,
-				WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/milestone' command.",
-				Examples:    []string{"/milestone v1.10", "/milestone v1.9", "/milestone clear", "/lh-milestone clear"},
-			}},
 		}},
 	}
 )

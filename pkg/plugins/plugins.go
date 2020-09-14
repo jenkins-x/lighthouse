@@ -22,7 +22,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -44,72 +43,6 @@ var (
 	plugins = map[string]Plugin{}
 )
 
-// Command defines a plugin command sent through a comment
-type Command struct {
-	Help                  []pluginhelp.Command
-	Regex                 *regexp.Regexp
-	MaxMatches            int
-	Filter                func(e scmprovider.GenericCommentEvent) bool
-	GenericCommentHandler CommandEventHandler
-}
-
-// InvokeHandler performs command checks (filter, then regex if any) the calls the handler with the match (if any)
-func (cmd Command) InvokeHandler(ce *scmprovider.GenericCommentEvent, handler func([]string) error) error {
-	if cmd.GenericCommentHandler == nil || (cmd.Filter != nil && !cmd.Filter(*ce)) {
-		return nil
-	}
-	if cmd.Regex != nil {
-		max := cmd.MaxMatches
-		if max == 0 {
-			max = -1
-		}
-		for _, m := range cmd.Regex.FindAllStringSubmatch(ce.Body, max) {
-			if err := handler(m); err != nil {
-				return err
-			}
-		}
-	} else {
-		return handler(nil)
-	}
-	return nil
-}
-
-// InvokeCommandHandler performs command checks (filter, then regex if any) the calls the handler with the match (if any)
-func (cmd Command) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(CommandEventHandler, *scmprovider.GenericCommentEvent, []string) error) error {
-	if cmd.GenericCommentHandler == nil || (cmd.Filter != nil && !cmd.Filter(*ce)) {
-		return nil
-	}
-	if cmd.Regex != nil {
-		max := cmd.MaxMatches
-		if max == 0 {
-			max = -1
-		}
-		for _, m := range cmd.Regex.FindAllStringSubmatch(ce.Body, max) {
-			if err := handler(cmd.GenericCommentHandler, ce, m); err != nil {
-				return err
-			}
-		}
-	} else {
-		return handler(cmd.GenericCommentHandler, ce, nil)
-	}
-	return nil
-}
-
-// GetMatches returns command matches
-func (cmd Command) GetMatches(ce *scmprovider.GenericCommentEvent) ([][]string, error) {
-	if cmd.Filter != nil && !cmd.Filter(*ce) {
-		return nil, nil
-	}
-	if cmd.Regex != nil {
-		max := cmd.MaxMatches
-		if max == 0 {
-			max = -1
-		}
-		return cmd.Regex.FindAllStringSubmatch(ce.Body, max), nil
-	}
-	return nil, errors.New("regex cannot be nil")
-}
-
 // Plugin defines a plugin and its handlers
 type Plugin struct {
 	Description           string
@@ -123,18 +56,8 @@ type Plugin struct {
 	Commands              []Command
 }
 
-// InvokeCommand calls InvokeHandler on all commands
-func (plugin Plugin) InvokeCommand(ce *scmprovider.GenericCommentEvent, handler func([]string) error) error {
-	for _, cmd := range plugin.Commands {
-		if err := cmd.InvokeHandler(ce, handler); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // InvokeCommandHandler calls InvokeHandler on all commands
-func (plugin Plugin) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(CommandEventHandler, *scmprovider.GenericCommentEvent, []string) error) error {
+func (plugin Plugin) InvokeCommandHandler(ce *scmprovider.GenericCommentEvent, handler func(CommandEventHandler, *scmprovider.GenericCommentEvent, CommandMatch) error) error {
 	for _, cmd := range plugin.Commands {
 		if err := cmd.InvokeCommandHandler(ce, handler); err != nil {
 			return err
@@ -174,7 +97,7 @@ type ReviewEventHandler func(Agent, scm.ReviewHook) error
 type GenericCommentHandler func(Agent, scmprovider.GenericCommentEvent) error
 
 // CommandEventHandler defines the function contract for a command handler.
-type CommandEventHandler func([]string, Agent, scmprovider.GenericCommentEvent) error
+type CommandEventHandler func(CommandMatch, Agent, scmprovider.GenericCommentEvent) error
 
 // HelpProviders returns the map of registered plugins with their associated HelpProvider.
 func HelpProviders() map[string]HelpProvider {
@@ -192,9 +115,7 @@ func HelpProviders() map[string]HelpProvider {
 				h.Description = v.Description
 			}
 			for _, c := range v.Commands {
-				for _, cc := range c.Help {
-					h.AddCommand(cc)
-				}
+				h.AddCommand(c.GetHelp())
 			}
 			h.Events = EventsForPlugin(v)
 			return h, err
@@ -431,7 +352,7 @@ func EventsForPlugin(plugin Plugin) []string {
 	if plugin.StatusEventHandler != nil {
 		events = append(events, "status")
 	}
-	if plugin.Commands != nil && len(plugin.Commands) > 0 {
+	if plugin.GenericCommentHandler != nil {
 		events = append(events, "GenericCommentEvent (any event for user text)")
 	}
 	return events

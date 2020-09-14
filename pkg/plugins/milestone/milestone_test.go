@@ -146,12 +146,12 @@ func TestMilestoneStatus(t *testing.T) {
 			}
 
 			cmd := plugin.Commands[0]
-			matches, err := cmd.GetMatches(e)
+			matches, err := cmd.FilterAndGetMatches(e)
 			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 			}
 			for _, m := range matches {
-				if err := handle(m[1], fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
+				if err := handle(m.Arg, fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
 					t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
 				}
 			}
