@@ -111,6 +111,9 @@ func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 
 func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCommentEvent) {
 	for p, h := range s.getPlugins(ce.Repo.Namespace, ce.Repo.Name) {
+		if h.ReceiveBotComments == false && ce.Author.Login == s.ClientAgent.BotName {
+			continue
+		}
 		if h.GenericCommentHandler != nil {
 			s.wg.Add(1)
 			go func(p string, h plugins.GenericCommentHandler) {

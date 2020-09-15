@@ -99,6 +99,7 @@ var (
 <br>Per-repo configuration may be used to require that PRs link to an associated issue before approval is granted. It may also be used to specify that the PR authors implicitly approve their own PRs.
 <br>For more information see <a href="https://git.github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve/approvers/README.md">here</a>.`,
 		ConfigHelpProvider: configHelp,
+		ReceiveBotComments: true,
 		ReviewEventHandler: handleReviewEvent,
 		PullRequestHandler: handlePullRequestEvent,
 		Commands: []plugins.Command{{

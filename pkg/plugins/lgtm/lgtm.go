@@ -59,6 +59,7 @@ var (
 	plugin = plugins.Plugin{
 		Description:        "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
 		ConfigHelpProvider: configHelp,
+		ReceiveBotComments: true,
 		PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
 			return handlePullRequestEvent(pc, pe)
 		},
