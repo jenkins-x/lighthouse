@@ -2,6 +2,7 @@
 
 - [Config](#Config)
 - [GitHubOptions](#GitHubOptions)
+- [InRepoConfig](#InRepoConfig)
 - [JenkinsOperator](#JenkinsOperator)
 - [OwnersDirExcludes](#OwnersDirExcludes)
 - [Plank](#Plank)
@@ -20,6 +21,7 @@ Config is config for all lighthouse controllers
 | `plank` | [Plank](./github-com-jenkins-x-lighthouse-pkg-config-lighthouse.md#Plank) | No |  |
 | `branch-protection` | [Config](./github-com-jenkins-x-lighthouse-pkg-config-branchprotection.md#Config) | No |  |
 | `orgs` | map[string][Config](./github-com-jenkins-x-lighthouse-pkg-config-org.md#Config) | No |  |
+| `in_repo_config` | [InRepoConfig](./github-com-jenkins-x-lighthouse-pkg-config-lighthouse.md#InRepoConfig) | Yes |  |
 | `jenkins_operators` | [][JenkinsOperator](./github-com-jenkins-x-lighthouse-pkg-config-lighthouse.md#JenkinsOperator) | No | TODO: Move this out of the main config. |
 | `prowjob_namespace` | string | No | LighthouseJobNamespace is the namespace in the cluster that prow<br />components will use for looking up LighthouseJobs. The namespace<br />needs to exist and will not be created by prow.<br />Defaults to "default". |
 | `pod_namespace` | string | No | PodNamespace is the namespace in the cluster that prow<br />components will use for looking up Pods owned by LighthouseJobs.<br />The namespace needs to exist and will not be created by prow.<br />Defaults to "default". |
@@ -37,6 +39,15 @@ GitHubOptions allows users to control how prow applications display GitHub websi
 | Stanza | Type | Required | Description |
 |---|---|---|---|
 | `link_url` | string | No | LinkURLFromConfig is the string representation of the link_url config parameter.<br />This config parameter allows users to override the default GitHub link url for all plugins.<br />If this option is not set, we assume "https://github.com". |
+
+## InRepoConfig
+
+InRepoConfig to enable configuration inside the source code of a repository
+
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `enabled` | map[string]*bool | No | Enabled describes whether InRepoConfig is enabled for a given repository. This can<br />be set globally, per org or per repo using '*', 'org' or 'org/repo' as key. The<br />narrowest match always takes precedence. |
+| `allowed_clusters` | map[string][]string | No | AllowedClusters is a list of allowed clusternames that can be used for jobs on<br />a given repo. All clusters that are allowed for the specific repo, its org or<br />globally can be used. |
 
 ## JenkinsOperator
 

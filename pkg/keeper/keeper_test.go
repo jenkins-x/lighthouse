@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -630,6 +631,11 @@ func (f *fgc) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change
 			},
 		},
 		nil
+}
+
+func (f *fgc) ToScmClient() *scm.Client {
+	client, _ := fakescm.NewDefault()
+	return client
 }
 
 // TestDividePool ensures that subpools returned by dividePool satisfy a few

@@ -1,0 +1,12 @@
+apiVersion: config.lighthouse.jenkins-x.io/v1alpha1
+kind: TriggerConfig
+spec:
+  presubmits:
+  - name: newthingy
+    context: "newthingy"
+    alwaysRun: true
+    optional: false
+    trigger: "/newthingy"
+    rerunCommand: "/renewthingy"
+    agent: tekton-pipeline
+

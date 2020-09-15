@@ -19,6 +19,7 @@ package lighthouse
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
@@ -31,6 +32,8 @@ type Config struct {
 	Plank            Plank                   `json:"plank,omitempty"`
 	BranchProtection branchprotection.Config `json:"branch-protection,omitempty"`
 	Orgs             map[string]org.Config   `json:"orgs,omitempty"`
+	InRepoConfig     InRepoConfig            `json:"in_repo_config"`
+
 	// TODO: Move this out of the main config.
 	JenkinsOperators []JenkinsOperator `json:"jenkins_operators,omitempty"`
 	// LighthouseJobNamespace is the namespace in the cluster that prow
@@ -104,4 +107,56 @@ func (c *Config) Parse() error {
 		}
 	}
 	return nil
+}
+
+// InRepoConfig to enable configuration inside the source code of a repository
+type InRepoConfig struct {
+	// Enabled describes whether InRepoConfig is enabled for a given repository. This can
+	// be set globally, per org or per repo using '*', 'org' or 'org/repo' as key. The
+	// narrowest match always takes precedence.
+	Enabled map[string]*bool `json:"enabled,omitempty"`
+	// AllowedClusters is a list of allowed clusternames that can be used for jobs on
+	// a given repo. All clusters that are allowed for the specific repo, its org or
+	// globally can be used.
+	AllowedClusters map[string][]string `json:"allowed_clusters,omitempty"`
+}
+
+// InRepoConfigEnabled returns whether InRepoConfig is enabled for a given repository.
+func (c *Config) InRepoConfigEnabled(identifier string) bool {
+	if c.InRepoConfig.Enabled[identifier] != nil {
+		return *c.InRepoConfig.Enabled[identifier]
+	}
+	identifierSlashSplit := strings.Split(identifier, "/")
+	if len(identifierSlashSplit) == 2 && c.InRepoConfig.Enabled[identifierSlashSplit[0]] != nil {
+		return *c.InRepoConfig.Enabled[identifierSlashSplit[0]]
+	}
+	if c.InRepoConfig.Enabled["*"] != nil {
+		return *c.InRepoConfig.Enabled["*"]
+	}
+	return false
+}
+
+// InRepoConfigAllowsCluster determines if a given cluster may be used for a given repository
+func (c *Config) InRepoConfigAllowsCluster(clusterName, repoIdentifier string) bool {
+	for _, allowedCluster := range c.InRepoConfig.AllowedClusters[repoIdentifier] {
+		if allowedCluster == clusterName {
+			return true
+		}
+	}
+
+	identifierSlashSplit := strings.Split(repoIdentifier, "/")
+	if len(identifierSlashSplit) == 2 {
+		for _, allowedCluster := range c.InRepoConfig.AllowedClusters[identifierSlashSplit[0]] {
+			if allowedCluster == clusterName {
+				return true
+			}
+		}
+	}
+
+	for _, allowedCluster := range c.InRepoConfig.AllowedClusters["*"] {
+		if allowedCluster == clusterName {
+			return true
+		}
+	}
+	return false
 }
