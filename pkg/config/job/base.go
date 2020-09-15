@@ -60,8 +60,8 @@ type Base struct {
 	// If this field is unspecified or false, a new pod will be created to replace
 	// the evicted one.
 	ErrorOnEviction bool `json:"error_on_eviction,omitempty"`
-	// SourcePath contains the path where this job is defined
-	SourcePath string `json:"-"`
+	// SourcePath contains the path where the tekton pipeline run is defined
+	SourcePath string `json:"source,omitempty"`
 	// Spec is the Kubernetes pod spec used if Agent is kubernetes.
 	Spec *v1.PodSpec `json:"spec,omitempty"`
 	// PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline

@@ -1,0 +1,16 @@
+apiVersion: config.lighthouse.jenkins-x.io/v1alpha1
+kind: TriggerConfig
+spec:
+  presubmits:
+  - name: lint
+    context: "test"
+    alwaysRun: true
+    optional: false
+    trigger: "/test"
+    rerunCommand: "/retest"
+    agent: tekton-pipeline
+  postsubmits:
+  - name: release
+    context: "release"
+    agent: tekton-pipeline
+

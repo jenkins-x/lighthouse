@@ -99,6 +99,11 @@ type Client struct {
 	botName string
 }
 
+// ToScmClient gets the underlying SCM client
+func (c *Client) ToScmClient() *scm.Client {
+	return c.client
+}
+
 // BotName returns the bot name
 func (c *Client) BotName() (string, error) {
 	botName := c.botName
