@@ -67,6 +67,7 @@ type SCMClient interface {
 	ReopenPR(string, string, int) error
 	ClosePR(string, string, int) error
 	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
+	FindPullRequestsByAuthor(string, string, string) ([]*scm.PullRequest, error)
 
 	// Functions implemented in repositories.go
 	GetRepoLabels(string, string) ([]*scm.Label, error)

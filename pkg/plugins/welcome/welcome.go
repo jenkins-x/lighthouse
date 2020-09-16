@@ -76,7 +76,7 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	FindIssues(query, sort string, asc bool) ([]scm.Issue, error)
+	FindPullRequestsByAuthor(owner, repo string, author string) ([]*scm.PullRequest, error)
 }
 
 type client struct {
@@ -105,8 +105,7 @@ func handlePR(c client, pre scm.PullRequestHook, welcomeTemplate string) error {
 	org := pre.PullRequest.Base.Repo.Namespace
 	repo := pre.PullRequest.Base.Repo.Name
 	user := pre.PullRequest.Author.Login
-	query := fmt.Sprintf("is:pr repo:%s/%s author:%s", org, repo, user)
-	issues, err := c.SCMProviderClient.FindIssues(query, "", false)
+	issues, err := c.SCMProviderClient.FindPullRequestsByAuthor(org, repo, user)
 	if err != nil {
 		return err
 	}
