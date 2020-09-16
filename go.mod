@@ -37,4 +37,7 @@ replace k8s.io/client-go => k8s.io/client-go v0.17.6
 // gomodules.xyz breaks in Athens proxying
 replace gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.1.0
 
+// vbom.ml doesn't actually exist any more
+replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9787
+
 go 1.13
