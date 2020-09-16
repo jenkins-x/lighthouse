@@ -74,7 +74,8 @@ type scmProviderClient interface {
 	GetRepositoryByFullName(string) (*scm.Repository, error)
 	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
 	CreateComment(owner, repo string, number int, isPR bool, comment string) error
-	ToScmClient() *scm.Client
+	GetFile(string, string, string, string) ([]byte, error)
+	ListFiles(string, string, string, string) ([]*scm.FileEntry, error)
 }
 
 type contextChecker interface {
@@ -1343,11 +1344,10 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 	}
 
 	// lets get the in repo config for the repo
-	scmClient := c.spc.ToScmClient()
 	owner := sp.org
 	repo := sp.repo
 	sharedConfig := c.config()
-	cfg, _, err := inrepo.Generate(scmClient, sharedConfig, nil, owner, repo, "")
+	cfg, _, err := inrepo.Generate(c.spc, sharedConfig, nil, owner, repo, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to calculate in repo config")
 	}
