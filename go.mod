@@ -34,4 +34,7 @@ require (
 
 replace k8s.io/client-go => k8s.io/client-go v0.17.6
 
+// gomodules.xyz breaks in Athens proxying
+replace gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.1.0
+
 go 1.13
