@@ -42,12 +42,11 @@ GitHubOptions allows users to control how prow applications display GitHub websi
 
 ## InRepoConfig
 
-InRepoConfig to enable configuration inside the source code of a repository
+InRepoConfig to enable configuration inside the source code of a repository<br /><br />this struct mirrors the similar struct inside prow
 
 | Stanza | Type | Required | Description |
 |---|---|---|---|
 | `enabled` | map[string]*bool | No | Enabled describes whether InRepoConfig is enabled for a given repository. This can<br />be set globally, per org or per repo using '*', 'org' or 'org/repo' as key. The<br />narrowest match always takes precedence. |
-| `allowed_clusters` | map[string][]string | No | AllowedClusters is a list of allowed clusternames that can be used for jobs on<br />a given repo. All clusters that are allowed for the specific repo, its org or<br />globally can be used. |
 
 ## JenkinsOperator
 
