@@ -1,4 +1,4 @@
-package scmload_test
+package inrepo_test
 
 import (
 	"os"
@@ -7,7 +7,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/scmload"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,13 +21,15 @@ func TestMergeConfigIntegration(t *testing.T) {
 		return
 	}
 	scmClient, _ := factory.NewClient("github", "https://github.com", token)
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
 	repoOwner := "jenkins-x"
 	repoName := "lighthouse-test-project"
 	sha := ""
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
 
-	flag, err := scmload.MergeTriggers(cfg, pluginCfg, scmClient, repoOwner, repoName, sha)
+	flag, err := inrepo.MergeTriggers(cfg, pluginCfg, scmProvider, repoOwner, repoName, sha)
 	require.NoError(t, err, "failed to merge configs")
 	assert.True(t, flag, "did not return merge flag")
 

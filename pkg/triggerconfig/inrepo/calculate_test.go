@@ -9,6 +9,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,6 +17,8 @@ import (
 
 func TestCalculate(t *testing.T) {
 	scmClient, _ := fakescm.NewDefault()
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
 	owner := "myorg"
 	repo := "myrepo"
 	ref := "master"
@@ -33,7 +36,7 @@ func TestCalculate(t *testing.T) {
 	}
 	sharedPluginConfig := &plugins.Configuration{}
 
-	cfg, pluginsCfg, err := inrepo.Generate(scmClient, sharedConfig, sharedPluginConfig, owner, repo, ref)
+	cfg, pluginsCfg, err := inrepo.Generate(scmProvider, sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	require.NoError(t, err, "failed to invoke getClientAndTrigger")
@@ -74,6 +77,8 @@ func TestCalculate(t *testing.T) {
 
 func TestTriggersInBranchMergeToMaster(t *testing.T) {
 	scmClient, _ := fakescm.NewDefault()
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
 	owner := "myorg"
 	repo := "branchtest"
 	ref := "mybranch"
@@ -91,7 +96,7 @@ func TestTriggersInBranchMergeToMaster(t *testing.T) {
 	}
 	sharedPluginConfig := &plugins.Configuration{}
 
-	cfg, _, err := inrepo.Generate(scmClient, sharedConfig, sharedPluginConfig, owner, repo, ref)
+	cfg, _, err := inrepo.Generate(scmProvider, sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	presubmits := cfg.Presubmits[fullName]

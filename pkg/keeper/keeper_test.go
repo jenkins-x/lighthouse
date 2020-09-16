@@ -510,6 +510,7 @@ type fgc struct {
 	expectedSHA    string
 	ignoreExpected bool
 	combinedStatus map[string]map[string]commitStatus
+	fakeClient     *scm.Client
 }
 
 type commitStatus struct {
@@ -633,9 +634,31 @@ func (f *fgc) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change
 		nil
 }
 
-func (f *fgc) ToScmClient() *scm.Client {
-	client, _ := fakescm.NewDefault()
-	return client
+// GetFile returns the file from git
+func (f *fgc) GetFile(owner, repo, filepath, commit string) ([]byte, error) {
+	if f.fakeClient == nil {
+		f.fakeClient, _ = fakescm.NewDefault()
+	}
+	ctx := context.Background()
+	fullName := scm.Join(owner, repo)
+	answer, r, err := f.fakeClient.Contents.Find(ctx, fullName, filepath, commit)
+	// handle files not existing nicely
+	if r != nil && r.Status == 404 {
+		return nil, nil
+	}
+	var data []byte
+	if answer != nil {
+		data = answer.Data
+	}
+	return data, err
+}
+
+// ListFiles returns the files from git
+func (f *fgc) ListFiles(owner, repo, filepath, commit string) ([]*scm.FileEntry, error) {
+	ctx := context.Background()
+	fullName := scm.Join(owner, repo)
+	answer, _, err := f.fakeClient.Contents.List(ctx, fullName, filepath, commit)
+	return answer, err
 }
 
 // TestDividePool ensures that subpools returned by dividePool satisfy a few

@@ -1,11 +1,9 @@
-package scmload
+package inrepo
 
 import (
-	"context"
 	"path/filepath"
 	"strings"
 
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -17,8 +15,8 @@ import (
 )
 
 // MergeTriggers merges the configuration with any `lighthouse.yaml` files in the repository
-func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, scmClient *scm.Client, repoOwner string, repoName string, sha string) (bool, error) {
-	repoConfig, err := LoadTriggerConfig(scmClient, repoOwner, repoName, sha)
+func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, scmClient scmProviderClient, ownerName string, repoName string, sha string) (bool, error) {
+	repoConfig, err := LoadTriggerConfig(scmClient, ownerName, repoName, sha)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to load configs")
 	}
@@ -26,44 +24,41 @@ func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, scmClie
 		return false, nil
 	}
 
-	err = merge.ConfigMerge(cfg, pluginCfg, repoConfig, repoOwner, repoName)
+	err = merge.ConfigMerge(cfg, pluginCfg, repoConfig, ownerName, repoName)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to merge repository config with repository %s/%s and sha %s", repoOwner, repoName, sha)
+		return false, errors.Wrapf(err, "failed to merge repository config with repository %s/%s and sha %s", ownerName, repoName, sha)
 	}
 	return true, nil
 }
 
 // LoadTriggerConfig loads the `lighthouse.yaml` configuration files in the repository
-func LoadTriggerConfig(scmClient *scm.Client, repoOwner string, repoName string, sha string) (*triggerconfig.Config, error) {
+func LoadTriggerConfig(scmClient scmProviderClient, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
 	if sha == "" {
 		sha = "master"
 	}
 
-	repo := scm.Join(repoOwner, repoName)
-
 	m := map[string]*triggerconfig.Config{}
 
-	ctx := context.Background()
 	path := ".lighthouse"
-	files, _, err := scmClient.Contents.List(ctx, repo, path, sha)
+	files, err := scmClient.ListFiles(ownerName, repoName, path, sha)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find any lighthouse configuration files in repo %s at sha %s", repo, sha)
+		return nil, errors.Wrapf(err, "failed to find any lighthouse configuration files in repo %s/%s at sha %s", ownerName, repoName, sha)
 	}
 	for _, f := range files {
 		if isDirType(f.Type) {
 			filePath := path + "/" + f.Name + "/triggers.yaml"
-			cfg, err := loadConfigFile(ctx, scmClient, repo, filePath, sha)
+			cfg, err := loadConfigFile(scmClient, ownerName, repoName, filePath, sha)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load file %s in %s with sha %s", filePath, repo, sha)
+				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
 			}
 			if cfg != nil {
 				m[filePath] = cfg
 			}
 		} else if f.Name == "trigger.yaml" {
 			filePath := path + "/" + f.Name
-			cfg, err := loadConfigFile(ctx, scmClient, repo, filePath, sha)
+			cfg, err := loadConfigFile(scmClient, ownerName, repoName, filePath, sha)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load file %s in %s with sha %s", filePath, repo, sha)
+				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
 			}
 			if cfg != nil {
 				m[filePath] = cfg
@@ -107,27 +102,24 @@ func isDirType(t string) bool {
 	return strings.ToLower(t) == "dir"
 }
 
-func loadConfigFile(ctx context.Context, client *scm.Client, repo string, path string, sha string) (*triggerconfig.Config, error) {
-	c, r, err := client.Contents.Find(ctx, repo, path, sha)
+func loadConfigFile(client scmProviderClient, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
+	data, err := client.GetFile(ownerName, repoName, path, sha)
 	if err != nil {
-		if r != nil && r.Status == 404 {
-			return nil, nil
-		}
-		return nil, errors.Wrapf(err, "failed to find file %s in repo %s with sha %s status %d", path, repo, sha, r.Status)
+		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 	}
-	if len(c.Data) == 0 {
+	if len(data) == 0 {
 		return nil, nil
 	}
 	repoConfig := &triggerconfig.Config{}
-	err = yaml.Unmarshal(c.Data, repoConfig)
+	err = yaml.Unmarshal(data, repoConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal file %s in repo %s with sha %s", path, repo, sha)
+		return nil, errors.Wrapf(err, "failed to unmarshal file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 	}
 	dir := filepath.Dir(path)
 	for i := range repoConfig.Spec.Presubmits {
 		r := &repoConfig.Spec.Presubmits[i]
 		if r.SourcePath != "" {
-			err = loadJobBaseFromSourcePath(ctx, client, &r.Base, repo, filepath.Join(dir, r.SourcePath), sha)
+			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, filepath.Join(dir, r.SourcePath), sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load Source for Presubmit %d", i)
 			}
@@ -140,7 +132,7 @@ func loadConfigFile(ctx context.Context, client *scm.Client, repo string, path s
 	for i := range repoConfig.Spec.Postsubmits {
 		r := &repoConfig.Spec.Postsubmits[i]
 		if r.SourcePath != "" {
-			err = loadJobBaseFromSourcePath(ctx, client, &r.Base, repo, filepath.Join(dir, r.SourcePath), sha)
+			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, filepath.Join(dir, r.SourcePath), sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load Source for Presubmit %d", i)
 			}
@@ -152,23 +144,20 @@ func loadConfigFile(ctx context.Context, client *scm.Client, repo string, path s
 	return repoConfig, nil
 }
 
-func loadJobBaseFromSourcePath(ctx context.Context, client *scm.Client, j *job.Base, repo, path, sha string) error {
-	c, r, err := client.Contents.Find(ctx, repo, path, sha)
+func loadJobBaseFromSourcePath(client scmProviderClient, j *job.Base, ownerName, repoName, path, sha string) error {
+	data, err := client.GetFile(ownerName, repoName, path, sha)
 	if err != nil {
-		if r != nil && r.Status == 404 {
-			return errors.Errorf("no file %s in repo %s for sha %s", path, repo, sha)
-		}
-		return errors.Wrapf(err, "failed to find file %s in repo %s with sha %s status %d", path, repo, sha, r.Status)
+		return errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 	}
-	if len(c.Data) == 0 {
-		return errors.Errorf("empty file file %s in repo %s for sha %s", path, repo, sha)
+	if len(data) == 0 {
+		return errors.Errorf("empty file file %s in repo %s/%s for sha %s", path, ownerName, repoName, sha)
 	}
 
 	// for now lets assume its a PipelineRun we could eventually support different kinds
 	prs := &tektonv1beta1.PipelineRun{}
-	err = yaml.Unmarshal(c.Data, prs)
+	err = yaml.Unmarshal(data, prs)
 	if err != nil {
-		return errors.Wrapf(err, "failed to unmarshal YAML file %s in repo %s with sha %s", path, repo, sha)
+		return errors.Wrapf(err, "failed to unmarshal YAML file %s/%s in repo %s with sha %s", path, ownerName, repoName, sha)
 	}
 	j.PipelineRunSpec = &prs.Spec
 	return nil

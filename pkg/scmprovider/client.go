@@ -29,6 +29,7 @@ type SCMClient interface {
 
 	// Functions implemented in content.go
 	GetFile(string, string, string, string) ([]byte, error)
+	ListFiles(string, string, string, string) ([]*scm.FileEntry, error)
 
 	// Functions implemented in git.go
 	GetRef(string, string, string) (string, error)

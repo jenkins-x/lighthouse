@@ -29,10 +29,8 @@ import (
 func (s *Server) CreateAgent(l *logrus.Entry, plugin, owner, repo, ref string) (plugins.Agent, error) {
 	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", plugin))
 
-	scmClient := pc.SCMProviderClient.ToScmClient()
 	var err error
-
-	pc.Config, pc.PluginConfig, err = inrepo.Generate(scmClient, pc.Config, pc.PluginConfig, owner, repo, ref)
+	pc.Config, pc.PluginConfig, err = inrepo.Generate(pc.SCMProviderClient, pc.Config, pc.PluginConfig, owner, repo, ref)
 	if err != nil {
 		return pc, errors.Wrapf(err, "failed to calculate in repo config")
 	}

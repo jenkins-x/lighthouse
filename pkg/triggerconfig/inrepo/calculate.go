@@ -5,12 +5,11 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/merge"
-	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/scmload"
 	"github.com/pkg/errors"
 )
 
 // Generate generates the in repository config if enabled for this repository otherwise return the shared config
-func Generate(scmClient *scm.Client, sharedConfig *config.Config, sharedPlugins *plugins.Configuration, owner, repo, eventRef string) (*config.Config, *plugins.Configuration, error) {
+func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPlugins *plugins.Configuration, owner, repo, eventRef string) (*config.Config, *plugins.Configuration, error) {
 	fullName := scm.Join(owner, repo)
 	if !sharedConfig.InRepoConfigEnabled(fullName) {
 		return sharedConfig, sharedPlugins, nil
@@ -35,7 +34,7 @@ func Generate(scmClient *scm.Client, sharedConfig *config.Config, sharedPlugins 
 		refs = append(refs, eventRef)
 	}
 	for _, ref := range refs {
-		repoConfig, err := scmload.LoadTriggerConfig(scmClient, owner, repo, ref)
+		repoConfig, err := LoadTriggerConfig(scmClient, owner, repo, ref)
 		if err != nil {
 			return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to create trigger config from local source for repo %s/%s ref %s", owner, repo, ref)
 		}
