@@ -189,3 +189,31 @@ func (c *Client) ClosePR(owner, repo string, number int) error {
 	_, err := c.client.PullRequests.Close(ctx, fullName, number)
 	return err
 }
+
+// FindPullRequestsByAuthor finds all pull requests for a given author
+func (c *Client) FindPullRequestsByAuthor(owner, repo string, author string) ([]*scm.PullRequest, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	var allPullRequests []*scm.PullRequest
+	var resp *scm.Response
+	var pullRequests []*scm.PullRequest
+	var err error
+	firstRun := false
+	opts := scm.PullRequestListOptions{
+		Page: 1,
+	}
+	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
+		pullRequests, resp, err = c.client.PullRequests.List(ctx, fullName, opts)
+		if err != nil {
+			return nil, err
+		}
+		firstRun = true
+		for _, pullRequest := range pullRequests {
+			if pullRequest.Author.Login == author {
+				allPullRequests = append(allPullRequests, pullRequest)
+			}
+		}
+		opts.Page++
+	}
+	return allPullRequests, err
+}
