@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 
@@ -257,27 +256,6 @@ func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 		fullName := fmt.Sprintf("%s/%s", o, repo)
 		plugins = append(plugins, pa.configuration.Plugins[o]...)
 		plugins = append(plugins, pa.configuration.Plugins[fullName]...)
-	}
-
-	// until we have the configuration stuff setup nicely - lets add a simple way to enable plugins
-	pluginNames := os.Getenv("LIGHTHOUSE_PLUGINS")
-	if pluginNames != "" {
-		names := strings.Split(pluginNames, ",")
-		for _, name := range names {
-			name = strings.TrimSpace(name)
-			if name != "" {
-				found := false
-				for _, p := range plugins {
-					if p == name {
-						found = true
-						break
-					}
-				}
-				if !found {
-					plugins = append(plugins, name)
-				}
-			}
-		}
 	}
 	logrus.Infof("found plugins %s\n", strings.Join(plugins, ", "))
 	return plugins
