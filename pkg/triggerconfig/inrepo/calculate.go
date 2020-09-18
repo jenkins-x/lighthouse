@@ -1,6 +1,8 @@
 package inrepo
 
 import (
+	"strings"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -30,7 +32,7 @@ func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPl
 
 	// lets load the main branch first then merge in any changes from this PR/branch
 	refs := []string{"master"}
-	if eventRef != "master" {
+	if eventRef != "master" && !strings.HasSuffix(eventRef, "/master") {
 		refs = append(refs, eventRef)
 	}
 	for _, ref := range refs {
