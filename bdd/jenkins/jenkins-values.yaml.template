@@ -1,0 +1,18 @@
+master:
+  JCasC:
+    configScripts:
+      security: |
+        jenkins:
+          securityRealm:
+            local:
+              allowsSignup: false
+              users:
+                - id: "{{ .Env.E2E_JENKINS_USER }}"
+                  password: "{{ .Env.E2E_JENKINS_PASSWORD }}"
+          authorizationStrategy: loggedInUsersCanDoAnything
+  ingress:
+    enabled: true
+    path: "/"
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hostName: "{{ .Env.E2E_JENKINS_HOSTNAME }}.{{ .Env.EXTERNAL_IP }}.nip.io"

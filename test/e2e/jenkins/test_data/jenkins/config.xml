@@ -1,0 +1,123 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.39">
+    <actions>
+        <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.7.2"/>
+        <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.7.2">
+            <jobProperties/>
+            <triggers/>
+            <parameters>
+                <string>PULL_NUMBER</string>
+                <string>JOB_TYPE</string>
+                <string>JOB_SPEC</string>
+                <string>PULL_REFS</string>
+                <string>PULL_BASE_SHA</string>
+                <string>PULL_BASE_REF</string>
+                <string>BUILD_ID</string>
+                <string>PULL_PULL_SHA</string>
+                <string>LIGHTHOUSE_JOB_ID</string>
+                <string>JOB_NAME</string>
+            </parameters>
+            <options/>
+        </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+    </actions>
+    <description></description>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <hudson.model.ParametersDefinitionProperty>
+            <parameterDefinitions>
+                <hudson.model.StringParameterDefinition>
+                    <name>JOB_NAME</name>
+                    <description>Job name</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>JOB_TYPE</name>
+                    <description>Job type</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>JOB_SPEC</name>
+                    <description>Job spec</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>PULL_BASE_REF</name>
+                    <description>Base ref</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>PULL_REFS</name>
+                    <description>Pull refs</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>PULL_REFS</name>
+                    <description>Pull base refs</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>PULL_NUMBER</name>
+                    <description>Pull number</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>PULL_BASE_SHA</name>
+                    <description>Pull base SHA</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>PULL_PULL_SHA</name>
+                    <description>Pull pull SHA</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>BUILD_ID</name>
+                    <description>Build id</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>LIGHTHOUSE_JOB_ID</name>
+                    <description>Lighthouse job id</description>
+                    <defaultValue></defaultValue>
+                    <trim>false</trim>
+                </hudson.model.StringParameterDefinition>
+            </parameterDefinitions>
+        </hudson.model.ParametersDefinitionProperty>
+    </properties>
+    <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@2.83">
+        <scm class="hudson.plugins.git.GitSCM" plugin="git@4.2.2">
+            <configVersion>2</configVersion>
+            <userRemoteConfigs>
+                <hudson.plugins.git.UserRemoteConfig>
+                    <url>{{ .E2E_TEST_REPO }}</url>
+                    <credentialsId>{{ .E2E_JENKINS_GIT_CREDENTIAL_ID }}</credentialsId>
+                </hudson.plugins.git.UserRemoteConfig>
+            </userRemoteConfigs>
+            <branches>
+                <hudson.plugins.git.BranchSpec>
+                    <name>*/master</name>
+                </hudson.plugins.git.BranchSpec>
+                <hudson.plugins.git.BranchSpec>
+                    <name>pr/${PULL_NUMBER}/head</name>
+                </hudson.plugins.git.BranchSpec>
+            </branches>
+            <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+            <submoduleCfg class="list"/>
+            <extensions/>
+        </scm>
+        <scriptPath>Jenkinsfile</scriptPath>
+        <lightweight>true</lightweight>
+    </definition>
+    <triggers/>
+    <disabled>false</disabled>
+</flow-definition>

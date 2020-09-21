@@ -27,6 +27,16 @@ pipelineConfig:
             value: http://jenkins-x-athens-proxy:80
           - name: GKE_SA
             value: /secrets/bdd/sa.json
+          - name: E2E_GIT_KIND
+            value: github
+          - name: E2E_GIT_SERVER
+            value: https://github.com
+          - name: E2E_TEST_NAMESPACE
+            value: lh-test
+          - name: E2E_JENKINS_HOSTNAME
+            value: jenkins
+          - name: E2E_CREATE_LIGHTHOUSE_CRD
+            value: "true"
           - name: CHARTMUSEUM_USER
             valueFrom:
               secretKeyRef:
@@ -37,25 +47,30 @@ pipelineConfig:
               secretKeyRef:
                 name: jenkins-x-chartmuseum
                 key: BASIC_AUTH_PASS
-          - name: GL_ACCESS_TOKEN
+          - name: E2E_PRIMARY_SCM_USER
             valueFrom:
               secretKeyRef:
-                name: jx-pipeline-git-gitlab-gl
+                name: lighthouse-bot-test-github
+                key: username
+          - name: E2E_PRIMARY_SCM_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: lighthouse-bot-test-github
                 key: password
           - name: JENKINS_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: test-jenkins-user
+                name: test-jenkins-user 
                 key: password
-          - name: BDD_APPROVER_USERNAME
+          - name: E2E_APPROVER_SCM_USER
             valueFrom:
               secretKeyRef:
-                name: jx-pipeline-git-gitlab-gl-approver
+                name: jenkins-x-bot-test-github
                 key: username
-          - name: BDD_APPROVER_ACCESS_TOKEN
+          - name: E2E_APPROVER_SCM_TOKEN
             valueFrom:
               secretKeyRef:
-                name: jx-pipeline-git-gitlab-gl-approver
+                name: jenkins-x-bot-test-github
                 key: password
         agent:
           image: gcr.io/jenkinsxio/builder-go-nodejs
@@ -148,5 +163,5 @@ pipelineConfig:
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=$(inputs.params.version)
 
-              - command: bdd/gitlab/ci.sh
+              - command: bdd/jenkins/ci.sh
                 name: runci
