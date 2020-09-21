@@ -56,7 +56,7 @@ var _ = AfterSuite(func() {
 })
 
 func TestTekton(t *testing.T) {
-	e2e.RunWithReporters(t, "Tekton integration")
+	e2e.RunWithReporters(t, "TektonIntegrationTest")
 }
 
 var _ = ChatOpsTests()
@@ -106,7 +106,7 @@ func ChatOpsTests() bool {
 				"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-batch-merge/0.2/git-batch-merge.yaml")
 
 			By(fmt.Sprintf("creating and populating Lighthouse config for %s", repo.Clone))
-			cfg, pluginCfg, err := e2e.ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, job.TektonPipelineAgent)
+			cfg, pluginCfg, err := e2e.ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, job.TektonPipelineAgent, "")
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(cfg).ShouldNot(BeNil())
 			Expect(pluginCfg).ShouldNot(BeNil())
@@ -173,7 +173,7 @@ func ChatOpsTests() bool {
 				Expect(pr).ShouldNot(BeNil())
 			})
 			By("verifying OWNERS link in APPROVALNOTIFIER comment is correct", func() {
-				err = e2e.ExpectThatPullRequestHasCommentMatching(spc, pr, func(comments []*scm.Comment) error {
+				err = e2e.ExpectThatPullRequestHasCommentMatching(scmClient, pr, func(comments []*scm.Comment) error {
 					for _, c := range comments {
 						if strings.Contains(c.Body, "[APPROVALNOTIFIER]") {
 							ownerRegex := regexp.MustCompile(`(?m).*\[OWNERS]\((.*)\).*`)
@@ -181,7 +181,7 @@ func ChatOpsTests() bool {
 							if len(matches) == 0 {
 								return backoff.Permanent(fmt.Errorf("could not find OWNERS link in:\n%s", c.Body))
 							}
-							expected := urlForProvider(e2e.GitKind(), gitServerURL, repo.Namespace, repo.Name)
+							expected := e2e.URLForFile(e2e.GitKind(), gitServerURL, repo.Namespace, repo.Name, "OWNERS")
 							if expected != matches[1] {
 								return backoff.Permanent(fmt.Errorf("expected OWNERS URL %s, but got %s", expected, matches[1]))
 							}
@@ -193,7 +193,7 @@ func ChatOpsTests() bool {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			By("waiting for build to succeed", func() {
-				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
+				e2e.WaitForPullRequestCommitStatus(scmClient, pr, []string{defaultContext}, "success")
 			})
 
 			By("changing the PR to fail", func() {
@@ -212,11 +212,11 @@ func ChatOpsTests() bool {
 			})
 
 			By("waiting for the PR build to fail", func() {
-				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				e2e.WaitForPullRequestCommitStatus(scmClient, pr, []string{defaultContext}, "failure")
 			})
 
 			By("attempting to LGTM our own PR", func() {
-				err = e2e.AttemptToLGTMOwnPullRequest(spc, pr)
+				err = e2e.AttemptToLGTMOwnPullRequest(scmClient, pr)
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 
@@ -252,10 +252,10 @@ func ChatOpsTests() bool {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				// Wait until we see a pending or running status, meaning we've got a new build
-				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
+				e2e.WaitForPullRequestCommitStatus(scmClient, pr, []string{defaultContext}, "pending", "running", "in-progress")
 
 				// Wait until we see the build fail.
-				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				e2e.WaitForPullRequestCommitStatus(scmClient, pr, []string{defaultContext}, "failure")
 			})
 
 			By("'/test this' with it failing again", func() {
@@ -263,10 +263,10 @@ func ChatOpsTests() bool {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				// Wait until we see a pending or running status, meaning we've got a new build
-				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
+				e2e.WaitForPullRequestCommitStatus(scmClient, pr, []string{defaultContext}, "pending", "running", "in-progress")
 
 				// Wait until we see the build fail.
-				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				e2e.WaitForPullRequestCommitStatus(scmClient, pr, []string{defaultContext}, "failure")
 			})
 
 			// '/override' has to be done by a repo admin, so use the bot user.
@@ -276,23 +276,12 @@ func ChatOpsTests() bool {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				// Wait until we see a success status
-				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
+				e2e.WaitForPullRequestCommitStatus(scmClient, pr, []string{defaultContext}, "success")
 
 				e2e.WaitForPullRequestToMerge(spc, pr)
 			})
 		})
 	})
-}
-
-func urlForProvider(providerType string, serverURL string, owner string, repo string) string {
-	switch providerType {
-	case "stash":
-		return fmt.Sprintf("%s/projects/%s/repos/%s/browse/OWNERS", serverURL, strings.ToUpper(owner), repo)
-	case "gitlab":
-		return fmt.Sprintf("%s/%s/%s/-/blob/master/OWNERS", serverURL, owner, repo)
-	default:
-		return fmt.Sprintf("%s/%s/%s/blob/master/OWNERS", serverURL, owner, repo)
-	}
 }
 
 func generatePipelineRunSpec() *tektonv1beta1.PipelineRunSpec {

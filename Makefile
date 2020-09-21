@@ -96,6 +96,10 @@ compile-e2e:
 run-tekton-e2e-tests: ## Runs Tekton E2E tests
 	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) --count=1 -run TestTekton ./test/e2e/tekton
 
+.PHONY: run-jenkins-e2e-tests
+run-jenkins-e2e-tests: ## Runs Jenkins E2E tests
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) --count=1 -run TestJenkins ./test/e2e/jenkins
+
 .PHONY: clean
 clean: ## Deletes the generated build directories
 	rm -rf bin build

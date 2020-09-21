@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: pack
+      volumeMounts:
+        - name: docker
+          mountPath: /var/run/docker.sock
+      image: buildpacksio/pack:0.12.0
+      command: ["tail", "-f", "/dev/null"]
+      imagePullPolicy: Always
+      resources:
+        requests:
+          memory: "2Gi"
+          cpu: "500m"
+        limits:
+          memory: "2Gi"
+  volumes:
+    - name: docker
+      hostPath:
+        path: /var/run/docker.sock
