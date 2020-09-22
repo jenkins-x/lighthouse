@@ -110,6 +110,6 @@ func TestTriggersInBranchMergeToMaster(t *testing.T) {
 	assert.Contains(t, presubmitNames, "lint", "presubmits for repo %s", fullName)
 	assert.Contains(t, presubmitNames, "newthingy", "presubmits for repo %s", fullName)
 
-	assert.Len(t, cfg.Postsubmits[fullName], 0, "postsubmits for repo %s", fullName)
+	assert.Len(t, cfg.Postsubmits[fullName], 1, "postsubmits for repo %s", fullName)
 
 }

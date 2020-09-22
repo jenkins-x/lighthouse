@@ -9,4 +9,7 @@ spec:
     trigger: "/lint"
     rerunCommand: "/relint"
     agent: tekton-pipeline
-
+  postsubmits:
+  - name: release
+    context: "release"
+    agent: tekton-pipeline
