@@ -1,10 +1,11 @@
-package e2e
+package tekton
 
 import (
 	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/jenkins-x/lighthouse/test/e2e"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -55,7 +56,7 @@ var _ = AfterSuite(func() {
 })
 
 func TestTekton(t *testing.T) {
-	RunWithReporters(t, "Tekton integration")
+	e2e.RunWithReporters(t, "Tekton integration")
 }
 
 var _ = ChatOpsTests()
@@ -65,47 +66,47 @@ func ChatOpsTests() bool {
 		BeforeEach(func() {
 			var err error
 			By("creating HMAC token")
-			hmacToken, err = CreateHMACToken()
+			hmacToken, err = e2e.CreateHMACToken()
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(hmacToken).ShouldNot(BeEmpty())
 
 			By("creating primary SCM client")
-			scmClient, spc, gitServerURL, err = CreateSCMClient(GetBotName, GetPrimarySCMToken)
+			scmClient, spc, gitServerURL, err = e2e.CreateSCMClient(e2e.GetBotName, e2e.GetPrimarySCMToken)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(scmClient).ShouldNot(BeNil())
 			Expect(spc).ShouldNot(BeNil())
 			Expect(gitServerURL).ShouldNot(BeEmpty())
 
 			By("creating approver SCM client")
-			approverClient, approverSpc, _, err = CreateSCMClient(GetApproverName, GetApproverSCMToken)
+			approverClient, approverSpc, _, err = e2e.CreateSCMClient(e2e.GetApproverName, e2e.GetApproverSCMToken)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(approverClient).ShouldNot(BeNil())
 			Expect(approverSpc).ShouldNot(BeNil())
 
 			By("creating git client")
-			gitClient, err = CreateGitClient(gitServerURL, GetBotName, GetPrimarySCMToken)
+			gitClient, err = e2e.CreateGitClient(gitServerURL, e2e.GetBotName, e2e.GetPrimarySCMToken)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(gitClient).ShouldNot(BeNil())
 
 			By("creating repository")
-			repo, localClone, err = CreateBaseRepository(GetBotName(), GetApproverName(), scmClient, gitClient)
+			repo, localClone, err = e2e.CreateBaseRepository(e2e.GetBotName(), e2e.GetApproverName(), scmClient, gitClient)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(repo).ShouldNot(BeNil())
 			Expect(localClone).ShouldNot(BeNil())
 			repoFullName = fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
 
-			By(fmt.Sprintf("adding %s to new repository", GetApproverName()))
-			err = AddCollaborator(GetApproverName(), repo, scmClient, approverClient)
+			By(fmt.Sprintf("adding %s to new repository", e2e.GetApproverName()))
+			err = e2e.AddCollaborator(e2e.GetApproverName(), repo, scmClient, approverClient)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			By("adding the Pipeline and Task definitions to the cluster")
 			err = applyPipelineAndTask()
 			Expect(err).ShouldNot(HaveOccurred())
-			ExpectCommandExecution(localClone.Dir, 1, 0, "kubectl", "apply", "-f",
+			e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "kubectl", "apply", "-f",
 				"https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-batch-merge/0.2/git-batch-merge.yaml")
 
 			By(fmt.Sprintf("creating and populating Lighthouse config for %s", repo.Clone))
-			cfg, pluginCfg, err := ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, job.TektonPipelineAgent)
+			cfg, pluginCfg, err := e2e.ProcessConfigAndPlugins(repo.Namespace, repo.Name, ns, job.TektonPipelineAgent)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(cfg).ShouldNot(BeNil())
 			Expect(pluginCfg).ShouldNot(BeNil())
@@ -126,11 +127,11 @@ func ChatOpsTests() bool {
 				},
 			}
 
-			err = ApplyConfigAndPluginsConfigMaps(cfg, pluginCfg)
+			err = e2e.ApplyConfigAndPluginsConfigMaps(cfg, pluginCfg)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			By(fmt.Sprintf("setting up webhooks for %s", repo.Clone))
-			err = CreateWebHook(scmClient, repo, hmacToken)
+			err = e2e.CreateWebHook(scmClient, repo, hmacToken)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 		var (
@@ -145,7 +146,7 @@ func ChatOpsTests() bool {
 
 				newFile := filepath.Join(localClone.Dir, "README")
 				err = ioutil.WriteFile(newFile, []byte("Hello world"), 0600)
-				ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
+				e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
 
 				changedScriptFile := filepath.Join("test_data", "passingRepoScript.sh")
 				changedScript, err := ioutil.ReadFile(changedScriptFile) /* #nosec */
@@ -155,7 +156,7 @@ func ChatOpsTests() bool {
 				err = ioutil.WriteFile(scriptOutputFile, changedScript, 0600)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
+				e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
 
 				err = localClone.Push(repo.Name, prBranch)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -172,7 +173,7 @@ func ChatOpsTests() bool {
 				Expect(pr).ShouldNot(BeNil())
 			})
 			By("verifying OWNERS link in APPROVALNOTIFIER comment is correct", func() {
-				err = ExpectThatPullRequestHasCommentMatching(spc, pr, func(comments []*scm.Comment) error {
+				err = e2e.ExpectThatPullRequestHasCommentMatching(spc, pr, func(comments []*scm.Comment) error {
 					for _, c := range comments {
 						if strings.Contains(c.Body, "[APPROVALNOTIFIER]") {
 							ownerRegex := regexp.MustCompile(`(?m).*\[OWNERS]\((.*)\).*`)
@@ -180,7 +181,7 @@ func ChatOpsTests() bool {
 							if len(matches) == 0 {
 								return backoff.Permanent(fmt.Errorf("could not find OWNERS link in:\n%s", c.Body))
 							}
-							expected := urlForProvider(GitKind(), gitServerURL, repo.Namespace, repo.Name)
+							expected := urlForProvider(e2e.GitKind(), gitServerURL, repo.Namespace, repo.Name)
 							if expected != matches[1] {
 								return backoff.Permanent(fmt.Errorf("expected OWNERS URL %s, but got %s", expected, matches[1]))
 							}
@@ -192,7 +193,7 @@ func ChatOpsTests() bool {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			By("waiting for build to succeed", func() {
-				WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
+				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
 			})
 
 			By("changing the PR to fail", func() {
@@ -204,43 +205,43 @@ func ChatOpsTests() bool {
 				err = ioutil.WriteFile(scriptOutputFile, failScript, 0600)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Updating to fail")
+				e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Updating to fail")
 
 				err = localClone.Push(repo.Name, prBranch)
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 
 			By("waiting for the PR build to fail", func() {
-				WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
 			})
 
 			By("attempting to LGTM our own PR", func() {
-				err = AttemptToLGTMOwnPullRequest(spc, pr)
+				err = e2e.AttemptToLGTMOwnPullRequest(spc, pr)
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 
-			if GitKind() != "stash" {
+			if e2e.GitKind() != "stash" {
 				By("requesting and unrequesting a reviewer", func() {
-					err = AddReviewerToPullRequestWithChatOpsCommand(spc, pr, GetApproverName())
+					err = e2e.AddReviewerToPullRequestWithChatOpsCommand(spc, pr, e2e.GetApproverName())
 					Expect(err).NotTo(HaveOccurred())
 				})
 			}
 
 			By("adding a hold label", func() {
-				err = AddHoldLabelToPullRequestWithChatOpsCommand(spc, pr)
+				err = e2e.AddHoldLabelToPullRequestWithChatOpsCommand(spc, pr)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			// Adding WIP to a MR title is hijacked by GitLab and currently doesn't send a webhook event, so skip for now.
-			if GitKind() != "gitlab" {
+			if e2e.GitKind() != "gitlab" {
 				By("adding a WIP label", func() {
-					err = AddWIPLabelToPullRequestByUpdatingTitle(spc, scmClient, pr)
+					err = e2e.AddWIPLabelToPullRequestByUpdatingTitle(spc, scmClient, pr)
 					Expect(err).NotTo(HaveOccurred())
 				})
 			}
 
 			By("approving pull request", func() {
-				err = ApprovePullRequest(spc, approverSpc, pr)
+				err = e2e.ApprovePullRequest(spc, approverSpc, pr)
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 
@@ -251,10 +252,10 @@ func ChatOpsTests() bool {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				// Wait until we see a pending or running status, meaning we've got a new build
-				WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
+				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
 
 				// Wait until we see the build fail.
-				WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
 			})
 
 			By("'/test this' with it failing again", func() {
@@ -262,10 +263,10 @@ func ChatOpsTests() bool {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				// Wait until we see a pending or running status, meaning we've got a new build
-				WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
+				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "pending", "running", "in-progress")
 
 				// Wait until we see the build fail.
-				WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
+				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "failure")
 			})
 
 			// '/override' has to be done by a repo admin, so use the bot user.
@@ -275,9 +276,9 @@ func ChatOpsTests() bool {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				// Wait until we see a success status
-				WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
+				e2e.WaitForPullRequestCommitStatus(spc, pr, []string{defaultContext}, "success")
 
-				WaitForPullRequestToMerge(spc, pr)
+				e2e.WaitForPullRequestToMerge(spc, pr)
 			})
 		})
 	})
@@ -344,15 +345,15 @@ func applyPipelineAndTask() error {
 		return errors.Wrapf(err, "parsing pipeline/task template from %s", pAndTFile)
 	}
 
-	rawToken, err := GetPrimarySCMToken()
+	rawToken, err := e2e.GetPrimarySCMToken()
 	if err != nil {
-		return errors.Wrapf(err, "getting git token for user %s", GetBotName())
+		return errors.Wrapf(err, "getting git token for user %s", e2e.GetBotName())
 	}
 
 	input := pipelineCRDInput{
 		Namespace:  ns,
 		BaseGitURL: gitServerURL,
-		GitUser:    base64.StdEncoding.EncodeToString([]byte(GetBotName())),
+		GitUser:    base64.StdEncoding.EncodeToString([]byte(e2e.GetBotName())),
 		GitToken:   base64.StdEncoding.EncodeToString([]byte(rawToken)),
 	}
 
@@ -369,6 +370,6 @@ func applyPipelineAndTask() error {
 		return errors.Wrapf(err, "writing to output file %s", outputFile)
 	}
 
-	ExpectCommandExecution(tmpDir, 1, 0, "kubectl", "apply", "-f", "pipelineAndTask.yaml")
+	e2e.ExpectCommandExecution(tmpDir, 1, 0, "kubectl", "apply", "-f", "pipelineAndTask.yaml")
 	return nil
 }
