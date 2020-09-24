@@ -360,7 +360,7 @@ func (c *Controller) syncPendingJob(lighthouseJob v1alpha1.LighthouseJob, jenkin
 	}
 
 	var err error
-	if originalLighthouseJob.Status.State != lighthouseJob.Status.State {
+	if originalLighthouseJob.Status.State != lighthouseJob.Status.State || originalLighthouseJob.Status.ReportURL != lighthouseJob.Status.ReportURL {
 		c.log.WithFields(jobutil.LighthouseJobFields(&lighthouseJob)).
 			WithField("from", originalLighthouseJob.Status.State).
 			WithField("to", lighthouseJob.Status.State).Info("Transitioning states.")
