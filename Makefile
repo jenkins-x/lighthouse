@@ -92,9 +92,9 @@ test: ## Runs the unit tests
 compile-e2e:
 	$(GOTEST) -run=nope -failfast -short -ldflags "$(GO_LDFLAGS)" ./test/...
 
-.PHONY: run-e2e-tests
-run-e2e-tests:
-	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) --count=1 -v ./test/...
+.PHONY: run-tekton-e2e-tests
+run-tekton-e2e-tests: ## Runs Tekton E2E tests
+	CGO_ENABLED=$(CGO_ENABLED) $(GOTEST) --count=1 -run TestTekton ./test/e2e/tekton
 
 .PHONY: clean
 clean: ## Deletes the generated build directories
