@@ -17,6 +17,8 @@ limitations under the License.
 package jenkins
 
 import (
+	"strconv"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -129,11 +131,7 @@ func (jb *Build) LighthouseJobID() string {
 	return ""
 }
 
-// BuildID extracts the build identifier used for
-// placing and discovering build artifacts.
-// This identifier can either originate from tot
-// or the snowflake library, depending on how the
-// Jenkins operator is configured to run.
+// BuildID extracts the Jenkins build number
 // We return an empty string if we are dealing with
 // a build that does not have the LighthouseJobID set
 // explicitly, as in that case the Jenkins build has
@@ -144,14 +142,7 @@ func (jb *Build) BuildID() string {
 	for _, action := range jb.Actions {
 		for _, p := range action.Parameters {
 			hasLighthouseJobID = hasLighthouseJobID || p.Name == lighthouseJobID
-			if p.Name == statusBuildID {
-				value, ok := p.Value.(string)
-				if !ok {
-					logrus.Errorf("Cannot determine %s value for %#v", p.Name, jb)
-					continue
-				}
-				buildID = value
-			}
+			buildID = strconv.Itoa(jb.Number)
 		}
 	}
 
