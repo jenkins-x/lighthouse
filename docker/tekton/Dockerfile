@@ -1,6 +1,9 @@
 FROM alpine:3.12
 
-RUN apk add --update --no-cache ca-certificates git
+RUN apk add --update --no-cache ca-certificates git \
+    && adduser -D jx
 
-COPY ./bin/lighthouse-tekton-controller /lighthouse-tekton-controller
-ENTRYPOINT ["/lighthouse-tekton-controller"]
+USER jx
+
+COPY ./bin/lighthouse-tekton-controller /home/jx/
+ENTRYPOINT ["/home/jx/lighthouse-tekton-controller"]

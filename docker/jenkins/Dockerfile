@@ -1,6 +1,9 @@
 FROM alpine:3.12
 
-RUN apk add --update --no-cache ca-certificates git
+RUN apk add --update --no-cache ca-certificates git \
+    && adduser -D jx
 
-COPY ./bin/jenkins-controller /jenkins-controller
-ENTRYPOINT ["/jenkins-controller"]
+USER jx
+
+COPY ./bin/jenkins-controller /home/jx/
+ENTRYPOINT ["/home/jx/jenkins-controller"]
