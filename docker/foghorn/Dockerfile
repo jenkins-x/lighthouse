@@ -1,9 +1,10 @@
 FROM alpine:3.12
 
-RUN apk add --update --no-cache ca-certificates git
+RUN apk add --update --no-cache ca-certificates git \
+    && adduser -D jx
 
-RUN mkdir /jxhome
-ENV JX_HOME /jxhome
+ENV JX_HOME /home/jx
+USER jx
 
-COPY ./bin/foghorn /foghorn
-ENTRYPOINT ["/foghorn"]
+COPY ./bin/foghorn /home/jx/
+ENTRYPOINT ["/home/jx/foghorn"]

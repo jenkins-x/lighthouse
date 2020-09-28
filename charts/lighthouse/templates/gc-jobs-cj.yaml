@@ -20,7 +20,7 @@ spec:
         spec:
           containers:
             - command:
-                - /gc-jobs
+                - /home/jx/gc-jobs
               image: {{ tpl .Values.gcJobs.image.repository . }}:{{ tpl .Values.gcJobs.image.tag . }}
               imagePullPolicy: {{ tpl .Values.gcJobs.image.pullPolicy . }}
               args:

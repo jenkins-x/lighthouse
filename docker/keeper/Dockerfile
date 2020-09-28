@@ -1,6 +1,9 @@
 FROM alpine:3.12
 
-RUN apk add --update --no-cache ca-certificates git
+RUN apk add --update --no-cache ca-certificates git \
+    && adduser -D jx
 
-COPY ./bin/keeper /keeper
-ENTRYPOINT ["/keeper"]
+USER jx
+
+COPY ./bin/keeper /home/jx/
+ENTRYPOINT ["/home/jx/keeper"]
