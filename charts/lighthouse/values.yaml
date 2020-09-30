@@ -104,7 +104,8 @@ webhooks:
     # webhooks.resources.limits -- Resource limits applied to the webhooks pods
     limits:
       cpu: 100m
-      memory: 256Mi
+      # may require more memory to perform the initial 'git clone' cmd for big repositories
+      memory: 512Mi
 
     # webhooks.resources.requests -- Resource requests applied to the webhooks pods
     requests:
