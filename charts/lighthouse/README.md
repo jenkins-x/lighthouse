@@ -120,6 +120,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `tektoncontroller.terminationGracePeriodSeconds` | int | Termination grace period for tekton controller pods | `180` |
 | `tektoncontroller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods | `[]` |
 | `user` | string | Git user name (used when GitHub app authentication is not enabled) | `""` |
+| `webhooks.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the webhooks pods | `{}` |
 | `webhooks.image.pullPolicy` | string | Template for computing the webhooks controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `webhooks.image.repository` | string | Template for computing the webhooks controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-webhooks"` |
 | `webhooks.image.tag` | string | Template for computing the webhooks controller docker image tag | `"{{ .Values.image.tag }}"` |
@@ -127,6 +128,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `webhooks.ingress.enabled` | bool | Enable webhooks ingress | `false` |
 | `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
+| `webhooks.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods | `{}` |
 | `webhooks.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `webhooks.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.replicaCount` | int | Number of replicas | `2` |
@@ -135,5 +137,6 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `webhooks.service` | object | Service settings for the webhooks controller | `{"annotations":{},"externalPort":80,"internalPort":8080,"type":"ClusterIP"}` |
 | `webhooks.serviceName` | string | Allows overriding the service name, this is here for compatibility reasons, regular users should clear this out | `"hook"` |
 | `webhooks.terminationGracePeriodSeconds` | int | Termination grace period for webhooks pods | `180` |
+| `webhooks.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the webhooks pods | `[]` |
 
 You can look directly at the [values.yaml](./values.yaml) file to look at the options and their default values.

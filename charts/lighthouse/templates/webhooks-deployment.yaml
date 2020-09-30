@@ -93,3 +93,15 @@ spec:
             secretName: tide-githubapp-tokens
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.webhooks.terminationGracePeriodSeconds }}
+{{- with .Values.webhooks.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.webhooks.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.webhooks.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
