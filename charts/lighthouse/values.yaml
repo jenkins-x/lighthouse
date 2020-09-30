@@ -75,7 +75,7 @@ gcJobs:
 
 webhooks:
   # webhooks.replicaCount -- Number of replicas
-  replicaCount: 2
+  replicaCount: 1
 
   # webhooks.terminationGracePeriodSeconds -- Termination grace period for webhooks pods
   terminationGracePeriodSeconds: 180

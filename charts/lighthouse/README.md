@@ -131,7 +131,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `webhooks.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods | `{}` |
 | `webhooks.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `webhooks.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
-| `webhooks.replicaCount` | int | Number of replicas | `2` |
+| `webhooks.replicaCount` | int | Number of replicas | `1` |
 | `webhooks.resources.limits` | object | Resource limits applied to the webhooks pods | `{"cpu":"100m","memory":"512Mi"}` |
 | `webhooks.resources.requests` | object | Resource requests applied to the webhooks pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `webhooks.service` | object | Service settings for the webhooks controller | `{"annotations":{},"externalPort":80,"internalPort":8080,"type":"ClusterIP"}` |
