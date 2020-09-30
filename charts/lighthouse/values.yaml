@@ -128,6 +128,15 @@ webhooks:
     successThreshold: 1
     timeoutSeconds: 1
 
+  # webhooks.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods
+  nodeSelector: {}
+
+  # webhooks.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the webhooks pods
+  affinity: {}
+
+  # webhooks.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the webhooks pods
+  tolerations: []
+
   ingress:
     # webhooks.ingress.enabled -- Enable webhooks ingress
     enabled: false
