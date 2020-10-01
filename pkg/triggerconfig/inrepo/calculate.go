@@ -24,6 +24,12 @@ func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPl
 	pluginCfg := plugins.Configuration{}
 	if sharedPlugins != nil {
 		pluginCfg = *sharedPlugins
+
+		// lets avoid concurrent modification issues sharing the config updater
+		pluginCfg.ConfigUpdater = plugins.ConfigUpdater{
+			Maps: map[string]plugins.ConfigMapSpec{},
+			GZIP: false,
+		}
 	}
 
 	if eventRef == "" {
