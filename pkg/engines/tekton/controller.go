@@ -55,7 +55,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 
 // SetupWithManager sets up the reconcilier with it's manager
 func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := mgr.GetFieldIndexer().IndexField(&pipelinev1beta1.PipelineRun{}, jobOwnerKey, func(rawObj runtime.Object) []string {
+	indexFunc := func(rawObj client.Object) []string {
 		obj := rawObj.(*pipelinev1beta1.PipelineRun)
 		owner := metav1.GetControllerOf(obj)
 		// TODO: would be nice to get kind from the type rather than a hard coded string
@@ -63,7 +63,8 @@ func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			return nil
 		}
 		return []string{owner.Name}
-	}); err != nil {
+	}
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &pipelinev1beta1.PipelineRun{}, jobOwnerKey, indexFunc); err != nil {
 		return err
 	}
 
@@ -75,8 +76,10 @@ func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // Reconcile represents an iteration of the reconciliation loop
-func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	r.logger.Infof("Reconcile LighthouseJob %+v", req)
 
