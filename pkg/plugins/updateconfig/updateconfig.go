@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"net/url"
 	"path"
@@ -117,7 +118,7 @@ type configValidateResults struct {
 
 // Update updates the configmap with the data from the identified files
 func Update(fg FileGetter, kc corev1.ConfigMapInterface, name, namespace string, updates []ConfigMapUpdate, logger *logrus.Entry) error {
-	cm, getErr := kc.Get(name, metav1.GetOptions{})
+	cm, getErr := kc.Get(context.TODO(), name, metav1.GetOptions{})
 	isNotFound := errors.IsNotFound(getErr)
 	if getErr != nil && !isNotFound {
 		return fmt.Errorf("failed to fetch current state of configmap: %v", getErr)
@@ -181,10 +182,10 @@ func Update(fg FileGetter, kc corev1.ConfigMapInterface, name, namespace string,
 	var verb string
 	if getErr != nil && isNotFound {
 		verb = "create"
-		_, updateErr = kc.Create(cm)
+		_, updateErr = kc.Create(context.TODO(), cm, metav1.CreateOptions{})
 	} else {
 		verb = "update"
-		_, updateErr = kc.Update(cm)
+		_, updateErr = kc.Update(context.TODO(), cm, metav1.UpdateOptions{})
 	}
 	if updateErr != nil {
 		return fmt.Errorf("%s config map err: %v", verb, updateErr)

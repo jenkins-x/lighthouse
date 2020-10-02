@@ -315,7 +315,9 @@ func loadTaskRefs(pipelineSpec *tektonv1beta1.PipelineSpec, dir, message string,
 			if err != nil {
 				return errors.Wrapf(err, "failed to unmarshal Task YAML file %s %s", path, message)
 			}
-			t.TaskSpec = &t2.Spec
+			t.TaskSpec = &tektonv1beta1.EmbeddedTask{
+				TaskSpec: &t2.Spec,
+			}
 			t.TaskRef = nil
 		}
 	}
@@ -358,7 +360,7 @@ func ConvertTaskToPipelineRun(from *tektonv1beta1.Task, message string, defaultV
 		Tasks: []tektonv1beta1.PipelineTask{
 			{
 				Name:       from.Name,
-				TaskSpec:   fs,
+				TaskSpec:   &tektonv1beta1.EmbeddedTask{TaskSpec: fs},
 				Resources:  ToPipelineResources(fs.Resources),
 				Params:     ToParams(fs.Params),
 				Workspaces: ToWorkspacePipelineTaskBindingsFromDeclarations(fs.Workspaces),
@@ -407,7 +409,7 @@ func ConvertTaskRunToPipelineRun(from *tektonv1beta1.TaskRun, message string, de
 			{
 				Name:     from.Name,
 				TaskRef:  fs.TaskRef,
-				TaskSpec: fs.TaskSpec,
+				TaskSpec: &tektonv1beta1.EmbeddedTask{TaskSpec: fs.TaskSpec},
 				//Resources: fs.Resources,
 				Params:     params,
 				Workspaces: ToWorkspacePipelineTaskBindings(fs.Workspaces),

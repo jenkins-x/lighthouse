@@ -90,8 +90,10 @@ func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // Reconcile represents an iteration of the reconciliation loop
-func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
+func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	r.logger.Infof("Reconcile LighthouseJob %+v", req)
 
