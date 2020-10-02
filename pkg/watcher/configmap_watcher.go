@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/jenkins-x/lighthouse/pkg/clients"
@@ -129,7 +130,7 @@ func NewConfigMapWatcher(kubeClient kubernetes.Interface, ns string, callbacks [
 	}
 
 	// lets synchronously process the list resources, then async handle callbacks
-	list, err := configMaps.List(metav1.ListOptions{})
+	list, err := configMaps.List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return w, errors.Wrapf(err, "failed to list ConfigMaps in namespace %s", ns)
 	}
@@ -190,10 +191,10 @@ func (w *ConfigMapWatcher) createWatcher() error {
 	}
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).List(metav1.ListOptions{})
+			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).List(context.TODO(), metav1.ListOptions{})
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).Watch(metav1.ListOptions{})
+			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).Watch(context.TODO(), metav1.ListOptions{})
 		},
 	}
 	var informer cache.Controller

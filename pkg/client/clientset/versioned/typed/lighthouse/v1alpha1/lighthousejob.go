@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -55,7 +56,7 @@ func (c *lighthouseJobs) Get(name string, options v1.GetOptions) (result *v1alph
 		Resource("lighthousejobs").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -72,7 +73,7 @@ func (c *lighthouseJobs) List(opts v1.ListOptions) (result *v1alpha1.LighthouseJ
 		Resource("lighthousejobs").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -89,7 +90,7 @@ func (c *lighthouseJobs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("lighthousejobs").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(context.TODO())
 }
 
 // Create takes the representation of a lighthouseJob and creates it.  Returns the server's representation of the lighthouseJob, and an error, if there is any.
@@ -99,7 +100,7 @@ func (c *lighthouseJobs) Create(lighthouseJob *v1alpha1.LighthouseJob) (result *
 		Namespace(c.ns).
 		Resource("lighthousejobs").
 		Body(lighthouseJob).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -112,7 +113,7 @@ func (c *lighthouseJobs) Update(lighthouseJob *v1alpha1.LighthouseJob) (result *
 		Resource("lighthousejobs").
 		Name(lighthouseJob.Name).
 		Body(lighthouseJob).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -128,7 +129,7 @@ func (c *lighthouseJobs) UpdateStatus(lighthouseJob *v1alpha1.LighthouseJob) (re
 		Name(lighthouseJob.Name).
 		SubResource("status").
 		Body(lighthouseJob).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -140,7 +141,7 @@ func (c *lighthouseJobs) Delete(name string, options *v1.DeleteOptions) error {
 		Resource("lighthousejobs").
 		Name(name).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -156,7 +157,7 @@ func (c *lighthouseJobs) DeleteCollection(options *v1.DeleteOptions, listOptions
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -169,7 +170,7 @@ func (c *lighthouseJobs) Patch(name string, pt types.PatchType, data []byte, sub
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
