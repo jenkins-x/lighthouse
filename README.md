@@ -157,4 +157,4 @@ Just add this line to the end of your [go.mod](https://github.com/jenkins-x/ligh
 replace github.com/jenkins-x/go-scm => /workspace/go/src/github.com/jenkins-x/go-scm
 ```  
 
-Using the exact path to where you cloned [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm).
+Using the exact path to where you cloned [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm)
