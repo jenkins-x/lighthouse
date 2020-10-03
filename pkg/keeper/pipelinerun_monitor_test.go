@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -114,7 +115,7 @@ func TestRerunPipelineRunsWithRaceConditionFailure(t *testing.T) {
 			err := rerunPipelineRunsWithRaceConditionFailure(tektonClient, ns, nil)
 			assert.NoError(t, err)
 
-			prList, err := tektonClient.TektonV1alpha1().PipelineRuns(ns).List(metav1.ListOptions{})
+			prList, err := tektonClient.TektonV1alpha1().PipelineRuns(ns).List(context.TODO(), metav1.ListOptions{})
 			assert.NoError(t, err)
 
 			if tc.shouldRerun {

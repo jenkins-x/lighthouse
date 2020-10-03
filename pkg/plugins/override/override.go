@@ -18,6 +18,7 @@ limitations under the License.
 package override
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -57,12 +58,12 @@ type scmProviderClient interface {
 
 func createOverrideJob(lhClient lighthouseclient.LighthouseJobInterface, job *v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error) {
 	overrideStatus := job.Status
-	createdJob, err := lhClient.Create(job)
+	createdJob, err := lhClient.Create(context.TODO(), job, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 	createdJob.Status = overrideStatus
-	return lhClient.UpdateStatus(createdJob)
+	return lhClient.UpdateStatus(context.TODO(), createdJob, metav1.UpdateOptions{})
 }
 
 func presubmitForContext(jc config.JobConfig, org, repo, context string) *job.Presubmit {
