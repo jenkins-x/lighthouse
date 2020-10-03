@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -45,13 +46,13 @@ func NewFilteredLighthouseJobInformer(client versioned.Interface, namespace stri
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LighthouseV1alpha1().LighthouseJobs(namespace).List(options)
+				return client.LighthouseV1alpha1().LighthouseJobs(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.LighthouseV1alpha1().LighthouseJobs(namespace).Watch(options)
+				return client.LighthouseV1alpha1().LighthouseJobs(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&lighthousev1alpha1.LighthouseJob{},
