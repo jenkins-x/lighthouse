@@ -1,6 +1,7 @@
 package foghorn
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -114,7 +115,7 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 
 			// invoke reconcile
-			_, err = reconciler.Reconcile(ctrl.Request{
+			_, err = reconciler.Reconcile(context.TODO(), ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Namespace: ns,
 					Name:      observedJob.GetName(),

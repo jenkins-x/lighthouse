@@ -10,8 +10,10 @@ import (
 )
 
 // LighthouseJobLister helps list LighthouseJobs.
+// All objects returned here must be treated as read-only.
 type LighthouseJobLister interface {
 	// List lists all LighthouseJobs in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LighthouseJob, err error)
 	// LighthouseJobs returns an object that can list and get LighthouseJobs.
 	LighthouseJobs(namespace string) LighthouseJobNamespaceLister
@@ -42,10 +44,13 @@ func (s *lighthouseJobLister) LighthouseJobs(namespace string) LighthouseJobName
 }
 
 // LighthouseJobNamespaceLister helps list and get LighthouseJobs.
+// All objects returned here must be treated as read-only.
 type LighthouseJobNamespaceLister interface {
 	// List lists all LighthouseJobs in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.LighthouseJob, err error)
 	// Get retrieves the LighthouseJob from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.LighthouseJob, error)
 	LighthouseJobNamespaceListerExpansion
 }

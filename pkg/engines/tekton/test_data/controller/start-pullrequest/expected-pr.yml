@@ -15,6 +15,7 @@ metadata:
     lighthouse.jenkins-x.io/refs.pull: "813"
     lighthouse.jenkins-x.io/refs.repo: lighthouse
     lighthouse.jenkins-x.io/type: presubmit
+  name: github-mz4c7
   generateName: github-
   namespace: jx
   resourceVersion: '1'

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -59,7 +60,7 @@ func main() {
 
 	lhInterface := lhClient.LighthouseV1alpha1().LighthouseJobs(o.namespace)
 
-	jobList, err := lhInterface.List(metav1.ListOptions{})
+	jobList, err := lhInterface.List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		logrus.WithError(err).Fatalf("Could not list LighthouseJobs in namespace %s", o.namespace)
 	}
@@ -87,5 +88,5 @@ func main() {
 
 func deleteLighthouseJob(lhInterface lhclient.LighthouseJobInterface, lhJob *v1alpha1.LighthouseJob) error {
 	logrus.Infof("Deleting LighthouseJob %s", lhJob.Name)
-	return lhInterface.Delete(lhJob.Name, metav1.NewDeleteOptions(0))
+	return lhInterface.Delete(context.TODO(), lhJob.Name, *metav1.NewDeleteOptions(0))
 }
