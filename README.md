@@ -146,6 +146,19 @@ dlv --listen=:2345 --headless=true --api-version=2 exec ./bin/lighthouse -- $*
 
 You can then debug from your Go-based IDE (e.g. GoLand / IDEA / VS Code).
 
+You can replace the running version in your cluster with the one running locally using [telepresence](https://www.telepresence.io/).  
+For webhooks, just run:
+```bash
+telepresence --swap-deployment lighthouse-webhooks --env-file /tmp/webhooks-env
+```
+in another terminal:
+```bash
+export $(cat /tmp/webhooks-env | xargs)
+dlv --listen=:2345 --headless=true --api-version=2 exec ./bin/webhooks -- --namespace=jx
+```
+
+You can do the same for any other deployment (keeper, foghorn...), just make sur to check the command args used for it an set them instead of `--namespace=jx`.
+
 ### Using a local go-scm
 
 If you are hacking on support for a specific Git provider, you may find yourself working on the Lighthouse code and the [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) code together.
