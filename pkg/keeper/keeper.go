@@ -346,7 +346,7 @@ func (c *DefaultController) Sync() error {
 	var err error
 	if len(prs) > 0 {
 		start := time.Now()
-		lhjList, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).List(metav1.ListOptions{})
+		lhjList, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list LighthouseJobs from the cluster.")
 			return err

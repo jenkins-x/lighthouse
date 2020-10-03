@@ -18,6 +18,7 @@ package jenkins
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sync"
 
@@ -57,7 +58,7 @@ type syncFn func(v1alpha1.LighthouseJob, map[string]Build) error
 
 // Controller manages LighthouseJobs on a Jenkins server.
 type Controller struct {
-	lighthouseClient lighthouseJobClient
+	lighthouseClient client.LighthouseJobInterface
 	jenkinsClient    jenkinsClient
 	log              *logrus.Entry
 	cfg              config.Getter
@@ -160,7 +161,7 @@ func (c *Controller) incrementNumPendingJobs(job string) {
 
 // Sync does one sync iteration.
 func (c *Controller) Sync() error {
-	jobList, err := c.lighthouseClient.List(metav1.ListOptions{LabelSelector: c.selector})
+	jobList, err := c.lighthouseClient.List(context.TODO(), metav1.ListOptions{LabelSelector: c.selector})
 	if err != nil {
 		return fmt.Errorf("error listing Lighthouse jobList: %v", err)
 	}
@@ -279,7 +280,7 @@ func (c *Controller) terminateDupes(lighthouseJobs []v1alpha1.LighthouseJob, jen
 			WithField("from", prevState).
 			WithField("to", toCancel.Status.State).Info("Transitioning states.")
 
-		updatedJob, err := c.lighthouseClient.UpdateStatus(&toCancel)
+		updatedJob, err := c.lighthouseClient.UpdateStatus(context.TODO(), &toCancel, metav1.UpdateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "unable to update LighthouseJob status")
 		}
@@ -366,7 +367,7 @@ func (c *Controller) syncPendingJob(lighthouseJob v1alpha1.LighthouseJob, jenkin
 			WithField("to", lighthouseJob.Status.State).Info("Transitioning states.")
 		// make sure to set an activity record this job state update
 		c.addActivity(&lighthouseJob)
-		_, err = c.lighthouseClient.UpdateStatus(&lighthouseJob)
+		_, err = c.lighthouseClient.UpdateStatus(context.TODO(), &lighthouseJob, metav1.UpdateOptions{})
 	}
 	return err
 }
@@ -385,7 +386,7 @@ func (c *Controller) syncAbortedJob(lighthouseJob v1alpha1.LighthouseJob, jenkin
 	lighthouseJob.SetComplete()
 	c.addActivity(&lighthouseJob)
 
-	_, err := c.lighthouseClient.UpdateStatus(&lighthouseJob)
+	_, err := c.lighthouseClient.UpdateStatus(context.TODO(), &lighthouseJob, metav1.UpdateOptions{})
 	return err
 }
 
@@ -427,7 +428,7 @@ func (c *Controller) syncTriggeredJob(lighthouseJob v1alpha1.LighthouseJob, jenk
 			WithField("to", lighthouseJob.Status.State).Info("Transitioning states.")
 		// make sure to set an activity record this job state update
 		c.addActivity(&lighthouseJob)
-		_, err = c.lighthouseClient.UpdateStatus(&lighthouseJob)
+		_, err = c.lighthouseClient.UpdateStatus(context.TODO(), &lighthouseJob, metav1.UpdateOptions{})
 	}
 
 	return err
