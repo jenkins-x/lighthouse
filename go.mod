@@ -11,9 +11,9 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/jenkins-x/go-scm v1.5.178
-	github.com/mattn/go-zglob v0.0.1
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.8.1
+	github.com/mattn/go-zglob v0.0.2
+	github.com/onsi/ginkgo v1.14.1
+	github.com/onsi/gomega v1.10.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5
@@ -35,7 +35,7 @@ require (
 // gomodules.xyz breaks in Athens proxying
 replace gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.1.0
 
-replace github.com/tektoncd/pipeline => github.com/rawlingsj/pipeline v0.8.1-0.20201002150609-ca0741e5d19a
+replace github.com/tektoncd/pipeline => github.com/jenkins-x/pipeline v0.0.0-20201002150609-ca0741e5d19a
 
 replace k8s.io/client-go => k8s.io/client-go v0.19.2
 
