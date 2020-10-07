@@ -12,9 +12,14 @@ import (
 func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConfig *triggerconfig.Config, repoOwner string, repoName string) error {
 	repoKey := repoOwner + "/" + repoName
 	if len(repoConfig.Spec.Presubmits) > 0 {
-		if cfg.Presubmits == nil {
-			cfg.Presubmits = map[string][]job.Presubmit{}
+		// lets make a new map to avoid concurrent modifications
+		m := map[string][]job.Presubmit{}
+		if cfg.Presubmits != nil {
+			for k, v := range cfg.Presubmits {
+				m[k] = append([]job.Presubmit{}, v...)
+			}
 		}
+		cfg.Presubmits = m
 
 		ps := cfg.Presubmits[repoKey]
 		for i, p := range repoConfig.Spec.Presubmits {
@@ -32,9 +37,14 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 		cfg.Presubmits[repoKey] = ps
 	}
 	if len(repoConfig.Spec.Postsubmits) > 0 {
-		if cfg.Postsubmits == nil {
-			cfg.Postsubmits = map[string][]job.Postsubmit{}
+		// lets make a new map to avoid concurrent modifications
+		m := map[string][]job.Postsubmit{}
+		if cfg.Postsubmits != nil {
+			for k, v := range cfg.Postsubmits {
+				m[k] = append([]job.Postsubmit{}, v...)
+			}
 		}
+		cfg.Postsubmits = m
 
 		ps := cfg.Postsubmits[repoKey]
 		for i, p := range repoConfig.Spec.Postsubmits {
