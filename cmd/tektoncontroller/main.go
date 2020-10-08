@@ -16,8 +16,9 @@ import (
 )
 
 type options struct {
-	namespace    string
-	dashboardURL string
+	namespace         string
+	dashboardURL      string
+	dashboardTemplate string
 }
 
 func (o *options) Validate() error {
@@ -28,6 +29,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
 	fs.StringVar(&o.dashboardURL, "dashboard-url", "", "The base URL for the Tekton Dashboard to link to for build reports")
+	fs.StringVar(&o.dashboardTemplate, "dashboard-template", "", "The template expression for generating the URL to the build report based on the PipelineRun parameters. If not specified defaults to $LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	err := fs.Parse(args)
 	if err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
@@ -62,7 +64,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.namespace)
+	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.dashboardTemplate, o.namespace)
 	if err = reconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}

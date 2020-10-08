@@ -29,6 +29,7 @@ spec:
         args:
           - --namespace={{ .Release.Namespace }}
           - --dashboard-url={{ .Values.tektoncontroller.dashboardURL }}
+          - --dashboard-template={{ .Values.tektoncontroller.dashboardTemplate }}
         ports:
           - name: metrics
             containerPort: 8080

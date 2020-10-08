@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	dashboardBaseURL = "https://example.com/"
+	dashboardBaseURL  = "https://example.com/"
+	dashboardTemplate = "#/namespaces/{{ .Namespace }}/pipelineruns/{{ .PipelineRun }}"
 )
 
 type seededRandIDGenerator struct{}
@@ -82,7 +83,7 @@ func TestReconcile(t *testing.T) {
 			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
 			c := fake.NewFakeClientWithScheme(scheme, state...)
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, ns)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 
 			// invoke reconcile
