@@ -107,7 +107,8 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `logFormat` | string | Log format | `"json"` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
 | `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
-| `tektoncontroller.dashboardURL` | string | Tekton dashboard URL | `""` |
+| `tektoncontroller.dashboardTemplate` | string | Go template expression for URLs in the dashboard if not using Tekton dashboard | `""` |
+| `tektoncontroller.dashboardURL` | string | the dashboard URL (e.g. Tekton dashboard) | `""` |
 | `tektoncontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `tektoncontroller.image.repository` | string | Template for computing the tekton controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"` |
 | `tektoncontroller.image.tag` | string | Template for computing the tekton controller docker image tag | `"{{ .Values.image.tag }}"` |
