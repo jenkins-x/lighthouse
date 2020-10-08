@@ -177,8 +177,10 @@ foghorn:
       memory: 128Mi
 
 tektoncontroller:
-  # tektoncontroller.dashboardURL -- Tekton dashboard URL
+  # tektoncontroller.dashboardURL -- the dashboard URL (e.g. Tekton dashboard)
   dashboardURL: ''
+  # tektoncontroller.dashboardTemplate -- Go template expression for URLs in the dashboard if not using Tekton dashboard
+  dashboardTemplate: ''
 
   # tektoncontroller.replicaCount -- Number of replicas
   replicaCount: 1
