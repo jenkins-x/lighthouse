@@ -47,7 +47,15 @@ func TestCalculate(t *testing.T) {
 
 	// lets verify we've loaded in repository trigger configuration
 	require.Len(t, cfg.Presubmits[fullName], 2, "presubmits for repo %s", fullName)
-	presubmit := cfg.Presubmits[fullName][0]
+	var presubmit *job.Presubmit
+	for _, p := range cfg.Presubmits[fullName] {
+		if p.Name == "test" {
+			pCopy := p
+			presubmit = &pCopy
+			break
+		}
+	}
+	assert.NotNil(t, presubmit, "Couldn't find presubmit 'test' for repo %s", fullName)
 	assert.NotNil(t, presubmit.PipelineRunSpec, "cfg.Presubmits[0].PipelineRunSpec for repo %s", fullName)
 	assert.Equal(t, job.TektonPipelineAgent, presubmit.Agent, "cfg.Presubmits[0].Agent for repo %s", fullName)
 
