@@ -235,7 +235,7 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 
 // AddCollaborator adds the approver user to the repo
 func AddCollaborator(approver string, repo *scm.Repository, botClient *scm.Client, approverClient *scm.Client) error {
-	_, alreadyCollaborator, _, err := botClient.Repositories.AddCollaborator(context.Background(), fmt.Sprintf("%s/%s", repo.Namespace, repo.Name), approver, "admin")
+	_, alreadyCollaborator, _, err := botClient.Repositories.AddCollaborator(context.Background(), fmt.Sprintf("%s/%s", repo.Namespace, repo.Name), approver, scm.WritePermission)
 	if alreadyCollaborator {
 		return nil
 	}

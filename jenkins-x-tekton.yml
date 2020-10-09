@@ -28,9 +28,9 @@ pipelineConfig:
           - name: GKE_SA
             value: /secrets/bdd/sa.json
           - name: E2E_GIT_KIND
-            value: github
+            value: gitlab
           - name: E2E_GIT_SERVER
-            value: https://github.com
+            value: https://gitlab.com
           - name: CHARTMUSEUM_USER
             valueFrom:
               secretKeyRef:
@@ -44,12 +44,12 @@ pipelineConfig:
           - name: E2E_PRIMARY_SCM_USER
             valueFrom:
               secretKeyRef:
-                name: lighthouse-bot-test-github
+                name: jx-pipeline-git-gitlab-gl
                 key: username
           - name: E2E_PRIMARY_SCM_TOKEN
             valueFrom:
               secretKeyRef:
-                name: lighthouse-bot-test-github
+                name: jx-pipeline-git-gitlab-gl
                 key: password
           - name: JENKINS_PASSWORD
             valueFrom:
@@ -59,12 +59,12 @@ pipelineConfig:
           - name: E2E_APPROVER_SCM_USER
             valueFrom:
               secretKeyRef:
-                name: jenkins-x-bot-test-github
+                name: jx-pipeline-git-gitlab-gl-approver
                 key: username
           - name: E2E_APPROVER_SCM_TOKEN
             valueFrom:
               secretKeyRef:
-                name: jenkins-x-bot-test-github
+                name: jx-pipeline-git-gitlab-gl-approver
                 key: password
         agent:
           image: gcr.io/jenkinsxio/builder-go-nodejs

@@ -130,9 +130,16 @@ func (c *Client) GetCombinedStatus(owner, repo, ref string) (*scm.CombinedStatus
 
 // HasPermission returns true if GetUserPermission() returns any of the roles.
 func (c *Client) HasPermission(org, repo, user string, roles ...string) (bool, error) {
-	perm, err := c.GetUserPermission(org, repo, user)
-	if err != nil {
-		return false, err
+	var perm string
+	var err error
+	// TODO: Get rid of hack when https://gitlab.com/gitlab-org/gitlab/-/issues/219299 is fixed
+	if c.ProviderType() == "gitlab" && org == user {
+		perm = RoleAdmin
+	} else {
+		perm, err = c.GetUserPermission(org, repo, user)
+		if err != nil {
+			return false, err
+		}
 	}
 	for _, r := range roles {
 		if r == perm {
