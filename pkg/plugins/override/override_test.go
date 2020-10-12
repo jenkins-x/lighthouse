@@ -18,8 +18,9 @@ package override
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
@@ -432,17 +433,12 @@ func TestHandle(t *testing.T) {
 			err := plugin.InvokeCommandHandler(&event, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
 				return handler(match, agent, event)
 			})
-			switch {
-			case err != nil:
-				if !tc.err {
-					t.Errorf("unexpected error: %v", err)
-				}
-			case tc.err:
+			if tc.err && err == nil {
 				t.Error("failed to receive an error")
-			case !reflect.DeepEqual(fc.Statuses[fakeOrg+"/"+fakeRepo], tc.expected):
-				t.Errorf("bad statuses: actual %#v != expected %#v", fc.Statuses[fakeOrg+"/"+fakeRepo], tc.expected)
-				// case !reflect.DeepEqual(fc.jobs, tc.jobs):
-				// 	t.Errorf("bad jobs: actual %#v != expected %#v", fc.jobs, tc.jobs)
+			} else if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			} else {
+				assert.ElementsMatch(t, fc.Statuses[fakeOrg+"/"+fakeRepo], tc.expected)
 			}
 		})
 	}
