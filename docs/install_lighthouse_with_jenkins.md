@@ -121,7 +121,7 @@ In this case you need to modify the relevant settings accordingly.
 
 ### Test project
 
-- Let's create a smaple project with a _hello world_ web server written in Go.
+- Let's create a sample project with a _hello world_ web server written in Go.
 
     ```bash
     bot_user=<github-username-of-bot-user>
