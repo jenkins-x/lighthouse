@@ -164,7 +164,7 @@ function install_tools() {
 # Creates the GKE test cluster
 ###############################################################################
 function create_cluster() {
-	CLUSTER_NAME=$(echo ${BRANCH_NAME,,}-${BUILD_ID,,}-lh-tekton-e2e)
+	CLUSTER_NAME=$(echo ${BRANCH_NAME,,}-${BUILD_ID,,}-lh-jenkins-e2e)
 
 	echo "Test cluster name: ${CLUSTER_NAME}"
 
@@ -188,7 +188,7 @@ function create_cluster() {
 		--min-nodes=3 \
 		--max-nodes=5 \
 		--scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/devstorage.full_control,https://www.googleapis.com/auth/service.management,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring \
-		--labels="created-by=${USER},create-time=${dateLabel,,},cluster=lh-tekton-e2e,branch=${BRANCH_NAME,,}" \
+		--labels="created-by=${USER},create-time=${dateLabel,,},cluster=lh-jenkins-e2e,branch=${BRANCH_NAME,,}" \
 		--project=jenkins-x-bdd3 \
 		--release-channel=regular
 
