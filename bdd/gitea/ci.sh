@@ -159,7 +159,7 @@ if kubectl get configmap config ; then
 fi
 
 # Run the test - we probably want something here to capture controller logs but we'll deal with that in a bit.
-make run-e2e-tests
+make run-tekton-e2e-tests
 
 bdd_result=$?
 if [[ $bdd_result != 0 ]]; then
