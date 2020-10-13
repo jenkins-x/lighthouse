@@ -12,3 +12,6 @@ gitea:
   config:
     service:
       DISABLE_REGISTRATION: true
+
+image:
+  version: linux-amd64
