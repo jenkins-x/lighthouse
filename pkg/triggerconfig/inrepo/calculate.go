@@ -47,9 +47,11 @@ func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPl
 			return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to create trigger config from local source for repo %s/%s ref %s", owner, repo, ref)
 		}
 
-		err = merge.ConfigMerge(&cfg, &pluginCfg, repoConfig, owner, repo)
-		if err != nil {
-			return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to merge repository config with repository %s/%s for ref %s", owner, repo, ref)
+		if repoConfig != nil {
+			err = merge.ConfigMerge(&cfg, &pluginCfg, repoConfig, owner, repo)
+			if err != nil {
+				return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to merge repository config with repository %s/%s for ref %s", owner, repo, ref)
+			}
 		}
 	}
 	return &cfg, &pluginCfg, nil
