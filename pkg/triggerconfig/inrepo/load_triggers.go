@@ -33,12 +33,7 @@ func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, scmClie
 
 // LoadTriggerConfig loads the `lighthouse.yaml` configuration files in the repository
 func LoadTriggerConfig(scmClient scmProviderClient, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
-	if sha == "" {
-		sha = "master"
-	}
-
 	m := map[string]*triggerconfig.Config{}
-
 	path := ".lighthouse"
 	files, err := scmClient.ListFiles(ownerName, repoName, path, sha)
 	if err != nil {

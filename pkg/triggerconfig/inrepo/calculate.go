@@ -32,15 +32,11 @@ func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPl
 		}
 	}
 
-	if eventRef == "" {
-		eventRef = "master"
-	}
-
 	// lets load the main branch first then merge in any changes from this PR/branch
-	refs := []string{"master"}
-	if eventRef != "master" && !strings.HasSuffix(eventRef, "/master") {
-		refs = append(refs, eventRef)
-	}
+	refs := []string{}
+	eventRef = strings.TrimPrefix(eventRef, "refs/heads/")
+	eventRef = strings.TrimPrefix(eventRef, "refs/tags/")
+	refs = append(refs, eventRef)
 	for _, ref := range refs {
 		repoConfig, err := LoadTriggerConfig(scmClient, owner, repo, ref)
 		if err != nil {
