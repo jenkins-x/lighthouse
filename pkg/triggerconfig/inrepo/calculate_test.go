@@ -16,13 +16,21 @@ import (
 )
 
 func TestCalculate(t *testing.T) {
-	scmClient, _ := fakescm.NewDefault()
-	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
-
 	owner := "myorg"
 	repo := "myrepo"
 	ref := "master"
 	fullName := scm.Join(owner, repo)
+
+	scmClient, fakeData := fakescm.NewDefault()
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+	fakeData.Repositories = []*scm.Repository{
+		{
+			Namespace: owner,
+			Name:      repo,
+			FullName:  fullName,
+			Branch:    "master",
+		},
+	}
 
 	enabled := true
 	sharedConfig := &config.Config{
@@ -84,13 +92,22 @@ func TestCalculate(t *testing.T) {
 }
 
 func TestTriggersInBranchMergeToMaster(t *testing.T) {
-	scmClient, _ := fakescm.NewDefault()
-	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
-
 	owner := "myorg"
 	repo := "branchtest"
 	ref := "mybranch"
 	fullName := scm.Join(owner, repo)
+
+	scmClient, fakeData := fakescm.NewDefault()
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
+	fakeData.Repositories = []*scm.Repository{
+		{
+			Namespace: owner,
+			Name:      repo,
+			FullName:  fullName,
+			Branch:    "master",
+		},
+	}
 
 	enabled := true
 	sharedConfig := &config.Config{
