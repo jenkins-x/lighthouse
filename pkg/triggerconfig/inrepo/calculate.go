@@ -47,7 +47,7 @@ func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPl
 
 	eventRef = strings.TrimPrefix(eventRef, "refs/heads/")
 	eventRef = strings.TrimPrefix(eventRef, "refs/tags/")
-	if eventRef != mainBranch {
+	if eventRef != mainBranch && eventRef != "" {
 		refs = append(refs, eventRef)
 	}
 	for _, ref := range refs {
