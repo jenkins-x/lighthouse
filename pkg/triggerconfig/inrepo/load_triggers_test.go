@@ -3,6 +3,7 @@ package inrepo_test
 import (
 	"testing"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -13,12 +14,23 @@ import (
 )
 
 func TestMergeConfig(t *testing.T) {
-	scmClient, _ := fake.NewDefault()
-	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
-
 	owner := "myorg"
 	repo := "loadtest"
 	ref := "master"
+	fullName := scm.Join(owner, repo)
+
+	scmClient, fakeData := fake.NewDefault()
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
+	fakeData.Repositories = []*scm.Repository{
+		{
+			Namespace: owner,
+			Name:      repo,
+			FullName:  fullName,
+			Branch:    "master",
+		},
+	}
+
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
 	flag, err := inrepo.MergeTriggers(cfg, pluginCfg, scmProvider, owner, repo, ref)

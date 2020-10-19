@@ -17,6 +17,16 @@ func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPl
 		return sharedConfig, sharedPlugins, nil
 	}
 
+	// lets find the main branch
+	repository, err := scmClient.GetRepositoryByFullName(fullName)
+	if err != nil {
+		return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to find repository %s", fullName)
+	}
+	mainBranch := repository.Branch
+	if mainBranch == "" {
+		mainBranch = "master"
+	}
+
 	// in repository configuration configured for this repository so lets create the in repository specific config structs
 	cfg := *sharedConfig
 
@@ -33,10 +43,13 @@ func Generate(scmClient scmProviderClient, sharedConfig *config.Config, sharedPl
 	}
 
 	// lets load the main branch first then merge in any changes from this PR/branch
-	refs := []string{}
+	refs := []string{mainBranch}
+
 	eventRef = strings.TrimPrefix(eventRef, "refs/heads/")
 	eventRef = strings.TrimPrefix(eventRef, "refs/tags/")
-	refs = append(refs, eventRef)
+	if eventRef != mainBranch {
+		refs = append(refs, eventRef)
+	}
 	for _, ref := range refs {
 		repoConfig, err := LoadTriggerConfig(scmClient, owner, repo, ref)
 		if err != nil {
