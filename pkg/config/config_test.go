@@ -523,7 +523,7 @@ presubmits:
     context: bar
     branches:
     - other
-    name: presubmit-bar
+    name: presubmit-bar2
     spec:
       containers:
       - image: alpine`,
@@ -566,7 +566,7 @@ presubmits:
     context: bar
     branches:
     - master
-    name: presubmit-bar
+    name: presubmit-bar2
     spec:
       containers:
       - image: alpine`,
