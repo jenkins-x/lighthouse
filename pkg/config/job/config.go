@@ -155,7 +155,7 @@ func (c *Config) Validate(lh lighthouse.Config) error {
 		for _, job := range jobs {
 			repoJobName := orgRepoJobName{repo, job.Name}
 			for _, existingJob := range validPresubmits[repoJobName] {
-				if existingJob.Brancher.Intersects(job.Brancher) {
+				if existingJob.Name == job.Name {
 					return fmt.Errorf("duplicated presubmit job: %s", job.Name)
 				}
 			}
