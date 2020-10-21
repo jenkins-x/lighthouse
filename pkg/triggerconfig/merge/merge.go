@@ -22,12 +22,14 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 		cfg.Presubmits = m
 
 		ps := cfg.Presubmits[repoKey]
-		for i, p := range repoConfig.Spec.Presubmits {
+		for _, p := range repoConfig.Spec.Presubmits {
 			found := false
-			for _, pt2 := range ps {
+			for i := range ps {
+				pt2 := &ps[i]
 				if pt2.Name == p.Name {
-					ps[i] = p
+					*pt2 = p
 					found = true
+					break
 				}
 			}
 			if !found {
@@ -47,9 +49,10 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 		cfg.Postsubmits = m
 
 		ps := cfg.Postsubmits[repoKey]
-		for i, p := range repoConfig.Spec.Postsubmits {
+		for _, p := range repoConfig.Spec.Postsubmits {
 			found := false
-			for _, pt2 := range ps {
+			for i := range ps {
+				pt2 := &ps[i]
 				if pt2.Name == p.Name {
 					ps[i] = p
 					found = true
