@@ -17,6 +17,8 @@ limitations under the License.
 package webhook
 
 import (
+	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 	"sync"
@@ -57,24 +59,33 @@ func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		"url":                    ic.Comment.Link,
 	})
 	l.Infof("Issue comment %s.", ic.Action)
-
+	event := &scmprovider.GenericCommentEvent{
+		GUID:        strconv.Itoa(ic.Comment.ID),
+		IsPR:        ic.Issue.PullRequest,
+		Action:      ic.Action,
+		Body:        ic.Comment.Body,
+		Link:        ic.Comment.Link,
+		Number:      ic.Issue.Number,
+		Repo:        ic.Repo,
+		Author:      ic.Comment.Author,
+		IssueAuthor: ic.Issue.Author,
+		Assignees:   ic.Issue.Assignees,
+		IssueState:  ic.Issue.State,
+		IssueBody:   ic.Issue.Body,
+		IssueLink:   ic.Issue.Link,
+	}
+	if ic.Issue.PullRequest {
+		updatedPR, _, err := s.ClientAgent.SCMProviderClient.PullRequests.Find(context.Background(), fmt.Sprintf("%s/%s",
+			ic.Repo.Namespace, ic.Repo.Name), ic.Issue.Number)
+		if err != nil {
+			l.WithError(err).Error("Error fetching Pull Request details.")
+		} else {
+			event.HeadSha = updatedPR.Head.Sha
+		}
+	}
 	s.handleGenericComment(
 		l,
-		&scmprovider.GenericCommentEvent{
-			GUID:        strconv.Itoa(ic.Comment.ID),
-			IsPR:        ic.Issue.PullRequest,
-			Action:      ic.Action,
-			Body:        ic.Comment.Body,
-			Link:        ic.Comment.Link,
-			Number:      ic.Issue.Number,
-			Repo:        ic.Repo,
-			Author:      ic.Comment.Author,
-			IssueAuthor: ic.Issue.Author,
-			Assignees:   ic.Issue.Assignees,
-			IssueState:  ic.Issue.State,
-			IssueBody:   ic.Issue.Body,
-			IssueLink:   ic.Issue.Link,
-		},
+		event,
 	)
 }
 
@@ -105,6 +116,7 @@ func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 			IssueState:  pc.PullRequest.State,
 			IssueBody:   pc.PullRequest.Body,
 			IssueLink:   pc.PullRequest.Link,
+			HeadSha:     pc.PullRequest.Head.Sha,
 		},
 	)
 }
@@ -115,7 +127,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 			s.wg.Add(1)
 			go func(p string, h plugins.GenericCommentHandler) {
 				defer s.wg.Done()
-				agent, err := s.CreateAgent(l, p, ce.Repo.Namespace, ce.Repo.Name, "")
+				agent, err := s.CreateAgent(l, p, ce.Repo.Namespace, ce.Repo.Name, ce.HeadSha)
 				if err != nil {
 					agent.Logger.WithError(err).Error("Error creating agent for GenericCommentEvent.")
 					return
@@ -130,7 +142,7 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 				s.wg.Add(1)
 				go func(p string, h plugins.CommandEventHandler, m plugins.CommandMatch) {
 					defer s.wg.Done()
-					agent, err := s.CreateAgent(l, p, ce.Repo.Namespace, ce.Repo.Name, "")
+					agent, err := s.CreateAgent(l, p, ce.Repo.Namespace, ce.Repo.Name, ce.HeadSha)
 					if err != nil {
 						agent.Logger.WithError(err).Error("Error creating agent for GenericCommentEvent.")
 						return
@@ -242,6 +254,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 			IssueState:  pr.PullRequest.State,
 			IssueBody:   pr.PullRequest.Body,
 			IssueLink:   pr.PullRequest.Link,
+			HeadSha:     pr.PullRequest.Head.Sha,
 		},
 	)
 }
@@ -305,6 +318,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 			IssueState:  re.PullRequest.State,
 			IssueBody:   re.PullRequest.Body,
 			IssueLink:   re.PullRequest.Link,
+			HeadSha:     re.PullRequest.Head.Sha,
 		},
 	)
 }
