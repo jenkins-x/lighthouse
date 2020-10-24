@@ -149,6 +149,7 @@ type GenericCommentEvent struct {
 	IssueBody   string
 	IssueLink   string
 	GUID        string
+	HeadSha     string
 }
 
 // ReviewAction is the action that a review can be made with.
