@@ -1,0 +1,46 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x/jx.git
+  creationTimestamp: "2020-07-20T19:50:21Z"
+  generation: 1
+  labels:
+    branch: PR-7463
+    build: "17"
+    context: boot-vault
+    jenkins.io/pipelineType: build
+    lighthouse.jenkins-x.io/baseSHA: c47ce72d4e2991a9440e6d954ecbf79d596f9352
+    lighthouse.jenkins-x.io/branch: PR-7463
+    lighthouse.jenkins-x.io/buildNum: "17"
+    lighthouse.jenkins-x.io/context: boot-vault
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    lighthouse.jenkins-x.io/lastCommitSHA: 8a3c5f595cdc3162e46390c72a5d22fb9c89d1df
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.repo: jx
+    owner: jenkins-x
+    repository: jx
+    tekton.dev/pipeline: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  namespace: jx
+  resourceVersion: "16726271"
+  selfLink: /apis/tekton.dev/v1beta1/namespaces/jx/pipelineruns/jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  uid: 3edf18d1-cac2-11ea-a610-42010a8400cb
+spec:
+  params:
+  - name: version
+    value: 0.0.0-SNAPSHOT-PR-7463-17
+  - name: build_id
+    value: "17"
+  pipelineRef:
+    apiVersion: tekton.dev/v1alpha1
+    name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  podTemplate:
+    schedulerName: ""
+  resources:
+  - name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
+    resourceRef:
+      apiVersion: tekton.dev/v1alpha1
+      name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
