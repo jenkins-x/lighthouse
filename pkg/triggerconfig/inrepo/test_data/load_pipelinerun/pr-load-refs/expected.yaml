@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/loadFileRefs: .*
+  creationTimestamp: null
+  name: pipelinerun-with-extra-params
+spec:
+  params:
+  - name: pl-param-x
+    value: "100"
+  - name: pl-param-y
+    value: "200"
+  - name: pl-param-z
+    value: "300"
+  pipelineSpec:
+    params:
+    - name: pl-param-x
+      type: string
+    - name: pl-param-y
+      type: string
+    tasks:
+    - name: add-params
+      params:
+      - name: a
+        value: $(params.pl-param-x)
+      - name: b
+        value: $(params.pl-param-y)
+      taskSpec:
+        params:
+        - description: The first integer
+          name: a
+          type: string
+        - description: The second integer
+          name: b
+          type: string
+        steps:
+        - image: bash:latest
+          name: sum
+          resources: {}
+          script: |-
+            #!/usr/bin/env bash
+            echo -n $(( "$(inputs.params.a)" + "$(inputs.params.b)" ))
+status: {}

@@ -1,16 +1,17 @@
 package inrepo
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/merge"
 	"github.com/pkg/errors"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -148,12 +149,35 @@ func loadJobBaseFromSourcePath(client scmProviderClient, j *job.Base, ownerName,
 		return errors.Errorf("empty file file %s in repo %s/%s for sha %s", path, ownerName, repoName, sha)
 	}
 
-	// for now lets assume its a PipelineRun we could eventually support different kinds
-	prs := &tektonv1beta1.PipelineRun{}
-	err = yaml.Unmarshal(data, prs)
+	dir := filepath.Dir(path)
+
+	message := fmt.Sprintf("in repo %s/%s with sha %s", ownerName, repoName, sha)
+
+	getData := func(path string) ([]byte, error) {
+		data, err := client.GetFile(ownerName, repoName, path, sha)
+		if err != nil && IsScmNotFound(err) {
+			err = nil
+		}
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+		}
+		return data, nil
+	}
+
+	prs, err := LoadTektonResourceAsPipelineRun(data, dir, message, getData, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to unmarshal YAML file %s/%s in repo %s with sha %s", path, ownerName, repoName, sha)
+		return errors.Wrapf(err, "failed to unmarshal YAML file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 	}
 	j.PipelineRunSpec = &prs.Spec
 	return nil
+}
+
+// IsScmNotFound returns true if the error is a not found error
+func IsScmNotFound(err error) bool {
+	if err != nil {
+		// I think that we should instead rely on the http status (404)
+		// until jenkins-x go-scm is updated t return that in the error this works for github and gitlab
+		return strings.Contains(err.Error(), scm.ErrNotFound.Error())
+	}
+	return false
 }
