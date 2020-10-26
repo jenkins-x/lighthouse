@@ -50,7 +50,7 @@ func LoadTriggerConfig(scmClient scmProviderClient, ownerName string, repoName s
 			if cfg != nil {
 				m[filePath] = cfg
 			}
-		} else if f.Name == "trigger.yaml" {
+		} else if f.Name == "triggers.yaml" {
 			filePath := path + "/" + f.Name
 			cfg, err := loadConfigFile(scmClient, ownerName, repoName, filePath, sha)
 			if err != nil {
