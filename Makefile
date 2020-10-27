@@ -172,7 +172,7 @@ crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
 
 .PHONY: docs
-docs: job-docs plugins-docs config-docs crds-docs ## Builds generated docs
+docs: job-docs plugins-docs config-docs trigger-docs crds-docs ## Builds generated docs
 
 DOCS_GEN := bin/gen-docs
 $(DOCS_GEN):
@@ -189,6 +189,11 @@ crds-docs: $(DOCS_GEN)
 config-docs: $(DOCS_GEN)
 	rm -rf ./docs/config/lighthouse
 	$(DOCS_GEN) --input=./pkg/config/lighthouse/... --root=Config --output=./docs/config/lighthouse
+
+.PHONY: trigger-docs
+trigger-docs: $(DOCS_GEN)
+	rm -rf ./docs/trigger
+	$(DOCS_GEN) --input=./pkg/triggerconfig/... --root=Config --output=./docs/trigger
 
 .PHONY: plugins-docs
 plugins-docs: $(DOCS_GEN)
