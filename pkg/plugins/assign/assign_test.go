@@ -36,7 +36,7 @@ type fakeClient struct {
 	commented bool
 }
 
-func (c *fakeClient) UnassignIssue(owner, repo string, number int, assignees []string) error {
+func (c *fakeClient) UnassignPR(owner, repo string, number int, assignees []string) error {
 	for _, who := range assignees {
 		c.unassigned[who]++
 	}
@@ -44,7 +44,7 @@ func (c *fakeClient) UnassignIssue(owner, repo string, number int, assignees []s
 	return nil
 }
 
-func (c *fakeClient) AssignIssue(owner, repo string, number int, assignees []string) error {
+func (c *fakeClient) AssignPR(owner, repo string, number int, assignees []string) error {
 	var missing scmprovider.MissingUsers
 	sort.Strings(assignees)
 	if len(assignees) > 10 {
