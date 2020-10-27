@@ -146,7 +146,7 @@ func optionsForRepo(config *plugins.Configuration, org, repo string) *plugins.Lg
 type scmProviderClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
 	AddLabel(owner, repo string, number int, label string, pr bool) error
-	AssignIssue(owner, repo string, number int, assignees []string) error
+	AssignPR(owner, repo string, number int, assignees []string) error
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
@@ -302,7 +302,7 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 		// in this case we need to ensure the commentor is assignable to the PR
 		// by assigning them
 		log.Infof("Assigning %s/%s#%d to %s", org, repoName, number, author)
-		if err := spc.AssignIssue(org, repoName, number, []string{author}); err != nil {
+		if err := spc.AssignPR(org, repoName, number, []string{author}); err != nil {
 			log.WithError(err).Errorf("Failed to assign %s/%s#%d to %s", org, repoName, number, author)
 		}
 	} else if !isAuthor && skipCollaborators {

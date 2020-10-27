@@ -217,3 +217,19 @@ func (c *Client) FindPullRequestsByAuthor(owner, repo string, author string) ([]
 	}
 	return allPullRequests, err
 }
+
+// AssignPR assigns pr
+func (c *Client) AssignPR(owner, repo string, number int, logins []string) error {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.PullRequests.AssignIssue(ctx, fullName, number, logins)
+	return err
+}
+
+// UnassignPR unassigns pr
+func (c *Client) UnassignPR(owner, repo string, number int, logins []string) error {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	_, err := c.client.PullRequests.UnassignIssue(ctx, fullName, number, logins)
+	return err
+}

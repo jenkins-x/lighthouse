@@ -55,8 +55,8 @@ func init() {
 }
 
 type scmProviderClient interface {
-	AssignIssue(owner, repo string, number int, logins []string) error
-	UnassignIssue(owner, repo string, number int, logins []string) error
+	AssignPR(owner, repo string, number int, logins []string) error
+	UnassignPR(owner, repo string, number int, logins []string) error
 
 	RequestReview(org, repo string, number int, logins []string) error
 	UnrequestReview(org, repo string, number int, logins []string) error
@@ -180,8 +180,8 @@ func newAssignHandler(e scmprovider.GenericCommentEvent, spc scmProviderClient, 
 
 	return &handler{
 		addFailureResponse: addFailureResponse,
-		remove:             spc.UnassignIssue,
-		add:                spc.AssignIssue,
+		remove:             spc.UnassignPR,
+		add:                spc.AssignPR,
 		event:              &e,
 		command:            "assign",
 		spc:                spc,
