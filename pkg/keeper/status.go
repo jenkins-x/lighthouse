@@ -234,7 +234,7 @@ func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (strin
 // in order to generate a diff for the status description. We choose the query
 // for the repo that the PR is closest to meeting (as determined by the number
 // of unmet/violated requirements).
-func expectedStatus(queryMap *keeper.QueryMap, pr *PullRequest, pool map[string]prWithStatus, cc contextChecker, blocks blockers.Blockers, providerType string) (string, string) {
+func expectedStatus(queryMap *keeper.QueryMap, pr *PullRequest, pool map[string]prWithStatus, cc contextChecker, blocks blockers.Blockers, providerType string, log *logrus.Entry) (string, string) {
 	if _, ok := pool[pr.prKey()]; !ok {
 		// if the branch is blocked forget checking for a diff
 		blockingIssues := blocks.GetApplicable(string(pr.Repository.Owner.Login), string(pr.Repository.Name), string(pr.BaseRef.Name))
@@ -261,6 +261,7 @@ func expectedStatus(queryMap *keeper.QueryMap, pr *PullRequest, pool map[string]
 		}
 		// GitLab doesn't like updating status description without a state change.
 		if providerType == "gitlab" {
+			log.Infof("gitlab: expectedStatus failed for repository %s pr#%d with reason: %s", pr.Repository.NameWithOwner, pr.Number, minDiff)
 			minDiff = ""
 		}
 		return scmprovider.StatusPending, fmt.Sprintf(statusNotInPool, minDiff)
@@ -334,7 +335,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]prWit
 			return
 		}
 
-		wantState, wantDesc := expectedStatus(queryMap, pr, pool, cr, blocks, sc.spc.ProviderType())
+		wantState, wantDesc := expectedStatus(queryMap, pr, pool, cr, blocks, sc.spc.ProviderType(), log)
 		var actualState githubql.StatusState
 		var actualDesc string
 		for _, ctx := range contexts {
