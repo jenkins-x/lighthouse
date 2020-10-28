@@ -19,7 +19,6 @@ package welcome
 import (
 	"fmt"
 	"io/ioutil"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -68,10 +67,6 @@ func (fc *fakeClient) NumComments() int {
 	return n
 }
 
-var (
-	expectedQueryRegex = regexp.MustCompile(`is:pr repo:(.+)/(.+) author:(.+)`)
-)
-
 // AddPR records an PR in the client
 func (fc *fakeClient) AddPR(owner, repo, author string, number int) {
 	key := fmt.Sprintf("%s,%s,%s", owner, repo, author)
@@ -88,18 +83,13 @@ func (fc *fakeClient) ClearPRs() {
 
 // FindIssues fails if the query does not match the expected query regex and
 // looks up issues based on parsing the expected query format
-func (fc *fakeClient) FindIssues(query, sort string, asc bool) ([]scm.Issue, error) {
-	fields := expectedQueryRegex.FindStringSubmatch(query)
-	if fields == nil || len(fields) != 4 {
-		return nil, fmt.Errorf("invalid query: `%s` does not match expected regex `%s`", query, expectedQueryRegex.String())
-	}
+func (fc *fakeClient) FindPullRequestsByAuthor(owner, repo string, author string) ([]*scm.PullRequest, error) {
 	// "find" results
-	owner, repo, author := fields[1], fields[2], fields[3]
 	key := fmt.Sprintf("%s,%s,%s", owner, repo, author)
 
-	issues := []scm.Issue{}
+	issues := []*scm.PullRequest{}
 	for _, number := range fc.prs[key].List() {
-		issues = append(issues, scm.Issue{
+		issues = append(issues, &scm.PullRequest{
 			Number: number,
 		})
 	}
@@ -365,7 +355,7 @@ func TestHelpProvider(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := helpProvider(c.config, c.enabledRepos)
+			_, err := configHelp(c.config, c.enabledRepos)
 			if err != nil && !c.err {
 				t.Fatalf("helpProvider error: %v", err)
 			}

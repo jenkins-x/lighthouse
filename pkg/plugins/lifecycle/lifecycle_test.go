@@ -231,7 +231,16 @@ func TestAddLifecycleLabels(t *testing.T) {
 				Body:   tc.body,
 				Action: scm.ActionCreate,
 			}
-			err := handle(fc, logrus.WithField("plugin", "fake-lifecyle"), e)
+			cmd := plugin.Commands[0]
+			matches, err := cmd.FilterAndGetMatches(e)
+			if err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
+			for _, m := range matches {
+				if err := handleOne(m.Prefix != "", "lifecycle/"+m.Arg, fc, logrus.WithField("plugin", pluginName), e); err != nil {
+					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+				}
+			}
 			switch {
 			case err != nil:
 				t.Errorf("%s: unexpected error: %v", tc.name, err)

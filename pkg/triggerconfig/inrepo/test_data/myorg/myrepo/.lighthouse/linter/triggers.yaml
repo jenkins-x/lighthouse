@@ -1,0 +1,15 @@
+apiVersion: config.lighthouse.jenkins-x.io/v1alpha1
+kind: TriggerConfig
+spec:
+  presubmits:
+  - name: lint
+    context: "lint"
+    always_run: true
+    optional: false
+    trigger: "/lint"
+    rerun_command: "/relint"
+    source: "lint.yaml"
+  branchProtection:
+    contexts:
+    - lint
+

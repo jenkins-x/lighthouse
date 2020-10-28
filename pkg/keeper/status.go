@@ -39,7 +39,7 @@ import (
 
 const (
 	statusContext string = "keeper"
-	statusInPool         = "In merge pool."
+	statusInPool         = "In merge pool"
 	// statusNotInPool is a format string used when a PR is not in a keeper pool.
 	// The '%s' field is populated with the reason why the PR is not in a
 	// keeper pool or the empty string if the reason is unknown. See requirementDiff.
@@ -82,7 +82,7 @@ type statusController struct {
 	lastSyncStart time.Time
 
 	sync.Mutex
-	poolPRs map[string]PullRequest
+	poolPRs map[string]prWithStatus
 	blocks  blockers.Blockers
 
 	storedState
@@ -234,8 +234,8 @@ func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (strin
 // in order to generate a diff for the status description. We choose the query
 // for the repo that the PR is closest to meeting (as determined by the number
 // of unmet/violated requirements).
-func expectedStatus(queryMap *keeper.QueryMap, pr *PullRequest, pool map[string]PullRequest, cc contextChecker, blocks blockers.Blockers, providerType string) (string, string) {
-	if _, ok := pool[prKey(pr)]; !ok {
+func expectedStatus(queryMap *keeper.QueryMap, pr *PullRequest, pool map[string]prWithStatus, cc contextChecker, blocks blockers.Blockers, providerType string, log *logrus.Entry) (string, string) {
+	if _, ok := pool[pr.prKey()]; !ok {
 		// if the branch is blocked forget checking for a diff
 		blockingIssues := blocks.GetApplicable(string(pr.Repository.Owner.Login), string(pr.Repository.Name), string(pr.BaseRef.Name))
 		var numbers []string
@@ -261,11 +261,33 @@ func expectedStatus(queryMap *keeper.QueryMap, pr *PullRequest, pool map[string]
 		}
 		// GitLab doesn't like updating status description without a state change.
 		if providerType == "gitlab" {
+			log.Infof("gitlab: expectedStatus failed for repository %s pr#%d with reason: %s", pr.Repository.NameWithOwner, pr.Number, minDiff)
 			minDiff = ""
 		}
 		return scmprovider.StatusPending, fmt.Sprintf(statusNotInPool, minDiff)
 	}
-	return scmprovider.StatusSuccess, statusInPool
+	return scmprovider.StatusSuccess, statusForPRInPool(pool[pr.prKey()])
+}
+
+func statusForPRInPool(pr prWithStatus) string {
+	if pr.success {
+		if len(pr.waitingForBatch) > 0 {
+			return fmt.Sprintf("%s, waiting for batch run and merge of PRs %s.", statusInPool, prList(pr.waitingForBatch))
+		}
+		if len(pr.waitingFor) > 0 {
+			return fmt.Sprintf("%s, waiting for merge of PR(s) %s.", statusInPool, prList(pr.waitingFor))
+		}
+	}
+	return statusInPool + "."
+}
+
+func prList(nums []int) string {
+	var withHash []string
+	for _, n := range nums {
+		withHash = append(withHash, fmt.Sprintf("#%d", n))
+	}
+
+	return strings.Join(withHash, ", ")
 }
 
 // targetURL determines the URL used for more details in the status
@@ -290,14 +312,14 @@ func targetURL(c config.Getter, pr *PullRequest, log *logrus.Entry) string {
 	return link
 }
 
-func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullRequest, blocks blockers.Blockers) {
+func (sc *statusController) setStatuses(all []PullRequest, pool map[string]prWithStatus, blocks blockers.Blockers) {
 	// queryMap caches which queries match a repo.
 	// Make a new one each sync loop as queries will change.
 	queryMap := sc.config().Keeper.Queries.QueryMap()
 	processed := sets.NewString()
 
 	process := func(pr *PullRequest) {
-		processed.Insert(prKey(pr))
+		processed.Insert(pr.prKey())
 		log := sc.logger.WithFields(pr.logFields())
 		contexts, err := headContexts(log, sc.spc, pr)
 		if err != nil {
@@ -313,7 +335,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 			return
 		}
 
-		wantState, wantDesc := expectedStatus(queryMap, pr, pool, cr, blocks, sc.spc.ProviderType())
+		wantState, wantDesc := expectedStatus(queryMap, pr, pool, cr, blocks, sc.spc.ProviderType(), log)
 		var actualState githubql.StatusState
 		var actualDesc string
 		for _, ctx := range contexts {
@@ -364,7 +386,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]PullR
 	for key, poolPR := range pool {
 		if !processed.Has(key) {
 			p := poolPR
-			process(&p)
+			process(&p.pr)
 		}
 	}
 }
@@ -421,7 +443,7 @@ func (sc *statusController) waitSync() {
 	}
 }
 
-func (sc *statusController) sync(pool map[string]PullRequest, blocks blockers.Blockers) {
+func (sc *statusController) sync(pool map[string]prWithStatus, blocks blockers.Blockers) {
 	sc.lastSyncStart = time.Now()
 	defer func() {
 		duration := time.Since(sc.lastSyncStart)

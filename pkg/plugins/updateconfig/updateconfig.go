@@ -28,7 +28,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	config2 "github.com/jenkins-x/lighthouse/pkg/config"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	zglob "github.com/mattn/go-zglob"
@@ -50,10 +49,17 @@ const (
 )
 
 func init() {
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest, helpProvider)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "The config-updater plugin automatically redeploys configuration and plugin configuration files when they change. The plugin watches for pull request merges that modify either of the config files and updates the cluster's configmap resources in response.",
+			ConfigHelpProvider: configHelp,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	var configInfo map[string]string
 	if len(enabledRepos) == 1 {
 		msg := fmt.Sprintf(
@@ -65,11 +71,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		)
 		configInfo = map[string]string{"": msg}
 	}
-	return &pluginhelp.PluginHelp{
-			Description: "The config-updater plugin automatically redeploys configuration and plugin configuration files when they change. The plugin watches for pull request merges that modify either of the config files and updates the cluster's configmap resources in response.",
-			Config:      configInfo,
-		},
-		nil
+	return configInfo, nil
 }
 
 type scmProviderClient interface {

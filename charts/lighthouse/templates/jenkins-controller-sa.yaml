@@ -1,0 +1,6 @@
+{{- if .Values.engines.jenkins }}
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ template "jenkinscontroller.name" . }}
+{{- end }}

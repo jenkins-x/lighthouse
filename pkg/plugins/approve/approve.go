@@ -26,22 +26,19 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/labels"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/plugins/approve/approvers"
+	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
-	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/plugins/approve/approvers"
-	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
-	// PluginName defines this plugin's registered name.
-	PluginName = "approve"
+	pluginName = "approve"
 
 	approveCommand  = "APPROVE"
 	cancelArgument  = "cancel"
@@ -51,7 +48,7 @@ const (
 
 var (
 	associatedIssueRegexFormat = `(?:%s/[^/]+/issues/|#)(\d+)`
-	commandRegex               = regexp.MustCompile(`(?m)^/([^\s]+)[\t ]*([^\n\r]*)`)
+	commandRegex               = regexp.MustCompile(`(?mi)^/(?:lh-)?(lgtm|approve)(?:\s+(no-issue|cancel))?.*$`)
 	notificationRegex          = regexp.MustCompile(`(?is)^\[` + approvers.ApprovalNotificationName + `\] *?([^\n]*)(?:\n\n(.*))?`)
 
 	// deprecatedBotNames are the names of the bots that previously handled approvals.
@@ -94,13 +91,36 @@ type state struct {
 	htmlURL   string
 }
 
+var (
+	plugin = plugins.Plugin{
+		Description: `The approve plugin implements a pull request approval process that manages the '` + labels.Approved + `' label and an approval notification comment. Approval is achieved when the set of users that have approved the PR is capable of approving every file changed by the PR. A user is able to approve a file if their username or an alias they belong to is listed in the 'approvers' section of an OWNERS file in the directory of the file or higher in the directory tree.
+<br>
+<br>Per-repo configuration may be used to require that PRs link to an associated issue before approval is granted. It may also be used to specify that the PR authors implicitly approve their own PRs.
+<br>For more information see <a href="https://git.github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve/approvers/README.md">here</a>.`,
+		ConfigHelpProvider: configHelp,
+		ReviewEventHandler: handleReviewEvent,
+		PullRequestHandler: handlePullRequestEvent,
+		Commands: []plugins.Command{{
+			Name: "lgtm|approve",
+			Arg: &plugins.CommandArg{
+				Pattern:  "no-issue|cancel",
+				Optional: true,
+			},
+			Description: "Approves a pull request",
+			Featured:    true,
+			WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.NotIssueState("closed")),
+		}},
+	}
+)
+
 func init() {
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent, helpProvider)
-	plugins.RegisterReviewEventHandler(PluginName, handleReviewEvent, helpProvider)
-	plugins.RegisterPullRequestHandler(PluginName, handlePullRequestEvent, helpProvider)
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	doNot := func(b bool) string {
 		if b {
 			return ""
@@ -128,24 +148,10 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 		approveConfig[repo] = fmt.Sprintf("Pull requests %s require an associated issue.<br>Pull request authors %s implicitly approve their own PRs.<br>The /lgtm [cancel] command(s) %s act as approval.<br>A GitHub approved or changes requested review %s act as approval or cancel respectively.", doNot(opts.IssueRequired), doNot(opts.HasSelfApproval()), willNot(opts.LgtmActsAsApprove), willNot(opts.ConsiderReviewState()))
 	}
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: `The approve plugin implements a pull request approval process that manages the '` + labels.Approved + `' label and an approval notification comment. Approval is achieved when the set of users that have approved the PR is capable of approving every file changed by the PR. A user is able to approve a file if their username or an alias they belong to is listed in the 'approvers' section of an OWNERS file in the directory of the file or higher in the directory tree.
-<br>
-<br>Per-repo configuration may be used to require that PRs link to an associated issue before approval is granted. It may also be used to specify that the PR authors implicitly approve their own PRs.
-<br>For more information see <a href="https://git.github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve/approvers/README.md">here</a>.`,
-		Config: approveConfig,
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/approve [no-issue|cancel]",
-		Description: "Approves a pull request",
-		Featured:    true,
-		WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
-		Examples:    []string{"/approve", "/approve no-issue", "/lh-approve"},
-	})
-	return pluginHelp, nil
+	return approveConfig, nil
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(_ plugins.CommandMatch, pc plugins.Agent, ce scmprovider.GenericCommentEvent) error {
 	baseURL, err := url.Parse(ce.IssueLink)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse URL %s", ce.Link)
@@ -163,10 +169,6 @@ func handleGenericCommentEvent(pc plugins.Agent, ce scmprovider.GenericCommentEv
 }
 
 func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersClient, serverURL *url.URL, config *plugins.Configuration, ce *scmprovider.GenericCommentEvent) error {
-	if ce.Action != scm.ActionCreate || !ce.IsPR || ce.IssueState == "closed" {
-		return nil
-	}
-
 	botName, err := spc.BotName()
 	if err != nil {
 		return err

@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -509,6 +510,7 @@ type fgc struct {
 	expectedSHA    string
 	ignoreExpected bool
 	combinedStatus map[string]map[string]commitStatus
+	fakeClient     *scm.Client
 }
 
 type commitStatus struct {
@@ -632,6 +634,33 @@ func (f *fgc) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change
 		nil
 }
 
+// GetFile returns the file from git
+func (f *fgc) GetFile(owner, repo, filepath, commit string) ([]byte, error) {
+	if f.fakeClient == nil {
+		f.fakeClient, _ = fakescm.NewDefault()
+	}
+	ctx := context.Background()
+	fullName := scm.Join(owner, repo)
+	answer, r, err := f.fakeClient.Contents.Find(ctx, fullName, filepath, commit)
+	// handle files not existing nicely
+	if r != nil && r.Status == 404 {
+		return nil, nil
+	}
+	var data []byte
+	if answer != nil {
+		data = answer.Data
+	}
+	return data, err
+}
+
+// ListFiles returns the files from git
+func (f *fgc) ListFiles(owner, repo, filepath, commit string) ([]*scm.FileEntry, error) {
+	ctx := context.Background()
+	fullName := scm.Join(owner, repo)
+	answer, _, err := f.fakeClient.Contents.List(ctx, fullName, filepath, commit)
+	return answer, err
+}
+
 // TestDividePool ensures that subpools returned by dividePool satisfy a few
 // important invariants.
 func TestDividePool(t *testing.T) {
@@ -734,7 +763,7 @@ func TestDividePool(t *testing.T) {
 		npr.Repository.Name = githubql.String(p.repo)
 		npr.Repository.Owner.Login = githubql.String(p.org)
 		npr.Repository.URL = githubql.String(fmt.Sprintf("https://github.com/%s/%s.git", p.org, p.repo))
-		pulls[prKey(&npr)] = npr
+		pulls[npr.prKey()] = npr
 	}
 	var pjs []v1alpha1.LighthouseJob
 	for _, pj := range testPJs {

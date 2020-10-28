@@ -20,7 +20,6 @@ package milestone
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -28,14 +27,12 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "milestone"
 
 var (
-	milestoneRegex   = regexp.MustCompile(`(?m)^/(?:lh-)?milestone\s+(.+?)\s*$`)
 	mustBeAuthorized = "You must be a member of the [%s/%s](https://github.com/orgs/%s/teams/%s/members) GitHub team to set the milestone. If you believe you should be able to issue the /milestone command, please contact your %s and have them propose you as an additional delegate for this responsibility."
 	invalidMilestone = "The provided milestone is not valid for this repository. Milestones in this repository: [%s]\n\nUse `/milestone %s` to clear the milestone."
 	milestoneTeamMsg = "The milestone maintainers team is the GitHub team %q with ID: %d."
@@ -44,67 +41,61 @@ var (
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	ClearMilestone(org, repo string, num int) error
-	SetMilestone(org, repo string, issueNum, milestoneNum int) error
+	ClearMilestone(org, repo string, num int, isPR bool) error
+	SetMilestone(org, repo string, issueNum, milestoneNum int, isPR bool) error
 	ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
-	ListMilestones(org, repo string) ([]scmprovider.Milestone, error)
+	ListMilestones(org, repo string) ([]*scm.Milestone, error)
 	QuoteAuthorForComment(string) string
 }
 
+var (
+	plugin = plugins.Plugin{
+		Description:        "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
+		ConfigHelpProvider: configHelp,
+		Commands: []plugins.Command{{
+			Name: "milestone",
+			Arg: &plugins.CommandArg{
+				Pattern: ".+?",
+			},
+			Description: "Updates the milestone for an issue or PR",
+			WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/milestone' command.",
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
+		}},
+	}
+)
+
 func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	msgForTeam := func(team plugins.Milestone) string {
 		return fmt.Sprintf(milestoneTeamMsg, team.MaintainersTeam, team.MaintainersID)
 	}
-
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The milestone plugin allows members of a configurable GitHub team to set the milestone on an issue or pull request.",
-		Config: func(repos []string) map[string]string {
-			configMap := make(map[string]string)
-			for _, repo := range repos {
-				team, exists := config.RepoMilestone[repo]
-				if exists {
-					configMap[repo] = msgForTeam(team)
-				}
-			}
-			configMap[""] = msgForTeam(config.RepoMilestone[""])
-			return configMap
-		}(enabledRepos),
+	configMap := make(map[string]string)
+	for _, repo := range enabledRepos {
+		team, exists := config.RepoMilestone[repo]
+		if exists {
+			configMap[repo] = msgForTeam(team)
+		}
 	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/milestone <version> or /milestone clear",
-		Description: "Updates the milestone for an issue or PR",
-		Featured:    false,
-		WhoCanUse:   "Members of the milestone maintainers GitHub team can use the '/milestone' command.",
-		Examples:    []string{"/milestone v1.10", "/milestone v1.9", "/milestone clear", "/lh-milestone clear"},
-	})
-	return pluginHelp, nil
+	configMap[""] = msgForTeam(config.RepoMilestone[""])
+	return configMap, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e, pc.PluginConfig.RepoMilestone)
-}
-
-func buildMilestoneMap(milestones []scmprovider.Milestone) map[string]int {
+func buildMilestoneMap(milestones []*scm.Milestone) map[string]int {
 	m := make(map[string]int)
 	for _, ms := range milestones {
 		m[ms.Title] = ms.Number
 	}
 	return m
 }
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
 
-	milestoneMatch := milestoneRegex.FindStringSubmatch(e.Body)
-	if len(milestoneMatch) != 2 {
-		return nil
-	}
-
+func handle(mileStone string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, repoMilestone map[string]plugins.Milestone) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 
@@ -137,18 +128,17 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		log.WithError(err).Errorf("Error listing the milestones in the %s/%s repo", org, repo)
 		return err
 	}
-	proposedMilestone := milestoneMatch[1]
 
 	// special case, if the clear keyword is used
-	if proposedMilestone == clearKeyword {
-		if err := spc.ClearMilestone(org, repo, e.Number); err != nil {
+	if mileStone == clearKeyword {
+		if err := spc.ClearMilestone(org, repo, e.Number, e.IsPR); err != nil {
 			log.WithError(err).Errorf("Error clearing the milestone for %s/%s#%d.", org, repo, e.Number)
 		}
 		return nil
 	}
 
 	milestoneMap := buildMilestoneMap(milestones)
-	milestoneNumber, ok := milestoneMap[proposedMilestone]
+	milestoneNumber, ok := milestoneMap[mileStone]
 	if !ok {
 		slice := make([]string, 0, len(milestoneMap))
 		for k := range milestoneMap {
@@ -160,8 +150,8 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		return spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg))
 	}
 
-	if err := spc.SetMilestone(org, repo, e.Number, milestoneNumber); err != nil {
-		log.WithError(err).Errorf("Error adding the milestone %s to %s/%s#%d.", proposedMilestone, org, repo, e.Number)
+	if err := spc.SetMilestone(org, repo, e.Number, milestoneNumber, e.IsPR); err != nil {
+		log.WithError(err).Errorf("Error adding the milestone %s to %s/%s#%d.", mileStone, org, repo, e.Number)
 	}
 
 	return nil

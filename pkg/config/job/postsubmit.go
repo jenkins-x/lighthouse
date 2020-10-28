@@ -21,13 +21,18 @@ import "fmt"
 // Postsubmit runs on push events.
 type Postsubmit struct {
 	Base
-
 	RegexpChangeMatcher
-
 	Brancher
-
 	// TODO(krzyzacy): Move existing `Report` into `Skip_Report` once this is deployed
 	Reporter
+	JenkinsSpec *JenkinsSpec `json:"jenkins_spec,omitempty"`
+}
+
+// JenkinsSpec holds optional Jenkins job config
+type JenkinsSpec struct {
+	// Job is managed by the GH branch source plugin
+	// and requires a specific path
+	BranchSourceJob bool `json:"branch_source_job,omitempty"`
 }
 
 // SetDefaults initializes default values

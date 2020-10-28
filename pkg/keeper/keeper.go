@@ -42,6 +42,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -73,6 +74,8 @@ type scmProviderClient interface {
 	GetRepositoryByFullName(string) (*scm.Repository, error)
 	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
 	CreateComment(owner, repo string, number int, isPR bool, comment string) error
+	GetFile(string, string, string, string) ([]byte, error)
+	ListFiles(string, string, string, string) ([]*scm.FileEntry, error)
 }
 
 type contextChecker interface {
@@ -150,6 +153,14 @@ type Pool struct {
 	Target   []PullRequest
 	Blockers []blockers.Blocker
 	Error    string
+}
+
+type prWithStatus struct {
+	pr              PullRequest
+	success         bool
+	waitingFor      []int
+	waitingForBatch []int
+	blocks          []blockers.Blocker
 }
 
 // Prometheus Metrics
@@ -264,19 +275,8 @@ func (c *DefaultController) GetHistory() *history.History {
 	return c.History
 }
 
-func prKey(pr *PullRequest) string {
+func (pr *PullRequest) prKey() string {
 	return fmt.Sprintf("%s#%d", string(pr.Repository.NameWithOwner), int(pr.Number))
-}
-
-// org/repo#number -> pr
-func byRepoAndNumber(prs []PullRequest) map[string]PullRequest {
-	m := make(map[string]PullRequest)
-	for _, pr := range prs {
-		p := pr
-		key := prKey(&p)
-		m[key] = pr
-	}
-	return m
 }
 
 // newExpectedContext creates a Context with Expected state.
@@ -322,7 +322,7 @@ func (c *DefaultController) Sync() error {
 
 			for _, pr := range results {
 				p := pr
-				prs[prKey(&p)] = pr
+				prs[p.prKey()] = pr
 			}
 		}
 	} else {
@@ -334,7 +334,7 @@ func (c *DefaultController) Sync() error {
 
 		for _, pr := range results {
 			p := pr
-			prs[prKey(&p)] = pr
+			prs[p.prKey()] = pr
 		}
 	}
 	c.logger.WithField(
@@ -378,16 +378,6 @@ func (c *DefaultController) Sync() error {
 	}
 	filteredPools := c.filterSubpools(c.config().Keeper.MaxGoroutines, rawPools)
 
-	// Notify statusController about the new pool.
-	c.sc.Lock()
-	c.sc.blocks = blocks
-	c.sc.poolPRs = poolPRMap(filteredPools)
-	select {
-	case c.sc.newPoolPending <- true:
-	default:
-	}
-	c.sc.Unlock()
-
 	// Sync subpools in parallel.
 	poolChan := make(chan Pool, len(filteredPools))
 	subpoolsInParallel(
@@ -410,6 +400,15 @@ func (c *DefaultController) Sync() error {
 	sortPools(pools)
 	c.m.Lock()
 	c.pools = pools
+	// Notify statusController about the new pool.
+	c.sc.Lock()
+	c.sc.blocks = blocks
+	c.sc.poolPRs = poolsToStatusPRMap(pools)
+	select {
+	case c.sc.newPoolPending <- true:
+	default:
+	}
+	c.sc.Unlock()
 	// While we're locked, rerun failed-but-rerunnable PipelineRuns.
 	c.logger.WithField("duration", time.Since(start).String()).Debug("Rerunning PipelineRuns failed due to race condition.")
 	err = rerunPipelineRunsWithRaceConditionFailure(c.tektonClient, c.ns, c.logger)
@@ -421,6 +420,82 @@ func (c *DefaultController) Sync() error {
 
 	c.History.Flush()
 	return nil
+}
+
+func poolsToStatusPRMap(pools []Pool) map[string]prWithStatus {
+	result := make(map[string]prWithStatus)
+
+	for _, p := range pools {
+		for k, v := range p.toPRsWithStatus() {
+			result[k] = v
+		}
+	}
+
+	return result
+}
+
+func (p *Pool) toPRsWithStatus() map[string]prWithStatus {
+	result := make(map[string]prWithStatus)
+
+	waitingFor := make(map[int]bool)
+	waitingForBatch := make(map[int]bool)
+
+	targets := make(map[int]bool)
+
+	if p.Action == Merge || p.Action == MergeBatch {
+		for _, t := range p.Target {
+			targets[int(t.Number)] = true
+		}
+	}
+
+	for _, w := range p.PendingPRs {
+		waitingFor[int(w.Number)] = true
+		result[w.prKey()] = prWithStatus{
+			pr:      w,
+			success: false,
+		}
+	}
+
+	for _, b := range p.BatchPending {
+		waitingForBatch[int(b.Number)] = true
+		result[b.prKey()] = prWithStatus{
+			pr:      b,
+			success: false,
+		}
+	}
+
+	for _, m := range p.MissingPRs {
+		result[m.prKey()] = prWithStatus{
+			pr:      m,
+			success: false,
+		}
+	}
+
+	for _, s := range p.SuccessPRs {
+		out := prWithStatus{
+			pr:              s,
+			success:         true,
+			waitingFor:      []int{},
+			waitingForBatch: []int{},
+			blocks:          p.Blockers,
+		}
+		// Add waiting for information for succeeded PRs
+		_, inTargets := targets[int(s.Number)]
+		_, inPending := waitingFor[int(s.Number)]
+		_, inBatch := waitingFor[int(s.Number)]
+
+		if !inTargets && !inPending && !inBatch {
+			for k := range waitingFor {
+				out.waitingFor = append(out.waitingFor, k)
+			}
+			for k := range waitingForBatch {
+				out.waitingForBatch = append(out.waitingForBatch, k)
+			}
+		}
+		result[s.prKey()] = out
+	}
+
+	return result
 }
 
 func (c *DefaultController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -576,18 +651,6 @@ func filterPR(spc scmProviderClient, sp *subpool, pr *PullRequest) bool {
 	}
 
 	return false
-}
-
-// poolPRMap collects all subpool PRs into a map containing all pooled PRs.
-func poolPRMap(subpoolMap map[string]*subpool) map[string]PullRequest {
-	prs := make(map[string]PullRequest)
-	for _, sp := range subpoolMap {
-		for _, pr := range sp.prs {
-			p := pr
-			prs[prKey(&p)] = pr
-		}
-	}
-	return prs
 }
 
 type simpleState string
@@ -1280,7 +1343,16 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 		}
 	}
 
-	for _, ps := range c.config().Presubmits[sp.org+"/"+sp.repo] {
+	// lets get the in repo config for the repo
+	owner := sp.org
+	repo := sp.repo
+	sharedConfig := c.config()
+	cfg, _, err := inrepo.Generate(c.spc, sharedConfig, nil, owner, repo, "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to calculate in repo config")
+	}
+
+	for _, ps := range cfg.Presubmits[owner+"/"+repo] {
 		if !ps.ContextRequired() {
 			continue
 		}

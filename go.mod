@@ -2,13 +2,15 @@ module github.com/jenkins-x/lighthouse
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible
+	github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46
+	github.com/bwmarrin/snowflake v0.0.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/go-stack/stack v1.8.0
 	github.com/google/go-cmp v0.4.1
 	github.com/gorilla/sessions v1.2.0
 	github.com/hashicorp/go-multierror v1.1.0
-	github.com/jenkins-x/go-scm v1.5.157
+	github.com/jenkins-x/go-scm v1.5.189
 	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
@@ -34,5 +36,11 @@ require (
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.17.6
+
+// gomodules.xyz breaks in Athens proxying
+replace gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.1.0
+
+// vbom.ml doesn't actually exist any more
+replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9787
 
 go 1.13

@@ -28,26 +28,23 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 )
 
 const (
-	// PluginName defines this plugin's registered name.
-	PluginName = labels.LGTM
+	pluginName = labels.LGTM
 )
 
 var (
+	// LGTMLabel is the name of the lgtm label applied by the lgtm plugin
+	LGTMLabel                  = labels.LGTM
+	match                      = regexp.MustCompile(`(?mi)^/(?:lh-)?lgtm(?: no-issue)?(?:\s+(cancel))?\s*$`)
+	removeLGTMLabelNoti        = "New changes are detected. LGTM label has been removed."
 	addLGTMLabelNotification   = "LGTM label has been added.  <details>Git tree hash: %s</details>"
 	addLGTMLabelNotificationRe = regexp.MustCompile(fmt.Sprintf(addLGTMLabelNotification, "(.*)"))
 	configInfoReviewActsAsLgtm = `Reviews of "approve" or "request changes" act as adding or removing LGTM.`
 	configInfoStoreTreeHash    = `Squashing commits does not remove LGTM.`
-	// LGTMLabel is the name of the lgtm label applied by the lgtm plugin
-	LGTMLabel           = labels.LGTM
-	lgtmRe              = regexp.MustCompile(`(?mi)^/(?:lh-)?lgtm(?: no-issue)?\s*$`)
-	lgtmCancelRe        = regexp.MustCompile(`(?mi)^/(?:lh-)?lgtm cancel\s*$`)
-	removeLGTMLabelNoti = "New changes are detected. LGTM label has been removed."
 )
 
 func configInfoStickyLgtmTeam(team string) string {
@@ -58,15 +55,40 @@ type commentPruner interface {
 	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
 }
 
+var (
+	plugin = plugins.Plugin{
+		Description:        "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
+		ConfigHelpProvider: configHelp,
+		PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
+			return handlePullRequestEvent(pc, pe)
+		},
+		ReviewEventHandler: handlePullRequestReviewEvent,
+		Commands: []plugins.Command{{
+			Name: "lgtm",
+			Arg: &plugins.CommandArg{
+				Pattern:  "no-issue|cancel",
+				Optional: true,
+			},
+			Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
+			WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
+			Action: plugins.
+				Invoke(func(m plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					cp, err := pc.CommentPruner()
+					if err != nil {
+						return err
+					}
+					return handleGenericComment(m.Arg == "cancel", pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+		}},
+	}
+)
+
 func init() {
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent, helpProvider)
-	plugins.RegisterPullRequestHandler(PluginName, func(pc plugins.Agent, pe scm.PullRequestHook) error {
-		return handlePullRequestEvent(pc, pe)
-	}, helpProvider)
-	plugins.RegisterReviewEventHandler(PluginName, handlePullRequestReviewEvent, helpProvider)
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	configInfo := map[string]string{}
 	for _, orgRepo := range enabledRepos {
 		parts := strings.Split(orgRepo, "/")
@@ -99,18 +121,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 			configInfo[orgRepo] = strings.Join(configInfoStrings, "\n")
 		}
 	}
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
-		Config:      configInfo,
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/lgtm [cancel] or GitHub Review action",
-		Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
-		Featured:    true,
-		WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
-		Examples:    []string{"/lgtm", "/lgtm cancel", "<a href=\"https://help.github.com/articles/about-pull-request-reviews/\">'Approve' or 'Request Changes'</a>"},
-	})
-	return pluginHelp, nil
+	return configInfo, nil
 }
 
 // optionsForRepo gets the plugins.Lgtm struct that is applicable to the indicated repo.
@@ -159,14 +170,6 @@ type reviewCtx struct {
 	number                             int
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	cp, err := pc.CommentPruner()
-	if err != nil {
-		return err
-	}
-	return handleGenericComment(pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
-}
-
 func handlePullRequestEvent(pc plugins.Agent, pre scm.PullRequestHook) error {
 	return handlePullRequest(
 		pc.Logger,
@@ -189,7 +192,7 @@ func handlePullRequestReviewEvent(pc plugins.Agent, e scm.ReviewHook) error {
 	return handlePullRequestReview(pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
 }
 
-func handleGenericComment(spc scmProviderClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(cancel bool, spc scmProviderClient, config *plugins.Configuration, ownersClient repoowners.Interface, log *logrus.Entry, cp commentPruner, e scmprovider.GenericCommentEvent) error {
 	rc := reviewCtx{
 		author:      e.Author.Login,
 		issueAuthor: e.IssueAuthor.Login,
@@ -200,21 +203,9 @@ func handleGenericComment(spc scmProviderClient, config *plugins.Configuration, 
 		number:      e.Number,
 	}
 
-	// Only consider open PRs and new comments.
-	if !e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
-		return nil
-	}
-
 	// If we create an "/lgtm" comment, add lgtm if necessary.
 	// If we create a "/lgtm cancel" comment, remove lgtm if necessary.
-	wantLGTM := false
-	if lgtmRe.MatchString(rc.body) {
-		wantLGTM = true
-	} else if lgtmCancelRe.MatchString(rc.body) {
-		wantLGTM = false
-	} else {
-		return nil
-	}
+	wantLGTM := !cancel
 
 	// use common handler to do the rest
 	return handle(wantLGTM, config, ownersClient, rc, spc, log, cp)
@@ -238,7 +229,7 @@ func handlePullRequestReview(spc scmProviderClient, config *plugins.Configuratio
 
 	// If the review event body contains an '/lgtm' or '/lgtm cancel' comment,
 	// skip handling the review event
-	if lgtmRe.MatchString(rc.body) || lgtmCancelRe.MatchString(rc.body) {
+	if match.MatchString(rc.body) {
 		return nil
 	}
 

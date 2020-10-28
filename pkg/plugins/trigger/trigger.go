@@ -26,7 +26,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -34,17 +33,51 @@ import (
 )
 
 const (
-	// PluginName is the name of the trigger plugin
-	PluginName = "trigger"
+	// pluginName is the name of the trigger plugin
+	pluginName = "trigger"
+)
+
+var (
+	plugin = plugins.Plugin{
+		Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
+<br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
+<br>The '/retest' command can be used to rerun jobs that have reported failure.`,
+		ConfigHelpProvider: configHelp,
+		PullRequestHandler: handlePullRequest,
+		PushEventHandler:   handlePush,
+		Commands: []plugins.Command{{
+			Name:        "ok-to-test",
+			Description: "Marks a PR as 'trusted' and starts tests.",
+			WhoCanUse:   "Members of the trusted organization for the repo.",
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+		}, {
+			Name: "test",
+			Arg: &plugins.CommandArg{
+				Pattern: `[-\w]+(?:,[-\w]+)*`,
+			},
+			Description: "Manually starts a/all test job(s).",
+			Featured:    true,
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+		}, {
+			Name:        "retest",
+			Description: "Rerun test jobs that have failed.",
+			Featured:    true,
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+		}},
+	}
 )
 
 func init() {
-	plugins.RegisterGenericCommentHandler(PluginName, handleGenericCommentEvent, helpProvider)
-	plugins.RegisterPullRequestHandler(PluginName, handlePullRequest, helpProvider)
-	plugins.RegisterPushEventHandler(PluginName, handlePush, helpProvider)
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	configInfo := map[string]string{}
 	for _, orgRepo := range enabledRepos {
 		parts := strings.Split(orgRepo, "/")
@@ -63,34 +96,7 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 		}
 		configInfo[orgRepo] = fmt.Sprintf("The trusted GitHub organization for this repository is %q.", org)
 	}
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
-<br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
-<br>The '/retest' command can be used to rerun jobs that have reported failure.`,
-		Config: configInfo,
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/ok-to-test",
-		Description: "Marks a PR as 'trusted' and starts tests.",
-		Featured:    false,
-		WhoCanUse:   "Members of the trusted organization for the repo.",
-		Examples:    []string{"/ok-to-test", "/lh-ok-to-test"},
-	})
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/test (<job name>|all)",
-		Description: "Manually starts a/all test job(s).",
-		Featured:    true,
-		WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-		Examples:    []string{"/test all", "/test pull-bazel-test", "/lh-test all"},
-	})
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/retest",
-		Description: "Rerun test jobs that have failed.",
-		Featured:    true,
-		WhoCanUse:   "Anyone can trigger this command on a trusted PR.",
-		Examples:    []string{"/retest", "/lh-retest"},
-	})
-	return pluginHelp, nil
+	return configInfo, nil
 }
 
 type scmProviderClient interface {
@@ -146,7 +152,7 @@ func handlePullRequest(pc plugins.Agent, pr scm.PullRequestHook) error {
 	return handlePR(getClient(pc), pc.PluginConfig.TriggerFor(org, repo), pr)
 }
 
-func handleGenericCommentEvent(pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
+func handleGenericCommentEvent(_ plugins.CommandMatch, pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
 	return handleGenericComment(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc)
 }
 

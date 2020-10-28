@@ -358,7 +358,6 @@ func TestLabel(t *testing.T) {
 			expectedNewLabels:     []string{},
 			expectedRemovedLabels: formatLabels("priority/low", "priority/high", "kind/api-server", "area/infra"),
 			commenter:             orgMember,
-			expectedBotComment:    true,
 		},
 		{
 			name:                  "Add and Remove Label at the same time",
@@ -488,7 +487,18 @@ func TestLabel(t *testing.T) {
 				Repo:   scm.Repository{Namespace: "org", Name: "repo"},
 				Author: scm.User{Login: tc.commenter},
 			}
-			err := handle(fakeClient, logrus.WithField("plugin", pluginName), tc.extraLabels, e)
+			agent := plugins.Agent{
+				SCMProviderClient: &fakeClient.Client,
+				Logger:            logrus.WithField("plugin", pluginName),
+				PluginConfig: &plugins.Configuration{
+					Label: plugins.Label{
+						AdditionalLabels: tc.extraLabels,
+					},
+				},
+			}
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+				return handler(match, agent, *e)
+			})
 			if err != nil {
 				t.Fatalf("didn't expect error from label test: %v", err)
 			}
@@ -559,12 +569,12 @@ func TestHelpProvider(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			pluginHelp, err := helpProvider(c.config, c.enabledRepos)
+			pluginHelp, err := configHelp(c.config, c.enabledRepos)
 			if err != nil && !c.err {
 				t.Fatalf("helpProvider error: %v", err)
 			}
 			for _, msg := range c.configInfoIncludes {
-				if !strings.Contains(pluginHelp.Config[""], msg) {
+				if !strings.Contains(pluginHelp[""], msg) {
 					t.Fatalf("helpProvider.Config error mismatch: didn't get %v, but wanted it", msg)
 				}
 			}

@@ -26,7 +26,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -57,17 +56,23 @@ type scmProviderClient interface {
 }
 
 func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
+	description := `The sigmention plugin responds to SIG (Special Interest Group) GitHub team mentions like '@kubernetes/sig-testing-bugs'. The plugin responds in two ways:
+<ol><li> The appropriate 'sig/*' and 'kind/*' labels are applied to the issue or pull request. In this case 'sig/testing' and 'kind/bug'.</li>
+<li> If the user who mentioned the GitHub team is not a member of the organization that owns the repository the bot will create a comment that repeats the mention. This is necessary because non-member mentions do not trigger GitHub notifications.</li></ol>`
+
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:           description,
+			ConfigHelpProvider:    configHelp,
+			GenericCommentHandler: handleGenericComment,
+		},
+	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	return &pluginhelp.PluginHelp{
-			Description: `The sigmention plugin responds to SIG (Special Interest Group) GitHub team mentions like '@kubernetes/sig-testing-bugs'. The plugin responds in two ways:
-<ol><li> The appropriate 'sig/*' and 'kind/*' labels are applied to the issue or pull request. In this case 'sig/testing' and 'kind/bug'.</li>
-<li> If the user who mentioned the GitHub team is not a member of the organization that owns the repository the bot will create a comment that repeats the mention. This is necessary because non-member mentions do not trigger GitHub notifications.</li></ol>`,
-			Config: map[string]string{
-				"": fmt.Sprintf("Labels added by the plugin are triggered by mentions of GitHub teams matching the following regexp:\n%s", config.SigMention.Regexp),
-			},
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
+	return map[string]string{
+			"": fmt.Sprintf("Labels added by the plugin are triggered by mentions of GitHub teams matching the following regexp:\n%s", config.SigMention.Regexp),
 		},
 		nil
 }
@@ -83,9 +88,6 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		return err
 	}
 	if e.Author.Login == botName {
-		return nil
-	}
-	if e.Action != scm.ActionCreate {
 		return nil
 	}
 
@@ -105,15 +107,15 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	if err != nil {
 		return err
 	}
-	RepoLabelsExisting := map[string]string{}
+	repoLabelsExisting := map[string]string{}
 	for _, l := range repoLabels {
-		RepoLabelsExisting[strings.ToLower(l.Name)] = l.Name
+		repoLabelsExisting[strings.ToLower(l.Name)] = l.Name
 	}
 
 	var nonexistent, toRepeat []string
 	for _, sigMatch := range sigMatches {
 		sigLabel := strings.ToLower("sig" + "/" + sigMatch[1])
-		sigLabel, ok := RepoLabelsExisting[sigLabel]
+		sigLabel, ok := repoLabelsExisting[sigLabel]
 		if !ok {
 			nonexistent = append(nonexistent, "sig/"+sigMatch[1])
 			continue

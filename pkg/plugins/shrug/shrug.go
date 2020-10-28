@@ -18,53 +18,42 @@ package shrug
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const pluginName = "shrug"
 
 var (
-	shrugRe   = regexp.MustCompile(`(?mi)^/(?:lh-)?shrug\s*$`)
-	unshrugRe = regexp.MustCompile(`(?mi)^/(?:lh-)?unshrug\s*$`)
+	plugin = plugins.Plugin{
+		Description: labels.Shrug,
+		Commands: []plugins.Command{{
+			Name:        "shrug",
+			Description: "Adds the " + labels.Shrug + " label",
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return addLabel(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
+		}, {
+			Name:        "unshrug",
+			Description: "Removes the " + labels.Shrug + " label",
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return removeLabel(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
+		}},
+	}
 )
 
-type event struct {
-	org           string
-	repo          string
-	number        int
-	prAuthor      string
-	commentAuthor string
-	body          string
-	assignees     []scm.User
-	hasLabel      func(label string) (bool, error)
-	htmlurl       string
-}
-
 func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: labels.Shrug,
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/[un]shrug",
-		Description: labels.Shrug,
-		Featured:    false,
-		WhoCanUse:   "Anyone, " + labels.Shrug,
-		Examples:    []string{"/shrug", "/unshrug"},
-	})
-	return pluginHelp, nil
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 type scmProviderClient interface {
@@ -75,50 +64,40 @@ type scmProviderClient interface {
 	QuoteAuthorForComment(string) string
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e)
-}
-
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-
-	wantShrug := false
-	if shrugRe.MatchString(e.Body) {
-		wantShrug = true
-	} else if unshrugRe.MatchString(e.Body) {
-		wantShrug = false
-	} else {
-		return nil
-	}
-
-	org := e.Repo.Namespace
-	repo := e.Repo.Name
-
-	// Only add the label if it doesn't have it yet.
-	hasShrug := false
-	issueLabels, err := spc.GetIssueLabels(org, repo, e.Number, e.IsPR)
+func hasLabel(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) (bool, error) {
+	issueLabels, err := spc.GetIssueLabels(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR)
 	if err != nil {
-		log.WithError(err).Errorf("Failed to get the labels on %s/%s#%d.", org, repo, e.Number)
+		log.WithError(err).Errorf("Failed to get the labels on %s/%s#%d.", e.Repo.Namespace, e.Repo.Name, e.Number)
+		return false, err
 	}
 	for _, candidate := range issueLabels {
 		if candidate.Name == labels.Shrug {
-			hasShrug = true
-			break
+			return true, nil
 		}
 	}
-	if hasShrug && !wantShrug {
-		log.Info("Removing Shrug label.")
-		resp := "¯\\\\\\_(ツ)\\_/¯"
-		log.Infof("Commenting with \"%s\".", resp)
-		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp)); err != nil {
-			return fmt.Errorf("failed to comment on %s/%s#%d: %v", org, repo, e.Number, err)
-		}
-		return spc.RemoveLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
-	} else if !hasShrug && wantShrug {
-		log.Info("Adding Shrug label.")
-		return spc.AddLabel(org, repo, e.Number, labels.Shrug, e.IsPR)
+	return false, nil
+}
+
+func addLabel(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
+	hasLabel, err := hasLabel(spc, log, e)
+	if err != nil || hasLabel {
+		return err
 	}
-	return nil
+	log.Info("Adding Shrug label.")
+	return spc.AddLabel(e.Repo.Namespace, e.Repo.Name, e.Number, labels.Shrug, e.IsPR)
+
+}
+
+func removeLabel(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
+	hasLabel, err := hasLabel(spc, log, e)
+	if err != nil || !hasLabel {
+		return err
+	}
+	log.Info("Removing Shrug label.")
+	resp := "¯\\\\\\_(ツ)\\_/¯"
+	log.Infof("Commenting with \"%s\".", resp)
+	if err := spc.CreateComment(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp)); err != nil {
+		return fmt.Errorf("failed to comment on %s/%s#%d: %v", e.Repo.Namespace, e.Repo.Name, e.Number, err)
+	}
+	return spc.RemoveLabel(e.Repo.Namespace, e.Repo.Name, e.Number, labels.Shrug, e.IsPR)
 }

@@ -878,7 +878,7 @@ func TestHandleGenericComment(t *testing.T) {
 				SCMProviderClient: g,
 				LauncherClient:    fakeLauncher,
 				Config:            fakeConfig,
-				Logger:            logrus.WithField("plugin", PluginName),
+				Logger:            logrus.WithField("plugin", pluginName),
 			}
 			presubmits := tc.Presubmits
 			if presubmits == nil {
@@ -937,11 +937,15 @@ func TestHandleGenericComment(t *testing.T) {
 			// In some cases handleGenericComment can be called twice for the same event.
 			// For instance on Issue/PR creation and modification.
 			// Let's call it twice to ensure idempotency.
-			if err := handleGenericComment(c, trigger, event); err != nil {
+			if err := plugin.InvokeCommandHandler(&event, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, _ plugins.CommandMatch) error {
+				return handleGenericComment(c, trigger, *e)
+			}); err != nil {
 				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 			}
 			validate(tc.name, fakeLauncher, g, tc, t)
-			if err := handleGenericComment(c, trigger, event); err != nil {
+			if err := plugin.InvokeCommandHandler(&event, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, _ plugins.CommandMatch) error {
+				return handleGenericComment(c, trigger, *e)
+			}); err != nil {
 				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 			}
 			validate(tc.name, fakeLauncher, g, tc, t)

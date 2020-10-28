@@ -29,33 +29,33 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 const (
-	// PluginName defines this plugin's registered name.
-	PluginName = "cherry-pick-unapproved"
+	pluginName = "cherry-pick-unapproved"
 )
 
 func init() {
-	plugins.RegisterPullRequestHandler(PluginName, handlePullRequest, helpProvider)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "Label PRs against a release branch which do not have the `cherry-pick-approved` label with the `do-not-merge/cherry-pick-not-approved` label.",
+			ConfigHelpProvider: configHelp,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// Only the 'Config' and Description' fields are necessary because this
-	// plugin does not react to any commands.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "Label PRs against a release branch which do not have the `cherry-pick-approved` label with the `do-not-merge/cherry-pick-not-approved` label.",
-		Config: map[string]string{
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
+	return map[string]string{
 			"": fmt.Sprintf(
 				"The cherry-pick-unapproved plugin treats PRs against branch names satisfying the regular expression `%s` as cherry-pick PRs and adds the following comment:\n%s",
 				config.CherryPickUnapproved.BranchRegexp,
 				config.CherryPickUnapproved.Comment,
 			),
 		},
-	}
-	return pluginHelp, nil
+		nil
 }
 
 type scmProviderClient interface {

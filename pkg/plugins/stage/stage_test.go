@@ -17,49 +17,23 @@ limitations under the License.
 package stage
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
 
-type fakeClient struct {
-	// current labels
-	labels []string
-	// labels that are added
-	added []string
-	// labels that are removed
-	removed []string
-}
-
-func (c *fakeClient) AddLabel(owner, repo string, number int, label string, _ bool) error {
-	c.added = append(c.added, label)
-	c.labels = append(c.labels, label)
-	return nil
-}
-
-func (c *fakeClient) RemoveLabel(owner, repo string, number int, label string, _ bool) error {
-	c.removed = append(c.removed, label)
-
-	// remove from existing labels
-	for k, v := range c.labels {
-		if label == v {
-			c.labels = append(c.labels[:k], c.labels[k+1:]...)
-			break
-		}
+func issueLabels(labels ...string) []string {
+	ls := []string{}
+	for _, label := range labels {
+		ls = append(ls, fmt.Sprintf("org/repo#0:%s", label))
 	}
-
-	return nil
-}
-
-func (c *fakeClient) GetIssueLabels(owner, repo string, number int, _ bool) ([]*scm.Label, error) {
-	la := []*scm.Label{}
-	for _, l := range c.labels {
-		la = append(la, &scm.Label{Name: l})
-	}
-	return la, nil
+	return ls
 }
 
 func TestStageLabels(t *testing.T) {
@@ -213,23 +187,32 @@ func TestStageLabels(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			fc := &fakeClient{
-				labels:  tc.labels,
-				added:   []string{},
-				removed: []string{},
-			}
+			fakeScmClient, fc := fake.NewDefault()
+			fakeClient := scmprovider.ToTestClient(fakeScmClient)
 			e := &scmprovider.GenericCommentEvent{
 				Body:   tc.body,
 				Action: scm.ActionCreate,
+				Repo: scm.Repository{
+					Namespace: "org",
+					Name:      "repo",
+					FullName:  "org/repo",
+				},
 			}
-			err := handle(fc, logrus.WithField("plugin", "fake-lifecyle"), e)
+			fc.IssueLabelsExisting = issueLabels(tc.labels...)
+			agent := plugins.Agent{
+				SCMProviderClient: &fakeClient.Client,
+				Logger:            logrus.WithField("plugin", pluginName),
+			}
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+				return handler(match, agent, *e)
+			})
 			switch {
 			case err != nil:
 				t.Errorf("%s: unexpected error: %v", tc.name, err)
-			case !reflect.DeepEqual(tc.added, fc.added):
-				t.Errorf("%s: added %v != actual %v", tc.name, tc.added, fc.added)
-			case !reflect.DeepEqual(tc.removed, fc.removed):
-				t.Errorf("%s: removed %v != actual %v", tc.name, tc.removed, fc.removed)
+			case !reflect.DeepEqual(issueLabels(tc.added...), fc.IssueLabelsAdded):
+				t.Errorf("%s: added %v != actual %v", tc.name, tc.added, fc.IssueLabelsAdded)
+			case !reflect.DeepEqual(issueLabels(tc.removed...), fc.IssueLabelsRemoved):
+				t.Errorf("%s: removed %v != actual %v", tc.name, tc.removed, fc.IssueLabelsRemoved)
 			}
 		})
 	}

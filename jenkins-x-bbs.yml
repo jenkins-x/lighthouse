@@ -93,7 +93,7 @@ pipelineConfig:
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
-                  - --dockerfile=/workspace/source/Dockerfile.webhooks
+                  - --dockerfile=/workspace/source/docker/webhooks/Dockerfile
                   - --destination=gcr.io/jenkinsxio/lighthouse-webhooks:$(inputs.params.version)
                   - --context=/workspace/source
                   - --cache-dir=/workspace
@@ -102,7 +102,7 @@ pipelineConfig:
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
-                  - --dockerfile=/workspace/source/Dockerfile.keeper
+                  - --dockerfile=/workspace/source/docker/keeper/Dockerfile
                   - --destination=gcr.io/jenkinsxio/lighthouse-keeper:$(inputs.params.version)
                   - --context=/workspace/source
                   - --cache-dir=/workspace
@@ -112,7 +112,7 @@ pipelineConfig:
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
-                  - --dockerfile=/workspace/source/Dockerfile.foghorn
+                  - --dockerfile=/workspace/source/docker/foghorn/Dockerfile
                   - --destination=gcr.io/jenkinsxio/lighthouse-foghorn:$(inputs.params.version)
                   - --context=/workspace/source
                   - --cache-dir=/workspace
@@ -122,8 +122,18 @@ pipelineConfig:
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
-                  - --dockerfile=/workspace/source/Dockerfile.tektoncontroller
+                  - --dockerfile=/workspace/source/docker/tekton/Dockerfile
                   - --destination=gcr.io/jenkinsxio/lighthouse-tekton-controller:${inputs.params.version}
+                  - --context=/workspace/source
+                  - --cache-dir=/workspace
+                  - --build-arg=VERSION=${inputs.params.version}
+
+              - name: build-and-push-jenkins-controller
+                image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
+                command: /kaniko/executor
+                args:
+                  - --dockerfile=/workspace/source/docker/jenkins/Dockerfile
+                  - --destination=gcr.io/jenkinsxio/lighthouse-jenkins-controller:${inputs.params.version}
                   - --context=/workspace/source
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=${inputs.params.version}
@@ -132,7 +142,7 @@ pipelineConfig:
                 image: gcr.io/kaniko-project/executor:9912ccbf8d22bbafbf971124600fbb0b13b9cbd6
                 command: /kaniko/executor
                 args:
-                  - --dockerfile=/workspace/source/Dockerfile.gcJobs
+                  - --dockerfile=/workspace/source/docker/gc/Dockerfile
                   - --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:$(inputs.params.version)
                   - --context=/workspace/source
                   - --cache-dir=/workspace

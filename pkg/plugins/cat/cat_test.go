@@ -29,6 +29,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
@@ -363,7 +364,9 @@ Available variants:
 		Number:     5,
 		IssueState: "open",
 	}
-	if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, &realClowder{url: ts.URL + "/?format=json"}, func() {}); err != nil {
+	if err := plugin.InvokeCommandHandler(e, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+		return handle(match.Name == "meowvie", match.Arg, fakeClient, logrus.WithField("plugin", pluginName), e, &realClowder{url: ts.URL + "/?format=json"}, func() {})
+	}); err != nil {
 		t.Errorf("didn't expect error: %v", err)
 		return
 	}
@@ -482,7 +485,9 @@ func TestCats(t *testing.T) {
 				IssueState: tc.state,
 				IsPR:       tc.pr,
 			}
-			err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakeClowder("tubbs"), func() {})
+			err := plugin.InvokeCommandHandler(e, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+				return handle(match.Name == "meowvie", match.Arg, fakeClient, logrus.WithField("plugin", pluginName), e, fakeClowder("tubbs"), func() {})
+			})
 			if !tc.shouldError && err != nil {
 				t.Fatalf("%s: didn't expect error: %v", tc.name, err)
 			} else if tc.shouldError && err == nil {

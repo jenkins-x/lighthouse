@@ -27,38 +27,35 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 var (
-	match  = regexp.MustCompile(`(?mi)^/(?:lh-)?joke\s*$`)
 	simple = regexp.MustCompile(`^[\w?'!., ]+$`)
 )
 
 const (
-	// Previously: https://tambal.azurewebsites.net/joke/random
 	jokeURL    = realJoke("https://icanhazdadjoke.com")
 	pluginName = "yuks"
 )
 
-func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
+func createPlugin(j joker) plugins.Plugin {
+	return plugins.Plugin{
+		Description: "The yuks plugin comments with jokes in response to the `/joke` command.",
+		Commands: []plugins.Command{{
+			Name:        "joke",
+			Description: "Tells a joke.",
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return joke(pc.SCMProviderClient, pc.Logger, &e, j)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
+		}},
+	}
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The yuks plugin comments with jokes in response to the `/joke` command.",
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/joke",
-		Description: "Tells a joke.",
-		Featured:    false,
-		WhoCanUse:   "Anyone can use the `/joke` command.",
-		Examples:    []string{"/joke", "/lh-joke"},
-	})
-	return pluginHelp, nil
+func init() {
+	plugins.RegisterPlugin(pluginName, createPlugin(jokeURL))
 }
 
 type scmProviderClient interface {
@@ -99,24 +96,7 @@ func (url realJoke) readJoke() (string, error) {
 	return a.Joke, nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e, jokeURL)
-}
-
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, j joker) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-	// Make sure they are requesting a joke
-	if !match.MatchString(e.Body) {
-		return nil
-	}
-
-	org := e.Repo.Namespace
-	repo := e.Repo.Name
-	number := e.Number
-
+func joke(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, j joker) error {
 	for i := 0; i < 10; i++ {
 		resp, err := j.readJoke()
 		if err != nil {
@@ -124,7 +104,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 		}
 		if simple.MatchString(resp) {
 			log.Infof("Commenting with \"%s\".", resp)
-			return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
+			return spc.CreateComment(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 		}
 
 		log.Errorf("joke contains invalid characters: %v", resp)

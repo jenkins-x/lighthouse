@@ -46,6 +46,8 @@ func TestExpectedStatus(t *testing.T) {
 		contexts          []Context
 		inPool            bool
 		blocks            []int
+		pending           []int
+		batchPending      []int
 
 		state string
 		desc  string
@@ -206,82 +208,115 @@ func TestExpectedStatus(t *testing.T) {
 			state: scmprovider.StatusError,
 			desc:  fmt.Sprintf(statusNotInPool, " Merging is blocked by issues 1, 2."),
 		},
+		{
+			name:    "in pool behind pending",
+			inPool:  true,
+			pending: []int{1},
+
+			state: scmprovider.StatusSuccess,
+			desc:  fmt.Sprintf("%s, waiting for merge of PR(s) #1.", statusInPool),
+		},
+		{
+			name:         "in pool behind batch",
+			inPool:       true,
+			batchPending: []int{1, 2, 3},
+
+			state: scmprovider.StatusSuccess,
+			desc:  fmt.Sprintf("%s, waiting for batch run and merge of PRs #1, #2, #3.", statusInPool),
+		},
 	}
 
 	for _, tc := range testcases {
-		t.Logf("Test Case: %q\n", tc.name)
-		secondQuery := keeper.Query{
-			Orgs:      []string{""},
-			Labels:    []string{"1", "2", "3", "4", "5", "6", "7"}, // lots of requirements
-			Milestone: "v1.0",
-		}
-		if tc.sameBranchReqs {
-			secondQuery.ExcludedBranches = tc.branchExcludeList
-			secondQuery.IncludedBranches = tc.branchIncludeList
-		}
-		queriesByRepo := keeper.Queries{
-			keeper.Query{
-				Orgs:             []string{""},
-				ExcludedBranches: tc.branchExcludeList,
-				IncludedBranches: tc.branchIncludeList,
-				Labels:           neededLabels,
-				MissingLabels:    forbiddenLabels,
-				Milestone:        "v1.0",
-			},
-			secondQuery,
-		}.QueryMap()
-		var pr PullRequest
-		pr.BaseRef = struct {
-			Name   githubql.String
-			Prefix githubql.String
-		}{
-			Name: githubql.String(tc.baseref),
-		}
-		for _, label := range tc.labels {
-			pr.Labels.Nodes = append(
-				pr.Labels.Nodes,
-				struct{ Name githubql.String }{Name: githubql.String(label)},
-			)
-		}
-		if len(tc.contexts) > 0 {
-			pr.HeadRefOID = githubql.String("head")
-			pr.Commits.Nodes = append(
-				pr.Commits.Nodes,
-				struct{ Commit Commit }{
-					Commit: Commit{
-						Status: struct{ Contexts []Context }{
-							Contexts: tc.contexts,
-						},
-						OID: githubql.String("head"),
-					},
+		t.Run(tc.name, func(t *testing.T) {
+			secondQuery := keeper.Query{
+				Orgs:      []string{""},
+				Labels:    []string{"1", "2", "3", "4", "5", "6", "7"}, // lots of requirements
+				Milestone: "v1.0",
+			}
+			if tc.sameBranchReqs {
+				secondQuery.ExcludedBranches = tc.branchExcludeList
+				secondQuery.IncludedBranches = tc.branchIncludeList
+			}
+			queriesByRepo := keeper.Queries{
+				keeper.Query{
+					Orgs:             []string{""},
+					ExcludedBranches: tc.branchExcludeList,
+					IncludedBranches: tc.branchIncludeList,
+					Labels:           neededLabels,
+					MissingLabels:    forbiddenLabels,
+					Milestone:        "v1.0",
 				},
-			)
-		}
-		if tc.milestone != "" {
-			pr.Milestone = &struct {
-				Title githubql.String
-			}{githubql.String(tc.milestone)}
-		}
-		var pool map[string]PullRequest
-		if tc.inPool {
-			pool = map[string]PullRequest{"#0": {}}
-		}
-		blocks := blockers.Blockers{
-			Repo: map[blockers.OrgRepo][]blockers.Blocker{},
-		}
-		var items []blockers.Blocker
-		for _, block := range tc.blocks {
-			items = append(items, blockers.Blocker{Number: block})
-		}
-		blocks.Repo[blockers.OrgRepo{Org: "", Repo: ""}] = items
+				secondQuery,
+			}.QueryMap()
+			var pr PullRequest
+			pr.BaseRef = struct {
+				Name   githubql.String
+				Prefix githubql.String
+			}{
+				Name: githubql.String(tc.baseref),
+			}
+			for _, label := range tc.labels {
+				pr.Labels.Nodes = append(
+					pr.Labels.Nodes,
+					struct{ Name githubql.String }{Name: githubql.String(label)},
+				)
+			}
+			if len(tc.contexts) > 0 {
+				pr.HeadRefOID = githubql.String("head")
+				pr.Commits.Nodes = append(
+					pr.Commits.Nodes,
+					struct{ Commit Commit }{
+						Commit: Commit{
+							Status: struct{ Contexts []Context }{
+								Contexts: tc.contexts,
+							},
+							OID: githubql.String("head"),
+						},
+					},
+				)
+			}
+			if tc.milestone != "" {
+				pr.Milestone = &struct {
+					Title githubql.String
+				}{githubql.String(tc.milestone)}
+			}
+			var pool map[string]prWithStatus
+			if tc.inPool {
+				withStatus := prWithStatus{
+					pr:      pr,
+					success: false,
+				}
+				if len(tc.pending) > 0 {
+					withStatus.waitingFor = append(withStatus.waitingFor, tc.pending...)
+					withStatus.success = true
+				}
+				if len(tc.batchPending) > 0 {
+					withStatus.waitingForBatch = append(withStatus.waitingForBatch, tc.batchPending...)
+					withStatus.success = true
+				}
+				pool = map[string]prWithStatus{"#0": withStatus}
+			}
+			blocks := blockers.Blockers{
+				Repo: map[blockers.OrgRepo][]blockers.Blocker{},
+			}
+			var items []blockers.Blocker
+			for _, block := range tc.blocks {
+				items = append(items, blockers.Blocker{Number: block})
+			}
+			blocks.Repo[blockers.OrgRepo{Org: "", Repo: ""}] = items
 
-		state, desc := expectedStatus(queriesByRepo, &pr, pool, &keeper.ContextPolicy{}, blocks, "fake")
-		if state != tc.state {
-			t.Errorf("Expected status state %q, but got %q.", string(tc.state), string(state))
-		}
-		if desc != tc.desc {
-			t.Errorf("Expected status description %q, but got %q.", tc.desc, desc)
-		}
+			state, desc := expectedStatus(queriesByRepo, &pr, pool, &keeper.ContextPolicy{}, blocks, "fake", nil)
+			if state != tc.state {
+				t.Errorf("Expected status state %q, but got %q.", string(tc.state), string(state))
+			}
+			expectedDesc := tc.desc
+			if expectedDesc == statusInPool {
+				expectedDesc = statusInPool + "."
+			}
+			if desc != expectedDesc {
+				t.Errorf("Expected status description %q, but got %q.", expectedDesc, desc)
+			}
+		})
 	}
 }
 
@@ -303,7 +338,7 @@ func TestSetStatuses(t *testing.T) {
 			inPool:     true,
 			hasContext: true,
 			state:      githubql.StatusStateSuccess,
-			desc:       statusInPool,
+			desc:       statusInPool + ".",
 
 			shouldSet: false,
 		},
@@ -365,44 +400,49 @@ func TestSetStatuses(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		var pr PullRequest
-		pr.Commits.Nodes = []struct{ Commit Commit }{{}}
-		if tc.hasContext {
-			pr.Commits.Nodes[0].Commit.Status.Contexts = []Context{
-				{
-					Context:     githubql.String(GetStatusContextLabel()),
-					State:       tc.state,
-					Description: githubql.String(tc.desc),
-				},
+		t.Run(tc.name, func(t *testing.T) {
+			var pr PullRequest
+			pr.Commits.Nodes = []struct{ Commit Commit }{{}}
+			if tc.hasContext {
+				pr.Commits.Nodes[0].Commit.Status.Contexts = []Context{
+					{
+						Context:     githubql.String(GetStatusContextLabel()),
+						State:       tc.state,
+						Description: githubql.String(tc.desc),
+					},
+				}
 			}
-		}
-		pool := make(map[string]PullRequest)
-		if tc.inPool {
-			pool[prKey(&pr)] = pr
-		}
-		fc := &fgc{}
-		ca := &config.Agent{}
-		ca.Set(&config.Config{})
-		// setStatuses logs instead of returning errors.
-		// Construct a logger to watch for errors to be printed.
-		log := logrus.WithField("component", "keeper")
-		initialLog, err := log.String()
-		if err != nil {
-			t.Fatalf("Failed to get log output before testing: %v", err)
-		}
+			pool := make(map[string]prWithStatus)
+			if tc.inPool {
+				pool[pr.prKey()] = prWithStatus{
+					pr:      pr,
+					success: false,
+				}
+			}
+			fc := &fgc{}
+			ca := &config.Agent{}
+			ca.Set(&config.Config{})
+			// setStatuses logs instead of returning errors.
+			// Construct a logger to watch for errors to be printed.
+			log := logrus.WithField("component", "keeper")
+			initialLog, err := log.String()
+			if err != nil {
+				t.Fatalf("Failed to get log output before testing: %v", err)
+			}
 
-		sc := &statusController{spc: fc, config: ca.Config, logger: log}
-		sc.setStatuses([]PullRequest{pr}, pool, blockers.Blockers{})
-		if str, err := log.String(); err != nil {
-			t.Fatalf("For case %s: failed to get log output: %v", tc.name, err)
-		} else if str != initialLog {
-			t.Errorf("For case %s: error setting status: %s", tc.name, str)
-		}
-		if tc.shouldSet && !fc.setStatus {
-			t.Errorf("For case %s: should set but didn't", tc.name)
-		} else if !tc.shouldSet && fc.setStatus {
-			t.Errorf("For case %s: should not set but did", tc.name)
-		}
+			sc := &statusController{spc: fc, config: ca.Config, logger: log}
+			sc.setStatuses([]PullRequest{pr}, pool, blockers.Blockers{})
+			if str, err := log.String(); err != nil {
+				t.Fatalf("For case %s: failed to get log output: %v", tc.name, err)
+			} else if str != initialLog {
+				t.Errorf("For case %s: error setting status: %s", tc.name, str)
+			}
+			if tc.shouldSet && !fc.setStatus {
+				t.Errorf("For case %s: should set but didn't", tc.name)
+			} else if !tc.shouldSet && fc.setStatus {
+				t.Errorf("For case %s: should not set but did", tc.name)
+			}
+		})
 	}
 }
 
@@ -449,12 +489,14 @@ func TestTargetUrl(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		ca := &config.Agent{}
-		ca.Set(&config.Config{ProwConfig: config.ProwConfig{Keeper: tc.config}})
-		log := logrus.WithField("controller", "status-update")
-		if actual, expected := targetURL(ca.Config, tc.pr, log), tc.expectedURL; actual != expected {
-			t.Errorf("%s: expected target URL %s but got %s", tc.name, expected, actual)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			ca := &config.Agent{}
+			ca.Set(&config.Config{ProwConfig: config.ProwConfig{Keeper: tc.config}})
+			log := logrus.WithField("controller", "status-update")
+			if actual, expected := targetURL(ca.Config, tc.pr, log), tc.expectedURL; actual != expected {
+				t.Errorf("%s: expected target URL %s but got %s", tc.name, expected, actual)
+			}
+		})
 	}
 }
 

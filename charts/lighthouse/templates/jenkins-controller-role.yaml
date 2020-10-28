@@ -1,0 +1,37 @@
+{{- if .Values.engines.jenkins }}
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "jenkinscontroller.name" . }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - configmaps
+  - secrets
+  verbs:
+  - get
+  - update
+  - create
+  - list
+  - watch
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs
+  verbs:
+  - get
+  - update
+  - list
+  - watch
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs/status
+  verbs:
+  - update
+  - get
+  - watch
+  - patch
+{{- end }}

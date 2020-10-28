@@ -30,15 +30,12 @@ import (
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
-
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
-	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 var (
-	match          = regexp.MustCompile(`(?mi)^/(?:lh-)?meow(vie)?(?: (.+))?\s*$`)
 	grumpyKeywords = regexp.MustCompile(`(?mi)^(no|grumpy)\s*$`)
 	meow           = &realClowder{
 		url: "https://api.thecatapi.com/v1/images/search?format=json&results_per_page=1",
@@ -50,25 +47,33 @@ const (
 	grumpyURL  = "https://upload.wikimedia.org/wikipedia/commons/e/ee/Grumpy_Cat_by_Gage_Skidmore.jpg"
 )
 
+var (
+	plugin = plugins.Plugin{
+		Description:        "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
+		ConfigHelpProvider: configHelp,
+		Commands: []plugins.Command{{
+			Name: "meow|meowvie",
+			Arg: &plugins.CommandArg{
+				Pattern:  `.+`,
+				Optional: true,
+			},
+			Description: "Add a cat image to the issue or PR",
+			Action: plugins.
+				Invoke(handleGenericComment).
+				When(plugins.Action(scm.ActionCreate)),
+		}},
+	}
+)
+
 func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
-		Config: map[string]string{
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
+	return map[string]string{
 			"": fmt.Sprintf("The cat plugin uses an api key for thecatapi.com stored in %s.", config.Cat.KeyPath),
 		},
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/meow(vie) [CATegory]",
-		Description: "Add a cat image to the issue or PR",
-		Featured:    false,
-		WhoCanUse:   "Anyone",
-		Examples:    []string{"/meow", "/meow caturday", "/meowvie clothes", "/lh-meow"},
-	})
-	return pluginHelp, nil
+		nil
 }
 
 type scmProviderClient interface {
@@ -175,8 +180,10 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 	return a.Format()
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+func handleGenericComment(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
 	return handle(
+		match.Name == "meowvie",
+		match.Arg,
 		pc.SCMProviderClient,
 		pc.Logger,
 		&e,
@@ -185,22 +192,7 @@ func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) e
 	)
 }
 
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, c clowder, setKey func()) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-	// Make sure they are requesting a cat
-	mat := match.FindStringSubmatch(e.Body)
-	if mat == nil {
-		return nil
-	}
-
-	category, movieCat, err := parseMatch(mat)
-	if err != nil {
-		return err
-	}
-
+func handle(movieCat bool, category string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, c clowder, setKey func()) error {
 	// Now that we know this is a relevant event we can set the key.
 	setKey()
 
@@ -228,14 +220,4 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	}
 
 	return errors.New("could not find a valid cat image")
-}
-
-func parseMatch(mat []string) (string, bool, error) {
-	if len(mat) != 3 {
-		err := fmt.Errorf("expected 3 capture groups in regexp match, but got %d", len(mat))
-		return "", false, err
-	}
-	category := strings.TrimSpace(mat[2])
-	movieCat := len(mat[1]) > 0 // "vie" suffix is present.
-	return category, movieCat, nil
 }

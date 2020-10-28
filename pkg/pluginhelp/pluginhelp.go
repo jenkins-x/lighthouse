@@ -41,6 +41,8 @@ type PluginHelp struct {
 	// Description is a description of what the plugin does and what purpose it achieves.
 	// This field may include HTML.
 	Description string
+	// ExcludedProviders is the list of scm providers that are not supported by a plugin.
+	ExcludedProviders []string
 	// Config is a map from org/repo strings to a string describing the configuration for that repo.
 	// The key "" should map to a string describing configuration that applies to all repos if any.
 	// This configuration strings may include HTML.

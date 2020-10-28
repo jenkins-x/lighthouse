@@ -215,9 +215,15 @@ func TestLabel(t *testing.T) {
 				Repo:       scm.Repository{Namespace: "org", Name: "repo"},
 				Author:     scm.User{Login: "Alice"},
 			}
-			err := handle(fakeSCMProviderClient, logrus.WithField("plugin", pluginName), &fakePruner{}, e)
+			cmd := plugin.Commands[0]
+			matches, err := cmd.FilterAndGetMatches(e)
 			if err != nil {
-				t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
+			for _, m := range matches {
+				if err := handle(m.Prefix != "", m.Name, &fakeSCMProviderClient.Client, logrus.WithField("plugin", pluginName), &fakePruner{}, e); err != nil {
+					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+				}
 			}
 
 			// Check that all the correct labels (and only the correct labels) were added.

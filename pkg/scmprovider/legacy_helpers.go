@@ -149,6 +149,7 @@ type GenericCommentEvent struct {
 	IssueBody   string
 	IssueLink   string
 	GUID        string
+	HeadSha     string
 }
 
 // ReviewAction is the action that a review can be made with.
@@ -196,12 +197,6 @@ type MissingUsers struct {
 
 func (m MissingUsers) Error() string {
 	return fmt.Sprintf("could not %s the following user(s): %s.", m.action, strings.Join(m.Users, ", "))
-}
-
-// Milestone is a milestone defined on a github repository
-type Milestone struct {
-	Title  string `json:"title"`
-	Number int    `json:"number"`
 }
 
 // HasLabel checks if label is in the label set "issueLabels".

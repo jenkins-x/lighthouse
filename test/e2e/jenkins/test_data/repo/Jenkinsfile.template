@@ -1,0 +1,68 @@
+pipeline {
+ agent {
+     kubernetes {
+       label 'build-pod'
+       idleMinutes 5
+       yamlFile 'build-pod.yaml'
+       defaultContainer 'pack'
+     }
+ }
+
+ parameters {
+     string(name: 'JOB_NAME', defaultValue: '', description: 'Job name')
+     string(name: 'JOB_TYPE', defaultValue: '', description: 'Job type')
+     string(name: 'JOB_SPEC', defaultValue: '', description: 'Job spec')
+
+     string(name: 'PULL_BASE_REF', defaultValue: '', description: 'Base ref')
+     string(name: 'PULL_REFS', defaultValue: '', description: 'Pull refs')
+     string(name: 'PULL_REFS', defaultValue: '', description: 'Pull base refs')
+     string(name: 'PULL_NUMBER', defaultValue: '', description: 'Pull number')
+     string(name: 'PULL_BASE_SHA', defaultValue: '', description: 'Pull base SHA')
+     string(name: 'PULL_PULL_SHA', defaultValue: '', description: 'Pull pull SHA')
+
+     string(name: 'BUILD_ID', defaultValue: '', description: 'Build id')
+     string(name: 'LIGHTHOUSE_JOB_ID', defaultValue: '', description: 'Lighthouse job id')
+ }
+
+ stages {
+   stage('Master Build') {
+       when {
+          expression {
+            PULL_NUMBER == ''
+          }
+       }
+       steps {
+          checkout([$class: 'GitSCM',
+          branches: [[name: "master"]],
+          doGenerateSubmoduleConfigurations: false,
+          extensions: [],
+          gitTool: 'Default',
+          submoduleCfg: [],
+          userRemoteConfigs: [[refspec: '+refs/pull/*:refs/remotes/origin/pr/*', url: '{{ .E2E_TEST_REPO }}', credentialsId: '{{ .E2E_JENKINS_GIT_CREDENTIAL_ID }}']]])
+       }
+   }
+
+   stage('PR Build') {
+       when {
+          expression {
+            PULL_NUMBER != ''
+          }
+       }
+       steps {
+          checkout([$class: 'GitSCM',
+          branches: [[name: "pr/${params.PULL_NUMBER}/head"]],
+          doGenerateSubmoduleConfigurations: false,
+          extensions: [],
+          gitTool: 'Default',
+          submoduleCfg: [],
+          userRemoteConfigs: [[refspec: '+refs/pull/*:refs/remotes/origin/pr/*', url: '{{ .E2E_TEST_REPO }}', credentialsId: '{{ .E2E_JENKINS_GIT_CREDENTIAL_ID }}']]])
+       }
+   }
+
+   stage('Build') {
+         steps {
+           sh "PULL_NUMBER=${params.PULL_NUMBER} pack --no-color build hello:\${PULL_NUMBER:-latest} --builder paketobuildpacks/builder:tiny"
+         }
+   }
+ }
+}

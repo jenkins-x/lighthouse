@@ -41,7 +41,8 @@ type Presubmit struct {
 	// The RerunCommand to give users. Must match Trigger.
 	// Trigger must also be specified if this field is specified.
 	// (Default: `/test <job name>`)
-	RerunCommand string `json:"rerun_command,omitempty"`
+	RerunCommand string       `json:"rerun_command,omitempty"`
+	JenkinsSpec  *JenkinsSpec `json:"jenkins_spec,omitempty"`
 
 	// We'll set these when we load it.
 	//re *regexp.Regexp // from Trigger.

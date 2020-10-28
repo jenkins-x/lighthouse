@@ -18,7 +18,6 @@ package lifecycle
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
@@ -26,8 +25,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
-
-var closeRe = regexp.MustCompile(`(?mi)^/(?:lh-)?close\s*$`)
 
 type closeClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
@@ -52,15 +49,6 @@ func isActive(gc closeClient, org, repo string, number int, pr bool) (bool, erro
 }
 
 func handleClose(gc closeClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	// Only consider open issues and new comments.
-	if e.IssueState != "open" || e.Action != scm.ActionCreate {
-		return nil
-	}
-
-	if !closeRe.MatchString(e.Body) {
-		return nil
-	}
-
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number

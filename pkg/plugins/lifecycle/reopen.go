@@ -18,7 +18,6 @@ package lifecycle
 
 import (
 	"fmt"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
@@ -26,8 +25,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
-
-var reopenRe = regexp.MustCompile(`(?mi)^/(?:lh-)?reopen\s*$`)
 
 type scmProviderClient interface {
 	IsCollaborator(owner, repo, login string) (bool, error)
@@ -38,15 +35,6 @@ type scmProviderClient interface {
 }
 
 func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	// Only consider closed issues and new comments.
-	if e.IssueState != "closed" || e.Action != scm.ActionCreate {
-		return nil
-	}
-
-	if !reopenRe.MatchString(e.Body) {
-		return nil
-	}
-
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number
@@ -111,6 +99,7 @@ func handleReopen(spc scmProviderClient, log *logrus.Entry, e *scmprovider.Gener
 		}
 		return err
 	}
+
 	// Add a comment after reopening the issue to leave an audit trail of who
 	// asked to reopen it.
 	return spc.CreateComment(

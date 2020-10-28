@@ -8,6 +8,9 @@ To verify pods have started, run:
 {{- if .Values.engines.tekton }}
     kubectl --namespace={{ .Release.Namespace }} get pods -l "app={{ template "tektoncontroller.name" . }}"
 {{- end }}
+{{- if .Values.engines.jenkins }}
+    kubectl --namespace={{ .Release.Namespace }} get pods -l "app={{ template "jenkinscontroller.name" . }}"
+{{- end }}
 
 {{- if .Values.createIngress }}
 To get the application URL, run:

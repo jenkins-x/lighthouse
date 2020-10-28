@@ -1,8 +1,11 @@
 package tekton
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"text/template"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -22,23 +25,30 @@ var apiGVStr = lighthousev1alpha1.SchemeGroupVersion.String()
 
 // LighthouseJobReconciler reconciles a LighthouseJob object
 type LighthouseJobReconciler struct {
-	client       client.Client
-	apiReader    client.Reader
-	logger       *logrus.Entry
-	scheme       *runtime.Scheme
-	dashboardURL string
-	namespace    string
+	client            client.Client
+	apiReader         client.Reader
+	logger            *logrus.Entry
+	scheme            *runtime.Scheme
+	idGenerator       buildIDGenerator
+	dashboardURL      string
+	dashboardTemplate string
+	namespace         string
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
+	if dashboardTemplate == "" {
+		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
+	}
 	return &LighthouseJobReconciler{
-		client:       client,
-		apiReader:    apiReader,
-		logger:       logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
-		scheme:       scheme,
-		dashboardURL: dashboardURL,
-		namespace:    namespace,
+		client:            client,
+		apiReader:         apiReader,
+		logger:            logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
+		scheme:            scheme,
+		dashboardURL:      dashboardURL,
+		dashboardTemplate: dashboardTemplate,
+		namespace:         namespace,
+		idGenerator:       &epochBuildIDGenerator{},
 	}
 }
 
@@ -95,7 +105,7 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	if len(pipelineRunList.Items) == 0 {
 		if job.Status.State == lighthousev1alpha1.TriggeredState {
 			// construct a pipeline run
-			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.apiReader)
+			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.idGenerator, r.apiReader)
 			if err != nil {
 				r.logger.Errorf("Failed to make pipeline run: %s", err)
 				return ctrl.Result{}, err
@@ -132,7 +142,7 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 			return ctrl.Result{}, err
 		}
 		if r.dashboardURL != "" {
-			job.Status.ReportURL = fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", trimDashboardURL(r.dashboardURL), r.namespace, pipelineRun.Name)
+			job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
 		}
 		job.Status.Activity = ConvertPipelineRun(&pipelineRun)
 		if err := r.client.Status().Update(ctx, &job); err != nil {
@@ -144,4 +154,42 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *LighthouseJobReconciler) getPipelingetPipelineTargetURLeTargetURL(pipelineRun pipelinev1beta1.PipelineRun) string {
+	if r.dashboardTemplate == "" {
+		return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", trimDashboardURL(r.dashboardURL), r.namespace, pipelineRun.Name)
+	}
+	funcMap := map[string]interface{}{}
+	tmpl, err := template.New("value.gotmpl").Option("missingkey=error").Funcs(funcMap).Parse(r.dashboardTemplate)
+	if err != nil {
+		r.logger.WithError(err).Warnf("failed to parse template: %s", r.dashboardTemplate)
+		return ""
+	}
+
+	labels := pipelineRun.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	namespace := pipelineRun.Namespace
+	if namespace == "" {
+		namespace = r.namespace
+	}
+	templateData := map[string]interface{}{
+		"Branch":      labels[util.BranchLabel],
+		"BuildNum":    labels[util.BuildNumLabel],
+		"Context":     labels[util.ContextLabel],
+		"Namespace":   namespace,
+		"Org":         labels[util.OrgLabel],
+		"PipelineRun": pipelineRun.Name,
+		"Pull":        labels[util.PullLabel],
+		"Repo":        labels[util.RepoLabel],
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, templateData)
+	if err != nil {
+		r.logger.WithError(err).Warnf("failed to parse template: %s for PipelineRun %s", r.dashboardTemplate, pipelineRun.Name)
+		return ""
+	}
+	return fmt.Sprintf("%s/%s", trimDashboardURL(r.dashboardURL), buf.String())
 }

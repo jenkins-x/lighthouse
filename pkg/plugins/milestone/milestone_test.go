@@ -145,8 +145,15 @@ func TestMilestoneStatus(t *testing.T) {
 				repoMilestone["org/repo"] = plugins.Milestone{MaintainersID: maintainersID, MaintainersTeam: maintainersName}
 			}
 
-			if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
+			cmd := plugin.Commands[0]
+			matches, err := cmd.FilterAndGetMatches(e)
+			if err != nil {
 				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
+			for _, m := range matches {
+				if err := handle(m.Arg, fakeClient, logrus.WithField("plugin", pluginName), e, repoMilestone); err != nil {
+					t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+				}
 			}
 
 			// Check that the milestone was set if it was supposed to be set

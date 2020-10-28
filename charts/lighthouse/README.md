@@ -1,5 +1,3 @@
-
-
 # Lighthouse
 
 This chart bootstraps installation of [Lighthouse](https://github.com/jenkins-x/lighthouse).
@@ -21,6 +19,7 @@ helm repo update
 
 # Helm v2
 helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
+
 # Helm v3
 helm upgrade --install my-lighthouse --namespace lighthouse jenkins-x/lighthouse
 ```
@@ -36,13 +35,10 @@ To uninstall the chart, simply delete the release.
 
 # Helm v2
 helm delete --purge my-lighthouse
+
 # Helm v3
 helm uninstall my-lighthouse --namespace lighthouse
 ```
-
-## Version
-
-Current chart version is `0.1.0-SNAPSHOT`
 
 ## Values
 
@@ -53,6 +49,7 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `configMaps.configUpdater` | object | Settings used to configure the `config-updater` plugin | `{"orgAndRepo":"","path":""}` |
 | `configMaps.create` | bool | Enables creation of `config.yaml` and `plugins.yaml` config maps | `false` |
 | `configMaps.plugins` | string | Raw `plugins.yaml` content | `nil` |
+| `engines.jenkins` | bool | Enables the Jenkins engine | `false` |
 | `engines.jx` | bool | Enables the jx engine | `true` |
 | `engines.tekton` | bool | Enables the tekton engine | `false` |
 | `env` | object | Environment variables | `{"JX_DEFAULT_IMAGE":""}` |
@@ -79,6 +76,20 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `image.parentRepository` | string | Docker registry to pull images from | `"gcr.io/jenkinsxio"` |
 | `image.pullPolicy` | string | Image pull policy | `"IfNotPresent"` |
 | `image.tag` | string | Docker images tag | `"0.0.750"` |
+| `jenkinscontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
+| `jenkinscontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `jenkinscontroller.image.repository` | string | Template for computing the Jenkins controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"` |
+| `jenkinscontroller.image.tag` | string | Template for computing the tekton controller docker image tag | `"{{ .Values.image.tag }}"` |
+| `jenkinscontroller.jenkinsToken` | string | The token for authenticating the Jenkins user | `nil` |
+| `jenkinscontroller.jenkinsURL` | string | The URL of the Jenkins instance | `nil` |
+| `jenkinscontroller.jenkinsUser` | string | The username for the Jenkins user | `nil` |
+| `jenkinscontroller.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the tekton controller pods | `{}` |
+| `jenkinscontroller.podAnnotations` | object | Annotations applied to the tekton controller pods | `{}` |
+| `jenkinscontroller.resources.limits` | object | Resource limits applied to the tekton controller pods | `{"cpu":"100m","memory":"256Mi"}` |
+| `jenkinscontroller.resources.requests` | object | Resource requests applied to the tekton controller pods | `{"cpu":"80m","memory":"128Mi"}` |
+| `jenkinscontroller.service` | object | Service settings for the tekton controller | `{"annotations":{}}` |
+| `jenkinscontroller.terminationGracePeriodSeconds` | int | Termination grace period for tekton controller pods | `180` |
+| `jenkinscontroller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods | `[]` |
 | `keeper.datadog.enabled` | string | Enables datadog | `"true"` |
 | `keeper.image.pullPolicy` | string | Template for computing the keeper controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `keeper.image.repository` | string | Template for computing the keeper controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-keeper"` |
@@ -103,7 +114,8 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `strobe.schedule` | string | Cron expression to periodically sync periodic jobs | `"0/5 * * * *"` |
 | `strobe.successfulJobsHistoryLimit` | int | Drives the successful jobs history limit | `1` |
 | `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
-| `tektoncontroller.dashboardURL` | string | Tekton dashboard URL | `""` |
+| `tektoncontroller.dashboardTemplate` | string | Go template expression for URLs in the dashboard if not using Tekton dashboard | `""` |
+| `tektoncontroller.dashboardURL` | string | the dashboard URL (e.g. Tekton dashboard) | `""` |
 | `tektoncontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `tektoncontroller.image.repository` | string | Template for computing the tekton controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"` |
 | `tektoncontroller.image.tag` | string | Template for computing the tekton controller docker image tag | `"{{ .Values.image.tag }}"` |
@@ -116,6 +128,7 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `tektoncontroller.terminationGracePeriodSeconds` | int | Termination grace period for tekton controller pods | `180` |
 | `tektoncontroller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods | `[]` |
 | `user` | string | Git user name (used when GitHub app authentication is not enabled) | `""` |
+| `webhooks.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the webhooks pods | `{}` |
 | `webhooks.image.pullPolicy` | string | Template for computing the webhooks controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `webhooks.image.repository` | string | Template for computing the webhooks controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-webhooks"` |
 | `webhooks.image.tag` | string | Template for computing the webhooks controller docker image tag | `"{{ .Values.image.tag }}"` |
@@ -123,13 +136,15 @@ Current chart version is `0.1.0-SNAPSHOT`
 | `webhooks.ingress.enabled` | bool | Enable webhooks ingress | `false` |
 | `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
+| `webhooks.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods | `{}` |
 | `webhooks.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `webhooks.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
-| `webhooks.replicaCount` | int | Number of replicas | `2` |
-| `webhooks.resources.limits` | object | Resource limits applied to the webhooks pods | `{"cpu":"100m","memory":"256Mi"}` |
+| `webhooks.replicaCount` | int | Number of replicas | `1` |
+| `webhooks.resources.limits` | object | Resource limits applied to the webhooks pods | `{"cpu":"100m","memory":"512Mi"}` |
 | `webhooks.resources.requests` | object | Resource requests applied to the webhooks pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `webhooks.service` | object | Service settings for the webhooks controller | `{"annotations":{},"externalPort":80,"internalPort":8080,"type":"ClusterIP"}` |
 | `webhooks.serviceName` | string | Allows overriding the service name, this is here for compatibility reasons, regular users should clear this out | `"hook"` |
 | `webhooks.terminationGracePeriodSeconds` | int | Termination grace period for webhooks pods | `180` |
+| `webhooks.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the webhooks pods | `[]` |
 
 You can look directly at the [values.yaml](./values.yaml) file to look at the options and their default values.

@@ -26,6 +26,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
@@ -67,7 +68,14 @@ func TestJokesMedium(t *testing.T) {
 		Number:     5,
 		IssueState: "open",
 	}
-	if err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, realJoke(ts.URL)); err != nil {
+	agent := plugins.Agent{
+		SCMProviderClient: &fakeClient.Client,
+		Logger:            logrus.WithField("plugin", pluginName),
+	}
+	plugin := createPlugin(realJoke(ts.URL))
+	if err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+		return handler(match, agent, *e)
+	}); err != nil {
 		t.Errorf("didn't expect error: %v", err)
 		return
 	}
@@ -161,7 +169,14 @@ func TestJokes(t *testing.T) {
 				IssueState: tc.state,
 				IsPR:       tc.pr,
 			}
-			err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, tc.joke)
+			agent := plugins.Agent{
+				SCMProviderClient: &fakeClient.Client,
+				Logger:            logrus.WithField("plugin", pluginName),
+			}
+			plugin := createPlugin(tc.joke)
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+				return handler(match, agent, *e)
+			})
 			if !tc.shouldError && err != nil {
 				t.Fatalf("For case %s, didn't expect error: %v", tc.name, err)
 			} else if tc.shouldError && err == nil {

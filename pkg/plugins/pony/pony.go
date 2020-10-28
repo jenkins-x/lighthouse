@@ -23,10 +23,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -51,27 +49,27 @@ const (
 	pluginName = "pony"
 )
 
-var (
-	match = regexp.MustCompile(`(?mi)^/(?:lh-)?(?:pony)(?: +(.+?))?\s*$`)
-)
-
-func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
+func createPlugin(h herd) plugins.Plugin {
+	return plugins.Plugin{
+		Description: "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
+		Commands: []plugins.Command{{
+			Name: "pony",
+			Arg: &plugins.CommandArg{
+				Pattern:  ".+",
+				Optional: true,
+			},
+			Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handle(match.Arg, pc.SCMProviderClient, pc.Logger, &e, h)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
+		}},
+	}
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "The pony plugin adds a pony image to an issue or PR in response to the `/pony` command.",
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/(pony) [pony]",
-		Description: "Add a little pony image to the issue or PR. A particular pony can optionally be named for a picture of that specific pony.",
-		Featured:    false,
-		WhoCanUse:   "Anyone",
-		Examples:    []string{"/pony", "/pony Twilight Sparkle", "/lh-pony"},
-	})
-	return pluginHelp, nil
+func init() {
+	plugins.RegisterPlugin(pluginName, createPlugin(ponyURL))
 }
 
 var client = http.Client{}
@@ -117,33 +115,14 @@ func (h realHerd) readPony(tags string) (string, error) {
 	return formatURLs(a.Pony.Representations.Small, a.Pony.Representations.Full), nil
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	return handle(pc.SCMProviderClient, pc.Logger, &e, ponyURL)
-}
-
-func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, p herd) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-	// Make sure they are requesting a pony
-	mat := match.FindStringSubmatch(e.Body)
-	if mat == nil {
-		return nil
-	}
-
-	tag := mat[1]
-	org := e.Repo.Namespace
-	repo := e.Repo.Name
-	number := e.Number
-
+func handle(tag string, spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, p herd) error {
 	for i := 0; i < 5; i++ {
 		resp, err := p.readPony(tag)
 		if err != nil {
 			log.WithError(err).Println("Failed to get a pony")
 			continue
 		}
-		return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
+		return spc.CreateComment(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
 
 	var msg string
@@ -152,7 +131,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, e *scmprovider.GenericComm
 	} else {
 		msg = "https://theponyapi.com appears to be down"
 	}
-	if err := spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg)); err != nil {
+	if err := spc.CreateComment(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), msg)); err != nil {
 		log.WithError(err).Error("Failed to leave comment")
 	}
 

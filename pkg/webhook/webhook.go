@@ -255,7 +255,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 
 		l.Info("invoking Push handler")
 
-		o.server.HandlePushEvent(l, pushHook)
+		o.server.handlePushEvent(l, pushHook)
 		return l, "processed push hook", nil
 	}
 	prHook, ok := webhook.(*scm.PullRequestHook)
@@ -271,7 +271,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 
 		l.Info("invoking PR handler")
 
-		o.server.HandlePullRequestEvent(l, prHook)
+		o.server.handlePullRequestEvent(l, prHook)
 		return l, "processed PR hook", nil
 	}
 	branchHook, ok := webhook.(*scm.BranchHook)
@@ -285,7 +285,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 
 		l.Info("invoking branch handler")
 
-		o.server.HandleBranchEvent(l, branchHook)
+		o.server.handleBranchEvent(l, branchHook)
 		return l, "processed branch hook", nil
 	}
 	issueCommentHook, ok := webhook.(*scm.IssueCommentHook)
@@ -305,7 +305,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 
 		l.Info("invoking Issue Comment handler")
 
-		o.server.HandleIssueCommentEvent(l, *issueCommentHook)
+		o.server.handleIssueCommentEvent(l, *issueCommentHook)
 		return l, "processed issue comment hook", nil
 	}
 	prCommentHook, ok := webhook.(*scm.PullRequestCommentHook)
@@ -329,7 +329,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 
 		l.Info("invoking Issue Comment handler")
 
-		o.server.HandlePullRequestCommentEvent(l, *prCommentHook)
+		o.server.handlePullRequestCommentEvent(l, *prCommentHook)
 		return l, "processed PR comment hook", nil
 	}
 	prReviewHook, ok := webhook.(*scm.ReviewHook)
@@ -349,7 +349,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 
 		l.Info("invoking PR Review handler")
 
-		o.server.HandleReviewEvent(l, *prReviewHook)
+		o.server.handleReviewEvent(l, *prReviewHook)
 		return l, "processed PR review hook", nil
 	}
 	l.Debugf("unknown kind %s webhook %#v", webhook.Kind(), webhook)

@@ -26,7 +26,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -45,10 +44,17 @@ type PRInfo struct {
 }
 
 func init() {
-	plugins.RegisterPullRequestHandler(pluginName, handlePullRequest, helpProvider)
+	plugins.RegisterPlugin(
+		pluginName,
+		plugins.Plugin{
+			Description:        "The welcome plugin posts a welcoming message when it detects a user's first contribution to a repo.",
+			ConfigHelpProvider: configHelp,
+			PullRequestHandler: handlePullRequest,
+		},
+	)
 }
 
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
 	welcomeConfig := map[string]string{}
 	for _, repo := range enabledRepos {
 		parts := strings.Split(repo, "/")
@@ -65,16 +71,12 @@ func helpProvider(config *plugins.Configuration, enabledRepos []string) (*plugin
 	}
 
 	// The {WhoCanUse, Usage, Examples} fields are omitted because this plugin is not triggered with commands.
-	return &pluginhelp.PluginHelp{
-			Description: "The welcome plugin posts a welcoming message when it detects a user's first contribution to a repo.",
-			Config:      welcomeConfig,
-		},
-		nil
+	return welcomeConfig, nil
 }
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
-	FindIssues(query, sort string, asc bool) ([]scm.Issue, error)
+	FindPullRequestsByAuthor(owner, repo string, author string) ([]*scm.PullRequest, error)
 }
 
 type client struct {
@@ -103,8 +105,7 @@ func handlePR(c client, pre scm.PullRequestHook, welcomeTemplate string) error {
 	org := pre.PullRequest.Base.Repo.Namespace
 	repo := pre.PullRequest.Base.Repo.Name
 	user := pre.PullRequest.Author.Login
-	query := fmt.Sprintf("is:pr repo:%s/%s author:%s", org, repo, user)
-	issues, err := c.SCMProviderClient.FindIssues(query, "", false)
+	issues, err := c.SCMProviderClient.FindPullRequestsByAuthor(org, repo, user)
 	if err != nil {
 		return err
 	}

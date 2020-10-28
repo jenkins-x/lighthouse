@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 
@@ -29,7 +28,7 @@ import (
 	lighthouseclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/commentpruner"
 	"github.com/jenkins-x/lighthouse/pkg/config"
-	git2 "github.com/jenkins-x/lighthouse/pkg/git"
+	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
@@ -40,103 +39,58 @@ import (
 )
 
 var (
-	pluginHelp                 = map[string]HelpProvider{}
-	genericCommentHandlers     = map[string]GenericCommentHandler{}
-	issueHandlers              = map[string]IssueHandler{}
-	issueCommentHandlers       = map[string]IssueCommentHandler{}
-	pullRequestHandlers        = map[string]PullRequestHandler{}
-	pushEventHandlers          = map[string]PushEventHandler{}
-	reviewEventHandlers        = map[string]ReviewEventHandler{}
-	reviewCommentEventHandlers = map[string]ReviewCommentEventHandler{}
-	statusEventHandlers        = map[string]StatusEventHandler{}
+	plugins = map[string]Plugin{}
 )
+
+// RegisterPlugin registers a plugin.
+func RegisterPlugin(name string, plugin Plugin) {
+	plugins[name] = plugin
+}
 
 // HelpProvider defines the function type that construct a pluginhelp.PluginHelp for enabled
 // plugins. It takes into account the plugins configuration and enabled repositories.
 type HelpProvider func(config *Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error)
 
-// HelpProviders returns the map of registered plugins with their associated HelpProvider.
-func HelpProviders() map[string]HelpProvider {
-	return pluginHelp
-}
+// ConfigHelpProvider defines the function type that constructs help about a plugin configuration.
+type ConfigHelpProvider func(config *Configuration, enabledRepos []string) (map[string]string, error)
 
 // IssueHandler defines the function contract for a scm.Issue handler.
 type IssueHandler func(Agent, scm.Issue) error
 
-// RegisterIssueHandler registers a plugin's scm.Issue handler.
-func RegisterIssueHandler(name string, fn IssueHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	issueHandlers[name] = fn
-}
-
-// IssueCommentHandler defines the function contract for a scm.Comment handler.
-type IssueCommentHandler func(Agent, scm.IssueCommentHook) error
-
-// RegisterIssueCommentHandler registers a plugin's scm.Comment handler.
-func RegisterIssueCommentHandler(name string, fn IssueCommentHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	issueCommentHandlers[name] = fn
-}
-
 // PullRequestHandler defines the function contract for a scm.PullRequest handler.
 type PullRequestHandler func(Agent, scm.PullRequestHook) error
-
-// RegisterPullRequestHandler registers a plugin's scm.PullRequest handler.
-func RegisterPullRequestHandler(name string, fn PullRequestHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	pullRequestHandlers[name] = fn
-}
 
 // StatusEventHandler defines the function contract for a scm.Status handler.
 type StatusEventHandler func(Agent, scm.Status) error
 
-// RegisterStatusEventHandler registers a plugin's scm.Status handler.
-func RegisterStatusEventHandler(name string, fn StatusEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	statusEventHandlers[name] = fn
-}
-
 // PushEventHandler defines the function contract for a scm.PushHook handler.
 type PushEventHandler func(Agent, scm.PushHook) error
-
-// RegisterPushEventHandler registers a plugin's scm.PushHook handler.
-func RegisterPushEventHandler(name string, fn PushEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	pushEventHandlers[name] = fn
-}
 
 // ReviewEventHandler defines the function contract for a ReviewHook handler.
 type ReviewEventHandler func(Agent, scm.ReviewHook) error
 
-// RegisterReviewEventHandler registers a plugin's ReviewHook handler.
-func RegisterReviewEventHandler(name string, fn ReviewEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	reviewEventHandlers[name] = fn
-}
-
-// ReviewCommentEventHandler defines the function contract for a scm.PullRequestCommentHook handler.
-type ReviewCommentEventHandler func(Agent, scm.PullRequestCommentHook) error
-
-// RegisterReviewCommentEventHandler registers a plugin's scm.PullRequestCommentHook handler.
-func RegisterReviewCommentEventHandler(name string, fn ReviewCommentEventHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	reviewCommentEventHandlers[name] = fn
-}
-
 // GenericCommentHandler defines the function contract for a scm.Comment handler.
 type GenericCommentHandler func(Agent, scmprovider.GenericCommentEvent) error
 
-// RegisterGenericCommentHandler registers a plugin's scm.Comment handler.
-func RegisterGenericCommentHandler(name string, fn GenericCommentHandler, help HelpProvider) {
-	pluginHelp[name] = help
-	genericCommentHandlers[name] = fn
+// CommandEventHandler defines the function contract for a command handler.
+type CommandEventHandler func(CommandMatch, Agent, scmprovider.GenericCommentEvent) error
+
+// HelpProviders returns the map of registered plugins with their associated HelpProvider.
+func HelpProviders() map[string]HelpProvider {
+	pluginHelp := make(map[string]HelpProvider)
+	for k, v := range plugins {
+		pluginHelp[k] = func(config *Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
+			return v.GetHelp(config, enabledRepos)
+		}
+	}
+	return pluginHelp
 }
 
 // Agent may be used concurrently, so each entry must be thread-safe.
 type Agent struct {
 	SCMProviderClient *scmprovider.Client
 	LauncherClient    launcher.PipelineLauncher
-	GitClient         git2.Client
+	GitClient         git.Client
 	KubernetesClient  kubernetes.Interface
 	LighthouseClient  lighthouseclient.LighthouseJobInterface
 	ServerURL         *url.URL
@@ -155,7 +109,7 @@ type Agent struct {
 	Logger *logrus.Entry
 
 	// may be nil if not initialized
-	commentPruner *commentpruner.EventClient
+	Commentpruner *commentpruner.EventClient
 }
 
 // NewAgent bootstraps a new Agent struct from the passed dependencies.
@@ -188,7 +142,7 @@ func NewAgent(configAgent *config.Agent, pluginConfigAgent *ConfigAgent, clientA
 // InitializeCommentPruner attaches a commentpruner.EventClient to the agent to handle
 // pruning comments.
 func (a *Agent) InitializeCommentPruner(org, repo string, pr int) {
-	a.commentPruner = commentpruner.NewEventClient(
+	a.Commentpruner = commentpruner.NewEventClient(
 		a.SCMProviderClient, a.Logger.WithField("client", "commentpruner"),
 		org, repo, pr,
 	)
@@ -197,10 +151,10 @@ func (a *Agent) InitializeCommentPruner(org, repo string, pr int) {
 // CommentPruner will return the commentpruner.EventClient attached to the agent or an error
 // if one is not attached.
 func (a *Agent) CommentPruner() (*commentpruner.EventClient, error) {
-	if a.commentPruner == nil {
+	if a.Commentpruner == nil {
 		return nil, errors.New("comment pruner client never initialized")
 	}
-	return a.commentPruner, nil
+	return a.Commentpruner, nil
 }
 
 // ClientAgent contains the various clients that are attached to the Agent.
@@ -209,7 +163,7 @@ type ClientAgent struct {
 	SCMProviderClient *scm.Client
 
 	KubernetesClient kubernetes.Interface
-	GitClient        git2.Client
+	GitClient        git.Client
 	LauncherClient   launcher.PipelineLauncher
 	LighthouseClient lighthouseclient.LighthouseJobInterface
 
@@ -237,8 +191,8 @@ func (pa *ConfigAgent) Load(path string) error {
 	if err := np.Validate(); err != nil {
 		return err
 	}
-	presentPlugins := make(map[string]interface{}, len(pluginHelp))
-	for k, v := range pluginHelp {
+	presentPlugins := make(map[string]interface{}, len(plugins))
+	for k, v := range plugins {
 		cp := v
 		presentPlugins[k] = &cp
 	}
@@ -259,8 +213,8 @@ func (pa *ConfigAgent) LoadYAMLConfig(data []byte) (*Configuration, error) {
 	if err := c.Validate(); err != nil {
 		return c, err
 	}
-	presentPlugins := make(map[string]interface{}, len(pluginHelp))
-	for k, v := range pluginHelp {
+	presentPlugins := make(map[string]interface{}, len(plugins))
+	for k, v := range plugins {
 		cp := v
 		presentPlugins[k] = &cp
 	}
@@ -287,124 +241,6 @@ func (pa *ConfigAgent) Set(pc *Configuration) {
 	pa.configuration = pc
 }
 
-// GenericCommentHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) GenericCommentHandlers(owner, repo string) map[string]GenericCommentHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]GenericCommentHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := genericCommentHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-	return hs
-}
-
-// IssueHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) IssueHandlers(owner, repo string) map[string]IssueHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]IssueHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := issueHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-	return hs
-}
-
-// IssueCommentHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) IssueCommentHandlers(owner, repo string) map[string]IssueCommentHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]IssueCommentHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := issueCommentHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-
-	return hs
-}
-
-// PullRequestHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) PullRequestHandlers(owner, repo string) map[string]PullRequestHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]PullRequestHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := pullRequestHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-
-	return hs
-}
-
-// ReviewEventHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) ReviewEventHandlers(owner, repo string) map[string]ReviewEventHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]ReviewEventHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := reviewEventHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-
-	return hs
-}
-
-// ReviewCommentEventHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) ReviewCommentEventHandlers(owner, repo string) map[string]ReviewCommentEventHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]ReviewCommentEventHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := reviewCommentEventHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-
-	return hs
-}
-
-// StatusEventHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) StatusEventHandlers(owner, repo string) map[string]StatusEventHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]StatusEventHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := statusEventHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-
-	return hs
-}
-
-// PushEventHandlers returns a map of plugin names to handlers for the repo.
-func (pa *ConfigAgent) PushEventHandlers(owner, repo string) map[string]PushEventHandler {
-	pa.mut.Lock()
-	defer pa.mut.Unlock()
-
-	hs := map[string]PushEventHandler{}
-	for _, p := range pa.getPlugins(owner, repo) {
-		if h, ok := pushEventHandlers[p]; ok {
-			hs[p] = h
-		}
-	}
-
-	return hs
-}
-
 // getPlugins returns a list of plugins that are enabled on a given (org, repository).
 func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 	var plugins []string
@@ -421,57 +257,20 @@ func (pa *ConfigAgent) getPlugins(owner, repo string) []string {
 		plugins = append(plugins, pa.configuration.Plugins[o]...)
 		plugins = append(plugins, pa.configuration.Plugins[fullName]...)
 	}
-
-	// until we have the configuration stuff setup nicely - lets add a simple way to enable plugins
-	pluginNames := os.Getenv("LIGHTHOUSE_PLUGINS")
-	if pluginNames != "" {
-		names := strings.Split(pluginNames, ",")
-		for _, name := range names {
-			name = strings.TrimSpace(name)
-			if name != "" {
-				found := false
-				for _, p := range plugins {
-					if p == name {
-						found = true
-						break
-					}
-				}
-				if !found {
-					plugins = append(plugins, name)
-				}
-			}
-		}
-	}
 	logrus.Infof("found plugins %s\n", strings.Join(plugins, ", "))
 	return plugins
 }
 
-// EventsForPlugin returns the registered events for the passed plugin.
-func EventsForPlugin(name string) []string {
-	var events []string
-	if _, ok := issueHandlers[name]; ok {
-		events = append(events, "issue")
+// GetPlugins returns a map of plugin names to plugins for the repo.
+func (pa *ConfigAgent) GetPlugins(owner, repo, provider string) map[string]Plugin {
+	pa.mut.Lock()
+	defer pa.mut.Unlock()
+
+	hs := map[string]Plugin{}
+	for _, p := range pa.getPlugins(owner, repo) {
+		if h, ok := plugins[p]; ok && !plugins[p].IsProviderExcluded(provider) {
+			hs[p] = h
+		}
 	}
-	if _, ok := issueCommentHandlers[name]; ok {
-		events = append(events, "issue_comment")
-	}
-	if _, ok := pullRequestHandlers[name]; ok {
-		events = append(events, "pull_request")
-	}
-	if _, ok := pushEventHandlers[name]; ok {
-		events = append(events, "push")
-	}
-	if _, ok := reviewEventHandlers[name]; ok {
-		events = append(events, "pull_request_review")
-	}
-	if _, ok := reviewCommentEventHandlers[name]; ok {
-		events = append(events, "pull_request_review_comment")
-	}
-	if _, ok := statusEventHandlers[name]; ok {
-		events = append(events, "status")
-	}
-	if _, ok := genericCommentHandlers[name]; ok {
-		events = append(events, "GenericCommentEvent (any event for user text)")
-	}
-	return events
+	return hs
 }

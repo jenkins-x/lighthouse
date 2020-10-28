@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +17,8 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	util2 "github.com/jenkins-x/lighthouse/test/e2e/util"
 
 	"github.com/cenkalti/backoff"
 	"github.com/jenkins-x/go-scm/scm"
@@ -38,14 +42,34 @@ import (
 )
 
 const (
-	primarySCMTokenEnvVar  = "E2E_PRIMARY_SCM_TOKEN" /* #nosec */
-	primarySCMUserEnvVar   = "E2E_PRIMARY_SCM_USER"
-	approverSCMTokenEnvVar = "E2E_APPROVER_SCM_TOKEN" /* #nosec */
-	approverSCMUserEnvVar  = "E2E_APPROVER_SCM_USER"
-	hmacTokenEnvVar        = "E2E_HMAC_TOKEN" /* #nosec */
-	gitServerEnvVar        = "E2E_GIT_SERVER"
-	gitKindEnvVar          = "E2E_GIT_KIND"
-	baseRepoName           = "lh-e2e-test"
+	// TestNamespace the namespace in which to run the test.
+	TestNamespace = "E2E_TEST_NAMESPACE" /* #nosec */
+	// PrimarySCMTokenEnvVar is the name of the environment variable containing the Git SCM token for the bot user.
+	PrimarySCMTokenEnvVar = "E2E_PRIMARY_SCM_TOKEN" /* #nosec */
+	// PrimarySCMUserEnvVar is the name of the environment variable containing the Git SCM username of the bot user.
+	PrimarySCMUserEnvVar = "E2E_PRIMARY_SCM_USER"
+	// ApproverSCMTokenEnvVar is the name of the environment variable containing the Git SCM token for the approver.
+	ApproverSCMTokenEnvVar = "E2E_APPROVER_SCM_TOKEN" /* #nosec */
+	// ApproverSCMUserEnvVar is the name of the environment variable containing the Git SCM username of the approver.
+	ApproverSCMUserEnvVar = "E2E_APPROVER_SCM_USER"
+	// HmacTokenEnvVar is the name of the environment variable containing the webhook secret.
+	HmacTokenEnvVar = "E2E_HMAC_TOKEN" /* #nosec */
+	// GitServerEnvVar is the name of the environment variable containing URL to the Git SCM provider
+	GitServerEnvVar = "E2E_GIT_SERVER"
+	// GitKindEnvVar is the name of the environment variable containing the Git SCM kind
+	GitKindEnvVar = "E2E_GIT_KIND"
+	// BaseRepoName is the name of the environment variable containing is the base name for the test repo. Will be suffixed with a random seed.
+	BaseRepoName = "lh-e2e-test"
+	// TestRepoName name of the test repo.
+	TestRepoName = "E2E_TEST_REPO"
+	// JenkinsURL the URL to the Jenkins test instance.
+	JenkinsURL = "E2E_JENKINS_URL"
+	// JenkinsUser username for making Jenkins API requests.
+	JenkinsUser = "E2E_JENKINS_USER"
+	// JenkinsAPIToken API token for Jenkins.
+	JenkinsAPIToken = "E2E_JENKINS_API_TOKEN" /* #nosec */
+	// JenkinsGitCredentialID id of the global Jenkins Git credentials
+	JenkinsGitCredentialID = "E2E_JENKINS_GIT_CREDENTIAL_ID"
 )
 
 var (
@@ -72,7 +96,7 @@ func CreateGitClient(gitServerURL string, userFunc func() string, tokenFunc func
 // CreateSCMClient takes functions that return the username and token to use, and creates the scm.Client and Lighthouse SCM client
 func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (*scm.Client, scmprovider.SCMClient, string, error) {
 	kind := GitKind()
-	serverURL := os.Getenv(gitServerEnvVar)
+	serverURL := os.Getenv(GitServerEnvVar)
 
 	client, err := factory.NewClient(kind, serverURL, "")
 
@@ -88,7 +112,7 @@ func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (
 
 // GitKind returns the git provider flavor being used
 func GitKind() string {
-	kind := os.Getenv(gitKindEnvVar)
+	kind := os.Getenv(GitKindEnvVar)
 	if kind == "" {
 		kind = "github"
 	}
@@ -97,7 +121,7 @@ func GitKind() string {
 
 // CreateHMACToken creates an HMAC token for use in webhooks, defaulting to the E2E_HMAC_TOKEN env var if set
 func CreateHMACToken() (string, error) {
-	fromEnv := os.Getenv(hmacTokenEnvVar)
+	fromEnv := os.Getenv(HmacTokenEnvVar)
 	if fromEnv != "" {
 		return fromEnv, nil
 	}
@@ -113,7 +137,7 @@ func CreateHMACToken() (string, error) {
 
 // GetBotName gets the bot user name
 func GetBotName() string {
-	botName := os.Getenv(primarySCMUserEnvVar)
+	botName := os.Getenv(PrimarySCMUserEnvVar)
 	if botName == "" {
 		botName = "jenkins-x-bot"
 	}
@@ -122,7 +146,7 @@ func GetBotName() string {
 
 // GetApproverName gets the approver user's username
 func GetApproverName() string {
-	botName := os.Getenv(approverSCMUserEnvVar)
+	botName := os.Getenv(ApproverSCMUserEnvVar)
 	if botName == "" {
 		botName = "jenkins-x-bot"
 	}
@@ -131,25 +155,25 @@ func GetApproverName() string {
 
 // GetPrimarySCMToken gets the token used by the bot/primary user
 func GetPrimarySCMToken() (string, error) {
-	return getSCMToken(primarySCMTokenEnvVar, GitKind())
+	return getSCMToken(PrimarySCMTokenEnvVar, GitKind())
 }
 
 // GetApproverSCMToken gets the token used by the approver
 func GetApproverSCMToken() (string, error) {
-	return getSCMToken(approverSCMTokenEnvVar, GitKind())
+	return getSCMToken(ApproverSCMTokenEnvVar, GitKind())
 }
 
 func getSCMToken(envName, gitKind string) (string, error) {
 	value := os.Getenv(envName)
 	if value == "" {
-		return value, fmt.Errorf("No token available for git kind %s at environment variable $%s", gitKind, envName)
+		return value, fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
 	}
 	return value, nil
 }
 
 // CreateBaseRepository creates the repository that will be used for tests
 func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitClient git.Client) (*scm.Repository, *git.Repo, error) {
-	repoName := baseRepoName + "-" + strconv.FormatInt(ginkgo.GinkgoRandomSeed(), 10)
+	repoName := BaseRepoName + "-" + strconv.FormatInt(ginkgo.GinkgoRandomSeed(), 10)
 
 	input := &scm.RepositoryInput{
 		Name:    repoName,
@@ -160,6 +184,7 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to create repository")
 	}
+	_ = os.Setenv(TestRepoName, repo.Clone)
 
 	// Sleep 5 seconds to ensure repository exists enough to be pushed to.
 	time.Sleep(5 * time.Second)
@@ -173,20 +198,11 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 		return nil, nil, err
 	}
 
-	baseScriptFile := filepath.Join("test_data", "baseRepoScript.sh")
-	baseScript, err := ioutil.ReadFile(baseScriptFile) /* #nosec */
+	testRepoDir := filepath.Join("test_data", "repo")
+	err = util2.Copy(testRepoDir, r.Dir, true)
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to read %s", baseScriptFile)
-	}
-
-	scriptOutputFile := filepath.Join(r.Dir, "script.sh")
-	err = ioutil.WriteFile(scriptOutputFile, baseScript, 0600)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "couldn't write to %s", scriptOutputFile)
-	}
-
-	ExpectCommandExecution(r.Dir, 1, 0, "git", "add", scriptOutputFile)
+	ExpectCommandExecution(r.Dir, 1, 0, "git", "add", ".")
 
 	owners := repoowners.SimpleConfig{
 		Config: repoowners.Config{
@@ -219,7 +235,7 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 
 // AddCollaborator adds the approver user to the repo
 func AddCollaborator(approver string, repo *scm.Repository, botClient *scm.Client, approverClient *scm.Client) error {
-	_, alreadyCollaborator, _, err := botClient.Repositories.AddCollaborator(context.Background(), fmt.Sprintf("%s/%s", repo.Namespace, repo.Name), approver, "admin")
+	_, alreadyCollaborator, _, err := botClient.Repositories.AddCollaborator(context.Background(), fmt.Sprintf("%s/%s", repo.Namespace, repo.Name), approver, scm.WritePermission)
 	if alreadyCollaborator {
 		return nil
 	}
@@ -260,7 +276,10 @@ func ExpectCommandExecution(dir string, commandTimeout time.Duration, exitCode i
 	f := func() error {
 		command := exec.Command(c, args...) /* #nosec */
 		command.Dir = dir
-		session, err := gexec.Start(command, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
+		session, err := gexec.Start(command, logrus.StandardLogger().Out, logrus.StandardLogger().Out)
+		if err != nil {
+			return err
+		}
 		session.Wait(10 * time.Second * commandTimeout)
 		gomega.Eventually(session).Should(gexec.Exit(exitCode))
 		return err
@@ -279,14 +298,15 @@ func retryExponentialBackoff(maxDuration time.Duration, f func() error) error {
 }
 
 type configReplacement struct {
-	Owner     string
-	Repo      string
-	Namespace string
-	Agent     string
+	Owner      string
+	Repo       string
+	Namespace  string
+	Agent      string
+	JenkinsURL string
 }
 
 // ProcessConfigAndPlugins reads the templates for the config and plugins config maps and replaces the owner, repo, and namespace in them
-func ProcessConfigAndPlugins(owner, repo, namespace, agent string) (*config.Config, *plugins.Configuration, error) {
+func ProcessConfigAndPlugins(owner, repo, namespace, agent, jenkinsURL string) (*config.Config, *plugins.Configuration, error) {
 	cfgFile := filepath.Join("test_data", "example-config.tmpl.yml")
 	pluginFile := filepath.Join("test_data", "example-plugins.tmpl.yml")
 
@@ -309,10 +329,11 @@ func ProcessConfigAndPlugins(owner, repo, namespace, agent string) (*config.Conf
 	}
 
 	input := configReplacement{
-		Owner:     owner,
-		Repo:      repo,
-		Namespace: namespace,
-		Agent:     agent,
+		Owner:      owner,
+		Repo:       repo,
+		Namespace:  namespace,
+		Agent:      agent,
+		JenkinsURL: jenkinsURL,
 	}
 
 	var cfgBuf bytes.Buffer
@@ -400,7 +421,9 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 	if err != nil {
 		return errors.Wrapf(err, "creating temp directory")
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
 
 	cfgYaml, err := yaml.Marshal(cfgMap)
 	if err != nil {
@@ -429,9 +452,9 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 }
 
 // ExpectThatPullRequestHasCommentMatching returns an error if the PR does not have a comment matching the provided function
-func ExpectThatPullRequestHasCommentMatching(lhClient scmprovider.SCMClient, pr *scm.PullRequest, matchFunc func(comments []*scm.Comment) error) error {
+func ExpectThatPullRequestHasCommentMatching(scmClient *scm.Client, pr *scm.PullRequest, matchFunc func(comments []*scm.Comment) error) error {
 	f := func() error {
-		comments, err := lhClient.ListPullRequestComments(pr.Repository().Namespace, pr.Repository().Name, pr.Number)
+		comments, _, err := scmClient.PullRequests.ListComments(context.Background(), pr.Repository().FullName, pr.Number, scm.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -443,40 +466,21 @@ func ExpectThatPullRequestHasCommentMatching(lhClient scmprovider.SCMClient, pr 
 
 // WaitForPullRequestCommitStatus checks a pull request until either it reaches a given status in all the contexts supplied
 // or a timeout is reached.
-func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.PullRequest, contexts []string, desiredStatuses ...string) {
+func WaitForPullRequestCommitStatus(scmClient *scm.Client, pr *scm.PullRequest, contexts []string, desiredStatuses ...string) {
 	gomega.Expect(pr.Sha).ShouldNot(gomega.Equal(""))
 	repo := pr.Repository()
 
 	checkPRStatuses := func() error {
-		updatedPR, err := lhClient.GetPullRequest(repo.Namespace, repo.Name, pr.Number)
+		updatedPR, _, err := scmClient.PullRequests.Find(context.Background(), repo.FullName, pr.Number)
 		if err != nil {
 			return err
 		}
-		statuses, err := lhClient.ListStatuses(repo.Namespace, repo.Name, updatedPR.Sha)
+		statuses, _, err := scmClient.Repositories.ListStatus(context.Background(), repo.FullName, updatedPR.Sha, scm.ListOptions{})
 		if err != nil {
 			logInfof("error fetching commit statuses for PR %s/%s/%d: %s\n", repo.Namespace, repo.Name, updatedPR.Number, err)
 			return err
 		}
-		contextStatuses := make(map[string]*scm.Status)
-		// For GitHub, only set the status if it's the first one we see for the context, which is always the newest
-		// For GitLab, ordering is actually the inverse,
-
-		var orderedStatuses []*scm.Status
-		if GitKind() == "gitlab" {
-			for i := len(statuses) - 1; i >= 0; i-- {
-				orderedStatuses = append(orderedStatuses, statuses[i])
-			}
-		} else {
-			orderedStatuses = append(orderedStatuses, statuses...)
-		}
-		for _, status := range orderedStatuses {
-			if status == nil {
-				return err
-			}
-			if _, exists := contextStatuses[status.Label]; !exists {
-				contextStatuses[status.Label] = status
-			}
-		}
+		contextStatuses := commitStatusesByContext(statuses)
 
 		var matchedStatus *scm.Status
 		var wrongStatuses []string
@@ -510,6 +514,64 @@ func WaitForPullRequestCommitStatus(lhClient scmprovider.SCMClient, pr *scm.Pull
 	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 }
 
+// GetCommitStatus retrieves the status check with the specified name for the specified sha
+func GetCommitStatus(scmClient *scm.Client, repoName string, sha string, statusName string) (*scm.Status, error) {
+	statuses, _, err := scmClient.Repositories.ListStatus(context.Background(), repoName, sha, scm.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to list commit status for %s in %s", sha, repoName)
+	}
+	contextStatuses := commitStatusesByContext(statuses)
+	return contextStatuses[statusName], nil
+}
+
+// BuildLog retrieves the build log as string from the specified URL.
+func BuildLog(url string) (string, error) {
+	resp, err := http.Get(url) // #nosec G107
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.Errorf("unexpected HTTP response status %d", resp.StatusCode)
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	log := string(bodyBytes)
+	return log, nil
+}
+
+func commitStatusesByContext(statuses []*scm.Status) map[string]*scm.Status {
+	contextStatuses := make(map[string]*scm.Status)
+
+	// For GitHub, only set the status if it's the first one we see for the context, which is always the newest
+	// For GitLab, ordering is actually the inverse,
+	var orderedStatuses []*scm.Status
+	if GitKind() == "gitlab" {
+		for i := len(statuses) - 1; i >= 0; i-- {
+			orderedStatuses = append(orderedStatuses, statuses[i])
+		}
+	} else {
+		orderedStatuses = append(orderedStatuses, statuses...)
+	}
+
+	for _, status := range orderedStatuses {
+		if status == nil {
+			logInfo("WARNING: nil commit status retrieved")
+			continue
+		}
+		if _, exists := contextStatuses[status.Label]; !exists {
+			contextStatuses[status.Label] = status
+		}
+	}
+
+	return contextStatuses
+}
+
 func isADesiredStatus(status string, desiredStatuses []string) bool {
 	for _, s := range desiredStatuses {
 		if status == s {
@@ -523,19 +585,19 @@ const infoPrefix = "      "
 
 // logInfo info logging
 func logInfo(message string) {
-	fmt.Fprintln(ginkgo.GinkgoWriter, infoPrefix+message)
+	_, _ = fmt.Fprint(logrus.StandardLogger().Out, infoPrefix+fmt.Sprint(message))
 }
 
 // logInfof info logging
 func logInfof(format string, args ...interface{}) {
-	fmt.Fprintf(ginkgo.GinkgoWriter, infoPrefix+fmt.Sprintf(format, args...))
+	_, _ = fmt.Fprintf(logrus.StandardLogger().Out, infoPrefix+fmt.Sprintf(format, args...))
 }
 
 // RunWithReporters runs a suite with better logging and gathering of test results
 func RunWithReporters(t *testing.T, suiteID string) {
 	reportsDir := os.Getenv("REPORTS_DIR")
 	if reportsDir == "" {
-		reportsDir = filepath.Join("../", "build", "reports")
+		reportsDir = filepath.Join("..", "..", "..", "build", "reports")
 	}
 	err := os.MkdirAll(reportsDir, 0700)
 	if err != nil {
@@ -561,15 +623,15 @@ func RunWithReporters(t *testing.T, suiteID string) {
 }
 
 // AttemptToLGTMOwnPullRequest return an error if the /lgtm fails to add the lgtm label to PR
-func AttemptToLGTMOwnPullRequest(lhClient scmprovider.SCMClient, pr *scm.PullRequest) error {
+func AttemptToLGTMOwnPullRequest(scmClient *scm.Client, pr *scm.PullRequest) error {
 	repo := pr.Repository()
 
-	err := lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, "/lgtm")
+	_, _, err := scmClient.PullRequests.CreateComment(context.Background(), repo.FullName, pr.Number, &scm.CommentInput{Body: "/lgtm"})
 	if err != nil {
 		return err
 	}
 
-	return ExpectThatPullRequestHasCommentMatching(lhClient, pr, func(comments []*scm.Comment) error {
+	return ExpectThatPullRequestHasCommentMatching(scmClient, pr, func(comments []*scm.Comment) error {
 		for _, c := range comments {
 			if strings.Contains(c.Body, "you cannot LGTM your own PR.") {
 				return nil
@@ -629,7 +691,7 @@ func AddReviewerToPullRequestWithChatOpsCommand(lhClient scmprovider.SCMClient, 
 	})
 }
 
-// ExpectThatPullRequestMatches returns an error if the PR does not satisfy the provided funciton
+// ExpectThatPullRequestMatches returns an error if the PR does not satisfy the provided function
 func ExpectThatPullRequestMatches(lhClient scmprovider.SCMClient, pullRequestNumber int, owner, repo string, matchFunc func(request *scm.PullRequest) error) error {
 	f := func() error {
 		pullRequest, err := lhClient.GetPullRequest(owner, repo, pullRequestNumber)
@@ -729,7 +791,7 @@ func AddWIPLabelToPullRequestByUpdatingTitle(lhClient scmprovider.SCMClient, scm
 }
 
 // ApprovePullRequest attempts to /approve a PR with the given approver git provider, then verify the label is there with the default provider
-func ApprovePullRequest(lhClient scmprovider.SCMClient, approverclient scmprovider.SCMClient, pr *scm.PullRequest) error {
+func ApprovePullRequest(lhClient scmprovider.SCMClient, approverClient scmprovider.SCMClient, pr *scm.PullRequest) error {
 	repo := pr.Repository()
 
 	ginkgo.By("approving the PR")
@@ -738,7 +800,7 @@ func ApprovePullRequest(lhClient scmprovider.SCMClient, approverclient scmprovid
 		approveCmd = "lh-" + approveCmd
 	}
 
-	err := approverclient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/%s", approveCmd))
+	err := approverClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/%s", approveCmd))
 	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
 	ginkgo.By("waiting for the approved label to appear")
@@ -769,4 +831,16 @@ func WaitForPullRequestToMerge(lhClient scmprovider.SCMClient, pr *scm.PullReque
 
 	err := retryExponentialBackoff(15*time.Minute, waitForMergeFunc)
 	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+}
+
+// URLForFile returns the SCM provider URL for a specific file in the repository.
+func URLForFile(providerType string, serverURL string, owner string, repo string, path string) string {
+	switch providerType {
+	case "stash":
+		return fmt.Sprintf("%s/projects/%s/repos/%s/browse/%s", serverURL, strings.ToUpper(owner), repo, path)
+	case "gitlab":
+		return fmt.Sprintf("%s/%s/%s/-/blob/master/%s", serverURL, owner, repo, path)
+	default:
+		return fmt.Sprintf("%s/%s/%s/blob/master/%s", serverURL, owner, repo, path)
+	}
 }

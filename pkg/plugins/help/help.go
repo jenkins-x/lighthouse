@@ -17,12 +17,10 @@ limitations under the License.
 package help
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -31,14 +29,10 @@ import (
 const pluginName = "help"
 
 var (
-	helpRe                     = regexp.MustCompile(`(?mi)^/(?:lh-)?help\s*$`)
-	helpRemoveRe               = regexp.MustCompile(`(?mi)^/(?:lh-)?remove-help\s*$`)
-	helpGoodFirstIssueRe       = regexp.MustCompile(`(?mi)^/(?:lh-)?good-first-issue\s*$`)
-	helpGoodFirstIssueRemoveRe = regexp.MustCompile(`(?mi)^/(?:lh-)?remove-good-first-issue\s*$`)
-	helpGuidelinesURL          = "https://git.k8s.io/community/contributors/guide/help-wanted.md"
-	helpMsgPruneMatch          = "This request has been marked as needing help from a contributor."
-	helpMsg                    = `
-	This request has been marked as needing help from a contributor.
+	helpGuidelinesURL = "https://git.k8s.io/community/contributors/guide/help-wanted.md"
+	helpMsgPruneMatch = "This request has been marked as needing help from a contributor."
+	helpMsg           = `
+This request has been marked as needing help from a contributor.
 
 Please ensure the request meets the requirements listed [here](` + helpGuidelinesURL + `).
 
@@ -47,7 +41,7 @@ by commenting with the ` + "`/remove-help`" + ` command.
 `
 	goodFirstIssueMsgPruneMatch = "This request has been marked as suitable for new contributors."
 	goodFirstIssueMsg           = `
-	This request has been marked as suitable for new contributors.
+This request has been marked as suitable for new contributors.
 
 Please ensure the request meets the requirements listed [here](` + helpGuidelinesURL + "#good-first-issue" + `).
 
@@ -56,23 +50,29 @@ by commenting with the ` + "`/remove-good-first-issue`" + ` command.
 `
 )
 
-func init() {
-	plugins.RegisterGenericCommentHandler(pluginName, handleGenericComment, helpProvider)
-}
-
-func helpProvider(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	// The Config field is omitted because this plugin is not configurable.
-	pluginHelp := &pluginhelp.PluginHelp{
+var (
+	plugin = plugins.Plugin{
 		Description: "The help plugin provides commands that add or remove the '" + labels.Help + "' and the '" + labels.GoodFirstIssue + "' labels from issues.",
+		Commands: []plugins.Command{{
+			Prefix:      "remove-",
+			Name:        "help|good-first-issue",
+			Description: "Applies or removes the '" + labels.Help + "' and '" + labels.GoodFirstIssue + "' labels to an issue.",
+			WhoCanUse:   "Anyone can trigger this command on a PR.",
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					cp, err := pc.CommentPruner()
+					if err != nil {
+						return err
+					}
+					return handle(match.Prefix != "", match.Name, pc.SCMProviderClient, pc.Logger, cp, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IsNotPR(), plugins.IssueState("open")),
+		}},
 	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/[remove-](help|good-first-issue)",
-		Description: "Applies or removes the '" + labels.Help + "' and '" + labels.GoodFirstIssue + "' labels to an issue.",
-		Featured:    false,
-		WhoCanUse:   "Anyone can trigger this command on a PR.",
-		Examples:    []string{"/help", "/remove-help", "/good-first-issue", "/remove-good-first-issue"},
-	})
-	return pluginHelp, nil
+)
+
+func init() {
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 type scmProviderClient interface {
@@ -88,20 +88,7 @@ type commentPruner interface {
 	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
 }
 
-func handleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	cp, err := pc.CommentPruner()
-	if err != nil {
-		return err
-	}
-	return handle(pc.SCMProviderClient, pc.Logger, cp, &e)
-}
-
-func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmprovider.GenericCommentEvent) error {
-	// Only consider open issues and new comments.
-	if e.IsPR || e.IssueState != "open" || e.Action != scm.ActionCreate {
-		return nil
-	}
-
+func handle(remove bool, command string, spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmprovider.GenericCommentEvent) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	commentAuthor := e.Author.Login
@@ -115,7 +102,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmpr
 	hasGoodFirstIssue := scmprovider.HasLabel(labels.GoodFirstIssue, issueLabels)
 
 	// If PR has help label and we're asking for it to be removed, remove label
-	if hasHelp && helpRemoveRe.MatchString(e.Body) {
+	if hasHelp && command == "help" && remove {
 		if err := spc.RemoveLabel(org, repo, e.Number, labels.Help, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labels.Help)
 		}
@@ -139,7 +126,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmpr
 
 	// If PR does not have the good-first-issue label and we are asking for it to be added,
 	// add both the good-first-issue and help labels
-	if !hasGoodFirstIssue && helpGoodFirstIssueRe.MatchString(e.Body) {
+	if !hasGoodFirstIssue && command == "good-first-issue" && !remove {
 		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, spc.QuoteAuthorForComment(commentAuthor), goodFirstIssueMsg)); err != nil {
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", goodFirstIssueMsg)
 		}
@@ -159,7 +146,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmpr
 
 	// If PR does not have the help label and we're asking it to be added,
 	// add the label
-	if !hasHelp && helpRe.MatchString(e.Body) {
+	if !hasHelp && command == "help" && !remove {
 		if err := spc.CreateComment(org, repo, e.Number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.IssueLink, spc.QuoteAuthorForComment(commentAuthor), helpMsg)); err != nil {
 			log.WithError(err).Errorf("Failed to create comment \"%s\".", helpMsg)
 		}
@@ -172,7 +159,7 @@ func handle(spc scmProviderClient, log *logrus.Entry, cp commentPruner, e *scmpr
 
 	// If PR has good-first-issue label and we are asking for it to be removed,
 	// remove just the good-first-issue label
-	if hasGoodFirstIssue && helpGoodFirstIssueRemoveRe.MatchString(e.Body) {
+	if hasGoodFirstIssue && command == "good-first-issue" && remove {
 		if err := spc.RemoveLabel(org, repo, e.Number, labels.GoodFirstIssue, e.IsPR); err != nil {
 			log.WithError(err).Errorf("GitHub failed to remove the following label: %s", labels.GoodFirstIssue)
 		}

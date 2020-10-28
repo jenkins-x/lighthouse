@@ -17,52 +17,60 @@ limitations under the License.
 package lifecycle
 
 import (
-	"regexp"
-
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
-	"github.com/jenkins-x/lighthouse/pkg/pluginhelp"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
 var (
 	lifecycleLabels = []string{labels.LifecycleActive, labels.LifecycleFrozen, labels.LifecycleStale, labels.LifecycleRotten}
-	lifecycleRe     = regexp.MustCompile(`(?mi)^/(?:lh-)?(remove-)?lifecycle (active|frozen|stale|rotten)\s*$`)
+)
+
+const pluginName = "lifecycle"
+
+var (
+	plugin = plugins.Plugin{
+		Description: "Close, reopen, flag and/or unflag an issue or PR as frozen/stale/rotten",
+		Commands: []plugins.Command{{
+			Prefix: "remove-",
+			Name:   "lifecycle",
+			Arg: &plugins.CommandArg{
+				Pattern: "frozen|stale|rotten",
+			},
+			Description: "Flags an issue or PR as frozen/stale/rotten",
+			WhoCanUse:   "Anyone can trigger this command.",
+			Action: plugins.
+				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handleOne(match.Prefix != "", "lifecycle/"+match.Arg, pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate)),
+		}, {
+			Name:        "close",
+			Description: "Closes an issue or PR.",
+			WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handleClose(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IssueState("open")),
+		}, {
+			Name:        "reopen",
+			Description: "Reopens an issue or PR",
+			WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
+			Action: plugins.
+				Invoke(func(_ plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+					return handleReopen(pc.SCMProviderClient, pc.Logger, &e)
+				}).
+				When(plugins.Action(scm.ActionCreate), plugins.IssueState("closed")),
+		}},
+	}
 )
 
 func init() {
-	plugins.RegisterGenericCommentHandler("lifecycle", lifecycleHandleGenericComment, help)
-}
-
-func help(config *plugins.Configuration, enabledRepos []string) (*pluginhelp.PluginHelp, error) {
-	pluginHelp := &pluginhelp.PluginHelp{
-		Description: "Close, reopen, flag and/or unflag an issue or PR as frozen/stale/rotten",
-	}
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/close",
-		Description: "Closes an issue or PR.",
-		Featured:    false,
-		WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-		Examples:    []string{"/close", "/lh-close"},
-	})
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/reopen",
-		Description: "Reopens an issue or PR",
-		Featured:    false,
-		WhoCanUse:   "Authors and collaborators on the repository can trigger this command.",
-		Examples:    []string{"/reopen", "/lh-reopen"},
-	})
-	pluginHelp.AddCommand(pluginhelp.Command{
-		Usage:       "/[remove-]lifecycle <frozen|stale|rotten>",
-		Description: "Flags an issue or PR as frozen/stale/rotten",
-		Featured:    false,
-		WhoCanUse:   "Anyone can trigger this command.",
-		Examples:    []string{"/lifecycle frozen", "/remove-lifecycle stale", "/lh-lifecyle rotten"},
-	})
-	return pluginHelp, nil
+	plugins.RegisterPlugin(pluginName, plugin)
 }
 
 type lifecycleClient interface {
@@ -71,40 +79,10 @@ type lifecycleClient interface {
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
 }
 
-func lifecycleHandleGenericComment(pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-	gc := pc.SCMProviderClient
-	log := pc.Logger
-	if err := handleReopen(gc, log, &e); err != nil {
-		return err
-	}
-	if err := handleClose(gc, log, &e); err != nil {
-		return err
-	}
-	return handle(gc, log, &e)
-}
-
-func handle(gc lifecycleClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
-	// Only consider new comments.
-	if e.Action != scm.ActionCreate {
-		return nil
-	}
-
-	for _, mat := range lifecycleRe.FindAllStringSubmatch(e.Body, -1) {
-		if err := handleOne(gc, log, e, mat); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func handleOne(gc lifecycleClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent, mat []string) error {
+func handleOne(remove bool, lbl string, gc lifecycleClient, log *logrus.Entry, e *scmprovider.GenericCommentEvent) error {
 	org := e.Repo.Namespace
 	repo := e.Repo.Name
 	number := e.Number
-
-	remove := mat[1] != ""
-	cmd := mat[2]
-	lbl := "lifecycle/" + cmd
 
 	// Let's start simple and allow anyone to add/remove frozen, stale, rotten labels.
 	// Adjust if we find evidence of the community abusing these labels.

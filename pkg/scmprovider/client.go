@@ -29,6 +29,7 @@ type SCMClient interface {
 
 	// Functions implemented in content.go
 	GetFile(string, string, string, string) ([]byte, error)
+	ListFiles(string, string, string, string) ([]*scm.FileEntry, error)
 
 	// Functions implemented in git.go
 	GetRef(string, string, string) (string, error)
@@ -67,6 +68,7 @@ type SCMClient interface {
 	ReopenPR(string, string, int) error
 	ClosePR(string, string, int) error
 	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
+	FindPullRequestsByAuthor(string, string, string) ([]*scm.PullRequest, error)
 
 	// Functions implemented in repositories.go
 	GetRepoLabels(string, string) ([]*scm.Label, error)
@@ -86,10 +88,10 @@ type SCMClient interface {
 	RequestReview(string, string, int, []string) error
 	UnrequestReview(string, string, int, []string) error
 
-	// Functions not yet implemented
-	ClearMilestone(string, string, int) error
-	SetMilestone(string, string, int, int) error
-	ListMilestones(string, string) ([]Milestone, error)
+	// Functions implemented in milestones.go
+	ClearMilestone(string, string, int, bool) error
+	SetMilestone(string, string, int, int, bool) error
+	ListMilestones(string, string) ([]*scm.Milestone, error)
 }
 
 // Client represents an interface that prow plugins expect on top of go-scm
@@ -98,19 +100,9 @@ type Client struct {
 	botName string
 }
 
-// ClearMilestone clears milestone
-func (c *Client) ClearMilestone(org, repo string, num int) error {
-	return scm.ErrNotSupported
-}
-
-// SetMilestone sets milestone
-func (c *Client) SetMilestone(org, repo string, issueNum, milestoneNum int) error {
-	return scm.ErrNotSupported
-}
-
-// ListMilestones list milestones
-func (c *Client) ListMilestones(org, repo string) ([]Milestone, error) {
-	return nil, scm.ErrNotSupported
+// ToScmClient gets the underlying SCM client
+func (c *Client) ToScmClient() *scm.Client {
+	return c.client
 }
 
 // BotName returns the bot name

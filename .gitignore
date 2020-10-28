@@ -20,12 +20,12 @@ debug
 
 .vscode/
 
-#Various temporary created while building/running jx.
-/build/
+#Various temporary created while building/running lighthose
+build/
 bin/
-release/
-dist/
-scanning/
+test/e2e/build
+lighthouse-values.yaml
+jenkins-values.yaml
 
 # vim swap files
 *.swp

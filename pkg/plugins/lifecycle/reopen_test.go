@@ -17,6 +17,7 @@ limitations under the License.
 package lifecycle
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -149,8 +150,16 @@ func TestReopenComment(t *testing.T) {
 				Number:      5,
 				IssueAuthor: scm.User{Login: "author"},
 			}
-			if err := handleReopen(fc, logrus.WithField("plugin", "fake-reopen"), e); err != nil {
-				t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+			cmd := plugin.Commands[2]
+			matches, err := cmd.FilterAndGetMatches(e)
+			if err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
+			fmt.Println(matches)
+			for range matches {
+				if err := handleReopen(fc, logrus.WithField("plugin", pluginName), e); err != nil {
+					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+				}
 			}
 			if tc.shouldReopen && !fc.open {
 				t.Errorf("For case %s, should have reopened but didn't.", tc.name)

@@ -19,6 +19,7 @@ package lighthouse
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
@@ -31,8 +32,10 @@ type Config struct {
 	Plank            Plank                   `json:"plank,omitempty"`
 	BranchProtection branchprotection.Config `json:"branch-protection,omitempty"`
 	Orgs             map[string]org.Config   `json:"orgs,omitempty"`
+	InRepoConfig     InRepoConfig            `json:"in_repo_config"`
+
 	// TODO: Move this out of the main config.
-	JenkinsOperators []JenkinsOperator `json:"jenkins_operators,omitempty"`
+	Jenkinses []JenkinsConfig `json:"jenkinses,omitempty"`
 	// LighthouseJobNamespace is the namespace in the cluster that prow
 	// components will use for looking up LighthouseJobs. The namespace
 	// needs to exist and will not be created by prow.
@@ -70,15 +73,15 @@ func (c *Config) Parse() error {
 	if err := c.Plank.Parse(); err != nil {
 		return err
 	}
-	for i := range c.JenkinsOperators {
-		if err := c.JenkinsOperators[i].Parse(); err != nil {
+	for i := range c.Jenkinses {
+		if err := c.Jenkinses[i].Parse(); err != nil {
 			return err
 		}
 		// TODO: Invalidate overlapping selectors more
-		if len(c.JenkinsOperators) > 1 && c.JenkinsOperators[i].LabelSelectorString == "" {
+		if len(c.Jenkinses) > 1 && c.Jenkinses[i].LabelSelectorString == "" {
 			return errors.New("selector overlap: cannot use an empty label_selector with multiple selectors")
 		}
-		if len(c.JenkinsOperators) == 1 && c.JenkinsOperators[0].LabelSelectorString != "" {
+		if len(c.Jenkinses) == 1 && c.Jenkinses[0].LabelSelectorString != "" {
 			return errors.New("label_selector is invalid when used for a single jenkins-operator")
 		}
 	}
@@ -104,4 +107,29 @@ func (c *Config) Parse() error {
 		}
 	}
 	return nil
+}
+
+// InRepoConfig to enable configuration inside the source code of a repository
+//
+// this struct mirrors the similar struct inside prow
+type InRepoConfig struct {
+	// Enabled describes whether InRepoConfig is enabled for a given repository. This can
+	// be set globally, per org or per repo using '*', 'org' or 'org/repo' as key. The
+	// narrowest match always takes precedence.
+	Enabled map[string]*bool `json:"enabled,omitempty"`
+}
+
+// InRepoConfigEnabled returns whether InRepoConfig is enabled for a given repository.
+func (c *Config) InRepoConfigEnabled(identifier string) bool {
+	if c.InRepoConfig.Enabled[identifier] != nil {
+		return *c.InRepoConfig.Enabled[identifier]
+	}
+	identifierSlashSplit := strings.Split(identifier, "/")
+	if len(identifierSlashSplit) == 2 && c.InRepoConfig.Enabled[identifierSlashSplit[0]] != nil {
+		return *c.InRepoConfig.Enabled[identifierSlashSplit[0]]
+	}
+	if c.InRepoConfig.Enabled["*"] != nil {
+		return *c.InRepoConfig.Enabled["*"]
+	}
+	return false
 }

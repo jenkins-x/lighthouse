@@ -194,8 +194,15 @@ func TestCloseComment(t *testing.T) {
 				Number:      5,
 				IssueAuthor: scm.User{Login: "author"},
 			}
-			if err := handleClose(fc, logrus.WithField("plugin", "fake-close"), e); err != nil {
-				t.Fatalf("For case %s, didn't expect error from handle: %v", tc.name, err)
+			cmd := plugin.Commands[1]
+			matches, err := cmd.FilterAndGetMatches(e)
+			if err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
+			for range matches {
+				if err := handleClose(fc, logrus.WithField("plugin", pluginName), e); err != nil {
+					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+				}
 			}
 			if tc.shouldClose && !fc.closed {
 				t.Errorf("For case %s, should have closed but didn't.", tc.name)

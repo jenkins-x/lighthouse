@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,9 +26,15 @@ import (
 )
 
 const (
-	dashboardBaseURL = "https://example.com/"
+	dashboardBaseURL  = "https://example.com/"
+	dashboardTemplate = "#/namespaces/{{ .Namespace }}/pipelineruns/{{ .PipelineRun }}"
 )
 
+type seededRandIDGenerator struct{}
+
+func (s *seededRandIDGenerator) GenerateBuildID() string {
+	return strconv.Itoa(utilrand.Int())
+}
 func TestReconcile(t *testing.T) {
 	testCases := []string{
 		"start-pullrequest",
@@ -76,7 +83,8 @@ func TestReconcile(t *testing.T) {
 			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
 			c := fake.NewFakeClientWithScheme(scheme, state...)
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, ns)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
+			reconciler.idGenerator = &seededRandIDGenerator{}
 
 			// invoke reconcile
 			_, err = reconciler.Reconcile(ctrl.Request{

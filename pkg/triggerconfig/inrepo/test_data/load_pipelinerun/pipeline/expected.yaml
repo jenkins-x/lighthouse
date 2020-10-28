@@ -1,0 +1,93 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  creationTimestamp: null
+  name: demo-pipeline
+spec:
+  pipelineSpec:
+    params:
+    - default: gcr.io/christiewilson-catfactory
+      name: image-registry
+    tasks:
+    - name: fetch-from-git
+      params:
+      - name: url
+        value: https://github.com/GoogleContainerTools/skaffold
+      - name: revision
+        value: v0.32.0
+      taskRef:
+        name: git-clone
+      workspaces:
+      - name: output
+        workspace: git-source
+    - name: skaffold-unit-tests
+      runAfter:
+      - fetch-from-git
+      taskRef:
+        name: unit-tests
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: build-skaffold-web
+      params:
+      - name: IMAGE
+        value: $(params.image-registry)/leeroy-web
+      - name: CONTEXT
+        value: examples/microservices/leeroy-web
+      - name: DOCKERFILE
+        value: $(workspaces.source.path)/examples/microservices/leeroy-web/Dockerfile
+      runAfter:
+      - skaffold-unit-tests
+      taskRef:
+        name: kaniko
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: build-skaffold-app
+      params:
+      - name: IMAGE
+        value: $(params.image-registry)/leeroy-app
+      - name: CONTEXT
+        value: examples/microservices/leeroy-app
+      - name: DOCKERFILE
+        value: $(workspaces.source.path)/examples/microservices/leeroy-app/Dockerfile
+      runAfter:
+      - skaffold-unit-tests
+      taskRef:
+        name: kaniko
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: deploy-app
+      params:
+      - name: imageURL
+        value: $(params.image-registry)/leeroy-app@$(tasks.build-skaffold-app.results.IMAGE_DIGEST)
+      - name: path
+        value: $(workspaces.source.path)/examples/microservices/leeroy-app/kubernetes/deployment.yaml
+      - name: yqArg
+        value: -d1
+      - name: yamlPathToImage
+        value: spec.template.spec.containers[0].image
+      taskRef:
+        name: demo-deploy-kubectl
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: deploy-web
+      params:
+      - name: imageURL
+        value: $(params.image-registry)/leeroy-web@$(tasks.build-skaffold-web.results.IMAGE_DIGEST)
+      - name: path
+        value: $(workspaces.source.path)/examples/microservices/leeroy-web/kubernetes/deployment.yaml
+      - name: yqArg
+        value: -d1
+      - name: yamlPathToImage
+        value: spec.template.spec.containers[0].image
+      taskRef:
+        name: demo-deploy-kubectl
+      workspaces:
+      - name: source
+        workspace: git-source
+    workspaces:
+    - name: git-source
+status: {}

@@ -29,6 +29,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
@@ -37,10 +38,7 @@ type fakePack string
 
 var human = flag.Bool("human", false, "Enable to run additional manual tests")
 
-func (c fakePack) readDog(dogURL string) (string, error) {
-	if dogURL != "" {
-		return dogURL, nil
-	}
+func (c fakePack) readDog() (string, error) {
 	return string(c), nil
 }
 
@@ -48,7 +46,7 @@ func TestRealDog(t *testing.T) {
 	if !*human {
 		t.Skip("Real dogs disabled for automation. Manual users can add --human [--category=foo]")
 	}
-	if dog, err := dogURL.readDog(""); err != nil {
+	if dog, err := dogURL.readDog(); err != nil {
 		t.Errorf("Could not read dog from %s: %v", dogURL, err)
 	} else {
 		fmt.Println(dog)
@@ -80,7 +78,7 @@ func TestFormat(t *testing.T) {
 		},
 	}
 	for _, tc := range testcases {
-		ret, err := FormatURL(tc.url)
+		ret, err := formatURL(tc.url)
 		switch {
 		case tc.err:
 			if err == nil {
@@ -96,7 +94,6 @@ func TestFormat(t *testing.T) {
 
 // Medium integration test (depends on ability to open a TCP port)
 func TestHttpResponse(t *testing.T) {
-
 	// create test cases for handling content length of images
 	contentLength := make(map[string]string)
 	contentLength["/dog.jpg"] = "717987"
@@ -206,7 +203,7 @@ func TestHttpResponse(t *testing.T) {
 
 	// run test for each case
 	for _, testcase := range testcases {
-		dog, err := realPack(ts.URL + testcase.path).readDog("")
+		dog, err := realPack(ts.URL + testcase.path).readDog()
 		if testcase.isValid && err != nil {
 			t.Errorf("For case %s, didn't expect error: %v", testcase.name, err)
 		} else if !testcase.isValid && err == nil {
@@ -228,7 +225,14 @@ func TestHttpResponse(t *testing.T) {
 			Number:     5,
 			IssueState: "open",
 		}
-		err = handle(fakeClient, logrus.WithField("plugin", pluginName), e, realPack(ts.URL))
+		agent := plugins.Agent{
+			SCMProviderClient: &fakeClient.Client,
+			Logger:            logrus.WithField("plugin", pluginName),
+		}
+		plugin := createPlugin(realPack(ts.URL))
+		err = plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+			return handler(match, agent, *e)
+		})
 		if err != nil {
 			t.Errorf("tc %s: For comment %s, didn't expect error: %v", testcase.name, testcase.comment, err)
 		}
@@ -348,7 +352,14 @@ func TestDogs(t *testing.T) {
 				IssueState: tc.state,
 				IsPR:       tc.pr,
 			}
-			err := handle(fakeClient, logrus.WithField("plugin", pluginName), e, fakePack("doge"))
+			agent := plugins.Agent{
+				SCMProviderClient: &fakeClient.Client,
+				Logger:            logrus.WithField("plugin", pluginName),
+			}
+			plugin := createPlugin(fakePack("http://127.0.0.1"))
+			err := plugin.InvokeCommandHandler(e, func(handler plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, match plugins.CommandMatch) error {
+				return handler(match, agent, *e)
+			})
 			if err != nil {
 				t.Errorf("For case %s, didn't expect error: %v", tc.name, err)
 			}

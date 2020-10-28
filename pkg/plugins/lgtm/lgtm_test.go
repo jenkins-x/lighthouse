@@ -348,8 +348,15 @@ func TestLGTMComment(t *testing.T) {
 				SCMProviderClient:   fc,
 				PullRequestComments: fc.PullRequestComments[5],
 			}
-			if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
-				t.Fatalf("didn't expect error from lgtmComment: %v", err)
+			cmd := plugin.Commands[0]
+			matches, err := cmd.FilterAndGetMatches(e)
+			if err != nil {
+				t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+			}
+			for _, m := range matches {
+				if err := handleGenericComment(m.Arg == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
+					t.Fatalf("For case %s, didn't expect error from label test: %v", tc.name, err)
+				}
 			}
 			if err := fakeClient.PopulateFakeLabelsFromComments("org", "repo", 5, fakeLabel, tc.hasLGTM && tc.shouldToggle); err != nil {
 				t.Fatalf("Failure populating labels from comments: %v", err)
@@ -509,9 +516,16 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
-		if err := handleGenericComment(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
-			t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
-			continue
+		cmd := plugin.Commands[0]
+		matches, err := cmd.FilterAndGetMatches(e)
+		if err != nil {
+			t.Fatalf("(%s): Unexpected error from handle: %v.", tc.name, err)
+		}
+		for _, m := range matches {
+			if err := handleGenericComment(m.Arg == "cancel", fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
+				t.Errorf("For case %s, didn't expect error from lgtmComment: %v", tc.name, err)
+				continue
+			}
 		}
 		deleted := false
 		for _, body := range fc.PullRequestCommentsDeleted {
@@ -706,7 +720,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 			SCMProviderClient:   fc,
 			PullRequestComments: fc.PullRequestComments[5],
 		}
-		if err := handlePullRequestReview(fakeClient, pc, oc, logrus.WithField("plugin", PluginName), fp, *e); err != nil {
+		if err := handlePullRequestReview(fakeClient, pc, oc, logrus.WithField("plugin", pluginName), fp, *e); err != nil {
 			t.Errorf("For case %s, didn't expect error from pull request review: %v", tc.name, err)
 			continue
 		}
@@ -1102,7 +1116,7 @@ func TestAddTreeHashComment(t *testing.T) {
 			commit := &scm.Commit{}
 			commit.Tree.Sha = treeSHA
 			fc.Commits[SHA] = commit
-			handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), &fakePruner{})
+			handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{})
 			found := false
 			for _, body := range fc.PullRequestCommentsAdded {
 				if addLGTMLabelNotificationRe.MatchString(body) {
@@ -1157,7 +1171,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		SCMProviderClient:   fc,
 		PullRequestComments: fc.PullRequestComments[101],
 	}
-	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", PluginName), fp)
+	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), fp)
 	found := false
 	for _, body := range fc.PullRequestCommentsDeleted {
 		if addLGTMLabelNotificationRe.MatchString(body) {
@@ -1229,17 +1243,17 @@ func TestHelpProvider(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			pluginHelp, err := helpProvider(c.config, c.enabledRepos)
+			pluginHelp, err := configHelp(c.config, c.enabledRepos)
 			if err != nil && !c.err {
 				t.Fatalf("helpProvider error: %v", err)
 			}
 			for _, msg := range c.configInfoExcludes {
-				if strings.Contains(pluginHelp.Config["org2/repo"], msg) {
+				if strings.Contains(pluginHelp["org2/repo"], msg) {
 					t.Fatalf("helpProvider.Config error mismatch: got %v, but didn't want it", msg)
 				}
 			}
 			for _, msg := range c.configInfoIncludes {
-				if !strings.Contains(pluginHelp.Config["org2/repo"], msg) {
+				if !strings.Contains(pluginHelp["org2/repo"], msg) {
 					t.Fatalf("helpProvider.Config error mismatch: didn't get %v, but wanted it", msg)
 				}
 			}
