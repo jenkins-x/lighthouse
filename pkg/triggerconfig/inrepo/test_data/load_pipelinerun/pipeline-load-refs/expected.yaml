@@ -111,6 +111,45 @@ spec:
           description: clean out the contents of the repo's destination directory (if it already exists) before trying to clone the repo there
           name: deleteExisting
           type: string
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
         results:
         - description: The precise commit SHA that was fetched by this Task
           name: commit
@@ -220,6 +259,46 @@ spec:
       runAfter:
       - fetch-from-git
       taskSpec:
+        params:
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
         stepTemplate:
           env:
           - name: BUILD_ID
@@ -321,6 +400,45 @@ spec:
         - default: gcr.io/kaniko-project/executor:latest
           description: The image on which builds will run
           name: BUILDER_IMAGE
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
         results:
         - description: Digest of the image just built.
           name: IMAGE_DIGEST
@@ -443,6 +561,45 @@ spec:
         - default: gcr.io/kaniko-project/executor:latest
           description: The image on which builds will run
           name: BUILDER_IMAGE
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
         results:
         - description: Digest of the image just built.
           name: IMAGE_DIGEST
@@ -560,6 +717,45 @@ spec:
           name: yamlPathToImage
         - description: The URL of the image to deploy
           name: imageURL
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
         stepTemplate:
           env:
           - name: BUILD_ID
@@ -663,6 +859,45 @@ spec:
           name: yamlPathToImage
         - description: The URL of the image to deploy
           name: imageURL
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
         stepTemplate:
           env:
           - name: BUILD_ID
