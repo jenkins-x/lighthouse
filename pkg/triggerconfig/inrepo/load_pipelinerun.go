@@ -79,16 +79,20 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			return nil, errors.Wrapf(err, "failed to unmarshal Pipeline YAML %s", message)
 		}
 		prs, err := ConvertPipelineToPipelineRun(pipeline, message, defaultValues)
-		if err == nil {
-			re, err := loadTektonRefsFromFilesPattern(prs)
+		if err != nil {
+			return prs, err
+		}
+		re, err := loadTektonRefsFromFilesPattern(prs)
+		if err != nil {
+			return prs, err
+		}
+		if re != nil {
+			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
 			if err != nil {
 				return prs, err
 			}
-			if re != nil {
-				return loadPipelineRunRefs(prs, dir, message, re, getData)
-			}
 		}
-		return prs, err
+		return DefaultPipelineParameters(prs)
 
 	case "PipelineRun":
 		prs := &tektonv1beta1.PipelineRun{}
@@ -96,15 +100,18 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal PipelineRun YAML %s", message)
 		}
-
 		re, err := loadTektonRefsFromFilesPattern(prs)
 		if err != nil {
 			return prs, err
 		}
 		if re != nil {
-			return loadPipelineRunRefs(prs, dir, message, re, getData)
+			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
+			if err != nil {
+				return prs, err
+			}
 		}
-		return prs, err
+		return DefaultPipelineParameters(prs)
+
 	case "Task":
 		task := &tektonv1beta1.Task{}
 		err := yaml.Unmarshal(data, task)
@@ -112,16 +119,20 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			return nil, errors.Wrapf(err, "failed to unmarshal Task YAML %s", message)
 		}
 		prs, err := ConvertTaskToPipelineRun(task, message, defaultValues)
-		if err == nil {
-			re, err := loadTektonRefsFromFilesPattern(prs)
+		if err != nil {
+			return prs, err
+		}
+		re, err := loadTektonRefsFromFilesPattern(prs)
+		if err != nil {
+			return prs, err
+		}
+		if re != nil {
+			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
 			if err != nil {
 				return prs, err
 			}
-			if re != nil {
-				return loadPipelineRunRefs(prs, dir, message, re, getData)
-			}
 		}
-		return prs, err
+		return DefaultPipelineParameters(prs)
 
 	case "TaskRun":
 		tr := &tektonv1beta1.TaskRun{}
@@ -130,16 +141,20 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			return nil, errors.Wrapf(err, "failed to unmarshal TaskRun YAML %s", message)
 		}
 		prs, err := ConvertTaskRunToPipelineRun(tr, message, defaultValues)
-		if err == nil {
-			re, err := loadTektonRefsFromFilesPattern(prs)
+		if err != nil {
+			return prs, err
+		}
+		re, err := loadTektonRefsFromFilesPattern(prs)
+		if err != nil {
+			return prs, err
+		}
+		if re != nil {
+			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
 			if err != nil {
 				return prs, err
 			}
-			if re != nil {
-				return loadPipelineRunRefs(prs, dir, message, re, getData)
-			}
 		}
-		return prs, err
+		return DefaultPipelineParameters(prs)
 
 	default:
 		return nil, errors.Errorf("kind %s is not supported for %s", kind, message)

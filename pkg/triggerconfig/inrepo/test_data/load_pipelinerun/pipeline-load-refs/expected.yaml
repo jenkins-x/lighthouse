@@ -10,6 +10,45 @@ spec:
     params:
     - default: gcr.io/christiewilson-catfactory
       name: image-registry
+    - description: the unique build number
+      name: BUILD_ID
+      type: string
+    - description: the name of the job which is the trigger context name
+      name: JOB_NAME
+      type: string
+    - description: the specification of the job
+      name: JOB_SPEC
+      type: string
+    - description: '''the kind of job: postsubmit or presubmit'''
+      name: JOB_TYPE
+      type: string
+    - description: the base git reference of the pull request
+      name: PULL_BASE_REF
+      type: string
+    - description: the git sha of the base of the pull request
+      name: PULL_BASE_SHA
+      type: string
+    - description: git pull request number
+      name: PULL_NUMBER
+      type: string
+    - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+      name: PULL_PULL_REF
+      type: string
+    - description: git revision to checkout (branch, tag, sha, ref…)
+      name: PULL_PULL_SHA
+      type: string
+    - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+      name: PULL_REFS
+      type: string
+    - description: git repository name
+      name: REPO_NAME
+      type: string
+    - description: git repository owner (user or organisation)
+      name: REPO_OWNER
+      type: string
+    - description: git url to clone
+      name: REPO_URL
+      type: string
     tasks:
     - name: fetch-from-git
       params:
@@ -17,6 +56,32 @@ spec:
         value: https://github.com/GoogleContainerTools/skaffold
       - name: revision
         value: v0.32.0
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
       taskSpec:
         params:
         - description: git url to clone
@@ -49,6 +114,36 @@ spec:
         results:
         - description: The precise commit SHA that was fetched by this Task
           name: commit
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
         steps:
         - image: ko://github.com/tektoncd/pipeline/cmd/git-init
           name: clone
@@ -95,9 +190,66 @@ spec:
       - name: output
         workspace: git-source
     - name: skaffold-unit-tests
+      params:
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
       runAfter:
       - fetch-from-git
       taskSpec:
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
         steps:
         - env:
           - name: GOPATH
@@ -126,6 +278,32 @@ spec:
         value: examples/microservices/leeroy-web
       - name: DOCKERFILE
         value: $(workspaces.source.path)/examples/microservices/leeroy-web/Dockerfile
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
       runAfter:
       - skaffold-unit-tests
       taskSpec:
@@ -146,6 +324,36 @@ spec:
         results:
         - description: Digest of the image just built.
           name: IMAGE_DIGEST
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
         steps:
         - command:
           - /kaniko/executor
@@ -192,6 +400,32 @@ spec:
         value: examples/microservices/leeroy-app
       - name: DOCKERFILE
         value: $(workspaces.source.path)/examples/microservices/leeroy-app/Dockerfile
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
       runAfter:
       - skaffold-unit-tests
       taskSpec:
@@ -212,6 +446,36 @@ spec:
         results:
         - description: Digest of the image just built.
           name: IMAGE_DIGEST
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
         steps:
         - command:
           - /kaniko/executor
@@ -260,6 +524,32 @@ spec:
         value: -d1
       - name: yamlPathToImage
         value: spec.template.spec.containers[0].image
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
       taskSpec:
         params:
         - description: Path to the manifest to apply
@@ -270,6 +560,36 @@ spec:
           name: yamlPathToImage
         - description: The URL of the image to deploy
           name: imageURL
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
         steps:
         - args:
           - w
@@ -307,6 +627,32 @@ spec:
         value: -d1
       - name: yamlPathToImage
         value: spec.template.spec.containers[0].image
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
       taskSpec:
         params:
         - description: Path to the manifest to apply
@@ -317,6 +663,36 @@ spec:
           name: yamlPathToImage
         - description: The URL of the image to deploy
           name: imageURL
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
         steps:
         - args:
           - w
