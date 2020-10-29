@@ -262,7 +262,6 @@ func ConvertTaskToPipelineRun(from *tektonv1beta1.Task, message string, defaultV
 		Finally: nil,
 	}
 	prs.Spec.PipelineSpec = pipelineSpec
-	prs.Spec.Params = ToParams(fs.Params)
 	//prs.Spec.Resources = fs.Resources
 	prs.Spec.Workspaces = ToWorkspaceBindings(fs.Workspaces)
 	defaultValues.Apply(prs)
@@ -312,7 +311,6 @@ func ConvertTaskRunToPipelineRun(from *tektonv1beta1.TaskRun, message string, de
 		Finally:    nil,
 	}
 	prs.Spec.PipelineSpec = pipelineSpec
-	prs.Spec.Params = params
 	prs.Spec.PodTemplate = fs.PodTemplate
 	//prs.Spec.Resources = fs.Resources
 	prs.Spec.ServiceAccountName = fs.ServiceAccountName
@@ -331,7 +329,7 @@ func (v *DefaultValues) Apply(prs *tektonv1beta1.PipelineRun) {
 	}
 }
 
-// ToParams convers the param specs to params
+// ToParams converts the param specs to params
 func ToParams(params []tektonv1beta1.ParamSpec) []tektonv1beta1.Param {
 	var answer []tektonv1beta1.Param
 	for _, p := range params {

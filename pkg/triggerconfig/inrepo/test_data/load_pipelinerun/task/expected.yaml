@@ -4,35 +4,6 @@ metadata:
   creationTimestamp: null
   name: cheese
 spec:
-  params:
-  - name: REPO_URL
-    value: $(params.REPO_URL)
-  - name: PULL_PULL_SHA
-    value: $(params.PULL_PULL_SHA)
-  - name: subdirectory
-    value: $(params.subdirectory)
-  - name: BUILD_ID
-    value: $(params.BUILD_ID)
-  - name: JOB_NAME
-    value: $(params.JOB_NAME)
-  - name: JOB_SPEC
-    value: $(params.JOB_SPEC)
-  - name: JOB_TYPE
-    value: $(params.JOB_TYPE)
-  - name: PULL_BASE_REF
-    value: $(params.PULL_BASE_REF)
-  - name: PULL_BASE_SHA
-    value: $(params.PULL_BASE_SHA)
-  - name: PULL_NUMBER
-    value: $(params.PULL_NUMBER)
-  - name: PULL_PULL_REF
-    value: $(params.PULL_PULL_REF)
-  - name: PULL_REFS
-    value: $(params.PULL_REFS)
-  - name: REPO_NAME
-    value: $(params.REPO_NAME)
-  - name: REPO_OWNER
-    value: $(params.REPO_OWNER)
   pipelineSpec:
     params:
     - description: git url to clone
