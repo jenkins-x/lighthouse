@@ -95,6 +95,8 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 		task := &ps.Tasks[i]
 		task.Params = addDefaultParameters(task.Params, defaultParameters)
 		if task.TaskSpec != nil {
+			task.TaskSpec.Params = addDefaultParameterSpecs(task.TaskSpec.Params, defaultParameterSpecs)
+
 			// lets create a step template if its not already defined
 			if task.TaskSpec.StepTemplate == nil {
 				task.TaskSpec.StepTemplate = &corev1.Container{}
