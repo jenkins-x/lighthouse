@@ -2,6 +2,8 @@ package inrepo
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -20,6 +22,12 @@ const (
 
 	// LoadFileRefPattern the regular expression to match which Pipeline/Task references to load via files
 	LoadFileRefPattern = "lighthouse.jenkins-x.io/loadFileRefs"
+
+	// PrependStepURL loads the steps from the given URL and prepends them to the given Task
+	PrependStepURL = "lighthouse.jenkins-x.io/prependStepsURL"
+
+	// AppendStepURL loads the steps from the given URL and appends them to the end of the Task steps
+	AppendStepURL = "lighthouse.jenkins-x.io/appendStepsURL"
 )
 
 // DefaultValues default values applied to a PipelineRun if wrapping a Pipeline/Task/TaskRun as a PipelineRun
@@ -92,6 +100,10 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 				return prs, err
 			}
 		}
+		prs, err = inheritTaskSteps(prs)
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to inherit steps")
+		}
 		return DefaultPipelineParameters(prs)
 
 	case "PipelineRun":
@@ -109,6 +121,10 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			if err != nil {
 				return prs, err
 			}
+		}
+		prs, err = inheritTaskSteps(prs)
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to inherit steps")
 		}
 		return DefaultPipelineParameters(prs)
 
@@ -132,6 +148,10 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 				return prs, err
 			}
 		}
+		prs, err = inheritTaskSteps(prs)
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to inherit steps")
+		}
 		return DefaultPipelineParameters(prs)
 
 	case "TaskRun":
@@ -154,6 +174,10 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 				return prs, err
 			}
 		}
+		prs, err = inheritTaskSteps(prs)
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to inherit steps")
+		}
 		return DefaultPipelineParameters(prs)
 
 	default:
@@ -161,8 +185,69 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 	}
 }
 
-// loadTektonRefsFromFilesPattern returns a regular expression matching the Pipeline/Task references we should load via the file system
-// as separate local files
+// inheritTaskSteps allows Task steps to be prepended or appended if the annotations are present
+func inheritTaskSteps(prs *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
+	ps := prs.Spec.PipelineSpec
+	if ps == nil || len(ps.Tasks) == 0 {
+		return prs, nil
+	}
+	if prs.Annotations == nil {
+		return prs, nil
+	}
+	appendURL := prs.Annotations[AppendStepURL]
+	prependURL := prs.Annotations[PrependStepURL]
+
+	var appendTask *tektonv1beta1.Task
+	var prependTask *tektonv1beta1.Task
+	var err error
+
+	if appendURL != "" {
+		appendTask, err = loadTaskByURL(appendURL)
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to load append steps Task")
+		}
+	}
+	if prependURL != "" {
+		prependTask, err = loadTaskByURL(prependURL)
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to load prepend steps Task")
+		}
+	}
+	if prependTask != nil {
+		firstTask := &ps.Tasks[0]
+		if firstTask.TaskSpec != nil {
+			firstTask.TaskSpec.Steps = append(prependTask.Spec.Steps, firstTask.TaskSpec.Steps...)
+		}
+	}
+	if appendTask != nil {
+		lastTask := &ps.Tasks[len(ps.Tasks)-1]
+		lastTask.TaskSpec.Steps = append(lastTask.TaskSpec.Steps, appendTask.Spec.Steps...)
+	}
+	return prs, nil
+}
+
+func loadTaskByURL(uri string) (*tektonv1beta1.Task, error) {
+	resp, err := http.Get(uri) // #nosec
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read URL %s", uri)
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read body from URL %s", uri)
+	}
+
+	task := &tektonv1beta1.Task{}
+	err = yaml.Unmarshal(data, &task)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshall YAML from URL %s", uri)
+	}
+	return task, nil
+}
+
+// loadTektonRefsFromFilesPattern returns a regular expression matching the Pipeline/Task references we should load
+// via the file system as separate local files
 func loadTektonRefsFromFilesPattern(prs *tektonv1beta1.PipelineRun) (*regexp.Regexp, error) {
 	if prs.Annotations == nil {
 		return nil, nil
