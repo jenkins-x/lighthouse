@@ -1,0 +1,63 @@
+# Copied from https://github.com/tektoncd/catalog/blob/v1beta1/kaniko/kaniko.yaml
+# with a few fixes that will be port over in https://github.com/tektoncd/catalog/pull/291
+# Post #1839 we can refer to the remote Task in a registry or post #2298 in git directly
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: kaniko
+spec:
+  workspaces:
+  - name: source
+  params:
+  - name: IMAGE
+    description: Name (reference) of the image to build.
+  - name: DOCKERFILE
+    description: Path to the Dockerfile to build.
+    default: ./Dockerfile
+  - name: CONTEXT
+    description: The build context used by Kaniko.
+    default: ./
+  - name: EXTRA_ARGS
+    default: ""
+  - name: BUILDER_IMAGE
+    description: The image on which builds will run
+    default: gcr.io/kaniko-project/executor:latest
+  results:
+  - name: IMAGE_DIGEST
+    description: Digest of the image just built.
+  steps:
+  - name: build-and-push
+    workingDir: $(workspaces.source.path)
+    image: $(params.BUILDER_IMAGE)
+    # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
+    # https://github.com/tektoncd/pipeline/pull/706
+    env:
+    - name: DOCKER_CONFIG
+      value: /tekton/home/.docker
+    command:
+    - /kaniko/executor
+    - $(params.EXTRA_ARGS)
+    - --dockerfile=$(params.DOCKERFILE)
+    - --context=$(workspaces.source.path)/$(params.CONTEXT)  # The user does not need to care the workspace and the source.
+    - --destination=$(params.IMAGE)
+    - --oci-layout-path=$(workspaces.source.path)/$(params.CONTEXT)/image-digest
+    # kaniko assumes it is running as root, which means this example fails on platforms
+    # that default to run containers as random uid (like OpenShift). Adding this securityContext
+    # makes it explicit that it needs to run as root.
+    securityContext:
+      runAsUser: 0
+  - name: write-digest
+    workingDir: $(workspaces.source.path)
+    image: ko://github.com/tektoncd/pipeline/cmd/imagedigestexporter
+    # output of imagedigestexport [{"name":"image","digest":"sha256:eed29..660"}]
+    command: ["/ko-app/imagedigestexporter"]
+    securityContext:
+      runAsUser: 0
+    args:
+    - -images=[{"name":"$(params.IMAGE)","type":"image","url":"$(params.IMAGE)","digest":"","OutputImageDir":"$(workspaces.source.path)/$(params.CONTEXT)/image-digest"}]
+    - -terminationMessagePath=$(params.CONTEXT)/image-digested
+  - name: digest-to-results
+    workingDir: $(workspaces.source.path)
+    image: stedolan/jq
+    script: |
+      cat $(params.CONTEXT)/image-digested | jq '.[0].value' -rj | tee /tekton/results/IMAGE_DIGEST
