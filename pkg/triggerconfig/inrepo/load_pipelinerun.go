@@ -186,15 +186,19 @@ func loadPipelineRunRefs(prs *tektonv1beta1.PipelineRun, dir, message string, re
 			pipelinePath += ".yaml"
 		}
 		data, err := getData(pipelinePath)
-		if err == nil && len(data) > 0 {
-			p := &tektonv1beta1.Pipeline{}
-			err = yaml.Unmarshal(data, p)
-			if err != nil {
-				return prs, errors.Wrapf(err, "failed to unmarshal Pipeline YAML file %s %s", pipelinePath, message)
-			}
-			prs.Spec.PipelineSpec = &p.Spec
-			prs.Spec.PipelineRef = nil
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to find path %s in PipelineRun", pipelinePath)
 		}
+		if len(data) == 0 {
+			return prs, errors.Errorf("no YAML for path %s in PipelineRun", pipelinePath)
+		}
+		p := &tektonv1beta1.Pipeline{}
+		err = yaml.Unmarshal(data, p)
+		if err != nil {
+			return prs, errors.Wrapf(err, "failed to unmarshal Pipeline YAML file %s %s", pipelinePath, message)
+		}
+		prs.Spec.PipelineSpec = &p.Spec
+		prs.Spec.PipelineRef = nil
 	}
 
 	if prs.Spec.PipelineSpec != nil {
@@ -215,15 +219,19 @@ func loadTaskRefs(pipelineSpec *tektonv1beta1.PipelineSpec, dir, message string,
 				path += ".yaml"
 			}
 			data, err := getData(path)
-			if err == nil && len(data) > 0 {
-				t2 := &tektonv1beta1.Task{}
-				err = yaml.Unmarshal(data, t2)
-				if err != nil {
-					return errors.Wrapf(err, "failed to unmarshal Task YAML file %s %s", path, message)
-				}
-				t.TaskSpec = &t2.Spec
-				t.TaskRef = nil
+			if err != nil {
+				return errors.Wrapf(err, "failed to find path %s in PipelineSpec", path)
 			}
+			if len(data) == 0 {
+				return errors.Errorf("no YAML for path %s in PipelineSpec", path)
+			}
+			t2 := &tektonv1beta1.Task{}
+			err = yaml.Unmarshal(data, t2)
+			if err != nil {
+				return errors.Wrapf(err, "failed to unmarshal Task YAML file %s %s", path, message)
+			}
+			t.TaskSpec = &t2.Spec
+			t.TaskRef = nil
 		}
 	}
 	return nil

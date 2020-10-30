@@ -41,6 +41,12 @@ func TestLoadPipelineRunTest(t *testing.T) {
 		require.NoError(t, err, "failed to load "+message)
 
 		pr, err := LoadTektonResourceAsPipelineRun(data, dir, message, getData, nil)
+		if strings.HasSuffix(name, "-fails") {
+			require.Errorf(t, err, "expected failure for test %s", name)
+			t.Logf("test %s generated expected error %s\n", name, err.Error())
+			continue
+		}
+
 		require.NoError(t, err, "failed to load PipelineRun for "+message)
 		require.NotNil(t, pr, "no PipelineRun for "+message)
 
