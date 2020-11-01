@@ -85,6 +85,7 @@ spec:
       - name: REPO_OWNER
         value: $(params.REPO_OWNER)
       taskSpec:
+        metadata: {}
         params:
         - description: git url to clone
           name: REPO_URL

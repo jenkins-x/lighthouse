@@ -83,6 +83,7 @@ spec:
       - name: REPO_URL
         value: $(params.REPO_URL)
       taskSpec:
+        metadata: {}
         params:
         - description: git url to clone
           name: url
@@ -259,6 +260,7 @@ spec:
       runAfter:
       - fetch-from-git
       taskSpec:
+        metadata: {}
         params:
         - description: the unique build number
           name: BUILD_ID
@@ -386,6 +388,7 @@ spec:
       runAfter:
       - skaffold-unit-tests
       taskSpec:
+        metadata: {}
         params:
         - description: Name (reference) of the image to build.
           name: IMAGE
@@ -547,6 +550,7 @@ spec:
       runAfter:
       - skaffold-unit-tests
       taskSpec:
+        metadata: {}
         params:
         - description: Name (reference) of the image to build.
           name: IMAGE
@@ -708,6 +712,7 @@ spec:
       - name: REPO_URL
         value: $(params.REPO_URL)
       taskSpec:
+        metadata: {}
         params:
         - description: Path to the manifest to apply
           name: path
@@ -850,6 +855,7 @@ spec:
       - name: REPO_URL
         value: $(params.REPO_URL)
       taskSpec:
+        metadata: {}
         params:
         - description: Path to the manifest to apply
           name: path
