@@ -95,6 +95,7 @@ spec:
       - name: REPO_URL
         value: $(params.REPO_URL)
       taskSpec:
+        metadata: {}
         params:
         - description: The first integer
           name: a
