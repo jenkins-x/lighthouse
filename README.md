@@ -48,7 +48,7 @@ Its got a few differences though:
 
 If there are any prow commands you want which we've not yet ported over, it is relatively easy to port Prow plugins.
 
-We've reused the prow plugin code and configuration code; so it is mostly a case of switching imports of `git.k8s.io/test-infra/prow` to `github.com/jenkins-x/lighthouse/pkg/prow`, then modifying the GitHub client structs from, say, `github.PullRequest` to `scm.PullRequest`.
+We've reused the prow plugin code and configuration code; so it is mostly a case of switching imports of `k8s.io/test-infra/prow` to `github.com/jenkins-x/lighthouse/pkg/prow`, then modifying the GitHub client structs from, say, `github.PullRequest` to `scm.PullRequest`.
 
 Most of the GitHub structs map 1-1 to the [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) equivalents (e.g. Issue, Commit, PullRequest).
 However, the go-scm API does tend to return slices to pointers to resources by default.
