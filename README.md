@@ -53,7 +53,7 @@ We've reused the prow plugin code and configuration code; so it is mostly a case
 Most of the GitHub structs map 1-1 to the [jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) equivalents (e.g. Issue, Commit, PullRequest).
 However, the go-scm API does tend to return slices to pointers to resources by default.
 There are some naming differences in different parts of the API as well.
-For exmaple, compare the `githubClient` API for [Prow lgtm](https://github.com/kubernetes/test-infra/blob/344024d30165cda6f4691cc178f25b16f1a1f5af/prow/plugins/lgtm/lgtm.go#L134-L150) versus the [Lighthouse lgtm](https://github.com/jenkins-x/lighthouse/blob/master/pkg/prow/plugins/lgtm/lgtm.go#L135-L150).
+For example, compare the `githubClient` API for [Prow lgtm](https://github.com/kubernetes/test-infra/blob/344024d30165cda6f4691cc178f25b16f1a1f5af/prow/plugins/lgtm/lgtm.go#L134-L150) versus the [Lighthouse lgtm](https://github.com/jenkins-x/lighthouse/blob/master/pkg/prow/plugins/lgtm/lgtm.go#L135-L150).
 
 ## Development
 
