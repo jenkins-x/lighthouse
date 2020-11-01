@@ -77,6 +77,7 @@ spec:
       - name: REPO_URL
         value: $(params.REPO_URL)
       taskSpec:
+        metadata: {}
         params:
         - default: param-value
           name: PARAM

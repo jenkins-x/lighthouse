@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -21,15 +22,15 @@ type LighthouseJobsGetter interface {
 
 // LighthouseJobInterface has methods to work with LighthouseJob resources.
 type LighthouseJobInterface interface {
-	Create(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
-	Update(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
-	UpdateStatus(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.LighthouseJob, error)
-	List(opts v1.ListOptions) (*v1alpha1.LighthouseJobList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.LighthouseJob, err error)
+	Create(ctx context.Context, lighthouseJob *v1alpha1.LighthouseJob, opts v1.CreateOptions) (*v1alpha1.LighthouseJob, error)
+	Update(ctx context.Context, lighthouseJob *v1alpha1.LighthouseJob, opts v1.UpdateOptions) (*v1alpha1.LighthouseJob, error)
+	UpdateStatus(ctx context.Context, lighthouseJob *v1alpha1.LighthouseJob, opts v1.UpdateOptions) (*v1alpha1.LighthouseJob, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.LighthouseJob, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.LighthouseJobList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.LighthouseJob, err error)
 	LighthouseJobExpansion
 }
 
@@ -48,20 +49,20 @@ func newLighthouseJobs(c *LighthouseV1alpha1Client, namespace string) *lighthous
 }
 
 // Get takes name of the lighthouseJob, and returns the corresponding lighthouseJob object, and an error if there is any.
-func (c *lighthouseJobs) Get(name string, options v1.GetOptions) (result *v1alpha1.LighthouseJob, err error) {
+func (c *lighthouseJobs) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.LighthouseJob, err error) {
 	result = &v1alpha1.LighthouseJob{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("lighthousejobs").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of LighthouseJobs that match those selectors.
-func (c *lighthouseJobs) List(opts v1.ListOptions) (result *v1alpha1.LighthouseJobList, err error) {
+func (c *lighthouseJobs) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.LighthouseJobList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -72,13 +73,13 @@ func (c *lighthouseJobs) List(opts v1.ListOptions) (result *v1alpha1.LighthouseJ
 		Resource("lighthousejobs").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested lighthouseJobs.
-func (c *lighthouseJobs) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *lighthouseJobs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -89,87 +90,90 @@ func (c *lighthouseJobs) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("lighthousejobs").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a lighthouseJob and creates it.  Returns the server's representation of the lighthouseJob, and an error, if there is any.
-func (c *lighthouseJobs) Create(lighthouseJob *v1alpha1.LighthouseJob) (result *v1alpha1.LighthouseJob, err error) {
+func (c *lighthouseJobs) Create(ctx context.Context, lighthouseJob *v1alpha1.LighthouseJob, opts v1.CreateOptions) (result *v1alpha1.LighthouseJob, err error) {
 	result = &v1alpha1.LighthouseJob{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("lighthousejobs").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(lighthouseJob).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a lighthouseJob and updates it. Returns the server's representation of the lighthouseJob, and an error, if there is any.
-func (c *lighthouseJobs) Update(lighthouseJob *v1alpha1.LighthouseJob) (result *v1alpha1.LighthouseJob, err error) {
+func (c *lighthouseJobs) Update(ctx context.Context, lighthouseJob *v1alpha1.LighthouseJob, opts v1.UpdateOptions) (result *v1alpha1.LighthouseJob, err error) {
 	result = &v1alpha1.LighthouseJob{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("lighthousejobs").
 		Name(lighthouseJob.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(lighthouseJob).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *lighthouseJobs) UpdateStatus(lighthouseJob *v1alpha1.LighthouseJob) (result *v1alpha1.LighthouseJob, err error) {
+func (c *lighthouseJobs) UpdateStatus(ctx context.Context, lighthouseJob *v1alpha1.LighthouseJob, opts v1.UpdateOptions) (result *v1alpha1.LighthouseJob, err error) {
 	result = &v1alpha1.LighthouseJob{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("lighthousejobs").
 		Name(lighthouseJob.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(lighthouseJob).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the lighthouseJob and deletes it. Returns an error if one occurs.
-func (c *lighthouseJobs) Delete(name string, options *v1.DeleteOptions) error {
+func (c *lighthouseJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("lighthousejobs").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *lighthouseJobs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *lighthouseJobs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("lighthousejobs").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched lighthouseJob.
-func (c *lighthouseJobs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.LighthouseJob, err error) {
+func (c *lighthouseJobs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.LighthouseJob, err error) {
 	result = &v1alpha1.LighthouseJob{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("lighthousejobs").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
