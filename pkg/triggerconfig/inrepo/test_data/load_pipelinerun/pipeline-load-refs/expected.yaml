@@ -28,13 +28,16 @@ spec:
     - description: the git sha of the base of the pull request
       name: PULL_BASE_SHA
       type: string
-    - description: git pull request number
+    - default: ""
+      description: git pull request number
       name: PULL_NUMBER
       type: string
-    - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+    - default: ""
+      description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
       name: PULL_PULL_REF
       type: string
-    - description: git revision to checkout (branch, tag, sha, ref…)
+    - default: ""
+      description: git revision to checkout (branch, tag, sha, ref…)
       name: PULL_PULL_SHA
       type: string
     - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
@@ -129,13 +132,16 @@ spec:
         - description: the git sha of the base of the pull request
           name: PULL_BASE_SHA
           type: string
-        - description: git pull request number
+        - default: ""
+          description: git pull request number
           name: PULL_NUMBER
           type: string
-        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
           name: PULL_PULL_REF
           type: string
-        - description: git revision to checkout (branch, tag, sha, ref…)
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
           name: PULL_PULL_SHA
           type: string
         - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
@@ -278,13 +284,16 @@ spec:
         - description: the git sha of the base of the pull request
           name: PULL_BASE_SHA
           type: string
-        - description: git pull request number
+        - default: ""
+          description: git pull request number
           name: PULL_NUMBER
           type: string
-        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
           name: PULL_PULL_REF
           type: string
-        - description: git revision to checkout (branch, tag, sha, ref…)
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
           name: PULL_PULL_SHA
           type: string
         - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
@@ -418,13 +427,16 @@ spec:
         - description: the git sha of the base of the pull request
           name: PULL_BASE_SHA
           type: string
-        - description: git pull request number
+        - default: ""
+          description: git pull request number
           name: PULL_NUMBER
           type: string
-        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
           name: PULL_PULL_REF
           type: string
-        - description: git revision to checkout (branch, tag, sha, ref…)
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
           name: PULL_PULL_SHA
           type: string
         - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
@@ -579,13 +591,16 @@ spec:
         - description: the git sha of the base of the pull request
           name: PULL_BASE_SHA
           type: string
-        - description: git pull request number
+        - default: ""
+          description: git pull request number
           name: PULL_NUMBER
           type: string
-        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
           name: PULL_PULL_REF
           type: string
-        - description: git revision to checkout (branch, tag, sha, ref…)
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
           name: PULL_PULL_SHA
           type: string
         - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
@@ -735,13 +750,16 @@ spec:
         - description: the git sha of the base of the pull request
           name: PULL_BASE_SHA
           type: string
-        - description: git pull request number
+        - default: ""
+          description: git pull request number
           name: PULL_NUMBER
           type: string
-        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
           name: PULL_PULL_REF
           type: string
-        - description: git revision to checkout (branch, tag, sha, ref…)
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
           name: PULL_PULL_SHA
           type: string
         - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
@@ -877,13 +895,16 @@ spec:
         - description: the git sha of the base of the pull request
           name: PULL_BASE_SHA
           type: string
-        - description: git pull request number
+        - default: ""
+          description: git pull request number
           name: PULL_NUMBER
           type: string
-        - description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
           name: PULL_PULL_REF
           type: string
-        - description: git revision to checkout (branch, tag, sha, ref…)
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
           name: PULL_PULL_SHA
           type: string
         - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
