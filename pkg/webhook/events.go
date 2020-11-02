@@ -27,6 +27,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -220,6 +221,9 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 				agent, err := s.CreateAgent(l, p, repo.Namespace, repo.Name, pr.PullRequest.Sha)
 				if err != nil {
 					agent.Logger.WithError(err).Error("Error creating agent for PullRequestEvent.")
+
+					// the error could be related to a bad local triggers.yaml change so lets comment on the Pull Request
+					s.reportErrorToPullRequest(l, agent, repo, pr, err)
 					return
 				}
 				agent.InitializeCommentPruner(
@@ -321,6 +325,16 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 			HeadSha:     re.PullRequest.Head.Sha,
 		},
 	)
+}
+
+func (s *Server) reportErrorToPullRequest(l *logrus.Entry, agent plugins.Agent, repo scm.Repository, pr *scm.PullRequestHook, err error) {
+	fileLink := repo.Link + "/blob/" + pr.PullRequest.Sha + "/"
+	message := "failed to trigger Pull Request pipeline\n" + util.ErrorToMarkdown(err, fileLink)
+
+	err = agent.SCMProviderClient.CreateComment(repo.Namespace, repo.Name, pr.PullRequest.Number, true, message)
+	if err != nil {
+		l.WithError(err).Errorf("failed to comment the failure on Pull Request")
+	}
 }
 
 func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool {

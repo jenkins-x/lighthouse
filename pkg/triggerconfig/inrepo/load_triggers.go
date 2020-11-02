@@ -117,7 +117,7 @@ func loadConfigFile(client scmProviderClient, ownerName, repoName, path, sha str
 		if r.SourcePath != "" {
 			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, filepath.Join(dir, r.SourcePath), sha)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load Source for Presubmit %d", i)
+				return nil, errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
 			}
 
 		}
@@ -130,7 +130,7 @@ func loadConfigFile(client scmProviderClient, ownerName, repoName, path, sha str
 		if r.SourcePath != "" {
 			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, filepath.Join(dir, r.SourcePath), sha)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load Source for Presubmit %d", i)
+				return nil, errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
 			}
 		}
 		if r.Agent == "" && r.PipelineRunSpec != nil {
