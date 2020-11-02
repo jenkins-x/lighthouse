@@ -45,16 +45,28 @@ var (
 			Description: "git pull request number",
 			Name:        "PULL_NUMBER",
 			Type:        "string",
+			Default: &v1beta1.ArrayOrString{
+				Type:      v1beta1.ParamTypeString,
+				StringVal: "",
+			},
 		},
 		{
 			Description: "git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'",
 			Name:        "PULL_PULL_REF",
 			Type:        "string",
+			Default: &v1beta1.ArrayOrString{
+				Type:      v1beta1.ParamTypeString,
+				StringVal: "",
+			},
 		},
 		{
 			Description: "git revision to checkout (branch, tag, sha, ref…)",
 			Name:        "PULL_PULL_SHA",
 			Type:        "string",
+			Default: &v1beta1.ArrayOrString{
+				Type:      v1beta1.ParamTypeString,
+				StringVal: "",
+			},
 		},
 		{
 			Description: "git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'",
