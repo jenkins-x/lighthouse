@@ -18,6 +18,7 @@ package trigger
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -35,6 +36,9 @@ import (
 const (
 	// pluginName is the name of the trigger plugin
 	pluginName = "trigger"
+
+	// environment variable used to enable deployment specific trigger commands
+	customerTriggerCommandEnvVar = "LH_CUSTOM_TRIGGER_COMMAND"
 )
 
 var (
@@ -74,6 +78,22 @@ var (
 )
 
 func init() {
+	customTriggerCommand := os.Getenv(customerTriggerCommandEnvVar)
+	if customTriggerCommand != "" {
+		customCommand := plugins.Command{
+			Name: customTriggerCommand,
+			Arg: &plugins.CommandArg{
+				Pattern: `[-\w]+(?:,[-\w]+)*`,
+			},
+			Description: fmt.Sprintf("Manually trigger /%s chatops commands.", customTriggerCommand),
+			Featured:    true,
+			Action: plugins.
+				Invoke(handleGenericCommentEvent).
+				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+		}
+		plugin.Commands = append(plugin.Commands, customCommand)
+	}
+
 	plugins.RegisterPlugin(pluginName, plugin)
 }
 

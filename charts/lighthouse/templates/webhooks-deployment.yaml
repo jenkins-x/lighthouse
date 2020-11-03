@@ -34,6 +34,8 @@ spec:
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"
+          - name: "LH_CUSTOM_TRIGGER_COMMAND"
+            value: "{{ .Values.webhooks.customDeploymentTriggerCommand }}"
           - name: "GIT_SERVER"
             value: "{{ .Values.git.server }}"
 {{- if .Values.githubApp.enabled }}

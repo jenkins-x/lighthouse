@@ -122,6 +122,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `tektoncontroller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods | `[]` |
 | `user` | string | Git user name (used when GitHub app authentication is not enabled) | `""` |
 | `webhooks.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the webhooks pods | `{}` |
+| `webhooks.customDeploymentTriggerCommand` | string | deployments can configure the ability to allow custom lighthouse triggers using their own unique chat prefix, for example extending the default `/test` trigger prefix let them specify `customDeploymentTriggerPrefix: foo` which means they can also use their own custom trigger /foo mycoolthing | `""` |
 | `webhooks.image.pullPolicy` | string | Template for computing the webhooks controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `webhooks.image.repository` | string | Template for computing the webhooks controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-webhooks"` |
 | `webhooks.image.tag` | string | Template for computing the webhooks controller docker image tag | `"{{ .Values.image.tag }}"` |
