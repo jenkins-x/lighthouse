@@ -115,6 +115,15 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 				r.logger.Errorf("Failed to set owner reference: %s", err)
 				return ctrl.Result{}, err
 			}
+
+			// lets disable the blockOwnerDeletion as it fails on OpenShift
+			for i := range pipelineRun.OwnerReferences {
+				ref := &pipelineRun.OwnerReferences[i]
+				if ref.Kind == "LighthouseJob" && ref.BlockOwnerDeletion != nil {
+					ref.BlockOwnerDeletion = nil
+				}
+			}
+
 			// TODO: changing the status should be a consequence of a pipeline run being created
 			// update status
 			job.Status = lighthousev1alpha1.LighthouseJobStatus{
