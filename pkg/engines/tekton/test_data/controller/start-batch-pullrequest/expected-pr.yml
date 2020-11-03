@@ -23,7 +23,6 @@ metadata:
       kind: LighthouseJob
       name: f46327af-b47e-11ea-b797-9256b7b8d9b0
       Controller: true
-      BlockOwnerDeletion: true
 spec:
   params:
     - name: BUILD_ID
