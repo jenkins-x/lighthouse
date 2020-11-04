@@ -10,6 +10,7 @@ import (
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -126,14 +127,23 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 
 			// TODO: changing the status should be a consequence of a pipeline run being created
 			// update status
-			job.Status = lighthousev1alpha1.LighthouseJobStatus{
+			status := lighthousev1alpha1.LighthouseJobStatus{
 				State:     lighthousev1alpha1.PendingState,
 				StartTime: metav1.Now(),
 			}
-			if err := r.client.Status().Update(ctx, &job); err != nil {
-				r.logger.Errorf("Failed to update LighthouseJob status: %s", err)
+			f := func(job *lighthousev1alpha1.LighthouseJob) error {
+				job.Status = status
+				if err := r.client.Status().Update(ctx, job); err != nil {
+					r.logger.Errorf("Failed to update LighthouseJob status: %s", err)
+					return err
+				}
+				return nil
+			}
+			err = r.retryModifyJob(ctx, req.NamespacedName, &job, f)
+			if err != nil {
 				return ctrl.Result{}, err
 			}
+
 			// create pipeline run
 			if err := r.client.Create(ctx, pipelineRun); err != nil {
 				r.logger.Errorf("Failed to create pipeline run: %s", err)
@@ -145,17 +155,32 @@ func (r *LighthouseJobReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		pipelineRun := pipelineRunList.Items[0]
 		r.logger.Infof("Reconcile PipelineRun %+v", pipelineRun)
 		// update build id
-		job.Labels[util.BuildNumLabel] = pipelineRun.Labels[util.BuildNumLabel]
-		if err := r.client.Update(ctx, &job); err != nil {
-			r.logger.Errorf("failed to update Project status: %s", err)
-			return ctrl.Result{}, err
+		if job.Labels[util.BuildNumLabel] != pipelineRun.Labels[util.BuildNumLabel] {
+			f := func(job *lighthousev1alpha1.LighthouseJob) error {
+				job.Labels[util.BuildNumLabel] = pipelineRun.Labels[util.BuildNumLabel]
+				if err := r.client.Update(ctx, job); err != nil {
+					return errors.Wrapf(err, "failed to add build label Project status")
+				}
+				return nil
+			}
+			err := r.retryModifyJob(ctx, req.NamespacedName, &job, f)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
 		}
-		if r.dashboardURL != "" {
-			job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
+
+		f := func(job *lighthousev1alpha1.LighthouseJob) error {
+			if r.dashboardURL != "" {
+				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
+			}
+			job.Status.Activity = ConvertPipelineRun(&pipelineRun)
+			if err := r.client.Status().Update(ctx, job); err != nil {
+				return errors.Wrapf(err, "failed to update LighthouseJob status")
+			}
+			return nil
 		}
-		job.Status.Activity = ConvertPipelineRun(&pipelineRun)
-		if err := r.client.Status().Update(ctx, &job); err != nil {
-			r.logger.Errorf("Failed to update LighthouseJob status: %s", err)
+		err := r.retryModifyJob(ctx, req.NamespacedName, &job, f)
+		if err != nil {
 			return ctrl.Result{}, err
 		}
 	} else {
@@ -201,4 +226,32 @@ func (r *LighthouseJobReconciler) getPipelingetPipelineTargetURLeTargetURL(pipel
 		return ""
 	}
 	return fmt.Sprintf("%s/%s", trimDashboardURL(r.dashboardURL), buf.String())
+}
+
+const retryCount = 5
+
+// retryModifyJob tries to modify the Job retrying if it fails
+func (r *LighthouseJobReconciler) retryModifyJob(ctx context.Context, ns client.ObjectKey, job *lighthousev1alpha1.LighthouseJob, f func(job *lighthousev1alpha1.LighthouseJob) error) error {
+	i := 0
+	for {
+		i++
+		err := f(job)
+		if err == nil {
+			if i > 1 {
+				r.logger.Infof("took %d attempts to update Job %s", i, job.Name)
+			}
+			return nil
+		}
+		if i >= retryCount {
+			return errors.Wrapf(err, "failed to update Job %s after %d attempts", job.Name, retryCount)
+		}
+
+		if err := r.client.Get(ctx, ns, job); err != nil {
+			r.logger.Warningf("Unable to get LighthouseJob %s due to: %s", job.Name, err)
+			// we'll ignore not-found errors, since they can't be fixed by an immediate
+			// requeue (we'll need to wait for a new notification), and we can get them
+			// on deleted requests.
+			return client.IgnoreNotFound(err)
+		}
+	}
 }

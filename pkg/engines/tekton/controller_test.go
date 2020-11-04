@@ -37,8 +37,8 @@ func (s *seededRandIDGenerator) GenerateBuildID() string {
 }
 func TestReconcile(t *testing.T) {
 	testCases := []string{
-		"start-pullrequest",
 		"update-job",
+		"start-pullrequest",
 		"start-batch-pullrequest",
 		"start-push",
 	}
