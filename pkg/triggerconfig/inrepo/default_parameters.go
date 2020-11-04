@@ -96,6 +96,9 @@ var (
 // DefaultPipelineParameters defaults the parameter specs and parameter values from lighthouse onto
 // the PipelineRun and its nested PipelineSpec and Tasks
 func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, error) {
+	if prs.Annotations != nil && prs.Annotations[DefaultParameters] == "false" {
+		return prs, nil
+	}
 	ps := prs.Spec.PipelineSpec
 	if ps == nil {
 		return prs, nil
