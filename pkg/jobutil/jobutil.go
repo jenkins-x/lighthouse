@@ -163,12 +163,13 @@ func specFromJobBase(jb job.Base) v1alpha1.LighthouseJobSpec {
 		namespace = *jb.Namespace
 	}
 	return v1alpha1.LighthouseJobSpec{
-		Agent:           jb.Agent,
-		Job:             jb.Name,
-		Namespace:       namespace,
-		MaxConcurrency:  jb.MaxConcurrency,
-		PodSpec:         jb.Spec,
-		PipelineRunSpec: jb.PipelineRunSpec,
+		Agent:             jb.Agent,
+		Job:               jb.Name,
+		Namespace:         namespace,
+		MaxConcurrency:    jb.MaxConcurrency,
+		PodSpec:           jb.Spec,
+		PipelineRunSpec:   jb.PipelineRunSpec,
+		PipelineRunParams: jb.PipelineRunParams,
 	}
 }
 
