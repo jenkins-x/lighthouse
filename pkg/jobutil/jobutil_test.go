@@ -163,6 +163,36 @@ func TestPresubmitSpec(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "pipeline_run_params are added to lighthouseJobSpec",
+			p: job.Presubmit{
+				Base: job.Base{
+					PipelineRunParams: []job.PipelineRunParam{
+						{
+							Name:          "FOO_PARAM",
+							ValueTemplate: "BAR_VALUE",
+						},
+					},
+				},
+			},
+			refs: v1alpha1.Refs{
+				PathAlias: "fancy",
+				CloneURI:  "cats",
+			},
+			expected: v1alpha1.LighthouseJobSpec{
+				Type: job.PresubmitJob,
+				Refs: &v1alpha1.Refs{
+					PathAlias: "fancy",
+					CloneURI:  "cats",
+				},
+				PipelineRunParams: []job.PipelineRunParam{
+					{
+						Name:          "FOO_PARAM",
+						ValueTemplate: "BAR_VALUE",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -526,7 +556,7 @@ func TestSpecFromJobBase(t *testing.T) {
 		verify  func(v1alpha1.LighthouseJobSpec) error
 	}{
 		{
-			name:    "Verify reporter config gets copied",
+			name: "Verify reporter config gets copied",
 			jobBase: job.Base{
 				/*				ReporterConfig: &v1alpha1.ReporterConfig{
 									Slack: &v1alpha1.SlackReporterConfig{
