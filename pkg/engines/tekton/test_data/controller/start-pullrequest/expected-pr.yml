@@ -52,6 +52,8 @@ spec:
       value: https://github.com/jenkins-x/lighthouse.git
     - name: branch-name
       value: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    - name: foo-param
+      value: bar-value
     - name: repo-url
       value: https://github.com/jenkins-x/lighthouse.git
   pipelineRef:
