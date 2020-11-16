@@ -14,6 +14,9 @@ build: clean $(HELMDOCS)
 	helm lint
 	$(HELMDOCS)
 
+docs: $(HELMDOCS)
+	$(HELMDOCS)
+
 install: clean build
 	helm install . --name ${NAME}
 
