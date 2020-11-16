@@ -53,13 +53,17 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `engines.jx` | bool | Enables the jx engine | `true` |
 | `engines.tekton` | bool | Enables the tekton engine | `false` |
 | `env` | object | Environment variables | `{"JX_DEFAULT_IMAGE":""}` |
+| `foghorn.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the foghorn pods | `{}` |
 | `foghorn.image.pullPolicy` | string | Template for computing the foghorn controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `foghorn.image.repository` | string | Template for computing the foghorn controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-foghorn"` |
 | `foghorn.image.tag` | string | Template for computing the foghorn controller docker image tag | `"{{ .Values.image.tag }}"` |
+| `foghorn.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the foghorn pods | `{}` |
 | `foghorn.replicaCount` | int | Number of replicas | `1` |
+| `foghorn.requests.cpu` | string |  | `"80m"` |
+| `foghorn.requests.memory` | string |  | `"128Mi"` |
 | `foghorn.resources.limits` | object | Resource limits applied to the foghorn pods | `{"cpu":"100m","memory":"256Mi"}` |
-| `foghorn.resources.requests` | object | Resource requests applied to the foghorn pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `foghorn.terminationGracePeriodSeconds` | int | Termination grace period for foghorn pods | `180` |
+| `foghorn.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods | `[]` |
 | `gcJobs.concurrencyPolicy` | string | Drives the job's concurrency policy | `"Forbid"` |
 | `gcJobs.failedJobsHistoryLimit` | int | Drives the failed jobs history limit | `1` |
 | `gcJobs.image.pullPolicy` | string | Template for computing the gc job docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
@@ -90,11 +94,13 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `jenkinscontroller.service` | object | Service settings for the tekton controller | `{"annotations":{}}` |
 | `jenkinscontroller.terminationGracePeriodSeconds` | int | Termination grace period for tekton controller pods | `180` |
 | `jenkinscontroller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods | `[]` |
+| `keeper.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the keeper pods | `{}` |
 | `keeper.datadog.enabled` | string | Enables datadog | `"true"` |
 | `keeper.image.pullPolicy` | string | Template for computing the keeper controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `keeper.image.repository` | string | Template for computing the keeper controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-keeper"` |
 | `keeper.image.tag` | string | Template for computing the keeper controller docker image tag | `"{{ .Values.image.tag }}"` |
 | `keeper.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":120,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
+| `keeper.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the keeper pods | `{}` |
 | `keeper.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `keeper.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `keeper.replicaCount` | int | Number of replicas | `1` |
@@ -103,6 +109,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `keeper.service` | object | Service settings for the webhooks controller | `{"externalPort":80,"internalPort":8888,"type":"ClusterIP"}` |
 | `keeper.statusContextLabel` | string | Label used to report status to git provider | `"Lighthouse Merge Status"` |
 | `keeper.terminationGracePeriodSeconds` | int | Termination grace period for keeper pods | `30` |
+| `keeper.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the keeper pods | `[]` |
 | `lighthouseJobNamespace` | string | Namespace where `LighthouseJob`s and `Pod`s are created | Deployment namespace |
 | `logFormat` | string | Log format | `"json"` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
