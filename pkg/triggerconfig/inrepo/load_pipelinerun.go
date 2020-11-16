@@ -20,6 +20,9 @@ const (
 	// TektonAPIVersion the default tekton API version
 	TektonAPIVersion = "tekton.dev/v1beta1"
 
+	// DefaultParameters the annotation used to disable default parameters
+	DefaultParameters = "lighthouse.jenkins-x.io/defaultParameters"
+
 	// LoadFileRefPattern the regular expression to match which Pipeline/Task references to load via files
 	LoadFileRefPattern = "lighthouse.jenkins-x.io/loadFileRefs"
 
