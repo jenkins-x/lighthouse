@@ -556,7 +556,7 @@ func TestSpecFromJobBase(t *testing.T) {
 		verify  func(v1alpha1.LighthouseJobSpec) error
 	}{
 		{
-			name: "Verify reporter config gets copied",
+			name:    "Verify reporter config gets copied",
 			jobBase: job.Base{
 				/*				ReporterConfig: &v1alpha1.ReporterConfig{
 									Slack: &v1alpha1.SlackReporterConfig{
