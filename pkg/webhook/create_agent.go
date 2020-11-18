@@ -23,11 +23,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// CreateAgent creates an agent for the given plugin and repository
+// CreateAgent creates an agent for the given repository
 // if the repository is configured to use in repository configuration then we create the use the repository specific
 // configuration
-func (s *Server) CreateAgent(l *logrus.Entry, plugin, owner, repo, ref string) (plugins.Agent, error) {
-	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l.WithField("plugin", plugin))
+func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.Agent, error) {
+	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l)
 
 	var err error
 	pc.Config, pc.PluginConfig, err = inrepo.Generate(pc.SCMProviderClient, pc.Config, pc.PluginConfig, owner, repo, ref)
