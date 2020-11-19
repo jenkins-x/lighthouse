@@ -29,7 +29,7 @@ func TestPublisher_Commit(t *testing.T) {
 	var testCases = []struct {
 		name          string
 		title, body   string
-		info          GitUserGetter
+		info          UserGetter
 		responses     map[string]execResponse
 		expectedCalls [][]string
 		expectedErr   bool

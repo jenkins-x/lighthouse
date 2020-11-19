@@ -89,7 +89,7 @@ type MergeOpt struct {
 }
 
 type interactor struct {
-	executor executor
+	executor Executor
 	remote   RemoteResolver
 	dir      string
 	logger   *logrus.Entry
