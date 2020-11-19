@@ -176,7 +176,11 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	})
 	l.Info("Push event.")
 	c := 0
-	agent, err := s.CreateAgent(l, repo.Namespace, repo.Name, pe.Ref)
+	ref := pe.After
+	if ref == "" {
+		ref = pe.Ref
+	}
+	agent, err := s.CreateAgent(l, repo.Namespace, repo.Name, ref)
 	if err != nil {
 		agent.Logger.WithError(err).Error("Error creating agent for PushEvent.")
 		return

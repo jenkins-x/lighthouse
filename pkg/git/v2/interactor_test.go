@@ -1535,7 +1535,7 @@ func TestInteractor_Diff(t *testing.T) {
 			responses: map[string]execResponse{
 				"diff head sha --name-only": {
 					out: []byte(`prow/git/v2/client_factory.go
-prow/git/v2/Executor.go
+prow/git/v2/executor.go
 prow/git/v2/executor_test.go
 prow/git/v2/fakes.go
 prow/git/v2/interactor.go
@@ -1550,7 +1550,7 @@ prow/git/v2/remote_test.go`),
 			},
 			expectedOut: []string{
 				"prow/git/v2/client_factory.go",
-				"prow/git/v2/Executor.go",
+				"prow/git/v2/executor.go",
 				"prow/git/v2/executor_test.go",
 				"prow/git/v2/fakes.go",
 				"prow/git/v2/interactor.go",

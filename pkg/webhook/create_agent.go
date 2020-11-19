@@ -31,6 +31,10 @@ import (
 // configuration
 func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.Agent, error) {
 	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l)
+	fullName := scm.Join(owner, repo)
+	if !pc.Config.InRepoConfigEnabled(fullName) {
+		return pc, nil
+	}
 
 	if !IsSHA(ref) {
 		err := s.createAgent(&pc, owner, repo, ref)
@@ -54,6 +58,20 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 	}
 	c.Add(key, &pc)
 	return pc, nil
+}
+
+func (s *Server) createAgent(pc *plugins.Agent, owner, repo, ref string) error {
+	var err error
+	pc.Config, pc.PluginConfig, err = inrepo.Generate(pc.SCMProviderClient, pc.Config, pc.PluginConfig, owner, repo, ref)
+	if err != nil {
+		return errors.Wrapf(err, "failed to calculate in repo config")
+	}
+	return nil
+}
+
+// IsSHA returns true if the given ref is a SHA
+func IsSHA(ref string) bool {
+	return len(ref) > 7 && !strings.Contains(ref, "/")
 }
 
 func (s *Server) createAgent(pc *plugins.Agent, owner, repo, ref string) error {

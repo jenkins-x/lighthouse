@@ -50,7 +50,6 @@ type repoClient struct {
 	interactor
 }
 
-// ClientFactoryOpts provides options for configuring the factory
 type ClientFactoryOpts struct {
 	// Host, defaults to "github.com" if unset
 	Host string
@@ -65,7 +64,7 @@ type ClientFactoryOpts struct {
 	// If unset, publishing action will error
 	Token TokenGetter
 	// The git user to use.
-	GitUser UserGetter
+	GitUser GitUserGetter
 	// The censor to use. Not needed for anonymous
 	// actions.
 	Censor Censor
@@ -96,7 +95,7 @@ func (cfo *ClientFactoryOpts) Apply(target *ClientFactoryOpts) {
 	}
 }
 
-// ClientFactoryOpt allows to manipulate the options for a ClientFactory
+// ClientFactoryOpts allows to manipulate the options for a ClientFactory
 type ClientFactoryOpt func(*ClientFactoryOpts)
 
 func defaultClientFactoryOpts(cfo *ClientFactoryOpts) {
@@ -156,7 +155,7 @@ func NewClientFactory(opts ...ClientFactoryOpt) (ClientFactory, error) {
 
 // NewLocalClientFactory allows for the creation of repository clients
 // based on a local filepath remote for testing
-func NewLocalClientFactory(baseDir string, gitUser UserGetter, censor Censor) (ClientFactory, error) {
+func NewLocalClientFactory(baseDir string, gitUser GitUserGetter, censor Censor) (ClientFactory, error) {
 	cacheDir, err := ioutil.TempDir("", "gitcache")
 	if err != nil {
 		return nil, err
@@ -174,7 +173,7 @@ func NewLocalClientFactory(baseDir string, gitUser UserGetter, censor Censor) (C
 
 type clientFactory struct {
 	remotes RemoteResolverFactory
-	gitUser UserGetter
+	gitUser GitUserGetter
 	censor  Censor
 	logger  *logrus.Entry
 

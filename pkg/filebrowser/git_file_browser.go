@@ -21,7 +21,7 @@ type gitFileBrowser struct {
 const headBranchPrefix = "HEAD branch:"
 
 // NewFileBrowserFromGitClient creates a new file browser from an Scm client
-func NewFileBrowserFromGitClient(clientFactory git.ClientFactory) Interface {
+func NewFileBrowserFromGitClient(clientFactory git.ClientFactory) *gitFileBrowser {
 	return &gitFileBrowser{
 		clientFactory: clientFactory,
 		clients:       map[string]*repoClientFacade{},
@@ -33,9 +33,8 @@ func (f *gitFileBrowser) GetMainAndCurrentBranchRefs(_, _, eventRef string) ([]s
 }
 
 func (f *gitFileBrowser) GetFile(owner, repo, path, ref string) (answer []byte, err error) {
-	err = f.withRepoClient(owner, repo, ref, func(repoClient git.RepoClient) error {
+	f.withRepoClient(owner, repo, ref, func(repoClient git.RepoClient) error {
 		f := repoPath(repoClient, path)
-		var err error
 		answer, err = ioutil.ReadFile(f) // #nosec
 		return err
 	})
@@ -93,13 +92,6 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fn func(repoCli
 			err = errors.Wrapf(err, "failed to create repo client")
 		}
 	}
-	if client.mainBranch == "" {
-		var err error
-		client.mainBranch, err = getMainBranch(client.repoClient.Directory())
-		if err != nil {
-			return errors.Wrapf(err, "failed to detect the main branch")
-		}
-	}
 	if err == nil {
 		repoClient = client.repoClient
 		err = client.UseRef(ref)
@@ -137,40 +129,27 @@ type repoClientFacade struct {
 	lock       sync.RWMutex
 	repoClient git.RepoClient
 	fullName   string
-	mainBranch string
 	ref        string
 }
 
 // UseRef this method should only be used within the lock
 func (c *repoClientFacade) UseRef(ref string) error {
 	if ref == "" {
-		ref = c.mainBranch
+		var err error
+		ref, err = getMainBranch(c.repoClient.Directory())
+		if err != nil {
+			return errors.Wrapf(err, "failed to detect the main branch")
+		}
 	}
 	if c.ref == ref {
 		return nil
 	}
-
-	// lets switch to the main branch first before we go to a custom sha/ref
-	if c.ref != "" && c.ref != c.mainBranch {
-		err := c.repoClient.Checkout(c.mainBranch)
-		if err != nil {
-			return errors.Wrapf(err, "failed to checkout repository %s main branch %s", c.fullName, c.mainBranch)
-		}
-	}
-
-	if ref != c.mainBranch {
-		err := c.repoClient.FetchRef(ref)
-		if err != nil {
-			return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
-		}
-	} else {
-		err := c.repoClient.Fetch()
-		if err != nil {
-			return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
-		}
-	}
 	c.ref = ref
-	err := c.repoClient.Checkout(ref)
+	err := c.repoClient.Fetch()
+	if err != nil {
+		return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+	}
+	err = c.repoClient.Checkout(ref)
 	if err != nil {
 		return errors.Wrapf(err, "failed to checkout repository %s ref %s", c.fullName, ref)
 	}

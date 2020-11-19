@@ -12,7 +12,7 @@ type scmFileBrowser struct {
 }
 
 // NewFileBrowserFromScmClient creates a new file browser from an Scm client
-func NewFileBrowserFromScmClient(scmClient scmProviderClient) Interface {
+func NewFileBrowserFromScmClient(scmClient scmProviderClient) *scmFileBrowser {
 	return &scmFileBrowser{scmClient: scmClient}
 }
 
