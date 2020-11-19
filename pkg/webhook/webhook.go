@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -390,11 +391,18 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse server URL %s", o.gitServerURL)
 	}
+
+	cache, err := lru.New(5000)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create in-repo LRU cache")
+	}
+
 	server := &Server{
 		ConfigAgent: configAgent,
 		Plugins:     pluginAgent,
 		Metrics:     promMetrics,
 		ServerURL:   serverURL,
+		InRepoCache: cache,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil

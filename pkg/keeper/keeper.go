@@ -37,6 +37,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
@@ -1347,7 +1348,7 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 	owner := sp.org
 	repo := sp.repo
 	sharedConfig := c.config()
-	cfg, _, err := inrepo.Generate(c.spc, sharedConfig, nil, owner, repo, "")
+	cfg, _, err := inrepo.Generate(filebrowser.NewFileBrowserFromScmClient(c.spc), sharedConfig, nil, owner, repo, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to calculate in repo config")
 	}
