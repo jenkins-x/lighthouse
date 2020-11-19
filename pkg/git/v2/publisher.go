@@ -32,8 +32,8 @@ type Publisher interface {
 	PushToCentral(branch string, force bool) error
 }
 
-// GitUserGetter fetches a name and email for us in git commits on-demand
-type GitUserGetter func() (name, email string, err error)
+// UserGetter fetches a name and email for us in git commits on-demand
+type UserGetter func() (name, email string, err error)
 
 type remotes struct {
 	publishRemote RemoteResolver
@@ -41,9 +41,9 @@ type remotes struct {
 }
 
 type publisher struct {
-	executor executor
+	executor Executor
 	remotes  remotes
-	info     GitUserGetter
+	info     UserGetter
 	logger   *logrus.Entry
 }
 
