@@ -19,9 +19,10 @@ package git
 import (
 	"bytes"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"reflect"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/diff"
 )
