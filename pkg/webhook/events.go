@@ -26,6 +26,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -40,6 +41,8 @@ type Server struct {
 	ServerURL      *url.URL
 	TokenGenerator func() []byte
 	Metrics        *Metrics
+	FileBrowser    filebrowser.Interface
+	InRepoCache    *lru.Cache
 
 	// Tracks running handlers for graceful shutdown
 	wg sync.WaitGroup

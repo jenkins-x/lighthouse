@@ -23,15 +23,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// executor knows how to execute Git commands
-type executor interface {
+// Executor knows how to execute Git commands
+type Executor interface {
 	Run(args ...string) ([]byte, error)
 }
 
 // Censor censors content to remove secrets
 type Censor func(content []byte) []byte
 
-func NewCensoringExecutor(dir string, censor Censor, logger *logrus.Entry) (executor, error) {
+// NewCensoringExecutor creates a new Executor
+func NewCensoringExecutor(dir string, censor Censor, logger *logrus.Entry) (Executor, error) {
 	g, err := exec.LookPath("git")
 	if err != nil {
 		return nil, err
