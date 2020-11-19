@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"sync"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -172,7 +173,11 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 	})
 	l.Info("Push event.")
 	c := 0
-	agent, err := s.CreateAgent(l, repo.Namespace, repo.Name, pe.Ref)
+	ref := pe.After
+	if ref == "" {
+		ref = pe.Ref
+	}
+	agent, err := s.CreateAgent(l, repo.Namespace, repo.Name, ref)
 	if err != nil {
 		agent.Logger.WithError(err).Error("Error creating agent for PushEvent.")
 		return

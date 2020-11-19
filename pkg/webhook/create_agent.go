@@ -17,6 +17,9 @@ limitations under the License.
 package webhook
 
 import (
+	"strings"
+
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
 	"github.com/pkg/errors"
@@ -28,11 +31,45 @@ import (
 // configuration
 func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.Agent, error) {
 	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l)
+	fullName := scm.Join(owner, repo)
+	if !pc.Config.InRepoConfigEnabled(fullName) {
+		return pc, nil
+	}
 
+	if !IsSHA(ref) {
+		err := s.createAgent(&pc, owner, repo, ref)
+		if err != nil {
+			return pc, errors.Wrapf(err, "failed to calculate in repo config")
+		}
+		return pc, nil
+	}
+
+	key := owner + "/" + repo + "/" + ref
+	c := s.InRepoCache
+	if x, found := c.Get(key); found {
+		pa := x.(*plugins.Agent)
+		if pa != nil {
+			return *pa, nil
+		}
+	}
+	err := s.createAgent(&pc, owner, repo, ref)
+	if err != nil {
+		return pc, errors.Wrapf(err, "failed to create agent")
+	}
+	c.Add(key, &pc)
+	return pc, nil
+}
+
+func (s *Server) createAgent(pc *plugins.Agent, owner, repo, ref string) error {
 	var err error
 	pc.Config, pc.PluginConfig, err = inrepo.Generate(pc.SCMProviderClient, pc.Config, pc.PluginConfig, owner, repo, ref)
 	if err != nil {
-		return pc, errors.Wrapf(err, "failed to calculate in repo config")
+		return errors.Wrapf(err, "failed to calculate in repo config")
 	}
-	return pc, nil
+	return nil
+}
+
+// IsSHA returns true if the given ref is a SHA
+func IsSHA(ref string) bool {
+	return len(ref) > 7 && !strings.Contains(ref, "/")
 }
