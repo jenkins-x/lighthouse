@@ -14,4 +14,4 @@ gitea:
       DISABLE_REGISTRATION: true
 
 image:
-  version: linux-amd64
+  version: 1.13.0

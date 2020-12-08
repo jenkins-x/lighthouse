@@ -1,5 +1,4 @@
-# Make
- does not offer a recursive wildcard function, so here's one:
+# Make does not offer a recursive wildcard function, so here's one:
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
 PROJECT := github.com/jenkins-x/lighthouse
