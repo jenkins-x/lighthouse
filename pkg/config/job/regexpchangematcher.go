@@ -51,7 +51,7 @@ func (cm RegexpChangeMatcher) ShouldRun(changes ChangedFilesProvider) (determine
 // RunsAgainstChanges returns true if any of the changed input paths match the run_if_changed regex.
 func (cm RegexpChangeMatcher) RunsAgainstChanges(changes []string) bool {
 	for _, change := range changes {
-		if cm.reChanges.MatchString(change) {
+		if cm.GetRE().MatchString(change) {
 			return true
 		}
 	}
@@ -68,4 +68,12 @@ func (cm RegexpChangeMatcher) SetChangeRegexes() (RegexpChangeMatcher, error) {
 		cm.reChanges = re
 	}
 	return cm, nil
+}
+
+func (cm RegexpChangeMatcher) GetRE() *regexp.Regexp {
+	if cm.reChanges == nil {
+		cm2, _ := cm.SetChangeRegexes()
+		return cm2.reChanges
+	}
+	return cm.reChanges
 }
