@@ -4,10 +4,10 @@ spec:
   presubmits:
   - name: lint
     context: "test"
-    alwaysRun: true
+    always_run: true
     optional: false
-    trigger: "/test"
-    rerunCommand: "/retest"
+    trigger: "(?:/test|/retest)"
+    rerun_command: "/retest"
     agent: tekton-pipeline
   postsubmits:
   - name: release

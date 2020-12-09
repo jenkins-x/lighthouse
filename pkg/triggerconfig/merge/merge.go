@@ -80,6 +80,10 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 	if err != nil {
 		return errors.Wrapf(err, "failed to validate plugins")
 	}
+	err = cfg.Init(cfg.ProwConfig)
+	if err != nil {
+		return errors.Wrapf(err, "failed to initialize config")
+	}
 	err = cfg.Validate(cfg.ProwConfig)
 	if err != nil {
 		return errors.Wrapf(err, "failed to validate config")

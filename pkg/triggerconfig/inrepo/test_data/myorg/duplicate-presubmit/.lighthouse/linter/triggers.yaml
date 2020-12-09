@@ -4,9 +4,9 @@ spec:
   presubmits:
   - name: lint
     context: "lint"
-    alwaysRun: true
+    always_run: true
     optional: false
-    trigger: "/lint"
-    rerunCommand: "/relint"
+    trigger: "(?:/lint|/relint)"
+    rerun_command: "/relint"
     agent: tekton-pipeline
 

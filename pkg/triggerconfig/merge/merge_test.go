@@ -36,7 +36,7 @@ func TestMergeTriggerConfig(t *testing.T) {
 							},
 							AlwaysRun:    true,
 							Optional:     false,
-							Trigger:      "/lint",
+							Trigger:      "(?:/lint|/relint)",
 							RerunCommand: "/relint",
 							Reporter: job.Reporter{
 								Context: "lint",
