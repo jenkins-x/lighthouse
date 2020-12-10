@@ -25,7 +25,7 @@ var (
 	// Define all metrics for webhooks here.
 	webhookCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "lighthouse_webhook_counter",
-		Help: "A counter of the webhooks made to prow.",
+		Help: "A counter of the webhooks made to lighthouse.",
 	}, []string{"event_type"})
 	responseCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "lighthouse_webhook_response_codes",
