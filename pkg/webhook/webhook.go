@@ -24,6 +24,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,6 +96,11 @@ func (o *WebhooksController) Ready(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
+}
+
+// Metrics returns the prometheus metrics
+func (o *WebhooksController) Metrics(w http.ResponseWriter, r *http.Request) {
+	promhttp.Handler().ServeHTTP(w, r)
 }
 
 // DefaultHandler responds to requests without a specific handler
@@ -235,6 +241,7 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 			o.server.FileBrowser = filebrowser.NewFileBrowserFromScmClient(scmProvider)
 		}
 	}
+
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
@@ -262,7 +269,15 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		"Clone":     repository.Clone,
 		"Webhook":   webhook.Kind(),
 	}
-	l = l.WithFields(logrus.Fields(fields))
+
+	// increase webhook counter
+	if o.server.Metrics != nil && o.server.Metrics.WebhookCounter != nil {
+		o.server.Metrics.WebhookCounter.With(map[string]string{
+			"event_type": string(webhook.Kind()),
+		}).Inc()
+	}
+
+	l = l.WithFields(fields)
 	_, ok := webhook.(*scm.PingHook)
 	if ok {
 		l.Info("received ping")
