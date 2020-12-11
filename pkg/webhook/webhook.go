@@ -58,7 +58,6 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	}
 
 	cfg := o.server.ConfigAgent.Config
-	o.gitServerURL = util.GetGitServer(cfg)
 	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind(cfg))
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
@@ -423,6 +422,7 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 		logrus.Warn("no configAgent configuration")
 	}
 
+	o.gitServerURL = util.GetGitServer(configAgent.Config)
 	serverURL, err := url.Parse(o.gitServerURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse server URL %s", o.gitServerURL)
