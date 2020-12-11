@@ -38,11 +38,7 @@ func Generate(fileBrowser filebrowser.Interface, sharedConfig *config.Config, sh
 	}
 
 	for _, ref := range refs {
-		repoConfig, err := LoadTriggerConfig(fileBrowser, owner, repo, ref)
-		if err != nil {
-			return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to create trigger config from local source for repo %s/%s ref %s", owner, repo, ref)
-		}
-
+		repoConfig, _ := LoadTriggerConfig(fileBrowser, owner, repo, ref)
 		if repoConfig != nil {
 			err = merge.ConfigMerge(&cfg, &pluginCfg, repoConfig, owner, repo)
 			if err != nil {
@@ -50,5 +46,5 @@ func Generate(fileBrowser filebrowser.Interface, sharedConfig *config.Config, sh
 			}
 		}
 	}
-	return &cfg, &pluginCfg, nil
+	return &cfg, &pluginCfg, errors.Wrapf(err, "failed to create trigger config from local source for repo %s/%s ref %s", owner, repo, eventRef)
 }
