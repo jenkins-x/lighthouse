@@ -17,8 +17,6 @@ const (
 	HealthPath = "/Health"
 	// ReadyPath URL path for the HTTP endpoint that returns Ready status.
 	ReadyPath = "/Ready"
-	// MetricsPath URL path for the HTTP endpoint that returns Prometheus metrics.
-	MetricsPath = "/Metrics"
 )
 
 type options struct {
@@ -83,12 +81,21 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle(HealthPath, http.HandlerFunc(controller.Health))
 	mux.Handle(ReadyPath, http.HandlerFunc(controller.Ready))
-	mux.Handle(MetricsPath, http.HandlerFunc(controller.Metrics))
 
 	mux.Handle("/", http.HandlerFunc(controller.DefaultHandler))
 	mux.Handle(o.path, http.HandlerFunc(controller.HandleWebhookRequests))
 
+	// lets serve metrics
+	metricsHandler := http.HandlerFunc(controller.Metrics)
+	go serveMetrics(metricsHandler)
+
 	logrus.Infof("Lighthouse is now listening on path %s and port %d for WebHooks", o.path, o.port)
 	err = http.ListenAndServe(":"+strconv.Itoa(o.port), mux)
-	logrus.WithError(err).Errorf("failed to server HTTP")
+	logrus.WithError(err).Errorf("failed to serve HTTP")
+}
+
+func serveMetrics(metricsHandler http.Handler) {
+	logrus.Info("Lighthouse is serving prometheus metrics on port 2112")
+	err := http.ListenAndServe(":2112", metricsHandler)
+	logrus.WithError(err).Errorf("failed to serve HTTP")
 }
