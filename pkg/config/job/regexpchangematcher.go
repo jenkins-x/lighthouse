@@ -70,6 +70,7 @@ func (cm RegexpChangeMatcher) SetChangeRegexes() (RegexpChangeMatcher, error) {
 	return cm, nil
 }
 
+// GetRE lazily creates the regex
 func (cm RegexpChangeMatcher) GetRE() *regexp.Regexp {
 	if cm.reChanges == nil {
 		cm2, _ := cm.SetChangeRegexes()
