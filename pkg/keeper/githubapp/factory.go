@@ -1,6 +1,7 @@
 package githubapp
 
 import (
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -20,7 +21,14 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 		return NewGitHubAppKeeperController(githubAppSecretDir, configAgent, botName, gitKind, maxRecordsPerPool, historyURI, statusURI, ns)
 	}
 
-	scmClient, err := factory.NewClient(gitKind, serverURL, "")
+	var scmClient *scm.Client
+	var err error
+	if gitKind == "gitea" {
+		// gitea returns 403 if the gitToken isn't passed here
+		scmClient, err = factory.NewClient(gitKind, serverURL, gitToken)
+	} else {
+		scmClient, err = factory.NewClient(gitKind, serverURL, "")
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create SCM client")
 	}
