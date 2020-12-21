@@ -46,5 +46,5 @@ func Generate(fileBrowser filebrowser.Interface, sharedConfig *config.Config, sh
 			}
 		}
 	}
-	return &cfg, &pluginCfg, errors.Wrapf(err, "failed to create trigger config from local source for repo %s/%s ref %s", owner, repo, eventRef)
+	return &cfg, &pluginCfg, nil
 }
