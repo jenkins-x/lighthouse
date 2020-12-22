@@ -27,10 +27,8 @@ pipelineConfig:
           steps:
           - name: init-helm
             image: alpine/helm:2.12.3
-            command: helm
-            args:
-              - init
-              - --client-only
+            command: ./init-helm.sh
+            dir: /workspace/source
 
           - name: helm-lint
             image: gcr.io/jenkinsxio/builder-go

@@ -16,6 +16,12 @@ export XDG_CONFIG_HOME=$JX_HOME
 
 mkdir -p $JX_HOME/git
 
+# TODO hack until we fix boot to do this too!
+helm init --client-only --skip-refresh
+helm repo rm stable
+helm repo add stable https://charts.helm.sh/stable
+helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
+
 jx install dependencies --all
 
 jx --version
@@ -71,10 +77,6 @@ sed -e s/\$VERSION/${VERSION}/g ../bdd/helm-requirements.yaml.template > env/req
 export BDD_ENABLE_TEST_CHATOPS_COMMANDS="true"
 
 echo "Building lighthouse with version $VERSION"
-
-# TODO hack until we fix boot to do this too!
-helm init --client-only
-helm repo add jenkins-x https://storage.googleapis.com/chartmuseum.jenkins-x.io
 
 # Enable checking the commit status reporting URL
 export BDD_LIGHTHOUSE_BASE_REPORT_URL=https://example.com
