@@ -64,6 +64,16 @@ pipelineConfig:
                   - name: kaniko-secret
                     mountPath: /kaniko-secrets
             steps:
+              - name: helm-init
+                image: gcr.io/jenkinsxio/builder-go
+                command: helm
+                args:
+                  - init
+                  - --client-only
+                  - --stable-repo-url
+                  - https://charts.helm.sh/stable
+                dir: /workspace/source
+
               - name: build-binaries
                 image: gcr.io/jenkinsxio/builder-go
                 command: make
