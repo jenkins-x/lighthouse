@@ -121,7 +121,10 @@ func (i *interactor) MirrorClone() error {
 	if err != nil {
 		return fmt.Errorf("could not resolve remote for cloning: %v", err)
 	}
-	if out, err := i.executor.Run("clone", "--mirror", remote, i.dir); err != nil {
+	out, err := i.executor.Run("clone", "--mirror", remote, i.dir)
+	if err != nil {
+		// the returned error is not being reported
+		i.logger.Errorf("error creating a mirror clone: %v %v", err, string(out))
 		return fmt.Errorf("error creating a mirror clone: %v %v", err, string(out))
 	}
 	return nil
