@@ -228,6 +228,9 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 				if o.server.ServerURL.Host != "" {
 					opts.Host = o.server.ServerURL.Host
 				}
+				if o.server.ServerURL.Scheme != "" {
+					opts.Scheme = o.server.ServerURL.Scheme
+				}
 			}
 			gitFactory, err := gitv2.NewClientFactory(configureOpts)
 			if err != nil {

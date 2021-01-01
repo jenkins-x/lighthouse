@@ -52,6 +52,8 @@ type repoClient struct {
 
 // ClientFactoryOpts provides options for configuring the factory
 type ClientFactoryOpts struct {
+	// Scheme, defaults to "https" if unset
+	Scheme string
 	// Host, defaults to "github.com" if unset
 	Host string
 	// UseSSH, defaults to false
@@ -100,6 +102,9 @@ func (cfo *ClientFactoryOpts) Apply(target *ClientFactoryOpts) {
 type ClientFactoryOpt func(*ClientFactoryOpts)
 
 func defaultClientFactoryOpts(cfo *ClientFactoryOpts) {
+	if cfo.Scheme == "" {
+		cfo.Scheme = "https"
+	}
 	if cfo.Host == "" {
 		cfo.Host = "github.com"
 	}
@@ -137,6 +142,7 @@ func NewClientFactory(opts ...ClientFactoryOpt) (ClientFactory, error) {
 		}
 	} else {
 		remotes = &httpResolverFactory{
+			scheme:   o.Scheme,
 			host:     o.Host,
 			username: o.Username,
 			token:    o.Token,
