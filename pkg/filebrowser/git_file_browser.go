@@ -90,7 +90,7 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fn func(repoCli
 	if client.repoClient == nil {
 		client.repoClient, err = f.clientFactory.ClientFor(owner, repo)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to create repo client")
+			return errors.Wrapf(err, "failed to create repo client")
 		}
 	}
 	if client.mainBranch == "" {
