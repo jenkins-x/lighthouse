@@ -85,7 +85,7 @@ type httpResolverFactory struct {
 // for the repository.
 func (f *httpResolverFactory) CentralRemote(org, repo string) RemoteResolver {
 	return HTTPResolver(func() (*url.URL, error) {
-		return &url.URL{Scheme: f.scheme, Host: f.host, Path: fmt.Sprintf("%s/%s", org, repo)}, nil
+		return &url.URL{Scheme: applyDefaultScheme(f.scheme), Host: f.host, Path: fmt.Sprintf("%s/%s", org, repo)}, nil
 	}, f.username, f.token)
 }
 
@@ -100,8 +100,15 @@ func (f *httpResolverFactory) PublishRemote(_, repo string) RemoteResolver {
 		if err != nil {
 			return nil, err
 		}
-		return &url.URL{Scheme: f.scheme, Host: f.host, Path: fmt.Sprintf("%s/%s", o, repo)}, nil
+		return &url.URL{Scheme: applyDefaultScheme(f.scheme), Host: f.host, Path: fmt.Sprintf("%s/%s", o, repo)}, nil
 	}, f.username, f.token)
+}
+
+func applyDefaultScheme(scheme string) string {
+	if scheme == "" {
+		return "https"
+	}
+	return scheme
 }
 
 // HTTPResolver builds http URLs that may optionally contain simple auth credentials, resolved dynamically.
