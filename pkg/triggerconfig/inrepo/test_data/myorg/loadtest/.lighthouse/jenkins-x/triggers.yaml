@@ -6,7 +6,7 @@ spec:
     context: "test"
     always_run: true
     optional: false
-    trigger: "(?:/test|/retest)"
+    trigger: "/test"
     rerun_command: "/retest"
     agent: tekton-pipeline
   postsubmits:

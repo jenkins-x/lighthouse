@@ -80,6 +80,7 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 	if err != nil {
 		return errors.Wrapf(err, "failed to validate plugins")
 	}
+	migrateOldConfig(&cfg.JobConfig)
 	err = cfg.Init(cfg.ProwConfig)
 	if err != nil {
 		return errors.Wrapf(err, "failed to initialize config")
@@ -89,4 +90,20 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 		return errors.Wrapf(err, "failed to validate config")
 	}
 	return nil
+}
+
+// migrateOldConfig lets handle some old incorrect configuration where the trigger and rerun_command values were not setup properly
+func migrateOldConfig(cfg *job.Config) {
+	for _, ps := range cfg.Presubmits {
+		for i := range ps {
+			presubmit := &ps[i]
+			if presubmit.Trigger == "/test" && presubmit.RerunCommand == "/retest" {
+				presubmit.Trigger = "(?m)^/test,?($|\\s.*)"
+				presubmit.RerunCommand = "/test"
+			} else if presubmit.Trigger == "/lint" && presubmit.RerunCommand == "/relint" {
+				presubmit.Trigger = "(?m)^/lint,?($|\\s.*)"
+				presubmit.RerunCommand = "/lint"
+			}
+		}
+	}
 }
