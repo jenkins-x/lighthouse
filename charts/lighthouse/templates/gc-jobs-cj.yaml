@@ -17,6 +17,10 @@ spec:
           labels:
             app: {{ template "gcJobs.name" . }}
             release: {{ .Release.Name }}
+{{- if .Values.gcJobs.podAnnotations }}
+          annotations:
+{{ toYaml .Values.gcJobs.podAnnotations | indent 12 }}
+{{- end }}
         spec:
           containers:
             - command:
