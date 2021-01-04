@@ -49,7 +49,7 @@ func LogConfig(t *testing.T, cfg *config.Config) {
 		t.Logf("presubmits for repository %s\n", k)
 
 		for _, r := range v {
-			t.Logf("  presubmit %s\n", r.Name)
+			t.Logf("  presubmit %s trigger: %s rerun_command: %s\n", r.Name, r.Trigger, r.RerunCommand)
 		}
 	}
 	for k, v := range cfg.Postsubmits {

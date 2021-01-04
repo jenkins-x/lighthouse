@@ -6,7 +6,7 @@ spec:
     context: "lint"
     always_run: true
     optional: false
-    trigger: "(?:/lint|/relint)"
+    trigger: "/lint"
     rerun_command: "/relint"
     agent: tekton-pipeline
 
