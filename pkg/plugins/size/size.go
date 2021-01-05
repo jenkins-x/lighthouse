@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -112,6 +112,8 @@ func handlePR(spc scmProviderClient, sizes plugins.Size, le *logrus.Entry, pe sc
 	}
 
 	var count int
+	var add int
+	var del int
 	for _, change := range changes {
 		// Skip generated and linguist-generated files.
 		if gf != nil && ga != nil && (gf.Match(change.Path) || ga.IsLinguistGenerated(change.Path)) {
@@ -119,6 +121,15 @@ func handlePR(spc scmProviderClient, sizes plugins.Size, le *logrus.Entry, pe sc
 		}
 
 		count += change.Additions + change.Deletions
+		// change additions and deletions are not available from all providers.
+		// if both are 0 or do not exist, check change.Patch to count the additions and deletions
+		if change.Additions == 0 && change.Deletions == 0 && len(change.Patch) > 0 {
+			for _, line := range strings.Split(strings.TrimSuffix(change.Patch, "\n"), "\n") {
+				add += strings.Count(line[0:1], "+")
+				del += strings.Count(line[0:1], "-")
+			}
+		}
+		count += add + del
 	}
 
 	labels, err := spc.GetIssueLabels(owner, repo, num, true)
