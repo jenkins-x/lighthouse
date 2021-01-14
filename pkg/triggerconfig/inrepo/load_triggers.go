@@ -1,7 +1,12 @@
 package inrepo
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -116,7 +121,12 @@ func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha
 	for i := range repoConfig.Spec.Presubmits {
 		r := &repoConfig.Spec.Presubmits[i]
 		if r.SourcePath != "" {
-			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, filepath.Join(dir, r.SourcePath), sha)
+			sourcePath := r.SourcePath
+			_, err := url.ParseRequestURI(sourcePath)
+			if err != nil {
+				sourcePath = filepath.Join(dir, r.SourcePath)
+			}
+			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, sourcePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
 			}
@@ -129,7 +139,12 @@ func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha
 	for i := range repoConfig.Spec.Postsubmits {
 		r := &repoConfig.Spec.Postsubmits[i]
 		if r.SourcePath != "" {
-			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, filepath.Join(dir, r.SourcePath), sha)
+			sourcePath := r.SourcePath
+			_, err := url.ParseRequestURI(sourcePath)
+			if err != nil {
+				sourcePath = filepath.Join(dir, r.SourcePath)
+			}
+			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, sourcePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
 			}
@@ -142,10 +157,23 @@ func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha
 }
 
 func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerName, repoName, path, sha string) error {
-	data, err := client.GetFile(ownerName, repoName, path, sha)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+	var data []byte
+
+	// source path can either be a local file or a Git URL
+	_, err := url.ParseRequestURI(path)
+	if err == nil {
+		data, err = getPipelineFromURL(path)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
+		}
+
+	} else {
+		data, err = client.GetFile(ownerName, repoName, path, sha)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+		}
 	}
+
 	if len(data) == 0 {
 		return errors.Errorf("empty file file %s in repo %s/%s for sha %s", path, ownerName, repoName, sha)
 	}
@@ -155,13 +183,23 @@ func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerN
 	message := fmt.Sprintf("in repo %s/%s with sha %s", ownerName, repoName, sha)
 
 	getData := func(path string) ([]byte, error) {
-		data, err := client.GetFile(ownerName, repoName, path, sha)
-		if err != nil && IsScmNotFound(err) {
-			err = nil
+		var data []byte
+		_, err := url.ParseRequestURI(path)
+		if err == nil {
+			data, err = getPipelineFromURL(path)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
+			}
+		} else {
+			data, err = client.GetFile(ownerName, repoName, path, sha)
+			if err != nil && IsScmNotFound(err) {
+				err = nil
+			}
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+			}
 		}
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
-		}
+
 		return data, nil
 	}
 
@@ -173,6 +211,31 @@ func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerN
 	return nil
 }
 
+func getPipelineFromURL(path string) ([]byte, error) {
+	client := &http.Client{
+		CheckRedirect: redirectPolicyFunc,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get URL %s", path)
+	}
+	req.Header.Add("Authorization", "Basic "+basicAuthGit())
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to request URL %s", path)
+	}
+
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read body from URL %s", path)
+	}
+	return data, nil
+}
+
 // IsScmNotFound returns true if the error is a not found error
 func IsScmNotFound(err error) bool {
 	if err != nil {
@@ -181,4 +244,19 @@ func IsScmNotFound(err error) bool {
 		return strings.Contains(err.Error(), scm.ErrNotFound.Error())
 	}
 	return false
+}
+
+func basicAuthGit() string {
+	user := os.Getenv("GIT_USER")
+	token := os.Getenv("GIT_TOKEN")
+	if user != "" && token != "" {
+		auth := user + ":" + token
+		return base64.StdEncoding.EncodeToString([]byte(auth))
+	}
+	return ""
+}
+
+func redirectPolicyFunc(req *http.Request, via []*http.Request) error {
+	req.Header.Add("Authorization", "Basic "+basicAuthGit())
+	return nil
 }
