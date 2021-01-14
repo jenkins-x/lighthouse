@@ -9,6 +9,7 @@ require (
 	github.com/go-stack/stack v1.8.0
 	github.com/google/go-cmp v0.4.1
 	github.com/gorilla/sessions v1.2.0
+	github.com/h2non/gock v1.0.9
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jenkins-x/go-scm v1.5.211

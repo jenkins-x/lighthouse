@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  labels:
+    jenkins.io/pipelineType: build
+  name: jx-kh-chuck
+spec:
+  pipelineSpec:
+    tasks:
+      - name: chuck-it
+        taskSpec:
+          steps:
+            - image: jenkinsxio/chuck:0.0.1
+              name: chuck
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 200Mi
+              workingDir: /workspace/source
+  serviceAccountName: tekton-bot
+  timeout: 0h20m0s
