@@ -67,3 +67,46 @@ func TestLoadPipelineRunTest(t *testing.T) {
 		assert.Equal(t, expectedText, text, "PipelineRun loaded for "+message)
 	}
 }
+
+func TestGetAnnotationsSortedSimple(t *testing.T) {
+	m := map[string]string{"lighthouse.jenkins-x.io/prependStepsURL": "a"}
+	res := getAnnotationsSorted(PrependStepURL, m)
+
+	assert.Equal(t, res, []string{"a"})
+}
+
+func TestGetAnnotationsSortedNumbered(t *testing.T) {
+	m := map[string]string{
+		"lighthouse.jenkins-x.io/prependStepsURL-1": "1",
+		"lighthouse.jenkins-x.io/prependStepsURL-2": "2",
+		"lighthouse.jenkins-x.io/prependStepsURL-3": "3",
+		"other-ano": "ano",
+	}
+	res := getAnnotationsSorted(PrependStepURL, m)
+
+	assert.Equal(t, res, []string{"3", "2", "1"})
+}
+
+func TestGetAnnotationsSortedMixed(t *testing.T) {
+	m := map[string]string{
+		"lighthouse.jenkins-x.io/prependStepsURL-a": "a",
+		"lighthouse.jenkins-x.io/prependStepsURL-1": "1",
+		"lighthouse.jenkins-x.io/prependStepsURL":   "",
+		"other-ano": "ano",
+	}
+	res := getAnnotationsSorted(PrependStepURL, m)
+
+	assert.Equal(t, res, []string{"a", "1", ""})
+}
+
+func TestGetAnnotationsSortedMixedStable(t *testing.T) {
+	m := map[string]string{
+		"lighthouse.jenkins-x.io/prependStepsURL":   "",
+		"lighthouse.jenkins-x.io/prependStepsURL-a": "a",
+		"lighthouse.jenkins-x.io/prependStepsURL-1": "1",
+		"other-ano": "ano",
+	}
+	res := getAnnotationsSorted(PrependStepURL, m)
+
+	assert.Equal(t, res, []string{"a", "1", ""})
+}

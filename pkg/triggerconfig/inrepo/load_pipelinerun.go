@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -197,36 +198,68 @@ func inheritTaskSteps(prs *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRu
 	if prs.Annotations == nil {
 		return prs, nil
 	}
-	appendURL := prs.Annotations[AppendStepURL]
-	prependURL := prs.Annotations[PrependStepURL]
 
-	var appendTask *tektonv1beta1.Task
-	var prependTask *tektonv1beta1.Task
+	prependURLs := getAnnotationsSorted(PrependStepURL, prs.Annotations)
+	appendURLs := getAnnotationsSorted(AppendStepURL, prs.Annotations)
+
+	for i := range prependURLs {
+		if err := taskApply(prependURLs[i], prs, prependTask); err != nil {
+			return nil, err
+		}
+	}
+
+	for i := range appendURLs {
+		if err := taskApply(appendURLs[i], prs, appendTask); err != nil {
+			return nil, err
+		}
+	}
+
+	return prs, nil
+}
+
+func prependTask(ps *tektonv1beta1.PipelineSpec, task *tektonv1beta1.Task) {
+	firstTask := &ps.Tasks[0]
+	if firstTask.TaskSpec != nil {
+		firstTask.TaskSpec.Steps = append(task.Spec.Steps, firstTask.TaskSpec.Steps...)
+	}
+}
+
+func appendTask(ps *tektonv1beta1.PipelineSpec, task *tektonv1beta1.Task) {
+	lastTask := &ps.Tasks[len(ps.Tasks)-1]
+	lastTask.TaskSpec.Steps = append(lastTask.TaskSpec.Steps, task.Spec.Steps...)
+}
+
+func taskApply(taskURL string, prs *tektonv1beta1.PipelineRun, f func(*tektonv1beta1.PipelineSpec, *tektonv1beta1.Task)) error {
+	var task *tektonv1beta1.Task
 	var err error
 
-	if appendURL != "" {
-		appendTask, err = loadTaskByURL(appendURL)
+	if taskURL != "" {
+		task, err = loadTaskByURL(taskURL)
 		if err != nil {
-			return prs, errors.Wrapf(err, "failed to load append steps Task")
+			return errors.Wrapf(err, "failed to load steps Task")
 		}
 	}
-	if prependURL != "" {
-		prependTask, err = loadTaskByURL(prependURL)
-		if err != nil {
-			return prs, errors.Wrapf(err, "failed to load prepend steps Task")
+	if task != nil {
+		f(prs.Spec.PipelineSpec, task)
+	}
+	return nil
+}
+
+func getAnnotationsSorted(prefix string, annotations map[string]string) []string {
+	// 1. Filter annotations matching prefix
+	matching := []string{}
+	for key, element := range annotations {
+		if strings.HasPrefix(key, prefix) {
+			matching = append(matching, element)
 		}
 	}
-	if prependTask != nil {
-		firstTask := &ps.Tasks[0]
-		if firstTask.TaskSpec != nil {
-			firstTask.TaskSpec.Steps = append(prependTask.Spec.Steps, firstTask.TaskSpec.Steps...)
-		}
-	}
-	if appendTask != nil {
-		lastTask := &ps.Tasks[len(ps.Tasks)-1]
-		lastTask.TaskSpec.Steps = append(lastTask.TaskSpec.Steps, appendTask.Spec.Steps...)
-	}
-	return prs, nil
+
+	// 2. Reverse sort - suffix `-2` comes before `-1`
+	sort.SliceStable(matching, func(i, j int) bool {
+		return matching[i] > matching[j]
+	})
+
+	return matching
 }
 
 func loadTaskByURL(uri string) (*tektonv1beta1.Task, error) {
