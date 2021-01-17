@@ -83,7 +83,8 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			c := fake.NewFakeClientWithScheme(scheme, state...)
+
+			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
 			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 
