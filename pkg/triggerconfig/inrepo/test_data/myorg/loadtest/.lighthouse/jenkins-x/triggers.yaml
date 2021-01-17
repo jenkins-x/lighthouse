@@ -4,10 +4,10 @@ spec:
   presubmits:
   - name: test
     context: "test"
-    alwaysRun: true
+    always_run: true
     optional: false
     trigger: "/test"
-    rerunCommand: "/retest"
+    rerun_command: "/retest"
     agent: tekton-pipeline
   postsubmits:
   - name: release

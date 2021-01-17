@@ -32,3 +32,4 @@ jenkins-values.yaml
 
 #OSX system files.
 **/.DS_Store
+.history

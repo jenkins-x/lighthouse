@@ -46,6 +46,11 @@ spec:
                 name: lighthouse-oauth-token
                 key: oauth
 {{- end }}
+          - name: "HMAC_TOKEN"
+            valueFrom:
+              secretKeyRef:
+                name: "lighthouse-hmac-token"
+                key: hmac
           - name: "JX_LOG_FORMAT"
             value: "{{ .Values.logFormat }}"
           - name: "LOGRUS_FORMAT"

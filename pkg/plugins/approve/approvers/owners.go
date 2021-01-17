@@ -58,6 +58,7 @@ type Owners struct {
 
 // NewOwners consturcts a new Owners instance. filenames is the slice of files changed.
 func NewOwners(log *logrus.Entry, filenames []string, r Repo, s int64) Owners {
+	log.Warnf("OWNERS FILENAMES : %s", filenames)
 	return Owners{filenames: filenames, repo: r, seed: s, log: log}
 }
 
@@ -385,7 +386,9 @@ func (ap Approvers) GetNoIssueApproversSet() sets.String {
 func (ap Approvers) GetFilesApprovers() map[string]sets.String {
 	filesApprovers := map[string]sets.String{}
 	currentApprovers := ap.GetCurrentApproversSetCased()
+	logrus.Warnf("CURRENT APPROVE SET CASED: %s", currentApprovers.List())
 	for fn, potentialApprovers := range ap.owners.GetApprovers() {
+		logrus.Warnf("POTENTIAL APPROVERS: %s", potentialApprovers.List())
 		// The order of parameter matters here:
 		// - currentApprovers is the list of github handles that have approved
 		// - potentialApprovers is the list of handles in the OWNER

@@ -6,19 +6,25 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/git"
+	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -53,7 +59,6 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	}
 
 	cfg := o.server.ConfigAgent.Config
-	o.gitServerURL = util.GetGitServer(cfg)
 	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind(cfg))
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
@@ -91,6 +96,11 @@ func (o *WebhooksController) Ready(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
+}
+
+// Metrics returns the prometheus metrics
+func (o *WebhooksController) Metrics(w http.ResponseWriter, r *http.Request) {
+	promhttp.Handler().ServeHTTP(w, r)
 }
 
 // DefaultHandler responds to requests without a specific handler
@@ -199,6 +209,42 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 		LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(o.namespace),
 		LauncherClient:    o.launcher,
 	}
+
+	if o.server.FileBrowser == nil {
+		// allow an enviroment variable to enable the git based file browsing
+		if os.Getenv("FILE_BROWSER") == "git" {
+			configureOpts := func(opts *gitv2.ClientFactoryOpts) {
+				opts.Token = func() []byte {
+					return []byte(token)
+				}
+				opts.GitUser = func() (name, email string, err error) {
+					name = gitCloneUser
+					return
+				}
+				opts.Username = func() (login string, err error) {
+					login = gitCloneUser
+					return
+				}
+				if o.server.ServerURL.Host != "" {
+					opts.Host = o.server.ServerURL.Host
+				}
+				if o.server.ServerURL.Scheme != "" {
+					opts.Scheme = o.server.ServerURL.Scheme
+				}
+			}
+			gitFactory, err := gitv2.NewClientFactory(configureOpts)
+			if err != nil {
+				err = errors.Wrapf(err, "failed to create git client factory for server %s", o.gitServerURL)
+				responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+				return
+			}
+			o.server.FileBrowser = filebrowser.NewFileBrowserFromGitClient(gitFactory)
+		} else {
+			scmProvider := scmprovider.ToClient(scmClient, o.server.ClientAgent.BotName)
+			o.server.FileBrowser = filebrowser.NewFileBrowserFromScmClient(scmProvider)
+		}
+	}
+
 	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
@@ -226,7 +272,15 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		"Clone":     repository.Clone,
 		"Webhook":   webhook.Kind(),
 	}
-	l = l.WithFields(logrus.Fields(fields))
+
+	// increase webhook counter
+	if o.server.Metrics != nil && o.server.Metrics.WebhookCounter != nil {
+		o.server.Metrics.WebhookCounter.With(map[string]string{
+			"event_type": string(webhook.Kind()),
+		}).Inc()
+	}
+
+	l = l.WithFields(fields)
 	_, ok := webhook.(*scm.PingHook)
 	if ok {
 		l.Info("received ping")
@@ -386,15 +440,23 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 		logrus.Warn("no configAgent configuration")
 	}
 
+	o.gitServerURL = util.GetGitServer(configAgent.Config)
 	serverURL, err := url.Parse(o.gitServerURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse server URL %s", o.gitServerURL)
 	}
+
+	cache, err := lru.New(5000)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create in-repo LRU cache")
+	}
+
 	server := &Server{
 		ConfigAgent: configAgent,
 		Plugins:     pluginAgent,
 		Metrics:     promMetrics,
 		ServerURL:   serverURL,
+		InRepoCache: cache,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil

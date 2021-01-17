@@ -8,6 +8,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/merge"
@@ -16,8 +17,8 @@ import (
 )
 
 // MergeTriggers merges the configuration with any `lighthouse.yaml` files in the repository
-func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, scmClient scmProviderClient, ownerName string, repoName string, sha string) (bool, error) {
-	repoConfig, err := LoadTriggerConfig(scmClient, ownerName, repoName, sha)
+func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, fileBrowser filebrowser.Interface, ownerName string, repoName string, sha string) (bool, error) {
+	repoConfig, err := LoadTriggerConfig(fileBrowser, ownerName, repoName, sha)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to load configs")
 	}
@@ -33,17 +34,17 @@ func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, scmClie
 }
 
 // LoadTriggerConfig loads the `lighthouse.yaml` configuration files in the repository
-func LoadTriggerConfig(scmClient scmProviderClient, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
+func LoadTriggerConfig(fileBrowser filebrowser.Interface, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
 	m := map[string]*triggerconfig.Config{}
 	path := ".lighthouse"
-	files, err := scmClient.ListFiles(ownerName, repoName, path, sha)
+	files, err := fileBrowser.ListFiles(ownerName, repoName, path, sha)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find any lighthouse configuration files in repo %s/%s at sha %s", ownerName, repoName, sha)
 	}
 	for _, f := range files {
 		if isDirType(f.Type) {
 			filePath := path + "/" + f.Name + "/triggers.yaml"
-			cfg, err := loadConfigFile(scmClient, ownerName, repoName, filePath, sha)
+			cfg, err := loadConfigFile(fileBrowser, ownerName, repoName, filePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
 			}
@@ -52,7 +53,7 @@ func LoadTriggerConfig(scmClient scmProviderClient, ownerName string, repoName s
 			}
 		} else if f.Name == "triggers.yaml" {
 			filePath := path + "/" + f.Name
-			cfg, err := loadConfigFile(scmClient, ownerName, repoName, filePath, sha)
+			cfg, err := loadConfigFile(fileBrowser, ownerName, repoName, filePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
 			}
@@ -98,7 +99,7 @@ func isDirType(t string) bool {
 	return strings.ToLower(t) == "dir"
 }
 
-func loadConfigFile(client scmProviderClient, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
+func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
 	data, err := client.GetFile(ownerName, repoName, path, sha)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
@@ -140,7 +141,7 @@ func loadConfigFile(client scmProviderClient, ownerName, repoName, path, sha str
 	return repoConfig, nil
 }
 
-func loadJobBaseFromSourcePath(client scmProviderClient, j *job.Base, ownerName, repoName, path, sha string) error {
+func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerName, repoName, path, sha string) error {
 	data, err := client.GetFile(ownerName, repoName, path, sha)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)

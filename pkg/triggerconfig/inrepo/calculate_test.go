@@ -8,6 +8,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
@@ -44,7 +45,9 @@ func TestCalculate(t *testing.T) {
 	}
 	sharedPluginConfig := &plugins.Configuration{}
 
-	cfg, pluginsCfg, err := inrepo.Generate(scmProvider, sharedConfig, sharedPluginConfig, owner, repo, ref)
+	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
+
+	cfg, pluginsCfg, err := inrepo.Generate(fileBrowser, sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	require.NoError(t, err, "failed to invoke getClientAndTrigger")
@@ -121,7 +124,8 @@ func TestTriggersInBranchMergeToMaster(t *testing.T) {
 	}
 	sharedPluginConfig := &plugins.Configuration{}
 
-	cfg, _, err := inrepo.Generate(scmProvider, sharedConfig, sharedPluginConfig, owner, repo, ref)
+	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
+	cfg, _, err := inrepo.Generate(fileBrowser, sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	presubmits := cfg.Presubmits[fullName]

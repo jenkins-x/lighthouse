@@ -6,16 +6,20 @@ plank: {}
 postsubmits:
   myorg/myowner:
   - agent: tekton-pipeline
+    cluster: default
     context: release
     name: release
+    namespace: ""
 presubmits:
   myorg/myowner:
   - agent: tekton-pipeline
     always_run: true
+    cluster: default
     context: lint
     name: lint
+    namespace: ""
     rerun_command: /relint
-    trigger: /lint
+    trigger: (?:/lint|/relint)
 push_gateway:
   serve_metrics: false
 tide:

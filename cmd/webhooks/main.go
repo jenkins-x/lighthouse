@@ -44,7 +44,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.path, "path", "/hook",
 		"The path to listen on for requests to trigger a pipeline run.")
 	fs.StringVar(&o.pluginFilename, "plugin-file", "", "Path to the plugins.yaml file. If not specified it is loaded from the 'plugins' ConfigMap")
-	fs.StringVar(&o.configFilename, "config-file", "", "7Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
+	fs.StringVar(&o.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	fs.StringVar(&o.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
 
@@ -85,7 +85,17 @@ func main() {
 	mux.Handle("/", http.HandlerFunc(controller.DefaultHandler))
 	mux.Handle(o.path, http.HandlerFunc(controller.HandleWebhookRequests))
 
+	// lets serve metrics
+	metricsHandler := http.HandlerFunc(controller.Metrics)
+	go serveMetrics(metricsHandler)
+
 	logrus.Infof("Lighthouse is now listening on path %s and port %d for WebHooks", o.path, o.port)
 	err = http.ListenAndServe(":"+strconv.Itoa(o.port), mux)
-	logrus.WithError(err).Errorf("failed to server HTTP")
+	logrus.WithError(err).Errorf("failed to serve HTTP")
+}
+
+func serveMetrics(metricsHandler http.Handler) {
+	logrus.Info("Lighthouse is serving prometheus metrics on port 2112")
+	err := http.ListenAndServe(":2112", metricsHandler)
+	logrus.WithError(err).Errorf("failed to serve HTTP")
 }

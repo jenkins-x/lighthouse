@@ -18,24 +18,20 @@ package webhook
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var (
 	// Define all metrics for webhooks here.
-	webhookCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "prow_webhook_counter",
-		Help: "A counter of the webhooks made to prow.",
+	webhookCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "lighthouse_webhook_counter",
+		Help: "A counter of the webhooks made to lighthouse.",
 	}, []string{"event_type"})
-	responseCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "prow_webhook_response_codes",
+	responseCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "lighthouse_webhook_response_codes",
 		Help: "A counter of the different responses hook has responded to webhooks with.",
 	}, []string{"response_code"})
 )
-
-func init() {
-	prometheus.MustRegister(webhookCounter)
-	prometheus.MustRegister(responseCounter)
-}
 
 // Metrics is a set of metrics gathered by hook.
 type Metrics struct {

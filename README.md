@@ -86,7 +86,7 @@ To configure your SCM, go-scm uses the following environment variables :
 
 | Name  |  Description |
 | ------------- | ------------- |
-| `GIT_KIND` | the kind of git server: `github, bitbucket, gitea, stash` |
+| `GIT_KIND` | the kind of git server: `github, gitlab, bitbucket, gitea, stash` |
 | `GIT_SERVER` | the URL of the server if not using the public hosted git providers: [https://github.com](https://github.com), [https://bitbucket.org] or [https://gitlab.com](https://gitlab.com) |
 | `GIT_USER` | the git user (bot name) to use on git operations |
 | `GIT_TOKEN` | the git token to perform operations on git (add comments, labels etc.) |
@@ -146,6 +146,38 @@ dlv --listen=:2345 --headless=true --api-version=2 exec ./bin/lighthouse -- $*
 
 You can then debug from your Go-based IDE (e.g. GoLand / IDEA / VS Code).
 
+### Debugging webhooks
+
+If you want to debug lighthouse locally from webhooks in your cluster there are a couple of tools that could help:
+
+#### Localizer
+
+If you [install localizer](https://github.com/jaredallard/localizer#install-localizer) (see [the blog for more detail](https://blog.jaredallard.me/localizer-an-adventure-in-creating-a-reverse-tunnel-and-tunnel-manager-for-kubernetes/) you can easily debug webhooks on your cluster.
+
+* first run localizer:
+
+```bash 
+sudo localizer
+```
+
+Then run/debug lighthouse locally. 
+
+e.g. in your IDE run the [cmd/webhooks/main.go](https://github.com/jenkins-x/lighthouse/blob/master/cmd/webhooks/main.go) (passing `--namespace jx` as program arguments)
+
+Then to get the webhooks to trigger your local process:
+
+```bash 
+localizer expose jx/hook --map 80:8080
+```
+
+when you have finished debugging, return things to normal via:
+
+```bash 
+localizer expose jx/hook --stop
+```
+
+
+#### Telepresence 
 You can replace the running version in your cluster with the one running locally using [telepresence](https://www.telepresence.io/).  
 For webhooks, just run:
 ```bash

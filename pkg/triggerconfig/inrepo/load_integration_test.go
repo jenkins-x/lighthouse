@@ -6,6 +6,7 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
@@ -29,7 +30,8 @@ func TestMergeConfigIntegration(t *testing.T) {
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
 
-	flag, err := inrepo.MergeTriggers(cfg, pluginCfg, scmProvider, repoOwner, repoName, sha)
+	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
+	flag, err := inrepo.MergeTriggers(cfg, pluginCfg, fileBrowser, repoOwner, repoName, sha)
 	require.NoError(t, err, "failed to merge configs")
 	assert.True(t, flag, "did not return merge flag")
 
@@ -47,7 +49,7 @@ func LogConfig(t *testing.T, cfg *config.Config) {
 		t.Logf("presubmits for repository %s\n", k)
 
 		for _, r := range v {
-			t.Logf("  presubmit %s\n", r.Name)
+			t.Logf("  presubmit %s trigger: %s rerun_command: %s\n", r.Name, r.Trigger, r.RerunCommand)
 		}
 	}
 	for k, v := range cfg.Postsubmits {

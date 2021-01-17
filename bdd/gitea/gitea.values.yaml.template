@@ -1,0 +1,17 @@
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  hosts:
+    - gitea.EXTERNAL_IP.nip.io
+
+gitea:
+  admin:
+    password: abcdEFGH
+
+  config:
+    service:
+      DISABLE_REGISTRATION: true
+
+image:
+  version: 1.13.0

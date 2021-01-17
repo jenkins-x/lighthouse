@@ -176,10 +176,20 @@ foghorn:
       cpu: 100m
       memory: 256Mi
 
-    # foghorn.resources.requests -- Resource requests applied to the foghorn pods
-    requests:
-      cpu: 80m
-      memory: 128Mi
+  # foghorn.resources.requests -- Resource requests applied to the foghorn pods
+  requests:
+    cpu: 80m
+    memory: 128Mi
+
+  # foghorn.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the foghorn pods
+  nodeSelector: {}
+
+  # foghorn.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the foghorn pods
+  affinity: {}
+
+  # foghorn.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods
+  tolerations: []
+
 
 tektoncontroller:
   # tektoncontroller.dashboardURL -- the dashboard URL (e.g. Tekton dashboard)
@@ -337,6 +347,15 @@ keeper:
   datadog:
     # keeper.datadog.enabled -- Enables datadog
     enabled: "true"
+
+  # keeper.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the keeper pods
+  nodeSelector: {}
+
+  # keeper.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the keeper pods
+  affinity: {}
+
+  # keeper.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the keeper pods
+  tolerations: []
 
 engines:
   # engines.jx -- Enables the jx engine

@@ -27,10 +27,8 @@ pipelineConfig:
           steps:
           - name: init-helm
             image: alpine/helm:2.12.3
-            command: helm
-            args:
-              - init
-              - --client-only
+            command: ./init-helm.sh
+            dir: /workspace/source
 
           - name: helm-lint
             image: gcr.io/jenkinsxio/builder-go
@@ -103,6 +101,11 @@ pipelineConfig:
                     name: jenkins-x-chartmuseum
                     key: BASIC_AUTH_PASS
             steps:
+              - name: init-helm
+                image: alpine/helm:2.12.3
+                command: ./init-helm.sh
+                dir: /workspace/source
+                
               - name: lint-check
                 image: gcr.io/jenkinsxio/builder-go
                 command: make
@@ -117,13 +120,6 @@ pipelineConfig:
                 - test
                 - build-linux
                 dir: /workspace/source
-
-              - name: init-helm
-                image: alpine/helm:2.12.3
-                command: helm
-                args:
-                - init
-                - --client-only
 
               - name: helm-lint
                 image: gcr.io/jenkinsxio/builder-go
