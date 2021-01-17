@@ -1,6 +1,7 @@
 package tekton
 
 import (
+	"knative.dev/pkg/apis"
 	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -10,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"knative.dev/pkg/apis"
 )
 
 // ConvertPipelineRun translates a PipelineRun into an ActivityRecord
