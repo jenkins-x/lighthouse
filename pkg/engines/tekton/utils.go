@@ -164,11 +164,8 @@ func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.P
 		pipelineSpec = pr.Spec.PipelineSpec
 	} else {
 		pipeline := tektonv1beta1.Pipeline{ObjectMeta: metav1.ObjectMeta{Name: pr.Spec.PipelineRef.Name, Namespace: pr.Namespace}}
-		key, err := client.ObjectKeyFromObject(&pipeline)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to find Pipeline %s for PipelineRun", pr.Spec.PipelineRef.Name)
-		}
-		err = c.Get(ctx, key, &pipeline)
+		key := client.ObjectKeyFromObject(&pipeline)
+		err := c.Get(ctx, key, &pipeline)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to find Pipeline %s for PipelineRun", pr.Spec.PipelineRef.Name)
 		}

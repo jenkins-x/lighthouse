@@ -10,6 +10,7 @@ spec:
     tasks:
     - name: cheese
       taskSpec:
+        metadata: {}
         stepTemplate:
           name: ""
           resources:
