@@ -32,7 +32,7 @@ APIS_PKG="$3"
 GROUPS_WITH_VERSIONS="$4"
 shift 4
 
-GENERATOR_VERSION=v0.19.2
+GENERATOR_VERSION=v0.20.2
 (
   # To support running this script from anywhere, we have to first cd into this directory
   # so we can install the tools.
