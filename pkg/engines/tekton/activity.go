@@ -1,8 +1,9 @@
 package tekton
 
 import (
-	"knative.dev/pkg/apis"
 	"strings"
+
+	"knative.dev/pkg/apis"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
