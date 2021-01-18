@@ -1,7 +1,6 @@
 module github.com/jenkins-x/lighthouse
 
 require (
-	code.gitea.io/sdk/gitea v0.13.1-0.20201217044651-7ddbf1a0151e // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible
 	github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46
 	github.com/bwmarrin/snowflake v0.0.0
@@ -13,7 +12,7 @@ require (
 	github.com/h2non/gock v1.0.9
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jenkins-x/go-scm v1.5.209
+	github.com/jenkins-x/go-scm v1.5.213
 	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
