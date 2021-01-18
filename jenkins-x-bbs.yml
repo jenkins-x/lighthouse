@@ -58,7 +58,7 @@ pipelineConfig:
                 name: jx-pipeline-git-bitbucketserver-bs-approver
                 key: password
         agent:
-          image: gcr.io/jenkinsxio/builder-go:2.1.155-779-nodejs
+          image: gcr.io/jenkinsxio/builder-go-nodejs:2.1.155-779
         stages:
           - name: ci
             options:
