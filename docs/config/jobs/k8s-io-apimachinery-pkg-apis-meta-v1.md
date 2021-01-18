@@ -25,7 +25,7 @@ FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.
 
 ## LabelSelector
 
-A label selector is a label query over a set of resources. The result of matchLabels and<br />matchExpressions are ANDed. An empty label selector matches all objects. A null<br />label selector matches no objects.
+A label selector is a label query over a set of resources. The result of matchLabels and<br />matchExpressions are ANDed. An empty label selector matches all objects. A null<br />label selector matches no objects.<br />+structType=atomic
 
 | Stanza | Type | Required | Description |
 |---|---|---|---|
