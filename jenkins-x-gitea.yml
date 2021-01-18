@@ -40,7 +40,7 @@ pipelineConfig:
                 name: jenkins-x-chartmuseum
                 key: BASIC_AUTH_PASS
         agent:
-          image: gcr.io/jenkinsxio/builder-go-nodejs
+          image: gcr.io/jenkinsxio/builder-go:2.1.155-779-nodejs
         stages:
           - name: ci
             options:
@@ -65,7 +65,7 @@ pipelineConfig:
                     mountPath: /kaniko-secrets
             steps:
               - name: build-binaries
-                image: gcr.io/jenkinsxio/builder-go
+                image: gcr.io/jenkinsxio/builder-go:2.1.155-779
                 command: make
                 args:
                   - build-linux
