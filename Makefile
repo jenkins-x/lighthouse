@@ -6,16 +6,21 @@ PROJECT := github.com/jenkins-x/lighthouse
 WEBHOOKS_EXECUTABLE := webhooks
 KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
-GC_JOBS_EXECUTABLE := gc-jobs
-TEKTON_CONTROLLER_EXECUTABLE := lighthouse-tekton-controller
+GCJOBS_EXECUTABLE := gc-jobs
+TEKTONCONTROLLER_EXECUTABLE := lighthouse-tekton-controller
 JENKINS_CONTROLLER_EXECUTABLE := jenkins-controller
+STROBE_EXECUTABLE := strobe
 
 WEBHOOKS_MAIN_SRC_FILE=cmd/webhooks/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
-GC_JOBS_MAIN_SRC_FILE=cmd/gc/main.go
-TEKTON_CONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
+GCJOBS_MAIN_SRC_FILE=cmd/gc/main.go
+TEKTONCONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
 JENKINS_CONTROLLER_MAIN_SRC_FILE=cmd/jenkins/main.go
+STROBE_MAIN_SRC_FILE=cmd/strobe/main.go
+
+DOCKER_REGISTRY := jenkinsxio
+DOCKER_IMAGE_NAME := lighthouse
 
 GO := GO111MODULE=on go
 GO_NOMOD := GO111MODULE=off go
@@ -30,7 +35,7 @@ GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 all: build test check docs ## Default rule, builds all binaries, runs tests and format checks
 
 .PHONY: build
-build: build-webhooks build-keeper build-foghorn build-tekton-controller build-gc-jobs build-jenkins-controller ## Builds all Lighthouse binaries native to your machine
+build: build-webhooks build-keeper build-foghorn build-tekton-controller build-gc-jobs build-jenkins-controller build-strobe ## Builds all Lighthouse binaries native to your machine
 
 .PHONY: build-webhooks
 build-webhooks: ## Build the webhooks controller binary for the native OS
@@ -57,7 +62,7 @@ build-jenkins-controller: ## Build the Jenkins controller binary for the native 
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
 
 .PHONY: build-linux
-build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
+build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux build-strobe-linux ## Build all binaries for Linux
 
 .PHONY: build-webhooks-linux ## Build the webhook controller binary for Linux
 build-webhooks-linux:
@@ -82,6 +87,14 @@ build-tekton-controller-linux: ## Build the Tekton controller binary for Linux
 .PHONY: build-jenkins-controller-linux
 build-jenkins-controller-linux: ## Build the Jenkins controller binary for Linux
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
+
+.PHONY: build-strobe
+build-strobe:
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(STROBE_EXECUTABLE) $(STROBE_MAIN_SRC_FILE)
+
+.PHONY: build-strobe-linux
+build-strobe-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(STROBE_EXECUTABLE) $(STROBE_MAIN_SRC_FILE)
 
 .PHONY: test
 test: ## Runs the unit tests

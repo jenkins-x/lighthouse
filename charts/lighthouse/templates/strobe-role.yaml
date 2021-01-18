@@ -1,0 +1,27 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "strobe.name" . }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - get
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs
+  verbs:
+  - create
