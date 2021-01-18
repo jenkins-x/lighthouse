@@ -27,23 +27,23 @@ require (
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
-	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
+	k8s.io/client-go v0.20.2
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
-	knative.dev/pkg v0.0.0-20201002052829-735a38c03260
+	knative.dev/pkg v0.0.0-20210107022335-51c72e24c179
 	sigs.k8s.io/controller-runtime v0.8.0
 	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
-	github.com/tektoncd/pipeline => github.com/jenkins-x/pipeline v0.0.0-20201002150609-ca0741e5d19a
+	github.com/tektoncd/pipeline => github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6
 	// gomodules.xyz breaks in Athens proxying
 	gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.1.0
 	k8s.io/api => k8s.io/api v0.20.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.2
 	k8s.io/client-go => k8s.io/client-go v0.20.2
+	knative.dev/pkg => github.com/jstrachan/pkg v0.0.0-20210118084935-c7bdd6c14bd0
 
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.8.0
-	knative.dev/pkg => github.com/dprotaso/pkg v0.0.0-20210114000224-9034beae0c6a
 )
 
 go 1.15
