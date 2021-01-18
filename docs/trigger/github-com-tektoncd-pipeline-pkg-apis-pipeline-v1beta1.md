@@ -1,6 +1,7 @@
 # Package github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1
 
 - [ArrayOrString](#ArrayOrString)
+- [EmbeddedTask](#EmbeddedTask)
 - [Param](#Param)
 - [ParamSpec](#ParamSpec)
 - [ParamType](#ParamType)
@@ -17,6 +18,7 @@
 - [PipelineTask](#PipelineTask)
 - [PipelineTaskCondition](#PipelineTaskCondition)
 - [PipelineTaskInputResource](#PipelineTaskInputResource)
+- [PipelineTaskMetadata](#PipelineTaskMetadata)
 - [PipelineTaskOutputResource](#PipelineTaskOutputResource)
 - [PipelineTaskResources](#PipelineTaskResources)
 - [PipelineTaskRunSpec](#PipelineTaskRunSpec)
@@ -29,7 +31,7 @@
 - [TaskResource](#TaskResource)
 - [TaskResources](#TaskResources)
 - [TaskResult](#TaskResult)
-- [TaskSpec](#TaskSpec)
+- [WhenExpressions](#WhenExpressions)
 - [WorkspaceBinding](#WorkspaceBinding)
 - [WorkspaceDeclaration](#WorkspaceDeclaration)
 - [WorkspacePipelineTaskBinding](#WorkspacePipelineTaskBinding)
@@ -39,7 +41,28 @@
 
 ArrayOrString is a type that can hold a single string or string array.<br />Used in JSON unmarshalling so that a single JSON field can accept<br />either an individual string or an array of strings.
 
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `type` | [ParamType](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#ParamType) | Yes |  |
+| `stringVal` | string | Yes |  |
+| `arrayVal` | []string | No |  |
 
+## EmbeddedTask
+
+
+
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `metadata` | [PipelineTaskMetadata](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineTaskMetadata) | No | +optional |
+| `resources` | *[TaskResources](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskResources) | No | Resources is a list input and output resource to run the task<br />Resources are represented in TaskRuns as bindings to instances of<br />PipelineResources.<br />+optional |
+| `params` | [][ParamSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#ParamSpec) | No | Params is a list of input parameters required to run the task. Params<br />must be supplied as inputs in TaskRuns unless they declare a default<br />value.<br />+optional |
+| `description` | string | No | Description is a user-facing description of the task that may be<br />used to populate a UI.<br />+optional |
+| `steps` | [][Step](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#Step) | No | Steps are the steps of the build; each step is run sequentially with the<br />source mounted into /workspace. |
+| `volumes` | [][Volume](./k8s-io-api-core-v1.md#Volume) | No | Volumes is a collection of volumes that are available to mount into the<br />steps of the build. |
+| `stepTemplate` | *[Container](./k8s-io-api-core-v1.md#Container) | No | StepTemplate can be used as the basis for all step containers within the<br />Task, so that the steps inherit settings on the base container. |
+| `sidecars` | [][Sidecar](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#Sidecar) | No | Sidecars are run alongside the Task's step containers. They begin before<br />the steps start and end after the steps complete. |
+| `workspaces` | [][WorkspaceDeclaration](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#WorkspaceDeclaration) | No | Workspaces are the volumes that this Task requires. |
+| `results` | [][TaskResult](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskResult) | No | Results are values that this Task can output |
 
 ## Param
 
@@ -85,6 +108,7 @@ PipelineRef can be used to refer to a specific instance of a Pipeline.<br />Copi
 |---|---|---|---|
 | `name` | string | No | Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names |
 | `apiVersion` | string | No | API version of the referent<br />+optional |
+| `bundle` | string | No | Bundle url reference to a Tekton Bundle.<br />+optional |
 
 ## PipelineResourceBinding
 
@@ -132,7 +156,7 @@ PipelineRunSpec defines the desired state of PipelineRun
 | `resources` | [][PipelineResourceBinding](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineResourceBinding) | No | Resources is a list of bindings specifying which actual instances of<br />PipelineResources to use for the resources the Pipeline has declared<br />it needs. |
 | `params` | [][Param](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#Param) | No | Params is a list of parameter names and values. |
 | `serviceAccountName` | string | No | +optional |
-| `serviceAccountNames` | [][PipelineRunSpecServiceAccountName](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineRunSpecServiceAccountName) | No | +optional |
+| `serviceAccountNames` | [][PipelineRunSpecServiceAccountName](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineRunSpecServiceAccountName) | No | Deprecated: use taskRunSpecs.ServiceAccountName instead<br />+optional |
 | `status` | [PipelineRunSpecStatus](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineRunSpecStatus) | No | Used for cancelling a pipelinerun (and maybe more later on)<br />+optional |
 | `timeout` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Time after which the Pipeline times out. Defaults to never.<br />Refer to Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration<br />+optional |
 | `podTemplate` | *[PodTemplate](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PodTemplate) | No | PodTemplate holds pod specific configuration |
@@ -176,8 +200,9 @@ PipelineTask defines a task in a Pipeline, passing inputs from both<br />Params 
 |---|---|---|---|
 | `name` | string | No | Name is the name of this task within the context of a Pipeline. Name is<br />used as a coordinate with the `from` and `runAfter` fields to establish<br />the execution order of tasks relative to one another. |
 | `taskRef` | *[TaskRef](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskRef) | No | TaskRef is a reference to a task definition.<br />+optional |
-| `taskSpec` | *[TaskSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskSpec) | No | TaskSpec is a specification of a task<br />+optional |
-| `conditions` | [][PipelineTaskCondition](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineTaskCondition) | No | Conditions is a list of conditions that need to be true for the task to run<br />+optional |
+| `taskSpec` | *[EmbeddedTask](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#EmbeddedTask) | No | TaskSpec is a specification of a task<br />+optional |
+| `conditions` | [][PipelineTaskCondition](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineTaskCondition) | No | Conditions is a list of conditions that need to be true for the task to run<br />Conditions are deprecated, use WhenExpressions instead<br />+optional |
+| `when` | [WhenExpressions](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#WhenExpressions) | No | WhenExpressions is a list of when expressions that need to be true for the task to run<br />+optional |
 | `retries` | int | No | Retries represents how many times this task should be retried in case of task failure: ConditionSucceeded set to False<br />+optional |
 | `runAfter` | []string | No | RunAfter is the list of PipelineTask names that should be executed before<br />this Task executes. (Used to force a specific ordering in graph execution.)<br />+optional |
 | `resources` | *[PipelineTaskResources](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineTaskResources) | No | Resources declares the resources given to this task as inputs and<br />outputs.<br />+optional |
@@ -204,6 +229,15 @@ PipelineTaskInputResource maps the name of a declared PipelineResource input<br 
 | `name` | string | Yes | Name is the name of the PipelineResource as declared by the Task. |
 | `resource` | string | Yes | Resource is the name of the DeclaredPipelineResource to use. |
 | `from` | []string | No | From is the list of PipelineTask names that the resource has to come from.<br />(Implies an ordering in the execution graph.)<br />+optional |
+
+## PipelineTaskMetadata
+
+
+
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `labels` | map[string]string | No | +optional |
+| `annotations` | map[string]string | No | +optional |
 
 ## PipelineTaskOutputResource
 
@@ -241,6 +275,7 @@ PipelineWorkspaceDeclaration creates a named slot in a Pipeline that a PipelineR
 |---|---|---|---|
 | `name` | string | Yes | Name is the name of a workspace to be provided by a PipelineRun. |
 | `description` | string | No | Description is a human readable string describing how the workspace will be<br />used in the Pipeline. It can be useful to include a bit of detail about which<br />tasks are intended to have access to the data on the workspace.<br />+optional |
+| `optional` | bool | No | Optional marks a Workspace as not being required in PipelineRuns. By default<br />this field is false and so declared workspaces are required. |
 
 ## PodTemplate
 
@@ -250,9 +285,33 @@ PodTemplate holds pod specific configuration
 
 ## Sidecar
 
-A sidecar has the same data structure as a Step, consisting of a Container, and optional Script.
+Sidecar has nearly the same data structure as Step, consisting of a Container and an optional Script, but does not have the ability to timeout.
 
-
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Name of the container specified as a DNS_LABEL.<br />Each container in a pod must have a unique name (DNS_LABEL).<br />Cannot be updated. |
+| `image` | string | No | Docker image name.<br />More info: https://kubernetes.io/docs/concepts/containers/images<br />This field is optional to allow higher level config management to default or override<br />container images in workload controllers like Deployments and StatefulSets.<br />+optional |
+| `command` | []string | No | Entrypoint array. Not executed within a shell.<br />The docker image's ENTRYPOINT is used if this is not provided.<br />Variable references $(VAR_NAME) are expanded using the container's environment. If a variable<br />cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax<br />can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,<br />regardless of whether the variable exists or not.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell<br />+optional |
+| `args` | []string | No | Arguments to the entrypoint.<br />The docker image's CMD is used if this is not provided.<br />Variable references $(VAR_NAME) are expanded using the container's environment. If a variable<br />cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax<br />can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,<br />regardless of whether the variable exists or not.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell<br />+optional |
+| `workingDir` | string | No | Container's working directory.<br />If not specified, the container runtime's default will be used, which<br />might be configured in the container image.<br />Cannot be updated.<br />+optional |
+| `ports` | [][ContainerPort](./k8s-io-api-core-v1.md#ContainerPort) | No | List of ports to expose from the container. Exposing a port here gives<br />the system additional information about the network connections a<br />container uses, but is primarily informational. Not specifying a port here<br />DOES NOT prevent that port from being exposed. Any port which is<br />listening on the default "0.0.0.0" address inside a container will be<br />accessible from the network.<br />Cannot be updated.<br />+optional<br />+patchMergeKey=containerPort<br />+patchStrategy=merge<br />+listType=map<br />+listMapKey=containerPort<br />+listMapKey=protocol |
+| `envFrom` | [][EnvFromSource](./k8s-io-api-core-v1.md#EnvFromSource) | No | List of sources to populate environment variables in the container.<br />The keys defined within a source must be a C_IDENTIFIER. All invalid keys<br />will be reported as an event when the container is starting. When a key exists in multiple<br />sources, the value associated with the last source will take precedence.<br />Values defined by an Env with a duplicate key will take precedence.<br />Cannot be updated.<br />+optional |
+| `env` | [][EnvVar](./k8s-io-api-core-v1.md#EnvVar) | No | List of environment variables to set in the container.<br />Cannot be updated.<br />+optional<br />+patchMergeKey=name<br />+patchStrategy=merge |
+| `resources` | [ResourceRequirements](./k8s-io-api-core-v1.md#ResourceRequirements) | No | Compute Resources required by this container.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/<br />+optional |
+| `volumeMounts` | [][VolumeMount](./k8s-io-api-core-v1.md#VolumeMount) | No | Pod volumes to mount into the container's filesystem.<br />Cannot be updated.<br />+optional<br />+patchMergeKey=mountPath<br />+patchStrategy=merge |
+| `volumeDevices` | [][VolumeDevice](./k8s-io-api-core-v1.md#VolumeDevice) | No | volumeDevices is the list of block devices to be used by the container.<br />+patchMergeKey=devicePath<br />+patchStrategy=merge<br />+optional |
+| `livenessProbe` | *[Probe](./k8s-io-api-core-v1.md#Probe) | No | Periodic probe of container liveness.<br />Container will be restarted if the probe fails.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes<br />+optional |
+| `readinessProbe` | *[Probe](./k8s-io-api-core-v1.md#Probe) | No | Periodic probe of container service readiness.<br />Container will be removed from service endpoints if the probe fails.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes<br />+optional |
+| `startupProbe` | *[Probe](./k8s-io-api-core-v1.md#Probe) | No | StartupProbe indicates that the Pod has successfully initialized.<br />If specified, no other probes are executed until this completes successfully.<br />If this probe fails, the Pod will be restarted, just as if the livenessProbe failed.<br />This can be used to provide different probe parameters at the beginning of a Pod's lifecycle,<br />when it might take a long time to load data or warm a cache, than during steady-state operation.<br />This cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes<br />+optional |
+| `lifecycle` | *[Lifecycle](./k8s-io-api-core-v1.md#Lifecycle) | No | Actions that the management system should take in response to container lifecycle events.<br />Cannot be updated.<br />+optional |
+| `terminationMessagePath` | string | No | Optional: Path at which the file to which the container's termination message<br />will be written is mounted into the container's filesystem.<br />Message written is intended to be brief final status, such as an assertion failure message.<br />Will be truncated by the node if greater than 4096 bytes. The total message length across<br />all containers will be limited to 12kb.<br />Defaults to /dev/termination-log.<br />Cannot be updated.<br />+optional |
+| `terminationMessagePolicy` | [TerminationMessagePolicy](./k8s-io-api-core-v1.md#TerminationMessagePolicy) | No | Indicate how the termination message should be populated. File will use the contents of<br />terminationMessagePath to populate the container status message on both success and failure.<br />FallbackToLogsOnError will use the last chunk of container log output if the termination<br />message file is empty and the container exited with an error.<br />The log output is limited to 2048 bytes or 80 lines, whichever is smaller.<br />Defaults to File.<br />Cannot be updated.<br />+optional |
+| `imagePullPolicy` | [PullPolicy](./k8s-io-api-core-v1.md#PullPolicy) | No | Image pull policy.<br />One of Always, Never, IfNotPresent.<br />Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/containers/images#updating-images<br />+optional |
+| `securityContext` | *[SecurityContext](./k8s-io-api-core-v1.md#SecurityContext) | No | Security options the pod should run with.<br />More info: https://kubernetes.io/docs/concepts/policy/security-context/<br />More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/<br />+optional |
+| `stdin` | bool | No | Whether this container should allocate a buffer for stdin in the container runtime. If this<br />is not set, reads from stdin in the container will always result in EOF.<br />Default is false.<br />+optional |
+| `stdinOnce` | bool | No | Whether the container runtime should close the stdin channel after it has been opened by<br />a single attach. When stdin is true the stdin stream will remain open across multiple attach<br />sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the<br />first client attaches to stdin, and then remains open and accepts data until the client disconnects,<br />at which time stdin is closed and remains closed until the container is restarted. If this<br />flag is false, a container processes that reads from stdin will never receive an EOF.<br />Default is false<br />+optional |
+| `tty` | bool | No | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.<br />Default is false.<br />+optional |
+| `script` | string | No | Script is the contents of an executable file to execute.<br /><br />If Script is not empty, the Step cannot have an Command or Args. |
 
 ## Step
 
@@ -270,10 +329,10 @@ Step embeds the Container type, which allows it to include fields not<br />provi
 | `env` | [][EnvVar](./k8s-io-api-core-v1.md#EnvVar) | No | List of environment variables to set in the container.<br />Cannot be updated.<br />+optional<br />+patchMergeKey=name<br />+patchStrategy=merge |
 | `resources` | [ResourceRequirements](./k8s-io-api-core-v1.md#ResourceRequirements) | No | Compute Resources required by this container.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/<br />+optional |
 | `volumeMounts` | [][VolumeMount](./k8s-io-api-core-v1.md#VolumeMount) | No | Pod volumes to mount into the container's filesystem.<br />Cannot be updated.<br />+optional<br />+patchMergeKey=mountPath<br />+patchStrategy=merge |
-| `volumeDevices` | [][VolumeDevice](./k8s-io-api-core-v1.md#VolumeDevice) | No | volumeDevices is the list of block devices to be used by the container.<br />This is a beta feature.<br />+patchMergeKey=devicePath<br />+patchStrategy=merge<br />+optional |
+| `volumeDevices` | [][VolumeDevice](./k8s-io-api-core-v1.md#VolumeDevice) | No | volumeDevices is the list of block devices to be used by the container.<br />+patchMergeKey=devicePath<br />+patchStrategy=merge<br />+optional |
 | `livenessProbe` | *[Probe](./k8s-io-api-core-v1.md#Probe) | No | Periodic probe of container liveness.<br />Container will be restarted if the probe fails.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes<br />+optional |
 | `readinessProbe` | *[Probe](./k8s-io-api-core-v1.md#Probe) | No | Periodic probe of container service readiness.<br />Container will be removed from service endpoints if the probe fails.<br />Cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes<br />+optional |
-| `startupProbe` | *[Probe](./k8s-io-api-core-v1.md#Probe) | No | StartupProbe indicates that the Pod has successfully initialized.<br />If specified, no other probes are executed until this completes successfully.<br />If this probe fails, the Pod will be restarted, just as if the livenessProbe failed.<br />This can be used to provide different probe parameters at the beginning of a Pod's lifecycle,<br />when it might take a long time to load data or warm a cache, than during steady-state operation.<br />This cannot be updated.<br />This is an alpha feature enabled by the StartupProbe feature flag.<br />More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes<br />+optional |
+| `startupProbe` | *[Probe](./k8s-io-api-core-v1.md#Probe) | No | StartupProbe indicates that the Pod has successfully initialized.<br />If specified, no other probes are executed until this completes successfully.<br />If this probe fails, the Pod will be restarted, just as if the livenessProbe failed.<br />This can be used to provide different probe parameters at the beginning of a Pod's lifecycle,<br />when it might take a long time to load data or warm a cache, than during steady-state operation.<br />This cannot be updated.<br />More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes<br />+optional |
 | `lifecycle` | *[Lifecycle](./k8s-io-api-core-v1.md#Lifecycle) | No | Actions that the management system should take in response to container lifecycle events.<br />Cannot be updated.<br />+optional |
 | `terminationMessagePath` | string | No | Optional: Path at which the file to which the container's termination message<br />will be written is mounted into the container's filesystem.<br />Message written is intended to be brief final status, such as an assertion failure message.<br />Will be truncated by the node if greater than 4096 bytes. The total message length across<br />all containers will be limited to 12kb.<br />Defaults to /dev/termination-log.<br />Cannot be updated.<br />+optional |
 | `terminationMessagePolicy` | [TerminationMessagePolicy](./k8s-io-api-core-v1.md#TerminationMessagePolicy) | No | Indicate how the termination message should be populated. File will use the contents of<br />terminationMessagePath to populate the container status message on both success and failure.<br />FallbackToLogsOnError will use the last chunk of container log output if the termination<br />message file is empty and the container exited with an error.<br />The log output is limited to 2048 bytes or 80 lines, whichever is smaller.<br />Defaults to File.<br />Cannot be updated.<br />+optional |
@@ -282,7 +341,8 @@ Step embeds the Container type, which allows it to include fields not<br />provi
 | `stdin` | bool | No | Whether this container should allocate a buffer for stdin in the container runtime. If this<br />is not set, reads from stdin in the container will always result in EOF.<br />Default is false.<br />+optional |
 | `stdinOnce` | bool | No | Whether the container runtime should close the stdin channel after it has been opened by<br />a single attach. When stdin is true the stdin stream will remain open across multiple attach<br />sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the<br />first client attaches to stdin, and then remains open and accepts data until the client disconnects,<br />at which time stdin is closed and remains closed until the container is restarted. If this<br />flag is false, a container processes that reads from stdin will never receive an EOF.<br />Default is false<br />+optional |
 | `tty` | bool | No | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.<br />Default is false.<br />+optional |
-| `script` | string | No | Script is the contents of an executable file to execute.<br /><br />If Script is not empty, the Step cannot have an Command or Args. |
+| `script` | string | No | Script is the contents of an executable file to execute.<br /><br />If Script is not empty, the Step cannot have an Command and the Args will be passed to the Script. |
+| `timeout` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Timeout is the time after which the step times out. Defaults to never.<br />Refer to Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration |
 
 ## TaskKind
 
@@ -299,6 +359,7 @@ TaskRef can be used to refer to a specific instance of a task.<br />Copied from 
 | `name` | string | No | Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names |
 | `kind` | [TaskKind](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskKind) | No | TaskKind indicates the kind of the task, namespaced or cluster scoped. |
 | `apiVersion` | string | No | API version of the referent<br />+optional |
+| `bundle` | string | No | Bundle url reference to a Tekton Bundle.<br />+optional |
 
 ## TaskResource
 
@@ -324,21 +385,11 @@ TaskResult used to describe the results of a task
 | `name` | string | Yes | Name the given name |
 | `description` | string | Yes | Description is a human-readable description of the result<br />+optional |
 
-## TaskSpec
+## WhenExpressions
 
-TaskSpec defines the desired state of Task.
+WhenExpressions are used to specify whether a Task should be executed or skipped<br />All of them need to evaluate to True for a guarded Task to be executed.
 
-| Stanza | Type | Required | Description |
-|---|---|---|---|
-| `resources` | *[TaskResources](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskResources) | No | Resources is a list input and output resource to run the task<br />Resources are represented in TaskRuns as bindings to instances of<br />PipelineResources.<br />+optional |
-| `params` | [][ParamSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#ParamSpec) | No | Params is a list of input parameters required to run the task. Params<br />must be supplied as inputs in TaskRuns unless they declare a default<br />value.<br />+optional |
-| `description` | string | No | Description is a user-facing description of the task that may be<br />used to populate a UI.<br />+optional |
-| `steps` | [][Step](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#Step) | No | Steps are the steps of the build; each step is run sequentially with the<br />source mounted into /workspace. |
-| `volumes` | [][Volume](./k8s-io-api-core-v1.md#Volume) | No | Volumes is a collection of volumes that are available to mount into the<br />steps of the build. |
-| `stepTemplate` | *[Container](./k8s-io-api-core-v1.md#Container) | No | StepTemplate can be used as the basis for all step containers within the<br />Task, so that the steps inherit settings on the base container. |
-| `sidecars` | [][Sidecar](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#Sidecar) | No | Sidecars are run alongside the Task's step containers. They begin before<br />the steps start and end after the steps complete. |
-| `workspaces` | [][WorkspaceDeclaration](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#WorkspaceDeclaration) | No | Workspaces are the volumes that this Task requires. |
-| `results` | [][TaskResult](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskResult) | No | Results are values that this Task can output |
+
 
 ## WorkspaceBinding
 
@@ -364,6 +415,7 @@ WorkspaceDeclaration is a declaration of a volume that a Task requires.
 | `description` | string | No | Description is an optional human readable description of this volume.<br />+optional |
 | `mountPath` | string | No | MountPath overrides the directory that the volume will be made available at.<br />+optional |
 | `readOnly` | bool | No | ReadOnly dictates whether a mounted volume is writable. By default this<br />field is false and so mounted volumes are writable. |
+| `optional` | bool | No | Optional marks a Workspace as not being required in TaskRuns. By default<br />this field is false and so declared workspaces are required. |
 
 ## WorkspacePipelineTaskBinding
 
