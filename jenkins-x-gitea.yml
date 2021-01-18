@@ -40,7 +40,7 @@ pipelineConfig:
                 name: jenkins-x-chartmuseum
                 key: BASIC_AUTH_PASS
         agent:
-          image: gcr.io/jenkinsxio/builder-go:2.1.155-779-nodejs
+          image: gcr.io/jenkinsxio/builder-go-nodejs:2.1.155-779
         stages:
           - name: ci
             options:
