@@ -1,4 +1,4 @@
-package inrepo_test
+package inrepo
 
 import (
 	"os"
@@ -9,7 +9,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +30,7 @@ func TestMergeConfigIntegration(t *testing.T) {
 	pluginCfg := &plugins.Configuration{}
 
 	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
-	flag, err := inrepo.MergeTriggers(cfg, pluginCfg, fileBrowser, repoOwner, repoName, sha)
+	flag, err := MergeTriggers(cfg, pluginCfg, fileBrowser, repoOwner, repoName, sha)
 	require.NoError(t, err, "failed to merge configs")
 	assert.True(t, flag, "did not return merge flag")
 
