@@ -387,7 +387,7 @@ func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, baseU
 	}
 	hasApprovedLabel := false
 	for _, label := range issueLabels {
-		if label.Name == labels.Approved {
+		if strings.ToLower(label.Name) == strings.ToLower(labels.Approved) {
 			hasApprovedLabel = true
 			break
 		}
