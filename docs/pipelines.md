@@ -74,7 +74,7 @@ steps:
 - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
 ```
 
-e.g. here is [an example](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-all-steps/source.yaml#L8) which generates this [PipelineRun](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-all-steps/expected.yaml#L154)
+e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-all-steps/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-all-steps/expected.yaml#L154)
 
 ### Referencing named steps
 
@@ -103,7 +103,7 @@ spec:
           name: promote-jx-preview
 ```
 
-e.g. here is [an example](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/source.yaml#L8) which uses different URI formats and generates this [PipelineRun](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/expected.yaml#L154)
+e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/source.yaml#L8) which uses different URI formats and generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/expected.yaml#L154)
 
 
 #### Including new steps in between
@@ -137,7 +137,7 @@ spec:
           name: promote-jx-preview
 ```
 
-e.g. here is [an example](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-add-custom/source.yaml#L8) which generates this [PipelineRun](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-add-custom/expected.yaml#L154)
+e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-add-custom/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-add-custom/expected.yaml#L154)
 
 
 
@@ -165,4 +165,4 @@ Any extra properties in the steps are used to override the underlying uses step.
 
 If you wish to change the `image:`  then currently just copy and paste the entire step inline in your task.
 
-e.g. here is [an example](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-override/source.yaml#L8) which generates this [PipelineRun](pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-override/expected.yaml#L154)
+e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-override/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-override/expected.yaml#L154)
