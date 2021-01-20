@@ -163,7 +163,7 @@ func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (strin
 	for _, l1 := range q.Labels {
 		var found bool
 		for _, l2 := range pr.Labels.Nodes {
-			if string(l2.Name) == l1 {
+			if strings.ToLower(string(l2.Name)) == strings.ToLower(string(l1)) {
 				found = true
 				break
 			}

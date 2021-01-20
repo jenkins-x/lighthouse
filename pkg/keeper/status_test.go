@@ -33,6 +33,7 @@ import (
 
 func TestExpectedStatus(t *testing.T) {
 	neededLabels := []string{"need-1", "need-2", "need-a-very-super-duper-extra-not-short-at-all-label-name"}
+	titleCasedNeededLabels := []string{"Need-1", "Need-2", "Need-a-very-super-duper-extra-not-short-at-all-label-name"}
 	forbiddenLabels := []string{"forbidden-1", "forbidden-2"}
 	testcases := []struct {
 		name string
@@ -66,6 +67,15 @@ func TestExpectedStatus(t *testing.T) {
 
 			state: scmprovider.StatusPending,
 			desc:  fmt.Sprintf(statusNotInPool, " Needs need-1, need-2 labels."),
+		},
+		{
+			name:      "check label requirements are case insensitive because Github treats them that way",
+			labels:    append([]string{}, titleCasedNeededLabels[:2]...),
+			milestone: "v1.0",
+			inPool:    false,
+
+			state: scmprovider.StatusPending,
+			desc:  fmt.Sprintf(statusNotInPool, " Needs need-a-very-super-duper-extra-not-short-at-all-label-name label."),
 		},
 		{
 			name:      "check truncation of label list is not excessive",
