@@ -114,7 +114,7 @@ func newFakeSCMProviderClient(hasLabel, humanApproved, labelComments bool, files
 			events,
 			&scm.ListedIssueEvent{
 				Event:   scmprovider.IssueActionLabeled,
-				Label:   scm.Label{Name: "approved"},
+				Label:   scm.Label{Name: "Approved"},
 				Actor:   scm.User{Login: "human"},
 				Created: time.Now(),
 			},
