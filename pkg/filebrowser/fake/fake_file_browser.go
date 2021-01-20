@@ -28,6 +28,7 @@ func (f *fakeFileBrowser) GetMainAndCurrentBranchRefs(owner, repo, ref string) (
 
 func (f *fakeFileBrowser) GetFile(owner, repo, path, ref string) ([]byte, error) {
 	fileName := filepath.Join(f.dir, path)
+	/* #nosec */
 	return ioutil.ReadFile(fileName)
 }
 

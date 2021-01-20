@@ -117,10 +117,11 @@ func (r *UsesResolver) findTaskStep(sourceURI string, task tektonv1beta1.Pipelin
 		return ts.Steps, nil
 	}
 
-	for _, s := range ts.Steps {
+	for i := range ts.Steps {
+		s := &ts.Steps[i]
 		if s.Name == step.Name {
-			OverrideStep(&s, &step)
-			return []tektonv1beta1.Step{s}, nil
+			OverrideStep(s, &step)
+			return []tektonv1beta1.Step{*s}, nil
 		}
 	}
 	return nil, errors.Errorf("source URI %s task %s has no step named %s", sourceURI, task.Name, step.Name)
