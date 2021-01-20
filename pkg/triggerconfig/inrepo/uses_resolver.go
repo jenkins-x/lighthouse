@@ -1,23 +1,25 @@
 package inrepo
 
 import (
-	"net/url"
-
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
+	"net/url"
 )
 
 // UsesResolver resolves the `uses:` URI syntax
 type UsesResolver struct {
-	Client        filebrowser.Interface
-	OwnerName     string
-	RepoName      string
-	SHA           string
-	Dir           string
-	Message       string
-	DefaultValues *DefaultValues
+	Client           filebrowser.Interface
+	OwnerName        string
+	RepoName         string
+	SHA              string
+	Dir              string
+	Message          string
+	DefaultValues    *DefaultValues
+	LocalFileResolve bool
 
 	cache map[string]*tektonv1beta1.PipelineRun
 }
@@ -30,7 +32,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 	}
 	pr := r.cache[sourceURI]
 	if pr == nil {
-		data, err := r.GetData(sourceURI)
+		data, err := r.GetData(sourceURI, false)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to load URI %s", sourceURI)
 		}
@@ -52,7 +54,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 }
 
 // GetData gets the data from the given source URI
-func (r *UsesResolver) GetData(path string) ([]byte, error) {
+func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error) {
 	var data []byte
 	_, err := url.ParseRequestURI(path)
 	if err == nil {
@@ -70,6 +72,22 @@ func (r *UsesResolver) GetData(path string) ([]byte, error) {
 	gitURI, err := ParseGitURI(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse git URI %s", path)
+	}
+	if gitURI == nil && r.LocalFileResolve {
+		if ignoreNotExist {
+			exists, err := util.FileExists(path)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to check file exists %s", path)
+			}
+			if !exists {
+				return nil, nil
+			}
+		}
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read file %s", path)
+		}
+		return data, nil
 	}
 	if gitURI != nil {
 		owner = gitURI.Owner

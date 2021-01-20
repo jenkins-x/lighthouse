@@ -9,7 +9,6 @@ import (
 
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
-	fakefb "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +18,7 @@ import (
 
 var (
 	// generateTestOutput enable to regenerate the expected output
-	generateTestOutput = true
+	generateTestOutput = false
 )
 
 func TestLoadPipelineRunTest(t *testing.T) {
@@ -29,6 +28,12 @@ func TestLoadPipelineRunTest(t *testing.T) {
 
 	scmClient, _ := fake.NewDefault()
 	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
+	resolver := &UsesResolver{
+		Client:           filebrowser.NewFileBrowserFromScmClient(scmProvider),
+		OwnerName:        "myorg",
+		LocalFileResolve: true,
+	}
 
 	// make it easy to run a specific test only
 	runTestName := os.Getenv("TEST_NAME")
@@ -45,17 +50,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			continue
 		}
 		dir := filepath.Join(sourceDir, name)
-
-		fileBrowserClient := fakefb.NewFakeFileBrowser(dir)
-		if strings.HasPrefix(name, "uses-") {
-			fileBrowserClient = filebrowser.NewFileBrowserFromScmClient(scmProvider)
-		}
-
-		resolver := &UsesResolver{
-			Client:    fileBrowserClient,
-			OwnerName: "myorg",
-			RepoName:  "myrepo",
-		}
+		resolver.Dir = dir
 
 		path := filepath.Join(dir, "source.yaml")
 		expectedPath := filepath.Join(dir, "expected.yaml")

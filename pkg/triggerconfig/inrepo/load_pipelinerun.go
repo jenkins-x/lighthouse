@@ -311,7 +311,7 @@ func loadPipelineRunRefs(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun,
 		if !strings.HasSuffix(pipelinePath, ".yaml") {
 			pipelinePath += ".yaml"
 		}
-		data, err := resolver.GetData(pipelinePath)
+		data, err := resolver.GetData(pipelinePath, true)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to find path %s in PipelineRun", pipelinePath)
 		}
@@ -344,7 +344,7 @@ func loadTaskRefs(resolver *UsesResolver, pipelineSpec *tektonv1beta1.PipelineSp
 			if !strings.HasSuffix(path, ".yaml") {
 				path += ".yaml"
 			}
-			data, err := resolver.GetData(path)
+			data, err := resolver.GetData(path, false)
 			if err != nil {
 				return errors.Wrapf(err, "failed to find path %s in PipelineSpec", path)
 			}
