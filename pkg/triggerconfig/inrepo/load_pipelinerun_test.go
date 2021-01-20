@@ -2,9 +2,15 @@ package inrepo
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
+	fakefb "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,11 +25,13 @@ var (
 func TestLoadPipelineRunTest(t *testing.T) {
 	sourceDir := filepath.Join("test_data", "load_pipelinerun")
 	fs, err := ioutil.ReadDir(sourceDir)
-	require.NoError(t, err, "failed to read source dir %s", sourceDir)
+	require.NoError(t, err, "failed to read source Dir %s", sourceDir)
 
-	getData := func(path string) ([]byte, error) {
-		return ioutil.ReadFile(path)
-	}
+	scmClient, _ := fake.NewDefault()
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
+	// make it easy to run a specific test only
+	runTestName := os.Getenv("TEST_NAME")
 	for _, f := range fs {
 		if !f.IsDir() {
 			continue
@@ -32,7 +40,23 @@ func TestLoadPipelineRunTest(t *testing.T) {
 		if strings.HasPrefix(name, ".") {
 			continue
 		}
+		if runTestName != "" && runTestName != name {
+			t.Logf("ignoring test %s\n", name)
+			continue
+		}
 		dir := filepath.Join(sourceDir, name)
+
+		fileBrowserClient := fakefb.NewFakeFileBrowser(dir)
+		if strings.HasPrefix(name, "uses-") {
+			fileBrowserClient = filebrowser.NewFileBrowserFromScmClient(scmProvider)
+		}
+
+		resolver := &UsesResolver{
+			Client:    fileBrowserClient,
+			OwnerName: "myorg",
+			RepoName:  "myrepo",
+		}
+
 		path := filepath.Join(dir, "source.yaml")
 		expectedPath := filepath.Join(dir, "expected.yaml")
 
@@ -40,7 +64,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 		data, err := ioutil.ReadFile(path)
 		require.NoError(t, err, "failed to load "+message)
 
-		pr, err := LoadTektonResourceAsPipelineRun(data, dir, message, getData, nil)
+		pr, err := LoadTektonResourceAsPipelineRun(resolver, data)
 		if strings.HasSuffix(name, "-fails") {
 			require.Errorf(t, err, "expected failure for test %s", name)
 			t.Logf("test %s generated expected error %s\n", name, err.Error())

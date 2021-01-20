@@ -182,28 +182,16 @@ func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerN
 
 	message := fmt.Sprintf("in repo %s/%s with sha %s", ownerName, repoName, sha)
 
-	getData := func(path string) ([]byte, error) {
-		var data []byte
-		_, err := url.ParseRequestURI(path)
-		if err == nil {
-			data, err = getPipelineFromURL(path)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
-			}
-		} else {
-			data, err = client.GetFile(ownerName, repoName, path, sha)
-			if err != nil && IsScmNotFound(err) {
-				err = nil
-			}
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
-			}
-		}
-
-		return data, nil
+	usesResolver := &UsesResolver{
+		Client:    client,
+		OwnerName: ownerName,
+		RepoName:  repoName,
+		SHA:       sha,
+		Dir:       dir,
+		Message:   message,
 	}
 
-	prs, err := LoadTektonResourceAsPipelineRun(data, dir, message, getData, nil)
+	prs, err := LoadTektonResourceAsPipelineRun(usesResolver, data)
 	if err != nil {
 		return errors.Wrapf(err, "failed to unmarshal YAML file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 	}

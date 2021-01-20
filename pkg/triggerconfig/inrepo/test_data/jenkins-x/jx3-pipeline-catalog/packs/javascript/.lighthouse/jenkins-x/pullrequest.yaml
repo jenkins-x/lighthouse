@@ -1,0 +1,59 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/prependStepsURL: https://raw.githubusercontent.com/jenkins-x/jx3-pipeline-catalog/60bed6408732c1eda91a15713f51a9f97dcb1757/tasks/git-clone/git-clone-pr.yaml
+  name: pullrequest
+spec:
+  pipelineSpec:
+    tasks:
+    - name: from-build-pack
+      resources: {}
+      taskSpec:
+        metadata: {}
+        stepTemplate:
+          name: ""
+          resources:
+            requests:
+              cpu: 400m
+              memory: 512Mi
+          workingDir: /workspace/source
+        steps:
+        - image: gcr.io/jenkinsxio/jx-boot:3.1.155
+          name: jx-variables
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            jx gitops variables
+        - image: node:12-slim
+          name: build-npm-install
+          resources: {}
+          script: |
+            #!/bin/sh
+            npm install
+        - image: node:12-slim
+          name: build-npm-test
+          resources: {}
+          script: |
+            #!/bin/sh
+            CI=true DISPLAY=:99 npm test
+        - image: gcr.io/kaniko-project/executor:debug-v1.3.0
+          name: build-container-build
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
+        - image: gcr.io/jenkinsxio/jx-preview:0.0.143
+          name: promote-jx-preview
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+            jx preview create
+
+  podTemplate: {}
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
+status: {}
