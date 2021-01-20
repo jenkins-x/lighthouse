@@ -1,13 +1,14 @@
 package inrepo
 
 import (
+	"io/ioutil"
+	"net/url"
+
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
-	"net/url"
 )
 
 // UsesResolver resolves the `uses:` URI syntax
