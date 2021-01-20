@@ -306,7 +306,7 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient
 		return err
 	}
 	if pre.Action == scm.ActionLabel &&
-		(pre.Label.Name != labels.Approved || pre.Sender.Login == botName || pre.PullRequest.State == "closed") {
+		(strings.ToLower(pre.Label.Name) != strings.ToLower(labels.Approved) || pre.Sender.Login == botName || pre.PullRequest.State == "closed") {
 		return nil
 	}
 
@@ -491,7 +491,7 @@ func humanAddedApproved(spc scmProviderClient, log *logrus.Entry, org, repo stri
 		lastAdded := scm.ListedIssueEvent{}
 		for _, event := range events {
 			// Only consider "approved" label added events.
-			if event.Event != scmprovider.IssueActionLabeled || event.Label.Name != labels.Approved {
+			if event.Event != scmprovider.IssueActionLabeled || strings.ToLower(event.Label.Name) != strings.ToLower(labels.Approved) {
 				continue
 			}
 			lastAdded = *event
