@@ -61,14 +61,19 @@ func NewDefaultValues() (*DefaultValues, error) {
 
 // LoadTektonResourceAsPipelineRun loads a PipelineRun, Pipeline, Task or TaskRun and convert it to a PipelineRun
 // if necessary
-func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData func(path string) ([]byte, error), defaultValues *DefaultValues) (*tektonv1beta1.PipelineRun, error) {
-	if defaultValues == nil {
+func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*tektonv1beta1.PipelineRun, error) {
+	if resolver.DefaultValues == nil {
 		var err error
-		defaultValues, err = NewDefaultValues()
+		resolver.DefaultValues, err = NewDefaultValues()
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse default values")
 		}
 	}
+	if resolver.Message == "" {
+		resolver.Message = fmt.Sprintf("in repo %s/%s with sha %s", resolver.OwnerName, resolver.RepoName, resolver.SHA)
+	}
+	message := resolver.Message
+	dir := resolver.Dir
 	kindPrefix := "kind:"
 	kind := "PipelineRun"
 	lines := strings.Split(string(data), "\n")
@@ -89,7 +94,7 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal Pipeline YAML %s", message)
 		}
-		prs, err := ConvertPipelineToPipelineRun(pipeline, message, defaultValues)
+		prs, err := ConvertPipelineToPipelineRun(pipeline, resolver.Message, resolver.DefaultValues)
 		if err != nil {
 			return prs, err
 		}
@@ -98,12 +103,12 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			return prs, err
 		}
 		if re != nil {
-			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
+			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
 			if err != nil {
 				return prs, err
 			}
 		}
-		prs, err = inheritTaskSteps(prs)
+		prs, err = inheritTaskSteps(resolver, prs)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to inherit steps")
 		}
@@ -120,12 +125,12 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			return prs, err
 		}
 		if re != nil {
-			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
+			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
 			if err != nil {
 				return prs, err
 			}
 		}
-		prs, err = inheritTaskSteps(prs)
+		prs, err = inheritTaskSteps(resolver, prs)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to inherit steps")
 		}
@@ -137,7 +142,7 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal Task YAML %s", message)
 		}
-		prs, err := ConvertTaskToPipelineRun(task, message, defaultValues)
+		prs, err := ConvertTaskToPipelineRun(task, message, resolver.DefaultValues)
 		if err != nil {
 			return prs, err
 		}
@@ -146,12 +151,12 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			return prs, err
 		}
 		if re != nil {
-			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
+			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
 			if err != nil {
 				return prs, err
 			}
 		}
-		prs, err = inheritTaskSteps(prs)
+		prs, err = inheritTaskSteps(resolver, prs)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to inherit steps")
 		}
@@ -163,7 +168,7 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal TaskRun YAML %s", message)
 		}
-		prs, err := ConvertTaskRunToPipelineRun(tr, message, defaultValues)
+		prs, err := ConvertTaskRunToPipelineRun(tr, message, resolver.DefaultValues)
 		if err != nil {
 			return prs, err
 		}
@@ -172,12 +177,12 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 			return prs, err
 		}
 		if re != nil {
-			prs, err = loadPipelineRunRefs(prs, dir, message, re, getData)
+			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
 			if err != nil {
 				return prs, err
 			}
 		}
-		prs, err = inheritTaskSteps(prs)
+		prs, err = inheritTaskSteps(resolver, prs)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to inherit steps")
 		}
@@ -189,7 +194,11 @@ func LoadTektonResourceAsPipelineRun(data []byte, dir, message string, getData f
 }
 
 // inheritTaskSteps allows Task steps to be prepended or appended if the annotations are present
-func inheritTaskSteps(prs *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
+func inheritTaskSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
+	err := processUsesSteps(resolver, prs)
+	if err != nil {
+		return prs, errors.Wrapf(err, "failed to ")
+	}
 	ps := prs.Spec.PipelineSpec
 	if ps == nil || len(ps.Tasks) == 0 {
 		return prs, nil
@@ -202,7 +211,6 @@ func inheritTaskSteps(prs *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRu
 
 	var appendTask *tektonv1beta1.Task
 	var prependTask *tektonv1beta1.Task
-	var err error
 
 	if appendURL != "" {
 		appendTask, err = loadTaskByURL(appendURL)
@@ -227,6 +235,36 @@ func inheritTaskSteps(prs *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRu
 		lastTask.TaskSpec.Steps = append(lastTask.TaskSpec.Steps, appendTask.Spec.Steps...)
 	}
 	return prs, nil
+}
+
+// processUsesSteps handles any step which has an image prefixed with "uses:"
+func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) error {
+	ps := prs.Spec.PipelineSpec
+	if ps == nil {
+		return nil
+	}
+	for i := range ps.Tasks {
+		pt := &ps.Tasks[i]
+		if pt.TaskSpec != nil {
+			ts := &pt.TaskSpec.TaskSpec
+			var steps []tektonv1beta1.Step
+			for j := range ts.Steps {
+				step := ts.Steps[j]
+				if !strings.HasPrefix(step.Image, "uses:") {
+					steps = append(steps, step)
+					continue
+				}
+				sourceURI := strings.TrimPrefix(step.Image, "uses:")
+				replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step)
+				if err != nil {
+					return errors.Wrapf(err, "failed to resolve git URI %s for step %s", sourceURI, step.Name)
+				}
+				steps = append(steps, replaceSteps...)
+			}
+			ts.Steps = steps
+		}
+	}
+	return nil
 }
 
 func loadTaskByURL(uri string) (*tektonv1beta1.Task, error) {
@@ -266,14 +304,14 @@ func loadTektonRefsFromFilesPattern(prs *tektonv1beta1.PipelineRun) (*regexp.Reg
 	return re, nil
 }
 
-func loadPipelineRunRefs(prs *tektonv1beta1.PipelineRun, dir, message string, re *regexp.Regexp, getData func(path string) ([]byte, error)) (*tektonv1beta1.PipelineRun, error) {
+func loadPipelineRunRefs(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun, dir, message string, re *regexp.Regexp) (*tektonv1beta1.PipelineRun, error) {
 	// if we reference a local
 	if prs.Spec.PipelineSpec == nil && prs.Spec.PipelineRef != nil && prs.Spec.PipelineRef.Name != "" && re.MatchString(prs.Spec.PipelineRef.Name) {
 		pipelinePath := filepath.Join(dir, prs.Spec.PipelineRef.Name)
 		if !strings.HasSuffix(pipelinePath, ".yaml") {
 			pipelinePath += ".yaml"
 		}
-		data, err := getData(pipelinePath)
+		data, err := resolver.GetData(pipelinePath)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to find path %s in PipelineRun", pipelinePath)
 		}
@@ -290,7 +328,7 @@ func loadPipelineRunRefs(prs *tektonv1beta1.PipelineRun, dir, message string, re
 	}
 
 	if prs.Spec.PipelineSpec != nil {
-		err := loadTaskRefs(prs.Spec.PipelineSpec, dir, message, re, getData)
+		err := loadTaskRefs(resolver, prs.Spec.PipelineSpec, dir, message, re)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to load Task refs for %s", message)
 		}
@@ -298,7 +336,7 @@ func loadPipelineRunRefs(prs *tektonv1beta1.PipelineRun, dir, message string, re
 	return prs, nil
 }
 
-func loadTaskRefs(pipelineSpec *tektonv1beta1.PipelineSpec, dir, message string, re *regexp.Regexp, getData func(path string) ([]byte, error)) error {
+func loadTaskRefs(resolver *UsesResolver, pipelineSpec *tektonv1beta1.PipelineSpec, dir, message string, re *regexp.Regexp) error {
 	for i := range pipelineSpec.Tasks {
 		t := &pipelineSpec.Tasks[i]
 		if t.TaskSpec == nil && t.TaskRef != nil && t.TaskRef.Name != "" && re.MatchString(t.TaskRef.Name) {
@@ -306,7 +344,7 @@ func loadTaskRefs(pipelineSpec *tektonv1beta1.PipelineSpec, dir, message string,
 			if !strings.HasSuffix(path, ".yaml") {
 				path += ".yaml"
 			}
-			data, err := getData(path)
+			data, err := resolver.GetData(path)
 			if err != nil {
 				return errors.Wrapf(err, "failed to find path %s in PipelineSpec", path)
 			}
