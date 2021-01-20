@@ -83,6 +83,7 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 				return nil, nil
 			}
 		}
+		/* #nosec */
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read file %s", path)
