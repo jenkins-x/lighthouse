@@ -19,7 +19,7 @@ in_repo_config:
     ...
 ```
 
-Then lighthouse will find all of the `.lighthouse/*/triggers.yaml`  files and use those to setup presubmits and post submits.
+Then lighthouse will find all of the `.lighthouse/*/triggers.yaml` files and use those to setup `presubmits` and `postsubmits`.
 
 
 ## Using existing pipeline tasks and steps
@@ -43,7 +43,7 @@ Inside the `triggers.yaml` you can use the `source` property to reference a loca
     source: jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
 ```
 
-That is a good approach for referencing a versioned `Task` / `Pipeline` / `PipelineRun` but it doesn't offer any ability to make local changes
+That is a good approach for referencing a versioned `Task` / `Pipeline` / `PipelineRun` but it doesn't offer any ability to make local changes or reuse individual steps.
 
 
 ### Source URI
@@ -59,7 +59,9 @@ The source URI syntax we use is:
 
 With this approach we reference a `Task` / `Pipeline` / `PipelineRun` inside a single Step using the following syntax.
 
-This borrows on the idea from ko and mink of using a special URI in the `image:` property. So we use `image: uses:sourceURI` to enable this:
+This borrows on the idea from [ko](https://github.com/google/ko) and [mink](https://github.com/mattmoor/mink) of reusing the **source URI** in the `image:` property using the special **uses:** prefix. 
+
+So we use `image: uses:sourceURI` to enable including versioned steps inside a `Task` / `Pipeline` / `PipelineRun` :
      
 ```yaml 
 steps:
@@ -71,7 +73,7 @@ steps:
 - image: uses:https://foo.bar.com/something/mytask.yaml 
 
 # use a git URI with version information
-- image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+- image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
 ```
 
 e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-all-steps/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-all-steps/expected.yaml#L154)
@@ -91,15 +93,15 @@ spec:
     - name: from-build-pack
       taskSpec:
         steps:
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: jx-variables
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: build-npm-install
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: build-npm-test
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: build-container-build
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: promote-jx-preview
 ```
 
@@ -125,15 +127,15 @@ spec:
           script: |
             #!/bin/sh
             npm something        
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: jx-variables
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: build-npm-install
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: build-npm-test
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: build-container-build
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: promote-jx-preview
 ```
 
@@ -154,7 +156,7 @@ spec:
     - name: from-build-pack
       taskSpec:
         steps:
-        - image: uses:github.com/jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: jx-variables
           script: |
             #!/usr/bin/env sh
