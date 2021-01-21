@@ -57,6 +57,7 @@ func (u *GitURI) String() string {
 		}
 		path += u.Path
 	}
+	path = strings.TrimSuffix(path, "/")
 	sha := u.SHA
 	if sha == "" {
 		sha = "head"
