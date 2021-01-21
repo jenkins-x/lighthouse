@@ -247,14 +247,23 @@ func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) er
 		pt := &ps.Tasks[i]
 		if pt.TaskSpec != nil {
 			ts := &pt.TaskSpec.TaskSpec
+			clearStepTemplateImage := false
 			var steps []tektonv1beta1.Step
 			for j := range ts.Steps {
 				step := ts.Steps[j]
-				if !strings.HasPrefix(step.Image, "uses:") {
+				image := step.Image
+				if image == "" && ts.StepTemplate != nil {
+					// lets default to the step image so we can share uses across steps
+					image = ts.StepTemplate.Image
+					if strings.HasPrefix(image, "uses:") {
+						clearStepTemplateImage = true
+					}
+				}
+				if !strings.HasPrefix(image, "uses:") {
 					steps = append(steps, step)
 					continue
 				}
-				sourceURI := strings.TrimPrefix(step.Image, "uses:")
+				sourceURI := strings.TrimPrefix(image, "uses:")
 				replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step)
 				if err != nil {
 					return errors.Wrapf(err, "failed to resolve git URI %s for step %s", sourceURI, step.Name)
@@ -262,6 +271,9 @@ func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) er
 				steps = append(steps, replaceSteps...)
 			}
 			ts.Steps = steps
+			if clearStepTemplateImage && ts.StepTemplate != nil {
+				ts.StepTemplate.Image = ""
+			}
 		}
 	}
 	return nil
