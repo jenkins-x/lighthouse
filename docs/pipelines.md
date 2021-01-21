@@ -104,13 +104,13 @@ spec:
         - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
           name: promote-jx-preview
 ```
+        
 
-e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/source.yaml#L8) which uses different URI formats and generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/expected.yaml#L154)
+### Concise syntax 
 
+Copying the `image: uses:` line for every step can be a little noisy so you can use the more concise format where you use the `stepTemplate.image` to config the uses image. 
 
-#### Including new steps in between
-
-You can then add extra steps in between these `uses:` steps if you wish to customise the steps in any way - e.g. see `my-prefix-step`:
+Then any step which doesn't not have an image will default to reuse the ``stepTemplate.image` value:
 
 
 ```yaml 
@@ -121,22 +121,46 @@ spec:
     tasks:
     - name: from-build-pack
       taskSpec:
+        stepTemplate:
+          image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
+        steps:
+        - name: jx-variables
+        - name: build-npm-install
+        - name: build-npm-test
+        - name: build-container-build
+        - name: promote-jx-preview
+```
+
+
+e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/source.yaml#L8) which uses different URI formats and generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps/expected.yaml#L154)
+
+
+#### Including new steps in between
+
+You can then add extra steps in between these `uses:` steps if you wish to customise the steps in any way - e.g. see `my-prefix-step` which has an explicit `image:` value so isn't inherited from the `stepTemplate.image`
+
+
+```yaml 
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+spec:
+  pipelineSpec:
+    tasks:
+    - name: from-build-pack
+      taskSpec:
+        stepTemplate:
+          image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
         steps:
         - image: node:12-slim
           name: my-prefix-step
           script: |
             #!/bin/sh
             npm something        
-        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
-          name: jx-variables
-        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
-          name: build-npm-install
-        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
-          name: build-npm-test
-        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
-          name: build-container-build
-        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@v1.2.3
-          name: promote-jx-preview
+        - name: jx-variables
+        - name: build-npm-install
+        - name: build-npm-test
+        - name: build-container-build
+        - name: promote-jx-preview
 ```
 
 e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-add-custom/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-add-custom/expected.yaml#L154)
