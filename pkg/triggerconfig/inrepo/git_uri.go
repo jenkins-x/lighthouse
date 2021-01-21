@@ -3,6 +3,8 @@ package inrepo
 import (
 	"strings"
 
+	"github.com/jenkins-x/go-scm/scm"
+
 	"github.com/pkg/errors"
 )
 
@@ -44,4 +46,20 @@ func ParseGitURI(text string) (*GitURI, error) {
 		Path:       path,
 		SHA:        sha,
 	}, nil
+}
+
+// String returns the string representation of the git URI
+func (u *GitURI) String() string {
+	path := scm.Join(u.Owner, u.Repository)
+	if u.Path != "" {
+		if !strings.HasPrefix(u.Path, "/") {
+			path += "/"
+		}
+		path += u.Path
+	}
+	sha := u.SHA
+	if sha == "" {
+		sha = "head"
+	}
+	return path + "@" + sha
 }
