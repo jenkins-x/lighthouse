@@ -11,9 +11,10 @@ import (
 
 func TestParseGitURI(t *testing.T) {
 	testCases := []struct {
-		text        string
-		expectedErr bool
-		expected    *inrepo.GitURI
+		text         string
+		expectedErr  bool
+		expected     *inrepo.GitURI
+		expectedText string
 	}{
 		{
 			text: "myowner/myrepo@v1",
@@ -32,6 +33,7 @@ func TestParseGitURI(t *testing.T) {
 				Path:       "",
 				SHA:        "v1",
 			},
+			expectedText: "myowner/myrepo@v1",
 		},
 		{
 			text: "myowner/myrepo/myfile.yaml@v1",
@@ -70,6 +72,15 @@ func TestParseGitURI(t *testing.T) {
 		} else {
 			require.NoError(t, err, "should have failed to parse %s", text)
 			assert.Equal(t, tc.expected, gitURI, "when parsing %s", text)
+
+			if tc.expected != nil {
+				actual := tc.expected.String()
+				expectedText := tc.expectedText
+				if expectedText == "" {
+					expectedText = text
+				}
+				assert.Equal(t, expectedText, actual, "generated string for GitURI for parsed %s", text)
+			}
 		}
 	}
 }
