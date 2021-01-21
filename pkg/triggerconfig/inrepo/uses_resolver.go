@@ -1,8 +1,12 @@
 package inrepo
 
 import (
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/url"
+	"os"
+	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -95,7 +99,7 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 		owner = gitURI.Owner
 		repo = gitURI.Repository
 		path = gitURI.Path
-		sha = gitURI.SHA
+		sha = resolveCustomSha(owner, repo, gitURI.SHA)
 	}
 	data, err = r.Client.GetFile(owner, repo, path, sha)
 	if err != nil && IsScmNotFound(err) {
@@ -105,6 +109,26 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, owner, repo, sha)
 	}
 	return data, nil
+}
+
+// lets allow version stream versions to be exposed by environment variables
+func resolveCustomSha(owner string, repo string, sha string) string {
+	if sha != "versionStream" {
+		return sha
+	}
+	envVar := strings.ToUpper(fmt.Sprintf("LIGHTHOUSE_VERSIONSTREAM_%s_%s", owner, repo))
+	envVar = strings.ReplaceAll(envVar, "-", "_")
+	envVar = strings.ReplaceAll(envVar, " ", "_")
+	envVar = strings.ReplaceAll(envVar, ".", "_")
+	value := os.Getenv(envVar)
+	if value != "" {
+		return value
+	}
+	logrus.WithFields(map[string]interface{}{
+		"Owner": owner,
+		"Repo":  repo,
+	}).Warnf("no version stream version environment variable: %s", envVar)
+	return "head"
 }
 
 func (r *UsesResolver) findSteps(sourceURI string, pr *tektonv1beta1.PipelineRun, taskName string, step tektonv1beta1.Step) ([]tektonv1beta1.Step, error) {

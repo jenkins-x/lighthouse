@@ -18,7 +18,7 @@ import (
 
 var (
 	// generateTestOutput enable to regenerate the expected output
-	generateTestOutput = true
+	generateTestOutput = false
 )
 
 func TestLoadPipelineRunTest(t *testing.T) {
@@ -34,6 +34,9 @@ func TestLoadPipelineRunTest(t *testing.T) {
 		OwnerName:        "myorg",
 		LocalFileResolve: true,
 	}
+
+	// lets use a custom version stream sha
+	os.Setenv("LIGHTHOUSE_VERSIONSTREAM_JENKINS_X_JX3_PIPELINE_CATALOG", "myversionstreamref")
 
 	// make it easy to run a specific test only
 	runTestName := os.Getenv("TEST_NAME")
