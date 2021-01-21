@@ -2,11 +2,12 @@ package inrepo
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/util"
