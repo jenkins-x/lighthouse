@@ -298,7 +298,12 @@ func LabelsAndAnnotationsForJob(lj v1alpha1.LighthouseJob, buildID string) (map[
 	if buildID != "" {
 		extraLabels[util.BuildNumLabel] = buildID
 	}
-	return LabelsAndAnnotationsForSpec(lj.Spec, extraLabels, nil)
+
+	var extraAnnotations map[string]string
+	if extraAnnotations = lj.ObjectMeta.Annotations; extraAnnotations == nil {
+		extraAnnotations = map[string]string{}
+	}
+	return LabelsAndAnnotationsForSpec(lj.Spec, extraLabels, extraAnnotations)
 }
 
 // PartitionActive separates the provided prowjobs into pending and triggered
