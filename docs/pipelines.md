@@ -108,9 +108,9 @@ spec:
 
 ### Concise syntax 
 
-Copying the `image: uses:` line for every step can be a little noisy so you can use the more concise format where you use the `stepTemplate.image` to config the uses image. 
+Copying the `image: uses:` line for every step can be a little noisy so you can use the more concise format where you use the `stepTemplate.image` to configure the uses image. 
 
-Then any step which doesn't not have an image will default to reuse the ``stepTemplate.image` value:
+Then any step which does not have an image will default to reuse the `stepTemplate.image` value:
 
 
 ```yaml 
