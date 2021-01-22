@@ -152,7 +152,7 @@ spec:
           name: ""
           resources: {}
         steps:
-        - image: gcr.io/jenkinsxio/jx-boot:latest
+        - image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
           resources: {}
           script: |
@@ -172,6 +172,28 @@ spec:
             CI=true DISPLAY=:99 npm test
         - image: gcr.io/kaniko-project/executor:debug-v1.3.0
           name: build-container-build
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
+        - env:
+          - name: IMAGE
+            value: gcr.io/myproject/myimage
+          image: gcr.io/kaniko-project/executor:debug-v1.3.0
+          name: build-container-build-cheese
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
+        - env:
+          - name: IMAGE
+            value: gcr.io/myproject/wine
+          image: gcr.io/kaniko-project/executor:debug-v1.3.0
+          name: build-container-build-wine
           resources: {}
           script: |
             #!/busybox/sh

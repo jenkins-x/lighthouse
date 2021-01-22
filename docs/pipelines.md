@@ -192,3 +192,36 @@ Any extra properties in the steps are used to override the underlying uses step.
 If you wish to change the `image:`  then currently just copy and paste the entire step inline in your task.
 
 e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-override/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-override/expected.yaml#L154)
+
+
+#### Including multiple copies of a step
+
+You may wish to reuse a step multiple times in a pipeline with different parameters. e.g. override the `script`, `command`, `args` or add a different `env` variable value.
+
+For example if you want to build multiple images reusing the same container build step but just changing the image name and/or `Dockefile`
+
+You can use this by using a custom `name` syntax. Use the name of the step you wish to inherit and then add `:something` as a suffix.
+
+```yaml 
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+spec:
+  pipelineSpec:
+    tasks:
+    - name: from-build-pack
+      taskSpec:
+        steps:
+        # lets reuse the 'build-container-build' step 3 times with different values
+        - name: build-container-build
+        - name: build-container-build:cheese
+          env:
+            - name: IMAGE
+              value: gcr.io/myproject/myimage
+        - name: build-container-build:wine
+          env:
+            - name: IMAGE
+              value: gcr.io/myproject/wine
+        - name: promote-jx-preview
+```
+
+e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-multiple-copies/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-multiple-copies/expected.yaml#L154)
