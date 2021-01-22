@@ -158,18 +158,30 @@ func (r *UsesResolver) findTaskStep(sourceURI string, task tektonv1beta1.Pipelin
 	if ts == nil {
 		return nil, errors.Errorf("source URI %s has no task spec for task %s", sourceURI, task.Name)
 	}
-	if step.Name == "" {
+	name := step.Name
+	if name == "" {
 		return ts.Steps, nil
+	}
+
+	idx := strings.Index(name, ":")
+	suffix := ""
+	if idx > 0 {
+		suffix = name[idx+1:]
+		name = name[0:idx]
 	}
 
 	for i := range ts.Steps {
 		s := &ts.Steps[i]
-		if s.Name == step.Name {
-			OverrideStep(s, &step)
-			return []tektonv1beta1.Step{*s}, nil
+		if s.Name == name {
+			replaceStep := *s
+			OverrideStep(&replaceStep, &step)
+			if suffix != "" {
+				replaceStep.Name = name + "-" + suffix
+			}
+			return []tektonv1beta1.Step{replaceStep}, nil
 		}
 	}
-	return nil, errors.Errorf("source URI %s task %s has no step named %s", sourceURI, task.Name, step.Name)
+	return nil, errors.Errorf("source URI %s task %s has no step named %s", sourceURI, task.Name, name)
 }
 
 // OverrideStep overrides the step with the given overrides
