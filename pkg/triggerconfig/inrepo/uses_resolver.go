@@ -2,11 +2,12 @@ package inrepo
 
 import (
 	"fmt"
-	"github.com/jenkins-x/go-scm/scm"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/jenkins-x/go-scm/scm"
 
 	"github.com/sirupsen/logrus"
 
