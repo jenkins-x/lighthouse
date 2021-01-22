@@ -2,6 +2,7 @@ package inrepo
 
 import (
 	"fmt"
+	"github.com/jenkins-x/go-scm/scm"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -29,6 +30,12 @@ type UsesResolver struct {
 
 	cache map[string]*tektonv1beta1.PipelineRun
 }
+
+var (
+	// VersionStreamVersions allows you to register version stream values of ful repository names in the format
+	// `owner/name` mapping to the version SHA/branch/tag
+	VersionStreamVersions = map[string]string{}
+)
 
 // UsesSteps lets resolve the sourceURI to a PipelineRun and find the step or steps
 // for the given task name and/or step name then lets apply any overrides from the step
@@ -117,11 +124,12 @@ func resolveCustomSha(owner string, repo string, sha string) string {
 	if sha != "versionStream" {
 		return sha
 	}
-	envVar := strings.ToUpper(fmt.Sprintf("LIGHTHOUSE_VERSIONSTREAM_%s_%s", owner, repo))
-	envVar = strings.ReplaceAll(envVar, "-", "_")
-	envVar = strings.ReplaceAll(envVar, " ", "_")
-	envVar = strings.ReplaceAll(envVar, ".", "_")
-	value := os.Getenv(envVar)
+	fullName := scm.Join(owner, repo)
+	value := VersionStreamVersions[fullName]
+	envVar := VersionStreamEnvVar(owner, repo)
+	if value == "" {
+		value = os.Getenv(envVar)
+	}
 	if value != "" {
 		return value
 	}
@@ -130,6 +138,15 @@ func resolveCustomSha(owner string, repo string, sha string) string {
 		"Repo":  repo,
 	}).Warnf("no version stream version environment variable: %s", envVar)
 	return "HEAD"
+}
+
+// VersionStreamEnvVar creates an environment variable name
+func VersionStreamEnvVar(owner string, repo string) string {
+	envVar := strings.ToUpper(fmt.Sprintf("LIGHTHOUSE_VERSIONSTREAM_%s_%s", owner, repo))
+	envVar = strings.ReplaceAll(envVar, "-", "_")
+	envVar = strings.ReplaceAll(envVar, " ", "_")
+	envVar = strings.ReplaceAll(envVar, ".", "_")
+	return envVar
 }
 
 func (r *UsesResolver) findSteps(sourceURI string, pr *tektonv1beta1.PipelineRun, taskName string, step tektonv1beta1.Step) ([]tektonv1beta1.Step, error) {
