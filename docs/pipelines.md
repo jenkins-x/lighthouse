@@ -51,7 +51,9 @@ That is a good approach for referencing a versioned `Task` / `Pipeline` / `Pipel
 The source URI syntax we use is:
         
 * treat it as a URL if it can be parsed as a URL (e.g. it contains `https://` or `http://`)
-* if the string contains @ then it's a git URI of the form: `owner/repository/pathToFile@versionBranchOrSha`
+* if the string contains `@` then it's a git URI of the form: `owner/repository/pathToFile@versionBranchOrSha`
+  * you can use `@HEAD` to mean the latest version from the main branch
+  * you can use `@versionStream` to mean the git SHA of this git repository configured inside your version stream if available; otherwise it defaults to `@HEAD`  
 * otherwise assume the path is a local relative file in git
 
 
