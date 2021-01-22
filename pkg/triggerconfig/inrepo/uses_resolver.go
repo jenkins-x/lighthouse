@@ -129,7 +129,7 @@ func resolveCustomSha(owner string, repo string, sha string) string {
 		"Owner": owner,
 		"Repo":  repo,
 	}).Warnf("no version stream version environment variable: %s", envVar)
-	return "head"
+	return "HEAD"
 }
 
 func (r *UsesResolver) findSteps(sourceURI string, pr *tektonv1beta1.PipelineRun, taskName string, step tektonv1beta1.Step) ([]tektonv1beta1.Step, error) {
