@@ -1350,7 +1350,8 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 	owner := sp.org
 	repo := sp.repo
 	sharedConfig := c.config()
-	cfg, _, err := inrepo.Generate(c.fileBrowsers, sharedConfig, nil, owner, repo, "")
+	cache := inrepo.NewResolverCache()
+	cfg, _, err := inrepo.Generate(c.fileBrowsers, cache, sharedConfig, nil, owner, repo, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to calculate in repo config")
 	}

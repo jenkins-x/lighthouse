@@ -20,6 +20,7 @@ import (
 // UsesResolver resolves the `uses:` URI syntax
 type UsesResolver struct {
 	FileBrowsers     *filebrowser.FileBrowsers
+	Cache            *ResolverCache
 	OwnerName        string
 	RepoName         string
 	SHA              string
@@ -27,8 +28,6 @@ type UsesResolver struct {
 	Message          string
 	DefaultValues    *DefaultValues
 	LocalFileResolve bool
-
-	cache map[string]*tektonv1beta1.PipelineRun
 }
 
 var (
@@ -40,10 +39,7 @@ var (
 // UsesSteps lets resolve the sourceURI to a PipelineRun and find the step or steps
 // for the given task name and/or step name then lets apply any overrides from the step
 func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv1beta1.Step) ([]tektonv1beta1.Step, error) {
-	if r.cache == nil {
-		r.cache = map[string]*tektonv1beta1.PipelineRun{}
-	}
-	pr := r.cache[sourceURI]
+	pr := r.Cache.GetPipelineRun(sourceURI)
 	if pr == nil {
 		data, err := r.GetData(sourceURI, false)
 		if err != nil {
@@ -60,7 +56,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 		if pr == nil {
 			return nil, errors.Errorf("no PipelineRun for URI %s", sourceURI)
 		}
-		r.cache[sourceURI] = pr
+		r.Cache.SetPipelineRun(sourceURI, pr)
 	}
 
 	return r.findSteps(sourceURI, pr, taskName, step)
@@ -68,7 +64,11 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 
 // GetData gets the data from the given source URI
 func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error) {
-	var data []byte
+	data := r.Cache.GetData(path)
+	if len(data) > 0 {
+		return data, nil
+	}
+
 	if strings.Contains(path, "://") {
 		data, err := getPipelineFromURL(path)
 		if err != nil {
@@ -104,6 +104,11 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 	}
 	fb := r.FileBrowsers.LighthouseGitFileBrowser()
 	if gitURI != nil {
+		data := r.lookupDataCache(path)
+		if len(data) > 0 {
+			return data, nil
+		}
+
 		owner = gitURI.Owner
 		repo = gitURI.Repository
 		path = gitURI.Path
@@ -120,6 +125,9 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, owner, repo, sha)
+	}
+	if gitURI != nil {
+		r.Cache.SetData(path, data)
 	}
 	return data, nil
 }
@@ -204,6 +212,14 @@ func (r *UsesResolver) findTaskStep(sourceURI string, task tektonv1beta1.Pipelin
 		}
 	}
 	return nil, errors.Errorf("source URI %s task %s has no step named %s", sourceURI, task.Name, name)
+}
+
+func (r *UsesResolver) lookupDataCache(path string) []byte {
+	return nil
+}
+
+func (r *UsesResolver) updateDataCache(path string, data []byte) {
+
 }
 
 // OverrideStep overrides the step with the given overrides
