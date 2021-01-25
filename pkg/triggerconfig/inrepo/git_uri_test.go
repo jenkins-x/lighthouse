@@ -19,6 +19,7 @@ func TestParseGitURI(t *testing.T) {
 		{
 			text: "myowner/myrepo@v1",
 			expected: &inrepo.GitURI{
+				Server:     "github",
 				Owner:      "myowner",
 				Repository: "myrepo",
 				Path:       "",
@@ -28,6 +29,7 @@ func TestParseGitURI(t *testing.T) {
 		{
 			text: "myowner/myrepo/@v1",
 			expected: &inrepo.GitURI{
+				Server:     "github",
 				Owner:      "myowner",
 				Repository: "myrepo",
 				Path:       "",
@@ -38,6 +40,7 @@ func TestParseGitURI(t *testing.T) {
 		{
 			text: "myowner/myrepo/myfile.yaml@v1",
 			expected: &inrepo.GitURI{
+				Server:     "github",
 				Owner:      "myowner",
 				Repository: "myrepo",
 				Path:       "myfile.yaml",
@@ -47,6 +50,17 @@ func TestParseGitURI(t *testing.T) {
 		{
 			text: "myowner/myrepo/javascript/pullrequest.yaml@v1",
 			expected: &inrepo.GitURI{
+				Server:     "github",
+				Owner:      "myowner",
+				Repository: "myrepo",
+				Path:       "javascript/pullrequest.yaml",
+				SHA:        "v1",
+			},
+		},
+		{
+			text: "myserver:myowner/myrepo/javascript/pullrequest.yaml@v1",
+			expected: &inrepo.GitURI{
+				Server:     "myserver",
 				Owner:      "myowner",
 				Repository: "myrepo",
 				Path:       "javascript/pullrequest.yaml",

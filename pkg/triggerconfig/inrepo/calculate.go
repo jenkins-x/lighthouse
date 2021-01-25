@@ -10,7 +10,7 @@ import (
 )
 
 // Generate generates the in repository config if enabled for this repository otherwise return the shared config
-func Generate(fileBrowser filebrowser.Interface, sharedConfig *config.Config, sharedPlugins *plugins.Configuration, owner, repo, eventRef string) (*config.Config, *plugins.Configuration, error) {
+func Generate(fileBrowsers *filebrowser.FileBrowsers, sharedConfig *config.Config, sharedPlugins *plugins.Configuration, owner, repo, eventRef string) (*config.Config, *plugins.Configuration, error) {
 	fullName := scm.Join(owner, repo)
 	if !sharedConfig.InRepoConfigEnabled(fullName) {
 		return sharedConfig, sharedPlugins, nil
@@ -32,13 +32,13 @@ func Generate(fileBrowser filebrowser.Interface, sharedConfig *config.Config, sh
 	}
 
 	// lets load the main branch first then merge in any changes from this PR/branch
-	refs, err := fileBrowser.GetMainAndCurrentBranchRefs(owner, repo, eventRef)
+	refs, err := fileBrowsers.LighthouseGitFileBrowser().GetMainAndCurrentBranchRefs(owner, repo, eventRef)
 	if err != nil {
 		return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to find main branch %s", fullName)
 	}
 
 	for _, ref := range refs {
-		repoConfig, _ := LoadTriggerConfig(fileBrowser, owner, repo, ref)
+		repoConfig, _ := LoadTriggerConfig(fileBrowsers, owner, repo, ref)
 		if repoConfig != nil {
 			err = merge.ConfigMerge(&cfg, &pluginCfg, repoConfig, owner, repo)
 			if err != nil {

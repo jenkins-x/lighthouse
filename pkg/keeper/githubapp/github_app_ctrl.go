@@ -174,7 +174,7 @@ func (g *gitHubAppKeeperController) createOwnerController(owner string, configGe
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
 	launcherClient := launcher.NewLauncher(lhClient, g.ns)
-	c, err := keeper.NewController(gitproviderClient, gitproviderClient, launcherClient, tektonClient, lhClient, g.ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
+	c, err := keeper.NewController(gitproviderClient, gitproviderClient, nil, launcherClient, tektonClient, lhClient, g.ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
 	return c, err
 }
 

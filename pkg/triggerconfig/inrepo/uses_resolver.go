@@ -3,7 +3,6 @@ package inrepo
 import (
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"strings"
 
@@ -20,7 +19,7 @@ import (
 
 // UsesResolver resolves the `uses:` URI syntax
 type UsesResolver struct {
-	Client           filebrowser.Interface
+	FileBrowsers     *filebrowser.FileBrowsers
 	OwnerName        string
 	RepoName         string
 	SHA              string
@@ -70,9 +69,8 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 // GetData gets the data from the given source URI
 func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error) {
 	var data []byte
-	_, err := url.ParseRequestURI(path)
-	if err == nil {
-		data, err = getPipelineFromURL(path)
+	if strings.Contains(path, "://") {
+		data, err := getPipelineFromURL(path)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
 		}
@@ -104,13 +102,19 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 		}
 		return data, nil
 	}
+	fb := r.FileBrowsers.LighthouseGitFileBrowser()
 	if gitURI != nil {
 		owner = gitURI.Owner
 		repo = gitURI.Repository
 		path = gitURI.Path
 		sha = resolveCustomSha(owner, repo, gitURI.SHA)
+
+		fb = r.FileBrowsers.GetFileBrowser(gitURI.Server)
+		if fb == nil {
+			return nil, errors.Errorf("could not find git file browser for server %s in uses: git URI %s", gitURI.Server, gitURI.String())
+		}
 	}
-	data, err = r.Client.GetFile(owner, repo, path, sha)
+	data, err = fb.GetFile(owner, repo, path, sha)
 	if err != nil && IsScmNotFound(err) {
 		err = nil
 	}
