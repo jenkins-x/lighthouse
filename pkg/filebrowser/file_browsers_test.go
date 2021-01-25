@@ -1,10 +1,11 @@
 package filebrowser_test
 
 import (
+	"testing"
+
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestFileBrowsers(t *testing.T) {

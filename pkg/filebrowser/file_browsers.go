@@ -1,10 +1,11 @@
 package filebrowser
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/git/v2"
-	"github.com/pkg/errors"
 	"os"
 	"strings"
+
+	"github.com/jenkins-x/lighthouse/pkg/git/v2"
+	"github.com/pkg/errors"
 )
 
 const (
