@@ -456,6 +456,8 @@ github.com/jenkins-x/go-scm v1.5.213 h1:gRmYPz5YVS3fNhZ+UjynwC9ksdPp/Ipkmnq/Tvuo
 github.com/jenkins-x/go-scm v1.5.213/go.mod h1:Iuk0V0mt0QGIt50TZyChHqRIiXTnp1ink9RyNoe7o7c=
 github.com/jenkins-x/go-scm v1.5.215 h1:RBpGmp5ppBOimDc0F/Ln9Dy/DPuZ52OqfSnPbEmUDsM=
 github.com/jenkins-x/go-scm v1.5.215/go.mod h1:Iuk0V0mt0QGIt50TZyChHqRIiXTnp1ink9RyNoe7o7c=
+github.com/jenkins-x/go-scm v1.5.216 h1:aQK0rthmvoEh6HqNmb4nPdr0Dj474Q7T6/lFgOrjg2c=
+github.com/jenkins-x/go-scm v1.5.216/go.mod h1:Iuk0V0mt0QGIt50TZyChHqRIiXTnp1ink9RyNoe7o7c=
 github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6 h1:P/UwaE7LPLOZNIsaNkUGW2QU+4HZSgxkrHLa572zL+8=
 github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6/go.mod h1:ZgXMj2xM7T6cldNEUiyBRm75MDOv1DrkCSwGhCK2yLU=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
