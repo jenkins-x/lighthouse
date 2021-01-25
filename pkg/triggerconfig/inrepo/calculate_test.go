@@ -45,9 +45,10 @@ func TestCalculate(t *testing.T) {
 	}
 	sharedPluginConfig := &plugins.Configuration{}
 
-	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
+	require.NoError(t, err, "failed to create filebrowsers")
 
-	cfg, pluginsCfg, err := inrepo.Generate(fileBrowser, sharedConfig, sharedPluginConfig, owner, repo, ref)
+	cfg, pluginsCfg, err := inrepo.Generate(fileBrowsers, sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	require.NoError(t, err, "failed to invoke getClientAndTrigger")
@@ -124,8 +125,10 @@ func TestTriggersInBranchMergeToMaster(t *testing.T) {
 	}
 	sharedPluginConfig := &plugins.Configuration{}
 
-	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
-	cfg, _, err := inrepo.Generate(fileBrowser, sharedConfig, sharedPluginConfig, owner, repo, ref)
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
+	require.NoError(t, err, "failed to create filebrowsers")
+
+	cfg, _, err := inrepo.Generate(fileBrowsers, sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	presubmits := cfg.Presubmits[fullName]

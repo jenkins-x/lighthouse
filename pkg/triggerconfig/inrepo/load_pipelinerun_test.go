@@ -18,7 +18,7 @@ import (
 
 var (
 	// generateTestOutput enable to regenerate the expected output
-	generateTestOutput = true
+	generateTestOutput = false
 )
 
 func TestLoadPipelineRunTest(t *testing.T) {
@@ -29,11 +29,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 	scmClient, _ := fake.NewDefault()
 	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
 
-	resolver := &UsesResolver{
-		Client:           filebrowser.NewFileBrowserFromScmClient(scmProvider),
-		OwnerName:        "myorg",
-		LocalFileResolve: true,
-	}
+	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
 
 	// lets use a custom version stream sha
 	os.Setenv("LIGHTHOUSE_VERSIONSTREAM_JENKINS_X_JX3_PIPELINE_CATALOG", "myversionstreamref")
@@ -52,6 +48,20 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			t.Logf("ignoring test %s\n", name)
 			continue
 		}
+
+		sourceURL := filebrowser.GitHubURL
+		if name == "uses-steps-custom-git" {
+			sourceURL = "https://my.gitserver.com"
+		}
+		fileBrowsers, err := filebrowser.NewFileBrowsers(sourceURL, fileBrowser)
+		require.NoError(t, err, "failed to create filebrowsers")
+
+		resolver := &UsesResolver{
+			FileBrowsers:     fileBrowsers,
+			OwnerName:        "myorg",
+			LocalFileResolve: true,
+		}
+
 		dir := filepath.Join(sourceDir, name)
 		resolver.Dir = dir
 

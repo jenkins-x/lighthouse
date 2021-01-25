@@ -91,6 +91,7 @@ type DefaultController struct {
 	logger         *logrus.Entry
 	config         config.Getter
 	spc            scmProviderClient
+	fileBrowsers   *filebrowser.FileBrowsers
 	launcherClient launcher
 	gc             git.Client
 	tektonClient   tektonclient.Interface
@@ -224,7 +225,7 @@ func init() {
 }
 
 // NewController makes a DefaultController out of the given clients.
-func NewController(spcSync, spcStatus *scmprovider.Client, launcherClient launcher, tektonClient tektonclient.Interface, lighthouseClient clientset.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
+func NewController(spcSync, spcStatus *scmprovider.Client, fileBrowsers *filebrowser.FileBrowsers, launcherClient launcher, tektonClient tektonclient.Interface, lighthouseClient clientset.Interface, ns string, cfg config.Getter, gc git.Client, maxRecordsPerPool int, historyURI, statusURI string, logger *logrus.Entry) (*DefaultController, error) {
 	if logger == nil {
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
@@ -244,6 +245,7 @@ func NewController(spcSync, spcStatus *scmprovider.Client, launcherClient launch
 	return &DefaultController{
 		logger:         logger.WithField("controller", "sync"),
 		spc:            spcSync,
+		fileBrowsers:   fileBrowsers,
 		launcherClient: launcherClient,
 		tektonClient:   tektonClient,
 		lhClient:       lighthouseClient,
@@ -1348,7 +1350,7 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 	owner := sp.org
 	repo := sp.repo
 	sharedConfig := c.config()
-	cfg, _, err := inrepo.Generate(filebrowser.NewFileBrowserFromScmClient(c.spc), sharedConfig, nil, owner, repo, "")
+	cfg, _, err := inrepo.Generate(c.fileBrowsers, sharedConfig, nil, owner, repo, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to calculate in repo config")
 	}

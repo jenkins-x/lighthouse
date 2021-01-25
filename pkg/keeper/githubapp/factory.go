@@ -5,6 +5,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
@@ -42,11 +43,16 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 		return []byte(gitToken)
 	})
 
+	fileBrowsers, err := filebrowser.NewFileBrowsers(serverURL, filebrowser.NewFileBrowserFromScmClient(gitproviderClient))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create the git file browsers")
+	}
+
 	tektonClient, _, lhClient, _, err := clients.GetAPIClients()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
 	launcherClient := launcher.NewLauncher(lhClient, ns)
-	c, err := keeper.NewController(gitproviderClient, gitproviderClient, launcherClient, tektonClient, lhClient, ns, configAgent.Config, gitClient, maxRecordsPerPool, historyURI, statusURI, nil)
+	c, err := keeper.NewController(gitproviderClient, gitproviderClient, fileBrowsers, launcherClient, tektonClient, lhClient, ns, configAgent.Config, gitClient, maxRecordsPerPool, historyURI, statusURI, nil)
 	return c, err
 }

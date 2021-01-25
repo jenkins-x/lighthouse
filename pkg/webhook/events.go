@@ -41,7 +41,7 @@ type Server struct {
 	ServerURL      *url.URL
 	TokenGenerator func() []byte
 	Metrics        *Metrics
-	FileBrowser    filebrowser.Interface
+	FileBrowsers   *filebrowser.FileBrowsers
 	InRepoCache    *lru.Cache
 
 	// Tracks running handlers for graceful shutdown

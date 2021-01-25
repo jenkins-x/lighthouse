@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -19,7 +18,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
@@ -210,38 +208,38 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 		LauncherClient:    o.launcher,
 	}
 
-	if o.server.FileBrowser == nil {
-		// allow an enviroment variable to enable the git based file browsing
-		if os.Getenv("FILE_BROWSER") == "git" {
-			configureOpts := func(opts *gitv2.ClientFactoryOpts) {
-				opts.Token = func() []byte {
-					return []byte(token)
-				}
-				opts.GitUser = func() (name, email string, err error) {
-					name = gitCloneUser
-					return
-				}
-				opts.Username = func() (login string, err error) {
-					login = gitCloneUser
-					return
-				}
-				if o.server.ServerURL.Host != "" {
-					opts.Host = o.server.ServerURL.Host
-				}
-				if o.server.ServerURL.Scheme != "" {
-					opts.Scheme = o.server.ServerURL.Scheme
-				}
+	if o.server.FileBrowsers == nil {
+		configureOpts := func(opts *gitv2.ClientFactoryOpts) {
+			opts.Token = func() []byte {
+				return []byte(token)
 			}
-			gitFactory, err := gitv2.NewClientFactory(configureOpts)
-			if err != nil {
-				err = errors.Wrapf(err, "failed to create git client factory for server %s", o.gitServerURL)
-				responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+			opts.GitUser = func() (name, email string, err error) {
+				name = gitCloneUser
 				return
 			}
-			o.server.FileBrowser = filebrowser.NewFileBrowserFromGitClient(gitFactory)
-		} else {
-			scmProvider := scmprovider.ToClient(scmClient, o.server.ClientAgent.BotName)
-			o.server.FileBrowser = filebrowser.NewFileBrowserFromScmClient(scmProvider)
+			opts.Username = func() (login string, err error) {
+				login = gitCloneUser
+				return
+			}
+			if o.server.ServerURL.Host != "" {
+				opts.Host = o.server.ServerURL.Host
+			}
+			if o.server.ServerURL.Scheme != "" {
+				opts.Scheme = o.server.ServerURL.Scheme
+			}
+		}
+		gitFactory, err := gitv2.NewClientFactory(configureOpts)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to create git client factory for server %s", o.gitServerURL)
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+			return
+		}
+		fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
+		o.server.FileBrowsers, err = filebrowser.NewFileBrowsers(o.gitServerURL, fb)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to create git filebrowsers%s", o.gitServerURL)
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+			return
 		}
 	}
 

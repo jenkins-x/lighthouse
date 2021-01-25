@@ -62,7 +62,7 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 
 func (s *Server) createAgent(pc *plugins.Agent, owner, repo, ref string) error {
 	var err error
-	pc.Config, pc.PluginConfig, err = inrepo.Generate(s.FileBrowser, pc.Config, pc.PluginConfig, owner, repo, ref)
+	pc.Config, pc.PluginConfig, err = inrepo.Generate(s.FileBrowsers, pc.Config, pc.PluginConfig, owner, repo, ref)
 	if err != nil {
 		return errors.Wrapf(err, "failed to calculate in repo config")
 	}

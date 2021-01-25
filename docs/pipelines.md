@@ -50,10 +50,11 @@ That is a good approach for referencing a versioned `Task` / `Pipeline` / `Pipel
 
 The source URI syntax we use is:
         
-* treat it as a URL if it can be parsed as a URL (e.g. it contains `https://` or `http://`)
+* treat it as a URL if it contains `://` 
 * if the string contains `@` then it's a git URI of the form: `owner/repository/pathToFile@versionBranchOrSha`
+  * the repository is assumed to live on `github.com` like GitHub Actions. If you wish to use your local repository prefix the sourceURI with the server name. e.g.  `lighthouse:owner/repository/pathToFile@versionBranchOrSha` will reference a git repository in the current lighthouse git repository instead of github.com
   * you can use `@HEAD` to mean the latest version from the main branch
-  * you can use `@versionStream` to mean the git SHA of this git repository configured inside your version stream if available; otherwise it defaults to `@HEAD`  
+  * you can use `@versionStream` to mean the git SHA of this git repository configured inside your version stream if available; otherwise it defaults to `@HEAD`
 * otherwise assume the path is a local relative file in git
 
 

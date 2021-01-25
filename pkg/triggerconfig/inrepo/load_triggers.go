@@ -22,8 +22,8 @@ import (
 )
 
 // MergeTriggers merges the configuration with any `lighthouse.yaml` files in the repository
-func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, fileBrowser filebrowser.Interface, ownerName string, repoName string, sha string) (bool, error) {
-	repoConfig, err := LoadTriggerConfig(fileBrowser, ownerName, repoName, sha)
+func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, fileBrowsers *filebrowser.FileBrowsers, ownerName string, repoName string, sha string) (bool, error) {
+	repoConfig, err := LoadTriggerConfig(fileBrowsers, ownerName, repoName, sha)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to load configs")
 	}
@@ -39,17 +39,17 @@ func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, fileBro
 }
 
 // LoadTriggerConfig loads the `lighthouse.yaml` configuration files in the repository
-func LoadTriggerConfig(fileBrowser filebrowser.Interface, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
+func LoadTriggerConfig(fileBrowsers *filebrowser.FileBrowsers, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
 	m := map[string]*triggerconfig.Config{}
 	path := ".lighthouse"
-	files, err := fileBrowser.ListFiles(ownerName, repoName, path, sha)
+	files, err := fileBrowsers.LighthouseGitFileBrowser().ListFiles(ownerName, repoName, path, sha)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find any lighthouse configuration files in repo %s/%s at sha %s", ownerName, repoName, sha)
 	}
 	for _, f := range files {
 		if isDirType(f.Type) {
 			filePath := path + "/" + f.Name + "/triggers.yaml"
-			cfg, err := loadConfigFile(fileBrowser, ownerName, repoName, filePath, sha)
+			cfg, err := loadConfigFile(fileBrowsers, ownerName, repoName, filePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
 			}
@@ -58,7 +58,7 @@ func LoadTriggerConfig(fileBrowser filebrowser.Interface, ownerName string, repo
 			}
 		} else if f.Name == "triggers.yaml" {
 			filePath := path + "/" + f.Name
-			cfg, err := loadConfigFile(fileBrowser, ownerName, repoName, filePath, sha)
+			cfg, err := loadConfigFile(fileBrowsers, ownerName, repoName, filePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
 			}
@@ -104,8 +104,8 @@ func isDirType(t string) bool {
 	return strings.ToLower(t) == "dir"
 }
 
-func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
-	data, err := client.GetFile(ownerName, repoName, path, sha)
+func loadConfigFile(fileBrowsers *filebrowser.FileBrowsers, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
+	data, err := fileBrowsers.LighthouseGitFileBrowser().GetFile(ownerName, repoName, path, sha)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 	}
@@ -126,7 +126,7 @@ func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha
 			if err != nil {
 				sourcePath = filepath.Join(dir, r.SourcePath)
 			}
-			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, sourcePath, sha)
+			err = loadJobBaseFromSourcePath(fileBrowsers, &r.Base, ownerName, repoName, sourcePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
 			}
@@ -144,7 +144,7 @@ func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha
 			if err != nil {
 				sourcePath = filepath.Join(dir, r.SourcePath)
 			}
-			err = loadJobBaseFromSourcePath(client, &r.Base, ownerName, repoName, sourcePath, sha)
+			err = loadJobBaseFromSourcePath(fileBrowsers, &r.Base, ownerName, repoName, sourcePath, sha)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
 			}
@@ -156,7 +156,7 @@ func loadConfigFile(client filebrowser.Interface, ownerName, repoName, path, sha
 	return repoConfig, nil
 }
 
-func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerName, repoName, path, sha string) error {
+func loadJobBaseFromSourcePath(fileBrowsers *filebrowser.FileBrowsers, j *job.Base, ownerName, repoName, path, sha string) error {
 	var data []byte
 
 	// source path can either be a local file or a Git URL
@@ -168,7 +168,7 @@ func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerN
 		}
 
 	} else {
-		data, err = client.GetFile(ownerName, repoName, path, sha)
+		data, err = fileBrowsers.LighthouseGitFileBrowser().GetFile(ownerName, repoName, path, sha)
 		if err != nil {
 			return errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 		}
@@ -183,12 +183,12 @@ func loadJobBaseFromSourcePath(client filebrowser.Interface, j *job.Base, ownerN
 	message := fmt.Sprintf("in repo %s/%s with sha %s", ownerName, repoName, sha)
 
 	usesResolver := &UsesResolver{
-		Client:    client,
-		OwnerName: ownerName,
-		RepoName:  repoName,
-		SHA:       sha,
-		Dir:       dir,
-		Message:   message,
+		FileBrowsers: fileBrowsers,
+		OwnerName:    ownerName,
+		RepoName:     repoName,
+		SHA:          sha,
+		Dir:          dir,
+		Message:      message,
 	}
 
 	prs, err := LoadTektonResourceAsPipelineRun(usesResolver, data)

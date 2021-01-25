@@ -29,8 +29,10 @@ func TestMergeConfigIntegration(t *testing.T) {
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
 
-	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
-	flag, err := MergeTriggers(cfg, pluginCfg, fileBrowser, repoOwner, repoName, sha)
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
+	require.NoError(t, err, "failed to create filebrowsers")
+
+	flag, err := MergeTriggers(cfg, pluginCfg, fileBrowsers, repoOwner, repoName, sha)
 	require.NoError(t, err, "failed to merge configs")
 	assert.True(t, flag, "did not return merge flag")
 
