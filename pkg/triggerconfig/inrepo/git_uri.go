@@ -1,8 +1,9 @@
 package inrepo
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"strings"
+
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 
 	"github.com/jenkins-x/go-scm/scm"
 
