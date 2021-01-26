@@ -176,10 +176,10 @@ foghorn:
       cpu: 100m
       memory: 256Mi
 
-  # foghorn.resources.requests -- Resource requests applied to the foghorn pods
-  requests:
-    cpu: 80m
-    memory: 128Mi
+    # foghorn.resources.requests -- Resource requests applied to the foghorn pods
+    requests:
+      cpu: 80m
+      memory: 128Mi
 
   # foghorn.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the foghorn pods
   nodeSelector: {}

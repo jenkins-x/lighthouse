@@ -59,9 +59,8 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `foghorn.image.tag` | string | Template for computing the foghorn controller docker image tag | `"{{ .Values.image.tag }}"` |
 | `foghorn.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the foghorn pods | `{}` |
 | `foghorn.replicaCount` | int | Number of replicas | `1` |
-| `foghorn.requests.cpu` | string |  | `"80m"` |
-| `foghorn.requests.memory` | string |  | `"128Mi"` |
 | `foghorn.resources.limits` | object | Resource limits applied to the foghorn pods | `{"cpu":"100m","memory":"256Mi"}` |
+| `foghorn.resources.requests` | object | Resource requests applied to the foghorn pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `foghorn.terminationGracePeriodSeconds` | int | Termination grace period for foghorn pods | `180` |
 | `foghorn.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods | `[]` |
 | `gcJobs.concurrencyPolicy` | string | Drives the job's concurrency policy | `"Forbid"` |
