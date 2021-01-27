@@ -87,7 +87,7 @@ To configure your SCM, go-scm uses the following environment variables :
 | Name  |  Description |
 | ------------- | ------------- |
 | `GIT_KIND` | the kind of git server: `github, gitlab, bitbucket, gitea, stash` |
-| `GIT_SERVER` | the URL of the server if not using the public hosted git providers: [https://github.com](https://github.com), [https://bitbucket.org] or [https://gitlab.com](https://gitlab.com) |
+| `GIT_SERVER` | the URL of the server if not using the public hosted git providers: [https://github.com](https://github.com), [https://bitbucket.org](https://bitbucket.org) or [https://gitlab.com](https://gitlab.com) |
 | `GIT_USER` | the git user (bot name) to use on git operations |
 | `GIT_TOKEN` | the git token to perform operations on git (add comments, labels etc.) |
 | `HMAC_TOKEN` | the token sent from the git provider in webhooks |
