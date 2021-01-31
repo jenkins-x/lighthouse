@@ -239,23 +239,13 @@ func (c *Client) CreateComment(owner, repo string, number int, pr bool, comment 
 	if pr {
 		_, response, err := c.client.PullRequests.CreateComment(ctx, fullName, number, &commentInput)
 		if err != nil {
-			var b bytes.Buffer
-			_, cperr := io.Copy(&b, response.Body)
-			if cperr != nil {
-				return errors.Wrapf(cperr, "response: %s", b.String())
-			}
-			return errors.Wrapf(err, "response: %s", b.String())
+			return connectErrorHandle(response, err)
 		}
 
 	} else {
 		_, response, err := c.client.Issues.CreateComment(ctx, fullName, number, &commentInput)
 		if err != nil {
-			var b bytes.Buffer
-			_, cperr := io.Copy(&b, response.Body)
-			if cperr != nil {
-				return errors.Wrapf(cperr, "reponse: %s", b.String())
-			}
-			return errors.Wrapf(err, "response: %s", b.String())
+			return connectErrorHandle(response, err)
 		}
 	}
 	return nil
@@ -271,26 +261,28 @@ func (c *Client) EditComment(owner, repo string, number int, id int, comment str
 	if pr {
 		_, response, err := c.client.PullRequests.EditComment(ctx, fullName, number, id, &commentInput)
 		if err != nil {
-			var b bytes.Buffer
-			_, cperr := io.Copy(&b, response.Body)
-			if cperr != nil {
-				return errors.Wrapf(cperr, "response: %s", b.String())
-			}
-			return errors.Wrapf(err, "response: %s", b.String())
+			return connectErrorHandle(response, err)
 		}
 
 	} else {
 		_, response, err := c.client.Issues.EditComment(ctx, fullName, number, id, &commentInput)
 		if err != nil {
-			var b bytes.Buffer
-			_, cperr := io.Copy(&b, response.Body)
-			if cperr != nil {
-				return errors.Wrapf(cperr, "reponse: %s", b.String())
-			}
-			return errors.Wrapf(err, "response: %s", b.String())
+			return connectErrorHandle(response, err)
 		}
 	}
 	return nil
+}
+
+func connectErrorHandle(response *scm.Response, err error) error {
+	if response.Body != nil {
+		var b bytes.Buffer
+		_, cpErr := io.Copy(&b, response.Body)
+		if cpErr != nil {
+			return errors.Wrapf(cpErr, "response: %s", b.String())
+		}
+		return errors.Wrapf(err, "response: %s", b.String())
+	}
+	return errors.Wrapf(err, "no response body, code: %d", response.Status)
 }
 
 // ReopenIssue reopen an issue
