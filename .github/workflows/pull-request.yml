@@ -1,0 +1,16 @@
+name: Pull Request Build
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  MarkdownLinkCheck:
+    name: MarkdownLinkCheck
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@master
+      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-verbose-mode: 'yes'
