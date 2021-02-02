@@ -107,7 +107,7 @@ func (i *interactor) Clean() error {
 
 // Clone clones the repository from a local path.
 func (i *interactor) Clone(from string) error {
-	i.logger.Infof("Creating a clone of the repo at %s from %s", i.dir, from)
+	i.logger.Debugf("Creating a clone of the repo at %s from %s", i.dir, from)
 	if out, err := i.executor.Run("clone", from, i.dir); err != nil {
 		return fmt.Errorf("error creating a clone: %v %v", err, string(out))
 	}
@@ -116,7 +116,7 @@ func (i *interactor) Clone(from string) error {
 
 // MirrorClone sets up a mirror of the source repository.
 func (i *interactor) MirrorClone() error {
-	i.logger.Infof("Creating a mirror of the repo at %s", i.dir)
+	i.logger.Debugf("Creating a mirror of the repo at %s", i.dir)
 	remote, err := i.remote()
 	if err != nil {
 		return fmt.Errorf("could not resolve remote for cloning: %v", err)
@@ -132,7 +132,7 @@ func (i *interactor) MirrorClone() error {
 
 // Checkout runs git checkout.
 func (i *interactor) Checkout(commitlike string) error {
-	i.logger.Infof("Checking out %q", commitlike)
+	i.logger.Debugf("Checking out %q", commitlike)
 	if out, err := i.executor.Run("checkout", commitlike); err != nil {
 		return fmt.Errorf("error checking out %q: %v %v", commitlike, err, string(out))
 	}
@@ -280,7 +280,7 @@ func (i *interactor) Fetch() error {
 	if err != nil {
 		return fmt.Errorf("could not resolve remote for fetching: %v", err)
 	}
-	i.logger.Infof("Fetching from %s", remote)
+	i.logger.Debugf("Fetching from %s", remote)
 	if out, err := i.executor.Run("fetch", remote); err != nil {
 		return fmt.Errorf("error fetching: %v %v", err, string(out))
 	}
@@ -293,7 +293,7 @@ func (i *interactor) FetchRef(refspec string) error {
 	if err != nil {
 		return fmt.Errorf("could not resolve remote for fetching: %v", err)
 	}
-	i.logger.Infof("Fetching %q from %s", refspec, remote)
+	i.logger.Debugf("Fetching %q from %s", refspec, remote)
 	if out, err := i.executor.Run("fetch", remote, refspec); err != nil {
 		return fmt.Errorf("error fetching %q: %v %v", refspec, err, string(out))
 	}
@@ -307,7 +307,7 @@ func (i *interactor) FetchFromRemote(remote RemoteResolver, branch string) error
 		return fmt.Errorf("couldn't get remote: %v", err)
 	}
 
-	i.logger.Infof("Fetching %s from %s", branch, r)
+	i.logger.Debugf("Fetching %s from %s", branch, r)
 	if out, err := i.executor.Run("fetch", r, branch); err != nil {
 		return fmt.Errorf("error fetching %s from %s: %v %v", branch, r, err, string(out))
 	}
