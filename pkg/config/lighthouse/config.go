@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/config/org"
@@ -131,5 +133,6 @@ func (c *Config) InRepoConfigEnabled(identifier string) bool {
 	if c.InRepoConfig.Enabled["*"] != nil {
 		return *c.InRepoConfig.Enabled["*"]
 	}
+	logrus.Infof("in-repo configuration not enabled for %s", identifier)
 	return false
 }
