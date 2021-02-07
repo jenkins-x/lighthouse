@@ -47,6 +47,8 @@ contrib.go.opencensus.io/exporter/stackdriver v0.13.4/go.mod h1:aXENhDJ1Y4lIg4EU
 contrib.go.opencensus.io/exporter/zipkin v0.1.2/go.mod h1:mP5xM3rrgOjpn79MM8fZbj3gsxcuytSqtH0dxSWW1RE=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
+gitea.com/cameronbraid/go-sdk/gitea v0.13.1-0.20210206144323-3e1728ca18b2 h1:u8AxwueCHINVUyfMubxOJd+wvOV4GQfRdeZ8dKPtzQQ=
+gitea.com/cameronbraid/go-sdk/gitea v0.13.1-0.20210206144323-3e1728ca18b2/go.mod h1:oJY3chIv8Ndep5RNRZarrGwa1J6f9dfW7BcDR5hENR0=
 github.com/Azure/azure-sdk-for-go v35.0.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/azure-sdk-for-go v38.0.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
 github.com/Azure/azure-sdk-for-go v42.3.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
@@ -459,8 +461,8 @@ github.com/jenkins-x/go-scm v1.5.215 h1:RBpGmp5ppBOimDc0F/Ln9Dy/DPuZ52OqfSnPbEmU
 github.com/jenkins-x/go-scm v1.5.215/go.mod h1:Iuk0V0mt0QGIt50TZyChHqRIiXTnp1ink9RyNoe7o7c=
 github.com/jenkins-x/go-scm v1.5.216 h1:aQK0rthmvoEh6HqNmb4nPdr0Dj474Q7T6/lFgOrjg2c=
 github.com/jenkins-x/go-scm v1.5.216/go.mod h1:Iuk0V0mt0QGIt50TZyChHqRIiXTnp1ink9RyNoe7o7c=
-github.com/jenkins-x/go-scm v1.5.217 h1:1jKOUjNIZXFTpleryVU16MmwsRXD9aIEZ4Q1fqU1WTE=
-github.com/jenkins-x/go-scm v1.5.217/go.mod h1:se6vcml6RbQyTKps3NLmgjoJPfRou/Flo2O2ca8Ha5c=
+github.com/jenkins-x/go-scm v1.5.218 h1:ZP+ZRY6NmYGqWFz1QVgbJMZRCYmELtSPznNPe4Vcizk=
+github.com/jenkins-x/go-scm v1.5.218/go.mod h1:82jddewWs3wXwyWHyFi/3Ft/+l8UN5+zq7Me7+4SpXY=
 github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6 h1:P/UwaE7LPLOZNIsaNkUGW2QU+4HZSgxkrHLa572zL+8=
 github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6/go.mod h1:ZgXMj2xM7T6cldNEUiyBRm75MDOv1DrkCSwGhCK2yLU=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
