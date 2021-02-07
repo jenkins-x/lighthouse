@@ -143,7 +143,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	lhClient := fake.NewSimpleClientset()
 	_, scmClient, serverURL, _, err := util.GetSCMClient("", configAgent.Config)
 	assert.NoError(t, err)
-	gitClient, err := git.NewClient(serverURL, util.GitKind(configAgent.Config))
+	gitClient, err := git.NewClient(serverURL, util.GitKind(configAgent.Config), "")
 	assert.NoError(t, err)
 	user := util.GetBotName(configAgent.Config)
 	token, err := util.GetSCMToken(util.GitKind(configAgent.Config))

@@ -38,7 +38,7 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 	}
 	util.AddAuthToSCMClient(scmClient, gitToken, false)
 	gitproviderClient := scmprovider.ToClient(scmClient, botName)
-	gitClient, err := git.NewClient(serverURL, gitKind)
+	gitClient, err := git.NewClient(serverURL, gitKind, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "creating git client")
 	}

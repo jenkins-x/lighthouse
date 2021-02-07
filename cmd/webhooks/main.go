@@ -29,6 +29,7 @@ type options struct {
 	pluginFilename string
 	configFilename string
 	botName        string
+	gitCacheDir    string
 }
 
 func (o *options) Validate() error {
@@ -47,6 +48,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	fs.StringVar(&o.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.StringVar(&o.namespace, "git-cache-dir", "/var/data/git-cache", "The directory for cache the git local repository")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -69,7 +71,8 @@ func main() {
 		logrus.SetFormatter(logrusutil.CreateDefaultFormatter())
 	}
 
-	controller, err := webhook.NewWebhooksController(o.path, o.namespace, o.botName, o.pluginFilename, o.configFilename)
+	controller, err := webhook.NewWebhooksController(o.path, o.namespace, o.botName, o.pluginFilename,
+		o.configFilename, o.gitCacheDir)
 	if err != nil {
 		logrus.WithError(err).Fatal("failed to set up controller")
 	}

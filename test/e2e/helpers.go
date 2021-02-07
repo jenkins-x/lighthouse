@@ -78,7 +78,7 @@ var (
 
 // CreateGitClient creates the git client used for cloning and making changes to the test repository
 func CreateGitClient(gitServerURL string, userFunc func() string, tokenFunc func() (string, error)) (git.Client, error) {
-	gitClient, err := git.NewClient(gitServerURL, GitKind())
+	gitClient, err := git.NewClient(gitServerURL, GitKind(), "")
 	if err != nil {
 		return nil, err
 	}

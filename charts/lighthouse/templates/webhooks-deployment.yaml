@@ -36,6 +36,7 @@ spec:
         imagePullPolicy: {{ tpl .Values.webhooks.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
+          - "--git-cache-dir={{ .git.cacheDir }}"
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"

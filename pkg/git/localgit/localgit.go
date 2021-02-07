@@ -48,7 +48,7 @@ func New() (*LocalGit, git.Client, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	c, err := git.NewClient("https://github.com", "github")
+	c, err := git.NewClient("https://github.com", "github", "")
 	if err != nil {
 		rerr := os.RemoveAll(t)
 		if rerr != nil {
