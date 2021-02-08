@@ -19,9 +19,14 @@ spec:
       app: {{ template "keeper.name" . }}
   template:
     metadata:
-{{- if .Values.keeper.datadog.enabled }}
+{{- if or .Values.keeper.datadog.enabled .Values.keeper.podAnnotations }}
       annotations:
+{{- if .Values.keeper.datadog.enabled }}
         ad.datadoghq.com/keeper.logs: '[{"source":"lighthouse","service":"keeper"}]'
+{{- end }}
+{{- if .Values.keeper.podAnnotations }}
+{{ toYaml .Values.keeper.podAnnotations | indent 8 }}
+{{- end }}
 {{- end }}
       labels:
         draft: {{ default "draft-app" .Values.draft }}

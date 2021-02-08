@@ -37,11 +37,11 @@ const metricsPort = 9090
 // ExposeMetrics chooses whether to serve or push metrics for the service
 func ExposeMetrics(component string, pushGateway lighthouse.PushGateway) {
 	if pushGateway.Endpoint != "" {
+		logrus.WithField("gateway", pushGateway.Endpoint).Info("using push gateway")
 		pushMetrics(component, pushGateway.Endpoint, pushGateway.Interval)
-		if pushGateway.ServeMetrics {
-			serveMetrics()
-		}
-	} else {
+	}
+	if pushGateway.ServeMetrics {
+		logrus.WithField("port", metricsPort).Info("exposing metrics server")
 		serveMetrics()
 	}
 }
