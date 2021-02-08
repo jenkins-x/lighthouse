@@ -132,7 +132,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*tekt
 		}
 		prs, err = inheritTaskSteps(resolver, prs)
 		if err != nil {
-			return prs, errors.Wrapf(err, "failed to inherit steps")
+			return prs, errors.Wrap(err, "failed to inherit steps")
 		}
 		return DefaultPipelineParameters(prs)
 
@@ -197,7 +197,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*tekt
 func inheritTaskSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
 	err := processUsesSteps(resolver, prs)
 	if err != nil {
-		return prs, errors.Wrapf(err, "failed to ")
+		return prs, errors.Wrap(err, "failed to process uses steps")
 	}
 	ps := prs.Spec.PipelineSpec
 	if ps == nil || len(ps.Tasks) == 0 {
