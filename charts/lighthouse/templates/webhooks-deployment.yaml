@@ -19,8 +19,9 @@ spec:
       labels:
         draft: {{ default "draft-app" .Values.draft }}
         app: {{ template "webhooks.name" . }}
-{{- if .Values.podAnnotations }}
+{{- if or .Values.webhooks.podAnnotations .Values.podAnnotations }}
       annotations:
+{{ toYaml .Values.webhooks.podAnnotations | indent 8 }}
 {{ toYaml .Values.podAnnotations | indent 8 }}
 {{- end }}
     spec:

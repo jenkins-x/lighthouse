@@ -100,6 +100,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `keeper.image.tag` | string | Template for computing the keeper controller docker image tag | `"{{ .Values.image.tag }}"` |
 | `keeper.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":120,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `keeper.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the keeper pods | `{}` |
+| `keeper.podAnnotations` | object | Annotations applied to the keeper pods | `{}` |
 | `keeper.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `keeper.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `keeper.replicaCount` | int | Number of replicas | `1` |
@@ -137,6 +138,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods | `{}` |
+| `webhooks.podAnnotations` | object | Annotations applied to the webhooks pods | `{}` |
 | `webhooks.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `webhooks.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.replicaCount` | int | Number of replicas | `1` |

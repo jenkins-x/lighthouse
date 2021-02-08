@@ -161,20 +161,13 @@ func main() {
 	})
 
 	// Push metrics to the configured prometheus pushgateway endpoint or serve them
-	gateway := cfg().PushGateway
-	if gateway.Endpoint != "" {
-		logrus.WithField("gateway", gateway.Endpoint).Infof("using push gateway")
-		go metrics.ExposeMetrics("keeper", gateway)
+	metrics.ExposeMetrics("keeper", cfg().PushGateway)
 
-		// serve data
-		interrupts.ListenAndServe(server, 10*time.Second)
-	} else {
-		logrus.Warn("not pushing metrics as there is no push_gateway defined in the config.yaml")
+	// serve data
+	logrus.WithField("port", o.port).Info("Starting HTTP server")
+	interrupts.ListenAndServe(server, 10*time.Second)
 
-		// serve data
-		err := server.ListenAndServe()
-		logrus.WithError(err).Errorf("failed to server HTTP")
-	}
+	interrupts.WaitForGracefulShutdown()
 }
 
 func sync(c keeper.Controller) {
