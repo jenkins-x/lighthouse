@@ -148,5 +148,6 @@ pipelineConfig:
                   - --cache-dir=/workspace
                   - --build-arg=VERSION=$(inputs.params.version)
 
-              - command: bdd/ghe/ci.sh
-                name: runci
+# TODO disabled for now as our GHE server is down
+#              - command: bdd/ghe/ci.sh
+#                name: runci
