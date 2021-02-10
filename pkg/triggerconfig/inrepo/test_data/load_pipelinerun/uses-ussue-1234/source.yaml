@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+spec:
+  pipelineSpec:
+    tasks:
+    - name: from-build-pack
+      taskSpec:
+        steps:
+        - image: uses:./test_data/load_pipelinerun/uses-ussue-1234/common.yaml
+          name: common-build
+          env:
+          - name: FOO
+            value: one
