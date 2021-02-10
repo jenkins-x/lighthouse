@@ -25,6 +25,9 @@ oauthToken: ""
 # hmacToken -- Secret used for webhooks
 hmacToken: ""
 
+# hmacTokenEnabled -- Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud
+hmacTokenEnabled: true
+
 # logFormat -- Log format
 logFormat: "json"
 
