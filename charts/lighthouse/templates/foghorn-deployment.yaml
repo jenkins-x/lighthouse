@@ -51,7 +51,7 @@ spec:
               secretKeyRef:
                 name: "lighthouse-hmac-token"
                 key: hmac
-                optional: {{ not .Values.hmacTokenEnabled | quote }}
+                optional: {{ not .Values.hmacTokenEnabled }}
           - name: "JX_LOG_FORMAT"
             value: "{{ .Values.logFormat }}"
           - name: "LOGRUS_FORMAT"
