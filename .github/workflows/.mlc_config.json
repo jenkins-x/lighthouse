@@ -1,0 +1,22 @@
+{
+    "ignorePatterns": [
+        {
+            "pattern": "^http://127.0.0.1"
+        },
+        {
+            "pattern": "^http://localhost"
+        },
+        {
+            "pattern": "^https://api.github"
+        },
+        {
+            "pattern": "^https://github"
+        },
+        {
+            "pattern": "^https://git.k8s.io/"
+        },
+        {
+            "pattern": "^https://prow.k8s.io/"
+        }
+    ]
+}
