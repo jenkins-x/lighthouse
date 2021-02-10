@@ -38,7 +38,7 @@ GitHubOptions allows users to control how prow applications display GitHub websi
 
 | Stanza | Type | Required | Description |
 |---|---|---|---|
-| `link_url` | string | No | LinkURLFromConfig is the string representation of the link_url config parameter.<br />This config parameter allows users to override the default GitHub link url for all plugins.<br />If this option is not set, we assume "https://github.com". |
+| `link_url` | string | No | LinkURLFromConfig is the string representation of the link_url config parameter.<br />This config parameter allows users to override the default GitHub link url for all plugins.<br />If this option is not set, we assume https://github.com. |
 
 ## InRepoConfig
 
