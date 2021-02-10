@@ -59,7 +59,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 		r.Cache.SetPipelineRun(sourceURI, pr)
 	}
 
-	return r.findSteps(sourceURI, pr, taskName, step)
+	return r.findSteps(sourceURI, pr.DeepCopy(), taskName, step)
 }
 
 // GetData gets the data from the given source URI

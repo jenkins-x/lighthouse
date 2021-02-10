@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+spec:
+  pipelineSpec:
+    tasks:
+    - name: common
+      taskSpec:
+        steps:
+        - image: common-image
+          name: common-build
+          env:
+          - name: FOO
+            value: foo
