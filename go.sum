@@ -39,6 +39,8 @@ cloud.google.com/go/storage v1.11.0/go.mod h1:/PAbprKS+5msVYogBmczjWalDXnQ9mr64y
 code.gitea.io/sdk/gitea v0.13.0/go.mod h1:z3uwDV/b9Ls47NGukYM9XhnHtqPh/J+t40lsUrR6JDY=
 code.gitea.io/sdk/gitea v0.13.1-0.20201217044651-7ddbf1a0151e h1:b9kfpt/mPttLy1szZhI2ZqL6FV8DKTXtwHvjyydHQRs=
 code.gitea.io/sdk/gitea v0.13.1-0.20201217044651-7ddbf1a0151e/go.mod h1:89WiyOX1KEcvjP66sRHdu0RafojGo60bT9UqW17VbWs=
+code.gitea.io/sdk/gitea v0.13.1-0.20210215065138-757f8bdb9033 h1:teh9BNhcRpi9JYAXGdChTSDOBR9w+fCHMqZmzb9g5Aw=
+code.gitea.io/sdk/gitea v0.13.1-0.20210215065138-757f8bdb9033/go.mod h1:89WiyOX1KEcvjP66sRHdu0RafojGo60bT9UqW17VbWs=
 code.gitea.io/sdk/gitea v0.13.2 h1:wAnT/J7Z62q3fJXbgnecoaOBh8CM1Qq0/DakWxiv4yA=
 code.gitea.io/sdk/gitea v0.13.2/go.mod h1:lee2y8LeV3kQb2iK+hHlMqoadL4bp27QOkOV/hawLKg=
 contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d/go.mod h1:IshRmMJBhDfFj5Y67nVhMYTTIze91RUeT73ipWKs/GY=
@@ -465,6 +467,8 @@ github.com/jenkins-x/go-scm v1.5.218 h1:ZP+ZRY6NmYGqWFz1QVgbJMZRCYmELtSPznNPe4Vc
 github.com/jenkins-x/go-scm v1.5.218/go.mod h1:82jddewWs3wXwyWHyFi/3Ft/+l8UN5+zq7Me7+4SpXY=
 github.com/jenkins-x/go-scm v1.5.220 h1:Fy6i8HkjW3+MGtUny3B126vQUP9kgQX7SDNQTZmBUTI=
 github.com/jenkins-x/go-scm v1.5.220/go.mod h1:sulLUJh0s+teOOGnmPEyjpjgr8gKUZtEpr3WnBLjj+M=
+github.com/jenkins-x/go-scm v1.5.221 h1:G2WtUaOWfyKzJ55I7iBrMR408dgrRmearNmcApXmLqc=
+github.com/jenkins-x/go-scm v1.5.221/go.mod h1:Fnm/vdVKKyt4u32tdCsgKRL7dSRZnF4kWb52HfXHyeo=
 github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6 h1:P/UwaE7LPLOZNIsaNkUGW2QU+4HZSgxkrHLa572zL+8=
 github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6/go.mod h1:ZgXMj2xM7T6cldNEUiyBRm75MDOv1DrkCSwGhCK2yLU=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
