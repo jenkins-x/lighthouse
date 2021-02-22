@@ -93,6 +93,10 @@ webhooks:
     # webhooks.image.pullPolicy -- Template for computing the webhooks controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
 
+
+  # webhooks.labels -- allow optional labels to be added to the webhook deployment
+  labels: {}
+
   # webhooks.podAnnotations -- Annotations applied to the webhooks pods
   podAnnotations: {}
 
