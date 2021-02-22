@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: {{ template "keeper.name" . }}
   labels:
-    draft: {{ default "draft-app" .Values.draft }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     app: {{ template "keeper.name" . }}
 spec:
@@ -15,7 +14,6 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      draft: {{ default "draft-app" .Values.draft }}
       app: {{ template "keeper.name" . }}
   template:
     metadata:
@@ -29,7 +27,6 @@ spec:
 {{- end }}
 {{- end }}
       labels:
-        draft: {{ default "draft-app" .Values.draft }}
         app: {{ template "keeper.name" . }}
     spec:
       serviceAccountName: {{ template "keeper.name" . }}

@@ -4,7 +4,6 @@ kind: Ingress
 metadata:
   name: {{ template "webhooks.name" . }}
   labels:
-    draft: {{ default "draft-app" .Values.draft }}
     app: {{ template "webhooks.name" . }}
   annotations:
     {{- toYaml .Values.webhooks.ingress.annotations | nindent 4 }}

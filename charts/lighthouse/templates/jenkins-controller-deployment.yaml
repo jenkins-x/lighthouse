@@ -4,19 +4,16 @@ kind: Deployment
 metadata:
   name: {{ template "jenkinscontroller.name" . }}
   labels:
-    draft: {{ default "draft-app" .Values.draft }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     app: {{ template "jenkinscontroller.name" . }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      draft: {{ default "draft-app" .Values.draft }}
       app: {{ template "jenkinscontroller.name" . }}
   template:
     metadata:
       labels:
-        draft: {{ default "draft-app" .Values.draft }}
         app: {{ template "jenkinscontroller.name" . }}
       annotations:
         {{- toYaml .Values.jenkinscontroller.podAnnotations | nindent 8 }}
