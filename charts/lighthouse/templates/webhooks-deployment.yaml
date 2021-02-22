@@ -5,6 +5,9 @@ metadata:
   labels:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     app: {{ template "webhooks.name" . }}
+{{- if  .Values.webhooks.labels }}
+{{ toYaml .Values.webhooks.labels | indent 4 }}
+{{- end }}
   annotations:
     checksum/config: {{ include (print $.Template.BasePath "/hmacsecret.yaml") . | sha256sum }}
 spec:
