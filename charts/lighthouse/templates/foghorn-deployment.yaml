@@ -3,19 +3,16 @@ kind: Deployment
 metadata:
   name: {{ template "foghorn.name" . }}
   labels:
-    draft: {{ default "draft-app" .Values.draft }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     app: {{ template "foghorn.name" . }}
 spec:
   replicas: {{ .Values.foghorn.replicaCount }}
   selector:
     matchLabels:
-      draft: {{ default "draft-app" .Values.draft }}
       app: {{ template "foghorn.name" . }}
   template:
     metadata:
       labels:
-        draft: {{ default "draft-app" .Values.draft }}
         app: {{ template "foghorn.name" . }}
 {{- if .Values.podAnnotations }}
       annotations:

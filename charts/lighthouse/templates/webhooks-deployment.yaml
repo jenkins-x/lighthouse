@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: {{ template "webhooks.name" . }}
   labels:
-    draft: {{ default "draft-app" .Values.draft }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     app: {{ template "webhooks.name" . }}
   annotations:
@@ -12,12 +11,10 @@ spec:
   replicas: {{ .Values.webhooks.replicaCount }}
   selector:
     matchLabels:
-      draft: {{ default "draft-app" .Values.draft }}
       app: {{ template "webhooks.name" . }}
   template:
     metadata:
       labels:
-        draft: {{ default "draft-app" .Values.draft }}
         app: {{ template "webhooks.name" . }}
 {{- if or .Values.webhooks.podAnnotations .Values.podAnnotations }}
       annotations:
