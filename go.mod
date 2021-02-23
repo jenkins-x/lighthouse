@@ -35,7 +35,11 @@ require (
 )
 
 replace (
-	github.com/tektoncd/pipeline => github.com/jenkins-x/pipeline v0.3.2-0.20210118090417-1e821d85abf6
+
+	// lets override the go-scm version from tektoncd
+	github.com/jenkins-x/go-scm => github.com/jenkins-x/go-scm v1.5.223
+	github.com/tektoncd/pipeline => github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496
+
 	// gomodules.xyz breaks in Athens proxying
 	gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.1.0
 	k8s.io/api => k8s.io/api v0.20.2
