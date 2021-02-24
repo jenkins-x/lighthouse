@@ -1205,6 +1205,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]job.Presubm
 			}
 			pj := jobutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
+			c.logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
 			if _, err := c.launcherClient.Launch(&pj); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create pipeline on the cluster.")
 				return fmt.Errorf("failed to create a pipeline for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
