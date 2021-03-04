@@ -183,13 +183,14 @@ func loadJobBaseFromSourcePath(fileBrowsers *filebrowser.FileBrowsers, cache *Re
 	message := fmt.Sprintf("in repo %s/%s with sha %s", ownerName, repoName, sha)
 
 	usesResolver := &UsesResolver{
-		FileBrowsers: fileBrowsers,
-		Cache:        cache,
-		OwnerName:    ownerName,
-		RepoName:     repoName,
-		SHA:          sha,
-		Dir:          dir,
-		Message:      message,
+		FileBrowsers:     fileBrowsers,
+		Cache:            cache,
+		OwnerName:        ownerName,
+		RepoName:         repoName,
+		SHA:              sha,
+		Dir:              dir,
+		Message:          message,
+		LocalFileResolve: true,
 	}
 
 	prs, err := LoadTektonResourceAsPipelineRun(usesResolver, data)
