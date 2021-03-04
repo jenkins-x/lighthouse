@@ -2,4 +2,4 @@
 
 Dependency | Sources | Version | Mismatched versions
 ---------- | ------- | ------- | -------------------
-[jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) |  | [1.5.224]() | 
+[jenkins-x/go-scm](https://github.com/jenkins-x/go-scm) |  | [1.5.225]() | 
