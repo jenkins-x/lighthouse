@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -1253,12 +1254,17 @@ func (c *DefaultController) takeAction(sp subpool, batchPending, successes, pend
 			return Wait, nil, err
 		}
 		if len(batch) > 1 {
+			sp.log.Infof("triggering batch job")
 			return TriggerBatch, batch, c.trigger(sp, sp.presubmits, batch)
 		}
+	}
+	if os.Getenv("LIGHTHOUSE_DISABLE_TRIGGER_ON_MISSING") == "true" {
+		return Wait, nil, nil
 	}
 	// If we have no serial jobs pending or successful, trigger one.
 	if len(missings) > 0 && len(pendings) == 0 && len(successes) == 0 {
 		if ok, pr := pickSmallestPassingNumber(sp.log, c.spc, missings, sp.cc); ok {
+			sp.log.Infof("triggering job as we have missings %d and no pendings and no successes", len(missings))
 			return Trigger, []PullRequest{pr}, c.trigger(sp, missingSerialTests, []PullRequest{pr})
 		}
 	}
