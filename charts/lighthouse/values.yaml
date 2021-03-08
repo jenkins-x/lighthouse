@@ -323,6 +323,9 @@ keeper:
   # keeper.podAnnotations -- Annotations applied to the keeper pods
   podAnnotations: {}
 
+  # keeper.env -- Lets you define keeper specific environment variables
+  env: {}
+
   # keeper.service -- Service settings for the webhooks controller
   service:
     type: ClusterIP

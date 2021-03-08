@@ -79,7 +79,7 @@ spec:
           value: "{{ .Values.logFormat }}"
         - name: "LIGHTHOUSE_KEEPER_STATUS_CONTEXT_LABEL"
           value: "{{ .Values.keeper.statusContextLabel}}"
-{{- if hasKey .Values "env" }}
+{{- if hasKey .Values.keeper "env" }}
 {{- range $pkey, $pval := .Values.keeper.env }}
         - name: {{ $pkey }}
           value: {{ $pval }}
