@@ -20,7 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"path"
+	"strings"
 )
 
 // RemoteResolverFactory knows how to construct remote resolvers for
@@ -85,7 +87,16 @@ type httpResolverFactory struct {
 // for the repository.
 func (f *httpResolverFactory) CentralRemote(org, repo string) RemoteResolver {
 	return HTTPResolver(func() (*url.URL, error) {
-		return &url.URL{Scheme: applyDefaultScheme(f.scheme), Host: f.host, Path: fmt.Sprintf("%s/%s", org, repo)}, nil
+		path := fmt.Sprintf("%s/%s", org, repo)
+		cloneSuffix := os.Getenv("GIT_CLONE_PATH_PREFIX")
+		if cloneSuffix != "" {
+			cloneSuffix = strings.TrimPrefix(cloneSuffix, "/")
+			cloneSuffix = strings.TrimSuffix(cloneSuffix, "/")
+		}
+		if cloneSuffix != "" {
+			path = fmt.Sprintf("%s/%s", cloneSuffix, path)
+		}
+		return &url.URL{Scheme: applyDefaultScheme(f.scheme), Host: f.host, Path: path}, nil
 	}, f.username, f.token)
 }
 
