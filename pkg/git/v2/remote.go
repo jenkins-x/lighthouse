@@ -88,13 +88,15 @@ type httpResolverFactory struct {
 func (f *httpResolverFactory) CentralRemote(org, repo string) RemoteResolver {
 	return HTTPResolver(func() (*url.URL, error) {
 		path := fmt.Sprintf("%s/%s", org, repo)
-		cloneSuffix := os.Getenv("GIT_CLONE_PATH_PREFIX")
-		if cloneSuffix != "" {
-			cloneSuffix = strings.TrimPrefix(cloneSuffix, "/")
-			cloneSuffix = strings.TrimSuffix(cloneSuffix, "/")
-		}
-		if cloneSuffix != "" {
-			path = fmt.Sprintf("%s/%s", cloneSuffix, path)
+		if f.host != "github.com" {
+			cloneSuffix := os.Getenv("GIT_CLONE_PATH_PREFIX")
+			if cloneSuffix != "" {
+				cloneSuffix = strings.TrimPrefix(cloneSuffix, "/")
+				cloneSuffix = strings.TrimSuffix(cloneSuffix, "/")
+			}
+			if cloneSuffix != "" {
+				path = fmt.Sprintf("%s/%s", cloneSuffix, path)
+			}
 		}
 		return &url.URL{Scheme: applyDefaultScheme(f.scheme), Host: f.host, Path: path}, nil
 	}, f.username, f.token)
