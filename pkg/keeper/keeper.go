@@ -1258,7 +1258,8 @@ func (c *DefaultController) takeAction(sp subpool, batchPending, successes, pend
 			return TriggerBatch, batch, c.trigger(sp, sp.presubmits, batch)
 		}
 	}
-	if os.Getenv("LIGHTHOUSE_DISABLE_TRIGGER_ON_MISSING") == "true" {
+	disableTrigger := os.Getenv("LIGHTHOUSE_DISABLE_TRIGGER_ON_MISSING")
+	if disableTrigger == "true" || disableTrigger == "yes" {
 		return Wait, nil, nil
 	}
 	// If we have no serial jobs pending or successful, trigger one.

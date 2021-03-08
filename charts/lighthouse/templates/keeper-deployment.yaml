@@ -82,7 +82,7 @@ spec:
 {{- if hasKey .Values.keeper "env" }}
 {{- range $pkey, $pval := .Values.keeper.env }}
         - name: {{ $pkey }}
-          value: {{ $pval }}
+          value: {{ quote  $pval }}
 {{- end }}
 {{- end }}
         resources:
