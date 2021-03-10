@@ -661,6 +661,11 @@ func (f *fgc) ListFiles(owner, repo, filepath, commit string) ([]*scm.FileEntry,
 	return answer, err
 }
 
+// GetIssueLabels get the labels from an issuePR
+func (f *fgc) GetIssueLabels(string, string, int, bool) ([]*scm.Label, error) {
+	return nil, nil
+}
+
 // TestDividePool ensures that subpools returned by dividePool satisfy a few
 // important invariants.
 func TestDividePool(t *testing.T) {

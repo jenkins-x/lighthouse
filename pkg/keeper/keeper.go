@@ -78,6 +78,7 @@ type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, isPR bool, comment string) error
 	GetFile(string, string, string, string) ([]byte, error)
 	ListFiles(string, string, string, string) ([]*scm.FileEntry, error)
+	GetIssueLabels(string, string, int, bool) ([]*scm.Label, error)
 }
 
 type contextChecker interface {
@@ -1772,6 +1773,11 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 
 		// Iterate over the PRs to see if they match the relevant queries
 		for _, pr := range prs {
+			err = loadMissingLabels(spc, pr)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to load labels for PR %s", pr.Link)
+			}
+
 			prLabels := make(map[string]struct{})
 			for _, l := range pr.Labels {
 				prLabels[l.Name] = struct{}{}
@@ -1846,6 +1852,25 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 	}
 
 	return relevantPRs, nil
+}
+
+func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {
+	if len(pr.Labels) > 0 {
+		return nil
+	}
+	gitKind := os.Getenv("GIT_KIND")
+	if gitKind != "bitbucketserver" {
+		return nil
+	}
+
+	// lets load the labels if they are missing
+	repo := pr.Repository()
+	var err error
+	pr.Labels, err = spc.GetIssueLabels(repo.Namespace, repo.Name, pr.Number, true)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find labels for PullRequest %s", pr.Link)
+	}
+	return nil
 }
 
 func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequest {
