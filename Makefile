@@ -56,6 +56,12 @@ build-tekton-controller: ## Build the Tekton controller binary for the native OS
 build-jenkins-controller: ## Build the Jenkins controller binary for the native OS
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
 
+.PHONY: release
+release: linux
+
+.PHONY: linux
+linux: build-linux
+
 .PHONY: build-linux
 build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
 
