@@ -448,6 +448,8 @@ github.com/jcmturner/gofork v0.0.0-20190328161633-dc7c13fece03/go.mod h1:MK8+TM0
 github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
 github.com/jenkins-x/go-scm v1.5.223 h1:dOdlcUJOILDbQp9o5yt/mrxiCkUOltbj99s0hqx592A=
 github.com/jenkins-x/go-scm v1.5.223/go.mod h1:yVqpMl3ZSkPWVcPi9EhcK3QtTM/anrtYqI//FqwrdxQ=
+github.com/jenkins-x/go-scm v1.5.229 h1:Enq/GGRGgkT/4yr5ifpiNjSRKOa3Hs6x617X8MlWTtQ=
+github.com/jenkins-x/go-scm v1.5.229/go.mod h1:yVqpMl3ZSkPWVcPi9EhcK3QtTM/anrtYqI//FqwrdxQ=
 github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496 h1:yN90dXuD7TkAkYwKr5h2fT7bjA7osK7tMhuz31qL7gE=
 github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496/go.mod h1:y1XwzBDu4EmOCfoeV2cUW2icCto/izTyjEKK5j0UmwA=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
