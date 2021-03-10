@@ -1,0 +1,83 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  creationTimestamp: null
+  name: release
+spec:
+  pipelineSpec:
+    tasks:
+    - name: chart
+      resources: {}
+      taskSpec:
+        metadata: {}
+        stepTemplate:
+          image: uses:jenkins-x/jx3-pipeline-catalog/tasks/go-plugin/release.yaml@versionStream
+          name: ""
+          resources: {}
+          workingDir: /workspace/source
+        steps:
+        - image: uses:jenkins-x/jx3-pipeline-catalog/tasks/git-clone/git-clone.yaml@versionStream
+          name: ""
+          resources: {}
+        - name: next-version
+          resources: {}
+        - name: jx-variables
+          resources: {}
+        - name: release-binary
+          resources: {}
+        - name: build-and-push-image:webhooks
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-webhooks:$VERSION --build-arg=VERSION=$VERSION
+        - name: build-and-push-image:keeper
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-keeper:$VERSION --build-arg=VERSION=$VERSION
+        - name: build-and-push-image:foghorn
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-foghorn:$VERSION --build-arg=VERSION=$VERSION
+        - name: build-and-push-image:tekton
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-tekton-controller:$VERSION --build-arg=VERSION=$VERSION
+        - name: build-and-push-image:jenkins
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-jenkins-controller:$VERSION --build-arg=VERSION=$VERSION
+        - name: build-and-push-image:gc-jobs
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
+        - name: chart-docs
+          resources: {}
+        - name: release-chart
+          resources: {}
+        - name: changelog
+          resources: {}
+        - name: upload-binaries
+          resources: {}
+        - name: promote-release
+          resources: {}
+  podTemplate: {}
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
+status: {}
