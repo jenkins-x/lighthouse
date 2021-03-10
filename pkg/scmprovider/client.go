@@ -185,5 +185,5 @@ func (e *FileNotFound) Error() string {
 // NoLabelProviders returns a set of provider names that don't support labels.
 func NoLabelProviders() sets.String {
 	// "coding" is a placeholder provider name from go-scm that we'll use for testing the comment support for label logic.
-	return sets.NewString("stash", "coding")
+	return sets.NewString("coding")
 }
