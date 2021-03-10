@@ -7,11 +7,13 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/git"
+	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
+	"net/url"
 )
 
 // NewKeeperController creates a new controller; either regular or a GitHub App flavour
@@ -46,6 +48,42 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 	fileBrowsers, err := filebrowser.NewFileBrowsers(serverURL, filebrowser.NewFileBrowserFromScmClient(gitproviderClient))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create the git file browsers")
+	}
+
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse %s", serverURL)
+	}
+
+	gitCloneUser := botName
+
+	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
+		opts.Token = func() []byte {
+			return []byte(gitToken)
+		}
+		opts.GitUser = func() (name, email string, err error) {
+			name = gitCloneUser
+			return
+		}
+		opts.Username = func() (login string, err error) {
+			login = gitCloneUser
+			return
+		}
+		if u.Host != "" {
+			opts.Host = u.Host
+		}
+		if u.Scheme != "" {
+			opts.Scheme = u.Scheme
+		}
+	}
+	gitFactory, err := gitv2.NewClientFactory(configureOpts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create git client factory for server %s", serverURL)
+	}
+	fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
+	fileBrowsers, err = filebrowser.NewFileBrowsers(serverURL, fb)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create git file browser")
 	}
 
 	tektonClient, _, lhClient, _, err := clients.GetAPIClients()
