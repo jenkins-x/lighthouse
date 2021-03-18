@@ -21,8 +21,12 @@ spec:
         app: {{ template "webhooks.name" . }}
 {{- if or .Values.webhooks.podAnnotations .Values.podAnnotations }}
       annotations:
+{{- if .Values.webhooks.podAnnotations }}
 {{ toYaml .Values.webhooks.podAnnotations | indent 8 }}
+{{- end }}
+{{- if .Values.podAnnotations }}
 {{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
 {{- end }}
     spec:
       serviceAccountName: {{ template "webhooks.name" . }}
