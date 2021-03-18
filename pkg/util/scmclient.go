@@ -99,8 +99,9 @@ func GetSCMClient(owner string, cfg config.Getter) (scmprovider.SCMClient, *scm.
 		}
 	}
 
-	client, err := factory.NewClient(kind, serverURL, token)
-	scmClient := scmprovider.ToClient(client, GetBotName(cfg))
+	botName := GetBotName(cfg)
+	client, err := factory.NewClient(kind, serverURL, token, factory.SetUsername(botName))
+	scmClient := scmprovider.ToClient(client, botName)
 	return scmClient, client, serverURL, token, err
 }
 

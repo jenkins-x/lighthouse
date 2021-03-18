@@ -3,6 +3,7 @@ package githubapp
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
@@ -179,7 +180,8 @@ func (g *gitHubAppKeeperController) createOwnerController(owner string, configGe
 }
 
 func createKeeperGitHubAppScmClient(gitServer string, token string) (*scm.Client, error) {
-	client, err := factory.NewClient("github", gitServer, "")
+	botName := os.Getenv("GIT_USER")
+	client, err := factory.NewClient("github", gitServer, "", factory.SetUsername(botName))
 	defaultScmTransport(client)
 	auth := &transport.Authorization{
 		Base:        http.DefaultTransport,
