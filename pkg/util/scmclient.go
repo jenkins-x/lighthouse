@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"fmt"
+	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,7 +16,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 )
 
 // AddAuthToSCMClient configures an existing go-scm client with transport and authorization using the given token,
@@ -33,20 +33,21 @@ func AddAuthToSCMClient(client *scm.Client, token string, isGitHubApp bool) {
 		client.Client.Transport = tr
 		return
 	}
-	if client.Driver.String() == "gitea" {
+	driver := client.Driver.String()
+	if driver == "gitea" {
 		client.Client = &http.Client{
 			Transport: &transport.Authorization{
 				Scheme:      "token",
 				Credentials: token,
 			},
 		}
-	} else if client.Driver.String() == "gitlab" || client.Driver.String() == "bitbucketcloud" {
+	} else if driver == "gitlab" {
 		client.Client = &http.Client{
 			Transport: &transport.PrivateToken{
 				Token: token,
 			},
 		}
-	} else {
+	} else if driver != "bitbucket" && driver != "bitbucketcloud" {
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: token},
 		)

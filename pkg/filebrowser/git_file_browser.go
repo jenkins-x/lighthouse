@@ -143,8 +143,13 @@ type repoClientFacade struct {
 
 // UseRef this method should only be used within the lock
 func (c *repoClientFacade) UseRef(ref string) error {
+	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		ref = c.mainBranch
+	}
+	// lets remove the bitbucket cloud refs prefix
+	if strings.HasPrefix(ref, "refs/heads/") {
+		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
 	}
 	if c.ref == ref {
 		return nil

@@ -274,6 +274,9 @@ func (c *Client) EditComment(owner, repo string, number int, id int, comment str
 }
 
 func connectErrorHandle(response *scm.Response, err error) error {
+	if response == nil {
+		return err
+	}
 	if response.Body != nil {
 		var b bytes.Buffer
 		_, cpErr := io.Copy(&b, response.Body)
