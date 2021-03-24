@@ -1,0 +1,51 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-03-24T19:27:32Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: add better validation
+
+      to ensure we only ever create valid tekton resources
+    sha: 592dbac9a41849570d11a78897c2c7b315d731c5
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: bug where we failed to inline uses steps
+    sha: 3a17f66f6738a804dce61b7ab5194f3e642ef8b9
+  - author:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    branch: master
+    committer:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    message: |
+      fix: helm chart webhook pod annotations
+
+      the chart should only render the pod annotations if they are not null/empty
+    sha: e941ed228119fa7e75bd0dac82e622602f5c795b
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  version: 1.0.6
+status: {}
+ 
+{{- end }}
