@@ -36,7 +36,6 @@ snapshot: update-version release
 release: clean
 	helm dependency build
 	helm lint
-	helm init --client-only --stable-repo-url https://charts.helm.sh/stable
 	helm package .
 	@curl --fail -u $(CHARTMUSEUM_USER):$(CHARTMUSEUM_PASS) --data-binary "@$(NAME)-$(shell sed -n 's/^version: //p' Chart.yaml).tgz" $(CHART_REPO)/api/charts
 	rm -rf ${NAME}*.tgz%
