@@ -41,7 +41,7 @@ image:
   parentRepository: gcr.io/jenkinsxio
 
   # image.tag -- Docker images tag
-  tag: 0.0.750
+  tag: 1.0.2
 
   # image.pullPolicy -- Image pull policy
   pullPolicy: IfNotPresent
@@ -68,10 +68,10 @@ gcJobs:
 
   image:
     # gcJobs.image.repository -- Template for computing the gc job docker image repository
-    repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
+    repository: gcr.io/jenkinsxio/lighthouse
 
     # gcJobs.image.tag -- Template for computing the gc job docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.0.2
 
     # gcJobs.image.pullPolicy -- Template for computing the gc job docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -85,10 +85,10 @@ webhooks:
 
   image:
     # webhooks.image.repository -- Template for computing the webhooks controller docker image repository
-    repository: "{{ .Values.image.parentRepository }}/lighthouse-webhooks"
+    repository: gcr.io/jenkinsxio/lighthouse
 
     # webhooks.image.tag -- Template for computing the webhooks controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.0.2
 
     # webhooks.image.pullPolicy -- Template for computing the webhooks controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -172,10 +172,10 @@ foghorn:
 
   image:
     # foghorn.image.repository -- Template for computing the foghorn controller docker image repository
-    repository: "{{ .Values.image.parentRepository }}/lighthouse-foghorn"
+    repository: gcr.io/jenkinsxio/lighthouse
 
     # foghorn.image.tag -- Template for computing the foghorn controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.0.2
 
     # foghorn.image.pullPolicy -- Template for computing the foghorn controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -215,10 +215,10 @@ tektoncontroller:
 
   image:
     # tektoncontroller.image.repository -- Template for computing the tekton controller docker image repository
-    repository: "{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"
+    repository: gcr.io/jenkinsxio/lighthouse
 
     # tektoncontroller.image.tag -- Template for computing the tekton controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.0.2
 
     # tektoncontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -265,10 +265,10 @@ jenkinscontroller:
 
   image:
     # jenkinscontroller.image.repository -- Template for computing the Jenkins controller docker image repository
-    repository: "{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"
+    repository: gcr.io/jenkinsxio/lighthouse
 
     # jenkinscontroller.image.tag -- Template for computing the tekton controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.0.2
 
     # jenkinscontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -312,10 +312,10 @@ keeper:
 
   image:
     # keeper.image.repository -- Template for computing the keeper controller docker image repository
-    repository: "{{ .Values.image.parentRepository }}/lighthouse-keeper"
+    repository: gcr.io/jenkinsxio/lighthouse
 
     # keeper.image.tag -- Template for computing the keeper controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.0.2
 
     # keeper.image.pullPolicy -- Template for computing the keeper controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
