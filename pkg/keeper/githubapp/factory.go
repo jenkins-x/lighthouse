@@ -1,6 +1,8 @@
 package githubapp
 
 import (
+	"net/url"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
@@ -13,7 +15,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
-	"net/url"
 )
 
 // NewKeeperController creates a new controller; either regular or a GitHub App flavour

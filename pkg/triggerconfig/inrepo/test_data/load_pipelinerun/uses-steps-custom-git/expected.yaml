@@ -77,8 +77,61 @@ spec:
       - name: REPO_URL
         value: $(params.REPO_URL)
       taskSpec:
+        description: |-
+          These Tasks are Git tasks to work with repositories used by other tasks in your Pipeline.
+          The git-clone Task will clone a repo from the provided url into the output Workspace. By default the repo will be cloned into the root of your Workspace. You can clone into a subdirectory by setting this Task's subdirectory param.
         metadata: {}
         params:
+        - description: git url to clone
+          name: url
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: revision
+          type: string
+        - default: ""
+          description: (optional) git refspec to fetch before checking out revision
+          name: refspec
+        - default: "true"
+          description: defines if the resource should initialize and fetch the submodules
+          name: submodules
+          type: string
+        - default: "1"
+          description: performs a shallow clone where only the most recent commit(s) will be fetched
+          name: depth
+          type: string
+        - default: "true"
+          description: defines if http.sslVerify should be set to true or false in the global git config
+          name: sslVerify
+          type: string
+        - default: ""
+          description: subdirectory inside the "output" workspace to clone the git repo into
+          name: subdirectory
+          type: string
+        - default: "true"
+          description: clean out the contents of the repo's destination directory (if it already exists) before trying to clone the repo there
+          name: deleteExisting
+          type: string
+        - default: ""
+          description: git HTTP proxy server for non-SSL requests
+          name: httpProxy
+          type: string
+        - default: ""
+          description: git HTTPS proxy server for SSL requests
+          name: httpsProxy
+          type: string
+        - default: ""
+          description: git no proxy - opt out of proxying HTTP/HTTPS requests
+          name: noProxy
+          type: string
+        - default: "true"
+          description: log the commands used during execution
+          name: verbose
+          type: string
+        - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+          description: the image used where the git-init binary is
+          name: gitInitImage
+          type: string
         - description: the unique build number
           name: BUILD_ID
           type: string
@@ -121,6 +174,11 @@ spec:
         - description: git url to clone
           name: REPO_URL
           type: string
+        results:
+        - description: The precise commit SHA that was fetched by this Task
+          name: commit
+        - description: The precise URL that was fetched by this Task
+          name: url
         stepTemplate:
           env:
           - name: BUILD_ID
@@ -205,37 +263,17 @@ spec:
             # ensure we don't add a trailing newline to the result
             echo -n "$RESULT_SHA" > $(results.commit.path)
             echo -n "$(params.url)" > $(results.url.path)
-        - image: gcr.io/jenkinsxio/jx-boot:3.1.155
-          name: jx-variables
+        - name: jx-variables
           resources: {}
-          script: |
-            #!/usr/bin/env sh
-            jx gitops variables
-        - image: node:12-slim
-          name: build-npm-install
+        - name: build-npm-install
           resources: {}
-          script: |
-            #!/bin/sh
-            npm install
-        - image: node:12-slim
-          name: build-npm-test
+        - name: build-npm-test
           resources: {}
-          script: |
-            #!/bin/sh
-            CI=true DISPLAY=:99 npm test
-        - image: gcr.io/kaniko-project/executor:debug-v1.3.0
-          name: build-container-build
+        - name: build-container-build
           resources: {}
-          script: |
-            #!/busybox/sh
-            source .jx/variables.sh
-            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
-        - image: gcr.io/jenkinsxio/jx-preview:0.0.143
-          name: promote-jx-preview
+        - name: promote-jx-preview
           resources: {}
-          script: |
-            #!/usr/bin/env sh
-            source .jx/variables.sh
-            jx preview create
+        workspaces:
+        - description: The git repo will be cloned onto the volume backing this workspace
+          name: output
 status: {}

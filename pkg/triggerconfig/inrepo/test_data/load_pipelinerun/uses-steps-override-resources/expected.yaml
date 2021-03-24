@@ -152,16 +152,35 @@ spec:
           name: ""
           resources:
             requests:
-              cpu: 400m
+              cpu: 600m
               memory: 512Mi
-          workingDir: /workspace/source
+          volumeMounts:
+          - mountPath: /tekton/home/npm-something-else
+            name: npmrc
+          workingDir: /workspace/my-source
         steps:
-        - image: node:12-slim
-          name: my-first-step
+        - image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+          name: git-clone
           resources: {}
           script: |
             #!/bin/sh
-            npm first thing
+            export SUBDIR="source"
+            echo "git cloning url: $REPO_URL version $PULL_PULL_SHA to dir: $SUBDIR"
+            git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot}
+            git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com}
+            git config --global credential.helper store
+            git clone $REPO_URL $SUBDIR
+            cd $SUBDIR
+            git checkout $PULL_PULL_SHA
+            echo "checked out revision: $PULL_PULL_SHA to dir: $SUBDIR"
+          workingDir: /workspace
+        - image: gcr.io/jenkinsxio/jx-boot:3.1.62
+          name: git-merge
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            jx gitops git merge variables
+          workingDir: /workspace/source
         - image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
           resources: {}
@@ -180,12 +199,6 @@ spec:
           script: |
             #!/bin/sh
             CI=true DISPLAY=:99 npm test
-        - image: node:12-slim
-          name: my-pre-build-container
-          resources: {}
-          script: |
-            #!/bin/sh
-            npm pre build container
         - image: gcr.io/kaniko-project/executor:debug-v1.3.0
           name: build-container-build
           resources: {}
@@ -201,10 +214,9 @@ spec:
             #!/usr/bin/env sh
             source .jx/variables.sh
             jx preview create
-        - image: node:12-slim
-          name: my-final-step
-          resources: {}
-          script: |
-            #!/bin/sh
-            npm final thing
+        volumes:
+        - name: npmrc
+          secret:
+            optional: true
+            secretName: npmrc
 status: {}

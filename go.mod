@@ -12,7 +12,7 @@ require (
 	github.com/h2non/gock v1.0.9
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jenkins-x/go-scm v1.6.4
+	github.com/jenkins-x/go-scm v1.6.6
 	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.14.1
 	github.com/onsi/gomega v1.10.2
@@ -36,7 +36,7 @@ require (
 
 replace (
 	// lets override the go-scm version from tektoncd
-	github.com/jenkins-x/go-scm => github.com/jenkins-x/go-scm v1.6.4
+	github.com/jenkins-x/go-scm => github.com/jenkins-x/go-scm v1.6.6
 
 	github.com/tektoncd/pipeline => github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496
 
