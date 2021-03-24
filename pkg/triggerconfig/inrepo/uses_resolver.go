@@ -1,6 +1,7 @@
 package inrepo
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -37,7 +38,7 @@ var (
 
 // UsesSteps lets resolve the sourceURI to a PipelineRun and find the step or steps
 // for the given task name and/or step name then lets apply any overrides from the step
-func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv1beta1.Step, ts *tektonv1beta1.TaskSpec) ([]tektonv1beta1.Step, error) {
+func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv1beta1.Step, ts *tektonv1beta1.TaskSpec, loc *UseLocation) ([]tektonv1beta1.Step, error) {
 	pr := r.Cache.GetPipelineRun(sourceURI)
 	if pr == nil {
 		data, err := r.GetData(sourceURI, false)
@@ -68,6 +69,11 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 	OverrideTaskSpec(useTS, ts)
 	*ts = *useTS
 	ts.Steps = originalSteps
+
+	err = UseParametersAndResults(context.TODO(), loc, useTS)
+	if err != nil {
+		return steps, errors.Wrapf(err, "failed to resolve parameters and results")
+	}
 	return steps, nil
 }
 

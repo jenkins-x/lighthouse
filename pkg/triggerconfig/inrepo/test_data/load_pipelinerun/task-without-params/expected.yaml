@@ -165,7 +165,7 @@ spec:
         steps:
         - args:
           - -c
-          - 'mkdir -p $HOME; git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot}; git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com}; git config --global credential.helper store; git clone $(params.REPO_URL) $(params.subdirectory); echo cloned url: $(params.REPO_URL) to dir: $(params.subdirectory); cd $(params.subdirectory); git checkout $(params.PULL_PULL_SHA); echo checked out revision: $(params.PULL_PULL_SHA) to dir: $(params.subdirectory)'
+          - mkdir -p $HOME; git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot}; git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com}; git config --global credential.helper store; git clone $REPO_URL
           command:
           - /bin/sh
           image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
@@ -196,13 +196,6 @@ spec:
           - step
           - git
           - merge
-          - --verbose
-          - --baseSHA
-          - $(params.PULL_BASE_SHA)
-          - --sha
-          - $(params.PULL_PULL_SHA)
-          - --baseBranch
-          - $(params.PULL_BASE_REF)
           command:
           - jx
           image: gcr.io/jenkinsxio/builder-jx:2.1.142-761

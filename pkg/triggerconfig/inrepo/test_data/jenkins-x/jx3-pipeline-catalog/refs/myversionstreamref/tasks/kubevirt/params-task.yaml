@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  creationTimestamp: null
+  name: test-params
+spec:
+  params:
+  - name: FOO
+    type: string
+    default: "BAR-CATALOG"
+  resources:
+    requests:
+      cpu: 400m
+      memory: 512Mi
+  stepTemplate:
+    name: ""
+  annotations:
+  steps:
+  - name: test-echo
+    image: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753
+    script: |
+      #!/usr/bin/env bash
+      echo "FOO: $(params.FOO)"
