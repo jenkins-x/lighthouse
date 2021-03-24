@@ -12,9 +12,12 @@ spec:
         metadata: {}
         stepTemplate:
           image: uses:jenkins-x/jx3-pipeline-catalog/tasks/go-plugin/release.yaml@versionStream
+          name: ""
+          resources: {}
           workingDir: /workspace/source
         steps:
         - image: uses:jenkins-x/jx3-pipeline-catalog/tasks/git-clone/git-clone.yaml@versionStream
+          name: ""
           resources: {}
         - name: next-version
           resources: {}
@@ -66,8 +69,17 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
         - name: chart-docs
           resources: {}
-        - name: changelog
+        - image: gcr.io/jenkinsxio/jx-changelog:0.0.34
+          name: changelog
           resources: {}
+          script: |
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+
+            sed -i -e "s/^version:.*/version: $VERSION/" ./charts/$REPO_NAME/Chart.yaml
+            sed -i -e "s/tag:.*/tag: $VERSION/" ./charts/$REPO_NAME/values.yaml;
+
+            jx changelog create --verbose --header-file=hack/changelog-header.md --version=$VERSION --rev=$PULL_BASE_SHA --output-markdown=changelog.md --update-release=false
         - name: release-chart
           resources: {}
         - name: upload-binaries
