@@ -1,0 +1,61 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-03-24T15:50:50Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    branch: master
+    committer:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    message: |
+      fix: helm chart webhook pod annotations
+
+      the chart should only render the pod annotations if they are not null/empty
+    sha: e941ed228119fa7e75bd0dac82e622602f5c795b
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      chore: upgrade deps
+    sha: 64324ada51bc538040019a0a443566fde7d22328
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      chore: fmt
+    sha: ae28dd044da46f7dabdee7c1d593c73ac09f6564
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: improve uses reuse
+
+      so that we can reuse volumes, and stepTemplate resources like workingDir, resources and volumeMounts so that the call site tekton YAML can be much smaller
+    sha: ce0b55fbe9eb6146f1a385406dcb66585af9f595
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  version: 1.0.5
+status: {}
+ 
+{{- end }}
