@@ -3,11 +3,12 @@ package util
 import (
 	"context"
 	"fmt"
-	"golang.org/x/oauth2"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+
+	"golang.org/x/oauth2"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
