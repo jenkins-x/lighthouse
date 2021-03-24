@@ -150,7 +150,14 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources: {}
+          resources:
+            requests:
+              cpu: 400m
+              memory: 512Mi
+          volumeMounts:
+          - mountPath: /tekton/home/npm
+            name: npmrc
+          workingDir: /workspace/source
         steps:
         - image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
@@ -164,25 +171,15 @@ spec:
           script: |
             #!/bin/sh
             npm install
-        - image: node:12-slim
-          name: build-npm-test
+        - name: build-npm-test
           resources: {}
-          script: |
-            #!/bin/sh
-            CI=true DISPLAY=:99 npm test
-        - image: gcr.io/kaniko-project/executor:debug-v1.3.0
-          name: build-container-build
+        - name: build-container-build
           resources: {}
-          script: |
-            #!/busybox/sh
-            source .jx/variables.sh
-            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
-        - image: gcr.io/jenkinsxio/jx-preview:0.0.143
-          name: promote-jx-preview
+        - name: promote-jx-preview
           resources: {}
-          script: |
-            #!/usr/bin/env sh
-            source .jx/variables.sh
-            jx preview create
+        volumes:
+        - name: npmrc
+          secret:
+            optional: true
+            secretName: npmrc
 status: {}

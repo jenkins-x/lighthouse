@@ -264,7 +264,7 @@ func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) er
 					continue
 				}
 				sourceURI := strings.TrimPrefix(image, "uses:")
-				replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step)
+				replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step, ts)
 				if err != nil {
 					return errors.Wrapf(err, "failed to resolve git URI %s for step %s", sourceURI, step.Name)
 				}

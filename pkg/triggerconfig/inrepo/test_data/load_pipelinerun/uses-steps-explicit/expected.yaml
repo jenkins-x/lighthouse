@@ -150,7 +150,14 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources: {}
+          resources:
+            requests:
+              cpu: 400m
+              memory: 512Mi
+          volumeMounts:
+          - mountPath: /tekton/home/npm
+            name: npmrc
+          workingDir: /workspace/source
         steps:
         - image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
@@ -185,4 +192,9 @@ spec:
             #!/usr/bin/env sh
             source .jx/variables.sh
             jx preview create
+        volumes:
+        - name: npmrc
+          secret:
+            optional: true
+            secretName: npmrc
 status: {}
