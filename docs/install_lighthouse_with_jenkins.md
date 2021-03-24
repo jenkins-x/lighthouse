@@ -63,7 +63,7 @@ In this case you need to modify the relevant settings accordingly.
 - Configure the Helm chart repository
 
     ```bash
-    helm repo add lighthouse http://chartmuseum.jenkins-x.io
+    helm repo add lighthouse https://storage.googleapis.com/jenkinsxio/charts
     helm repo update
     ```
 
