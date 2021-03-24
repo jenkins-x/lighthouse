@@ -12,6 +12,9 @@ func OverrideTaskSpec(ts *tektonv1beta1.TaskSpec, override *tektonv1beta1.TaskSp
 			ts.StepTemplate = &v1.Container{}
 		}
 		OverrideContainer(ts.StepTemplate, override.StepTemplate, true)
+		if override.StepTemplate.Image != "" {
+			ts.StepTemplate.Image = override.StepTemplate.Image
+		}
 	}
 	ts.Volumes = OverrideVolumes(ts.Volumes, override.Volumes, true)
 }

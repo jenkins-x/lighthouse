@@ -2,11 +2,10 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
+  name: release
 spec:
   pipelineSpec:
     params:
-    - default: param-value
-      name: PARAM
     - description: the unique build number
       name: BUILD_ID
       type: string
@@ -50,10 +49,8 @@ spec:
       name: REPO_URL
       type: string
     tasks:
-    - name: default
+    - name: from-build-pack
       params:
-      - name: PARAM
-        value: $(params.PARAM)
       - name: BUILD_ID
         value: $(params.BUILD_ID)
       - name: JOB_NAME
@@ -80,11 +77,10 @@ spec:
         value: $(params.REPO_OWNER)
       - name: REPO_URL
         value: $(params.REPO_URL)
+      resources: {}
       taskSpec:
         metadata: {}
         params:
-        - default: param-value
-          name: PARAM
         - description: the unique build number
           name: BUILD_ID
           type: string
@@ -129,6 +125,10 @@ spec:
           type: string
         stepTemplate:
           env:
+          - name: _JAVA_OPTIONS
+            value: -XX:+UnlockExperimentalVMOptions -Dsun.zip.disableMemoryMapping=true -XX:+UseParallelGC -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Xms10m -Xmx192m
+          - name: MAVEN_OPTS
+            value: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=25 -Dmaven.wagon.http.retryHandler.count=3
           - name: BUILD_ID
             value: $(params.BUILD_ID)
           - name: JOB_NAME
@@ -156,86 +156,108 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources: {}
+          resources:
+            requests:
+              cpu: 400m
+              memory: 512Mi
+          volumeMounts:
+          - mountPath: /root/.m2/
+            name: maven-settings
+          - mountPath: /root/.gnupg
+            name: release-gpg
+          workingDir: /workspace/source
         steps:
-        - image: ubuntu
-          name: noshebang
+        - image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+          name: git-clone
           resources: {}
-          script: echo "no shebang"
-        - env:
-          - name: FOO
-            value: foooooooo
-          image: ubuntu
-          name: bash
+          script: |
+            #!/bin/sh
+            export SUBDIR="source"
+            echo "git cloning url: $REPO_URL version $PULL_BASE_SHA to dir: $SUBDIR"
+            git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot}
+            git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com}
+            git config --global credential.helper store
+            git clone $REPO_URL $SUBDIR
+            cd $SUBDIR
+            git checkout $PULL_BASE_SHA
+            echo "checked out revision: $PULL_BASE_SHA to dir: $SUBDIR"
+          workingDir: /workspace
+        - image: gcr.io/jenkinsxio/jx-release-version:2.2.5
+          name: next-version
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            jx-release-version > VERSION
+        - image: ghcr.io/jenkins-x/jx-boot:3.1.334
+          name: jx-variables
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            jx gitops variables
+        - image: maven:3.6-openjdk-11
+          name: build-mvn-deploy
           resources: {}
           script: |
             #!/usr/bin/env bash
-            set -euxo pipefail
-            echo "Hello from Bash!"
-            echo FOO is ${FOO}
-            echo substring is ${FOO:2:4}
-            for i in {1..10}; do
-              echo line $i
-            done
-        - image: ubuntu
-          name: place-file
+            source .jx/variables.sh
+
+            # modify the pom.xml
+            echo "upgrading the pom to version $VERSION"
+            mvn versions:set -DnewVersion=$VERSION
+
+            mvn --no-transfer-progress clean deploy
+        - image: gcr.io/jenkinsxio/jx-registry:0.0.11
+          name: check-registry
+          resources: {}
+        - image: gcr.io/kaniko-project/executor:debug-v1.3.0
+          name: build-container-build
           resources: {}
           script: |
-            #!/usr/bin/env bash
-            echo "echo Hello from script file" > /workspace/hello
-            chmod +x /workspace/hello
-        - image: ubuntu
-          name: run-file
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$PUSH_CONTAINER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
+        - image: gcr.io/jenkinsxio/jx-changelog:0.0.34
+          name: promote-changelog
           resources: {}
           script: |
-            #!/usr/bin/env bash
-            /workspace/hello
-        - image: ubuntu
-          name: contains-eof
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+
+            if [ -d "charts/$REPO_NAME" ]; then
+            sed -i -e "s/^version:.*/version: $VERSION/" ./charts/$REPO_NAME/Chart.yaml
+            sed -i -e "s/repository:.*/repository: $DOCKER_REGISTRY\/$DOCKER_REGISTRY_ORG\/$APP_NAME/" ./charts/$REPO_NAME/values.yaml
+            sed -i -e "s/tag:.*/tag: $VERSION/" ./charts/$REPO_NAME/values.yaml;
+            else echo no charts; fi
+
+            jx changelog create --version v${VERSION}
+
+            git add * || true
+            git commit -a -m "chore: release $VERSION" --allow-empty
+            git tag -fa v$VERSION -m "Release version $VERSION"
+            git push --force origin v$VERSION
+        - image: ghcr.io/jenkins-x/jx-boot:3.1.334
+          name: promote-helm-release
           resources: {}
           script: |
-            #!/usr/bin/env bash
-            cat > file << EOF
-            this file has some contents
-            EOF
-            cat file
-        - image: node
-          name: node
+            #!/usr/bin/env sh
+            jx gitops helm release
+        - image: ghcr.io/jenkins-x/jx-promote:0.0.243
+          name: promote-jx-promote
           resources: {}
           script: |
-            #!/usr/bin/env node
-            console.log("Hello from Node!")
-        - image: python
-          name: python
-          resources: {}
-          script: |
-            #!/usr/bin/env python3
-            print("Hello from Python!")
-        - image: perl
-          name: perl
-          resources: {}
-          script: |
-            #!/usr/bin/perl
-            print "Hello from Perl!"
-        - image: python
-          name: params-applied
-          resources: {}
-          script: |
-            #!/usr/bin/env python3
-            v = '$(params.PARAM)'
-            if v != 'param-value':
-              print('Param values not applied')
-              print('Got: ', v)
-              exit(1)
-        - args:
-          - hello
-          - world
-          image: ubuntu
-          name: args-allowed
-          resources: {}
-          script: |-
-            #!/usr/bin/env bash
-            [[ $# == 2 ]]
-            [[ $1 == "hello" ]]
-            [[ $2 == "world" ]]
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+            jx promote -b --all --timeout 1h --no-poll
+        volumes:
+        - name: maven-settings
+          secret:
+            secretName: jenkins-maven-settings
+        - name: release-gpg
+          secret:
+            optional: true
+            secretName: jenkins-release-gpg
+  podTemplate: {}
+  serviceAccountName: tekton-bot
+  timeout: 240h0m0s
 status: {}

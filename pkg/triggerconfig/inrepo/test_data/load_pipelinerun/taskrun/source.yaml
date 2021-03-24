@@ -7,7 +7,6 @@ spec:
     params:
     - name: PARAM
       default: param-value
-
     steps:
     - name: noshebang
       image: ubuntu

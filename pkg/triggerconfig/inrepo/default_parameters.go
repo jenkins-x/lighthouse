@@ -1,7 +1,10 @@
 package inrepo
 
 import (
+	"context"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -119,6 +122,18 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 			stepTemplate := task.TaskSpec.StepTemplate
 			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
 		}
+	}
+
+	// lets validate to make sure its valid
+
+	// lets make a deep copy so that the defaults don't carry through into the generated resources which causes extra
+	// verbosity due to the stepTemplate env vars being copy/pasted on every step
+	copy := prs.DeepCopy()
+	ctx := context.TODO()
+	copy.SetDefaults(ctx)
+	err := copy.Validate(ctx)
+	if err != nil {
+		return prs, errors.Wrapf(err, "failed to validate generated PipelineRun")
 	}
 	return prs, nil
 }

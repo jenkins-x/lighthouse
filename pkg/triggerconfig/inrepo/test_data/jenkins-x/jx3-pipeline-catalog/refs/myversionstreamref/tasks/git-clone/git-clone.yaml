@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: git-clone
+spec:
+  steps:
+  - script: |
+      #!/bin/sh
+      export SUBDIR="source"
+      echo "git cloning url: $REPO_URL version $PULL_BASE_SHA to dir: $SUBDIR"
+      git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot}
+      git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com}
+      git config --global credential.helper store
+      git clone $REPO_URL $SUBDIR
+      cd $SUBDIR
+      git checkout $PULL_BASE_SHA
+      echo "checked out revision: $PULL_BASE_SHA to dir: $SUBDIR"
+    image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+    name: git-clone
+    resources: { }
+    workingDir: /workspace

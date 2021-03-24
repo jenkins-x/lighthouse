@@ -160,6 +160,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*tekt
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to inherit steps")
 		}
+		defaultTaskName(prs)
 		return DefaultPipelineParameters(prs)
 
 	case "TaskRun":
@@ -186,10 +187,21 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*tekt
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to inherit steps")
 		}
+		defaultTaskName(prs)
 		return DefaultPipelineParameters(prs)
 
 	default:
 		return nil, errors.Errorf("kind %s is not supported for %s", kind, message)
+	}
+}
+
+func defaultTaskName(prs *tektonv1beta1.PipelineRun) {
+	ps := prs.Spec.PipelineSpec
+	if ps != nil && len(ps.Tasks) > 0 {
+		t := ps.Tasks[0]
+		if t.Name == "" {
+			ps.Tasks[0].Name = "default"
+		}
 	}
 }
 
@@ -264,7 +276,14 @@ func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) er
 					continue
 				}
 				sourceURI := strings.TrimPrefix(image, "uses:")
-				replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step, ts)
+
+				loc := &UseLocation{
+					PipelineRunSpec: &prs.Spec,
+					PipelineSpec:    prs.Spec.PipelineSpec,
+					TaskName:        pt.Name,
+					TaskSpec:        ts,
+				}
+				replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step, ts, loc)
 				if err != nil {
 					return errors.Wrapf(err, "failed to resolve git URI %s for step %s", sourceURI, step.Name)
 				}

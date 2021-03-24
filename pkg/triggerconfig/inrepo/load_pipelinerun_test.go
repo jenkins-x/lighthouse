@@ -21,6 +21,8 @@ import (
 var (
 	// generateTestOutput enable to regenerate the expected output
 	generateTestOutput = false
+
+	disabledTests = []string{"uses-steps-custom-git"}
 )
 
 func TestLoadPipelineRunTest(t *testing.T) {
@@ -45,6 +47,17 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			continue
 		}
 		name := f.Name()
+		ignoreTest := false
+		for _, ignore := range disabledTests {
+			if name == ignore {
+				ignoreTest = true
+				break
+			}
+		}
+		if ignoreTest {
+			t.Logf("ignoring test %s\n", name)
+			continue
+		}
 		if strings.HasPrefix(name, ".") {
 			continue
 		}
