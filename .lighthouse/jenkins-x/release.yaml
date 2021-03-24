@@ -66,11 +66,9 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
         - name: chart-docs
           resources: {}
-        - name: release-chart
-          resources: {}
         - name: changelog
           resources: {}
-        - name: upload-binaries
+        - name: release-chart
           resources: {}
         - name: promote-release
           resources: {}
