@@ -125,11 +125,21 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 	}
 
 	// lets validate to make sure its valid
+	ctx := context.TODO()
+
+	// lets avoid missing workspaces causing issues
+	if len(prs.Spec.Workspaces) > 0 {
+		w := &prs.Spec.Workspaces[0]
+		if w.Validate(ctx) != nil {
+			// lets default a workspace
+			w.EmptyDir = &corev1.EmptyDirVolumeSource{}
+		}
+	}
 
 	// lets make a deep copy so that the defaults don't carry through into the generated resources which causes extra
 	// verbosity due to the stepTemplate env vars being copy/pasted on every step
 	copy := prs.DeepCopy()
-	ctx := context.TODO()
+	// lets default a workspace implementation if there is none
 	copy.SetDefaults(ctx)
 	err := copy.Validate(ctx)
 	if err != nil {

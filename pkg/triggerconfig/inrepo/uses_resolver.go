@@ -67,10 +67,16 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 	originalSteps := ts.Steps
 	steps := useTS.Steps
 	OverrideTaskSpec(useTS, ts)
+
+	// lets preserve any parameters, results, workspaces on the ts before overriding...
+	ctx := context.TODO()
+	useTS.Params = useParameterSpecs(ctx, useTS.Params, ts.Params)
+	useTS.Results = useResults(useTS.Results, ts.Results)
+	useTS.Workspaces = useWorkspaces(useTS.Workspaces, ts.Workspaces)
 	*ts = *useTS
 	ts.Steps = originalSteps
 
-	err = UseParametersAndResults(context.TODO(), loc, useTS)
+	err = UseParametersAndResults(ctx, loc, useTS)
 	if err != nil {
 		return steps, errors.Wrapf(err, "failed to resolve parameters and results")
 	}

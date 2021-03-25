@@ -19,10 +19,6 @@ spec:
         - name: build-npm-test
         - name: build-container-build
         - name: promote-jx-preview
-  workspaces:
-  - name: output
-    persistentVolumeClaim:
-      claimName: "cheese"
 
 
 

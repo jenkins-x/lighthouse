@@ -22,7 +22,8 @@ var (
 	// generateTestOutput enable to regenerate the expected output
 	generateTestOutput = false
 
-	disabledTests = []string{"uses-steps-custom-git"}
+	// disabledTests lets us disable one or more tests when refactoring
+	disabledTests = []string{}
 )
 
 func TestLoadPipelineRunTest(t *testing.T) {
