@@ -288,6 +288,9 @@ spec:
         - description: The git repo will be cloned onto the volume backing this workspace
           mountPath: /workspace
           name: output
+      workspaces:
+      - name: output
+        workspace: output
     workspaces:
     - description: The git repo will be cloned onto the volume backing this workspace
       name: output
