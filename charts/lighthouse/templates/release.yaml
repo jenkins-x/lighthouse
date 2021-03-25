@@ -1,0 +1,61 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-03-25T08:08:29Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      chore: disable test generation
+    sha: fa7ddbc4a233717b55706966a7e31588f4d15832
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: better validation of uses pipelines
+
+      and ensure we properly inherit parameters from Task -> PipelineRun when using a Task and ensuring we add the parameters to the PipelineRun
+    sha: df2e7880f07bcb5f188ebb9583ed8eb5c32f248b
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: add better validation
+
+      to ensure we only ever create valid tekton resources
+    sha: 592dbac9a41849570d11a78897c2c7b315d731c5
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: bug where we failed to inline uses steps
+    sha: 3a17f66f6738a804dce61b7ab5194f3e642ef8b9
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  version: 1.0.7
+status: {}
+ 
+{{- end }}
