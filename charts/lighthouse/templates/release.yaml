@@ -1,0 +1,59 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-03-25T09:13:31Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      chore: add updatebot configuration
+    sha: 506591a457cdbcb771539f5ccb20e1a369b4c4bb
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: add default workspace binding if none are provided when using tasks
+    sha: 8a4095c8d97a389559a4da69c66a22c6fc26c0c9
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      chore: disable test generation
+    sha: fa7ddbc4a233717b55706966a7e31588f4d15832
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: better validation of uses pipelines
+
+      and ensure we properly inherit parameters from Task -> PipelineRun when using a Task and ensuring we add the parameters to the PipelineRun
+    sha: df2e7880f07bcb5f188ebb9583ed8eb5c32f248b
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  version: 1.0.8
+status: {}
+ 
+{{- end }}
