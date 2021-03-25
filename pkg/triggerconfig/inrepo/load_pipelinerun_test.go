@@ -20,7 +20,7 @@ import (
 
 var (
 	// generateTestOutput enable to regenerate the expected output
-	generateTestOutput = true
+	generateTestOutput = false
 
 	// disabledTests lets us disable one or more tests when refactoring
 	disabledTests = []string{}
