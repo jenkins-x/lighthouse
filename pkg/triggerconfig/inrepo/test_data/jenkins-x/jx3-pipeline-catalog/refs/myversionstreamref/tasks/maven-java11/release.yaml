@@ -36,7 +36,7 @@ spec:
           script: |
             #!/usr/bin/env sh
             jx-release-version > VERSION
-        - image: ghcr.io/jenkins-x/jx-boot:3.1.334
+        - image: ghcr.io/jenkins-x/jx-boot:3.1.335
           name: jx-variables
           resources: {}
           script: |
@@ -83,7 +83,7 @@ spec:
             git commit -a -m "chore: release $VERSION" --allow-empty
             git tag -fa v$VERSION -m "Release version $VERSION"
             git push --force origin v$VERSION
-        - image: ghcr.io/jenkins-x/jx-boot:3.1.334
+        - image: ghcr.io/jenkins-x/jx-boot:3.1.335
           name: promote-helm-release
           resources: {}
           script: |

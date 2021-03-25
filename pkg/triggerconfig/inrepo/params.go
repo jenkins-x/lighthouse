@@ -27,6 +27,7 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 	prs := loc.PipelineRunSpec
 	if prs != nil {
 		prs.Params = useParameters(prs.Params, ToDefaultParams(parameterSpecs))
+		prs.Workspaces = useWorkspaceBindings(prs.Workspaces, ToWorkspaceBindings(uses.Workspaces))
 	}
 	ps := loc.PipelineSpec
 	if ps != nil {
@@ -239,6 +240,23 @@ func useWorkspaces(ws []v1beta1.WorkspaceDeclaration, uses []v1beta1.WorkspaceDe
 				if param.Description == "" {
 					param.Description = u.Description
 				}
+				break
+			}
+		}
+		if !found {
+			ws = append(ws, u)
+		}
+	}
+	return ws
+}
+
+func useWorkspaceBindings(ws []v1beta1.WorkspaceBinding, uses []v1beta1.WorkspaceBinding) []v1beta1.WorkspaceBinding {
+	for _, u := range uses {
+		found := false
+		for i := range ws {
+			param := &ws[i]
+			if param.Name == u.Name {
+				found = true
 				break
 			}
 		}

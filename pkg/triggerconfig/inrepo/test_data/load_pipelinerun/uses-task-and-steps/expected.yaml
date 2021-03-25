@@ -215,7 +215,7 @@ spec:
           script: |
             #!/usr/bin/env sh
             jx-release-version > VERSION
-        - image: ghcr.io/jenkins-x/jx-boot:3.1.334
+        - image: ghcr.io/jenkins-x/jx-boot:3.1.335
           name: jx-variables
           resources: {}
           script: |
@@ -263,7 +263,7 @@ spec:
             git commit -a -m "chore: release $VERSION" --allow-empty
             git tag -fa v$VERSION -m "Release version $VERSION"
             git push --force origin v$VERSION
-        - image: ghcr.io/jenkins-x/jx-boot:3.1.334
+        - image: ghcr.io/jenkins-x/jx-boot:3.1.335
           name: promote-helm-release
           resources: {}
           script: |
@@ -284,7 +284,17 @@ spec:
           secret:
             optional: true
             secretName: jenkins-release-gpg
+        workspaces:
+        - description: The git repo will be cloned onto the volume backing this workspace
+          mountPath: /workspace
+          name: output
+    workspaces:
+    - description: The git repo will be cloned onto the volume backing this workspace
+      name: output
   podTemplate: {}
   serviceAccountName: tekton-bot
   timeout: 240h0m0s
+  workspaces:
+  - emptyDir: {}
+    name: output
 status: {}
