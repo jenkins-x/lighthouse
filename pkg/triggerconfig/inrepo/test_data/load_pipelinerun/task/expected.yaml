@@ -4,6 +4,35 @@ metadata:
   creationTimestamp: null
   name: cheese
 spec:
+  params:
+  - name: REPO_URL
+    value: ""
+  - name: PULL_PULL_SHA
+    value: master
+  - name: subdirectory
+    value: source
+  - name: BUILD_ID
+    value: ""
+  - name: JOB_NAME
+    value: ""
+  - name: JOB_SPEC
+    value: ""
+  - name: JOB_TYPE
+    value: ""
+  - name: PULL_BASE_REF
+    value: master
+  - name: PULL_BASE_SHA
+    value: ""
+  - name: PULL_NUMBER
+    value: ""
+  - name: PULL_PULL_REF
+    value: ""
+  - name: PULL_REFS
+    value: ""
+  - name: REPO_NAME
+    value: ""
+  - name: REPO_OWNER
+    value: ""
   pipelineSpec:
     params:
     - description: git url to clone

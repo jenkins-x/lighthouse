@@ -4,6 +4,35 @@ metadata:
   creationTimestamp: null
   name: params
 spec:
+  params:
+  - name: FOO
+    value: BAR-CATALOG
+  - name: BUILD_ID
+    value: ""
+  - name: JOB_NAME
+    value: ""
+  - name: JOB_SPEC
+    value: ""
+  - name: JOB_TYPE
+    value: ""
+  - name: PULL_BASE_REF
+    value: ""
+  - name: PULL_BASE_SHA
+    value: ""
+  - name: PULL_NUMBER
+    value: ""
+  - name: PULL_PULL_REF
+    value: ""
+  - name: PULL_PULL_SHA
+    value: ""
+  - name: PULL_REFS
+    value: ""
+  - name: REPO_NAME
+    value: ""
+  - name: REPO_OWNER
+    value: ""
+  - name: REPO_URL
+    value: ""
   pipelineSpec:
     params:
     - default: BAR-CATALOG
@@ -134,6 +163,8 @@ spec:
         resources: {}
         stepTemplate:
           env:
+          - name: FOO
+            value: $(params.FOO)
           - name: BUILD_ID
             value: $(params.BUILD_ID)
           - name: JOB_NAME
@@ -160,8 +191,6 @@ spec:
             value: $(params.REPO_OWNER)
           - name: REPO_URL
             value: $(params.REPO_URL)
-          - name: FOO
-            value: $(params.FOO)
           name: ""
           resources:
             requests:

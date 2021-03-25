@@ -3,6 +3,33 @@ kind: PipelineRun
 metadata:
   creationTimestamp: null
 spec:
+  params:
+  - name: BUILD_ID
+    value: ""
+  - name: JOB_NAME
+    value: ""
+  - name: JOB_SPEC
+    value: ""
+  - name: JOB_TYPE
+    value: ""
+  - name: PULL_BASE_REF
+    value: ""
+  - name: PULL_BASE_SHA
+    value: ""
+  - name: PULL_NUMBER
+    value: ""
+  - name: PULL_PULL_REF
+    value: ""
+  - name: PULL_PULL_SHA
+    value: ""
+  - name: PULL_REFS
+    value: ""
+  - name: REPO_NAME
+    value: ""
+  - name: REPO_OWNER
+    value: ""
+  - name: REPO_URL
+    value: ""
   pipelineSpec:
     params:
     - description: the unique build number

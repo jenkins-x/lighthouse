@@ -24,6 +24,10 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 	parameters := ToParams(parameterSpecs)
 	results := uses.Results
 
+	prs := loc.PipelineRunSpec
+	if prs != nil {
+		prs.Params = useParameters(prs.Params, ToDefaultParams(parameterSpecs))
+	}
 	ps := loc.PipelineSpec
 	if ps != nil {
 		ps.Params = useParameterSpecs(ctx, ps.Params, parameterSpecs)
@@ -55,6 +59,26 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 		}
 	}
 	return nil
+}
+
+// ToDefaultParams converts the param specs to default params
+func ToDefaultParams(params []v1beta1.ParamSpec) []v1beta1.Param {
+	var answer []v1beta1.Param
+	for _, p := range params {
+		value := v1beta1.ArrayOrString{
+			Type: v1beta1.ParamTypeString,
+		}
+		d := p.Default
+		if d != nil {
+			value.StringVal = d.StringVal
+			value.ArrayVal = d.ArrayVal
+		}
+		answer = append(answer, v1beta1.Param{
+			Name:  p.Name,
+			Value: value,
+		})
+	}
+	return answer
 }
 
 func useParameterSpecs(ctx context.Context, params []v1beta1.ParamSpec, uses []v1beta1.ParamSpec) []v1beta1.ParamSpec {
