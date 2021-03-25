@@ -1,0 +1,12 @@
+apiVersion: updatebot.jenkins-x.io/v1alpha1
+kind: UpdateConfig
+spec:
+  rules:
+    - urls:
+        - https://github.com/jenkins-x/jx3-versions
+      changes:
+        - regex:
+            pattern: |
+              version: (.*)
+            files:
+              - "charts/jx3/lighthouse/defaults.yaml"
