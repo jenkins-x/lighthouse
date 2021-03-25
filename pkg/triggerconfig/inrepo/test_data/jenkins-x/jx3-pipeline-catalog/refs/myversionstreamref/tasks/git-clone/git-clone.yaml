@@ -3,6 +3,10 @@ kind: Task
 metadata:
   name: git-clone
 spec:
+  workspaces:
+  - name: output
+    description: The git repo will be cloned onto the volume backing this workspace
+    mountPath: /workspace
   steps:
   - script: |
       #!/bin/sh
