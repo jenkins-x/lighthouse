@@ -69,7 +69,7 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
         - name: chart-docs
           resources: {}
-        - image: gcr.io/jenkinsxio/jx-changelog:0.0.34
+        - image: gcr.io/jenkinsxio/jx-changelog:0.0.35
           name: changelog
           resources: {}
           script: |
@@ -79,7 +79,7 @@ spec:
             sed -i -e "s/^version:.*/version: $VERSION/" ./charts/$REPO_NAME/Chart.yaml
             sed -i -e "s/tag:.*/tag: $VERSION/" ./charts/$REPO_NAME/values.yaml;
 
-            jx changelog create --verbose --header-file=hack/changelog-header.md --version=$VERSION --rev=$PULL_BASE_SHA --output-markdown=changelog.md --update-release=false
+            jx changelog create --verbose --header-file=hack/changelog-header.md --version=$VERSION --rev=$PULL_BASE_SHA --output-markdown=changelog.md --prerelease
         - name: release-chart
           resources: {}
         - name: upload-binaries
