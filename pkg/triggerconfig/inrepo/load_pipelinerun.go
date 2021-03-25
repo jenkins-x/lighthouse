@@ -281,6 +281,7 @@ func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) er
 				loc := &UseLocation{
 					PipelineRunSpec: &prs.Spec,
 					PipelineSpec:    prs.Spec.PipelineSpec,
+					PipelineTask:    pt,
 					TaskName:        pt.Name,
 					TaskSpec:        ts,
 				}
