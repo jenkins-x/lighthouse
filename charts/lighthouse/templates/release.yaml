@@ -1,0 +1,88 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-03-25T12:55:29Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: lets make the release a prerelease
+    sha: bf235971cb6b6cdd379fa07cee4381e24b668bee
+  - author:
+      email: chrissena87@gmail.com
+      name: Chris Sena
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      style: fix formatting in jobutil_test.go
+    sha: 7f2cb5b6c7e668baaa0b5591d9e8d5e17de4cc2c
+  - author:
+      email: chrissena87@gmail.com
+      name: Chris Sena
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      test: add pipeline_run_params to test param value added to PipelineRun
+    sha: 6ee9cb0a0470c3f734349c9091664259f88521cb
+  - author:
+      email: chrissena87@gmail.com
+      name: Chris Sena
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    issueIds:
+    - "1155"
+    message: |
+      fix: add missing PipelineRunParams when creating LighthouseJobSpec from job.Base
+
+      add missing PipelineRunParams in specFromJobBase
+      add corresponding test case
+      fix #1155
+    sha: c0c730d926383bc4b807d5097dccb6e00fba7e0c
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    message: |
+      fix: add missing workspace bindings
+    sha: cc0d88864af82cc45fb9791233a90f6b06406a7a
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  issues:
+  - body: "It appears that the `pipeline_run_params` declared in the presubmit/postsubmit
+      config in trigger.yaml are not copied to the generated LighthouseJobSpec and
+      are therefore not available later to the subsequent code that generates the
+      PipelineRun resource.\r\n\r\nI had a browse of the source code and it looks
+      like the bug is caused here:\r\nhttps://github.com/jenkins-x/lighthouse/blob/860dc3b15d148e9437661d8172798a9ea0192720/pkg/jobutil/jobutil.go#L160-L174\r\nas
+      the line `PipelineRunParams: jb.PipelineRunParams` is missing."
+    creationTimestamp: "2020-11-13T10:31:12Z"
+    id: "1155"
+    labels:
+    - url: lifecycle/stale
+    state: closed
+    title: Params declared in pre/postsubmit config are not passed to LighthouseJobSpec
+    url: https://github.com/jenkins-x/lighthouse/issues/1155
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/1.0.10
+  version: 1.0.10
+status: {}
+ 
+{{- end }}
