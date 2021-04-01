@@ -175,7 +175,7 @@ func handleGenericComment(log *logrus.Entry, spc scmProviderClient, oc ownersCli
 	}
 
 	opts := optionsForRepo(config, ce.Repo.Namespace, ce.Repo.Name)
-	if !isApprovalCommand(botName, opts.LgtmActsAsApprove, &comment{Body: ce.Body, Author: ce.Author.Login}) {
+	if !isApprovalCommand(log, botName, opts.LgtmActsAsApprove, &comment{Body: ce.Body, Author: ce.Author.Login}) {
 		return nil
 	}
 
@@ -242,7 +242,7 @@ func handleReview(log *logrus.Entry, spc scmProviderClient, oc ownersClient, ser
 	// Check for an approval command is in the body. If one exists, let the
 	// genericCommentEventHandler handle this event. Approval commands override
 	// review state.
-	if isApprovalCommand(botName, opts.LgtmActsAsApprove, &comment{Body: re.Review.Body, Author: re.Review.Author.Login}) {
+	if isApprovalCommand(log, botName, opts.LgtmActsAsApprove, &comment{Body: re.Review.Body, Author: re.Review.Author.Login}) {
 		return nil
 	}
 
@@ -442,7 +442,7 @@ func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, baseU
 	sort.SliceStable(comments, func(i, j int) bool {
 		return comments[i].Created.Before(comments[j].Created)
 	})
-	approveComments := filterComments(comments, approvalMatcher(botName, opts.LgtmActsAsApprove, opts.ConsiderReviewState()))
+	approveComments := filterComments(comments, approvalMatcher(log, botName, opts.LgtmActsAsApprove, opts.ConsiderReviewState()))
 	addApprovers(&approversHandler, approveComments, pr.author, opts.ConsiderReviewState())
 
 	for _, user := range pr.assignees {
@@ -513,14 +513,17 @@ func humanAddedApproved(spc scmProviderClient, log *logrus.Entry, org, repo stri
 	}
 }
 
-func approvalMatcher(botName string, lgtmActsAsApprove, reviewActsAsApprove bool) func(*comment) bool {
+func approvalMatcher(log *logrus.Entry, botName string, lgtmActsAsApprove, reviewActsAsApprove bool) func(*comment) bool {
 	return func(c *comment) bool {
-		return isApprovalCommand(botName, lgtmActsAsApprove, c) || isApprovalState(botName, reviewActsAsApprove, c)
+		return isApprovalCommand(log, botName, lgtmActsAsApprove, c) || isApprovalState(botName, reviewActsAsApprove, c)
 	}
 }
 
-func isApprovalCommand(botName string, lgtmActsAsApprove bool, c *comment) bool {
-	if c.Author == botName || isDeprecatedBot(c.Author) {
+func isApprovalCommand(log *logrus.Entry, botName string, lgtmActsAsApprove bool, c *comment) bool {
+	if c.Author == botName {
+		log.Warn("Approval is made by the bot, for production installs it is recommended to use a different bot user account that your personal one")
+	}
+	if isDeprecatedBot(c.Author) {
 		return false
 	}
 

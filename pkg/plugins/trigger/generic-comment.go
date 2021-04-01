@@ -42,8 +42,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 		return err
 	}
 	if commentAuthor == botName {
-		c.Logger.Debug("Comment is made by the bot, skipping.")
-		return nil
+		c.Logger.Warn("Comment is made by the bot, for production installs it is recommended to use a different bot user account that your personal one")
 	}
 
 	pr, err := c.SCMProviderClient.GetPullRequest(org, repo, number)
