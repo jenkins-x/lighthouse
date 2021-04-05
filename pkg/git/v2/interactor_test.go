@@ -1174,12 +1174,12 @@ func TestInteractor_FetchRef(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"fetch someone.com shasum": {
+				"fetch --tags someone.com shasum": {
 					out: []byte(`ok`),
 				},
 			},
 			expectedCalls: [][]string{
-				{"fetch", "someone.com", "shasum"},
+				{"fetch", "--tags", "someone.com", "shasum"},
 			},
 			expectedErr: false,
 		},
@@ -1200,12 +1200,12 @@ func TestInteractor_FetchRef(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"fetch someone.com shasum": {
+				"fetch --tags someone.com shasum": {
 					err: errors.New("oops"),
 				},
 			},
 			expectedCalls: [][]string{
-				{"fetch", "someone.com", "shasum"},
+				{"fetch", "--tags", "someone.com", "shasum"},
 			},
 			expectedErr: true,
 		},
@@ -1340,7 +1340,7 @@ func TestInteractor_CheckoutPullRequest(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"fetch someone.com pull/1/head": {
+				"fetch --tags someone.com pull/1/head": {
 					out: []byte(`ok`),
 				},
 				"checkout FETCH_HEAD": {
@@ -1351,7 +1351,7 @@ func TestInteractor_CheckoutPullRequest(t *testing.T) {
 				},
 			},
 			expectedCalls: [][]string{
-				{"fetch", "someone.com", "pull/1/head"},
+				{"fetch", "--tags", "someone.com", "pull/1/head"},
 				{"checkout", "FETCH_HEAD"},
 				{"checkout", "-b", "pull1"},
 			},
@@ -1374,12 +1374,12 @@ func TestInteractor_CheckoutPullRequest(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"fetch someone.com pull/1/head": {
+				"fetch --tags someone.com pull/1/head": {
 					err: errors.New("oops"),
 				},
 			},
 			expectedCalls: [][]string{
-				{"fetch", "someone.com", "pull/1/head"},
+				{"fetch", "--tags", "someone.com", "pull/1/head"},
 			},
 			expectedErr: true,
 		},
@@ -1390,7 +1390,7 @@ func TestInteractor_CheckoutPullRequest(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"fetch someone.com pull/1/head": {
+				"fetch --tags someone.com pull/1/head": {
 					out: []byte(`ok`),
 				},
 				"checkout FETCH_HEAD": {
@@ -1398,7 +1398,7 @@ func TestInteractor_CheckoutPullRequest(t *testing.T) {
 				},
 			},
 			expectedCalls: [][]string{
-				{"fetch", "someone.com", "pull/1/head"},
+				{"fetch", "--tags", "someone.com", "pull/1/head"},
 				{"checkout", "FETCH_HEAD"},
 			},
 			expectedErr: true,
@@ -1410,7 +1410,7 @@ func TestInteractor_CheckoutPullRequest(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"fetch someone.com pull/1/head": {
+				"fetch --tags someone.com pull/1/head": {
 					out: []byte(`ok`),
 				},
 				"checkout FETCH_HEAD": {
@@ -1421,7 +1421,7 @@ func TestInteractor_CheckoutPullRequest(t *testing.T) {
 				},
 			},
 			expectedCalls: [][]string{
-				{"fetch", "someone.com", "pull/1/head"},
+				{"fetch", "--tags", "someone.com", "pull/1/head"},
 				{"checkout", "FETCH_HEAD"},
 				{"checkout", "-b", "pull1"},
 			},
