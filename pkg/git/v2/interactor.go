@@ -294,7 +294,7 @@ func (i *interactor) FetchRef(refspec string) error {
 		return fmt.Errorf("could not resolve remote for fetching: %v", err)
 	}
 	i.logger.Debugf("Fetching %q from %s", refspec, remote)
-	if out, err := i.executor.Run("fetch", remote, refspec); err != nil {
+	if out, err := i.executor.Run("fetch", "--tags", remote, refspec); err != nil {
 		return fmt.Errorf("error fetching %q: %v %v", refspec, err, string(out))
 	}
 	return nil
