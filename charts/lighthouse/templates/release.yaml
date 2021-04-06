@@ -1,0 +1,38 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-04-06T07:33:10Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: cameron@drivenow.com.au
+      name: Cameron Braid
+    branch: master
+    committer:
+      email: cameron@drivenow.com.au
+      name: Cameron Braid
+    message: |
+      feat: added explicit test for git filebrowser clone, create tag, fetch ref.  Fixed tests for interactor that use FetchRef.  Removed --fetch arg from Fetch()
+    sha: cf24ea40b6ebacc1c6c612593c0bc980df814b9e
+  - author:
+      email: cameron@drivenow.com.au
+      name: Cameron Braid
+    branch: master
+    committer:
+      email: cameron@drivenow.com.au
+      name: Cameron Braid
+    message: |
+      fix: include tags when fetching updates from the server
+    sha: dd5ddf3a5105bec9bf73f86176d7ba99844085fa
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/1.0.16
+  version: 1.0.16
+status: {}
+ 
+{{- end }}
