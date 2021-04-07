@@ -34,13 +34,15 @@ var (
 	// VersionStreamVersions allows you to register version stream values of ful repository names in the format
 	// `owner/name` mapping to the version SHA/branch/tag
 	VersionStreamVersions = map[string]string{}
+
+	ignoreUsesCache = os.Getenv("NO_USES_CACHE") == "true"
 )
 
 // UsesSteps lets resolve the sourceURI to a PipelineRun and find the step or steps
 // for the given task name and/or step name then lets apply any overrides from the step
 func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv1beta1.Step, ts *tektonv1beta1.TaskSpec, loc *UseLocation) ([]tektonv1beta1.Step, error) {
 	pr := r.Cache.GetPipelineRun(sourceURI)
-	if pr == nil {
+	if pr == nil || ignoreUsesCache {
 		data, err := r.GetData(sourceURI, false)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to load URI %s", sourceURI)
