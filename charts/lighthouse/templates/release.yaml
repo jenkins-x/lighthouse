@@ -1,0 +1,30 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-04-08T10:45:05Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: jenkins-x@googlegroups.com
+      name: jenkins-x-bot
+    branch: master
+    committer:
+      email: jenkins-x@googlegroups.com
+      name: jenkins-x-bot
+    message: |
+      chore: upgrade jenkins-x/lighthouse to version 1.6.14
+
+      from: https://github.com/jenkins-x/go-scm.git
+    sha: 25142141e4bdd9fc8233e19823e80d4433aaf5d1
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/v1.0.20
+  version: 1.0.20
+status: {}
+ 
+{{- end }}
