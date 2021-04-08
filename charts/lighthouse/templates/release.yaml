@@ -1,0 +1,32 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-04-08T09:09:23Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    branch: master
+    committer:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    message: |
+      fix: log at warning level when external plugin failed
+
+      related to https://github.com/jenkins-x/jx3-versions/pull/2307
+
+      if we have external plugins that can't be reached, let's just log this as a warning, because it's not impacting the behaviour of lighthouse in itself.
+    sha: bfd1202932eae23c8d0983281ebba73551b78233
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/v1.0.19
+  version: 1.0.19
+status: {}
+ 
+{{- end }}
