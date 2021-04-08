@@ -181,7 +181,7 @@ func callExternalPlugins(l *logrus.Entry, externalPlugins []plugins.ExternalPlug
 		go func(p plugins.ExternalPlugin) {
 			defer wg.Done()
 			if err := dispatch(p.Endpoint, payload, headers); err != nil {
-				l.WithError(err).WithField("external-plugin", p.Name).Error("Error dispatching event to external plugin.")
+				l.WithError(err).WithField("external-plugin", p.Name).Warning("Error dispatching event to external plugin.")
 			} else {
 				l.WithField("external-plugin", p.Name).Info("Dispatched event to external plugin")
 			}
