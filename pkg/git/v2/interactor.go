@@ -281,7 +281,7 @@ func (i *interactor) Fetch() error {
 		return fmt.Errorf("could not resolve remote for fetching: %v", err)
 	}
 	i.logger.Debugf("Fetching from %s", remote)
-	if out, err := i.executor.Run("fetch", remote); err != nil {
+	if out, err := i.executor.Run("fetch", "--force", remote); err != nil {
 		return fmt.Errorf("error fetching: %v %v", err, string(out))
 	}
 	return nil
@@ -294,7 +294,7 @@ func (i *interactor) FetchRef(refspec string) error {
 		return fmt.Errorf("could not resolve remote for fetching: %v", err)
 	}
 	i.logger.Debugf("Fetching %q from %s", refspec, remote)
-	if out, err := i.executor.Run("fetch", "--tags", remote, refspec); err != nil {
+	if out, err := i.executor.Run("fetch", "--tags", "--force", remote, refspec); err != nil {
 		return fmt.Errorf("error fetching %q: %v %v", refspec, err, string(out))
 	}
 	return nil
@@ -308,7 +308,7 @@ func (i *interactor) FetchFromRemote(remote RemoteResolver, branch string) error
 	}
 
 	i.logger.Debugf("Fetching %s from %s", branch, r)
-	if out, err := i.executor.Run("fetch", r, branch); err != nil {
+	if out, err := i.executor.Run("fetch", "--force", r, branch); err != nil {
 		return fmt.Errorf("error fetching %s from %s: %v %v", branch, r, err, string(out))
 	}
 	return nil

@@ -25,13 +25,16 @@ import (
 type RegexpChangeMatcher struct {
 	// RunIfChanged defines a regex used to select which subset of file changes should trigger this job.
 	// If any file in the changeset matches this regex, the job will be triggered
-	RunIfChanged string         `json:"run_if_changed,omitempty"`
-	reChanges    *regexp.Regexp // from RunIfChanged
+	RunIfChanged string `json:"run_if_changed,omitempty"`
+	// IgnoreChanges defines a regex used to select which file changes should be ignored
+	IgnoreChanges   string         `json:"ignore_changes,omitempty"`
+	reChanges       *regexp.Regexp // from RunIfChanged
+	reIgnoreChanges *regexp.Regexp // from IgnoreChanges
 }
 
 // CouldRun determines if its possible for a set of changes to trigger this condition
 func (cm RegexpChangeMatcher) CouldRun() bool {
-	return cm.RunIfChanged != ""
+	return cm.RunIfChanged != "" || cm.IgnoreChanges != ""
 }
 
 // ShouldRun determines if we can know for certain that the job should run. We can either
@@ -51,7 +54,10 @@ func (cm RegexpChangeMatcher) ShouldRun(changes ChangedFilesProvider) (determine
 // RunsAgainstChanges returns true if any of the changed input paths match the run_if_changed regex.
 func (cm RegexpChangeMatcher) RunsAgainstChanges(changes []string) bool {
 	for _, change := range changes {
-		if cm.GetRE().MatchString(change) {
+		if cm.IgnoreChanges != "" && cm.GetIgnoreRE().MatchString(change) {
+			continue
+		}
+		if cm.RunIfChanged == "" || cm.GetRE().MatchString(change) {
 			return true
 		}
 	}
@@ -70,6 +76,18 @@ func (cm RegexpChangeMatcher) SetChangeRegexes() (RegexpChangeMatcher, error) {
 	return cm, nil
 }
 
+// SetChangeRegexes validates and compiles internal regexes
+func (cm RegexpChangeMatcher) SetIgnoreChangeRegexes() (RegexpChangeMatcher, error) {
+	if cm.IgnoreChanges != "" {
+		re, err := regexp.Compile(cm.IgnoreChanges)
+		if err != nil {
+			return cm, fmt.Errorf("could not compile ignore_changes regex: %v", err)
+		}
+		cm.reIgnoreChanges = re
+	}
+	return cm, nil
+}
+
 // GetRE lazily creates the regex
 func (cm RegexpChangeMatcher) GetRE() *regexp.Regexp {
 	if cm.reChanges == nil {
@@ -77,4 +95,13 @@ func (cm RegexpChangeMatcher) GetRE() *regexp.Regexp {
 		return cm2.reChanges
 	}
 	return cm.reChanges
+}
+
+// GetIgnoreRE lazily creates the regex
+func (cm RegexpChangeMatcher) GetIgnoreRE() *regexp.Regexp {
+	if cm.reIgnoreChanges == nil {
+		cm2, _ := cm.SetIgnoreChangeRegexes()
+		return cm2.reIgnoreChanges
+	}
+	return cm.reIgnoreChanges
 }
