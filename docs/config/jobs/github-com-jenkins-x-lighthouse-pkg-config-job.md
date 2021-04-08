@@ -87,6 +87,7 @@ Postsubmit runs on push events.
 | `pipeline_run_spec` | *[PipelineRunSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineRunSpec) | No | PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline |
 | `pipeline_run_params` | [][PipelineRunParam](./github-com-jenkins-x-lighthouse-pkg-config-job.md#PipelineRunParam) | No | PipelineRunParams are the params used by the pipeline run |
 | `run_if_changed` | string | No | RunIfChanged defines a regex used to select which subset of file changes should trigger this job.<br />If any file in the changeset matches this regex, the job will be triggered |
+| `ignore_changes` | string | No | IgnoreChanges defines a regex used to select which file changes should be ignored |
 | `skip_branches` | []string | No | Do not run against these branches. Default is no branches. |
 | `branches` | []string | No | Only run against these branches. Default is all branches. |
 | `context` | string | No | Context is the name of the GitHub status context for the job.<br />Defaults: the same as the name of the job. |
@@ -130,6 +131,7 @@ Presubmit runs on PRs.
 | `skip_branches` | []string | No | Do not run against these branches. Default is no branches. |
 | `branches` | []string | No | Only run against these branches. Default is all branches. |
 | `run_if_changed` | string | No | RunIfChanged defines a regex used to select which subset of file changes should trigger this job.<br />If any file in the changeset matches this regex, the job will be triggered |
+| `ignore_changes` | string | No | IgnoreChanges defines a regex used to select which file changes should be ignored |
 | `context` | string | No | Context is the name of the GitHub status context for the job.<br />Defaults: the same as the name of the job. |
 | `skip_report` | bool | No | SkipReport skips commenting and setting status on GitHub. |
 | `always_run` | bool | Yes | AlwaysRun automatically for every PR, or only when a comment triggers it. |
