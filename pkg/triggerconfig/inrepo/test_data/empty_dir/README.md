@@ -1,0 +1,1 @@
+# this dir has no .lighthouse folder
