@@ -155,7 +155,7 @@ func welcomeMsg(spc scmProviderClient, trigger *plugins.Trigger, pr scm.PullRequ
 
 PRs from untrusted users cannot be marked as trusted with `+"`/ok-to-test`"+` in this repo meaning untrusted PR authors can never trigger tests themselves. Collaborators can still trigger tests on the PR using `+"`/test all`"+`.
 
-I understand the commands that are listed [here](https://go.k8s.io/bot-commands?repo=%s).
+I understand the commands that are listed [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=%s).
 
 <details>
 
@@ -169,7 +169,7 @@ I'm waiting for a [%s](https://github.com/orgs/%s/people) %smember to verify tha
 
 Once the patch is verified, the new status will be reflected by the `+"`%s`"+` label.
 
-I understand the commands that are listed [here](https://go.k8s.io/bot-commands?repo=%s).
+I understand the commands that are listed [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=%s).
 
 <details>
 

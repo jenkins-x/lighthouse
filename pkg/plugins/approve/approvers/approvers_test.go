@@ -716,7 +716,7 @@ You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 <details open>
 Needs approval from an approver in each of these files:
@@ -757,7 +757,7 @@ You can assign the PR to them by writing ` + "`/assign @\"alice\"`" + ` in a com
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 <details open>
 Needs approval from an approver in each of these files:
@@ -798,7 +798,7 @@ You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 <details open>
 Needs approval from an approver in each of these files:
@@ -839,7 +839,7 @@ You can assign the PR to them by writing ` + "`/lh-assign @alice`" + ` in a comm
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/lh-approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 <details open>
 Needs approval from an approver in each of these files:
@@ -879,7 +879,7 @@ This pull-request has been approved by: *[Alice](REFERENCE "Approved")*, *[Bill]
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 The pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)
 
@@ -921,7 +921,7 @@ You can assign the PR to them by writing ` + "`/assign @alice @bill`" + ` in a c
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 <details open>
 Needs approval from an approver in each of these files:
@@ -963,7 +963,7 @@ This pull-request has been approved by: *[Alice](REFERENCE "Approved")*, *[Bill]
 
 Associated issue: *#12345*
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 The pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)
 
@@ -1006,7 +1006,7 @@ This pull-request has been approved by: *[Alice](REFERENCE "Approved")*, *[Bill]
 
 Associated issue requirement bypassed by: *[Alice](REFERENCE "Approved")*, *[Bill](REFERENCE "Approved")*
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 The pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)
 
@@ -1049,7 +1049,7 @@ You can assign the PR to them by writing ` + "`/assign @alice @doctor`" + ` in a
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 <details open>
 Needs approval from an approver in each of these files:
@@ -1090,7 +1090,7 @@ You can assign the PR to them by writing ` + "`/assign @alice @doctor`" + ` in a
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo=org%2Frepo).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
 <details open>
 Needs approval from an approver in each of these files:
