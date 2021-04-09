@@ -1,0 +1,46 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-04-09T12:02:33Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    issueIds:
+    - "1268"
+    message: |
+      fix: lets not fail if a repo has no triggers dir
+
+      fixes #1268
+    sha: 3315a7cb699df12fbadd6fc9469108d4c0e06d8a
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  issues:
+  - body: "we should be able to handle any git repository with no `.lighthouse` folder
+      in the main branch and incrementally add pipelines in a new Pull Request.\r\n\r\nRight
+      now we see errors like this:\r\n```\r\nfailed to trigger Pull Request pipeline\r\nfailed
+      to create agent\r\nfailed to calculate in repo config\r\nfailed to load trigger
+      config for repository njiuko/centroid for ref\r\nfailed to find any lighthouse
+      configuration files in repo njiuko/centroid at sha\r\nfailed to process repo
+      njiuko/centroid refref\r\nfailed to list files in directory /var/tmp/gitrepo774783968/.lighthouse\r\nopen
+      /var/tmp/gitrepo774783968/.lighthouse\r\nno such file or directory\r\n```"
+    creationTimestamp: "2021-03-31T11:00:35Z"
+    id: "1268"
+    state: closed
+    title: lets not fail if the main branch does not have .lighthouse
+    url: https://github.com/jenkins-x/lighthouse/issues/1268
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/v1.0.23
+  version: 1.0.23
+status: {}
+ 
+{{- end }}
