@@ -27,6 +27,8 @@ import (
 
 const (
 	controllerName = "foghorn"
+
+	retryCount = 5
 )
 
 // LighthouseJobReconciler listens for changes to LighthouseJobs and updates the corresponding LighthouseJob status and provider commit statuses.
@@ -120,13 +122,47 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	r.reportStatus(activityRecord, jobCopy)
 
 	if !reflect.DeepEqual(job.Status, jobCopy.Status) {
-		if err := r.client.Status().Update(ctx, jobCopy); err != nil {
+		f := func(job *lighthousev1alpha1.LighthouseJob) error {
+			job.Status = jobCopy.Status
+			if err := r.client.Status().Update(ctx, job); err != nil {
+				r.logger.Errorf("Failed to update LighthouseJob status: %s", err)
+				return err
+			}
+			return nil
+		}
+		if err := r.retryModifyJob(ctx, req.NamespacedName, jobCopy, f); err != nil {
 			r.logger.Errorf("Failed to update LighthouseJob status: %s", err)
 			return ctrl.Result{}, err
 		}
 	}
 
 	return ctrl.Result{}, nil
+}
+
+// retryModifyJob tries to modify the Job retrying if it fails
+func (r *LighthouseJobReconciler) retryModifyJob(ctx context.Context, ns client.ObjectKey, job *lighthousev1alpha1.LighthouseJob, f func(job *lighthousev1alpha1.LighthouseJob) error) error {
+	i := 0
+	for {
+		i++
+		err := f(job)
+		if err == nil {
+			if i > 1 {
+				r.logger.Infof("took %d attempts to update Job %s", i, job.Name)
+			}
+			return nil
+		}
+		if i >= retryCount {
+			return errors.Wrapf(err, "failed to update Job %s after %d attempts", job.Name, retryCount)
+		}
+
+		if err := r.client.Get(ctx, ns, job); err != nil {
+			r.logger.Warningf("Unable to get LighthouseJob %s due to: %s", job.Name, err)
+			// we'll ignore not-found errors, since they can't be fixed by an immediate
+			// requeue (we'll need to wait for a new notification), and we can get them
+			// on deleted requests.
+			return client.IgnoreNotFound(err)
+		}
+	}
 }
 
 func (r *LighthouseJobReconciler) updateJobStatusForActivity(activity *lighthousev1alpha1.ActivityRecord, job *lighthousev1alpha1.LighthouseJob) {
