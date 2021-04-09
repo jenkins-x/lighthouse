@@ -97,6 +97,9 @@ func mergeConfigs(m map[string]*triggerconfig.Config) (*triggerconfig.Config, er
 		}
 		answer = merge.CombineConfigs(answer, cfg)
 	}
+	if answer == nil {
+		answer = &triggerconfig.Config{}
+	}
 	return answer, nil
 }
 

@@ -1,6 +1,7 @@
 package inrepo
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -11,6 +12,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
+	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/stretchr/testify/assert"
@@ -67,6 +69,21 @@ func TestInvalidConfigs(t *testing.T) {
 
 		t.Logf("got expected error loading invalid configuration on repo %s of: %s", repo, err.Error())
 	}
+}
+
+func TestEmptyDirectoryDoesNotFail(t *testing.T) {
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser(filepath.Join("test_data", "empty_dir")))
+	require.NoError(t, err, "failed to create filebrowsers")
+
+	owner := "myorg"
+	repo := "myrepo"
+	ref := "master"
+	config, err := LoadTriggerConfig(fileBrowsers, NewResolverCache(), owner, repo, ref)
+	require.NoErrorf(t, err, "should not fail to load triggers for repo %s/%s with ref %s", owner, repo, ref)
+	require.NotNil(t, config, "no config for repo %s/%s with ref %s", owner, repo, ref)
+
+	assert.Empty(t, config.Spec.Presubmits, "should have no presubmits")
+	assert.Empty(t, config.Spec.Postsubmits, "should have no postsubmits")
 }
 
 func TestLoadJobFromURL(t *testing.T) {

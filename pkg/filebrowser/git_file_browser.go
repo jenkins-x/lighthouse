@@ -1,6 +1,7 @@
 package filebrowser
 
 import (
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
@@ -45,6 +46,13 @@ func (f *gitFileBrowser) GetFile(owner, repo, path, ref string) (answer []byte, 
 func (f *gitFileBrowser) ListFiles(owner, repo, path, ref string) (answer []*scm.FileEntry, err error) {
 	err = f.withRepoClient(owner, repo, ref, func(repoClient git.RepoClient) error {
 		dir := repoPath(repoClient, path)
+		exists, err := util.DirExists(dir)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check dir exists %s", dir)
+		}
+		if !exists {
+			return nil
+		}
 		fileNames, err := ioutil.ReadDir(dir)
 		if err != nil {
 			return errors.Wrapf(err, "failed to list files in directory %s", dir)

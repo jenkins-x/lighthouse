@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"io/ioutil"
 	"path/filepath"
 
@@ -34,6 +35,13 @@ func (f *fakeFileBrowser) GetFile(owner, repo, path, ref string) ([]byte, error)
 
 func (f *fakeFileBrowser) ListFiles(owner, repo, path, ref string) ([]*scm.FileEntry, error) {
 	dir := filepath.Join(f.dir, path)
+	exists, err := util.DirExists(dir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to check dir exists %s", dir)
+	}
+	if !exists {
+		return nil, nil
+	}
 	fileNames, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read dir %s", dir)
