@@ -658,7 +658,7 @@ Associated issue requirement bypassed by:{{range $index, $approval := .ap.ListNo
 
 {{ end -}}
 
-The full list of commands accepted by this bot can be found [here](https://go.k8s.io/bot-commands?repo={{ .org }}%2F{{ .repo }}).
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo={{ .org }}%2F{{ .repo }}).
 
 {{ if (or .ap.AreFilesApproved (call .ap.ManuallyApproved)) -}}
 The pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)
