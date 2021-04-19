@@ -1,0 +1,65 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-04-19T09:43:18Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    branch: master
+    committer:
+      email: james.strachan@gmail.com
+      name: James Strachan
+    issueIds:
+    - "1287"
+    message: |
+      fix: preserve sidecars with in repo pipelines
+
+      fixes #1287
+    sha: 6c09a5f0c4c8b83b7986105ff4a8951d514593ef
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  issues:
+  - body: "Hi !\r\n\r\nI have been trying to configure a pipeline with a sidecar for
+      the execution of tests in a nodejs application against selenium. Although the
+      pipeline is correct (jx pipeline lint gives an OK result) when lighthouse creates
+      the LighthouseJob from the repository pullrequest.yaml it does not include the
+      sidecar part in the pipeline specification. For this reason, the pipelinerun
+      that is created later does not have this definition either.\r\n\r\nI add sidecar
+      config and test to check this and after add the code pass the test, but the
+      LighthouseJob don't have all configuration.\r\n\r\n```\r\ndiff --git a/pkg/triggerconfig/inrepo/load_triggers_test.go
+      b/pkg/triggerconfig/inrepo/load_triggers_test.go\r\nindex ad704498..7419eb73
+      100644\r\n--- a/pkg/triggerconfig/inrepo/load_triggers_test.go\r\n+++ b/pkg/triggerconfig/inrepo/load_triggers_test.go\r\n@@
+      -99,4 +99,5 @@ func TestLoadJobFromURL(t *testing.T) {\r\n        err := loadJobBaseFromSourcePath(nil,
+      NewResolverCache(), j, \"\", \"\", \"https://raw.githubusercontent.com/rawlingsj/test/master/foo.yaml\",
+      \"\")\r\n        assert.NoError(t, err, \"should not have an error returned\")\r\n
+      \       assert.Equal(t, \"jenkinsxio/chuck:0.0.1\", j.PipelineRunSpec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Image,
+      \"image name for task is not correct\")\r\n+       assert.Equal(t, \"selenium/standalone-chrome\",
+      j.PipelineRunSpec.PipelineSpec.Tasks[0].TaskSpec.Sidecars[0].Image, \"image
+      name for sidecar is not correct\")\r\n }\r\ndiff --git a/pkg/triggerconfig/inrepo/test_data/load_url/foo.yaml
+      b/pkg/triggerconfig/inrepo/test_data/load_url/foo.yaml\r\nindex 22da2d41..e2213ad9
+      100644\r\n--- a/pkg/triggerconfig/inrepo/test_data/load_url/foo.yaml\r\n+++
+      b/pkg/triggerconfig/inrepo/test_data/load_url/foo.yaml\r\n@@ -17,5 +17,8 @@
+      spec:\r\n                   cpu: 100m\r\n                   memory: 200Mi\r\n
+      \              workingDir: /workspace/source\r\n+          sidecars:\r\n+            -
+      image: selenium/standalone-chrome\r\n+              name: selenium\r\n   serviceAccountName:
+      tekton-bot\r\n   timeout: 0h20m0s\r\n\\ No newline at end of file\r\n```\r\n\r\nWe
+      need to load all configuration defined in the pipelines. I will investigate
+      to see if I find the cause of the problem and a possible solution. I willl add
+      more test"
+    creationTimestamp: "2021-04-18T07:01:04Z"
+    id: "1287"
+    state: closed
+    title: lost sidecar definition on task when load pipelines from repository
+    url: https://github.com/jenkins-x/lighthouse/issues/1287
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/v1.0.28
+  version: 1.0.28
+status: {}
+ 
+{{- end }}
