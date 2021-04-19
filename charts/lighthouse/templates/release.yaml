@@ -1,0 +1,32 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-04-19T07:15:35Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    branch: master
+    committer:
+      email: v.behar@free.fr
+      name: Vincent Behar
+    message: |
+      fix: use the right event GUID when handling comments
+
+      previously issues & pullrequests comments used the issue/pr ID as the event GUID
+
+      related to https://github.com/jenkins-x/go-scm/pull/267
+    sha: 1b9b016819fde24c30778e7472dbaa45d985fdad
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/v1.0.27
+  version: 1.0.27
+status: {}
+ 
+{{- end }}
