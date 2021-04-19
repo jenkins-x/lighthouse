@@ -75,6 +75,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 	useTS.Params = useParameterSpecs(ctx, useTS.Params, ts.Params)
 	useTS.Results = useResults(useTS.Results, ts.Results)
 	useTS.Workspaces = useWorkspaces(useTS.Workspaces, ts.Workspaces)
+	useTS.Sidecars = useSidecars(useTS.Sidecars, ts.Sidecars)
 	*ts = *useTS
 	ts.Steps = originalSteps
 

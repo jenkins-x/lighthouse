@@ -48,6 +48,7 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 	if ts != nil {
 		ts.Params = useParameterSpecs(ctx, ts.Params, parameterSpecs)
 		ts.Results = useResults(ts.Results, results)
+		ts.Sidecars = useSidecars(ts.Sidecars, uses.Sidecars)
 		ts.Workspaces = useWorkspaces(ts.Workspaces, uses.Workspaces)
 
 		// lets create a step template if its not already defined
@@ -247,6 +248,23 @@ func usePipelineWorkspaces(ws []v1beta1.PipelineWorkspaceDeclaration, uses []v1b
 				Description: u.Description,
 				Optional:    u.Optional,
 			})
+		}
+	}
+	return ws
+}
+
+func useSidecars(ws []v1beta1.Sidecar, uses []v1beta1.Sidecar) []v1beta1.Sidecar {
+	for _, u := range uses {
+		found := false
+		for i := range ws {
+			param := &ws[i]
+			if param.Name == u.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			ws = append(ws, u)
 		}
 	}
 	return ws
