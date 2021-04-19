@@ -65,7 +65,7 @@ func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 	})
 	l.Infof("Issue comment %s.", ic.Action)
 	event := &scmprovider.GenericCommentEvent{
-		GUID:        strconv.Itoa(ic.Comment.ID),
+		GUID:        ic.GUID,
 		IsPR:        ic.Issue.PullRequest,
 		Action:      ic.Action,
 		Body:        ic.Comment.Body,
@@ -108,7 +108,7 @@ func (s *Server) handlePullRequestCommentEvent(l *logrus.Entry, pc scm.PullReque
 	s.handleGenericComment(
 		l,
 		&scmprovider.GenericCommentEvent{
-			GUID:        strconv.Itoa(pc.Comment.ID),
+			GUID:        pc.GUID,
 			IsPR:        true,
 			Action:      pc.Action,
 			Body:        pc.Comment.Body,
