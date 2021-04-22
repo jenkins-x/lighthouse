@@ -9,7 +9,7 @@ metadata:
     {{- toYaml .Values.webhooks.ingress.annotations | nindent 4 }}
 spec:
   rules:
-  {{- range .Values.webhooks.ingress.hosts }}
+  {{- range (required "A valid ingress host is required when ingress enabled!" .Values.webhooks.ingress.hosts) }}
   - host: {{ . | quote }}
     http:
       paths:
