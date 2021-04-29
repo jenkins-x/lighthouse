@@ -12,7 +12,7 @@ lighthouseJobNamespace: ""
 githubApp:
   # githubApp.enabled -- Enables GitHub app authentication
   enabled: false
-
+               log
   # githubApp.username -- GitHub app user name 
   username:  "jenkins-x[bot]"
 
@@ -28,8 +28,17 @@ hmacToken: ""
 # hmacTokenEnabled -- Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud
 hmacTokenEnabled: true
 
-# logFormat -- Log format
+# logFormat -- Log format either json or stackdriver
 logFormat: "json"
+
+# logService -- The name of the service registered with logging
+logService: ""
+
+# logLevel -- The logging level: debug, info, warn
+logLevel: "info"
+
+# logStackSkip -- Comma separated stack frames to skip from the log
+logStackSkip: ""
 
 cluster:
   crds:
