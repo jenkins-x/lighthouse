@@ -35,6 +35,12 @@ spec:
           - name: "LOGRUS_FORMAT"
             value: "{{ .Values.logFormat }}"
           {{- range $pkey, $pval := .Values.env }}
+          - name: LOGRUS_SERVICE
+            value: "{{ .Values.logService | default .Chart.Name }}"
+          - name: LOGRUS_SERVICE_VERSION
+            value: "{{ .Chart.Version }}"
+          - name: LOGRUS_STACK_SKIP
+            value: "{{ .Values.logStackSkip }}"
           - name: {{ $pkey }}
             value: {{ quote $pval }}
           {{- end }}

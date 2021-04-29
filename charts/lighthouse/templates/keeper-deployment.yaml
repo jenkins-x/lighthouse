@@ -77,6 +77,12 @@ spec:
           value: "{{ .Values.logFormat }}"
         - name: "LOGRUS_FORMAT"
           value: "{{ .Values.logFormat }}"
+        - name: LOGRUS_SERVICE
+          value: "{{ .Values.logService | default .Chart.Name }}"
+        - name: LOGRUS_SERVICE_VERSION
+          value: "{{ .Chart.Version }}"
+        - name: LOGRUS_STACK_SKIP
+          value: "{{ .Values.logStackSkip }}"
         - name: "LIGHTHOUSE_KEEPER_STATUS_CONTEXT_LABEL"
           value: "{{ .Values.keeper.statusContextLabel}}"
 {{- if hasKey .Values.keeper "env" }}

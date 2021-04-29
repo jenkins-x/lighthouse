@@ -73,7 +73,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `gcJobs.successfulJobsHistoryLimit` | int | Drives the successful jobs history limit | `3` |
 | `git.kind` | string | Git SCM provider (`github`, `gitlab`, `stash`) | `"github"` |
 | `git.server` | string | Git server URL | `""` |
-| `githubApp.enabled` | bool | Enables GitHub app authentication | `false` |
+| `githubApp.enabled` | string | Enables GitHub app authentication | `"false log"` |
 | `githubApp.username` | string | GitHub app user name  | `"jenkins-x[bot]"` |
 | `hmacToken` | string | Secret used for webhooks | `""` |
 | `hmacTokenEnabled` | bool | Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud | `true` |
@@ -113,7 +113,10 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `keeper.terminationGracePeriodSeconds` | int | Termination grace period for keeper pods | `30` |
 | `keeper.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the keeper pods | `[]` |
 | `lighthouseJobNamespace` | string | Namespace where `LighthouseJob`s and `Pod`s are created | Deployment namespace |
-| `logFormat` | string | Log format | `"json"` |
+| `logFormat` | string | Log format either json or stackdriver | `"json"` |
+| `logLevel` | string | The logging level: debug, info, warn | `"info"` |
+| `logService` | string | The name of the service registered with logging | `""` |
+| `logStackSkip` | string | Comma separated stack frames to skip from the log | `""` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
 | `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
 | `tektoncontroller.dashboardTemplate` | string | Go template expression for URLs in the dashboard if not using Tekton dashboard | `""` |
