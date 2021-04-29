@@ -12,8 +12,8 @@ lighthouseJobNamespace: ""
 githubApp:
   # githubApp.enabled -- Enables GitHub app authentication
   enabled: false
-               log
-  # githubApp.username -- GitHub app user name 
+
+  # githubApp.username -- GitHub app user name
   username:  "jenkins-x[bot]"
 
 # user -- Git user name (used when GitHub app authentication is not enabled)
