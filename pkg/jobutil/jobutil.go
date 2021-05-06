@@ -304,6 +304,10 @@ func LabelsAndAnnotationsForJob(lj v1alpha1.LighthouseJob, buildID string) (map[
 	if extraAnnotations = lj.ObjectMeta.Annotations; extraAnnotations == nil {
 		extraAnnotations = map[string]string{}
 	}
+	// ensure the opentelemetry annotations holding trace context
+	// won't be copied to other resources
+	delete(extraAnnotations, "lighthouse.jenkins-x.io/traceparent")
+	delete(extraAnnotations, "lighthouse.jenkins-x.io/tracestate")
 	return LabelsAndAnnotationsForSpec(lj.Spec, extraLabels, extraAnnotations)
 }
 
