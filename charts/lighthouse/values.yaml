@@ -5,6 +5,9 @@ git:
   # git.server -- Git server URL
   server: ""
 
+  # git local repository cache directory
+  cacheDir: ""
+
 # lighthouseJobNamespace -- Namespace where `LighthouseJob`s and `Pod`s are created
 # @default -- Deployment namespace
 lighthouseJobNamespace: ""

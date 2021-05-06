@@ -65,8 +65,8 @@ func (c *client) Clean() error {
 
 // NewClient returns a client that talks to GitHub. It will fail if git is not
 // in the PATH.
-func NewClient(serverURL string, gitKind string) (Client, error) {
-	t, err := ioutil.TempDir("", "git")
+func NewClient(serverURL string, gitKind, gitCacheDir string) (Client, error) {
+	t, err := ioutil.TempDir(gitCacheDir, "git")
 	if err != nil {
 		return nil, err
 	}

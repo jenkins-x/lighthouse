@@ -163,7 +163,7 @@ func (g *gitHubAppKeeperController) createOwnerController(owner string, configGe
 	}
 	util.AddAuthToSCMClient(scmClient, token, true)
 	gitproviderClient := scmprovider.ToClient(scmClient, g.botName)
-	gitClient, err := git.NewClient(g.gitServer, g.gitKind)
+	gitClient, err := git.NewClient(g.gitServer, g.gitKind, "")
 	if err != nil {
 		return nil, errors.Wrap(err, "creating git client")
 	}

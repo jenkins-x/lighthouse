@@ -42,7 +42,7 @@ type WebhooksController struct {
 }
 
 // NewWebhooksController creates and configures the controller
-func NewWebhooksController(path, namespace, botName, pluginFilename, configFilename string) (*WebhooksController, error) {
+func NewWebhooksController(path, namespace, botName, pluginFilename, configFilename, gitCacheDir string) (*WebhooksController, error) {
 	o := &WebhooksController{
 		path:           path,
 		namespace:      namespace,
@@ -57,7 +57,7 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	}
 
 	cfg := o.server.ConfigAgent.Config
-	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind(cfg))
+	gitClient, err := git.NewClient(o.gitServerURL, util.GitKind(cfg), gitCacheDir)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error getting git client.")
 	}
