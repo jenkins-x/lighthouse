@@ -346,8 +346,8 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]prWit
 		}
 		if wantState != strings.ToLower(string(actualState)) || wantDesc != actualDesc {
 			reportURL := targetURL(sc.config, pr, log)
-			// BitBucket Server requires a valid URL in all status reports
-			if sc.spc.ProviderType() == "stash" && reportURL == "" {
+			// BitBucket Server and Cloud require a valid URL in all status reports
+			if (sc.spc.ProviderType() == "stash" || sc.spc.ProviderType() == "bitbucketcloud" || sc.spc.ProviderType() == "bitbucket") && reportURL == "" {
 				reportURL = "https://github.com/jenkins-x/lighthouse"
 			}
 			if _, err := sc.spc.CreateGraphQLStatus(
