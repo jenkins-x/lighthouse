@@ -145,3 +145,49 @@ func TestTriggersInBranchMergeToMaster(t *testing.T) {
 	assert.Len(t, cfg.Postsubmits[fullName], 1, "postsubmits for repo %s", fullName)
 
 }
+
+func TestIssue1306(t *testing.T) {
+
+	/**
+	*
+	* The issue is that the master version of shared-task.yaml is used even though the PR branch provides an update
+	*
+	 */
+	owner := "myorg"
+	repo := "issue-1306"
+
+	fullName := scm.Join(owner, repo)
+
+	scmClient, fakeData := fakescm.NewDefault()
+	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
+
+	fakeData.Repositories = []*scm.Repository{
+		{
+			Namespace: owner,
+			Name:      repo,
+			FullName:  fullName,
+			Branch:    "master",
+		},
+	}
+
+	enabled := true
+	sharedConfig := &config.Config{
+		ProwConfig: config.ProwConfig{
+			InRepoConfig: lighthouse.InRepoConfig{
+				Enabled: map[string]*bool{
+					fullName: &enabled,
+				},
+			},
+		},
+	}
+	sharedPluginConfig := &plugins.Configuration{}
+
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
+	require.NoError(t, err, "failed to create filebrowsers")
+
+	cfg, _, err := inrepo.Generate(fileBrowsers, inrepo.NewResolverCache(), sharedConfig, sharedPluginConfig, owner, repo, "pr1")
+	require.NoError(t, err, "failed to calculate in repo config")
+
+	assert.Contains(t, cfg.Presubmits[fullName][0].Base.PipelineRunSpec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Script, "ubuntu-pr1")
+
+}

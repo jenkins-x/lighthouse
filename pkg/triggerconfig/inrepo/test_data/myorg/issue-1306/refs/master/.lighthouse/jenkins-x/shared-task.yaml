@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: task1
+spec:
+  steps:
+  - name: step-1
+    image: ubuntu
+    script: |
+      #!/usr/bin/env bash
+      echo ubuntu-master

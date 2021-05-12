@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  creationTimestamp: null
+  name: release
+spec:
+  pipelineSpec:
+    tasks:
+    - name: release
+      taskSpec:
+        steps:
+        - image: uses:.lighthouse/jenkins-x/shared-task.yaml

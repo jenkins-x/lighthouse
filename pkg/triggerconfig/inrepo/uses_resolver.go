@@ -41,7 +41,7 @@ var (
 // UsesSteps lets resolve the sourceURI to a PipelineRun and find the step or steps
 // for the given task name and/or step name then lets apply any overrides from the step
 func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv1beta1.Step, ts *tektonv1beta1.TaskSpec, loc *UseLocation) ([]tektonv1beta1.Step, error) {
-	pr := r.Cache.GetPipelineRun(sourceURI)
+	pr := r.Cache.GetPipelineRun(sourceURI, r.SHA)
 	if pr == nil || ignoreUsesCache {
 		data, err := r.GetData(sourceURI, false)
 		if err != nil {
@@ -58,7 +58,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 		if pr == nil {
 			return nil, errors.Errorf("no PipelineRun for URI %s", sourceURI)
 		}
-		r.Cache.SetPipelineRun(sourceURI, pr)
+		r.Cache.SetPipelineRun(sourceURI, r.SHA, pr)
 	}
 
 	useTS, err := r.findSteps(sourceURI, pr.DeepCopy(), taskName, step)
@@ -88,7 +88,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 
 // GetData gets the data from the given source URI
 func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error) {
-	data := r.Cache.GetData(path)
+	data := r.Cache.GetData(path, r.SHA)
 	if len(data) > 0 {
 		return data, nil
 	}
@@ -151,7 +151,7 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, owner, repo, sha)
 	}
 	if gitURI != nil {
-		r.Cache.SetData(path, data)
+		r.Cache.SetData(path, r.SHA, data)
 	}
 	return data, nil
 }
