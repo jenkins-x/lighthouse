@@ -6,7 +6,7 @@ spec:
     - name: from-build-pack
       taskSpec:
         steps:
-        - image: uses:./test_data/load_pipelinerun/uses-ussue-1234/common.yaml
+        - image: uses:./test_data/load_pipelinerun/uses-issue-1234/common.yaml
           name: common-build
           env:
           - name: FOO
