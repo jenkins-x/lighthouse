@@ -73,8 +73,8 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `gcJobs.successfulJobsHistoryLimit` | int | Drives the successful jobs history limit | `3` |
 | `git.kind` | string | Git SCM provider (`github`, `gitlab`, `stash`) | `"github"` |
 | `git.server` | string | Git server URL | `""` |
-| `githubApp.enabled` | string | Enables GitHub app authentication | `"false log"` |
-| `githubApp.username` | string | GitHub app user name  | `"jenkins-x[bot]"` |
+| `githubApp.enabled` | bool | Enables GitHub app authentication | `false` |
+| `githubApp.username` | string | GitHub app user name | `"jenkins-x[bot]"` |
 | `hmacToken` | string | Secret used for webhooks | `""` |
 | `hmacTokenEnabled` | bool | Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud | `true` |
 | `image.parentRepository` | string | Docker registry to pull images from | `"gcr.io/jenkinsxio"` |
