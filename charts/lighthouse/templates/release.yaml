@@ -1,0 +1,28 @@
+{{- if .Capabilities.APIVersions.Has "jenkins.io/v1/Release" }}
+apiVersion: jenkins.io/v1
+kind: Release
+metadata:
+  creationTimestamp: "2021-05-19T09:50:17Z"
+  deletionTimestamp: null
+  name: '{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}'
+spec:
+  commits:
+  - author:
+      email: cameron@drivenow.com.au
+      name: Cameron Braid
+    branch: master
+    committer:
+      email: cameron@drivenow.com.au
+      name: Cameron Braid
+    message: |
+      chore: upgrade go-scm to 1.9.0
+    sha: 996e65361cbdd8a1a30d35fbb744ca4080b10ca1
+  gitHttpUrl: https://github.com/jenkins-x/lighthouse
+  gitOwner: jenkins-x
+  gitRepository: lighthouse
+  name: '{{ .Chart.Name }}'
+  releaseNotesURL: https://github.com/jenkins-x/lighthouse/releases/tag/v1.0.41
+  version: 1.0.41
+status: {}
+ 
+{{- end }}
