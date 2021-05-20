@@ -350,6 +350,8 @@ func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool 
 		scm.ActionUnassigned,
 		scm.ActionReviewRequested,
 		scm.ActionReviewRequestRemoved,
+		scm.ActionReadyForReview,
+		scm.ActionConvertedToDraft,
 		scm.ActionLabel,
 		scm.ActionUnlabel,
 		scm.ActionClose,
