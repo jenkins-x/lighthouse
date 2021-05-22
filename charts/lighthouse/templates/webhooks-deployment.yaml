@@ -77,6 +77,10 @@ spec:
             value: {{ quote $pval }}
 {{- end }}
 {{- end }}
+        envFrom:
+        - secretRef:
+            name: jx-boot-job-env-vars
+            optional: true
         ports:
         - containerPort: {{ .Values.webhooks.service.internalPort }}
         livenessProbe:
