@@ -43,6 +43,10 @@ spec:
           - name: {{ $pkey }}
             value: {{ quote $pval }}
           {{- end }}
+        envFrom:
+        - secretRef:
+            name: jx-boot-job-env-vars
+            optional: true
         resources:
           {{- toYaml .Values.tektoncontroller.resources | nindent 12 }}
       terminationGracePeriodSeconds: {{ .Values.tektoncontroller.terminationGracePeriodSeconds }}

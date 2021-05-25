@@ -91,6 +91,10 @@ spec:
           value: {{ quote  $pval }}
 {{- end }}
 {{- end }}
+        envFrom:
+        - secretRef:
+            name: jx-boot-job-env-vars
+            optional: true
         resources:
 {{ toYaml .Values.keeper.resources | indent 10 }}
 {{- if .Values.githubApp.enabled }}
