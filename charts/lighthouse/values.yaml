@@ -47,7 +47,7 @@ cluster:
 
 image:
   # image.parentRepository -- Docker registry to pull images from
-  parentRepository: gcr.io/jenkinsxio
+  parentRepository: ghcr.io/jenkins-x
 
   # image.tag -- Docker images tag
   tag: 0.0.750

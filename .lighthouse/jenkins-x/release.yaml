@@ -31,45 +31,45 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-webhooks:$VERSION --destination=ghcr.io/jenkins-x/lighthouse/lighthouse-webhooks:$VERSION --build-arg=VERSION=$VERSION
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION --build-arg=VERSION=$VERSION
         - name: build-and-push-image:keeper
           resources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-keeper:$VERSION --destination=ghcr.io/jenkins-x/lighthouse/lighthouse-keeper:$VERSION --build-arg=VERSION=$VERSION
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION --build-arg=VERSION=$VERSION
         - name: build-and-push-image:foghorn
           resources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-foghorn:$VERSION --destination=ghcr.io/jenkins-x/lighthouse/lighthouse-foghorn:$VERSION --build-arg=VERSION=$VERSION
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-foghorn:$VERSION --build-arg=VERSION=$VERSION
         - name: build-and-push-image:tekton
           resources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-tekton-controller:$VERSION --destination=ghcr.io/jenkins-x/lighthouse/lighthouse-tekton-controller:$VERSION --build-arg=VERSION=$VERSION
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:$VERSION --build-arg=VERSION=$VERSION
         - name: build-and-push-image:jenkins
           resources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-jenkins-controller:$VERSION --destination=ghcr.io/jenkins-x/lighthouse/lighthouse-jenkins-controller:$VERSION --build-arg=VERSION=$VERSION
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:$VERSION --build-arg=VERSION=$VERSION
         - name: build-and-push-image:gc-jobs
           resources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=gcr.io/jenkinsxio/lighthouse-gc-jobs:$VERSION --destination=ghcr.io/jenkins-x/lighthouse/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
         - name: chart-docs
           resources: {}
-        - image: gcr.io/jenkinsxio/jx-changelog:0.0.35
+        - image: ghcr.io/jenkins-x/jx-changelog:0.0.43
           name: changelog
           resources: {}
           script: |
