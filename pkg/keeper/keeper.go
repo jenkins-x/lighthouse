@@ -1410,7 +1410,7 @@ func (c *DefaultController) commentOnPRsWithFailedMerge(prs []PullRequest, error
 }
 
 func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, error) {
-	sp.log.Infof("Syncing subpool: %d PRs, %d PJs.", len(sp.prs), len(sp.ljs))
+	sp.log.Infof("Syncing subpool: %d PRs, %d LJs.", len(sp.prs), len(sp.ljs))
 	successes, pendings, missings, missingSerialTests := accumulate(sp.presubmits, sp.prs, sp.ljs, sp.log)
 	batchMerge, batchPending := accumulateBatch(sp.presubmits, sp.prs, sp.ljs, sp.log)
 	sp.log.WithFields(logrus.Fields{
