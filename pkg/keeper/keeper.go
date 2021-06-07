@@ -1263,6 +1263,15 @@ func (c *DefaultController) takeAction(sp subpool, batchPending, successes, pend
 	if disableTrigger == "disable" || strings.HasPrefix(disableTrigger, "disable") {
 		return Wait, nil, nil
 	}
+	if disableTrigger != "" {
+		fullName := sp.org + "/" + sp.repo
+		disableRepos := strings.Split(disableTrigger, ",")
+		for _, disableRepo := range disableRepos {
+			if strings.TrimSpace(disableRepo) == fullName {
+				return Wait, nil, nil
+			}
+		}
+	}
 	// If we have no serial jobs pending or successful, trigger one.
 	if len(missings) > 0 && len(pendings) == 0 && len(successes) == 0 {
 		if ok, pr := pickSmallestPassingNumber(sp.log, c.spc, missings, sp.cc); ok {
