@@ -17,6 +17,7 @@ limitations under the License.
 package jobutil
 
 import (
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 
@@ -684,5 +685,75 @@ func TestPartitionActive(t *testing.T) {
 				t.Errorf("didn't find aborted job %#v", job)
 			}
 		}
+	}
+}
+
+func TestGenerateName(t *testing.T) {
+	tests := []struct {
+		expected string
+		spec     v1alpha1.LighthouseJobSpec
+	}{
+		{
+			expected: "myorg-myrepo-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "myorg",
+					Repo: "myrepo",
+				},
+			},
+		},
+		{
+			expected: "st-organsation-my-repo-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "1st.Organsation",
+					Repo: "MY_REPO",
+				},
+			},
+		},
+		{
+			expected: "myorg-myrepo-main-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:     "myorg",
+					Repo:    "myrepo",
+					BaseRef: "main",
+				},
+			},
+		},
+		{
+			expected: "myorg-myrepo-pr-123-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "myorg",
+					Repo: "myrepo",
+					Pulls: []v1alpha1.Pull{
+						{
+							Number: 123,
+						},
+					},
+				},
+			},
+		},
+		{
+			expected: "repo-with-very-long-name-pr-123-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "organisation-with-long-name",
+					Repo: "repo-with-very-long-name",
+					Pulls: []v1alpha1.Pull{
+						{
+							Number: 123,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		spec := &tc.spec
+		actual := GenerateName(spec)
+		assert.Equal(t, tc.expected, actual, "for spec %#v", spec)
 	}
 }

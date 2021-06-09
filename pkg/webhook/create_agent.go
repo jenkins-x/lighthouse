@@ -32,6 +32,9 @@ import (
 func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.Agent, error) {
 	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l)
 	fullName := scm.Join(owner, repo)
+	if pc.Config == nil {
+		return pc, errors.Errorf("no config available. maybe the ConfigMap got deleted")
+	}
 	if !pc.Config.InRepoConfigEnabled(fullName) {
 		return pc, nil
 	}

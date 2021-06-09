@@ -30,10 +30,13 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
+)
+
+const (
+	maxGenerateNamePrefix = 32
 )
 
 // lighthouseClient a minimalistic lighthouse client required by the aborter
@@ -44,17 +47,17 @@ type lighthouseClient interface {
 // NewLighthouseJob initializes a LighthouseJob out of a LighthouseJobSpec.
 func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotations map[string]string) v1alpha1.LighthouseJob {
 	labels, annotations := LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
-	newID, _ := uuid.NewV1()
 
+	generateName := GenerateName(&spec)
 	return v1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "lighthouse.jenkins.io/v1alpha1",
 			Kind:       "LighthouseJob",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        newID.String(),
-			Labels:      labels,
-			Annotations: annotations,
+			GenerateName: generateName,
+			Labels:       labels,
+			Annotations:  annotations,
 		},
 		Spec: spec,
 	}
@@ -184,6 +187,40 @@ func completePrimaryRefs(refs v1alpha1.Refs, jb job.Base) *v1alpha1.Refs {
 	// TODO
 	//refs.CloneDepth = jb.CloneDepth
 	return &refs
+}
+
+// GenerateName generates a meaningful name for the LighthouseJob from the spec
+func GenerateName(spec *v1alpha1.LighthouseJobSpec) string {
+	if spec.Refs == nil {
+		return "missingref"
+	}
+
+	branch := spec.Refs.BaseRef
+	if len(spec.Refs.Pulls) > 0 {
+		branch = "pr-" + strconv.Itoa(spec.Refs.Pulls[0].Number)
+	}
+	name := addNonEmptyParts(spec.Refs.Org, spec.Refs.Repo, branch, spec.Context)
+	name = util.ToValidName(name)
+	if len(name) > maxGenerateNamePrefix {
+		name = name[len(name)-maxGenerateNamePrefix:]
+	}
+	name = strings.TrimPrefix(name, "-")
+	name = util.ToValidName(name)
+
+	if !strings.HasSuffix(name, "-") {
+		name += "-"
+	}
+	return name
+}
+
+func addNonEmptyParts(values ...string) string {
+	var parts []string
+	for _, v := range values {
+		if v != "" {
+			parts = append(parts, v)
+		}
+	}
+	return strings.Join(parts, "-")
 }
 
 // LighthouseJobFields extracts logrus fields from a LighthouseJob useful for logging.

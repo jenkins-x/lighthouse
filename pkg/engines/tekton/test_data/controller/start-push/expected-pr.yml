@@ -14,8 +14,8 @@ metadata:
     lighthouse.jenkins-x.io/refs.org: jenkins-x
     lighthouse.jenkins-x.io/refs.repo: lighthouse
     lighthouse.jenkins-x.io/type: postsubmit
-  name: github-mz4c7
-  generateName: github-
+  name: jenkins-x-lighthouse-main-github-mz4c7
+  generateName: jenkins-x-lighthouse-main-github-
   namespace: jx
   resourceVersion: '1'
   ownerReferences:
