@@ -50,7 +50,8 @@ image:
   parentRepository: ghcr.io/jenkins-x
 
   # image.tag -- Docker images tag
-  tag: 0.0.750
+  # the following tag is latest on the main branch, it's a specific version on a git tag
+  tag: latest
 
   # image.pullPolicy -- Image pull policy
   pullPolicy: IfNotPresent
