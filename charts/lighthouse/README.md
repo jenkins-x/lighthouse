@@ -73,13 +73,13 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `gcJobs.successfulJobsHistoryLimit` | int | Drives the successful jobs history limit | `3` |
 | `git.kind` | string | Git SCM provider (`github`, `gitlab`, `stash`) | `"github"` |
 | `git.server` | string | Git server URL | `""` |
-| `githubApp.enabled` | string | Enables GitHub app authentication | `"false log"` |
-| `githubApp.username` | string | GitHub app user name  | `"jenkins-x[bot]"` |
+| `githubApp.enabled` | bool | Enables GitHub app authentication | `false` |
+| `githubApp.username` | string | GitHub app user name | `"jenkins-x[bot]"` |
 | `hmacToken` | string | Secret used for webhooks | `""` |
 | `hmacTokenEnabled` | bool | Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud | `true` |
 | `image.parentRepository` | string | Docker registry to pull images from | `"ghcr.io/jenkins-x"` |
 | `image.pullPolicy` | string | Image pull policy | `"IfNotPresent"` |
-| `image.tag` | string | Docker images tag | `"0.0.750"` |
+| `image.tag` | string | Docker images tag the following tag is latest on the main branch, it's a specific version on a git tag | `"latest"` |
 | `jenkinscontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
 | `jenkinscontroller.image.pullPolicy` | string | Template for computing the tekton controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `jenkinscontroller.image.repository` | string | Template for computing the Jenkins controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"` |
