@@ -35,6 +35,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
+const (
+	maxGenerateNamePrefix = 32
+)
+
 // lighthouseClient a minimalistic lighthouse client required by the aborter
 type lighthouseClient interface {
 	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.LighthouseJob, err error)
@@ -200,7 +204,12 @@ func GenerateName(spec *v1alpha1.LighthouseJobSpec) string {
 		branch = "pr-" + strconv.Itoa(spec.Refs.Pulls[0].Number)
 	}
 	name := addNonEmptyParts(spec.Refs.Org, spec.Refs.Repo, branch, spec.Context)
-	return util.ToValidNameTruncated(name, 32)
+	name = util.ToValidName(name)
+	if len(name) > maxGenerateNamePrefix {
+		name = name[len(name)-maxGenerateNamePrefix:]
+	}
+	name = strings.TrimPrefix(name, "-")
+	return util.ToValidName(name)
 }
 
 func addNonEmptyParts(values ...string) string {

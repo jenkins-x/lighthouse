@@ -736,11 +736,16 @@ func TestGenerateName(t *testing.T) {
 			},
 		},
 		{
-			expected: "organisation-with-long-name-repo",
+			expected: "repo-with-very-long-name-pr-123",
 			spec: v1alpha1.LighthouseJobSpec{
 				Refs: &v1alpha1.Refs{
 					Org:  "organisation-with-long-name",
 					Repo: "repo-with-very-long-name",
+					Pulls: []v1alpha1.Pull{
+						{
+							Number: 123,
+						},
+					},
 				},
 			},
 		},
