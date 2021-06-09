@@ -694,7 +694,7 @@ func TestGenerateName(t *testing.T) {
 		spec     v1alpha1.LighthouseJobSpec
 	}{
 		{
-			expected: "myorg-myrepo",
+			expected: "myorg-myrepo-",
 			spec: v1alpha1.LighthouseJobSpec{
 				Refs: &v1alpha1.Refs{
 					Org:  "myorg",
@@ -703,7 +703,7 @@ func TestGenerateName(t *testing.T) {
 			},
 		},
 		{
-			expected: "st-organsation-my-repo",
+			expected: "st-organsation-my-repo-",
 			spec: v1alpha1.LighthouseJobSpec{
 				Refs: &v1alpha1.Refs{
 					Org:  "1st.Organsation",
@@ -712,7 +712,7 @@ func TestGenerateName(t *testing.T) {
 			},
 		},
 		{
-			expected: "myorg-myrepo-main",
+			expected: "myorg-myrepo-main-",
 			spec: v1alpha1.LighthouseJobSpec{
 				Refs: &v1alpha1.Refs{
 					Org:     "myorg",
@@ -722,7 +722,7 @@ func TestGenerateName(t *testing.T) {
 			},
 		},
 		{
-			expected: "myorg-myrepo-pr-123",
+			expected: "myorg-myrepo-pr-123-",
 			spec: v1alpha1.LighthouseJobSpec{
 				Refs: &v1alpha1.Refs{
 					Org:  "myorg",
@@ -736,7 +736,7 @@ func TestGenerateName(t *testing.T) {
 			},
 		},
 		{
-			expected: "repo-with-very-long-name-pr-123",
+			expected: "repo-with-very-long-name-pr-123-",
 			spec: v1alpha1.LighthouseJobSpec{
 				Refs: &v1alpha1.Refs{
 					Org:  "organisation-with-long-name",

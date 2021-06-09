@@ -3,7 +3,6 @@ package tekton
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -61,10 +60,11 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 
 	prLabels, annotations := jobutil.LabelsAndAnnotationsForJob(lj, buildID)
 	specCopy := lj.Spec.PipelineRunSpec.DeepCopy()
+	generateName := jobutil.GenerateName(&lj.Spec)
 	p := tektonv1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations:  annotations,
-			GenerateName: fmt.Sprintf("%s-", lj.Spec.Job),
+			GenerateName: generateName,
 			Namespace:    namespace,
 			Labels:       prLabels,
 		},

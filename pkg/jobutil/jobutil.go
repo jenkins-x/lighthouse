@@ -49,10 +49,6 @@ func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotat
 	labels, annotations := LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
 
 	generateName := GenerateName(&spec)
-	if !strings.HasSuffix(generateName, "-") {
-		generateName += "-"
-	}
-
 	return v1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "lighthouse.jenkins.io/v1alpha1",
@@ -209,7 +205,12 @@ func GenerateName(spec *v1alpha1.LighthouseJobSpec) string {
 		name = name[len(name)-maxGenerateNamePrefix:]
 	}
 	name = strings.TrimPrefix(name, "-")
-	return util.ToValidName(name)
+	name = util.ToValidName(name)
+
+	if !strings.HasSuffix(name, "-") {
+		name += "-"
+	}
+	return name
 }
 
 func addNonEmptyParts(values ...string) string {
