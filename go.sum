@@ -464,8 +464,8 @@ github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9/go.mod h1:Js0mq
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jcmturner/gofork v0.0.0-20190328161633-dc7c13fece03/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
 github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
-github.com/jenkins-x/go-scm v1.9.2 h1:2ahJTAowVNdRQMohjUi/Px30JKnzInEc9GUcKn1GAxU=
-github.com/jenkins-x/go-scm v1.9.2/go.mod h1:z7xTO9/VzqW3xEbEMH2z5cpOGrZ8+nOHOWfU1ngFGxs=
+github.com/jenkins-x/go-scm v1.9.3 h1:FXsit1wvYZcgR/R7MAYTY/cErmQ0SruLZeasewh7AUs=
+github.com/jenkins-x/go-scm v1.9.3/go.mod h1:z7xTO9/VzqW3xEbEMH2z5cpOGrZ8+nOHOWfU1ngFGxs=
 github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496 h1:yN90dXuD7TkAkYwKr5h2fT7bjA7osK7tMhuz31qL7gE=
 github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496/go.mod h1:y1XwzBDu4EmOCfoeV2cUW2icCto/izTyjEKK5j0UmwA=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
@@ -691,8 +691,6 @@ github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQD
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da/go.mod h1:gi+0XIa01GRL2eRQVjQkKGqKF3SF9vZR/HnPullcV2E=
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
-github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5 h1:Jw7W4WMfQDxsXvfeFSaS2cHlY7bAF4MGrgnbd0+Uo78=
-github.com/satori/go.uuid v1.2.1-0.20180103174451-36e9d2ebbde5/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/sclevine/spec v1.2.0/go.mod h1:W4J29eT/Kzv7/b9IWLB055Z+qvVC9vt0Arko24q7p+U=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
