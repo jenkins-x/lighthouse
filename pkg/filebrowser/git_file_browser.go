@@ -159,9 +159,6 @@ func (c *repoClientFacade) UseRef(ref string) error {
 	if strings.HasPrefix(ref, "refs/heads/") {
 		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
 	}
-	if c.ref == ref {
-		return nil
-	}
 
 	// lets switch to the main branch first before we go to a custom sha/ref
 	if c.ref != "" && c.ref != c.mainBranch {
