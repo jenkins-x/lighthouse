@@ -2,11 +2,13 @@ package filebrowser
 
 import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
@@ -142,12 +144,18 @@ func (f *gitFileBrowser) getOrCreateClient(owner string, repo string) *repoClien
 
 // repoClientFacade a repo client and a lock to create/use it
 type repoClientFacade struct {
-	lock       sync.RWMutex
-	repoClient git.RepoClient
-	fullName   string
-	mainBranch string
-	ref        string
+	lock        sync.RWMutex
+	repoClient  git.RepoClient
+	fullName    string
+	mainBranch  string
+	ref         string
+	refPullTime int64
 }
+
+var (
+	// maxRefFetchSeconds number of seconds to reuse the git fetch to avoid slowing things down too much
+	maxRefFetchSeconds = int64(20)
+)
 
 // UseRef this method should only be used within the lock
 func (c *repoClientFacade) UseRef(ref string) error {
@@ -158,6 +166,21 @@ func (c *repoClientFacade) UseRef(ref string) error {
 	// lets remove the bitbucket cloud refs prefix
 	if strings.HasPrefix(ref, "refs/heads/") {
 		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
+	}
+	if c.ref == ref {
+		t := time.Now().Unix()
+		// lets only re-run a git fetch of the ref if we've not done it for a little while
+		if t-c.refPullTime < maxRefFetchSeconds {
+			return nil
+		}
+		c.refPullTime = t
+		logrus.StandardLogger().WithFields(map[string]interface{}{
+			"Name": c.fullName,
+			"Ref":  ref,
+			"File": "git_file_browser",
+		}).Info("fetching ref")
+	} else {
+		c.refPullTime = 0
 	}
 
 	// lets switch to the main branch first before we go to a custom sha/ref
