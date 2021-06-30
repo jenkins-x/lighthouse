@@ -55,6 +55,12 @@ spec:
             #!/usr/bin/env sh
             source .jx/variables.sh
             jx preview create
+        - command:
+          - jx-updatebot
+          - pr
+          image: ghcr.io/jenkins-x/jx-updatebot:0.0.82
+          name: promote-release
+          resources: {}
         volumes:
         - name: npmrc
           secret:
