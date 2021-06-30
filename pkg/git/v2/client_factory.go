@@ -43,11 +43,18 @@ type ClientFactory interface {
 type RepoClient interface {
 	Publisher
 	Interactor
+
+	// ShouldFetch returns true if we should fetch from git
+	ShouldFetch(fullName, ref string, t int64) bool
 }
 
 type repoClient struct {
 	publisher
 	interactor
+}
+
+func (r *repoClient) ShouldFetch(fullName, ref string, t int64) bool {
+	return true
 }
 
 // ClientFactoryOpts provides options for configuring the factory

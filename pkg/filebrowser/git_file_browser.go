@@ -19,6 +19,7 @@ type gitFileBrowser struct {
 	clientFactory git.ClientFactory
 	clientsLock   sync.RWMutex
 	clients       map[string]*repoClientFacade
+	pullTimes     map[string]int64
 }
 
 const headBranchPrefix = "HEAD branch:"
@@ -28,6 +29,7 @@ func NewFileBrowserFromGitClient(clientFactory git.ClientFactory) Interface {
 	return &gitFileBrowser{
 		clientFactory: clientFactory,
 		clients:       map[string]*repoClientFacade{},
+		pullTimes:     map[string]int64{},
 	}
 }
 
@@ -134,13 +136,37 @@ func (f *gitFileBrowser) getOrCreateClient(owner string, repo string) *repoClien
 	client := f.clients[fullName]
 	if client == nil {
 		client = &repoClientFacade{
-			fullName:  fullName,
-			pullTimes: map[string]int64{},
+			fullName: fullName,
 		}
 		f.clients[fullName] = client
 	}
 	f.clientsLock.Unlock()
 	return client
+}
+
+// ShouldFetch returns true if we should fetch the given repo name and ref
+func (f *gitFileBrowser) ShouldFetch(fullName, ref string, t int64) bool {
+	key := fullName + "/" + ref
+	var deleteKeys []string
+	f.clientsLock.Lock()
+
+	// lets remove all the old times to avoid the map getting too big over time
+	for k, v := range f.pullTimes {
+		if t-v > maxRefFetchSeconds {
+			deleteKeys = append(deleteKeys, k)
+		}
+	}
+	for _, k := range deleteKeys {
+		delete(f.pullTimes, k)
+	}
+	pullTime := f.pullTimes[key]
+	answer := t-pullTime > maxRefFetchSeconds
+
+	if answer {
+		f.pullTimes[key] = t
+	}
+	f.clientsLock.Unlock()
+	return answer
 }
 
 // repoClientFacade a repo client and a lock to create/use it
@@ -150,7 +176,6 @@ type repoClientFacade struct {
 	fullName   string
 	mainBranch string
 	ref        string
-	pullTimes  map[string]int64
 }
 
 var (
@@ -168,15 +193,12 @@ func (c *repoClientFacade) UseRef(ref string) error {
 	if strings.HasPrefix(ref, "refs/heads/") {
 		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
 	}
-	key := c.fullName + "/" + ref
 	if c.ref == ref {
 		t := time.Now().Unix()
 
-		// lets only re-run a git fetch of the ref if we've not done it for a little while
-		if t-c.pullTimes[key] < maxRefFetchSeconds {
+		if !c.repoClient.ShouldFetch(c.fullName, ref, t) {
 			return nil
 		}
-		c.pullTimes[key] = t
 		logrus.StandardLogger().WithFields(map[string]interface{}{
 			"Name": c.fullName,
 			"Ref":  ref,
