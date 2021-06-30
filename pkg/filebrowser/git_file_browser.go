@@ -134,7 +134,8 @@ func (f *gitFileBrowser) getOrCreateClient(owner string, repo string) *repoClien
 	client := f.clients[fullName]
 	if client == nil {
 		client = &repoClientFacade{
-			fullName: fullName,
+			fullName:  fullName,
+			pullTimes: map[string]int64{},
 		}
 		f.clients[fullName] = client
 	}
@@ -144,12 +145,12 @@ func (f *gitFileBrowser) getOrCreateClient(owner string, repo string) *repoClien
 
 // repoClientFacade a repo client and a lock to create/use it
 type repoClientFacade struct {
-	lock        sync.RWMutex
-	repoClient  git.RepoClient
-	fullName    string
-	mainBranch  string
-	ref         string
-	refPullTime int64
+	lock       sync.RWMutex
+	repoClient git.RepoClient
+	fullName   string
+	mainBranch string
+	ref        string
+	pullTimes  map[string]int64
 }
 
 var (
@@ -167,20 +168,20 @@ func (c *repoClientFacade) UseRef(ref string) error {
 	if strings.HasPrefix(ref, "refs/heads/") {
 		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
 	}
+	key := c.fullName + "/" + ref
 	if c.ref == ref {
 		t := time.Now().Unix()
+
 		// lets only re-run a git fetch of the ref if we've not done it for a little while
-		if t-c.refPullTime < maxRefFetchSeconds {
+		if t-c.pullTimes[key] < maxRefFetchSeconds {
 			return nil
 		}
-		c.refPullTime = t
+		c.pullTimes[key] = t
 		logrus.StandardLogger().WithFields(map[string]interface{}{
 			"Name": c.fullName,
 			"Ref":  ref,
 			"File": "git_file_browser",
 		}).Info("fetching ref")
-	} else {
-		c.refPullTime = 0
 	}
 
 	// lets switch to the main branch first before we go to a custom sha/ref
