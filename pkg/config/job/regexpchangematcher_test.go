@@ -17,10 +17,11 @@ limitations under the License.
 package job_test
 
 import (
+	"testing"
+
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestRegexChangeMatcher(t *testing.T) {

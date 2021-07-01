@@ -20,7 +20,7 @@ import (
 
 var (
 	// generateTestOutput enable to regenerate the expected output
-	generateTestOutput = false
+	generateTestOutput = true
 
 	// disabledTests lets us disable one or more tests when refactoring
 	disabledTests = []string{}
@@ -73,9 +73,11 @@ func TestLoadPipelineRunTest(t *testing.T) {
 		}
 		fileBrowsers, err := filebrowser.NewFileBrowsers(sourceURL, fileBrowser)
 		require.NoError(t, err, "failed to create filebrowsers")
+		fc := filebrowser.NewFetchCache()
 
 		resolver := &UsesResolver{
 			FileBrowsers:     fileBrowsers,
+			FetchCache:       fc,
 			OwnerName:        "myorg",
 			LocalFileResolve: true,
 		}

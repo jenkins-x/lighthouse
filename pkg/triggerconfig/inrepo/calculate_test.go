@@ -47,8 +47,9 @@ func TestCalculate(t *testing.T) {
 
 	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
 	require.NoError(t, err, "failed to create filebrowsers")
+	fc := filebrowser.NewFetchCache()
 
-	cfg, pluginsCfg, err := inrepo.Generate(fileBrowsers, inrepo.NewResolverCache(), sharedConfig, sharedPluginConfig, owner, repo, ref)
+	cfg, pluginsCfg, err := inrepo.Generate(fileBrowsers, fc, inrepo.NewResolverCache(), sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	require.NoError(t, err, "failed to invoke getClientAndTrigger")
@@ -127,8 +128,9 @@ func TestTriggersInBranchMergeToMaster(t *testing.T) {
 
 	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
 	require.NoError(t, err, "failed to create filebrowsers")
+	fc := filebrowser.NewFetchCache()
 
-	cfg, _, err := inrepo.Generate(fileBrowsers, inrepo.NewResolverCache(), sharedConfig, sharedPluginConfig, owner, repo, ref)
+	cfg, _, err := inrepo.Generate(fileBrowsers, fc, inrepo.NewResolverCache(), sharedConfig, sharedPluginConfig, owner, repo, ref)
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	presubmits := cfg.Presubmits[fullName]
@@ -184,8 +186,9 @@ func TestIssue1306(t *testing.T) {
 
 	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
 	require.NoError(t, err, "failed to create filebrowsers")
+	fc := filebrowser.NewFetchCache()
 
-	cfg, _, err := inrepo.Generate(fileBrowsers, inrepo.NewResolverCache(), sharedConfig, sharedPluginConfig, owner, repo, "pr1")
+	cfg, _, err := inrepo.Generate(fileBrowsers, fc, inrepo.NewResolverCache(), sharedConfig, sharedPluginConfig, owner, repo, "pr1")
 	require.NoError(t, err, "failed to calculate in repo config")
 
 	assert.Contains(t, cfg.Presubmits[fullName][0].Base.PipelineRunSpec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Script, "ubuntu-pr1")

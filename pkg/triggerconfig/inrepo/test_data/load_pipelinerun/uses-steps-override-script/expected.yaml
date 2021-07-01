@@ -179,35 +179,13 @@ spec:
           name: ""
           resources:
             requests:
-              cpu: 600m
+              cpu: 400m
               memory: 512Mi
           volumeMounts:
-          - mountPath: /tekton/home/npm-something-else
+          - mountPath: /tekton/home/npm
             name: npmrc
-          workingDir: /workspace/my-source
-        steps:
-        - image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
-          name: git-clone
-          resources: {}
-          script: |
-            #!/bin/sh
-            export SUBDIR="source"
-            echo "git cloning url: $REPO_URL version $PULL_PULL_SHA to dir: $SUBDIR"
-            git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot}
-            git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com}
-            git config --global credential.helper store
-            git clone $REPO_URL $SUBDIR
-            cd $SUBDIR
-            git checkout $PULL_PULL_SHA
-            echo "checked out revision: $PULL_PULL_SHA to dir: $SUBDIR"
-          workingDir: /workspace
-        - image: gcr.io/jenkinsxio/jx-boot:3.1.62
-          name: git-merge
-          resources: {}
-          script: |
-            #!/usr/bin/env sh
-            jx gitops git merge variables
           workingDir: /workspace/source
+        steps:
         - image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
           resources: {}
@@ -241,12 +219,13 @@ spec:
             #!/usr/bin/env sh
             source .jx/variables.sh
             jx preview create
-        - command:
-          - jx-updatebot
-          - pr
-          image: ghcr.io/jenkins-x/jx-updatebot:0.0.82
+        - image: ghcr.io/jenkins-x/jx-updatebot:0.0.82
           name: promote-release
           resources: {}
+          script: |
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+            jx updatebot argo promote --target-git-url https://github.com/myorg/my-staging-repo
         volumes:
         - name: npmrc
           secret:

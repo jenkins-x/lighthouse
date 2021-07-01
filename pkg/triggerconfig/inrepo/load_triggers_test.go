@@ -42,7 +42,8 @@ func TestMergeConfig(t *testing.T) {
 
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
-	flag, err := MergeTriggers(cfg, pluginCfg, fileBrowsers, NewResolverCache(), owner, repo, ref)
+	fc := filebrowser.NewFetchCache()
+	flag, err := MergeTriggers(cfg, pluginCfg, fileBrowsers, fc, NewResolverCache(), owner, repo, ref)
 	require.NoError(t, err, "failed to merge configs")
 	assert.True(t, flag, "did not return merge flag")
 
@@ -59,12 +60,13 @@ func TestInvalidConfigs(t *testing.T) {
 
 	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
 	require.NoError(t, err, "failed to create filebrowsers")
+	fc := filebrowser.NewFetchCache()
 
 	invalidRepos := []string{"duplicate-presubmit", "duplicate-postsubmit"}
 	for _, repo := range invalidRepos {
 		owner := "myorg"
 		ref := "master"
-		_, err := LoadTriggerConfig(fileBrowsers, NewResolverCache(), owner, repo, ref)
+		_, err := LoadTriggerConfig(fileBrowsers, fc, NewResolverCache(), owner, repo, ref)
 		require.Errorf(t, err, "should have failed to load triggers from repo %s/%s with ref %s", owner, repo, ref)
 
 		t.Logf("got expected error loading invalid configuration on repo %s of: %s", repo, err.Error())
@@ -74,11 +76,12 @@ func TestInvalidConfigs(t *testing.T) {
 func TestEmptyDirectoryDoesNotFail(t *testing.T) {
 	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser(filepath.Join("test_data", "empty_dir")))
 	require.NoError(t, err, "failed to create filebrowsers")
+	fc := filebrowser.NewFetchCache()
 
 	owner := "myorg"
 	repo := "myrepo"
 	ref := "master"
-	config, err := LoadTriggerConfig(fileBrowsers, NewResolverCache(), owner, repo, ref)
+	config, err := LoadTriggerConfig(fileBrowsers, fc, NewResolverCache(), owner, repo, ref)
 	require.NoErrorf(t, err, "should not fail to load triggers for repo %s/%s with ref %s", owner, repo, ref)
 	require.NotNil(t, config, "no config for repo %s/%s with ref %s", owner, repo, ref)
 
@@ -96,7 +99,8 @@ func TestLoadJobFromURL(t *testing.T) {
 		File("test_data/load_url/foo.yaml")
 
 	j := &job.Base{}
-	err := loadJobBaseFromSourcePath(nil, NewResolverCache(), j, "", "", "https://raw.githubusercontent.com/rawlingsj/test/master/foo.yaml", "")
+	fc := filebrowser.NewFetchCache()
+	err := loadJobBaseFromSourcePath(nil, fc, NewResolverCache(), j, "", "", "https://raw.githubusercontent.com/rawlingsj/test/master/foo.yaml", "")
 	assert.NoError(t, err, "should not have an error returned")
 	assert.Equal(t, "jenkinsxio/chuck:0.0.1", j.PipelineRunSpec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Image, "image name for task is not correct")
 }

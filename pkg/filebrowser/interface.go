@@ -8,8 +8,8 @@ type Interface interface {
 	GetMainAndCurrentBranchRefs(owner, repo, ref string) ([]string, error)
 
 	// GetFile returns a file from the given path in the repository with the given sha
-	GetFile(owner, repo, path, ref string) ([]byte, error)
+	GetFile(owner, repo, path, ref string, fc FetchCache) ([]byte, error)
 
 	// ListFiles returns the file and directory entries in the given path in the repository with the given sha
-	ListFiles(owner, repo, path, ref string) ([]*scm.FileEntry, error)
+	ListFiles(owner, repo, path, ref string, fc FetchCache) ([]*scm.FileEntry, error)
 }

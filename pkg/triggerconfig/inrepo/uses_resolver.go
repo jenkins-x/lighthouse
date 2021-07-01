@@ -20,6 +20,7 @@ import (
 // UsesResolver resolves the `uses:` URI syntax
 type UsesResolver struct {
 	FileBrowsers     *filebrowser.FileBrowsers
+	FetchCache       filebrowser.FetchCache
 	Cache            *ResolverCache
 	OwnerName        string
 	RepoName         string
@@ -143,7 +144,7 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 			return nil, errors.Errorf("could not find git file browser for server %s in uses: git URI %s", gitURI.Server, gitURI.String())
 		}
 	}
-	data, err = fb.GetFile(owner, repo, path, sha)
+	data, err = fb.GetFile(owner, repo, path, sha, r.FetchCache)
 	if err != nil && IsScmNotFound(err) {
 		err = nil
 	}

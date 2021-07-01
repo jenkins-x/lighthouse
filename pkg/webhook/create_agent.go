@@ -19,6 +19,8 @@ package webhook
 import (
 	"strings"
 
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
@@ -66,7 +68,8 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 func (s *Server) createAgent(pc *plugins.Agent, owner, repo, ref string) error {
 	var err error
 	cache := inrepo.NewResolverCache()
-	pc.Config, pc.PluginConfig, err = inrepo.Generate(s.FileBrowsers, cache, pc.Config, pc.PluginConfig, owner, repo, ref)
+	fc := filebrowser.NewFetchCache()
+	pc.Config, pc.PluginConfig, err = inrepo.Generate(s.FileBrowsers, fc, cache, pc.Config, pc.PluginConfig, owner, repo, ref)
 	if err != nil {
 		return errors.Wrapf(err, "failed to calculate in repo config")
 	}
