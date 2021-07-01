@@ -170,6 +170,18 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 
 	shouldFetch := fc.ShouldFetch(c.fullName, ref)
 	if shouldFetch {
+		// lets check if we've already fetched this sha
+		sha, err := c.repoClient.HasSHA(ref)
+		if err == nil && sha != "" && strings.HasPrefix(sha, ref) {
+			shouldFetch = false
+			logrus.StandardLogger().WithFields(map[string]interface{}{
+				"Name": c.fullName,
+				"Ref":  ref,
+				"File": "git_file_browser",
+			}).Info("not fetching ref as we already have it")
+		}
+	}
+	if shouldFetch {
 		logrus.StandardLogger().WithFields(map[string]interface{}{
 			"Name": c.fullName,
 			"Ref":  ref,
