@@ -266,7 +266,7 @@ func handle(spc scmProviderClient, kc corev1.ConfigMapsGetter, cp commentPruner,
 	isUpdate := false
 
 	switch pre.Action {
-	case scm.ActionClose:
+	case scm.ActionClose, scm.ActionMerge:
 		isMerge = true
 	case scm.ActionOpen, scm.ActionReopen, scm.ActionSync:
 		isUpdate = true

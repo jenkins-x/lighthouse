@@ -355,6 +355,7 @@ func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool 
 		scm.ActionLabel,
 		scm.ActionUnlabel,
 		scm.ActionClose,
+		scm.ActionMerge,
 		scm.ActionReopen,
 		scm.ActionSync:
 		return false
