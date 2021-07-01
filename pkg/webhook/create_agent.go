@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"strings"
+	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 
@@ -32,6 +33,7 @@ import (
 // if the repository is configured to use in repository configuration then we create the use the repository specific
 // configuration
 func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.Agent, error) {
+	start := time.Now()
 	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l)
 	fullName := scm.Join(owner, repo)
 	if pc.Config == nil {
@@ -62,6 +64,8 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 		return pc, errors.Wrapf(err, "failed to create agent")
 	}
 	c.Add(key, &pc)
+	duration := time.Now().Sub(start)
+	l.WithField("Duration", duration.String()).Info("created configAgent")
 	return pc, nil
 }
 
