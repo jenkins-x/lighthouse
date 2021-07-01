@@ -251,7 +251,7 @@ func dispatch(endpoint string, payload []byte, h http.Header) error {
 
 // ExternalPluginsForEvent returns whether there are any external plugins that need to
 // get the present event.
-func ExternalPluginsForEvent(pluginConfig *plugins.ConfigAgent, eventKind string, srcRepo string) []plugins.ExternalPlugin {
+func ExternalPluginsForEvent(pluginConfig *plugins.ConfigAgent, eventKind string, srcRepo string, disabledExternalPlugins []string) []plugins.ExternalPlugin {
 	var matching []plugins.ExternalPlugin
 	if pluginConfig.Config() == nil {
 		return matching
@@ -267,6 +267,9 @@ func ExternalPluginsForEvent(pluginConfig *plugins.ConfigAgent, eventKind string
 
 		// Make sure the events match
 		for _, p := range extPlugins {
+			if StringArrayIndex(disabledExternalPlugins, p.Name) >= 0 {
+				continue
+			}
 			if len(p.Events) == 0 {
 				matching = append(matching, p)
 			} else {

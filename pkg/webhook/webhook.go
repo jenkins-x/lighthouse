@@ -3,6 +3,7 @@ package webhook
 import (
 	"bytes"
 	"fmt"
+	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -30,15 +31,16 @@ import (
 type WebhooksController struct {
 	ConfigMapWatcher *watcher.ConfigMapWatcher
 
-	path           string
-	namespace      string
-	pluginFilename string
-	configFilename string
-	server         *Server
-	botName        string
-	gitServerURL   string
-	gitClient      git.Client
-	launcher       launcher.PipelineLauncher
+	path                    string
+	namespace               string
+	pluginFilename          string
+	configFilename          string
+	server                  *Server
+	botName                 string
+	gitServerURL            string
+	gitClient               git.Client
+	launcher                launcher.PipelineLauncher
+	disabledExternalPlugins []string
 }
 
 // NewWebhooksController creates and configures the controller
@@ -242,13 +244,22 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 			return
 		}
 	}
+	entry := logrus.WithField("Webhook", webhook.Kind())
+	if o.disabledExternalPlugins == nil {
+		o.disabledExternalPlugins, err = externalplugincfg.LoadDisabledPlugins(entry, kubeClient, o.namespace)
+		if err != nil {
+			err = errors.Wrap(err, "failed to load disabled external plugins")
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+			return
+		}
+	}
 
-	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
+	l, output, err := o.ProcessWebHook(entry, webhook)
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
 	// Demux events only to external plugins that require this event.
-	if external := util.ExternalPluginsForEvent(o.server.Plugins, string(webhook.Kind()), webhook.Repository().FullName); len(external) > 0 {
+	if external := util.ExternalPluginsForEvent(o.server.Plugins, string(webhook.Kind()), webhook.Repository().FullName, o.disabledExternalPlugins); len(external) > 0 {
 		go util.CallExternalPluginsWithWebhook(l, external, webhook, util.HMACToken(), &o.server.wg)
 	}
 
