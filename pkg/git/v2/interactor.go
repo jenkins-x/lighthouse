@@ -66,6 +66,8 @@ type Interactor interface {
 	MergeCommitsExistBetween(target, head string) (bool, error)
 	// ShowRef returns the commit for a commitlike. Unlike rev-parse it does not require a checkout.
 	ShowRef(commitlike string) (string, error)
+	// HasSHA checks if a ref is a sha we have fetched locally
+	HasSHA(ref string) (string, error)
 }
 
 // cacher knows how to cache and update repositories in a central cache
@@ -372,6 +374,15 @@ func (i *interactor) ShowRef(commitlike string) (string, error) {
 	out, err := i.executor.Run("show-ref", "-s", commitlike)
 	if err != nil {
 		return "", fmt.Errorf("failed to get commit sha for commitlike %s: %v", commitlike, err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func (i *interactor) HasSHA(ref string) (string, error) {
+	i.logger.Infof("Checking if %s is a fetched SHA", ref)
+	out, err := i.executor.Run("cat-file", "commit", ref)
+	if err != nil {
+		return "", fmt.Errorf("failed to verify ref is a sha: %s: %v", ref, err)
 	}
 	return strings.TrimSpace(string(out)), nil
 }
