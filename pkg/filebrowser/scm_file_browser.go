@@ -37,10 +37,10 @@ func (f *scmFileBrowser) GetMainAndCurrentBranchRefs(owner, repo, eventRef strin
 	return refs, nil
 }
 
-func (f *scmFileBrowser) GetFile(owner, repo, path, ref string) ([]byte, error) {
+func (f *scmFileBrowser) GetFile(owner, repo, path, ref string, fc FetchCache) ([]byte, error) {
 	return f.scmClient.GetFile(owner, repo, path, ref)
 }
 
-func (f *scmFileBrowser) ListFiles(owner, repo, path, ref string) ([]*scm.FileEntry, error) {
+func (f *scmFileBrowser) ListFiles(owner, repo, path, ref string, fc FetchCache) ([]*scm.FileEntry, error) {
 	return f.scmClient.ListFiles(owner, repo, path, ref)
 }

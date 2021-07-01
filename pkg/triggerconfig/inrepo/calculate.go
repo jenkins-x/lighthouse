@@ -10,7 +10,7 @@ import (
 )
 
 // Generate generates the in repository config if enabled for this repository otherwise return the shared config
-func Generate(fileBrowsers *filebrowser.FileBrowsers, cache *ResolverCache, sharedConfig *config.Config, sharedPlugins *plugins.Configuration, owner, repo, eventRef string) (*config.Config, *plugins.Configuration, error) {
+func Generate(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, sharedConfig *config.Config, sharedPlugins *plugins.Configuration, owner, repo, eventRef string) (*config.Config, *plugins.Configuration, error) {
 	fullName := scm.Join(owner, repo)
 	if !sharedConfig.InRepoConfigEnabled(fullName) {
 		return sharedConfig, sharedPlugins, nil
@@ -38,7 +38,7 @@ func Generate(fileBrowsers *filebrowser.FileBrowsers, cache *ResolverCache, shar
 	}
 
 	for _, ref := range refs {
-		repoConfig, err := LoadTriggerConfig(fileBrowsers, cache, owner, repo, ref)
+		repoConfig, err := LoadTriggerConfig(fileBrowsers, fc, cache, owner, repo, ref)
 		if err != nil {
 			return sharedConfig, sharedPlugins, errors.Wrapf(err, "failed to load trigger config for repository %s/%s for ref %s", owner, repo, ref)
 		}

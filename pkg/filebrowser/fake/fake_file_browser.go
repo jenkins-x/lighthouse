@@ -1,9 +1,10 @@
 package fake
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/util"
 	"io/ioutil"
 	"path/filepath"
+
+	"github.com/jenkins-x/lighthouse/pkg/util"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
@@ -27,13 +28,13 @@ func (f *fakeFileBrowser) GetMainAndCurrentBranchRefs(owner, repo, ref string) (
 	return f.mainAndCurrentBranchRefs, nil
 }
 
-func (f *fakeFileBrowser) GetFile(owner, repo, path, ref string) ([]byte, error) {
+func (f *fakeFileBrowser) GetFile(owner, repo, path, ref string, fc filebrowser.FetchCache) ([]byte, error) {
 	fileName := filepath.Join(f.dir, path)
 	/* #nosec */
 	return ioutil.ReadFile(fileName)
 }
 
-func (f *fakeFileBrowser) ListFiles(owner, repo, path, ref string) ([]*scm.FileEntry, error) {
+func (f *fakeFileBrowser) ListFiles(owner, repo, path, ref string, fc filebrowser.FetchCache) ([]*scm.FileEntry, error) {
 	dir := filepath.Join(f.dir, path)
 	exists, err := util.DirExists(dir)
 	if err != nil {

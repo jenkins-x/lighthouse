@@ -1,18 +1,17 @@
 package filebrowser
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/util"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type gitFileBrowser struct {
@@ -37,8 +36,8 @@ func (f *gitFileBrowser) GetMainAndCurrentBranchRefs(_, _, eventRef string) ([]s
 	return []string{"", eventRef}, nil
 }
 
-func (f *gitFileBrowser) GetFile(owner, repo, path, ref string) (answer []byte, err error) {
-	err = f.withRepoClient(owner, repo, ref, func(repoClient git.RepoClient) error {
+func (f *gitFileBrowser) GetFile(owner, repo, path, ref string, fc FetchCache) (answer []byte, err error) {
+	err = f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
 		f := repoPath(repoClient, path)
 		var err error
 		answer, err = ioutil.ReadFile(f) // #nosec
@@ -47,8 +46,8 @@ func (f *gitFileBrowser) GetFile(owner, repo, path, ref string) (answer []byte, 
 	return
 }
 
-func (f *gitFileBrowser) ListFiles(owner, repo, path, ref string) (answer []*scm.FileEntry, err error) {
-	err = f.withRepoClient(owner, repo, ref, func(repoClient git.RepoClient) error {
+func (f *gitFileBrowser) ListFiles(owner, repo, path, ref string, fc FetchCache) (answer []*scm.FileEntry, err error) {
+	err = f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
 		dir := repoPath(repoClient, path)
 		exists, err := util.DirExists(dir)
 		if err != nil {
@@ -93,7 +92,7 @@ func repoPath(repoClient git.RepoClient, path string) string {
 	return filepath.Join(dir, path)
 }
 
-func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fn func(repoClient git.RepoClient) error) error {
+func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, fn func(repoClient git.RepoClient) error) error {
 	client := f.getOrCreateClient(owner, repo)
 
 	var repoClient git.RepoClient
@@ -114,7 +113,7 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fn func(repoCli
 	}
 	if err == nil {
 		repoClient = client.repoClient
-		err = client.UseRef(ref)
+		err = client.UseRef(ref, fc)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to switch to ref %s", ref)
 		}
@@ -144,31 +143,6 @@ func (f *gitFileBrowser) getOrCreateClient(owner string, repo string) *repoClien
 	return client
 }
 
-// ShouldFetch returns true if we should fetch the given repo name and ref
-func (f *gitFileBrowser) ShouldFetch(fullName, ref string, t int64) bool {
-	key := fullName + "/" + ref
-	var deleteKeys []string
-	f.clientsLock.Lock()
-
-	// lets remove all the old times to avoid the map getting too big over time
-	for k, v := range f.pullTimes {
-		if t-v > maxRefFetchSeconds {
-			deleteKeys = append(deleteKeys, k)
-		}
-	}
-	for _, k := range deleteKeys {
-		delete(f.pullTimes, k)
-	}
-	pullTime := f.pullTimes[key]
-	answer := t-pullTime > maxRefFetchSeconds
-
-	if answer {
-		f.pullTimes[key] = t
-	}
-	f.clientsLock.Unlock()
-	return answer
-}
-
 // repoClientFacade a repo client and a lock to create/use it
 type repoClientFacade struct {
 	lock       sync.RWMutex
@@ -184,7 +158,7 @@ var (
 )
 
 // UseRef this method should only be used within the lock
-func (c *repoClientFacade) UseRef(ref string) error {
+func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		ref = c.mainBranch
@@ -193,17 +167,18 @@ func (c *repoClientFacade) UseRef(ref string) error {
 	if strings.HasPrefix(ref, "refs/heads/") {
 		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
 	}
-	if c.ref == ref {
-		t := time.Now().Unix()
 
-		if !c.repoClient.ShouldFetch(c.fullName, ref, t) {
-			return nil
-		}
+	shouldFetch := fc.ShouldFetch(c.fullName, ref)
+	if shouldFetch {
 		logrus.StandardLogger().WithFields(map[string]interface{}{
 			"Name": c.fullName,
 			"Ref":  ref,
 			"File": "git_file_browser",
 		}).Info("fetching ref")
+	}
+
+	if c.ref == ref && !shouldFetch {
+		return nil
 	}
 
 	// lets switch to the main branch first before we go to a custom sha/ref
@@ -214,15 +189,17 @@ func (c *repoClientFacade) UseRef(ref string) error {
 		}
 	}
 
-	if ref != c.mainBranch {
-		err := c.repoClient.FetchRef(ref)
-		if err != nil {
-			return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
-		}
-	} else {
-		err := c.repoClient.Fetch()
-		if err != nil {
-			return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+	if shouldFetch {
+		if ref != c.mainBranch {
+			err := c.repoClient.FetchRef(ref)
+			if err != nil {
+				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+			}
+		} else {
+			err := c.repoClient.Fetch()
+			if err != nil {
+				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+			}
 		}
 	}
 	c.ref = ref
