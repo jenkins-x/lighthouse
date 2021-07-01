@@ -137,6 +137,10 @@ func (s *Server) handleGenericComment(l *logrus.Entry, ce *scmprovider.GenericCo
 		ce.Repo.Name,
 		ce.Number,
 	)
+	s.handleGenericCommentWithAgent(l, ce, agent)
+}
+
+func (s *Server) handleGenericCommentWithAgent(l *logrus.Entry, ce *scmprovider.GenericCommentEvent, agent plugins.Agent) {
 	for p, h := range s.getPlugins(ce.Repo.Namespace, ce.Repo.Name) {
 		if h.GenericCommentHandler != nil {
 			s.wg.Add(1)
@@ -245,7 +249,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 	if !actionRelatesToPullRequestComment(action, l) {
 		return
 	}
-	s.handleGenericComment(
+	s.handleGenericCommentWithAgent(
 		l,
 		&scmprovider.GenericCommentEvent{
 			GUID:        pr.GUID,
@@ -263,6 +267,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 			IssueLink:   pr.PullRequest.Link,
 			HeadSha:     pr.PullRequest.Head.Sha,
 		},
+		agent,
 	)
 }
 
@@ -309,7 +314,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 	if !actionRelatesToPullRequestComment(action, l) {
 		return
 	}
-	s.handleGenericComment(
+	s.handleGenericCommentWithAgent(
 		l,
 		&scmprovider.GenericCommentEvent{
 			GUID:        re.GUID,
@@ -327,6 +332,7 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 			IssueLink:   re.PullRequest.Link,
 			HeadSha:     re.PullRequest.Head.Sha,
 		},
+		agent,
 	)
 }
 
