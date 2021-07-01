@@ -60,6 +60,19 @@ image:
 env:
   JX_DEFAULT_IMAGE: ""
 
+
+externalPlugins:
+- name: cd-indicators
+  requiredResources:
+  - kind: Service
+    namespace: jx
+    name: cd-indicators
+- name: lighthouse-webui-plugin
+  requiredResources:
+  - kind: Service
+    namespace: jx
+    name: lighthouse-webui-plugin
+
 gcJobs:
   # gcJobs.maxAge -- Max age from which `LighthouseJob`s will be deleted
   maxAge: 168h
