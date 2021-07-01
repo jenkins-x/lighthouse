@@ -1,7 +1,8 @@
-package filebrowser
+package filebrowser_test
 
 import (
 	"fmt"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -19,9 +20,9 @@ func TestGitFileBrowser(t *testing.T) {
 
 	cf, err := git.NewClientFactory()
 	require.NoError(t, err, "failed to create git client factory")
-	fb := NewFileBrowserFromGitClient(cf)
+	fb := filebrowser.NewFileBrowserFromGitClient(cf)
 
-	fc := NewFetchCache()
+	fc := filebrowser.NewFetchCache()
 
 	owner := "jenkins-x-quickstarts"
 	repo := "node-http"
@@ -107,7 +108,7 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	require.NoError(t, err, "failed to find git binary")
 	fmt.Println(baseDir)
 
-	fc := NewFetchCache()
+	fc := filebrowser.NewFetchCache()
 
 	defer os.RemoveAll(baseDir)
 
@@ -138,7 +139,7 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 
 	cf, err := git.NewLocalClientFactory(baseDir, userGetter, censor)
 	require.NoError(t, err, "failed to create git client factory")
-	fb := NewFileBrowserFromGitClient(cf)
+	fb := filebrowser.NewFileBrowserFromGitClient(cf)
 
 	files, err := fb.ListFiles("org", "repo", "", "master", fc)
 	require.NoError(t, err, "failed to list files")
@@ -166,4 +167,18 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	data, err := fb.GetFile("org", "repo", "README.md", "v0.0.1", fc)
 	require.NoError(t, err, "failed to lst files in v0.0.1 tag")
 	require.Equal(t, string(data), "README-update-1")
+}
+
+func TestIsSHA(t *testing.T) {
+	testCases := map[string]bool{
+		"de6cc99": true,
+		"de6cc99a6de8ca34b8884fcc05945bd30033f330": true,
+		"main":    false,
+		"123_567": false,
+	}
+
+	for ref, expected := range testCases {
+		got := filebrowser.IsSHA(ref)
+		assert.Equal(t, expected, got, "for ref: %s", ref)
+	}
 }

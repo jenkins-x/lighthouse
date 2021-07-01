@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -22,6 +23,10 @@ type gitFileBrowser struct {
 }
 
 const headBranchPrefix = "HEAD branch:"
+
+var (
+	shaRegex = regexp.MustCompile("\\b[0-9a-f]{7,40}\\b")
+)
 
 // NewFileBrowserFromGitClient creates a new file browser from an Scm client
 func NewFileBrowserFromGitClient(clientFactory git.ClientFactory) Interface {
@@ -169,10 +174,10 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 	}
 
 	shouldFetch := fc.ShouldFetch(c.fullName, ref)
-	if shouldFetch {
+	if shouldFetch && IsSHA(ref) {
 		// lets check if we've already fetched this sha
 		sha, err := c.repoClient.HasSHA(ref)
-		if err == nil && sha != "" && strings.HasPrefix(sha, ref) {
+		if err == nil && sha != "" {
 			shouldFetch = false
 			logrus.StandardLogger().WithFields(map[string]interface{}{
 				"Name": c.fullName,
@@ -257,4 +262,9 @@ func runCmd(dir, cmd string, arg ...string) (string, error) {
 		return text, errors.Wrapf(err, "failed to run command in dir %s: %s, %v: %s", dir, cmd, arg, text)
 	}
 	return text, nil
+}
+
+// IsSHA returns true if the given ref is a git sha
+func IsSHA(ref string) bool {
+	return shaRegex.MatchString(ref)
 }

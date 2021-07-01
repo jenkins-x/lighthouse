@@ -380,7 +380,7 @@ func (i *interactor) ShowRef(commitlike string) (string, error) {
 
 func (i *interactor) HasSHA(ref string) (string, error) {
 	i.logger.Infof("Checking if %s is a fetched SHA", ref)
-	out, err := i.executor.Run("rev-parse", "--verify", ref)
+	out, err := i.executor.Run("cat-file", "commit", ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to verify ref is a sha: %s: %v", ref, err)
 	}
