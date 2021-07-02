@@ -27,7 +27,7 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 
 	var scmClient *scm.Client
 	var err error
-	if gitKind == "gitea" {
+	if gitKind == "gitea" || gitKind == "bitbucketcloud" {
 		// gitea returns 403 if the gitToken isn't passed here
 		scmClient, err = factory.NewClient(gitKind, serverURL, gitToken, factory.SetUsername(botName))
 	} else {
