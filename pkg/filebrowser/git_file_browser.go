@@ -44,7 +44,14 @@ func (f *gitFileBrowser) GetMainAndCurrentBranchRefs(_, _, eventRef string) ([]s
 func (f *gitFileBrowser) GetFile(owner, repo, path, ref string, fc FetchCache) (answer []byte, err error) {
 	err = f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
 		f := repoPath(repoClient, path)
-		var err error
+		exists, err := util.FileExists(f)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check if file exists %s", f)
+		}
+		if !exists {
+			answer = nil
+			return nil
+		}
 		answer, err = ioutil.ReadFile(f) // #nosec
 		return err
 	})

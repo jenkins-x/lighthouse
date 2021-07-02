@@ -1,14 +1,14 @@
 package inrepo
 
 import (
+	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"os"
+	"path/filepath"
 	"testing"
 
-	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,16 +20,13 @@ func TestMergeConfigIntegration(t *testing.T) {
 		t.SkipNow()
 		return
 	}
-	scmClient, _ := factory.NewClient("github", "https://github.com", token)
-	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
-
 	repoOwner := "jenkins-x"
 	repoName := "lighthouse-test-project"
 	sha := ""
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
 
-	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser(filepath.Join("test_data"), true))
 	require.NoError(t, err, "failed to create filebrowsers")
 
 	fc := filebrowser.NewFetchCache()

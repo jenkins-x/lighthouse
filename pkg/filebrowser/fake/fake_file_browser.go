@@ -2,6 +2,7 @@ package fake
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -13,13 +14,15 @@ import (
 
 type fakeFileBrowser struct {
 	dir                      string
+	multiRepo                bool
 	mainAndCurrentBranchRefs []string
 }
 
 // NewFakeFileBrowser a simple fake provider pointing at a folder
-func NewFakeFileBrowser(dir string) filebrowser.Interface {
+func NewFakeFileBrowser(dir string, multiRepo bool) filebrowser.Interface {
 	return &fakeFileBrowser{
 		dir:                      dir,
+		multiRepo:                multiRepo,
 		mainAndCurrentBranchRefs: []string{"main"},
 	}
 }
@@ -29,13 +32,39 @@ func (f *fakeFileBrowser) GetMainAndCurrentBranchRefs(owner, repo, ref string) (
 }
 
 func (f *fakeFileBrowser) GetFile(owner, repo, path, ref string, fc filebrowser.FetchCache) ([]byte, error) {
-	fileName := filepath.Join(f.dir, path)
+	fileName := f.getPath(owner, repo, path, ref)
+	exists, err := util.FileExists(fileName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to check if file exists %s", fileName)
+	}
+	if !exists {
+		return nil, nil
+	}
 	/* #nosec */
 	return ioutil.ReadFile(fileName)
 }
 
+func (f *fakeFileBrowser) getPath(owner, repo, path, ref string) string {
+	if f.multiRepo {
+		refs := []string{ref}
+		// lets handle main or master as the default branch name
+		if ref == "main" {
+			refs = append(refs, "master")
+		}
+		for _, r := range refs {
+			p := filepath.Join(f.dir, owner, repo, "refs", r, path)
+			_, err := os.Stat(p)
+			if err == nil {
+				return p
+			}
+		}
+		return filepath.Join(f.dir, owner, repo, path)
+	}
+	return filepath.Join(f.dir, path)
+}
+
 func (f *fakeFileBrowser) ListFiles(owner, repo, path, ref string, fc filebrowser.FetchCache) ([]*scm.FileEntry, error) {
-	dir := filepath.Join(f.dir, path)
+	dir := f.getPath(owner, repo, path, ref)
 	exists, err := util.DirExists(dir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check dir exists %s", dir)
@@ -55,14 +84,14 @@ func (f *fakeFileBrowser) ListFiles(owner, repo, path, ref string, fc filebrowse
 		if f.IsDir() {
 			t = "dir"
 		}
-		path := filepath.Join(dir, name)
+		childPath := filepath.Join(path, name)
 		answer = append(answer, &scm.FileEntry{
 			Name: name,
-			Path: path,
+			Path: childPath,
 			Type: t,
 			Size: int(f.Size()),
 			Sha:  ref,
-			Link: "file://" + path,
+			Link: "file://" + childPath,
 		})
 	}
 	return answer, nil

@@ -46,11 +46,6 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 		return []byte(gitToken)
 	})
 
-	fileBrowsers, err := filebrowser.NewFileBrowsers(serverURL, filebrowser.NewFileBrowserFromScmClient(gitproviderClient))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create the git file browsers")
-	}
-
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse %s", serverURL)
@@ -82,7 +77,7 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 		return nil, errors.Wrapf(err, "failed to create git client factory for server %s", serverURL)
 	}
 	fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
-	fileBrowsers, err = filebrowser.NewFileBrowsers(serverURL, fb)
+	fileBrowsers, err := filebrowser.NewFileBrowsers(serverURL, fb)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create git file browser")
 	}

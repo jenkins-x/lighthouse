@@ -2,15 +2,14 @@ package inrepo
 
 import (
 	"fmt"
+	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 
 	"github.com/stretchr/testify/assert"
@@ -31,10 +30,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 	fs, err := ioutil.ReadDir(sourceDir)
 	require.NoError(t, err, "failed to read source Dir %s", sourceDir)
 
-	scmClient, _ := fake.NewDefault()
-	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
-
-	fileBrowser := filebrowser.NewFileBrowserFromScmClient(scmProvider)
+	fileBrowser := fbfake.NewFakeFileBrowser(filepath.Join("test_data"), true)
 
 	// lets use a custom version stream sha
 	os.Setenv("LIGHTHOUSE_VERSIONSTREAM_JENKINS_X_JX3_PIPELINE_CATALOG", "myversionstreamref")
