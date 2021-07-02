@@ -1195,15 +1195,15 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]job.Presubm
 	triggeredContexts := sets.NewString()
 	for _, pr := range prs {
 		for _, ps := range presubmits[int(pr.Number)] {
-			if triggeredContexts.Has(string(ps.Context)) {
+			if triggeredContexts.Has(ps.Context) {
 				continue
 			}
-			triggeredContexts.Insert(string(ps.Context))
+			triggeredContexts.Insert(ps.Context)
 			var spec v1alpha1.LighthouseJobSpec
 			if len(prs) == 1 {
-				spec = jobutil.PresubmitSpec(ps, refs)
+				spec = jobutil.PresubmitSpec(c.logger, ps, refs)
 			} else {
-				spec = jobutil.BatchSpec(ps, refs)
+				spec = jobutil.BatchSpec(c.logger, ps, refs)
 			}
 			pj := jobutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()

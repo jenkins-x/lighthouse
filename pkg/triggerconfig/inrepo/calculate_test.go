@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -15,6 +17,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	logger = logrus.WithField("client", "test")
 )
 
 func TestCalculate(t *testing.T) {
@@ -59,8 +65,14 @@ func TestCalculate(t *testing.T) {
 		}
 	}
 	assert.NotNil(t, presubmit, "Couldn't find presubmit 'test' for repo %s", fullName)
+	err = presubmit.LoadPipeline(logger)
+	require.NoError(t, err, "failed to load presubmit.PipelineRunSpec")
+
 	assert.NotNil(t, presubmit.PipelineRunSpec, "cfg.Presubmits[0].PipelineRunSpec for repo %s", fullName)
 	assert.Equal(t, job.TektonPipelineAgent, presubmit.Agent, "cfg.Presubmits[0].Agent for repo %s", fullName)
+
+	err = cfg.Presubmits[fullName][1].LoadPipeline(logger)
+	require.NoError(t, err, "failed to load cfg.Presubmits[1].PipelineRunSpec")
 
 	assert.NotNil(t, cfg.Presubmits[fullName][1].PipelineRunSpec, "cfg.Presubmits[1].PipelineRunSpec for repo %s", fullName)
 
@@ -76,6 +88,9 @@ func TestCalculate(t *testing.T) {
 
 	require.Len(t, cfg.Postsubmits[fullName], 1, "postsubmits for repo %s", fullName)
 	postsubmit := cfg.Postsubmits[fullName][0]
+	err = postsubmit.LoadPipeline(logger)
+	require.NoError(t, err, "failed to load postsubmit.PipelineRunSpec")
+
 	assert.NotNil(t, postsubmit.PipelineRunSpec, "cfg.Postsubmits[0].PipelineRunSpec for repo %s", fullName)
 	assert.Equal(t, job.TektonPipelineAgent, postsubmit.Agent, "cfg.Postsubmits[0].Agent for repo %s", fullName)
 

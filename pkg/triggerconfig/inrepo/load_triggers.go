@@ -146,36 +146,49 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 	for i := range repoConfig.Spec.Presubmits {
 		r := &repoConfig.Spec.Presubmits[i]
 		if r.SourcePath != "" {
-			sourcePath := r.SourcePath
-			_, err := url.ParseRequestURI(sourcePath)
-			if err != nil {
-				sourcePath = filepath.Join(dir, r.SourcePath)
+			if r.Agent == "" {
+				r.Agent = job.TektonPipelineAgent
 			}
-			err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, &r.Base, ownerName, repoName, sourcePath, sha)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
-			}
-
-		}
-		if r.Agent == "" && r.PipelineRunSpec != nil {
-			r.Agent = job.TektonPipelineAgent
+			r.SetPipelineLoader(func(base *job.Base) error {
+				sourcePath := r.SourcePath
+				_, err := url.ParseRequestURI(sourcePath)
+				if err != nil {
+					sourcePath = filepath.Join(dir, r.SourcePath)
+				}
+				err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				if err != nil {
+					return errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
+				}
+				r.Base = *base
+				if r.Agent == "" && r.PipelineRunSpec != nil {
+					r.Agent = job.TektonPipelineAgent
+				}
+				return nil
+			})
 		}
 	}
 	for i := range repoConfig.Spec.Postsubmits {
 		r := &repoConfig.Spec.Postsubmits[i]
 		if r.SourcePath != "" {
-			sourcePath := r.SourcePath
-			_, err := url.ParseRequestURI(sourcePath)
-			if err != nil {
-				sourcePath = filepath.Join(dir, r.SourcePath)
+			if r.Agent == "" {
+				r.Agent = job.TektonPipelineAgent
 			}
-			err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, &r.Base, ownerName, repoName, sourcePath, sha)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
-			}
-		}
-		if r.Agent == "" && r.PipelineRunSpec != nil {
-			r.Agent = job.TektonPipelineAgent
+			r.SetPipelineLoader(func(base *job.Base) error {
+				sourcePath := r.SourcePath
+				_, err := url.ParseRequestURI(sourcePath)
+				if err != nil {
+					sourcePath = filepath.Join(dir, r.SourcePath)
+				}
+				err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				if err != nil {
+					return errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
+				}
+				r.Base = *base
+				if r.Agent == "" && r.PipelineRunSpec != nil {
+					r.Agent = job.TektonPipelineAgent
+				}
+				return nil
+			})
 		}
 	}
 	return repoConfig, nil
