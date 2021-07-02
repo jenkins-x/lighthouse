@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jenkins-x/lighthouse/pkg/git/v2"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -30,6 +28,9 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	"github.com/jenkins-x/lighthouse/pkg/git/v2"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"

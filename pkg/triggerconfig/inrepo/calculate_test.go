@@ -1,9 +1,10 @@
 package inrepo_test
 
 import (
-	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"path/filepath"
 	"testing"
+
+	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"

@@ -2,12 +2,13 @@ package filebrowser_test
 
 import (
 	"fmt"
-	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"

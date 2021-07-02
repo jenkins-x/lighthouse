@@ -1,10 +1,11 @@
 package inrepo
 
 import (
-	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"os"
 	"path/filepath"
 	"testing"
+
+	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"

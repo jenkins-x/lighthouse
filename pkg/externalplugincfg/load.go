@@ -2,6 +2,8 @@ package externalplugincfg
 
 import (
 	"context"
+	"strings"
+
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -9,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 func LoadDisabledPlugins(l *logrus.Entry, client kubernetes.Interface, namespace string) ([]string, error) {

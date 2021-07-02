@@ -3,13 +3,14 @@ package inrepo
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/jenkins-x/lighthouse/pkg/util"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jenkins-x/lighthouse/pkg/util"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"

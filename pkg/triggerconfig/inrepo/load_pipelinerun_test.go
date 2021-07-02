@@ -2,12 +2,13 @@ package inrepo
 
 import (
 	"fmt"
-	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/util"
