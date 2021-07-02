@@ -63,6 +63,11 @@ func (f *fakeFileBrowser) getPath(owner, repo, path, ref string) string {
 	return filepath.Join(f.dir, path)
 }
 
+func (f *fakeFileBrowser) WithDir(owner, repo, ref string, fc filebrowser.FetchCache, fn func(dir string) error) error {
+	dir := f.getPath(owner, repo, "", ref)
+	return fn(dir)
+}
+
 func (f *fakeFileBrowser) ListFiles(owner, repo, path, ref string, fc filebrowser.FetchCache) ([]*scm.FileEntry, error) {
 	dir := f.getPath(owner, repo, path, ref)
 	exists, err := util.DirExists(dir)

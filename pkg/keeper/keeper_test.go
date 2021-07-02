@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/jenkins-x/lighthouse/pkg/git/v2"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -1022,7 +1024,28 @@ func TestCheckMergeLabels(t *testing.T) {
 	}
 }
 
+func GetDefaultBranch(t *testing.T) string {
+	logger := logrus.WithField("client", "git")
+	censor := func(content []byte) []byte { return content }
+
+	executor, err := git.NewCensoringExecutor(".", censor, logger)
+	require.NoError(t, err, "failed to find git binary")
+
+	defaultBranch := "master"
+	out, err := executor.Run("config", "--global", "--get", "init.defaultBranch")
+	if err == nil {
+		text := strings.TrimSpace(string(out))
+		if text != "" {
+			defaultBranch = text
+		}
+	}
+	t.Logf("using default branch: %s\n", defaultBranch)
+	return defaultBranch
+}
+
 func TestTakeAction(t *testing.T) {
+	defaultBranch := GetDefaultBranch(t)
+
 	sleep = func(time.Duration) {}
 	defer func() { sleep = time.Sleep }()
 
@@ -1377,8 +1400,8 @@ func TestTakeAction(t *testing.T) {
 				cc:         &keeper.ContextPolicy{},
 				org:        "o",
 				repo:       "r",
-				branch:     "master",
-				sha:        "master",
+				branch:     defaultBranch,
+				sha:        defaultBranch,
 			}
 			genPulls := func(nums []int) []PullRequest {
 				var prs []PullRequest
@@ -1389,7 +1412,7 @@ func TestTakeAction(t *testing.T) {
 					if err := lg.AddCommit("o", "r", map[string][]byte{fmt.Sprintf("%d", i): []byte("WOW")}); err != nil {
 						t.Fatalf("Error adding commit: %v", err)
 					}
-					if err := lg.Checkout("o", "r", "master"); err != nil {
+					if err := lg.Checkout("o", "r", defaultBranch); err != nil {
 						t.Fatalf("Error checking out master: %v", err)
 					}
 					oid := githubql.String(fmt.Sprintf("origin/pr-%d", i))

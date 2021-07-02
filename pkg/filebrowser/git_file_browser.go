@@ -37,6 +37,13 @@ func NewFileBrowserFromGitClient(clientFactory git.ClientFactory) Interface {
 	}
 }
 
+func (f *gitFileBrowser) WithDir(owner, repo, ref string, fc FetchCache, fn func(dir string) error) error {
+	return f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
+		dir := repoClient.Directory()
+		return fn(dir)
+	})
+}
+
 func (f *gitFileBrowser) GetMainAndCurrentBranchRefs(_, _, eventRef string) ([]string, error) {
 	return []string{"", eventRef}, nil
 }

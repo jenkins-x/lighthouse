@@ -3,6 +3,7 @@ package inrepo
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -40,34 +41,51 @@ func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, fileBro
 
 // LoadTriggerConfig loads the `lighthouse.yaml` configuration files in the repository
 func LoadTriggerConfig(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
-	m := map[string]*triggerconfig.Config{}
-	path := ".lighthouse"
-	files, err := fileBrowsers.LighthouseGitFileBrowser().ListFiles(ownerName, repoName, path, sha, fc)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find any lighthouse configuration files in repo %s/%s at sha %s", ownerName, repoName, sha)
-	}
-	for _, f := range files {
-		if isDirType(f.Type) {
-			filePath := path + "/" + f.Name + "/triggers.yaml"
-			cfg, err := loadConfigFile(fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
+	var answer *triggerconfig.Config
+	err := fileBrowsers.LighthouseGitFileBrowser().WithDir(ownerName, repoName, sha, fc, func(dir string) error {
+		path := filepath.Join(dir, ".lighthouse")
+		exists, err := util.DirExists(path)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check if dir exists %s", path)
+		}
+		m := map[string]*triggerconfig.Config{}
+		if exists {
+			fs, err := ioutil.ReadDir(path)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
+				return errors.Wrapf(err, "failed to read dir %s", path)
 			}
-			if cfg != nil {
-				m[filePath] = cfg
-			}
-		} else if f.Name == "triggers.yaml" {
-			filePath := path + "/" + f.Name
-			cfg, err := loadConfigFile(fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
-			}
-			if cfg != nil {
-				m[filePath] = cfg
+			for _, f := range fs {
+				name := f.Name()
+				if strings.HasPrefix(name, ".") {
+					continue
+				}
+				if f.IsDir() {
+					filePath := filepath.Join(path, name, "triggers.yaml")
+					cfg, err := loadConfigFile(filePath, fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
+					if err != nil {
+						return errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
+					}
+					if cfg != nil {
+						m[filePath] = cfg
+					}
+
+				} else if name == "triggers.yaml" {
+					filePath := filepath.Join(path, "triggers.yaml")
+					cfg, err := loadConfigFile(filePath, fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
+					if err != nil {
+						return errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
+					}
+					if cfg != nil {
+						m[filePath] = cfg
+					}
+
+				}
 			}
 		}
-	}
-	return mergeConfigs(m)
+		answer, err = mergeConfigs(m)
+		return err
+	})
+	return answer, err
 }
 
 func mergeConfigs(m map[string]*triggerconfig.Config) (*triggerconfig.Config, error) {
@@ -103,14 +121,17 @@ func mergeConfigs(m map[string]*triggerconfig.Config) (*triggerconfig.Config, er
 	return answer, nil
 }
 
-func isDirType(t string) bool {
-	return strings.ToLower(t) == "dir"
-}
-
-func loadConfigFile(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
-	data, err := fileBrowsers.LighthouseGitFileBrowser().GetFile(ownerName, repoName, path, sha, fc)
+func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
+	exists, err := util.FileExists(filePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+		return nil, errors.Wrapf(err, "failed to check if file exists %s", filePath)
+	}
+	if !exists {
+		return nil, nil
+	}
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read file %s with sha %s", filePath, sha)
 	}
 	if len(data) == 0 {
 		return nil, nil
@@ -118,9 +139,9 @@ func loadConfigFile(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.Fetch
 	repoConfig := &triggerconfig.Config{}
 	err = yaml.Unmarshal(data, repoConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+		return nil, errors.Wrapf(err, "failed to unmarshal file %s with sha %s", filePath, sha)
 	}
-	dir := filepath.Dir(path)
+	dir := filepath.Dir(filePath)
 	for i := range repoConfig.Spec.Presubmits {
 		r := &repoConfig.Spec.Presubmits[i]
 		if r.SourcePath != "" {
@@ -171,9 +192,9 @@ func loadJobBaseFromSourcePath(fileBrowsers *filebrowser.FileBrowsers, fc filebr
 		}
 
 	} else {
-		data, err = fileBrowsers.LighthouseGitFileBrowser().GetFile(ownerName, repoName, path, sha, fc)
+		data, err = ioutil.ReadFile(path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+			return errors.Wrapf(err, "failed to read file %s with sha %s", path, sha)
 		}
 	}
 

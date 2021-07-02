@@ -12,4 +12,7 @@ type Interface interface {
 
 	// ListFiles returns the file and directory entries in the given path in the repository with the given sha
 	ListFiles(owner, repo, path, ref string, fc FetchCache) ([]*scm.FileEntry, error)
+
+	// WithDir processes the given repository and reference at the given directory
+	WithDir(owner, repo, ref string, fc FetchCache, f func(dir string) error) error
 }
