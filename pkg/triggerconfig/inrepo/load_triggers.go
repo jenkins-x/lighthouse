@@ -184,18 +184,24 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 func loadJobBaseFromSourcePath(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, j *job.Base, ownerName, repoName, path, sha string) error {
 	var data []byte
 
-	// source path can either be a local file or a Git URL
-	_, err := url.ParseRequestURI(path)
-	if err == nil {
-		data, err = getPipelineFromURL(path)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
-		}
-
-	} else {
+	exists, err := util.FileExists(path)
+	if err != nil {
+		return errors.Wrapf(err, "failed to find file %s", path)
+	}
+	if exists {
 		data, err = ioutil.ReadFile(path)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read file %s with sha %s", path, sha)
+		}
+	} else {
+		_, err := url.ParseRequestURI(path)
+		if err == nil {
+			data, err = getPipelineFromURL(path)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
+			}
+		} else {
+			return errors.Errorf("file does not exist and not a URL: %s", path)
 		}
 	}
 
