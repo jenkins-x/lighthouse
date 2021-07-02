@@ -145,17 +145,18 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 	dir := filepath.Dir(filePath)
 	for i := range repoConfig.Spec.Presubmits {
 		r := &repoConfig.Spec.Presubmits[i]
-		if r.SourcePath != "" {
+		sourcePath := r.SourcePath
+		if sourcePath != "" {
 			if r.Agent == "" {
 				r.Agent = job.TektonPipelineAgent
 			}
+			// lets load the local file data now as we have locked the git file system
+			data, err := loadLocalFile(dir, sourcePath, sha)
+			if err != nil {
+				return nil, err
+			}
 			r.SetPipelineLoader(func(base *job.Base) error {
-				sourcePath := r.SourcePath
-				_, err := url.ParseRequestURI(sourcePath)
-				if err != nil {
-					sourcePath = filepath.Join(dir, r.SourcePath)
-				}
-				err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
 				if err != nil {
 					return errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
 				}
@@ -169,17 +170,18 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 	}
 	for i := range repoConfig.Spec.Postsubmits {
 		r := &repoConfig.Spec.Postsubmits[i]
-		if r.SourcePath != "" {
+		sourcePath := r.SourcePath
+		if sourcePath != "" {
 			if r.Agent == "" {
 				r.Agent = job.TektonPipelineAgent
 			}
+			// lets load the local file data now as we have locked the git file system
+			data, err := loadLocalFile(dir, sourcePath, sha)
+			if err != nil {
+				return nil, err
+			}
 			r.SetPipelineLoader(func(base *job.Base) error {
-				sourcePath := r.SourcePath
-				_, err := url.ParseRequestURI(sourcePath)
-				if err != nil {
-					sourcePath = filepath.Join(dir, r.SourcePath)
-				}
-				err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
 				if err != nil {
 					return errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
 				}
@@ -194,19 +196,24 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 	return repoConfig, nil
 }
 
-func loadJobBaseFromSourcePath(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, j *job.Base, ownerName, repoName, path, sha string) error {
-	var data []byte
-
+func loadLocalFile(dir, name, sha string) ([]byte, error) {
+	path := filepath.Join(dir, name)
 	exists, err := util.FileExists(path)
 	if err != nil {
-		return errors.Wrapf(err, "failed to find file %s", path)
+		return nil, errors.Wrapf(err, "failed to find file %s", path)
 	}
 	if exists {
-		data, err = ioutil.ReadFile(path)
+		data, err := ioutil.ReadFile(path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file %s with sha %s", path, sha)
+			return nil, errors.Wrapf(err, "failed to read file %s with sha %s", path, sha)
 		}
-	} else {
+		return data, nil
+	}
+	return nil, nil
+}
+
+func loadJobBaseFromSourcePath(data []byte, fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, j *job.Base, ownerName, repoName, path, sha string) error {
+	if data == nil {
 		_, err := url.ParseRequestURI(path)
 		if err == nil {
 			data, err = getPipelineFromURL(path)
@@ -217,7 +224,6 @@ func loadJobBaseFromSourcePath(fileBrowsers *filebrowser.FileBrowsers, fc filebr
 			return errors.Errorf("file does not exist and not a URL: %s", path)
 		}
 	}
-
 	if len(data) == 0 {
 		return errors.Errorf("empty file file %s in repo %s/%s for sha %s", path, ownerName, repoName, sha)
 	}
