@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jenkins-x/lighthouse/pkg/util"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -40,34 +42,51 @@ func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, fileBro
 
 // LoadTriggerConfig loads the `lighthouse.yaml` configuration files in the repository
 func LoadTriggerConfig(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
-	m := map[string]*triggerconfig.Config{}
-	path := ".lighthouse"
-	files, err := fileBrowsers.LighthouseGitFileBrowser().ListFiles(ownerName, repoName, path, sha, fc)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find any lighthouse configuration files in repo %s/%s at sha %s", ownerName, repoName, sha)
-	}
-	for _, f := range files {
-		if isDirType(f.Type) {
-			filePath := path + "/" + f.Name + "/triggers.yaml"
-			cfg, err := loadConfigFile(fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
+	var answer *triggerconfig.Config
+	err := fileBrowsers.LighthouseGitFileBrowser().WithDir(ownerName, repoName, sha, fc, func(dir string) error {
+		path := filepath.Join(dir, ".lighthouse")
+		exists, err := util.DirExists(path)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check if dir exists %s", path)
+		}
+		m := map[string]*triggerconfig.Config{}
+		if exists {
+			fs, err := ioutil.ReadDir(path)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
+				return errors.Wrapf(err, "failed to read dir %s", path)
 			}
-			if cfg != nil {
-				m[filePath] = cfg
-			}
-		} else if f.Name == "triggers.yaml" {
-			filePath := path + "/" + f.Name
-			cfg, err := loadConfigFile(fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
-			}
-			if cfg != nil {
-				m[filePath] = cfg
+			for _, f := range fs {
+				name := f.Name()
+				if strings.HasPrefix(name, ".") {
+					continue
+				}
+				if f.IsDir() {
+					filePath := filepath.Join(path, name, "triggers.yaml")
+					cfg, err := loadConfigFile(filePath, fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
+					if err != nil {
+						return errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
+					}
+					if cfg != nil {
+						m[filePath] = cfg
+					}
+
+				} else if name == "triggers.yaml" {
+					filePath := filepath.Join(path, "triggers.yaml")
+					cfg, err := loadConfigFile(filePath, fileBrowsers, fc, cache, ownerName, repoName, filePath, sha)
+					if err != nil {
+						return errors.Wrapf(err, "failed to load file %s in %s/%s with sha %s", filePath, ownerName, repoName, sha)
+					}
+					if cfg != nil {
+						m[filePath] = cfg
+					}
+
+				}
 			}
 		}
-	}
-	return mergeConfigs(m)
+		answer, err = mergeConfigs(m)
+		return err
+	})
+	return answer, err
 }
 
 func mergeConfigs(m map[string]*triggerconfig.Config) (*triggerconfig.Config, error) {
@@ -103,14 +122,17 @@ func mergeConfigs(m map[string]*triggerconfig.Config) (*triggerconfig.Config, er
 	return answer, nil
 }
 
-func isDirType(t string) bool {
-	return strings.ToLower(t) == "dir"
-}
-
-func loadConfigFile(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
-	data, err := fileBrowsers.LighthouseGitFileBrowser().GetFile(ownerName, repoName, path, sha, fc)
+func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, ownerName, repoName, path, sha string) (*triggerconfig.Config, error) {
+	exists, err := util.FileExists(filePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+		return nil, errors.Wrapf(err, "failed to check if file exists %s", filePath)
+	}
+	if !exists {
+		return nil, nil
+	}
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read file %s with sha %s", filePath, sha)
 	}
 	if len(data) == 0 {
 		return nil, nil
@@ -118,65 +140,90 @@ func loadConfigFile(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.Fetch
 	repoConfig := &triggerconfig.Config{}
 	err = yaml.Unmarshal(data, repoConfig)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+		return nil, errors.Wrapf(err, "failed to unmarshal file %s with sha %s", filePath, sha)
 	}
-	dir := filepath.Dir(path)
+	dir := filepath.Dir(filePath)
 	for i := range repoConfig.Spec.Presubmits {
 		r := &repoConfig.Spec.Presubmits[i]
-		if r.SourcePath != "" {
-			sourcePath := r.SourcePath
-			_, err := url.ParseRequestURI(sourcePath)
-			if err != nil {
-				sourcePath = filepath.Join(dir, r.SourcePath)
+		sourcePath := r.SourcePath
+		if sourcePath != "" {
+			if r.Agent == "" {
+				r.Agent = job.TektonPipelineAgent
 			}
-			err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, &r.Base, ownerName, repoName, sourcePath, sha)
+			// lets load the local file data now as we have locked the git file system
+			data, err := loadLocalFile(dir, sourcePath, sha)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
+				return nil, err
 			}
-
-		}
-		if r.Agent == "" && r.PipelineRunSpec != nil {
-			r.Agent = job.TektonPipelineAgent
+			r.SetPipelineLoader(func(base *job.Base) error {
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				if err != nil {
+					return errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
+				}
+				r.Base = *base
+				if r.Agent == "" && r.PipelineRunSpec != nil {
+					r.Agent = job.TektonPipelineAgent
+				}
+				return nil
+			})
 		}
 	}
 	for i := range repoConfig.Spec.Postsubmits {
 		r := &repoConfig.Spec.Postsubmits[i]
-		if r.SourcePath != "" {
-			sourcePath := r.SourcePath
-			_, err := url.ParseRequestURI(sourcePath)
-			if err != nil {
-				sourcePath = filepath.Join(dir, r.SourcePath)
+		sourcePath := r.SourcePath
+		if sourcePath != "" {
+			if r.Agent == "" {
+				r.Agent = job.TektonPipelineAgent
 			}
-			err = loadJobBaseFromSourcePath(fileBrowsers, fc, cache, &r.Base, ownerName, repoName, sourcePath, sha)
+			// lets load the local file data now as we have locked the git file system
+			data, err := loadLocalFile(dir, sourcePath, sha)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
+				return nil, err
 			}
-		}
-		if r.Agent == "" && r.PipelineRunSpec != nil {
-			r.Agent = job.TektonPipelineAgent
+			r.SetPipelineLoader(func(base *job.Base) error {
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				if err != nil {
+					return errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
+				}
+				r.Base = *base
+				if r.Agent == "" && r.PipelineRunSpec != nil {
+					r.Agent = job.TektonPipelineAgent
+				}
+				return nil
+			})
 		}
 	}
 	return repoConfig, nil
 }
 
-func loadJobBaseFromSourcePath(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, j *job.Base, ownerName, repoName, path, sha string) error {
-	var data []byte
-
-	// source path can either be a local file or a Git URL
-	_, err := url.ParseRequestURI(path)
-	if err == nil {
-		data, err = getPipelineFromURL(path)
+func loadLocalFile(dir, name, sha string) ([]byte, error) {
+	path := filepath.Join(dir, name)
+	exists, err := util.FileExists(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find file %s", path)
+	}
+	if exists {
+		data, err := ioutil.ReadFile(path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
+			return nil, errors.Wrapf(err, "failed to read file %s with sha %s", path, sha)
 		}
+		return data, nil
+	}
+	return nil, nil
+}
 
-	} else {
-		data, err = fileBrowsers.LighthouseGitFileBrowser().GetFile(ownerName, repoName, path, sha, fc)
-		if err != nil {
-			return errors.Wrapf(err, "failed to find file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
+func loadJobBaseFromSourcePath(data []byte, fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, j *job.Base, ownerName, repoName, path, sha string) error {
+	if data == nil {
+		_, err := url.ParseRequestURI(path)
+		if err == nil {
+			data, err = getPipelineFromURL(path)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get pipeline from URL %s ", path)
+			}
+		} else {
+			return errors.Errorf("file does not exist and not a URL: %s", path)
 		}
 	}
-
 	if len(data) == 0 {
 		return errors.Errorf("empty file file %s in repo %s/%s for sha %s", path, ownerName, repoName, sha)
 	}

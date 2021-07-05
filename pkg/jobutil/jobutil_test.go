@@ -20,6 +20,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/stretchr/testify/assert"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +33,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
+)
+
+var (
+	logger = logrus.WithField("client", "git")
 )
 
 func TestPostsubmitSpec(t *testing.T) {
@@ -97,7 +103,7 @@ func TestPostsubmitSpec(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		actual := PostsubmitSpec(tc.p, tc.refs)
+		actual := PostsubmitSpec(logger, tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
 		}
@@ -198,7 +204,7 @@ func TestPresubmitSpec(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		actual := PresubmitSpec(tc.p, tc.refs)
+		actual := PresubmitSpec(logger, tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
 		}
@@ -269,7 +275,7 @@ func TestBatchSpec(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		actual := BatchSpec(tc.p, tc.refs)
+		actual := BatchSpec(logger, tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
 		}
@@ -586,7 +592,7 @@ func TestSpecFromJobBase(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pj := specFromJobBase(tc.jobBase)
+			pj := specFromJobBase(logger, tc.jobBase)
 			if err := tc.verify(pj); err != nil {
 				t.Fatalf("Verification failed: %v", err)
 			}

@@ -2,11 +2,13 @@ package filebrowser_test
 
 import (
 	"fmt"
-	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
@@ -102,6 +104,7 @@ func assertNoScmFileExists(t *testing.T, files []*scm.FileEntry, name, message s
 }
 
 func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
+
 	logger := logrus.WithField("client", "git")
 
 	baseDir, err := ioutil.TempDir("", "localdir")
@@ -125,6 +128,17 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	executor, err := git.NewCensoringExecutor(repoDir, censor, logger)
 	require.NoError(t, err, "failed to find git binary")
 
+	// lets fetch the default branch
+	defaultBranch := "master"
+	out, err := executor.Run("config", "--global", "--get", "init.defaultBranch")
+	if err == nil {
+		text := strings.TrimSpace(string(out))
+		if text != "" {
+			defaultBranch = text
+		}
+	}
+	t.Logf("using default branch: %s\n", defaultBranch)
+
 	err = ioutil.WriteFile(filepath.Join(repoDir, "README.md"), []byte("README"), 0600)
 	require.NoError(t, err, "failed to write README.md file")
 
@@ -141,7 +155,7 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	require.NoError(t, err, "failed to create git client factory")
 	fb := filebrowser.NewFileBrowserFromGitClient(cf)
 
-	files, err := fb.ListFiles("org", "repo", "", "master", fc)
+	files, err := fb.ListFiles("org", "repo", "", defaultBranch, fc)
 	require.NoError(t, err, "failed to list files")
 
 	require.True(t, len(files) == 1, "exepecting 1 file")

@@ -3,11 +3,12 @@ package webhook
 import (
 	"bytes"
 	"fmt"
-	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"

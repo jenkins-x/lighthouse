@@ -22,6 +22,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -68,6 +70,25 @@ type Base struct {
 	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
 	// PipelineRunParams are the params used by the pipeline run
 	PipelineRunParams []PipelineRunParam `json:"pipeline_run_params,omitempty"`
+	// lets us register a loader
+	pipelineLoader func(*Base) error
+}
+
+// LoadPipeline() loads the pipeline specification if its not already been loaded
+func (b *Base) LoadPipeline(logger *logrus.Entry) error {
+	if b.PipelineRunSpec != nil || b.pipelineLoader == nil {
+		return nil
+	}
+	logger.Infof("lazy loading the PipelineRunSpec")
+	answer := b.pipelineLoader(b)
+	// lets gc the function
+	b.pipelineLoader = nil
+	return answer
+}
+
+// SetPipelineLoader sets the function to lazy load the pipeline spec
+func (b *Base) SetPipelineLoader(fn func(b *Base) error) {
+	b.pipelineLoader = fn
 }
 
 // SetDefaults initializes default values

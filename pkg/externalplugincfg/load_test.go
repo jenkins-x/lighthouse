@@ -1,6 +1,8 @@
 package externalplugincfg_test
 
 import (
+	"testing"
+
 	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -8,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"testing"
 )
 
 var testYaml = `- name: cd-indicators
