@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
@@ -200,17 +201,12 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 			}).Info("not fetching ref as we already have it")
 		}
 	}
-	if shouldFetch {
-		logrus.StandardLogger().WithFields(map[string]interface{}{
-			"Name": c.fullName,
-			"Ref":  ref,
-			"File": "git_file_browser",
-		}).Info("fetching ref")
-	}
 
 	if c.ref == ref && !shouldFetch {
 		return nil
 	}
+
+	start := time.Now()
 
 	// lets switch to the main branch first before we go to a custom sha/ref
 	if c.ref != "" && c.ref != c.mainBranch {
@@ -238,6 +234,14 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to checkout repository %s ref %s", c.fullName, ref)
 	}
+
+	duration := time.Now().Sub(start)
+	logrus.StandardLogger().WithFields(map[string]interface{}{
+		"Name":     c.fullName,
+		"Ref":      ref,
+		"File":     "git_file_browser",
+		"Duration": duration.String(),
+	}).Info("fetched and checked out ref")
 	return nil
 }
 

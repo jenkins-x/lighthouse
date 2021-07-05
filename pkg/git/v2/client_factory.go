@@ -22,6 +22,7 @@ import (
 	"path"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	utilpointer "k8s.io/utils/pointer"
@@ -242,8 +243,10 @@ func (c *clientFactory) ClientFromDir(org, repo, dir string) (RepoClient, error)
 // take a while. Once that is done, it will do a git fetch instead of a clone,
 // which will usually take at most a few seconds.
 func (c *clientFactory) ClientFor(org, repo string) (RepoClient, error) {
+	start := time.Now()
 	cacheDir := path.Join(c.cacheDir, org, repo)
-	c.logger.WithFields(logrus.Fields{"org": org, "repo": repo, "dir": cacheDir}).Debug("Creating a client from the cache.")
+	l := c.logger.WithFields(logrus.Fields{"org": org, "repo": repo, "dir": cacheDir})
+	l.Debug("Creating a client from the cache.")
 	cacheClientCacher, _, _, err := c.bootstrapClients(org, repo, cacheDir)
 	if err != nil {
 		return nil, err
@@ -287,6 +290,8 @@ func (c *clientFactory) ClientFor(org, repo string) (RepoClient, error) {
 		return nil, err
 	}
 
+	duration := time.Now().Sub(start)
+	l.WithField("Duration", duration.String()).Info("cloned repository")
 	return repoClient, nil
 }
 
