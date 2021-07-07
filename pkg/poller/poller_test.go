@@ -1,9 +1,10 @@
 package poller_test
 
 import (
+	"testing"
+
 	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"github.com/jenkins-x/lighthouse/pkg/poller"
-	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/stretchr/testify/assert"

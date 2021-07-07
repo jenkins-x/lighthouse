@@ -126,14 +126,14 @@ func (o *WebhooksController) isReady() bool {
 
 // HandleWebhookRequests handles incoming webhook events
 func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *http.Request) {
-	o.handleWebhookOrPollRequest(w, r, func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
+	o.handleWebhookOrPollRequest(w, r, "Webhook", func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
 		return scmClient.Webhooks.Parse(r, o.secretFn)
 	})
 }
 
 // HandlePollingRequests handles incoming polling events
 func (o *WebhooksController) HandlePollingRequests(w http.ResponseWriter, r *http.Request) {
-	o.handleWebhookOrPollRequest(w, r, func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
+	o.handleWebhookOrPollRequest(w, r, "Pollhook", func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
 		data, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read poll payload")
@@ -148,7 +148,7 @@ func (o *WebhooksController) HandlePollingRequests(w http.ResponseWriter, r *htt
 }
 
 // handleWebhookOrPollRequest handles incoming events
-func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r *http.Request, parseWebhook func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error)) {
+func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r *http.Request, operation string, parseWebhook func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error)) {
 	if r.Method != http.MethodPost {
 		// liveness probe etc
 		logrus.WithField("method", r.Method).Debug("invalid http method so returning 200")
@@ -269,7 +269,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 			return
 		}
 	}
-	entry := logrus.WithField("Webhook", webhook.Kind())
+	entry := logrus.WithField(operation, webhook.Kind())
 	if o.disabledExternalPlugins == nil {
 		o.disabledExternalPlugins, err = externalplugincfg.LoadDisabledPlugins(entry, kubeClient, o.namespace)
 		if err != nil {

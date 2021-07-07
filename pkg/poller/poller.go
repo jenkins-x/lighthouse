@@ -1,6 +1,8 @@
 package poller
 
 import (
+	"strings"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
@@ -8,7 +10,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"strings"
 )
 
 var (
@@ -40,9 +41,15 @@ func NewPollingController(repositoryNames []string, gitServer string, fb filebro
 	}, nil
 }
 
+func (c *pollingController) Sync() {
+	c.PollReleases()
+}
+
 func (c *pollingController) PollReleases() {
 	for _, fullName := range c.repositoryNames {
 		l := c.logger.WithField("Repo", fullName)
+
+		l.Info("polling for new commit on main branch")
 
 		// lets git clone and see if the latest git commit sha is new...
 		owner, repo := scm.Split(fullName)

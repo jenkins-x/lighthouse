@@ -1,7 +1,6 @@
 package inrepo_test
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/sirupsen/logrus"
