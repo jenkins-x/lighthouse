@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/poller"
+	"github.com/pkg/errors"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -22,8 +27,6 @@ import (
 )
 
 type options struct {
-	port int
-
 	configPath    string
 	jobConfigPath string
 	botName       string
@@ -31,10 +34,10 @@ type options struct {
 	gitKind       string
 	namespace     string
 	repoNames     string
-
-	runOnce bool
-
-	syncPeriod time.Duration
+	hookEndpoint  string
+	runOnce       bool
+	dryRun        bool
+	syncPeriod    time.Duration
 }
 
 func (o *options) Validate() error {
@@ -49,9 +52,11 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.gitServerURL, "git-url", "", "The git provider URL")
 	fs.StringVar(&o.gitKind, "git-kind", "", "The git provider kind (e.g. github, gitlab, bitbucketserver")
 	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
+	fs.BoolVar(&o.dryRun, "dry-run", false, "Disable POSTing to the webhook service and just log the webhooks instead.")
 
 	fs.StringVar(&o.namespace, "namespace", "jx", "The namespace to listen in")
 	fs.StringVar(&o.repoNames, "repo", "", "The git repository names to poll. If not specified all the repositories are polled")
+	fs.StringVar(&o.hookEndpoint, "hook", "", "The hook endpoint to post to")
 
 	fs.DurationVar(&o.syncPeriod, "period", 20*time.Second, "The time period between polls")
 
@@ -94,6 +99,9 @@ func main() {
 	}
 	if botName == "" {
 		logrus.Fatal("no $GIT_USER defined")
+	}
+	if o.hookEndpoint == "" {
+		logrus.Fatal("no hook endpoint defined")
 	}
 	serverURL := o.gitServerURL
 	if serverURL == "" {
@@ -190,6 +198,38 @@ func findAllRepoNames(c *config.Config) []string {
 }
 
 func (o *options) notifier(hook scm.Webhook) error {
-	logrus.WithField("Hook", hook).Info("notify")
+	if o.dryRun {
+		logrus.WithField("Hook", hook).Info("notify")
+		return nil
+	}
+
+	data, err := json.Marshal(hook)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal hook %#v", hook)
+	}
+
+	req, err := http.NewRequest("POST", o.hookEndpoint, bytes.NewBuffer(data))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		if err != nil {
+			return errors.Wrapf(err, "failed to invoke endpoint %s", o.hookEndpoint)
+		}
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	l := logrus.WithFields(map[string]interface{}{
+		"Status":   resp.Status,
+		"Endpoint": o.hookEndpoint,
+		"Body":     string(body),
+	})
+	if resp.StatusCode >= 300 {
+		l.Warnf("failed to notify")
+		return errors.Errorf("status when invoking endpoint")
+	}
+	l.Infof("notified")
 	return nil
 }

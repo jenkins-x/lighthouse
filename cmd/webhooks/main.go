@@ -44,7 +44,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 		"The interface address to bind to (by default, will listen on all interfaces/addresses).")
 	fs.StringVar(&o.path, "path", "/hook",
 		"The path to listen on for webhook to trigger a pipeline run.")
-	fs.StringVar(&o.pollPath, "pollPath", "/poll",
+	fs.StringVar(&o.pollPath, "pollPath", "/hook/poll",
 		"The path to listen on for polling requests to trigger a pipeline run.")
 	fs.StringVar(&o.pluginFilename, "plugin-file", "", "Path to the plugins.yaml file. If not specified it is loaded from the 'plugins' ConfigMap")
 	fs.StringVar(&o.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
