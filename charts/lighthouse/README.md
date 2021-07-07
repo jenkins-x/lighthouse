@@ -53,6 +53,14 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `engines.jx` | bool | Enables the jx engine | `true` |
 | `engines.tekton` | bool | Enables the tekton engine | `false` |
 | `env` | object | Environment variables | `{"JX_DEFAULT_IMAGE":""}` |
+| `externalPlugins[0].name` | string |  | `"cd-indicators"` |
+| `externalPlugins[0].requiredResources[0].kind` | string |  | `"Service"` |
+| `externalPlugins[0].requiredResources[0].name` | string |  | `"cd-indicators"` |
+| `externalPlugins[0].requiredResources[0].namespace` | string |  | `"jx"` |
+| `externalPlugins[1].name` | string |  | `"lighthouse-webui-plugin"` |
+| `externalPlugins[1].requiredResources[0].kind` | string |  | `"Service"` |
+| `externalPlugins[1].requiredResources[0].name` | string |  | `"lighthouse-webui-plugin"` |
+| `externalPlugins[1].requiredResources[0].namespace` | string |  | `"jx"` |
 | `foghorn.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the foghorn pods | `{}` |
 | `foghorn.image.pullPolicy` | string | Template for computing the foghorn controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `foghorn.image.repository` | string | Template for computing the foghorn controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-foghorn"` |
