@@ -31,6 +31,8 @@ type Presubmit struct {
 	Reporter
 	// AlwaysRun automatically for every PR, or only when a comment triggers it.
 	AlwaysRun bool `json:"always_run"`
+	// RequireRun if this value is true and AlwaysRun is false then we need to manually trigger this context for the PR to be allowed to auto merge.
+	RequireRun bool `json:"require_run,omitempty"`
 	// Optional indicates that the job's status context should not be required for merge.
 	Optional bool `json:"optional,omitempty"`
 	// Trigger is the regular expression to trigger the job.
@@ -106,7 +108,7 @@ func (p Presubmit) ShouldRun(baseRef string, changes ChangedFilesProvider, force
 	if !p.CouldRun(baseRef) {
 		return false, nil
 	}
-	if p.AlwaysRun {
+	if p.AlwaysRun || p.RequireRun {
 		return true, nil
 	}
 	if forced {
