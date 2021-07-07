@@ -178,7 +178,7 @@ func findAllRepoNames(c *config.Config) []string {
 		m[fullName] = true
 	}
 	for fullName := range c.InRepoConfig.Enabled {
-		if !strings.Contains(fullName, "*") {
+		if !strings.Contains(fullName, "*") && strings.Contains(fullName, "/") {
 			m[fullName] = true
 		}
 	}
