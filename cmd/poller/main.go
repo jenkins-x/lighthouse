@@ -197,7 +197,7 @@ func findAllRepoNames(c *config.Config) []string {
 	return repoNames
 }
 
-func (o *options) notifier(hook scm.Webhook) error {
+func (o *options) notifier(hook *scm.WebhookWrapper) error {
 	if o.dryRun {
 		logrus.WithField("Hook", hook).Info("notify")
 		return nil

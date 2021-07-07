@@ -1,13 +1,13 @@
 package poller
 
 import (
+	"context"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/poller/pollstate"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -19,14 +19,14 @@ var (
 type pollingController struct {
 	repositoryNames []string
 	gitServer       string
-	scmClient       *scmprovider.Client
+	scmClient       *scm.Client
 	fb              filebrowser.Interface
 	pollstate       pollstate.Interface
 	logger          *logrus.Entry
-	notifier        func(webhook scm.Webhook) error
+	notifier        func(webhook *scm.WebhookWrapper) error
 }
 
-func NewPollingController(repositoryNames []string, gitServer string, fb filebrowser.Interface, notifier func(webhook scm.Webhook) error) (*pollingController, error) {
+func NewPollingController(repositoryNames []string, gitServer string, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	if gitServer == "" {
 		gitServer = "https://github.com"
@@ -93,7 +93,10 @@ func (c *pollingController) PollReleases() {
 				return errors.Wrapf(err, "failed to create PushHook")
 			}
 
-			err = c.notifier(pushHook)
+			wh := &scm.WebhookWrapper{
+				PushHook: pushHook,
+			}
+			err = c.notifier(wh)
 			if err != nil {
 				return errors.Wrapf(err, "failed to notify PushHook")
 			}
@@ -104,6 +107,39 @@ func (c *pollingController) PollReleases() {
 			l.WithError(err).Warn("failed to poll release")
 		}
 	}
+}
+
+func (c *pollingController) PollPullRequests() {
+	ctx := context.TODO()
+
+	for _, fullName := range c.repositoryNames {
+		l := c.logger.WithField("Repo", fullName)
+
+		l.Info("polling for new commit on main branch")
+
+		opts := scm.PullRequestListOptions{
+			Open: true,
+
+			// TODO use last update poll?
+		}
+		prs, _, err := c.scmClient.PullRequests.List(ctx, fullName, opts)
+		if err != nil {
+			l.WithError(err).Error("failed to list open pull requests")
+			continue
+		}
+		if len(prs) == 0 {
+			l.Info("no open Pull Requests")
+			continue
+		}
+
+		for _, pr := range prs {
+			c.pollPullRequest(fullName, pr)
+		}
+	}
+}
+
+func (c *pollingController) pollPullRequest(fullRepoName string, pr *scm.PullRequest) {
+
 }
 
 func (c *pollingController) createPushHook(fullName, owner, repo, before, after, branch string) (*scm.PushHook, error) {
