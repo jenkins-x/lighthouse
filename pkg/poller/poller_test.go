@@ -1,6 +1,7 @@
 package poller_test
 
 import (
+	scmfake "github.com/jenkins-x/go-scm/scm/driver/fake"
 	"testing"
 
 	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
@@ -20,17 +21,18 @@ var (
 func TestPoller(t *testing.T) {
 	var hooks []*scm.PushHook
 
-	fakeNotifier := func(webhook scm.Webhook) error {
-		hook := webhook.(*scm.PushHook)
-		assert.NotNil(t, hook, "no PushHook for webhook %#v", webhook)
+	fakeNotifier := func(wrapper *scm.WebhookWrapper) error {
+		hook := wrapper.PushHook
+		assert.NotNil(t, hook, "no PushHook for webhook %#v", wrapper)
 		if hook != nil {
 			hooks = append(hooks, hook)
 		}
 		return nil
 	}
+	scmClient, _ := scmfake.NewDefault()
 	fb := fbfake.NewFakeFileBrowser("test_data", true)
 
-	p, err := poller.NewPollingController(repoNames, gitServer, fb, fakeNotifier)
+	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
 
 	p.PollReleases()

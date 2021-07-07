@@ -156,7 +156,13 @@ func main() {
 		logrus.Fatal("no repositories found")
 	}
 
-	c, err := poller.NewPollingController(repoNames, serverURL, fb, o.notifier)
+	gitHubAppOwner := ""
+	_, scmClient, _, _, err := util.GetSCMClient(gitHubAppOwner, configAgent.Config)
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to create scm client")
+	}
+
+	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, fb, o.notifier)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}

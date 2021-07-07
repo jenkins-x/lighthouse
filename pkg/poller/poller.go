@@ -26,7 +26,7 @@ type pollingController struct {
 	notifier        func(webhook *scm.WebhookWrapper) error
 }
 
-func NewPollingController(repositoryNames []string, gitServer string, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
+func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	if gitServer == "" {
 		gitServer = "https://github.com"
@@ -35,6 +35,7 @@ func NewPollingController(repositoryNames []string, gitServer string, fb filebro
 		repositoryNames: repositoryNames,
 		gitServer:       gitServer,
 		logger:          logger,
+		scmClient:       scmClient,
 		fb:              fb,
 		notifier:        notifier,
 		pollstate:       pollstate.NewMemoryPollState(),
@@ -46,6 +47,8 @@ func (c *pollingController) Sync() {
 }
 
 func (c *pollingController) PollReleases() {
+	ctx := context.TODO()
+
 	for _, fullName := range c.repositoryNames {
 		l := c.logger.WithField("Repo", fullName)
 
@@ -82,6 +85,20 @@ func (c *pollingController) PollReleases() {
 				return errors.Wrapf(err, "failed to check if sha %s is new", sha)
 			}
 			if !newValue {
+				return nil
+			}
+
+			// lets check we have not triggered this before
+			opts := scm.ListOptions{
+				Page: 1,
+			}
+
+			statuses, _, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+			if err != nil {
+				return errors.Wrapf(err, "failed to list status")
+			}
+			if len(statuses) > 0 {
+				l.WithField("Statuses", statuses).Info("the SHA has CI statuses so not triggering")
 				return nil
 			}
 
