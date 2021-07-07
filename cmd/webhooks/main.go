@@ -22,6 +22,7 @@ const (
 type options struct {
 	bindAddress string
 	path        string
+	pollPath    string
 	port        int
 	jsonLog     bool
 
@@ -42,7 +43,9 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.bindAddress, "bind", "",
 		"The interface address to bind to (by default, will listen on all interfaces/addresses).")
 	fs.StringVar(&o.path, "path", "/hook",
-		"The path to listen on for requests to trigger a pipeline run.")
+		"The path to listen on for webhook to trigger a pipeline run.")
+	fs.StringVar(&o.pollPath, "pollPath", "/poll",
+		"The path to listen on for polling requests to trigger a pipeline run.")
 	fs.StringVar(&o.pluginFilename, "plugin-file", "", "Path to the plugins.yaml file. If not specified it is loaded from the 'plugins' ConfigMap")
 	fs.StringVar(&o.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	fs.StringVar(&o.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
@@ -84,6 +87,7 @@ func main() {
 
 	mux.Handle("/", http.HandlerFunc(controller.DefaultHandler))
 	mux.Handle(o.path, http.HandlerFunc(controller.HandleWebhookRequests))
+	mux.Handle(o.pollPath, http.HandlerFunc(controller.HandlePollingRequests))
 
 	// lets serve metrics
 	metricsHandler := http.HandlerFunc(controller.Metrics)

@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -123,8 +124,31 @@ func (o *WebhooksController) isReady() bool {
 	return true
 }
 
-// HandleWebhookRequests handles incoming events
+// HandleWebhookRequests handles incoming webhook events
 func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *http.Request) {
+	o.handleWebhookOrPollRequest(w, r, func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
+		return scmClient.Webhooks.Parse(r, o.secretFn)
+	})
+}
+
+// HandlePollingRequests handles incoming polling events
+func (o *WebhooksController) HandlePollingRequests(w http.ResponseWriter, r *http.Request) {
+	o.handleWebhookOrPollRequest(w, r, func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read poll payload")
+		}
+		wh := &scm.WebhookWrapper{}
+		err = json.Unmarshal(data, wh)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal WebhookWrapper payload")
+		}
+		return wh.ToWebhook()
+	})
+}
+
+// handleWebhookOrPollRequest handles incoming events
+func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r *http.Request, parseWebhook func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error)) {
 	if r.Method != http.MethodPost {
 		// liveness probe etc
 		logrus.WithField("method", r.Method).Debug("invalid http method so returning 200")
@@ -156,7 +180,7 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 		return
 	}
 
-	webhook, err := scmClient.Webhooks.Parse(r, o.secretFn)
+	webhook, err := parseWebhook(scmClient, r)
 	if err != nil {
 		logrus.Warnf("failed to parse webhook: %s", err.Error())
 

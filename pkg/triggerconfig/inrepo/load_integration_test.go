@@ -27,7 +27,7 @@ func TestMergeConfigIntegration(t *testing.T) {
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
 
-	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser(filepath.Join("test_data"), true))
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser("test_data", true))
 	require.NoError(t, err, "failed to create filebrowsers")
 
 	fc := filebrowser.NewFetchCache()

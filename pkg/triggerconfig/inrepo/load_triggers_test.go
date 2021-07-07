@@ -21,7 +21,7 @@ func TestMergeConfig(t *testing.T) {
 	repo := "loadtest"
 	ref := "master"
 
-	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser(filepath.Join("test_data"), true))
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser("test_data", true))
 	require.NoError(t, err, "failed to create filebrowsers")
 
 	cfg := &config.Config{}
@@ -44,7 +44,7 @@ func TestInvalidConfigs(t *testing.T) {
 		owner := "myorg"
 		ref := "master"
 
-		fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser(filepath.Join("test_data"), true))
+		fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser("test_data", true))
 		require.NoError(t, err, "failed to create filebrowsers")
 
 		fc := filebrowser.NewFetchCache()
