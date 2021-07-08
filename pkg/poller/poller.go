@@ -43,6 +43,10 @@ func NewPollingController(repositoryNames []string, gitServer string, scmClient 
 	}, nil
 }
 
+func (c *pollingController) Logger() *logrus.Entry {
+	return c.logger
+}
+
 func (c *pollingController) Sync() {
 	c.PollReleases()
 	c.PollPullRequests()

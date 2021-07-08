@@ -1,0 +1,16 @@
+{{- if .Values.poller.enabled }}
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "poller.name" . }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+{{- end }}

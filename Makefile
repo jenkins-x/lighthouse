@@ -4,6 +4,7 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 PROJECT := github.com/jenkins-x/lighthouse
 
 WEBHOOKS_EXECUTABLE := webhooks
+POLLER_EXECUTABLE := poller
 KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
 GC_JOBS_EXECUTABLE := gc-jobs
@@ -11,6 +12,7 @@ TEKTON_CONTROLLER_EXECUTABLE := lighthouse-tekton-controller
 JENKINS_CONTROLLER_EXECUTABLE := jenkins-controller
 
 WEBHOOKS_MAIN_SRC_FILE=cmd/webhooks/main.go
+POLLER_MAIN_SRC_FILE=cmd/poller/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
 GC_JOBS_MAIN_SRC_FILE=cmd/gc/main.go
@@ -30,11 +32,15 @@ GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 all: build test check docs ## Default rule, builds all binaries, runs tests and format checks
 
 .PHONY: build
-build: build-webhooks build-keeper build-foghorn build-tekton-controller build-gc-jobs build-jenkins-controller ## Builds all Lighthouse binaries native to your machine
+build: build-webhooks build-poller build-keeper build-foghorn build-tekton-controller build-gc-jobs build-jenkins-controller ## Builds all Lighthouse binaries native to your machine
 
 .PHONY: build-webhooks
 build-webhooks: ## Build the webhooks controller binary for the native OS
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
+
+.PHONY: build-poller
+build-poller: ## Build the poller controller binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(POLLER_EXECUTABLE) $(POLLER_MAIN_SRC_FILE)
 
 .PHONY: build-keeper
 build-keeper: ## Build the keeper controller binary for the native OS
@@ -63,11 +69,15 @@ release: linux
 linux: build-linux
 
 .PHONY: build-linux
-build-linux: build-webhooks-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
+build-linux: build-webhooks-linux build-poller-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
 
 .PHONY: build-webhooks-linux ## Build the webhook controller binary for Linux
 build-webhooks-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
+
+.PHONY: build-poller-linux ## Build the webhook controller binary for Linux
+build-poller-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(POLLER_EXECUTABLE) $(POLLER_MAIN_SRC_FILE)
 
 .PHONY: build-keeper-linux
 build-keeper-linux: ## Build the keeper controller binary for Linux

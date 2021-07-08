@@ -37,7 +37,7 @@ type options struct {
 	hookEndpoint  string
 	runOnce       bool
 	dryRun        bool
-	syncPeriod    time.Duration
+	pollPeriod    time.Duration
 }
 
 func (o *options) Validate() error {
@@ -56,9 +56,19 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 
 	fs.StringVar(&o.namespace, "namespace", "jx", "The namespace to listen in")
 	fs.StringVar(&o.repoNames, "repo", "", "The git repository names to poll. If not specified all the repositories are polled")
-	fs.StringVar(&o.hookEndpoint, "hook", "", "The hook endpoint to post to")
+	fs.StringVar(&o.hookEndpoint, "hook", os.Getenv("POLL_HOOK_ENDPOINT"), "The hook endpoint to post to")
 
-	fs.DurationVar(&o.syncPeriod, "period", 20*time.Second, "The time period between polls")
+	defaultPollPeriod := 20 * time.Second
+	text := os.Getenv("POLL_PERIOD")
+	if text != "" {
+		d, err := time.ParseDuration(text)
+		if err != nil {
+			logrus.WithError(err).WithField("PollPeriod", text).Warn("invalid POLL_PERIOD value")
+		} else {
+			defaultPollPeriod = d
+		}
+	}
+	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -69,7 +79,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 }
 
 func main() {
-	logrusutil.ComponentInit("keeper")
+	logrusutil.ComponentInit("poller")
 
 	defer interrupts.WaitForGracefulShutdown()
 
@@ -113,7 +123,7 @@ func main() {
 	}
 	gitToken, err := util.GetSCMToken(gitKind)
 	if err != nil {
-		logrus.WithError(err).Fatal("Error creating Keeper controller.")
+		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
 
 	gitCloneUser := o.botName
@@ -164,8 +174,13 @@ func main() {
 
 	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, fb, o.notifier)
 	if err != nil {
-		logrus.WithError(err).Fatal("Error creating Keeper controller.")
+		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
+
+	c.Logger().WithFields(map[string]interface{}{
+		"PollPeriod":  o.pollPeriod,
+		"HookEndpint": o.hookEndpoint,
+	}).Info("starting")
 
 	start := time.Now()
 	c.Sync()
@@ -174,11 +189,11 @@ func main() {
 	}
 
 	// run the controller, but only after one sync period expires after our first run
-	time.Sleep(time.Until(start.Add(o.syncPeriod)))
+	time.Sleep(time.Until(start.Add(o.pollPeriod)))
 	interrupts.Tick(func() {
 		c.Sync()
 	}, func() time.Duration {
-		return o.syncPeriod
+		return o.pollPeriod
 	})
 }
 

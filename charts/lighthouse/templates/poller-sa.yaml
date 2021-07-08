@@ -1,0 +1,6 @@
+{{- if .Values.poller.enabled }}
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ template "poller.name" . }}
+{{- end }}

@@ -35,6 +35,13 @@ spec:
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION --build-arg=VERSION=$VERSION
+        - name: build-container-build:poller
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/poller/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-poller:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:keeper
           resources: {}
           script: |
