@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/jenkins-x/go-scm/pkg/hmac"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -149,7 +150,23 @@ func (o *WebhooksController) HandlePollingRequests(w http.ResponseWriter, r *htt
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal WebhookWrapper payload")
 		}
-		return wh.ToWebhook()
+		hook, err := wh.ToWebhook()
+		if err != nil {
+			return nil, err
+		}
+
+		key, err := o.secretFn(hook)
+		if err != nil {
+			return hook, err
+		} else if key == "" {
+			return hook, nil
+		}
+
+		sig := r.Header.Get("X-Hub-Signature")
+		if !hmac.ValidatePrefix(data, []byte(key), sig) {
+			return hook, scm.ErrSignatureInvalid
+		}
+		return hook, err
 	})
 }
 

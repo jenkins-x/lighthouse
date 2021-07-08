@@ -32,6 +32,8 @@ type options struct {
 	botName       string
 	gitServerURL  string
 	gitKind       string
+	gitToken      string
+	hmacToken     string
 	namespace     string
 	repoNames     string
 	hookEndpoint  string
@@ -41,6 +43,9 @@ type options struct {
 }
 
 func (o *options) Validate() error {
+	if o.hmacToken == "" {
+		o.hmacToken = os.Getenv("HMAC_TOKEN")
+	}
 	return nil
 }
 
@@ -121,9 +126,12 @@ func main() {
 	if gitKind == "" {
 		gitKind = util.GitKind(configAgent.Config)
 	}
-	gitToken, err := util.GetSCMToken(gitKind)
+	o.gitToken, err = util.GetSCMToken(gitKind)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
+	}
+	if o.gitToken == "" {
+		logrus.WithError(err).Fatal("no git token.")
 	}
 
 	gitCloneUser := o.botName
@@ -135,7 +143,7 @@ func main() {
 
 	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
 		opts.Token = func() []byte {
-			return []byte(gitToken)
+			return []byte(o.gitToken)
 		}
 		opts.GitUser = func() (name, email string, err error) {
 			name = gitCloneUser
@@ -231,6 +239,11 @@ func (o *options) notifier(hook *scm.WebhookWrapper) error {
 
 	req, err := http.NewRequest("POST", o.hookEndpoint, bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json")
+
+	if o.hmacToken != "" {
+		sig := util.CreateHMACHeader(data, o.hmacToken)
+		req.Header.Set("X-Hub-Signature", sig)
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
