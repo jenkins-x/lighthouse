@@ -40,7 +40,7 @@ spec:
           - "--namespace={{ .Release.Namespace }}"
         ports:
           - name: http
-            containerPort: {{ .Values.poller.service.internalPort }}
+            containerPort: {{ .Values.poller.internalPort }}
             protocol: TCP
         livenessProbe:
           httpGet:
@@ -74,6 +74,12 @@ spec:
               name: lighthouse-oauth-token
               key: oauth
 {{- end }}
+        - name: "HMAC_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "lighthouse-hmac-token"
+              key: hmac
+              optional: {{ not .Values.hmacTokenEnabled }}
         - name: "JX_LOG_FORMAT"
           value: "{{ .Values.logFormat }}"
         - name: "LOGRUS_FORMAT"

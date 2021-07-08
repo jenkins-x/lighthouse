@@ -349,7 +349,7 @@ keeper:
   # keeper.env -- Lets you define keeper specific environment variables
   env: {}
 
-  # keeper.service -- Service settings for the webhooks controller
+  # keeper.service -- Service settings for the keeper controller
   service:
     type: ClusterIP
     externalPort: 80
@@ -441,6 +441,9 @@ poller:
   # poller.probe -- Liveness and readiness probes settings
   probe:
     path: /
+
+  # keeper.internalPort -- The internal port used to view metrics etc
+  internalPort: 8888
 
   # poller.livenessProbe -- Liveness probe configuration
   livenessProbe:
