@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 )
 
 type options struct {
+	port          int
 	configPath    string
 	jobConfigPath string
 	botName       string
@@ -51,6 +53,7 @@ func (o *options) Validate() error {
 
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
+	fs.IntVar(&o.port, "port", 8888, "Port to listen on.")
 	fs.StringVar(&o.configPath, "config-path", "", "Path to config.yaml.")
 	fs.StringVar(&o.jobConfigPath, "job-config-path", "", "Path to prow job configs.")
 	fs.StringVar(&o.botName, "bot-name", "", "The bot name")
@@ -190,19 +193,25 @@ func main() {
 		"HookEndpint": o.hookEndpoint,
 	}).Info("starting")
 
-	start := time.Now()
-	c.Sync()
+	http.Handle("/", c)
+	server := &http.Server{Addr: ":" + strconv.Itoa(o.port)}
+
 	if o.runOnce {
+		c.Sync()
 		return
 	}
 
-	// run the controller, but only after one sync period expires after our first run
-	time.Sleep(time.Until(start.Add(o.pollPeriod)))
 	interrupts.Tick(func() {
 		c.Sync()
 	}, func() time.Duration {
 		return o.pollPeriod
 	})
+
+	// serve data
+	logrus.WithField("port", o.port).Info("Starting HTTP server")
+	interrupts.ListenAndServe(server, 10*time.Second)
+
+	interrupts.WaitForGracefulShutdown()
 }
 
 func findAllRepoNames(c *config.Config) []string {

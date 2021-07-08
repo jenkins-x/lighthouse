@@ -2,6 +2,7 @@ package poller
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,10 @@ type pollingController struct {
 	pollstate       pollstate.Interface
 	logger          *logrus.Entry
 	notifier        func(webhook *scm.WebhookWrapper) error
+}
+
+func (c *pollingController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("hello from lighthouse poller\n"))
 }
 
 func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
