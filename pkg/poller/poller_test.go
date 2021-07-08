@@ -18,7 +18,7 @@ var (
 	gitServer = "https://github.com"
 )
 
-func TestPoller(t *testing.T) {
+func TestPollerReleases(t *testing.T) {
 	var hooks []*scm.PushHook
 
 	fakeNotifier := func(wrapper *scm.WebhookWrapper) error {
@@ -42,4 +42,53 @@ func TestPoller(t *testing.T) {
 	hook := hooks[0]
 	assert.NotNil(t, hook, "no PushHook")
 	t.Logf("created PushHook %#v", hook)
+}
+
+func TestPollerPullRequests(t *testing.T) {
+	var hooks []*scm.PullRequestHook
+
+	fakeNotifier := func(wrapper *scm.WebhookWrapper) error {
+		hook := wrapper.PullRequestHook
+		assert.NotNil(t, hook, "no PullRequestHook for webhook %#v", wrapper)
+		if hook != nil {
+			hooks = append(hooks, hook)
+		}
+		return nil
+	}
+	scmClient, fakeData := scmfake.NewDefault()
+	fb := fbfake.NewFakeFileBrowser("test_data", true)
+
+	prNumber := 123
+	fullName := repoNames[0]
+	owner, repo := scm.Split(fullName)
+	sha := "mysha1234"
+	fakeData.PullRequests[prNumber] = &scm.PullRequest{
+		Number: prNumber,
+		Base: scm.PullRequestBranch{
+			Ref: "master",
+			Repo: scm.Repository{
+				Namespace: owner,
+				Name:      repo,
+				FullName:  fullName,
+			},
+		},
+		Head: scm.PullRequestBranch{
+			Sha: sha,
+		},
+		Title:  "fix: some stuff",
+		Body:   "the PR comment",
+		Closed: false,
+		State:  "open",
+		Sha:    sha,
+	}
+	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, fb, fakeNotifier)
+	require.NoError(t, err, "failed to create PollingController")
+
+	p.PollPullRequests()
+
+	require.Len(t, hooks, 1, "should have 1 PullRequestHook")
+
+	hook := hooks[0]
+	assert.NotNil(t, hook, "no PullRequestHook")
+	t.Logf("created PullRequestHook %#v", hook)
 }

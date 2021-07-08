@@ -2,6 +2,7 @@ package poller
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -44,6 +45,7 @@ func NewPollingController(repositoryNames []string, gitServer string, scmClient 
 
 func (c *pollingController) Sync() {
 	c.PollReleases()
+	c.PollPullRequests()
 }
 
 func (c *pollingController) PollReleases() {
@@ -89,16 +91,11 @@ func (c *pollingController) PollReleases() {
 			}
 
 			// lets check we have not triggered this before
-			opts := scm.ListOptions{
-				Page: 1,
-			}
-
-			statuses, _, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+			hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha)
 			if err != nil {
-				return errors.Wrapf(err, "failed to list status")
+				return errors.Wrapf(err, "failed to check for status ")
 			}
-			if len(statuses) > 0 {
-				l.WithField("Statuses", statuses).Info("the SHA has CI statuses so not triggering")
+			if hasStatus {
 				return nil
 			}
 
@@ -150,13 +147,70 @@ func (c *pollingController) PollPullRequests() {
 		}
 
 		for _, pr := range prs {
-			c.pollPullRequest(fullName, pr)
+			c.pollPullRequest(ctx, l.WithField("PullRequest", pr.Number), fullName, pr)
 		}
 	}
 }
 
-func (c *pollingController) pollPullRequest(fullRepoName string, pr *scm.PullRequest) {
+func (c *pollingController) pollPullRequest(ctx context.Context, l *logrus.Entry, fullName string, pr *scm.PullRequest) error {
+	sha := pr.Sha
+	if sha == "" {
+		l.Infof("no SHA for PullRequest")
+		return nil
+	}
 
+	newValue, err := c.pollstate.IsNew(fullName, "PR-"+strconv.Itoa(pr.Number), sha)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if sha %s is new", sha)
+	}
+	if !newValue {
+		return nil
+	}
+
+	hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check for status ")
+	}
+	if hasStatus {
+		return nil
+	}
+
+	l.Infof("triggering pull request webhook")
+
+	pullRequestHook, err := c.createPullRequestHook(fullName, pr)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create PullRequestHook")
+	}
+
+	wh := &scm.WebhookWrapper{
+		PullRequestHook: pullRequestHook,
+	}
+	err = c.notifier(wh)
+	if err != nil {
+		return errors.Wrapf(err, "failed to notify PullRequestHook")
+	}
+	l.Infof("notified PullRequestHook")
+	return nil
+}
+
+func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry, fullName string, sha string) (bool, error) {
+	opts := scm.ListOptions{
+		Page: 1,
+	}
+	statuses, _, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to list status")
+	}
+	for _, s := range statuses {
+		if !strings.HasPrefix(s.Label, "Lighthouse") {
+			l.WithFields(map[string]interface{}{
+				"SHA":      sha,
+				"Statuses": statuses,
+			}).Info("the SHA has CI statuses so not triggering")
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (c *pollingController) createPushHook(fullName, owner, repo, before, after, branch string) (*scm.PushHook, error) {
@@ -176,6 +230,20 @@ func (c *pollingController) createPushHook(fullName, owner, repo, before, after,
 		Commit:       scm.Commit{},
 		Sender:       scm.User{},
 		GUID:         after,
+		Installation: nil,
+	}, nil
+}
+
+func (c *pollingController) createPullRequestHook(fullName string, pr *scm.PullRequest) (*scm.PullRequestHook, error) {
+	repo := pr.Repository()
+	return &scm.PullRequestHook{
+		Action:       scm.ActionCreate,
+		Repo:         repo,
+		Label:        scm.Label{},
+		PullRequest:  *pr,
+		Sender:       scm.User{},
+		Changes:      scm.PullRequestHookChanges{},
+		GUID:         "",
 		Installation: nil,
 	}, nil
 }
