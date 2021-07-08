@@ -139,6 +139,9 @@ func main() {
 
 	gitCloneUser := os.Getenv("GIT_USER")
 	if gitCloneUser == "" {
+		gitCloneUser = os.Getenv("GIT_USERNAME")
+	}
+	if gitCloneUser == "" {
 		gitCloneUser = o.botName
 	}
 	u, err := url.Parse(serverURL)
