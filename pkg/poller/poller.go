@@ -102,7 +102,7 @@ func (c *pollingController) PollReleases() {
 			l.Infof("triggering release webhook")
 
 			before := ""
-			pushHook, err := c.createPushHook(fullName, owner, repo, before, sha, branch)
+			pushHook, err := c.createPushHook(fullName, owner, repo, before, sha, branch, branch)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create PushHook")
 			}
@@ -233,7 +233,8 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 	}
 	l = l.WithField("Branch", branch)
 	before := ""
-	pushHook, err := c.createPushHook(fullName, owner, repo, before, sha, branch)
+	refBranch := pr.Source
+	pushHook, err := c.createPushHook(fullName, owner, repo, before, sha, branch, refBranch)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create PushHook")
 	}
@@ -266,9 +267,9 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	return false, nil
 }
 
-func (c *pollingController) createPushHook(fullName, owner, repo, before, after, branch string) (*scm.PushHook, error) {
+func (c *pollingController) createPushHook(fullName, owner, repo, before, after, branch, refBranch string) (*scm.PushHook, error) {
 	return &scm.PushHook{
-		Ref: "refs/heads/" + branch,
+		Ref: "refs/heads/" + refBranch,
 		Repo: scm.Repository{
 			Namespace: owner,
 			Name:      repo,
@@ -290,7 +291,7 @@ func (c *pollingController) createPushHook(fullName, owner, repo, before, after,
 func (c *pollingController) createPullRequestHook(fullName string, pr *scm.PullRequest) (*scm.PullRequestHook, error) {
 	repo := pr.Repository()
 	return &scm.PullRequestHook{
-		Action:       scm.ActionCreate,
+		Action:       scm.ActionOpen,
 		Repo:         repo,
 		Label:        scm.Label{},
 		PullRequest:  *pr,
