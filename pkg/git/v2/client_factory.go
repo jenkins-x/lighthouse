@@ -72,6 +72,8 @@ type ClientFactoryOpts struct {
 	// The censor to use. Not needed for anonymous
 	// actions.
 	Censor Censor
+	// UseUserInURL should we enable the user name and password in the git URLs
+	UseUserInURL bool
 }
 
 // Apply allows to use a ClientFactoryOpts as Opt
@@ -147,6 +149,7 @@ func NewClientFactory(opts ...ClientFactoryOpt) (ClientFactory, error) {
 			host:     o.Host,
 			username: o.Username,
 			token:    o.Token,
+			urlUser:  o.UseUserInURL,
 		}
 	}
 	return &clientFactory{

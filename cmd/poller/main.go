@@ -137,8 +137,10 @@ func main() {
 		logrus.WithError(err).Fatal("no git token.")
 	}
 
-	gitCloneUser := o.botName
-
+	gitCloneUser := os.Getenv("GIT_USER")
+	if gitCloneUser == "" {
+		gitCloneUser = o.botName
+	}
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		logrus.WithError(err).Fatalf("failed to parse git server %s", serverURL)
@@ -158,6 +160,7 @@ func main() {
 		}
 		opts.Host = u.Host
 		opts.Scheme = u.Scheme
+		opts.UseUserInURL = true
 	}
 	gitFactory, err := gitv2.NewClientFactory(configureOpts)
 	if err != nil {
