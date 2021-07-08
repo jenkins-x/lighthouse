@@ -55,6 +55,10 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 		pluginFilename: pluginFilename,
 		configFilename: configFilename,
 		botName:        botName,
+		logWebHooks:    os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true",
+	}
+	if o.logWebHooks {
+		logrus.Info("enabling webhook logging")
 	}
 	var err error
 	o.server, err = o.createHookServer()
@@ -75,7 +79,6 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	}
 	o.launcher = launcher.NewLauncher(lhClient, o.namespace)
 
-	o.logWebHooks = os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true"
 	return o, nil
 }
 
