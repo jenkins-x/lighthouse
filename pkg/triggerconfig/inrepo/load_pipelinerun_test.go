@@ -31,7 +31,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 	fs, err := ioutil.ReadDir(sourceDir)
 	require.NoError(t, err, "failed to read source Dir %s", sourceDir)
 
-	fileBrowser := fbfake.NewFakeFileBrowser(filepath.Join("test_data"), true)
+	fileBrowser := fbfake.NewFakeFileBrowser("test_data", true)
 
 	// lets use a custom version stream sha
 	os.Setenv("LIGHTHOUSE_VERSIONSTREAM_JENKINS_X_JX3_PIPELINE_CATALOG", "myversionstreamref")

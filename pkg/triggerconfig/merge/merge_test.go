@@ -77,7 +77,7 @@ func TestMergeTriggerConfig(t *testing.T) {
 }
 
 func TestMergeTriggerConfigFiles(t *testing.T) {
-	sourceData := filepath.Join("test_data")
+	sourceData := "test_data"
 	fileNames, err := ioutil.ReadDir(sourceData)
 	assert.NoError(t, err)
 

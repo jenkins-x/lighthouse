@@ -396,6 +396,78 @@ keeper:
   # keeper.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the keeper pods
   tolerations: []
 
+poller:
+  # poller.enabled -- Whether to enable or disable the poller component
+  enabled: false
+
+  # poller.replicaCount -- Number of replicas
+  replicaCount: 1
+
+  # poller.terminationGracePeriodSeconds -- Termination grace period for poller pods
+  terminationGracePeriodSeconds: 30
+
+  image:
+    # poller.image.repository -- Template for computing the poller controller docker image repository
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-poller"
+
+    # poller.image.tag -- Template for computing the poller controller docker image tag
+    tag: "{{ .Values.image.tag }}"
+
+    # poller.image.pullPolicy -- Template for computing the poller controller docker image pull policy
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+
+  # poller.podAnnotations -- Annotations applied to the poller pods
+  podAnnotations: {}
+
+  # poller.env -- Lets you define poller specific environment variables
+  env:
+    # poller.env.POLL_PERIOD the time period before polling
+    POLL_PERIOD: 20s
+
+    # poller.env.POLL_HOOK_ENDPOINT the hook service endpoint to post webhooks to
+    POLL_HOOK_ENDPOINT: http://hook/hook/poll
+
+  resources:
+    # poller.resources.limits -- Resource limits applied to the poller pods
+    limits:
+      cpu: 400m
+      memory: 512Mi
+
+    # poller.resources.requests -- Resource requests applied to the poller pods
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # poller.probe -- Liveness and readiness probes settings
+  probe:
+    path: /
+
+  # poller.livenessProbe -- Liveness probe configuration
+  livenessProbe:
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  # poller.readinessProbe -- Readiness probe configuration
+  readinessProbe:
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  datadog:
+    # poller.datadog.enabled -- Enables datadog
+    enabled: "true"
+
+  # poller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the poller pods
+  nodeSelector: {}
+
+  # poller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the poller pods
+  affinity: {}
+
+  # poller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the poller pods
+  tolerations: []
+
 engines:
   # engines.jx -- Enables the jx engine
   jx: true

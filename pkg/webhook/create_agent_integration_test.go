@@ -1,6 +1,9 @@
 package webhook
 
 import (
+	"os"
+	"testing"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
@@ -14,8 +17,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestCreateAgentIntegration(t *testing.T) {
