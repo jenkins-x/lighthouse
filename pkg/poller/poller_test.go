@@ -45,13 +45,16 @@ func TestPollerReleases(t *testing.T) {
 }
 
 func TestPollerPullRequests(t *testing.T) {
-	var hooks []*scm.PullRequestHook
+	var prHooks []*scm.PullRequestHook
+	var pushHooks []*scm.PushHook
 
 	fakeNotifier := func(wrapper *scm.WebhookWrapper) error {
-		hook := wrapper.PullRequestHook
-		assert.NotNil(t, hook, "no PullRequestHook for webhook %#v", wrapper)
-		if hook != nil {
-			hooks = append(hooks, hook)
+		if wrapper.PullRequestHook != nil {
+			prHooks = append(prHooks, wrapper.PullRequestHook)
+		} else if wrapper.PushHook != nil {
+			pushHooks = append(pushHooks, wrapper.PushHook)
+		} else {
+			assert.Fail(t, "unknown webhook %v", wrapper)
 		}
 		return nil
 	}
@@ -86,9 +89,14 @@ func TestPollerPullRequests(t *testing.T) {
 
 	p.PollPullRequests()
 
-	require.Len(t, hooks, 1, "should have 1 PullRequestHook")
+	require.Len(t, prHooks, 1, "should have 1 PullRequestHook")
+	require.Len(t, pushHooks, 1, "should have 1 PushHook")
 
-	hook := hooks[0]
+	hook := prHooks[0]
 	assert.NotNil(t, hook, "no PullRequestHook")
 	t.Logf("created PullRequestHook %#v", hook)
+
+	pushHook := pushHooks[0]
+	assert.NotNil(t, pushHook, "no PushHook")
+	t.Logf("created PushHook %#v", pushHook)
 }
