@@ -53,6 +53,14 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `engines.jx` | bool | Enables the jx engine | `true` |
 | `engines.tekton` | bool | Enables the tekton engine | `false` |
 | `env` | object | Environment variables | `{"JX_DEFAULT_IMAGE":""}` |
+| `externalPlugins[0].name` | string |  | `"cd-indicators"` |
+| `externalPlugins[0].requiredResources[0].kind` | string |  | `"Service"` |
+| `externalPlugins[0].requiredResources[0].name` | string |  | `"cd-indicators"` |
+| `externalPlugins[0].requiredResources[0].namespace` | string |  | `"jx"` |
+| `externalPlugins[1].name` | string |  | `"lighthouse-webui-plugin"` |
+| `externalPlugins[1].requiredResources[0].kind` | string |  | `"Service"` |
+| `externalPlugins[1].requiredResources[0].name` | string |  | `"lighthouse-webui-plugin"` |
+| `externalPlugins[1].requiredResources[0].namespace` | string |  | `"jx"` |
 | `foghorn.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the foghorn pods | `{}` |
 | `foghorn.image.pullPolicy` | string | Template for computing the foghorn controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
 | `foghorn.image.repository` | string | Template for computing the foghorn controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-foghorn"` |
@@ -118,6 +126,23 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `logService` | string | The name of the service registered with logging | `""` |
 | `logStackSkip` | string | Comma separated stack frames to skip from the log | `""` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
+| `poller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the poller pods | `{}` |
+| `poller.datadog.enabled` | string | Enables datadog | `"true"` |
+| `poller.enabled` | bool | Whether to enable or disable the poller component | `false` |
+| `poller.env` | object | Lets you define poller specific environment variables | `{"POLL_HOOK_ENDPOINT":"http://hook/hook/poll","POLL_PERIOD":"20s"}` |
+| `poller.image.pullPolicy` | string | Template for computing the poller controller docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
+| `poller.image.repository` | string | Template for computing the poller controller docker image repository | `"{{ .Values.image.parentRepository }}/lighthouse-poller"` |
+| `poller.image.tag` | string | Template for computing the poller controller docker image tag | `"{{ .Values.image.tag }}"` |
+| `poller.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":120,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
+| `poller.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the poller pods | `{}` |
+| `poller.podAnnotations` | object | Annotations applied to the poller pods | `{}` |
+| `poller.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
+| `poller.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
+| `poller.replicaCount` | int | Number of replicas | `1` |
+| `poller.resources.limits` | object | Resource limits applied to the poller pods | `{"cpu":"400m","memory":"512Mi"}` |
+| `poller.resources.requests` | object | Resource requests applied to the poller pods | `{"cpu":"100m","memory":"128Mi"}` |
+| `poller.terminationGracePeriodSeconds` | int | Termination grace period for poller pods | `30` |
+| `poller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the poller pods | `[]` |
 | `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
 | `tektoncontroller.dashboardTemplate` | string | Go template expression for URLs in the dashboard if not using Tekton dashboard | `""` |
 | `tektoncontroller.dashboardURL` | string | the dashboard URL (e.g. Tekton dashboard) | `""` |
