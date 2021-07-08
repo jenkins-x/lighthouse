@@ -147,19 +147,33 @@ func (c *pollingController) PollPullRequests() {
 		}
 
 		for _, pr := range prs {
-			c.pollPullRequest(ctx, l.WithField("PullRequest", pr.Number), fullName, pr)
+			sha := pr.Sha
+			if sha == "" {
+				l.Infof("no SHA for PullRequest")
+				continue
+			}
+			prName := "PR-" + strconv.Itoa(pr.Number)
+
+			l2 := l.WithFields(map[string]interface{}{
+				"SHA":         sha,
+				"PullRequest": pr.Number,
+			})
+			err = c.pollPullRequest(ctx, l2, fullName, pr, prName, sha)
+			if err != nil {
+				l2.WithError(err).Error("failed to check for PullRequestHook")
+				continue
+			}
+			err = c.pollPullRequestPushHook(ctx, l2, fullName, pr, prName, sha)
+			if err != nil {
+				l2.WithError(err).Error("failed to check for PullRequestHook")
+				continue
+			}
 		}
 	}
 }
 
-func (c *pollingController) pollPullRequest(ctx context.Context, l *logrus.Entry, fullName string, pr *scm.PullRequest) error {
-	sha := pr.Sha
-	if sha == "" {
-		l.Infof("no SHA for PullRequest")
-		return nil
-	}
-
-	newValue, err := c.pollstate.IsNew(fullName, "PR-"+strconv.Itoa(pr.Number), sha)
+func (c *pollingController) pollPullRequest(ctx context.Context, l *logrus.Entry, fullName string, pr *scm.PullRequest, prName, sha string) error {
+	newValue, err := c.pollstate.IsNew(fullName, prName, "created")
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if sha %s is new", sha)
 	}
@@ -193,6 +207,48 @@ func (c *pollingController) pollPullRequest(ctx context.Context, l *logrus.Entry
 	return nil
 }
 
+func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logrus.Entry, fullName string, pr *scm.PullRequest, prName, sha string) error {
+	newValue, err := c.pollstate.IsNew(fullName, prName+"-push", sha)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if sha %s is new", sha)
+	}
+	if !newValue {
+		return nil
+	}
+
+	hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha)
+	if err != nil {
+		return errors.Wrapf(err, "failed to check for status ")
+	}
+	if hasStatus {
+		return nil
+	}
+
+	l.Infof("triggering pull request push webhook")
+
+	owner, repo := scm.Split(fullName)
+	branch := pr.Repository().Branch
+	if branch == "" {
+		branch = pr.Head.Ref
+	}
+	l = l.WithField("Branch", branch)
+	before := ""
+	pushHook, err := c.createPushHook(fullName, owner, repo, before, sha, branch)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create PushHook")
+	}
+
+	wh := &scm.WebhookWrapper{
+		PushHook: pushHook,
+	}
+	err = c.notifier(wh)
+	if err != nil {
+		return errors.Wrapf(err, "failed to notify PR PushHook")
+	}
+	l.Infof("notified PR PushHook")
+	return nil
+}
+
 func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry, fullName string, sha string) (bool, error) {
 	opts := scm.ListOptions{
 		Page: 1,
@@ -203,10 +259,7 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	}
 	for _, s := range statuses {
 		if !strings.HasPrefix(s.Label, "Lighthouse") {
-			l.WithFields(map[string]interface{}{
-				"SHA":      sha,
-				"Statuses": statuses,
-			}).Info("the SHA has CI statuses so not triggering")
+			l.WithField("Statuses", statuses).Info("the SHA has CI statuses so not triggering")
 			return true, nil
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
@@ -43,6 +44,7 @@ type WebhooksController struct {
 	gitClient               git.Client
 	launcher                launcher.PipelineLauncher
 	disabledExternalPlugins []string
+	logWebHooks             bool
 }
 
 // NewWebhooksController creates and configures the controller
@@ -73,6 +75,7 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	}
 	o.launcher = launcher.NewLauncher(lhClient, o.namespace)
 
+	o.logWebHooks = os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true"
 	return o, nil
 }
 
@@ -315,6 +318,11 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 	}
 
 	l = l.WithFields(fields)
+
+	if o.logWebHooks {
+		l.WithField("WebHook", webhook).Info("webhook")
+	}
+
 	_, ok := webhook.(*scm.PingHook)
 	if ok {
 		l.Info("received ping")
