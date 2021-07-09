@@ -36,6 +36,11 @@ func TestMergeConfig(t *testing.T) {
 	r := owner + "/" + repo
 	assert.Len(t, cfg.Presubmits[r], 2, "presubmits for repo %s", r)
 	assert.Len(t, cfg.Postsubmits[r], 1, "postsubmits for repo %s", r)
+
+	presubmit := cfg.Presubmits[r][0]
+	assert.False(t, presubmit.Optional, "Optional for presubmit %s", presubmit.Context)
+	assert.False(t, presubmit.SkipReport, "SkipReport for presubmit %s", presubmit.Context)
+	assert.True(t, presubmit.ContextRequired(), "ContextRequired() for presubmit %s", presubmit.Context)
 }
 
 func TestInvalidConfigs(t *testing.T) {
