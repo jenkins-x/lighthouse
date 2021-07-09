@@ -108,7 +108,9 @@ func (p Presubmit) ShouldRun(baseRef string, changes ChangedFilesProvider, force
 	if !p.CouldRun(baseRef) {
 		return false, nil
 	}
-	if p.AlwaysRun || p.RequireRun {
+	// TODO temporary disable RequireRun
+	//if p.AlwaysRun || p.RequireRun {
+	if p.AlwaysRun {
 		return true, nil
 	}
 	if forced {
