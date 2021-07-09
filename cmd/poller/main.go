@@ -28,20 +28,22 @@ import (
 )
 
 type options struct {
-	port          int
-	configPath    string
-	jobConfigPath string
-	botName       string
-	gitServerURL  string
-	gitKind       string
-	gitToken      string
-	hmacToken     string
-	namespace     string
-	repoNames     string
-	hookEndpoint  string
-	runOnce       bool
-	dryRun        bool
-	pollPeriod    time.Duration
+	port                   int
+	configPath             string
+	jobConfigPath          string
+	botName                string
+	gitServerURL           string
+	gitKind                string
+	gitToken               string
+	hmacToken              string
+	namespace              string
+	repoNames              string
+	hookEndpoint           string
+	runOnce                bool
+	dryRun                 bool
+	disablePollRelease     bool
+	disablePollPullRequest bool
+	pollPeriod             time.Duration
 }
 
 func (o *options) Validate() error {
@@ -61,6 +63,8 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.gitKind, "git-kind", "", "The git provider kind (e.g. github, gitlab, bitbucketserver")
 	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Disable POSTing to the webhook service and just log the webhooks instead.")
+	fs.BoolVar(&o.disablePollRelease, "no-release", false, "Disable polling for new commits on the main branch (releases) - mostly used for easier testing/debugging.")
+	fs.BoolVar(&o.disablePollPullRequest, "no-pr", false, "Disable polling for Pull Request changes - mostly used for easier testing/debugging.")
 
 	fs.StringVar(&o.namespace, "namespace", "jx", "The namespace to listen in")
 	fs.StringVar(&o.repoNames, "repo", "", "The git repository names to poll. If not specified all the repositories are polled")
@@ -165,7 +169,7 @@ func main() {
 		opts.Scheme = u.Scheme
 		opts.UseUserInURL = true
 	}
-	gitFactory, err := gitv2.NewClientFactory(configureOpts)
+	gitFactory, err := gitv2.NewNoMirrorClientFactory(configureOpts)
 	if err != nil {
 		logrus.WithError(err).Fatalf("failed to create git client factory for server %s", o.gitServerURL)
 	}
@@ -194,9 +198,14 @@ func main() {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
 
+	c.DisablePollPullRequest = o.disablePollPullRequest
+	c.DisablePollRelease = o.disablePollRelease
+
 	c.Logger().WithFields(map[string]interface{}{
-		"PollPeriod":  o.pollPeriod,
-		"HookEndpint": o.hookEndpoint,
+		"PollPeriod":             o.pollPeriod,
+		"HookEndpint":            o.hookEndpoint,
+		"DisablePollRelease":     o.disablePollRelease,
+		"DisablePollPullRequest": o.disablePollPullRequest,
 	}).Info("starting")
 
 	http.Handle("/", c)

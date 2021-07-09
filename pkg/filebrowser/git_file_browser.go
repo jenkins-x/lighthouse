@@ -189,7 +189,8 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 	}
 
 	shouldFetch := fc.ShouldFetch(c.fullName, ref)
-	if shouldFetch && IsSHA(ref) {
+	isSHA := IsSHA(ref)
+	if shouldFetch && isSHA {
 		// lets check if we've already fetched this sha
 		sha, err := c.repoClient.HasSHA(ref)
 		if err == nil && sha != "" {
@@ -224,6 +225,13 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 			}
 		} else {
 			err := c.repoClient.Fetch()
+			if err != nil {
+				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+			}
+		}
+		if !isSHA {
+			// lets pull any new changes into the main branch
+			err := c.repoClient.Pull()
 			if err != nil {
 				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
 			}

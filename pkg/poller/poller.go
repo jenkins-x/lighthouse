@@ -19,13 +19,15 @@ var (
 )
 
 type pollingController struct {
-	repositoryNames []string
-	gitServer       string
-	scmClient       *scm.Client
-	fb              filebrowser.Interface
-	pollstate       pollstate.Interface
-	logger          *logrus.Entry
-	notifier        func(webhook *scm.WebhookWrapper) error
+	DisablePollRelease     bool
+	DisablePollPullRequest bool
+	repositoryNames        []string
+	gitServer              string
+	scmClient              *scm.Client
+	fb                     filebrowser.Interface
+	pollstate              pollstate.Interface
+	logger                 *logrus.Entry
+	notifier               func(webhook *scm.WebhookWrapper) error
 }
 
 func (c *pollingController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +55,12 @@ func (c *pollingController) Logger() *logrus.Entry {
 }
 
 func (c *pollingController) Sync() {
-	c.PollReleases()
-	c.PollPullRequests()
+	if !c.DisablePollRelease {
+		c.PollReleases()
+	}
+	if !c.DisablePollPullRequest {
+		c.PollPullRequests()
+	}
 }
 
 func (c *pollingController) PollReleases() {
