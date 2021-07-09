@@ -278,7 +278,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 				opts.Scheme = o.server.ServerURL.Scheme
 			}
 		}
-		gitFactory, err := gitv2.NewNoMirrorClientFactory(configureOpts)
+		gitFactory, err := gitv2.NewClientFactory(configureOpts)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to create git client factory for server %s", o.gitServerURL)
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
