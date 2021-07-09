@@ -68,6 +68,8 @@ type Interactor interface {
 	ShowRef(commitlike string) (string, error)
 	// HasSHA checks if a ref is a sha we have fetched locally
 	HasSHA(ref string) (string, error)
+	// Pull pulls any changes into a branch from the remote
+	Pull() error
 }
 
 // cacher knows how to cache and update repositories in a central cache
@@ -163,6 +165,15 @@ func (i *interactor) CheckoutNewBranch(branch string) error {
 	i.logger.Infof("Checking out new branch %q", branch)
 	if out, err := i.executor.Run("checkout", "-b", branch); err != nil {
 		return fmt.Errorf("error checking out new branch %q: %v %v", branch, err, string(out))
+	}
+	return nil
+}
+
+// Checkout runs git checkout.
+func (i *interactor) Pull() error {
+	i.logger.Debugf("Pulling")
+	if out, err := i.executor.Run("pull"); err != nil {
+		return fmt.Errorf("error pulling: %v %v", err, string(out))
 	}
 	return nil
 }
