@@ -135,6 +135,7 @@ Presubmit runs on PRs.
 | `context` | string | No | Context is the name of the GitHub status context for the job.<br />Defaults: the same as the name of the job. |
 | `skip_report` | bool | No | SkipReport skips commenting and setting status on GitHub. |
 | `always_run` | bool | Yes | AlwaysRun automatically for every PR, or only when a comment triggers it. |
+| `require_run` | bool | No | RequireRun if this value is true and AlwaysRun is false then we need to manually trigger this context for the PR to be allowed to auto merge. |
 | `optional` | bool | No | Optional indicates that the job's status context should not be required for merge. |
 | `trigger` | string | No | Trigger is the regular expression to trigger the job.<br />e.g. `@k8s-bot e2e test this`<br />RerunCommand must also be specified if this field is specified.<br />(Default: `(?m)^/test (?:.*? )?<job name>(?: .*?)?$`) |
 | `rerun_command` | string | No | The RerunCommand to give users. Must match Trigger.<br />Trigger must also be specified if this field is specified.<br />(Default: `/test <job name>`) |
