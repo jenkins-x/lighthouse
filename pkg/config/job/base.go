@@ -79,7 +79,7 @@ func (b *Base) LoadPipeline(logger *logrus.Entry) error {
 	if b.PipelineRunSpec != nil || b.pipelineLoader == nil {
 		return nil
 	}
-	logger.Infof("lazy loading the PipelineRunSpec")
+	logger.Debugf("lazy loading the PipelineRunSpec")
 	answer := b.pipelineLoader(b)
 	// lets gc the function
 	b.pipelineLoader = nil
