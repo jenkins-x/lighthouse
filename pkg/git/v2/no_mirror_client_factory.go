@@ -1,13 +1,14 @@
 package git
 
 import (
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // NewNoMirrorClientFactory creates a client factory which does not use mirroring
@@ -156,7 +157,7 @@ func (c *noMirrorClientFactory) ClientFor(org, repo string) (RepoClient, error) 
 		}
 	}
 	duration := time.Now().Sub(start)
-	l.WithField("Duration", duration.String()).Info("cloned repository")
+	l.WithField("Duration", duration.String()).Debug("cloned repository")
 	return repoClient, nil
 }
 
