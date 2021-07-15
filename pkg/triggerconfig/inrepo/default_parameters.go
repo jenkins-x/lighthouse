@@ -129,10 +129,12 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 	// lets avoid missing workspaces causing issues
 	if len(prs.Spec.Workspaces) > 0 {
-		w := &prs.Spec.Workspaces[0]
-		if w.Validate(ctx) != nil {
-			// lets default a workspace
-			w.EmptyDir = &corev1.EmptyDirVolumeSource{}
+		for i, _ := range prs.Spec.Workspaces {
+			w := &prs.Spec.Workspaces[i]
+			if w.Validate(ctx) != nil {
+				// lets default a workspace
+				w.EmptyDir = &corev1.EmptyDirVolumeSource{}
+			}
 		}
 	}
 
