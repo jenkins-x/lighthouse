@@ -145,7 +145,7 @@ func (i *interactor) Checkout(commitlike string) error {
 
 // RevParse runs git rev-parse.
 func (i *interactor) RevParse(commitlike string) (string, error) {
-	i.logger.Infof("Parsing revision %q", commitlike)
+	i.logger.Debugf("Parsing revision %q", commitlike)
 	out, err := i.executor.Run("rev-parse", commitlike)
 	if err != nil {
 		return "", fmt.Errorf("error parsing %q: %v %v", commitlike, err, string(out))
@@ -155,14 +155,14 @@ func (i *interactor) RevParse(commitlike string) (string, error) {
 
 // BranchExists returns true if branch exists in heads.
 func (i *interactor) BranchExists(branch string) bool {
-	i.logger.Infof("Checking if branch %q exists", branch)
+	i.logger.Debugf("Checking if branch %q exists", branch)
 	_, err := i.executor.Run("ls-remote", "--exit-code", "--heads", "origin", branch)
 	return err == nil
 }
 
 // CheckoutNewBranch creates a new branch and checks it out.
 func (i *interactor) CheckoutNewBranch(branch string) error {
-	i.logger.Infof("Checking out new branch %q", branch)
+	i.logger.Debugf("Checking out new branch %q", branch)
 	if out, err := i.executor.Run("checkout", "-b", branch); err != nil {
 		return fmt.Errorf("error checking out new branch %q: %v %v", branch, err, string(out))
 	}
@@ -188,7 +188,7 @@ func (i *interactor) Merge(commitlike string) (bool, error) {
 // It returns true if the merge completes. if the merge does not complete successfully, we try to
 // abort it and return an error if the abort fails.
 func (i *interactor) MergeWithStrategy(commitlike, mergeStrategy string, opts ...MergeOpt) (bool, error) {
-	i.logger.Infof("Merging %q using the %q strategy", commitlike, mergeStrategy)
+	i.logger.Debugf("Merging %q using the %q strategy", commitlike, mergeStrategy)
 	switch mergeStrategy {
 	case "merge":
 		return i.mergeMerge(commitlike, opts...)
@@ -266,7 +266,7 @@ func (i *interactor) MergeAndCheckout(baseSHA string, mergeStrategy string, head
 // by performing a three-way merge (similar to git cherry-pick). It returns
 // an error if the patch cannot be applied.
 func (i *interactor) Am(path string) error {
-	i.logger.Infof("Applying patch at %s", path)
+	i.logger.Debugf("Applying patch at %s", path)
 	out, err := i.executor.Run("am", "--3way", path)
 	if err == nil {
 		return nil
@@ -345,7 +345,7 @@ func (i *interactor) CheckoutPullRequest(number int) error {
 
 // Config runs git config.
 func (i *interactor) Config(key, value string) error {
-	i.logger.Infof("Configuring %q=%q", key, value)
+	i.logger.Debugf("Configuring %q=%q", key, value)
 	if out, err := i.executor.Run("config", key, value); err != nil {
 		return fmt.Errorf("error configuring %q=%q: %v %v", key, value, err, string(out))
 	}
@@ -355,7 +355,7 @@ func (i *interactor) Config(key, value string) error {
 // Diff lists the difference between the two references, returning the output
 // line by line.
 func (i *interactor) Diff(head, sha string) ([]string, error) {
-	i.logger.Infof("Finding the differences between %q and %q", head, sha)
+	i.logger.Debugf("Finding the differences between %q and %q", head, sha)
 	out, err := i.executor.Run("diff", head, sha, "--name-only")
 	if err != nil {
 		return nil, err
@@ -372,7 +372,7 @@ func (i *interactor) Diff(head, sha string) ([]string, error) {
 // MergeCommitsExistBetween runs 'git log <target>..<head> --merged' to verify
 // if merge commits exist between "target" and "head".
 func (i *interactor) MergeCommitsExistBetween(target, head string) (bool, error) {
-	i.logger.Infof("Determining if merge commits exist between %q and %q", target, head)
+	i.logger.Debugf("Determining if merge commits exist between %q and %q", target, head)
 	out, err := i.executor.Run("log", fmt.Sprintf("%s..%s", target, head), "--oneline", "--merges")
 	if err != nil {
 		return false, fmt.Errorf("error verifying if merge commits exist between %q and %q: %v %s", target, head, err, string(out))
@@ -381,7 +381,7 @@ func (i *interactor) MergeCommitsExistBetween(target, head string) (bool, error)
 }
 
 func (i *interactor) ShowRef(commitlike string) (string, error) {
-	i.logger.Infof("Getting the commit sha for commitlike %s", commitlike)
+	i.logger.Debugf("Getting the commit sha for commitlike %s", commitlike)
 	out, err := i.executor.Run("show-ref", "-s", commitlike)
 	if err != nil {
 		return "", fmt.Errorf("failed to get commit sha for commitlike %s: %v", commitlike, err)
@@ -390,7 +390,7 @@ func (i *interactor) ShowRef(commitlike string) (string, error) {
 }
 
 func (i *interactor) HasSHA(ref string) (string, error) {
-	i.logger.Infof("Checking if %s is a fetched SHA", ref)
+	i.logger.Debugf("Checking if %s is a fetched SHA", ref)
 	out, err := i.executor.Run("cat-file", "commit", ref)
 	if err != nil {
 		return "", fmt.Errorf("failed to verify ref is a sha: %s: %v", ref, err)

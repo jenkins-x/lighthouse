@@ -199,7 +199,7 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 				"Name": c.fullName,
 				"Ref":  ref,
 				"File": "git_file_browser",
-			}).Info("not fetching ref as we already have it")
+			}).Debug("not fetching ref as we already have it")
 		}
 	}
 
