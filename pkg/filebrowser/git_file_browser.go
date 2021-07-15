@@ -249,7 +249,7 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 		"Ref":      ref,
 		"File":     "git_file_browser",
 		"Duration": duration.String(),
-	}).Info("fetched and checked out ref")
+	}).Debug("fetched and checked out ref")
 	return nil
 }
 

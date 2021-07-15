@@ -294,7 +294,7 @@ func (c *clientFactory) ClientFor(org, repo string) (RepoClient, error) {
 	}
 
 	duration := time.Now().Sub(start)
-	l.WithField("Duration", duration.String()).Info("cloned repository")
+	l.WithField("Duration", duration.String()).Debug("cloned repository")
 	return repoClient, nil
 }
 
