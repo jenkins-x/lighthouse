@@ -464,8 +464,8 @@ github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9/go.mod h1:Js0mq
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99/go.mod h1:1lJo3i6rXxKeerYnT8Nvf0QmHCRC1n8sfWVwXF2Frvo=
 github.com/jcmturner/gofork v0.0.0-20190328161633-dc7c13fece03/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
 github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
-github.com/jenkins-x/go-scm v1.10.8 h1:B9g8RbeqQL+ALG9WGT/mDn6ege45u3dYEnhup4yIeyc=
-github.com/jenkins-x/go-scm v1.10.8/go.mod h1:z7xTO9/VzqW3xEbEMH2z5cpOGrZ8+nOHOWfU1ngFGxs=
+github.com/jenkins-x/go-scm v1.10.9 h1:mMQdtrwAcl7vlOD8KFWtU5/8Cz3RLeyYjIeUr7Q9rVQ=
+github.com/jenkins-x/go-scm v1.10.9/go.mod h1:z7xTO9/VzqW3xEbEMH2z5cpOGrZ8+nOHOWfU1ngFGxs=
 github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496 h1:yN90dXuD7TkAkYwKr5h2fT7bjA7osK7tMhuz31qL7gE=
 github.com/jenkins-x/pipeline v0.3.2-0.20210223153617-0d1186b27496/go.mod h1:y1XwzBDu4EmOCfoeV2cUW2icCto/izTyjEKK5j0UmwA=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
