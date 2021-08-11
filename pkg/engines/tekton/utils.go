@@ -47,7 +47,7 @@ func trimDashboardURL(base string) string {
 
 // makePipeline creates a PipelineRun and substitutes LighthouseJob managed pipeline resources with ResourceSpec instead of ResourceRef
 // so that we don't have to take care of potentially dangling created pipeline resources.
-func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, idGen buildIDGenerator, c client.Reader) (*tektonv1beta1.PipelineRun, error) {
+func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, breakpoints []*v1alpha1.LighthouseBreakpoint, namespace string, logger *logrus.Entry, idGen buildIDGenerator, c client.Reader) (*tektonv1beta1.PipelineRun, error) {
 	// First validate.
 	if lj.Spec.PipelineRunSpec == nil {
 		return nil, errors.New("no PipelineSpec defined")
@@ -140,7 +140,34 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 		})
 	}
 
+	// lets apply any breakpoints...
+
+	for i := range p.Spec.TaskRunSpecs {
+		trs := &p.Spec.TaskRunSpecs[i]
+		if trs.Debug == nil {
+			filterValues := resolveBreakpointFilter(&p, trs.PipelineTaskName, lj)
+
+			trs.Debug = filterValues.ResolveDebug(breakpoints)
+		}
+	}
+
 	return &p, nil
+}
+
+func resolveBreakpointFilter(p *tektonv1beta1.PipelineRun, name string, lj v1alpha1.LighthouseJob) *v1alpha1.LighthousePipelineFilter {
+	filterValues := &v1alpha1.LighthousePipelineFilter{
+		Type:    lj.Spec.Type,
+		Context: lj.Spec.Context,
+	}
+	refs := lj.Spec.Refs
+	if refs != nil {
+		filterValues.Owner = refs.Org
+		filterValues.Repository = refs.Repo
+		filterValues.Branch = refs.BaseRef
+	}
+
+	// TODO if refs isn't populated should we try labels?
+	return filterValues
 }
 
 type gitTaskParamNames struct {

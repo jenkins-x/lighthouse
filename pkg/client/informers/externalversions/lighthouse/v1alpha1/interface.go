@@ -8,6 +8,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// LighthouseBreakpoints returns a LighthouseBreakpointInformer.
+	LighthouseBreakpoints() LighthouseBreakpointInformer
 	// LighthouseJobs returns a LighthouseJobInformer.
 	LighthouseJobs() LighthouseJobInformer
 }
@@ -21,6 +23,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// LighthouseBreakpoints returns a LighthouseBreakpointInformer.
+func (v *version) LighthouseBreakpoints() LighthouseBreakpointInformer {
+	return &lighthouseBreakpointInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // LighthouseJobs returns a LighthouseJobInformer.

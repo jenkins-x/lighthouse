@@ -2,6 +2,14 @@
 
 package v1alpha1
 
+// LighthouseBreakpointListerExpansion allows custom methods to be added to
+// LighthouseBreakpointLister.
+type LighthouseBreakpointListerExpansion interface{}
+
+// LighthouseBreakpointNamespaceListerExpansion allows custom methods to be added to
+// LighthouseBreakpointNamespaceLister.
+type LighthouseBreakpointNamespaceListerExpansion interface{}
+
 // LighthouseJobListerExpansion allows custom methods to be added to
 // LighthouseJobLister.
 type LighthouseJobListerExpansion interface{}

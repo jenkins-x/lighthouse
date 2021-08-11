@@ -1,0 +1,16 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: lighthousebreakpoints.lighthouse.jenkins.io
+spec:
+  group: lighthouse.jenkins.io
+  names:
+    kind: LighthouseBreakpoint
+    singular: lighthousebreakpoint
+    plural: lighthousebreakpoints
+    shortNames:
+      - lhbp
+  scope: Namespaced
+  subresources:
+    status: {}
+  version: v1alpha1
