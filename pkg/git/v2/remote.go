@@ -19,11 +19,12 @@ package git
 import (
 	"errors"
 	"fmt"
-	errors2 "github.com/pkg/errors"
 	"net/url"
 	"os"
 	"path"
 	"strings"
+
+	errors2 "github.com/pkg/errors"
 )
 
 // RemoteResolverFactory knows how to construct remote resolvers for

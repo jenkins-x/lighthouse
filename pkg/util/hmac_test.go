@@ -1,8 +1,9 @@
 package util_test
 
 import (
-	"github.com/jenkins-x/go-scm/pkg/hmac"
 	"testing"
+
+	"github.com/jenkins-x/go-scm/pkg/hmac"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
