@@ -1,5 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
+metadata:
+  name: common
 spec:
   pipelineSpec:
     tasks:

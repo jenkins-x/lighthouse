@@ -1,6 +1,7 @@
 package inrepo
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,9 @@ import (
 func TestDefaultWorkspacesEmptyDir(t *testing.T) {
 
 	prs := &v1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cheese",
+		},
 		Spec: v1beta1.PipelineRunSpec{
 			PipelineSpec: &v1beta1.PipelineSpec{},
 			Workspaces: []v1beta1.WorkspaceBinding{

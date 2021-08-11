@@ -122,6 +122,7 @@ spec:
         - description: git url to clone
           name: REPO_URL
           type: string
+        spec: null
         stepTemplate:
           env:
           - name: BUILD_ID
@@ -165,7 +166,9 @@ spec:
         steps:
         - args:
           - -c
-          - mkdir -p $HOME; git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot}; git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com}; git config --global credential.helper store; git clone $REPO_URL
+          - mkdir -p $HOME; git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot};
+            git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com};
+            git config --global credential.helper store; git clone $REPO_URL
           command:
           - /bin/sh
           image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
@@ -234,7 +237,11 @@ spec:
           name: build-npm-test
           resources: {}
         - args:
-          - source .jx/variables.sh && cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json && /kaniko/executor $KANIKO_FLAGS --cache=true --cache-dir=/workspace --context=/workspace/source --dockerfile=/workspace/source/Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION --cache-repo=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/cache
+          - source .jx/variables.sh && cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson
+            /kaniko/.docker/config.json && /kaniko/executor $KANIKO_FLAGS --cache=true
+            --cache-dir=/workspace --context=/workspace/source --dockerfile=/workspace/source/Dockerfile
+            --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
+            --cache-repo=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/cache
           command:
           - /busybox/sh
           - -c
