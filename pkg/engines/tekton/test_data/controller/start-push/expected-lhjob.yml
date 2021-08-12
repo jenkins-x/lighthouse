@@ -3,6 +3,7 @@ kind: LighthouseJob
 metadata:
   annotations:
     lighthouse.jenkins-x.io/job: github
+  creationTimestamp: null
   labels:
     created-by-lighthouse: "true"
     lighthouse.jenkins-x.io/branch: main
@@ -15,7 +16,7 @@ metadata:
     lighthouse.jenkins-x.io/type: postsubmit
   name: f46327af-b47e-11ea-b797-9256b7b8d9b0
   namespace: jx
-  resourceVersion: '1000'
+  resourceVersion: "1000"
 spec:
   agent: tekton-pipeline
   context: github
@@ -25,8 +26,7 @@ spec:
     pipelineRef:
       apiVersion: tekton.dev/v1beta1
       name: jenkins-x-charts-jx-build-templ-wbbx6-7
-    podTemplate:
-      schedulerName: ""
+    podTemplate: {}
     serviceAccountName: tekton-bot
   refs:
     base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
@@ -39,4 +39,5 @@ spec:
   rerun_command: /test github
   type: postsubmit
 status:
+  startTime: null
   state: pending

@@ -2,6 +2,7 @@ package tekton
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path"
@@ -31,13 +32,20 @@ const (
 	dashboardTemplate = "#/namespaces/{{ .Namespace }}/pipelineruns/{{ .PipelineRun }}"
 )
 
+var (
+	// generateTestOutput enable to regenerate the expected output
+	generateTestOutput = false
+)
+
 type seededRandIDGenerator struct{}
 
 func (s *seededRandIDGenerator) GenerateBuildID() string {
 	return strconv.Itoa(utilrand.Int())
 }
+
 func TestReconcile(t *testing.T) {
 	testCases := []string{
+		"debug-pr",
 		"update-job",
 		"start-pullrequest",
 		"start-batch-pullrequest",
@@ -54,9 +62,9 @@ func TestReconcile(t *testing.T) {
 
 			// load observed state
 			ns := "jx"
-			observedPR, err := loadControllerPipelineRun(true, testData)
+			observedPR, _, err := loadControllerPipelineRun(true, testData)
 			assert.NoError(t, err)
-			observedJob, err := loadLighthouseJob(true, testData)
+			observedJob, _, err := loadLighthouseJob(true, testData)
 			assert.NoError(t, err)
 			observedPipeline, err := loadObservedPipeline(testData)
 			assert.NoError(t, err)
@@ -72,9 +80,9 @@ func TestReconcile(t *testing.T) {
 			}
 
 			// load expected state
-			expectedPR, err := loadControllerPipelineRun(false, testData)
+			expectedPR, expectedPRFile, err := loadControllerPipelineRun(false, testData)
 			assert.NoError(t, err)
-			expectedJob, err := loadLighthouseJob(false, testData)
+			expectedJob, expectedJobFile, err := loadLighthouseJob(false, testData)
 			assert.NoError(t, err)
 
 			// create fake controller
@@ -87,6 +95,26 @@ func TestReconcile(t *testing.T) {
 			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
 			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
 			reconciler.idGenerator = &seededRandIDGenerator{}
+			reconciler.disableLogging = true
+
+			if tc == "debug-pr" {
+				reconciler.breakpoints = []*lighthousev1alpha1.LighthouseBreakpoint{
+					{
+						Spec: lighthousev1alpha1.LighthouseBreakpointSpec{
+							Filter: lighthousev1alpha1.LighthousePipelineFilter{
+								Owner:      "jenkins-x",
+								Repository: "lighthouse",
+								Branch:     "master",
+								Context:    "github",
+								Task:       "",
+							},
+							Debug: tektonv1beta1.TaskRunDebug{
+								Breakpoint: []string{"onFailure"},
+							},
+						},
+					},
+				}
+			}
 
 			// invoke reconcile
 			_, err = reconciler.Reconcile(context.TODO(), ctrl.Request{
@@ -98,16 +126,24 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 
 			// assert observed state matches expected state
-			if expectedPR != nil {
+			if expectedPR != nil || generateTestOutput {
 				var pipelineRunList tektonv1beta1.PipelineRunList
 				err := c.List(nil, &pipelineRunList, client.InNamespace(ns))
 				assert.NoError(t, err)
 				assert.Len(t, pipelineRunList.Items, 1)
 				updatedPR := pipelineRunList.Items[0].DeepCopy()
-				if d := cmp.Diff(expectedPR, updatedPR); d != "" {
-					t.Errorf("PipelineRun did not match expected: %s", d)
-					py, _ := yaml.Marshal(updatedPR)
-					t.Logf("pr:\n%s", string(py))
+				if generateTestOutput {
+					data, err := yaml.Marshal(updatedPR)
+					require.NoError(t, err, "failed to marshal expected PR %#v", updatedPR)
+					err = ioutil.WriteFile(expectedPRFile, data, 0644)
+					require.NoError(t, err, "failed to save file %s", expectedPRFile)
+					t.Logf("saved expected PR file %s\n", expectedPRFile)
+				} else {
+					if d := cmp.Diff(expectedPR, updatedPR); d != "" {
+						t.Errorf("PipelineRun did not match expected: %s", d)
+						py, _ := yaml.Marshal(updatedPR)
+						t.Logf("pr:\n%s", string(py))
+					}
 				}
 			}
 			if expectedJob != nil {
@@ -118,15 +154,23 @@ func TestReconcile(t *testing.T) {
 				// Ignore status.starttime since that's always going to be different
 				updatedJob := jobList.Items[0].DeepCopy()
 				updatedJob.Status.StartTime = metav1.Time{}
-				if d := cmp.Diff(expectedJob, updatedJob); d != "" {
-					t.Errorf("LighthouseJob did not match expected: %s", d)
+				if generateTestOutput {
+					data, err := yaml.Marshal(updatedJob)
+					require.NoError(t, err, "failed to marshal expected job %#v", updatedJob)
+					err = ioutil.WriteFile(expectedJobFile, data, 0644)
+					require.NoError(t, err, "failed to save file %s", expectedJobFile)
+					t.Logf("saved expected Job file %s\n", expectedJobFile)
+				} else {
+					if d := cmp.Diff(expectedJob, updatedJob); d != "" {
+						t.Errorf("LighthouseJob did not match expected: %s", d)
+					}
 				}
 			}
 		})
 	}
 }
 
-func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, error) {
+func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, string, error) {
 	var baseFn string
 	if isObserved {
 		baseFn = "observed-lhjob.yml"
@@ -136,24 +180,24 @@ func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, er
 	fileName := filepath.Join(dir, baseFn)
 	exists, err := util.FileExists(fileName)
 	if err != nil {
-		return nil, err
+		return nil, fileName, err
 	}
 	if exists {
 		lhjob := &v1alpha1.LighthouseJob{}
 		data, err := ioutil.ReadFile(fileName)
 		if err != nil {
-			return nil, err
+			return nil, fileName, err
 		}
 		err = yaml.Unmarshal(data, lhjob)
 		if err != nil {
-			return nil, err
+			return nil, fileName, err
 		}
-		return lhjob, err
+		return lhjob, fileName, err
 	}
-	return nil, nil
+	return nil, fileName, nil
 }
 
-func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.PipelineRun, error) {
+func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.PipelineRun, string, error) {
 	var baseFn string
 	if isObserved {
 		baseFn = "observed-pr.yml"
@@ -163,21 +207,21 @@ func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.Pipe
 	fileName := filepath.Join(dir, baseFn)
 	exists, err := util.FileExists(fileName)
 	if err != nil {
-		return nil, err
+		return nil, fileName, err
 	}
 	if exists {
 		pr := &tektonv1beta1.PipelineRun{}
 		data, err := ioutil.ReadFile(fileName)
 		if err != nil {
-			return nil, err
+			return nil, fileName, err
 		}
 		err = yaml.Unmarshal(data, pr)
 		if err != nil {
-			return nil, err
+			return nil, fileName, err
 		}
-		return pr, err
+		return pr, fileName, err
 	}
-	return nil, nil
+	return nil, fileName, nil
 }
 
 func loadObservedPipeline(dir string) (*tektonv1beta1.Pipeline, error) {

@@ -141,7 +141,6 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, breakpoints
 	}
 
 	// lets apply any breakpoints...
-
 	for i := range p.Spec.TaskRunSpecs {
 		trs := &p.Spec.TaskRunSpecs[i]
 		if trs.Debug == nil {

@@ -34,6 +34,10 @@ type LighthouseJobReconciler struct {
 	dashboardURL      string
 	dashboardTemplate string
 	namespace         string
+
+	// TODO replace with watched values ASAP!
+	breakpoints    []*lighthousev1alpha1.LighthouseBreakpoint
+	disableLogging bool
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
@@ -158,7 +162,9 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	} else if len(pipelineRunList.Items) == 1 {
 		// if pipeline run exists, create it and update status
 		pipelineRun := pipelineRunList.Items[0]
-		r.logger.Infof("Reconcile PipelineRun %+v", pipelineRun)
+		if !r.disableLogging {
+			r.logger.Infof("Reconcile PipelineRun %+v", pipelineRun)
+		}
 		// update build id
 		if job.Labels[util.BuildNumLabel] != pipelineRun.Labels[util.BuildNumLabel] {
 			f := func(job *lighthousev1alpha1.LighthouseJob) error {
@@ -263,5 +269,5 @@ func (r *LighthouseJobReconciler) retryModifyJob(ctx context.Context, ns client.
 
 // getBreakpoints returns the current breakpoint resources
 func (r *LighthouseJobReconciler) getBreakpoints() []*lighthousev1alpha1.LighthouseBreakpoint {
-	return nil
+	return r.breakpoints
 }
