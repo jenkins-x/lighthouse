@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
+  name: cheese
 spec:
   params:
   - name: url
@@ -74,19 +75,23 @@ spec:
       name: submodules
       type: string
     - default: "1"
-      description: performs a shallow clone where only the most recent commit(s) will be fetched
+      description: performs a shallow clone where only the most recent commit(s) will
+        be fetched
       name: depth
       type: string
     - default: "true"
-      description: defines if http.sslVerify should be set to true or false in the global git config
+      description: defines if http.sslVerify should be set to true or false in the
+        global git config
       name: sslVerify
       type: string
     - default: ""
-      description: subdirectory inside the "output" workspace to clone the git repo into
+      description: subdirectory inside the "output" workspace to clone the git repo
+        into
       name: subdirectory
       type: string
     - default: "true"
-      description: clean out the contents of the repo's destination directory (if it already exists) before trying to clone the repo there
+      description: clean out the contents of the repo's destination directory (if
+        it already exists) before trying to clone the repo there
       name: deleteExisting
       type: string
     - default: ""
@@ -248,19 +253,23 @@ spec:
           name: submodules
           type: string
         - default: "1"
-          description: performs a shallow clone where only the most recent commit(s) will be fetched
+          description: performs a shallow clone where only the most recent commit(s)
+            will be fetched
           name: depth
           type: string
         - default: "true"
-          description: defines if http.sslVerify should be set to true or false in the global git config
+          description: defines if http.sslVerify should be set to true or false in
+            the global git config
           name: sslVerify
           type: string
         - default: ""
-          description: subdirectory inside the "output" workspace to clone the git repo into
+          description: subdirectory inside the "output" workspace to clone the git
+            repo into
           name: subdirectory
           type: string
         - default: "true"
-          description: clean out the contents of the repo's destination directory (if it already exists) before trying to clone the repo there
+          description: clean out the contents of the repo's destination directory
+            (if it already exists) before trying to clone the repo there
           name: deleteExisting
           type: string
         - default: ""
@@ -288,6 +297,7 @@ spec:
           name: commit
         - description: The precise URL that was fetched by this Task
           name: url
+        spec: null
         stepTemplate:
           env:
           - name: BUILD_ID

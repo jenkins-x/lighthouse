@@ -198,7 +198,7 @@ $(DOCS_GEN):
 .PHONY: crds-docs
 crds-docs: $(DOCS_GEN)
 	rm -rf ./docs/crds
-	$(DOCS_GEN) --input=./pkg/apis/lighthouse/v1alpha1/... --root=LighthouseJob --output=./docs/crds
+	$(DOCS_GEN) --input=./pkg/apis/lighthouse/v1alpha1/... --root=LighthouseBreakpoint --root=LighthouseJob --output=./docs/crds
 
 .PHONY: config-docs
 config-docs: $(DOCS_GEN)

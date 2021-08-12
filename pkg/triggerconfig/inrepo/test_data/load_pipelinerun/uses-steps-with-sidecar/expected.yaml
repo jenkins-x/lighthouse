@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
+  name: cheese
 spec:
   params:
   - name: BUILD_ID
@@ -155,6 +156,7 @@ spec:
           image: selenium/standalone-chrome
           name: selenium
           resources: {}
+        spec: null
         stepTemplate:
           env:
           - name: BUILD_ID

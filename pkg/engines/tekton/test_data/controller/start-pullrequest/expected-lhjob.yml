@@ -3,6 +3,7 @@ kind: LighthouseJob
 metadata:
   annotations:
     lighthouse.jenkins-x.io/job: github
+  creationTimestamp: null
   labels:
     created-by-lighthouse: "true"
     lighthouse.jenkins-x.io/branch: PR-813
@@ -16,26 +17,26 @@ metadata:
     lighthouse.jenkins-x.io/type: presubmit
   name: f46327af-b47e-11ea-b797-9256b7b8d9b0
   namespace: jx
-  resourceVersion: '1000'
+  resourceVersion: "1000"
 spec:
   agent: tekton-pipeline
   context: github
   job: github
   namespace: jx
+  pipeline_run_params:
+  - name: branch-name
+    value_template: '{{ range $i, $v := .Refs.Pulls }}{{if $i}} {{end}}{{ $v.SHA }}{{
+      end }}'
+  - name: repo-url
+    value_template: '{{ .Refs.CloneURI }}'
+  - name: foo-param
+    value_template: bar-value
   pipeline_run_spec:
     pipelineRef:
       apiVersion: tekton.dev/v1beta1
       name: jenkins-x-charts-jx-build-templ-wbbx6-7
-    podTemplate:
-      schedulerName: ""
+    podTemplate: {}
     serviceAccountName: tekton-bot
-  pipeline_run_params:
-    - name: branch-name
-      value_template: '{{ range $i, $v := .Refs.Pulls }}{{if $i}} {{end}}{{ $v.SHA }}{{ end }}'
-    - name: repo-url
-      value_template: '{{ .Refs.CloneURI }}'
-    - name: foo-param
-      value_template: bar-value
   refs:
     base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
     base_ref: master
@@ -54,4 +55,5 @@ spec:
   rerun_command: /test github
   type: presubmit
 status:
+  startTime: null
   state: pending

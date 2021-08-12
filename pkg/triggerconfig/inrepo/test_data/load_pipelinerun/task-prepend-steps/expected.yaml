@@ -124,6 +124,7 @@ spec:
         - description: git url to clone
           name: REPO_URL
           type: string
+        spec: null
         stepTemplate:
           env:
           - name: BUILD_ID

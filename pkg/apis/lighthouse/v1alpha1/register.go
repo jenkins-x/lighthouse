@@ -30,6 +30,8 @@ var (
 // Adds the list of known types to the Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
+		&LighthouseBreakpoint{},
+		&LighthouseBreakpointList{},
 		&LighthouseJob{},
 		&LighthouseJobList{},
 	)

@@ -34,10 +34,12 @@ type LighthouseJobReconciler struct {
 	dashboardURL      string
 	dashboardTemplate string
 	namespace         string
+	breakpointGetter  func() []*lighthousev1alpha1.LighthouseBreakpoint
+	disableLogging    bool
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string, breakpointGetter func() []*lighthousev1alpha1.LighthouseBreakpoint) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
@@ -49,6 +51,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 		dashboardURL:      dashboardURL,
 		dashboardTemplate: dashboardTemplate,
 		namespace:         namespace,
+		breakpointGetter:  breakpointGetter,
 		idGenerator:       &epochBuildIDGenerator{},
 	}
 }
@@ -105,11 +108,13 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
+	breakpoints := r.getBreakpoints()
+
 	// if pipeline run does not exist, create it
 	if len(pipelineRunList.Items) == 0 {
 		if job.Status.State == lighthousev1alpha1.TriggeredState {
 			// construct a pipeline run
-			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.idGenerator, r.apiReader)
+			pipelineRun, err := makePipelineRun(ctx, job, breakpoints, r.namespace, r.logger, r.idGenerator, r.apiReader)
 			if err != nil {
 				r.logger.Errorf("Failed to make pipeline run: %s", err)
 				return ctrl.Result{}, err
@@ -156,7 +161,9 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	} else if len(pipelineRunList.Items) == 1 {
 		// if pipeline run exists, create it and update status
 		pipelineRun := pipelineRunList.Items[0]
-		r.logger.Infof("Reconcile PipelineRun %+v", pipelineRun)
+		if !r.disableLogging {
+			r.logger.Infof("Reconcile PipelineRun %+v", pipelineRun)
+		}
 		// update build id
 		if job.Labels[util.BuildNumLabel] != pipelineRun.Labels[util.BuildNumLabel] {
 			f := func(job *lighthousev1alpha1.LighthouseJob) error {
@@ -257,4 +264,9 @@ func (r *LighthouseJobReconciler) retryModifyJob(ctx context.Context, ns client.
 			return client.IgnoreNotFound(err)
 		}
 	}
+}
+
+// getBreakpoints returns the current breakpoint resources
+func (r *LighthouseJobReconciler) getBreakpoints() []*lighthousev1alpha1.LighthouseBreakpoint {
+	return r.breakpointGetter()
 }

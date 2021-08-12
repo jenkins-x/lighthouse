@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/jenkins-x/go-scm/pkg/hmac"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/jenkins-x/go-scm/pkg/hmac"
 
 	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 

@@ -10,12 +10,17 @@ import (
 
 type LighthouseV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	LighthouseBreakpointsGetter
 	LighthouseJobsGetter
 }
 
 // LighthouseV1alpha1Client is used to interact with features provided by the lighthouse.jenkins.io group.
 type LighthouseV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *LighthouseV1alpha1Client) LighthouseBreakpoints(namespace string) LighthouseBreakpointInterface {
+	return newLighthouseBreakpoints(c, namespace)
 }
 
 func (c *LighthouseV1alpha1Client) LighthouseJobs(namespace string) LighthouseJobInterface {

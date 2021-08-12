@@ -1,8 +1,9 @@
 package poller_test
 
 import (
-	scmfake "github.com/jenkins-x/go-scm/scm/driver/fake"
 	"testing"
+
+	scmfake "github.com/jenkins-x/go-scm/scm/driver/fake"
 
 	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
 	"github.com/jenkins-x/lighthouse/pkg/poller"
