@@ -34,14 +34,12 @@ type LighthouseJobReconciler struct {
 	dashboardURL      string
 	dashboardTemplate string
 	namespace         string
-
-	// TODO replace with watched values ASAP!
-	breakpoints    []*lighthousev1alpha1.LighthouseBreakpoint
-	disableLogging bool
+	breakpointGetter  func() []*lighthousev1alpha1.LighthouseBreakpoint
+	disableLogging    bool
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string, breakpointGetter func() []*lighthousev1alpha1.LighthouseBreakpoint) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
@@ -53,6 +51,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 		dashboardURL:      dashboardURL,
 		dashboardTemplate: dashboardTemplate,
 		namespace:         namespace,
+		breakpointGetter:  breakpointGetter,
 		idGenerator:       &epochBuildIDGenerator{},
 	}
 }
@@ -269,5 +268,5 @@ func (r *LighthouseJobReconciler) retryModifyJob(ctx context.Context, ns client.
 
 // getBreakpoints returns the current breakpoint resources
 func (r *LighthouseJobReconciler) getBreakpoints() []*lighthousev1alpha1.LighthouseBreakpoint {
-	return r.breakpoints
+	return r.breakpointGetter()
 }

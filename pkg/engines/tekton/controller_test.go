@@ -10,11 +10,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/watcher"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	fakelh "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
+
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -95,14 +99,15 @@ func TestReconcile(t *testing.T) {
 			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
 
-			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
-			reconciler.idGenerator = &seededRandIDGenerator{}
-			reconciler.disableLogging = true
+			lhClient := fakelh.NewSimpleClientset()
 
 			if strings.HasPrefix(tc, "debug") {
-				reconciler.breakpoints = []*lighthousev1alpha1.LighthouseBreakpoint{
-					{
+				lhClient = fakelh.NewSimpleClientset(
+					&lighthousev1alpha1.LighthouseBreakpoint{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "my-bp",
+							Namespace: ns,
+						},
 						Spec: lighthousev1alpha1.LighthouseBreakpointSpec{
 							Filter: lighthousev1alpha1.LighthousePipelineFilter{
 								Owner:      "jenkins-x",
@@ -116,8 +121,16 @@ func TestReconcile(t *testing.T) {
 							},
 						},
 					},
-				}
+				)
 			}
+			bpWatcher, err := watcher.NewBreakpointWatcher(lhClient, ns, nil)
+			require.NoError(t, err, "failed to create BreakpointWatcher")
+			defer bpWatcher.Stop()
+
+			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns, bpWatcher.GetBreakpoints)
+			reconciler.idGenerator = &seededRandIDGenerator{}
+			reconciler.disableLogging = true
 
 			// invoke reconcile
 			_, err = reconciler.Reconcile(context.TODO(), ctrl.Request{
