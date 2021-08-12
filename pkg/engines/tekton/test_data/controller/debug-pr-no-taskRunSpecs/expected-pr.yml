@@ -348,10 +348,6 @@ spec:
   - debug:
       breakpoint:
       - onFailure
-    pipelineTaskName: my-task
-  - debug:
-      breakpoint:
-      - onFailure
     pipelineTaskName: fetch-from-git
   - debug:
       breakpoint:

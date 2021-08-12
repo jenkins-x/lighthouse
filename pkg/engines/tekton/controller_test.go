@@ -2,13 +2,15 @@ package tekton
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -46,6 +48,7 @@ func (s *seededRandIDGenerator) GenerateBuildID() string {
 func TestReconcile(t *testing.T) {
 	testCases := []string{
 		"debug-pr",
+		"debug-pr-no-taskRunSpecs",
 		"update-job",
 		"start-pullrequest",
 		"start-batch-pullrequest",
@@ -97,7 +100,7 @@ func TestReconcile(t *testing.T) {
 			reconciler.idGenerator = &seededRandIDGenerator{}
 			reconciler.disableLogging = true
 
-			if tc == "debug-pr" {
+			if strings.HasPrefix(tc, "debug") {
 				reconciler.breakpoints = []*lighthousev1alpha1.LighthouseBreakpoint{
 					{
 						Spec: lighthousev1alpha1.LighthouseBreakpointSpec{

@@ -1,8 +1,9 @@
 package v1alpha1_test
 
 import (
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"testing"
+
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
