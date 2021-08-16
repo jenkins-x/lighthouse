@@ -3,6 +3,7 @@ package tekton
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -194,14 +195,36 @@ func resolveBreakpointFilter(p *tektonv1beta1.PipelineRun, name string, lj v1alp
 		Type:    lj.Spec.Type,
 		Context: lj.Spec.Context,
 	}
+	branch := ""
+	if lj.Labels != nil {
+		branch = lj.Labels[util.BranchLabel]
+	}
 	refs := lj.Spec.Refs
 	if refs != nil {
 		filterValues.Owner = refs.Org
 		filterValues.Repository = refs.Repo
-		filterValues.Branch = refs.BaseRef
+		if branch == "" {
+			for _, p := range refs.Pulls {
+				if p.Number > 0 {
+					branch = fmt.Sprintf("PR-%d", p.Number)
+					break
+				}
+			}
+		}
+		if branch == "" {
+			branch = refs.BaseRef
+		}
 	}
+	filterValues.Branch = branch
 
-	// TODO if refs isn't populated should we try labels?
+	if lj.Labels != nil {
+		if filterValues.Owner == "" {
+			filterValues.Owner = lj.Labels[util.OrgLabel]
+		}
+		if filterValues.Repository == "" {
+			filterValues.Repository = lj.Labels[util.RepoLabel]
+		}
+	}
 	return filterValues
 }
 

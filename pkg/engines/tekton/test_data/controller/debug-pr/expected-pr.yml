@@ -7,7 +7,7 @@ metadata:
   labels:
     created-by-lighthouse: "true"
     lighthouse.jenkins-x.io/baseSHA: e8d56b5ee9671599c75644af574a251dd3b94a5c
-    lighthouse.jenkins-x.io/branch: PR-813
+    lighthouse.jenkins-x.io/branch: master
     lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
     lighthouse.jenkins-x.io/context: github
     lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0

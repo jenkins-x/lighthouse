@@ -51,8 +51,8 @@ func (s *seededRandIDGenerator) GenerateBuildID() string {
 
 func TestReconcile(t *testing.T) {
 	testCases := []string{
-		"debug-pr",
 		"debug-pr-no-taskRunSpecs",
+		"debug-pr",
 		"update-job",
 		"start-pullrequest",
 		"start-batch-pullrequest",
@@ -102,6 +102,10 @@ func TestReconcile(t *testing.T) {
 			lhClient := fakelh.NewSimpleClientset()
 
 			if strings.HasPrefix(tc, "debug") {
+				branch := "master"
+				if tc == "debug-pr-no-taskRunSpecs" {
+					branch = "PR-813"
+				}
 				lhClient = fakelh.NewSimpleClientset(
 					&lighthousev1alpha1.LighthouseBreakpoint{
 						ObjectMeta: metav1.ObjectMeta{
@@ -112,7 +116,7 @@ func TestReconcile(t *testing.T) {
 							Filter: lighthousev1alpha1.LighthousePipelineFilter{
 								Owner:      "jenkins-x",
 								Repository: "lighthouse",
-								Branch:     "master",
+								Branch:     branch,
 								Context:    "github",
 								Task:       "",
 							},
