@@ -2,6 +2,7 @@ package inrepo
 
 import (
 	"context"
+	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -126,6 +127,8 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 	// lets validate to make sure its valid
 	ctx := context.TODO()
+	// lets enable alpha fields
+	ctx = enableAlphaAPIFields(ctx)
 
 	// lets avoid missing workspaces causing issues
 	if len(prs.Spec.Workspaces) > 0 {
@@ -148,6 +151,19 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 		return prs, errors.Wrapf(err, "failed to validate generated PipelineRun")
 	}
 	return prs, nil
+}
+
+func enableAlphaAPIFields(ctx context.Context) context.Context {
+	featureFlags, _ := config.NewFeatureFlagsFromMap(map[string]string{
+		"enable-api-fields": "alpha",
+	})
+	cfg := &config.Config{
+		Defaults: &config.Defaults{
+			DefaultTimeoutMinutes: 60,
+		},
+		FeatureFlags: featureFlags,
+	}
+	return config.ToContext(ctx, cfg)
 }
 
 func addDefaultParameterSpecs(params []v1beta1.ParamSpec, defaults []v1beta1.ParamSpec) []v1beta1.ParamSpec {
