@@ -153,7 +153,7 @@ After the installation, any changes merged into the _master_ branch of this conf
 - Configure the Helm chart repository
 
     ```bash
-    helm repo add lighthouse https://storage.googleapis.com/jenkinsxio/charts
+    helm repo add lighthouse https://jenkins-x-charts.github.io/repo
     helm repo update
     ```
 

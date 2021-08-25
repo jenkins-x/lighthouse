@@ -7,7 +7,7 @@ This chart bootstraps installation of [Lighthouse](https://github.com/jenkins-x/
 - Add jenkins-x helm charts repo
 
 ```bash
-helm repo add jenkins-x https://storage.googleapis.com/jenkinsxio/charts
+helm repo add jenkins-x https://jenkins-x-charts.github.io/repo
 
 helm repo update
 ```
