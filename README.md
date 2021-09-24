@@ -179,9 +179,10 @@ localizer expose jx/hook --stop
 
 #### Telepresence 
 You can replace the running version in your cluster with the one running locally using [telepresence](https://www.telepresence.io/).  
+First install the [telepresence cli](https://www.telepresence.io/docs/latest/install/) on your device then [the traffic-manager](https://www.telepresence.io/docs/latest/install/helm/) into your cluster 
 For webhooks, just run:
 ```bash
-telepresence --swap-deployment lighthouse-webhooks --env-file /tmp/webhooks-env
+telepresence intercept hook --namespace=jx --port 80 --env-file=/tmp/webhooks-env
 ```
 in another terminal:
 ```bash
@@ -190,6 +191,12 @@ dlv --listen=:2345 --headless=true --api-version=2 exec ./bin/webhooks -- --name
 ```
 
 You can do the same for any other deployment (keeper, foghorn...), just make sur to check the command args used for it an set them instead of `--namespace=jx`.
+
+to stop intercepting:
+```bash
+telepresence leave hook-jx # hook-jx is the name of the intercept
+```
+
 
 ### Using a local go-scm
 
