@@ -74,6 +74,7 @@ func (c *pollingController) PollReleases() {
 		// lets git clone and see if the latest git commit sha is new...
 		owner, repo := scm.Split(fullName)
 		ref := ""
+		sha := ""
 		fc := filebrowser.NewFetchCache()
 		err := c.fb.WithDir(owner, repo, ref, fc, func(dir string) error {
 			executor, err := git.NewCensoringExecutor(dir, censor, l)
@@ -85,7 +86,7 @@ func (c *pollingController) PollReleases() {
 			if err != nil {
 				return errors.Wrapf(err, "failed to get latest git commit sha")
 			}
-			sha := strings.TrimSpace(string(out))
+			sha = strings.TrimSpace(string(out))
 			if sha == "" {
 				return errors.Errorf("could not find latest git commit sha")
 			}
@@ -133,6 +134,7 @@ func (c *pollingController) PollReleases() {
 			return nil
 		})
 		if err != nil {
+			c.pollstate.Invalidate(fullName, "release", sha)
 			l.WithError(err).Warn("failed to poll release")
 		}
 	}
@@ -175,11 +177,13 @@ func (c *pollingController) PollPullRequests() {
 			})
 			err = c.pollPullRequest(ctx, l2, fullName, pr, prName, sha)
 			if err != nil {
+				c.pollstate.Invalidate(fullName, prName, "created")
 				l2.WithError(err).Error("failed to check for PullRequestHook")
 				continue
 			}
 			err = c.pollPullRequestPushHook(ctx, l2, fullName, pr, prName, sha)
 			if err != nil {
+				c.pollstate.Invalidate(fullName, prName+"-push", sha)
 				l2.WithError(err).Error("failed to check for PullRequestHook")
 				continue
 			}
