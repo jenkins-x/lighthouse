@@ -30,24 +30,24 @@ import (
 )
 
 type options struct {
-	port                   int
-	configPath             string
-	jobConfigPath          string
-	botName                string
-	gitServerURL           string
-	gitKind                string
-	gitToken               string
-	hmacToken              string
-	namespace              string
-	repoNames              string
-	hookEndpoint           string
-	pattern                string
-	runOnce                bool
-	dryRun                 bool
-	disablePollRelease     bool
-	disablePollPullRequest bool
-	compiledPattern        *regexp.Regexp
-	pollPeriod             time.Duration
+	port                             int
+	configPath                       string
+	jobConfigPath                    string
+	botName                          string
+	gitServerURL                     string
+	gitKind                          string
+	gitToken                         string
+	hmacToken                        string
+	namespace                        string
+	repoNames                        string
+	hookEndpoint                     string
+	commitStatusLabelPattern         string
+	commitStatusLabelPatternCompiled *regexp.Regexp
+	runOnce                          bool
+	dryRun                           bool
+	disablePollRelease               bool
+	disablePollPullRequest           bool
+	pollPeriod                       time.Duration
 }
 
 func (o *options) Validate() error {
@@ -65,7 +65,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.botName, "bot-name", "", "The bot name")
 	fs.StringVar(&o.gitServerURL, "git-url", "", "The git provider URL")
 	fs.StringVar(&o.gitKind, "git-kind", "", "The git provider kind (e.g. github, gitlab, bitbucketserver")
-	fs.StringVar(&o.pattern, "pattern", "", "The regex pattern to use for matching commit status labels.")
+	fs.StringVar(&o.commitStatusLabelPattern, "commit-status-label-pattern", "", "The regex pattern to use for matching commit status labels.")
 	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Disable POSTing to the webhook service and just log the webhooks instead.")
 	fs.BoolVar(&o.disablePollRelease, "no-release", false, "Disable polling for new commits on the main branch (releases) - mostly used for easier testing/debugging.")
@@ -87,12 +87,12 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	}
 	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
 
-	if o.pattern != "" {
-		compiledPattern, err := regexp.Compile(o.pattern)
+	if o.commitStatusLabelPattern != "" {
+		commitStatusLabelPatternCompiled, err := regexp.Compile(o.commitStatusLabelPattern)
 		if err != nil {
-			logrus.WithError(err).Fatalf("failed to compile pattern \"%s\"", o.pattern)
+			logrus.WithError(err).Fatalf("failed to compile commit status label pattern \"%s\"", o.commitStatusLabelPattern)
 		}
-		o.compiledPattern = compiledPattern
+		o.commitStatusLabelPatternCompiled = commitStatusLabelPatternCompiled
 	}
 
 	err := fs.Parse(args)
@@ -206,7 +206,7 @@ func main() {
 		logrus.WithError(err).Fatal("failed to create scm client")
 	}
 
-	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, o.compiledPattern, fb, o.notifier)
+	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, o.commitStatusLabelPatternCompiled, fb, o.notifier)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}

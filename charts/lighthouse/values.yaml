@@ -427,6 +427,8 @@ poller:
     # poller.env.POLL_HOOK_ENDPOINT the hook service endpoint to post webhooks to
     POLL_HOOK_ENDPOINT: http://hook/hook/poll
 
+  commitStatusLabelPattern: ""
+
   resources:
     # poller.resources.limits -- Resource limits applied to the poller pods
     limits:
