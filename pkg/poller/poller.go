@@ -282,7 +282,7 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	}
 
 	for _, s := range statuses {
-		if c.isValidStatus(s) {
+		if c.isMatchingStatus(s) {
 			l.WithField("Statuses", statuses).Info("the SHA has CI statuses so not triggering")
 			return true, nil
 		}
@@ -290,7 +290,7 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	return false, nil
 }
 
-func (c *pollingController) isValidStatus(s *scm.Status) bool {
+func (c *pollingController) isMatchingStatus(s *scm.Status) bool {
 	if c.commitStatusLabelPatternCompiled != nil {
 		if c.commitStatusLabelPatternCompiled.MatchString(s.Label) {
 			return true
