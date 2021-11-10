@@ -3,6 +3,7 @@ package poller
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,7 @@ type pollingController struct {
 	fb                     filebrowser.Interface
 	pollstate              pollstate.Interface
 	logger                 *logrus.Entry
+	compiledPattern        *regexp.Regexp
 	notifier               func(webhook *scm.WebhookWrapper) error
 }
 
@@ -34,7 +36,7 @@ func (c *pollingController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello from lighthouse poller\n"))
 }
 
-func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
+func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, compiledPattern *regexp.Regexp, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	if gitServer == "" {
 		gitServer = "https://github.com"
@@ -46,6 +48,7 @@ func NewPollingController(repositoryNames []string, gitServer string, scmClient 
 		scmClient:       scmClient,
 		fb:              fb,
 		notifier:        notifier,
+		compiledPattern: compiledPattern,
 		pollstate:       pollstate.NewMemoryPollState(),
 	}, nil
 }
@@ -277,13 +280,25 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to list status")
 	}
+
 	for _, s := range statuses {
-		if !strings.HasPrefix(s.Label, "Lighthouse") {
+		if c.isValidStatus(s) {
 			l.WithField("Statuses", statuses).Info("the SHA has CI statuses so not triggering")
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+func (c *pollingController) isValidStatus(s *scm.Status) bool {
+	if c.compiledPattern != nil {
+		if c.compiledPattern.MatchString(s.Label) {
+			return true
+		}
+	} else if !strings.HasPrefix(s.Label, "Lighthouse") {
+		return true
+	}
+	return false
 }
 
 func (c *pollingController) createPushHook(fullName, owner, repo, before, after, branch, refBranch string) (*scm.PushHook, error) {
