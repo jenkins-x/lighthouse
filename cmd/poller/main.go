@@ -87,6 +87,12 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	}
 	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
 
+	err := fs.Parse(args)
+	if err != nil {
+		logrus.WithError(err).Fatal("Invalid options")
+	}
+	o.configPath = configutil.PathOrDefault(o.configPath)
+
 	if o.commitStatusLabelPattern != "" {
 		commitStatusLabelPatternCompiled, err := regexp.Compile(o.commitStatusLabelPattern)
 		if err != nil {
@@ -95,11 +101,6 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 		o.commitStatusLabelPatternCompiled = commitStatusLabelPatternCompiled
 	}
 
-	err := fs.Parse(args)
-	if err != nil {
-		logrus.WithError(err).Fatal("Invalid options")
-	}
-	o.configPath = configutil.PathOrDefault(o.configPath)
 	return o
 }
 
