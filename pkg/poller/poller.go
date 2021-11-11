@@ -280,7 +280,6 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to list status")
 	}
-
 	for _, s := range statuses {
 		if c.isMatchingStatus(s) {
 			l.WithField("Statuses", statuses).Info("the SHA has CI statuses so not triggering")
