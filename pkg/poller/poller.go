@@ -46,9 +46,9 @@ func NewPollingController(repositoryNames []string, gitServer string, scmClient 
 		gitServer:                   gitServer,
 		logger:                      logger,
 		scmClient:                   scmClient,
+		contextMatchPatternCompiled: contextMatchPatternCompiled,
 		fb:                          fb,
 		notifier:                    notifier,
-		contextMatchPatternCompiled: contextMatchPatternCompiled,
 		pollstate:                   pollstate.NewMemoryPollState(),
 	}, nil
 }
