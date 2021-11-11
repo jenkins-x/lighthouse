@@ -20,36 +20,36 @@ var (
 )
 
 type pollingController struct {
-	DisablePollRelease               bool
-	DisablePollPullRequest           bool
-	repositoryNames                  []string
-	gitServer                        string
-	scmClient                        *scm.Client
-	fb                               filebrowser.Interface
-	pollstate                        pollstate.Interface
-	logger                           *logrus.Entry
-	commitStatusLabelPatternCompiled *regexp.Regexp
-	notifier                         func(webhook *scm.WebhookWrapper) error
+	DisablePollRelease          bool
+	DisablePollPullRequest      bool
+	repositoryNames             []string
+	gitServer                   string
+	scmClient                   *scm.Client
+	fb                          filebrowser.Interface
+	pollstate                   pollstate.Interface
+	logger                      *logrus.Entry
+	contextMatchPatternCompiled *regexp.Regexp
+	notifier                    func(webhook *scm.WebhookWrapper) error
 }
 
 func (c *pollingController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello from lighthouse poller\n"))
 }
 
-func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, commitStatusLabelPatternCompiled *regexp.Regexp, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
+func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, contextMatchPatternCompiled *regexp.Regexp, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	if gitServer == "" {
 		gitServer = "https://github.com"
 	}
 	return &pollingController{
-		repositoryNames:                  repositoryNames,
-		gitServer:                        gitServer,
-		logger:                           logger,
-		scmClient:                        scmClient,
-		fb:                               fb,
-		notifier:                         notifier,
-		commitStatusLabelPatternCompiled: commitStatusLabelPatternCompiled,
-		pollstate:                        pollstate.NewMemoryPollState(),
+		repositoryNames:             repositoryNames,
+		gitServer:                   gitServer,
+		logger:                      logger,
+		scmClient:                   scmClient,
+		fb:                          fb,
+		notifier:                    notifier,
+		contextMatchPatternCompiled: contextMatchPatternCompiled,
+		pollstate:                   pollstate.NewMemoryPollState(),
 	}, nil
 }
 
@@ -291,8 +291,8 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 }
 
 func (c *pollingController) isMatchingStatus(s *scm.Status) bool {
-	if c.commitStatusLabelPatternCompiled != nil {
-		if c.commitStatusLabelPatternCompiled.MatchString(s.Label) {
+	if c.contextMatchPatternCompiled != nil {
+		if c.contextMatchPatternCompiled.MatchString(s.Label) {
 			return true
 		}
 	} else if !strings.HasPrefix(s.Label, "Lighthouse") {

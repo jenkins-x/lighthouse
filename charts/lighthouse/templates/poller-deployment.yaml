@@ -38,8 +38,8 @@ spec:
         imagePullPolicy: {{ tpl .Values.poller.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
-          {{- if .Values.poller.commitStatusLabelPattern }}
-          - "--commit-status-label-pattern={{ .Values.poller.commitStatusLabelPattern }}"
+          {{- if .Values.poller.contextMatchPattern }}
+          - "--context-match-pattern={{ .Values.poller.contextMatchPattern }}"
           {{- end }}
         ports:
           - name: http

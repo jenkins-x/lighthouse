@@ -427,8 +427,8 @@ poller:
     # poller.env.POLL_HOOK_ENDPOINT the hook service endpoint to post webhooks to
     POLL_HOOK_ENDPOINT: http://hook/hook/poll
 
-  # poller.commitStatusLabelPattern -- Regex pattern to match commit status label/context
-  commitStatusLabelPattern: ""
+  # poller.contextMatchPattern -- Regex pattern to use to match commit status context
+  contextMatchPattern: ""
 
   resources:
     # poller.resources.limits -- Resource limits applied to the poller pods

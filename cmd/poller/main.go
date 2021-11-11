@@ -30,24 +30,23 @@ import (
 )
 
 type options struct {
-	port                             int
-	configPath                       string
-	jobConfigPath                    string
-	botName                          string
-	gitServerURL                     string
-	gitKind                          string
-	gitToken                         string
-	hmacToken                        string
-	namespace                        string
-	repoNames                        string
-	hookEndpoint                     string
-	commitStatusLabelPattern         string
-	commitStatusLabelPatternCompiled *regexp.Regexp
-	runOnce                          bool
-	dryRun                           bool
-	disablePollRelease               bool
-	disablePollPullRequest           bool
-	pollPeriod                       time.Duration
+	port                   int
+	configPath             string
+	jobConfigPath          string
+	botName                string
+	gitServerURL           string
+	gitKind                string
+	gitToken               string
+	hmacToken              string
+	namespace              string
+	repoNames              string
+	hookEndpoint           string
+	contextMatchPattern    string
+	runOnce                bool
+	dryRun                 bool
+	disablePollRelease     bool
+	disablePollPullRequest bool
+	pollPeriod             time.Duration
 }
 
 func (o *options) Validate() error {
@@ -65,7 +64,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.botName, "bot-name", "", "The bot name")
 	fs.StringVar(&o.gitServerURL, "git-url", "", "The git provider URL")
 	fs.StringVar(&o.gitKind, "git-kind", "", "The git provider kind (e.g. github, gitlab, bitbucketserver")
-	fs.StringVar(&o.commitStatusLabelPattern, "commit-status-label-pattern", "", "The regex pattern to use for matching commit status labels.")
+	fs.StringVar(&o.contextMatchPattern, "context-match-pattern", "", "Regex pattern to use to match commit status context.")
 	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Disable POSTing to the webhook service and just log the webhooks instead.")
 	fs.BoolVar(&o.disablePollRelease, "no-release", false, "Disable polling for new commits on the main branch (releases) - mostly used for easier testing/debugging.")
@@ -92,14 +91,6 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 	o.configPath = configutil.PathOrDefault(o.configPath)
-
-	if o.commitStatusLabelPattern != "" {
-		commitStatusLabelPatternCompiled, err := regexp.Compile(o.commitStatusLabelPattern)
-		if err != nil {
-			logrus.WithError(err).Fatalf("failed to compile commit status label pattern \"%s\"", o.commitStatusLabelPattern)
-		}
-		o.commitStatusLabelPatternCompiled = commitStatusLabelPatternCompiled
-	}
 
 	return o
 }
@@ -167,6 +158,15 @@ func main() {
 		logrus.WithError(err).Fatalf("failed to parse git server %s", serverURL)
 	}
 
+	var contextMatchPatternCompiled *regexp.Regexp
+	if o.contextMatchPattern != "" {
+		contextMatchPatternCompiled, err = regexp.Compile(o.contextMatchPattern)
+		if err != nil {
+			logrus.WithError(err).Fatalf("failed to compile context match pattern \"%s\"", o.contextMatchPattern)
+		}
+		contextMatchPatternCompiled = contextMatchPatternCompiled
+	}
+
 	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
 		opts.Token = func() []byte {
 			return []byte(o.gitToken)
@@ -207,7 +207,7 @@ func main() {
 		logrus.WithError(err).Fatal("failed to create scm client")
 	}
 
-	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, o.commitStatusLabelPatternCompiled, fb, o.notifier)
+	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, contextMatchPatternCompiled, fb, o.notifier)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
