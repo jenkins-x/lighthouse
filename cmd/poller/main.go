@@ -91,7 +91,6 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 	o.configPath = configutil.PathOrDefault(o.configPath)
-
 	return o
 }
 
