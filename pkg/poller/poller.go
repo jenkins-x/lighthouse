@@ -292,13 +292,9 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 
 func (c *pollingController) isMatchingStatus(s *scm.Status) bool {
 	if c.contextMatchPatternCompiled != nil {
-		if c.contextMatchPatternCompiled.MatchString(s.Label) {
-			return true
-		}
-	} else if !strings.HasPrefix(s.Label, "Lighthouse") {
-		return true
+		return c.contextMatchPatternCompiled.MatchString(s.Label)
 	}
-	return false
+	return !strings.HasPrefix(s.Label, "Lighthouse")
 }
 
 func (c *pollingController) createPushHook(fullName, owner, repo, before, after, branch, refBranch string) (*scm.PushHook, error) {
