@@ -163,7 +163,6 @@ func main() {
 		if err != nil {
 			logrus.WithError(err).Fatalf("failed to compile context match pattern \"%s\"", o.contextMatchPattern)
 		}
-		contextMatchPatternCompiled = contextMatchPatternCompiled
 	}
 
 	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
