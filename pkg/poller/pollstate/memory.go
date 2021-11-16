@@ -25,3 +25,16 @@ func (p *memoryPollstate) IsNew(repository, operation, newValue string) (bool, e
 	p.lock.Unlock()
 	return old != newValue, nil
 }
+
+func (p *memoryPollstate) Invalidate(repository, operation, invalidValue string) {
+	key := repository + ":" + operation
+
+	p.lock.Lock()
+
+	currentValue := p.cache[key]
+	if currentValue == invalidValue {
+		delete(p.cache, key)
+	}
+
+	p.lock.Unlock()
+}
