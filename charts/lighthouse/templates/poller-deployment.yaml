@@ -38,6 +38,9 @@ spec:
         imagePullPolicy: {{ tpl .Values.poller.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
+          {{- if .Values.poller.contextMatchPattern }}
+          - "--context-match-pattern={{ .Values.poller.contextMatchPattern }}"
+          {{- end }}
         ports:
           - name: http
             containerPort: {{ .Values.poller.internalPort }}

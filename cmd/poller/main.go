@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -40,6 +41,7 @@ type options struct {
 	namespace              string
 	repoNames              string
 	hookEndpoint           string
+	contextMatchPattern    string
 	runOnce                bool
 	dryRun                 bool
 	disablePollRelease     bool
@@ -62,6 +64,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.botName, "bot-name", "", "The bot name")
 	fs.StringVar(&o.gitServerURL, "git-url", "", "The git provider URL")
 	fs.StringVar(&o.gitKind, "git-kind", "", "The git provider kind (e.g. github, gitlab, bitbucketserver")
+	fs.StringVar(&o.contextMatchPattern, "context-match-pattern", "", "Regex pattern to use to match commit status context.")
 	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Disable POSTing to the webhook service and just log the webhooks instead.")
 	fs.BoolVar(&o.disablePollRelease, "no-release", false, "Disable polling for new commits on the main branch (releases) - mostly used for easier testing/debugging.")
@@ -154,6 +157,14 @@ func main() {
 		logrus.WithError(err).Fatalf("failed to parse git server %s", serverURL)
 	}
 
+	var contextMatchPatternCompiled *regexp.Regexp
+	if o.contextMatchPattern != "" {
+		contextMatchPatternCompiled, err = regexp.Compile(o.contextMatchPattern)
+		if err != nil {
+			logrus.WithError(err).Fatalf("failed to compile context match pattern \"%s\"", o.contextMatchPattern)
+		}
+	}
+
 	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
 		opts.Token = func() []byte {
 			return []byte(o.gitToken)
@@ -194,7 +205,7 @@ func main() {
 		logrus.WithError(err).Fatal("failed to create scm client")
 	}
 
-	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, fb, o.notifier)
+	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, contextMatchPatternCompiled, fb, o.notifier)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
