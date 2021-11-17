@@ -1,6 +1,9 @@
 package poller_test
 
 import (
+	"os/exec"
+	"regexp"
+	"strings"
 	"testing"
 
 	scmfake "github.com/jenkins-x/go-scm/scm/driver/fake"
@@ -14,9 +17,9 @@ import (
 )
 
 var (
-	repoNames = []string{"myorg/myrepo"}
-
-	gitServer = "https://github.com"
+	repoNames   = []string{"myorg/myrepo"}
+	gitServer   = "https://github.com"
+	testDataDir = "test_data"
 )
 
 func TestPollerReleases(t *testing.T) {
@@ -30,10 +33,24 @@ func TestPollerReleases(t *testing.T) {
 		}
 		return nil
 	}
-	scmClient, _ := scmfake.NewDefault()
-	fb := fbfake.NewFakeFileBrowser("test_data", true)
+	scmClient, fakeData := scmfake.NewDefault()
+	fb := fbfake.NewFakeFileBrowser(testDataDir, true)
 
-	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, fb, fakeNotifier)
+	contextMatchPattern := "^Lighthouse$"
+	contextMatchPatternCompiled, err := regexp.Compile(contextMatchPattern)
+	require.NoErrorf(t, err, "failed to compile context match pattern \"%s\"", contextMatchPattern)
+
+	// Load fake statuses that don't match our context match pattern
+	c := exec.Command("git", "rev-parse", "HEAD")
+	c.Dir = testDataDir
+	out, err := c.CombinedOutput()
+	require.NoError(t, err, "failed to get latest git commit sha")
+	sha := strings.TrimSpace(string(out))
+	fakeData.Statuses = map[string][]*scm.Status{
+		sha: {{Label: "Jenkins"}},
+	}
+
+	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
 
 	p.PollReleases()
@@ -62,6 +79,10 @@ func TestPollerPullRequests(t *testing.T) {
 	scmClient, fakeData := scmfake.NewDefault()
 	fb := fbfake.NewFakeFileBrowser("test_data", true)
 
+	contextMatchPattern := "^Lighthouse$"
+	contextMatchPatternCompiled, err := regexp.Compile(contextMatchPattern)
+	require.NoErrorf(t, err, "failed to compile context match pattern \"%s\"", contextMatchPattern)
+
 	prNumber := 123
 	fullName := repoNames[0]
 	owner, repo := scm.Split(fullName)
@@ -85,7 +106,11 @@ func TestPollerPullRequests(t *testing.T) {
 		State:  "open",
 		Sha:    sha,
 	}
-	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, fb, fakeNotifier)
+	// Load fake statuses that don't match our context match pattern
+	fakeData.Statuses = map[string][]*scm.Status{
+		sha: {{Label: "Jenkins"}},
+	}
+	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
 
 	p.PollPullRequests()
