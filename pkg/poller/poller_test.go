@@ -40,7 +40,7 @@ func TestPollerReleases(t *testing.T) {
 	contextMatchPatternCompiled, err := regexp.Compile(contextMatchPattern)
 	require.NoErrorf(t, err, "failed to compile context match pattern \"%s\"", contextMatchPattern)
 
-	// Load fake statuses that don't match our context match pattern
+	// Load fake status with label that doesn't match our context match pattern
 	c := exec.Command("git", "rev-parse", "HEAD")
 	c.Dir = testDataDir
 	out, err := c.CombinedOutput()
@@ -106,7 +106,7 @@ func TestPollerPullRequests(t *testing.T) {
 		State:  "open",
 		Sha:    sha,
 	}
-	// Load fake statuses that don't match our context match pattern
+	// Load fake status with label that doesn't match our context match pattern
 	fakeData.Statuses = map[string][]*scm.Status{
 		sha: {{Label: "Jenkins"}},
 	}
