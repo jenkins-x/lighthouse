@@ -46,9 +46,7 @@ func TestPollerReleases(t *testing.T) {
 	out, err := c.CombinedOutput()
 	require.NoError(t, err, "failed to get latest git commit sha")
 	sha := strings.TrimSpace(string(out))
-	fakeData.Statuses = map[string][]*scm.Status{
-		sha: {{Label: "Jenkins"}},
-	}
+	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: "Jenkins"}}}
 
 	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
@@ -107,9 +105,8 @@ func TestPollerPullRequests(t *testing.T) {
 		Sha:    sha,
 	}
 	// Load fake status with label that doesn't match our context match pattern
-	fakeData.Statuses = map[string][]*scm.Status{
-		sha: {{Label: "Jenkins"}},
-	}
+	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: "Jenkins"}}}
+
 	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
 
