@@ -17,9 +17,11 @@ import (
 )
 
 var (
-	repoNames   = []string{"myorg/myrepo"}
-	gitServer   = "https://github.com"
-	testDataDir = "test_data"
+	repoNames           = []string{"myorg/myrepo"}
+	gitServer           = "https://github.com"
+	testDataDir         = "test_data"
+	contextMatchPattern = "^Lighthouse$"
+	statusLabel         = "Jenkins"
 )
 
 func TestPollerReleases(t *testing.T) {
@@ -36,7 +38,6 @@ func TestPollerReleases(t *testing.T) {
 	scmClient, fakeData := scmfake.NewDefault()
 	fb := fbfake.NewFakeFileBrowser(testDataDir, true)
 
-	contextMatchPattern := "^Lighthouse$"
 	contextMatchPatternCompiled, err := regexp.Compile(contextMatchPattern)
 	require.NoErrorf(t, err, "failed to compile context match pattern \"%s\"", contextMatchPattern)
 
@@ -46,7 +47,7 @@ func TestPollerReleases(t *testing.T) {
 	out, err := c.CombinedOutput()
 	require.NoError(t, err, "failed to get latest git commit sha")
 	sha := strings.TrimSpace(string(out))
-	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: "Jenkins"}}}
+	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: statusLabel}}}
 
 	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
@@ -77,7 +78,6 @@ func TestPollerPullRequests(t *testing.T) {
 	scmClient, fakeData := scmfake.NewDefault()
 	fb := fbfake.NewFakeFileBrowser("test_data", true)
 
-	contextMatchPattern := "^Lighthouse$"
 	contextMatchPatternCompiled, err := regexp.Compile(contextMatchPattern)
 	require.NoErrorf(t, err, "failed to compile context match pattern \"%s\"", contextMatchPattern)
 
@@ -105,7 +105,7 @@ func TestPollerPullRequests(t *testing.T) {
 		Sha:    sha,
 	}
 	// Load fake status with label that doesn't match our context match pattern
-	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: "Jenkins"}}}
+	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: statusLabel}}}
 
 	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
