@@ -1205,7 +1205,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]job.Presubm
 			triggeredContexts.Insert(ps.Context)
 			var spec v1alpha1.LighthouseJobSpec
 			if len(prs) == 1 {
-				spec = jobutil.PresubmitSpec(c.logger, ps, refs)
+				spec, _ = jobutil.PresubmitSpec(c.logger, ps, refs)
 			} else {
 				spec = jobutil.BatchSpec(c.logger, ps, refs)
 			}

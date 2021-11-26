@@ -281,7 +281,10 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []job.Presubmit, 
 	var errors []error
 	for _, job := range requestedJobs {
 		c.Logger.Infof("Starting %s build.", job.Name)
-		pj := jobutil.NewPresubmit(c.Logger, pr, baseSHA, job, eventGUID, c.SCMProviderClient.PRRefFmt())
+		pj, err := jobutil.NewPresubmit(c.Logger, pr, baseSHA, job, eventGUID, c.SCMProviderClient.PRRefFmt())
+		if err != nil {
+			errors = append(errors, err)
+		}
 		c.Logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
 		if _, err := c.LauncherClient.Launch(&pj); err != nil {
 			c.Logger.WithError(err).Error("Failed to create LighthouseJob.")
@@ -291,6 +294,17 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []job.Presubmit, 
 			}
 		}
 	}
+
+	if len(errors) > 0 {
+		org, repo, _ := orgRepoAuthor(*pr)
+		errorString := ""
+		for k := range errors {
+			errorString += "*" + errors[k].Error() + "\n"
+		}
+		message := "failed to trigger Pull Request pipeline\n" + errorString
+		c.SCMProviderClient.CreateComment(org, repo, pr.Number, true, message)
+	}
+
 	return errorutil.NewAggregate(errors...)
 }
 

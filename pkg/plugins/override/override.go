@@ -206,7 +206,7 @@ Only the following contexts were expected:
 				return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 			}
 
-			pj := jobutil.NewPresubmit(log, pr, baseSHA, *pre, e.GUID, spc.PRRefFmt())
+			pj, _ := jobutil.NewPresubmit(log, pr, baseSHA, *pre, e.GUID, spc.PRRefFmt())
 			now := metav1.Now()
 			pj.Status = v1alpha1.LighthouseJobStatus{
 				State:          v1alpha1.SuccessState,
