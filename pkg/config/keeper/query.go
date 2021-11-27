@@ -135,7 +135,8 @@ func (tq *Query) Validate() error {
 
 	for r := range tq.Repos {
 		parts := strings.Split(tq.Repos[r], "/")
-		if len(parts) != 2 || len(parts[0]) == 0 || len(parts[1]) == 0 {
+		// parts can have length of upto 20 for nested repos in gitlab
+		if len(parts[0]) == 0 || len(parts[1]) == 0 {
 			return fmt.Errorf("repos[%d]: %q is not of the form \"org/repo\"", r, tq.Repos[r])
 		}
 		if orgs.Has(parts[0]) {
@@ -152,7 +153,7 @@ func (tq *Query) Validate() error {
 
 	for er := range tq.ExcludedRepos {
 		parts := strings.Split(tq.ExcludedRepos[er], "/")
-		if len(parts) != 2 || len(parts[0]) == 0 || len(parts[1]) == 0 {
+		if len(parts[0]) == 0 || len(parts[1]) == 0 {
 			return fmt.Errorf("excludedRepos[%d]: %q is not of the form \"org/repo\"", er, tq.ExcludedRepos[er])
 		}
 		if !orgs.Has(parts[0]) {

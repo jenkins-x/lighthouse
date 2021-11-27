@@ -835,7 +835,6 @@ func accumulateBatch(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs 
 // accumulate returns the supplied PRs sorted into three buckets based on their
 // accumulated state across the presubmits.
 func accumulate(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]job.Presubmit) {
-
 	missingTests = map[int][]job.Presubmit{}
 	for _, pr := range prs {
 		// Accumulate the best result for each job (Passing > Pending > Failing/Unknown)
@@ -1393,7 +1392,6 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 }
 
 func (c *DefaultController) commentOnPRsWithFailedMerge(prs []PullRequest, errorString string) error {
-
 	commentBody := fmt.Sprintf("Failed to merge this PR due to:\n>%s\n", errorString)
 
 	var errs []error
@@ -1787,7 +1785,6 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load labels for PR %s", pr.Link)
 			}
-
 			prLabels := make(map[string]struct{})
 			for _, l := range pr.Labels {
 				prLabels[l.Name] = struct{}{}
