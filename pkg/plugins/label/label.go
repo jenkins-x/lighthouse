@@ -40,7 +40,7 @@ var (
 		ConfigHelpProvider: configHelp,
 		Commands: []plugins.Command{{
 			Prefix: "remove-",
-			Name:   "area|committee|kind|language|priority|sig|triage|wg|label",
+			Name:   "area|committee|kind|language|priority|sig|team|triage|wg|label",
 			Arg: &plugins.CommandArg{
 				Pattern: ".*",
 			},
