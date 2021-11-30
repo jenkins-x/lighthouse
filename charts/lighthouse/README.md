@@ -127,6 +127,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `logStackSkip` | string | Comma separated stack frames to skip from the log | `""` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
 | `poller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the poller pods | `{}` |
+| `poller.contextMatchPattern` | string | Regex pattern to use to match commit status context | `""` |
 | `poller.datadog.enabled` | string | Enables datadog | `"true"` |
 | `poller.enabled` | bool | Whether to enable or disable the poller component | `false` |
 | `poller.env` | object | Lets you define poller specific environment variables | `{"POLL_HOOK_ENDPOINT":"http://hook/hook/poll","POLL_PERIOD":"20s"}` |
