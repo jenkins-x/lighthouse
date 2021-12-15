@@ -124,7 +124,7 @@ func (c *pollingController) PollReleases() {
 			}
 
 			if c.requireSuccess {
-				// We have not been able to find a successful status so invalidate cache
+				// We have not been able to find a successful status so invalidate cache to retry
 				c.pollstate.Invalidate(fullName, "release", sha)
 			}
 
@@ -222,7 +222,7 @@ func (c *pollingController) pollPullRequest(ctx context.Context, l *logrus.Entry
 	}
 
 	if c.requireSuccess {
-		// We have not been able to find a successful status so invalidate cache
+		// We have not been able to find a successful status so invalidate cache to retry
 		c.pollstate.Invalidate(fullName, prName, "created")
 	}
 
@@ -262,7 +262,7 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 	}
 
 	if c.requireSuccess {
-		// We have not been able to find a successful status so invalidate cache
+		// We have not been able to find a successful status so invalidate cache to retry
 		c.pollstate.Invalidate(fullName, prName+"-push", sha)
 	}
 
