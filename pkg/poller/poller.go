@@ -26,6 +26,7 @@ type pollingController struct {
 	gitServer                   string
 	scmClient                   *scm.Client
 	fb                          filebrowser.Interface
+	requireSuccess              bool
 	pollstate                   pollstate.Interface
 	logger                      *logrus.Entry
 	contextMatchPatternCompiled *regexp.Regexp
@@ -36,7 +37,7 @@ func (c *pollingController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello from lighthouse poller\n"))
 }
 
-func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, contextMatchPatternCompiled *regexp.Regexp, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
+func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, contextMatchPatternCompiled *regexp.Regexp, fb filebrowser.Interface, requireSuccess bool, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	if gitServer == "" {
 		gitServer = "https://github.com"
@@ -48,6 +49,7 @@ func NewPollingController(repositoryNames []string, gitServer string, scmClient 
 		scmClient:                   scmClient,
 		contextMatchPatternCompiled: contextMatchPatternCompiled,
 		fb:                          fb,
+		requireSuccess:              requireSuccess,
 		notifier:                    notifier,
 		pollstate:                   pollstate.NewMemoryPollState(),
 	}, nil
@@ -119,6 +121,11 @@ func (c *pollingController) PollReleases() {
 			}
 			if hasStatus {
 				return nil
+			}
+
+			if c.requireSuccess {
+				// We have not been able to find a successful status so invalidate cache
+				c.pollstate.Invalidate(fullName, "release", sha)
 			}
 
 			l.Infof("triggering release webhook")
@@ -214,6 +221,11 @@ func (c *pollingController) pollPullRequest(ctx context.Context, l *logrus.Entry
 		return nil
 	}
 
+	if c.requireSuccess {
+		// We have not been able to find a successful status so invalidate cache
+		c.pollstate.Invalidate(fullName, prName, "created")
+	}
+
 	l.Infof("triggering pull request webhook")
 
 	pullRequestHook, err := c.createPullRequestHook(fullName, pr)
@@ -247,6 +259,11 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 	}
 	if hasStatus {
 		return nil
+	}
+
+	if c.requireSuccess {
+		// We have not been able to find a successful status so invalidate cache
+		c.pollstate.Invalidate(fullName, prName+"-push", sha)
 	}
 
 	l.Infof("triggering pull request push webhook")
@@ -293,6 +310,12 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 }
 
 func (c *pollingController) isMatchingStatus(s *scm.Status) bool {
+	if c.requireSuccess {
+		if s.State != scm.StateSuccess {
+			return false
+		}
+	}
+
 	if c.contextMatchPatternCompiled != nil {
 		return c.contextMatchPatternCompiled.MatchString(s.Label)
 	}

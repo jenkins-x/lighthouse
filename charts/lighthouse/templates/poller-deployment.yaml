@@ -41,6 +41,9 @@ spec:
           {{- if .Values.poller.contextMatchPattern }}
           - "--context-match-pattern={{ .Values.poller.contextMatchPattern }}"
           {{- end }}
+          {{- if .Values.poller.requireSuccess }}
+          - --require-success
+          {{- end }}
         ports:
           - name: http
             containerPort: {{ .Values.poller.internalPort }}

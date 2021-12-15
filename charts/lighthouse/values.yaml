@@ -442,6 +442,9 @@ poller:
   # poller.contextMatchPattern -- Regex pattern to use to match commit status context
   contextMatchPattern: ""
 
+  # poller.requireSuccess -- Keep polling until commit status is successful
+  requireSuccess: false
+
   resources:
     # poller.resources.limits -- Resource limits applied to the poller pods
     limits:
