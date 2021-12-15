@@ -445,6 +445,10 @@ poller:
   # poller.requireSuccess -- Keep polling until commit status is successful
   requireSuccess: false
 
+  # poller.successContextMatchPattern -- Only used when poller.requireSuccess is true. Polling will
+  # only retry for success if commit status context matches this regex pattern
+  successContextMatchPattern: ""
+
   resources:
     # poller.resources.limits -- Resource limits applied to the poller pods
     limits:

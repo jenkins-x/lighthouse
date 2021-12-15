@@ -43,6 +43,9 @@ spec:
           {{- end }}
           {{- if .Values.poller.requireSuccess }}
           - --require-success
+          {{- if .Values.poller.successContextMatchPattern }}
+          - "--success-context-match-pattern={{ .Values.poller.successContextMatchPattern }}"
+          {{- end }}
           {{- end }}
         ports:
           - name: http
