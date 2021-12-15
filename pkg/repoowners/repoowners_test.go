@@ -114,7 +114,8 @@ func getTestClient(
 	extraBranchesAndFiles map[string]map[string][]byte,
 ) (*Client, func(), error) {
 	testAliasesFile := map[string][]byte{
-		"OWNERS_ALIASES": []byte("aliases:\n  Best-approvers:\n  - carl\n  - cjwagner\n  best-reviewers:\n  - Carl\n  - BOB"),
+		"OWNERS_ALIASES": []byte("aliases:\n  Best-approvers:\n  - carl\n  - cjwagner\n  best-reviewers:\n  - Carl\n  - BOB\n" +
+			"foreignAliases:\n- name: another-repo\n"),
 	}
 
 	localGit, git, err := localgit.New()
@@ -149,8 +150,15 @@ func getTestClient(
 	}
 
 	return &Client{
-			git:    git,
-			spc:    &fake.SCMClient{Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"}},
+			git: git,
+			spc: &fake.SCMClient{
+				Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"},
+				RemoteFiles: map[string]map[string]string{
+					"OWNERS_ALIASES": {
+						"HEAD": "aliases:\n  best-approvers:\n  - blahonga\n",
+					},
+				},
+			},
 			logger: logrus.WithField("client", "repoowners"),
 			cache:  make(map[string]cacheEntry),
 
@@ -583,7 +591,7 @@ func TestLoadRepoAliases(t *testing.T) {
 			name:            "Normal aliases file",
 			aliasFileExists: true,
 			expectedRepoAliases: RepoAliases{
-				"best-approvers": sets.NewString("carl", "cjwagner"),
+				"best-approvers": sets.NewString("carl", "cjwagner", "blahonga"),
 				"best-reviewers": sets.NewString("carl", "bob"),
 			},
 		},
