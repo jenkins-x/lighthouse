@@ -20,38 +20,40 @@ var (
 )
 
 type pollingController struct {
-	DisablePollRelease          bool
-	DisablePollPullRequest      bool
-	repositoryNames             []string
-	gitServer                   string
-	scmClient                   *scm.Client
-	fb                          filebrowser.Interface
-	requireSuccess              bool
-	pollstate                   pollstate.Interface
-	logger                      *logrus.Entry
-	contextMatchPatternCompiled *regexp.Regexp
-	notifier                    func(webhook *scm.WebhookWrapper) error
+	DisablePollRelease                 bool
+	DisablePollPullRequest             bool
+	repositoryNames                    []string
+	gitServer                          string
+	scmClient                          *scm.Client
+	fb                                 filebrowser.Interface
+	pollstate                          pollstate.Interface
+	logger                             *logrus.Entry
+	contextMatchPatternCompiled        *regexp.Regexp
+	requireSuccess                     bool
+	successContextMatchPatternCompiled *regexp.Regexp
+	notifier                           func(webhook *scm.WebhookWrapper) error
 }
 
 func (c *pollingController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello from lighthouse poller\n"))
 }
 
-func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, contextMatchPatternCompiled *regexp.Regexp, fb filebrowser.Interface, requireSuccess bool, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
+func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, contextMatchPatternCompiled *regexp.Regexp, requireSuccess bool, successContextMatchPatternCompiled *regexp.Regexp, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	if gitServer == "" {
 		gitServer = "https://github.com"
 	}
 	return &pollingController{
-		repositoryNames:             repositoryNames,
-		gitServer:                   gitServer,
-		logger:                      logger,
-		scmClient:                   scmClient,
-		contextMatchPatternCompiled: contextMatchPatternCompiled,
-		fb:                          fb,
-		requireSuccess:              requireSuccess,
-		notifier:                    notifier,
-		pollstate:                   pollstate.NewMemoryPollState(),
+		repositoryNames:                    repositoryNames,
+		gitServer:                          gitServer,
+		logger:                             logger,
+		scmClient:                          scmClient,
+		contextMatchPatternCompiled:        contextMatchPatternCompiled,
+		requireSuccess:                     requireSuccess,
+		successContextMatchPatternCompiled: successContextMatchPatternCompiled,
+		fb:                                 fb,
+		notifier:                           notifier,
+		pollstate:                          pollstate.NewMemoryPollState(),
 	}, nil
 }
 
@@ -311,9 +313,16 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 
 func (c *pollingController) isMatchingStatus(s *scm.Status) bool {
 	if c.requireSuccess {
-		if s.State != scm.StateSuccess {
+		// Only require success if no context match pattern is specified or if the context matches the
+		// specified context match pattern...
+		if c.successContextMatchPatternCompiled == nil ||
+			(c.successContextMatchPatternCompiled != nil && c.successContextMatchPatternCompiled.MatchString(s.Label)) {
+			if s.State != scm.StateSuccess {
+				return false
+			}
 			return false
 		}
+		// ...otherwise fall through to the default logic
 	}
 
 	if c.contextMatchPatternCompiled != nil {

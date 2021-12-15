@@ -50,7 +50,7 @@ func TestPollerReleases(t *testing.T) {
 	sha := strings.TrimSpace(string(out))
 	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: statusLabel}}}
 
-	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, requireSuccess, fakeNotifier)
+	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, requireSuccess, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
 
 	p.PollReleases()
@@ -108,7 +108,7 @@ func TestPollerPullRequests(t *testing.T) {
 	// Load fake status with label that doesn't match our context match pattern
 	fakeData.Statuses = map[string][]*scm.Status{sha: {{Label: statusLabel}}}
 
-	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, fb, requireSuccess, fakeNotifier)
+	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, contextMatchPatternCompiled, requireSuccess, contextMatchPatternCompiled, fb, fakeNotifier)
 	require.NoError(t, err, "failed to create PollingController")
 
 	p.PollPullRequests()

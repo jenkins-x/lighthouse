@@ -68,6 +68,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.gitServerURL, "git-url", "", "The git provider URL")
 	fs.StringVar(&o.gitKind, "git-kind", "", "The git provider kind (e.g. github, gitlab, bitbucketserver")
 	fs.StringVar(&o.contextMatchPattern, "context-match-pattern", "", "Regex pattern to use to match commit status context.")
+	fs.StringVar(&o.successContextMatchPattern, "success-context-match-pattern", "", "Regex pattern to use to match success commit status context.")
 	fs.BoolVar(&o.runOnce, "run-once", false, "If true, run only once then quit.")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Disable POSTing to the webhook service and just log the webhooks instead.")
 	fs.BoolVar(&o.disablePollRelease, "no-release", false, "Disable polling for new commits on the main branch (releases) - mostly used for easier testing/debugging.")
@@ -180,6 +181,14 @@ func main() {
 		}
 	}
 
+	var successContextMatchPatternCompiled *regexp.Regexp
+	if o.successContextMatchPattern != "" {
+		successContextMatchPatternCompiled, err = regexp.Compile(o.successContextMatchPattern)
+		if err != nil {
+			logrus.WithError(err).Fatalf("failed to compile success context match pattern \"%s\"", o.successContextMatchPattern)
+		}
+	}
+
 	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
 		opts.Token = func() []byte {
 			return []byte(o.gitToken)
@@ -220,7 +229,7 @@ func main() {
 		logrus.WithError(err).Fatal("failed to create scm client")
 	}
 
-	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, contextMatchPatternCompiled, fb, o.requireSuccess, o.notifier)
+	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, contextMatchPatternCompiled, o.requireSuccess, successContextMatchPatternCompiled, fb, o.notifier)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
