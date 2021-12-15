@@ -313,8 +313,8 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 
 func (c *pollingController) isMatchingStatus(s *scm.Status) bool {
 	if c.requireSuccess {
-		// Only require success if no context match pattern is specified or if the context matches the
-		// specified context match pattern...
+		// Only require success if no success context match pattern is specified or if the context
+		// matches the specified success context match pattern...
 		if c.successContextMatchPatternCompiled == nil ||
 			(c.successContextMatchPatternCompiled != nil && c.successContextMatchPatternCompiled.MatchString(s.Label)) {
 			if s.State != scm.StateSuccess {
