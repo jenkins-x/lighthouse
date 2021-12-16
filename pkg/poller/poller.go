@@ -124,7 +124,7 @@ func (c *pollingController) PollReleases() {
 			}
 
 			if c.requireReleaseSuccess {
-				// We have not been able to find a successful status so invalidate cache to retry
+				// We have not been able to find a successful release status so invalidate cache to retry
 				c.pollstate.Invalidate(fullName, "release", sha)
 			}
 
