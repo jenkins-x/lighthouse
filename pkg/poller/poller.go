@@ -301,7 +301,9 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 
 func (c *pollingController) isMatchingStatus(s *scm.Status, isRelease bool) bool {
 	if isRelease && c.requireReleaseSuccess {
-		return s.State == scm.StateSuccess
+		if s.State != scm.StateSuccess {
+			return false
+		}
 	}
 
 	if c.contextMatchPatternCompiled != nil {
