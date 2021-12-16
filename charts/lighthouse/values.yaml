@@ -442,7 +442,7 @@ poller:
   # poller.contextMatchPattern -- Regex pattern to use to match commit status context
   contextMatchPattern: ""
 
-  # poller.requireReleaseSuccess -- Keep polling releases until commit status is successful.
+  # poller.requireReleaseSuccess -- Keep polling releases until the most recent commit status is successful
   requireReleaseSuccess: false
 
   resources:
