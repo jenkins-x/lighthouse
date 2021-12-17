@@ -100,7 +100,7 @@ func parsePollPeriod(envVar string, defaultPollPeriod time.Duration) time.Durati
 	if text != "" {
 		d, err := time.ParseDuration(text)
 		if err != nil {
-			logrus.WithError(err).WithField(envVar, text).Warn(fmt.Sprintf("invalid %s value", envVar))
+			logrus.WithError(err).Warn(fmt.Sprintf("invalid %s value", envVar))
 		} else {
 			return d
 		}
