@@ -47,6 +47,7 @@ type options struct {
 	disablePollRelease     bool
 	disablePollPullRequest bool
 	pollPeriod             time.Duration
+	pollReleasePeriod      time.Duration
 }
 
 func (o *options) Validate() error {
@@ -85,6 +86,17 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 		}
 	}
 	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
+
+	text = os.Getenv("POLL_RELEASE_PERIOD")
+	if text != "" {
+		d, err := time.ParseDuration(text)
+		if err != nil {
+			logrus.WithError(err).WithField("PollReleasePeriod", text).Warn("invalid POLL_RELEASE_PERIOD value")
+		} else {
+			defaultPollPeriod = d
+		}
+	}
+	fs.DurationVar(&o.pollReleasePeriod, "release-period", defaultPollPeriod, "The time period between release polls")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -215,6 +227,7 @@ func main() {
 
 	c.Logger().WithFields(map[string]interface{}{
 		"PollPeriod":             o.pollPeriod,
+		"PollReleasePeriod":      o.pollReleasePeriod,
 		"HookEndpint":            o.hookEndpoint,
 		"DisablePollRelease":     o.disablePollRelease,
 		"DisablePollPullRequest": o.disablePollPullRequest,
@@ -224,12 +237,19 @@ func main() {
 	server := &http.Server{Addr: ":" + strconv.Itoa(o.port)}
 
 	if o.runOnce {
-		c.Sync()
+		c.SyncReleases()
+		c.SyncPullRequests()
 		return
 	}
 
 	interrupts.Tick(func() {
-		c.Sync()
+		c.SyncReleases()
+	}, func() time.Duration {
+		return o.pollReleasePeriod
+	})
+
+	interrupts.Tick(func() {
+		c.SyncPullRequests()
 	}, func() time.Duration {
 		return o.pollPeriod
 	})

@@ -57,10 +57,13 @@ func (c *pollingController) Logger() *logrus.Entry {
 	return c.logger
 }
 
-func (c *pollingController) Sync() {
+func (c *pollingController) SyncReleases() {
 	if !c.DisablePollRelease {
 		c.PollReleases()
 	}
+}
+
+func (c *pollingController) SyncPullRequests() {
 	if !c.DisablePollPullRequest {
 		c.PollPullRequests()
 	}
