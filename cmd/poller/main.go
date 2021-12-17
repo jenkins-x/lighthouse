@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -77,39 +78,13 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.hookEndpoint, "hook", os.Getenv("POLL_HOOK_ENDPOINT"), "The hook endpoint to post to")
 
 	defaultPollPeriod := 20 * time.Second
-	text := os.Getenv("POLL_PERIOD")
-	if text != "" {
-		d, err := time.ParseDuration(text)
-		if err != nil {
-			logrus.WithError(err).WithField("PollPeriod", text).Warn("invalid POLL_PERIOD value")
-		} else {
-			defaultPollPeriod = d
-		}
-	}
+	defaultPollPeriod = parsePollPeriod("POLL_PERIOD", defaultPollPeriod)
 	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
 
-	defaultPollReleasePeriod := defaultPollPeriod
-	text = os.Getenv("POLL_RELEASE_PERIOD")
-	if text != "" {
-		d, err := time.ParseDuration(text)
-		if err != nil {
-			logrus.WithError(err).WithField("PollReleasePeriod", text).Warn("invalid POLL_RELEASE_PERIOD value")
-		} else {
-			defaultPollReleasePeriod = d
-		}
-	}
+	defaultPollReleasePeriod := parsePollPeriod("POLL_RELEASE_PERIOD", defaultPollPeriod)
 	fs.DurationVar(&o.pollReleasePeriod, "release-period", defaultPollReleasePeriod, "The time period between release polls")
 
-	defaultPollPullRequestPeriod := defaultPollPeriod
-	text = os.Getenv("POLL_PULL_REQUEST_PERIOD")
-	if text != "" {
-		d, err := time.ParseDuration(text)
-		if err != nil {
-			logrus.WithError(err).WithField("PollPullRequestPeriod", text).Warn("invalid POLL_PULL_REQUEST_PERIOD value")
-		} else {
-			defaultPollPullRequestPeriod = d
-		}
-	}
+	defaultPollPullRequestPeriod := parsePollPeriod("POLL_PULL_REQUEST_PERIOD", defaultPollPeriod)
 	fs.DurationVar(&o.pollPullRequestPeriod, "pull-request-period", defaultPollPullRequestPeriod, "The time period between pull request polls")
 
 	err := fs.Parse(args)
@@ -118,6 +93,19 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	}
 	o.configPath = configutil.PathOrDefault(o.configPath)
 	return o
+}
+
+func parsePollPeriod(envVar string, defaultPollPeriod time.Duration) time.Duration {
+	text := os.Getenv(envVar)
+	if text != "" {
+		d, err := time.ParseDuration(text)
+		if err != nil {
+			logrus.WithError(err).WithField(envVar, text).Warn(fmt.Sprintf("invalid %s value", envVar))
+		} else {
+			return d
+		}
+	}
+	return defaultPollPeriod
 }
 
 func main() {
