@@ -127,6 +127,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `logStackSkip` | string | Comma separated stack frames to skip from the log | `""` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
 | `poller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the poller pods | `{}` |
+| `poller.contextMatchPattern` | string | Regex pattern to use to match commit status context | `""` |
 | `poller.datadog.enabled` | string | Enables datadog | `"true"` |
 | `poller.enabled` | bool | Whether to enable or disable the poller component | `false` |
 | `poller.env` | object | Lets you define poller specific environment variables | `{"POLL_HOOK_ENDPOINT":"http://hook/hook/poll","POLL_PERIOD":"20s"}` |
@@ -167,7 +168,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `webhooks.ingress.annotations` | object | Webhooks ingress annotations | `{}` |
 | `webhooks.ingress.enabled` | bool | Enable webhooks ingress | `false` |
 | `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
-| `webhooks.ingress.ingressClassName` | string | Ingress class name | `null` |
+| `webhooks.ingress.ingressClassName` | string | Webhooks ingress ingressClassName | `nil` |
 | `webhooks.labels` | object | allow optional labels to be added to the webhook deployment | `{}` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods | `{}` |
