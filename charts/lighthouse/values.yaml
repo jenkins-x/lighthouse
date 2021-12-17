@@ -179,7 +179,7 @@ webhooks:
     annotations: {}
     
     # webhooks.ingress.ingressClassName -- Webhooks ingress ingressClassName
-    ingressClassName: ""
+    ingressClassName: null
 
     # webhooks.ingress.hosts -- Webhooks ingress host names
     hosts: []

@@ -14,7 +14,7 @@ metadata:
   annotations:
     {{- toYaml .Values.webhooks.ingress.annotations | nindent 4 }}
 spec:
-  {{- if .Values.webhooks.ingress.ingressClassName }}
+  {{- if semverCompare ">=1.18-0" .Capabilities.KubeVersion.Version }}
   ingressClassName: {{ .Values.webhooks.ingress.ingressClassName }}
   {{- end }}
   rules:
