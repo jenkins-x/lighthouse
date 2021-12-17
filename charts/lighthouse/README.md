@@ -167,6 +167,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `webhooks.ingress.annotations` | object | Webhooks ingress annotations | `{}` |
 | `webhooks.ingress.enabled` | bool | Enable webhooks ingress | `false` |
 | `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
+| `webhooks.ingress.ingressClassName` | string | Ingress class name | `null` |
 | `webhooks.labels` | object | allow optional labels to be added to the webhook deployment | `{}` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods | `{}` |
