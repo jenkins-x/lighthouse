@@ -177,6 +177,9 @@ webhooks:
 
     # webhooks.ingress.annotations -- Webhooks ingress annotations
     annotations: {}
+    
+    # webhooks.ingress.ingressClassName -- Webhooks ingress ingressClassName
+    ingressClassName: ""
 
     # webhooks.ingress.hosts -- Webhooks ingress host names
     hosts: []
