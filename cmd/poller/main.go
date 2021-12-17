@@ -99,7 +99,7 @@ func parseEnvPollPeriod(env string, defaultPollPeriod time.Duration) time.Durati
 	if text != "" {
 		d, err := time.ParseDuration(text)
 		if err != nil {
-			logrus.WithError(err).WithField(env, text).Warn("invalid time duration, expected number and suffix (e.g. 20s)")
+			logrus.WithError(err).WithField(env, text).Warn("invalid time duration, expected sequence of numbers each with a unit suffix (e.g. 20s or 1h30m)")
 		} else {
 			return d
 		}
