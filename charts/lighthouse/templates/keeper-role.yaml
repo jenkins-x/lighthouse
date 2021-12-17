@@ -12,6 +12,7 @@ rules:
       - get
       - list
       - watch
+  {{- if .Values.engines.tekton }}
   - apiGroups:
       - tekton.dev
     resources:
@@ -27,6 +28,7 @@ rules:
       - watch
       - patch
       - delete
+  {{- end }}
   - apiGroups:
       - lighthouse.jenkins.io
     resources:
