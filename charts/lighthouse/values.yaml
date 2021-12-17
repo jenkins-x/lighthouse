@@ -424,6 +424,9 @@ poller:
     # poller.env.POLL_PERIOD the time period before polling
     POLL_PERIOD: 20s
 
+    # poller.env.POLL_RELEASE_PERIOD the time period before polling releases
+    POLL_RELEASE_PERIOD: 20s
+
     # poller.env.POLL_HOOK_ENDPOINT the hook service endpoint to post webhooks to
     POLL_HOOK_ENDPOINT: http://hook/hook/poll
 
