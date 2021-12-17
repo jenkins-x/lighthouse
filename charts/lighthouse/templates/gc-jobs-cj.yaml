@@ -11,6 +11,7 @@ spec:
     metadata:
       creationTimestamp: null
     spec:
+      backoffLimit: {{ .Values.gcJobs.backoffLimit }}
       template:
         metadata:
           creationTimestamp: null
