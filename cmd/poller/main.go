@@ -48,6 +48,7 @@ type options struct {
 	disablePollPullRequest bool
 	pollPeriod             time.Duration
 	pollReleasePeriod      time.Duration
+	pollPullRequestPeriod  time.Duration
 }
 
 func (o *options) Validate() error {
@@ -87,16 +88,29 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	}
 	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
 
+	defaultPollReleasePeriod := defaultPollPeriod
 	text = os.Getenv("POLL_RELEASE_PERIOD")
 	if text != "" {
 		d, err := time.ParseDuration(text)
 		if err != nil {
 			logrus.WithError(err).WithField("PollReleasePeriod", text).Warn("invalid POLL_RELEASE_PERIOD value")
 		} else {
-			defaultPollPeriod = d
+			defaultPollReleasePeriod = d
 		}
 	}
-	fs.DurationVar(&o.pollReleasePeriod, "release-period", defaultPollPeriod, "The time period between release polls")
+	fs.DurationVar(&o.pollReleasePeriod, "release-period", defaultPollReleasePeriod, "The time period between release polls")
+
+	defaultPollPullRequestPeriod := defaultPollPeriod
+	text = os.Getenv("POLL_PULL_REQUEST_PERIOD")
+	if text != "" {
+		d, err := time.ParseDuration(text)
+		if err != nil {
+			logrus.WithError(err).WithField("PollPullRequestPeriod", text).Warn("invalid POLL_PULL_REQUEST_PERIOD value")
+		} else {
+			defaultPollPullRequestPeriod = d
+		}
+	}
+	fs.DurationVar(&o.pollPullRequestPeriod, "pull-request-period", defaultPollPullRequestPeriod, "The time period between pull request polls")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -226,8 +240,8 @@ func main() {
 	c.DisablePollRelease = o.disablePollRelease
 
 	c.Logger().WithFields(map[string]interface{}{
-		"PollPeriod":             o.pollPeriod,
 		"PollReleasePeriod":      o.pollReleasePeriod,
+		"PollPullRequestPeriod":  o.pollPullRequestPeriod,
 		"HookEndpint":            o.hookEndpoint,
 		"DisablePollRelease":     o.disablePollRelease,
 		"DisablePollPullRequest": o.disablePollPullRequest,
@@ -251,7 +265,7 @@ func main() {
 	interrupts.Tick(func() {
 		c.SyncPullRequests()
 	}, func() time.Duration {
-		return o.pollPeriod
+		return o.pollPullRequestPeriod
 	})
 
 	// serve data
