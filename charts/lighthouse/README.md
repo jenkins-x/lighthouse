@@ -71,6 +71,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `foghorn.resources.requests` | object | Resource requests applied to the foghorn pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `foghorn.terminationGracePeriodSeconds` | int | Termination grace period for foghorn pods | `180` |
 | `foghorn.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods | `[]` |
+| `gcJobs.backoffLimit` | int | Set the backoff limit for failed cronJobs | `6` |
 | `gcJobs.concurrencyPolicy` | string | Drives the job's concurrency policy | `"Forbid"` |
 | `gcJobs.failedJobsHistoryLimit` | int | Drives the failed jobs history limit | `1` |
 | `gcJobs.image.pullPolicy` | string | Template for computing the gc job docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |

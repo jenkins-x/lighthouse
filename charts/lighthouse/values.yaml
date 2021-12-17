@@ -89,6 +89,9 @@ gcJobs:
   # gcJobs.concurrencyPolicy -- Drives the job's concurrency policy
   concurrencyPolicy: Forbid
 
+  # gcJobs.backoffLimit -- Drives the job's backoff limit
+  backoffLimit: 6
+
   image:
     # gcJobs.image.repository -- Template for computing the gc job docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
