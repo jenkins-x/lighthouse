@@ -144,6 +144,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `poller.resources.requests` | object | Resource requests applied to the poller pods | `{"cpu":"100m","memory":"128Mi"}` |
 | `poller.terminationGracePeriodSeconds` | int | Termination grace period for poller pods | `30` |
 | `poller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the poller pods | `[]` |
+| `scope` | string | set scope to either `cluster` or `namespace` for permissions | `cluster` |
 | `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
 | `tektoncontroller.dashboardTemplate` | string | Go template expression for URLs in the dashboard if not using Tekton dashboard | `""` |
 | `tektoncontroller.dashboardURL` | string | the dashboard URL (e.g. Tekton dashboard) | `""` |

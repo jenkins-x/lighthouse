@@ -6,7 +6,9 @@ rules:
 - apiGroups:
   - ""
   resources:
+  {{- if eq .Values.scope "cluster" }}
   - namespaces
+  {{- end }}
   - configmaps
   - secrets
   verbs:
