@@ -78,13 +78,13 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.hookEndpoint, "hook", os.Getenv("POLL_HOOK_ENDPOINT"), "The hook endpoint to post to")
 
 	defaultPollPeriod := 20 * time.Second
-	defaultPollPeriod = parsePollPeriod("POLL_PERIOD", defaultPollPeriod)
+	defaultPollPeriod = parseEnvPollPeriod("POLL_PERIOD", defaultPollPeriod)
 	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
 
-	defaultPollReleasePeriod := parsePollPeriod("POLL_RELEASE_PERIOD", defaultPollPeriod)
+	defaultPollReleasePeriod := parseEnvPollPeriod("POLL_RELEASE_PERIOD", defaultPollPeriod)
 	fs.DurationVar(&o.pollReleasePeriod, "release-period", defaultPollReleasePeriod, "The time period between release polls")
 
-	defaultPollPullRequestPeriod := parsePollPeriod("POLL_PULL_REQUEST_PERIOD", defaultPollPeriod)
+	defaultPollPullRequestPeriod := parseEnvPollPeriod("POLL_PULL_REQUEST_PERIOD", defaultPollPeriod)
 	fs.DurationVar(&o.pollPullRequestPeriod, "pull-request-period", defaultPollPullRequestPeriod, "The time period between pull request polls")
 
 	err := fs.Parse(args)
@@ -95,12 +95,12 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	return o
 }
 
-func parsePollPeriod(envVar string, defaultPollPeriod time.Duration) time.Duration {
-	text := os.Getenv(envVar)
+func parseEnvPollPeriod(env string, defaultPollPeriod time.Duration) time.Duration {
+	text := os.Getenv(env)
 	if text != "" {
 		d, err := time.ParseDuration(text)
 		if err != nil {
-			logrus.WithError(err).Warn(fmt.Sprintf("invalid %s value", envVar))
+			logrus.WithError(err).Warn(fmt.Sprintf("invalid %s value", env))
 		} else {
 			return d
 		}
