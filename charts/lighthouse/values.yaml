@@ -427,7 +427,7 @@ poller:
 
   # poller.env -- Lets you define poller specific environment variables
   env:
-    # poller.env.POLL_PERIOD the time period between polling
+    # poller.env.POLL_PERIOD the default time period between polling releases and pull requests
     POLL_PERIOD: 20s
 
     # poller.env.POLL_RELEASE_PERIOD the time period between polling releases
