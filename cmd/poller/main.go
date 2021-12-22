@@ -44,9 +44,9 @@ type options struct {
 	contextMatchPattern    string
 	runOnce                bool
 	dryRun                 bool
+	requireReleaseSuccess  bool
 	disablePollRelease     bool
 	disablePollPullRequest bool
-	requireReleaseSuccess  bool
 	pollPeriod             time.Duration
 	pollReleasePeriod      time.Duration
 	pollPullRequestPeriod  time.Duration
