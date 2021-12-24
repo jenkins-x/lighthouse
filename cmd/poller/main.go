@@ -78,13 +78,13 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 
 	defaultPollPeriod := 20 * time.Second
 	defaultPollPeriod = parseEnvPollPeriod("POLL_PERIOD", defaultPollPeriod)
-	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The time period between polls")
+	fs.DurationVar(&o.pollPeriod, "period", defaultPollPeriod, "The default time period between polling releases and pull requests")
 
 	defaultPollReleasePeriod := parseEnvPollPeriod("POLL_RELEASE_PERIOD", defaultPollPeriod)
-	fs.DurationVar(&o.pollReleasePeriod, "release-period", defaultPollReleasePeriod, "The time period between release polls")
+	fs.DurationVar(&o.pollReleasePeriod, "release-period", defaultPollReleasePeriod, "The time period between polling releases")
 
 	defaultPollPullRequestPeriod := parseEnvPollPeriod("POLL_PULL_REQUEST_PERIOD", defaultPollPeriod)
-	fs.DurationVar(&o.pollPullRequestPeriod, "pull-request-period", defaultPollPullRequestPeriod, "The time period between pull request polls")
+	fs.DurationVar(&o.pollPullRequestPeriod, "pull-request-period", defaultPollPullRequestPeriod, "The time period between polling pull requests")
 
 	err := fs.Parse(args)
 	if err != nil {
