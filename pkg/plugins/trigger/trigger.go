@@ -41,41 +41,39 @@ const (
 	customerTriggerCommandEnvVar = "LH_CUSTOM_TRIGGER_COMMAND"
 )
 
-var (
-	plugin = plugins.Plugin{
-		Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
+var plugin = plugins.Plugin{
+	Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
 <br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
 <br>The '/retest' command can be used to rerun jobs that have reported failure.`,
-		ConfigHelpProvider: configHelp,
-		PullRequestHandler: handlePullRequest,
-		PushEventHandler:   handlePush,
-		Commands: []plugins.Command{{
-			Name:        "ok-to-test",
-			Description: "Marks a PR as 'trusted' and starts tests.",
-			WhoCanUse:   "Members of the trusted organization for the repo.",
-			Action: plugins.
-				Invoke(handleGenericCommentEvent).
-				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
-		}, {
-			Name: "test",
-			Arg: &plugins.CommandArg{
-				Pattern: `[-\w]+(?:,[-\w]+)*`,
-			},
-			Description: "Manually starts a/all test job(s).",
-			Featured:    true,
-			Action: plugins.
-				Invoke(handleGenericCommentEvent).
-				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
-		}, {
-			Name:        "retest",
-			Description: "Rerun test jobs that have failed.",
-			Featured:    true,
-			Action: plugins.
-				Invoke(handleGenericCommentEvent).
-				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
-		}},
-	}
-)
+	ConfigHelpProvider: configHelp,
+	PullRequestHandler: handlePullRequest,
+	PushEventHandler:   handlePush,
+	Commands: []plugins.Command{{
+		Name:        "ok-to-test",
+		Description: "Marks a PR as 'trusted' and starts tests.",
+		WhoCanUse:   "Members of the trusted organization for the repo.",
+		Action: plugins.
+			Invoke(handleGenericCommentEvent).
+			When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+	}, {
+		Name: "test",
+		Arg: &plugins.CommandArg{
+			Pattern: `[-\w]+(?:,[-\w]+)*`,
+		},
+		Description: "Manually starts a/all test job(s).",
+		Featured:    true,
+		Action: plugins.
+			Invoke(handleGenericCommentEvent).
+			When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+	}, {
+		Name:        "retest",
+		Description: "Rerun test jobs that have failed.",
+		Featured:    true,
+		Action: plugins.
+			Invoke(handleGenericCommentEvent).
+			When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+	}},
+}
 
 func init() {
 	customTriggerCommand := os.Getenv(customerTriggerCommandEnvVar)
