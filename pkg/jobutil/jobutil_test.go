@@ -17,6 +17,7 @@ limitations under the License.
 package jobutil
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -285,6 +286,7 @@ func TestBatchSpec(t *testing.T) {
 func TestNewLighthouseJob(t *testing.T) {
 	var testCases = []struct {
 		name                string
+		gitKind             string
 		spec                v1alpha1.LighthouseJobSpec
 		labels              map[string]string
 		expectedLabels      map[string]string
@@ -293,6 +295,7 @@ func TestNewLighthouseJob(t *testing.T) {
 	}{
 		{
 			name: "periodic job, no extra labels",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PeriodicJob,
@@ -309,6 +312,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PeriodicJob,
@@ -328,6 +332,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		},
 		{
 			name: "presubmit job",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PresubmitJob,
@@ -362,7 +367,46 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
+			name: "presubmit job with nested repos",
+			gitKind: "gitlab",
+			spec: v1alpha1.LighthouseJobSpec{
+				Job:  "job",
+				Type: job.PresubmitJob,
+				Refs: &v1alpha1.Refs{
+					Org:     "org",
+					Repo:    "group/repo",
+					BaseSHA: "abcd1234",
+					Pulls: []v1alpha1.Pull{
+						{
+							Number: 1,
+							SHA:    "1234abcd",
+						},
+					},
+					CloneURI: "https://gitlab.jx.com/org/group/repo.git",
+				},
+				Context: "pr-build",
+			},
+			labels: map[string]string{},
+			expectedLabels: map[string]string{
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job",
+				job.LighthouseJobTypeLabel:   "presubmit",
+				util.OrgLabel:                "org",
+				util.RepoLabel:               "group-repo",
+				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
+				util.ContextLabel:            "pr-build",
+				util.BaseSHALabel:            "abcd1234",
+				util.LastCommitSHALabel:      "1234abcd",
+			},
+			expectedAnnotations: map[string]string{
+				util.CloneURIAnnotation: "https://gitlab.jx.com/org/group/repo.git",
+				util.LighthouseJobAnnotation: "job",
+			},
+		},
+		{
 			name: "non-github presubmit job",
+			gitKind: "gerrit",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PresubmitJob,
@@ -395,6 +439,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		}, {
 			name: "job with name too long to fit in a label",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
 				Type: job.PresubmitJob,
@@ -430,6 +475,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels, extra annotations",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PeriodicJob,
@@ -454,6 +500,7 @@ func TestNewLighthouseJob(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			os.Setenv("GIT_KIND", testCase.gitKind)
 			pj := NewLighthouseJob(testCase.spec, testCase.labels, testCase.annotations)
 			if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
 				t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))

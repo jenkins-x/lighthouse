@@ -19,6 +19,7 @@ package jobutil
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -193,7 +194,7 @@ func completePrimaryRefs(refs v1alpha1.Refs, jb job.Base) *v1alpha1.Refs {
 	}
 	refs.SkipSubmodules = jb.SkipSubmodules
 	// TODO
-	//refs.CloneDepth = jb.CloneDepth
+	// refs.CloneDepth = jb.CloneDepth
 	return &refs
 }
 
@@ -306,6 +307,11 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 	// let's validate labels
 	for key, value := range labels {
 		if errs := validation.IsValidLabelValue(value); len(errs) > 0 {
+			// ToDo: Use util.GitKind function instead
+			// For nested repos only in gitlab, we do not want to remove the sub group name, which comes before /
+			if key == util.RepoLabel && os.Getenv("GIT_KIND") == "gitlab" {
+				value = strings.Replace(value, "/", "-", -1)
+			}
 			// try to use basename of a path, if path contains invalid //
 			base := filepath.Base(value)
 			if errs := validation.IsValidLabelValue(base); len(errs) == 0 {
@@ -330,7 +336,6 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 	for k, v := range extraAnnotations {
 		annotations[k] = v
 	}
-
 	return labels, annotations
 }
 
