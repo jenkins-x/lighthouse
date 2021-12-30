@@ -457,7 +457,8 @@ func (o *RepoOwners) walkFunc(path string, info os.FileInfo, err error) error {
 	relPathDir := canonicalize(filepath.Dir(relPath))
 
 	simple, err := ParseSimpleConfig(b)
-	if err != nil || simple.Empty() {
+	if err != nil && simple.Empty() {
+	  // if err != nil, the simple.Empty() absolutely return true, so || should be &&
 		c, err := ParseFullConfig(b)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to unmarshal %s into either Simple or FullConfig.", path)
@@ -477,6 +478,25 @@ func (o *RepoOwners) walkFunc(path string, info os.FileInfo, err error) error {
 			o.applyOptionsToPath(relPathDir, c.Options)
 		}
 	} else {
+	  if err != nil { //there is warn log
+	    // case one: if github username type is number,for example 23456346,not string, the err as below：
+	    // unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into
+	    // Go struct field SimpleConfig.approvers of type string
+	    // if OWNER files content
+	    // approvers:
+	    //   - rubinus
+	    //   - 23456346
+	    // reviewers:
+	    //   - rubinus
+	    //   - 23456346
+	    // but result can be as below，the simple.Empty() not false
+      // simple.Config.Approvers = [rubinus]
+      // simple.Config.Reviewers = [rubinus]
+	    // the number github username is lost，but the approvers and reviewers have value
+	    // the another solution: you ensure OWNERS file use "23456346" replace 23456346
+	    // other words: OWNERS file use the all string username
+      log.WithError(err).Warnf("If OWNERS file use the username type is number maybe lost, you best use the string username")
+    }
 		// it's a SimpleConfig
 		o.applyConfigToPath(relPathDir, nil, &simple.Config)
 		o.applyOptionsToPath(relPathDir, simple.Options)
