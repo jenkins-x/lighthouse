@@ -28,6 +28,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -136,6 +137,10 @@ type scmProviderClient interface {
 	PRRefFmt() string
 }
 
+type ownersClient interface {
+	LoadRepoOwners(org, repo, base string) (repoowners.RepoOwner, error)
+}
+
 type launcher interface {
 	Launch(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
 }
@@ -148,6 +153,7 @@ type Client struct {
 	LauncherClient    launcher
 	Config            *config.Config
 	Logger            *logrus.Entry
+	OwnersClient      ownersClient
 }
 
 type trustedUserClient interface {
@@ -162,6 +168,7 @@ func getClient(pc plugins.Agent) Client {
 		Config:            pc.Config,
 		LauncherClient:    pc.LauncherClient,
 		Logger:            pc.Logger,
+		OwnersClient:      pc.OwnersClient,
 	}
 }
 
@@ -182,7 +189,7 @@ func handlePush(pc plugins.Agent, pe scm.PushHook) error {
 //
 // Trusted users are either repo collaborators, org members or trusted org members.
 // Whether repo collaborators and/or a second org is trusted is configured by trigger.
-func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, repo string) (bool, error) {
+func TrustedUser(spc trustedUserClient, oc ownersClient, scm scmProviderClient, trigger *plugins.Trigger, user, org, repo string, number int) (bool, error) {
 	botUser, err := spc.BotName()
 	if err == nil && user == botUser {
 		logrus.Infof("User %q is the bot user", user)
@@ -194,6 +201,29 @@ func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, rep
 			return false, fmt.Errorf("error in IsCollaborator: %v", err)
 		} else if ok {
 			logrus.Infof("User %q is a collaborator of org %q", user, org)
+			return true, nil
+		}
+	}
+
+	// Trigger pipelines from users who are not in the org but
+	// listed in owners file only if no_external_trigger is set to false
+	if !trigger.NoExternalTrigger {
+		pr, err := scm.GetPullRequest(org, repo, number)
+		if err != nil {
+			return false, err
+		}
+
+		owners, err := oc.LoadRepoOwners(org, repo, pr.Base.Ref)
+		if err != nil {
+			return false, err
+		}
+
+		filenames, err := getChangedFiles(scm, org, repo, number)
+		if err != nil {
+			return false, err
+		}
+		if loadReviewers(owners, filenames).Has(scmprovider.NormLogin(user)) {
+			logrus.Infof("User %q is in the owners file but not in the org %q", user, org)
 			return true, nil
 		}
 	}
@@ -307,4 +337,27 @@ func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []job.Presubmit) e
 		}
 	}
 	return errorutil.NewAggregate(errors...)
+}
+
+// getChangedFiles returns all the changed files for the provided pull request.
+func getChangedFiles(spc scmProviderClient, org, repo string, number int) ([]string, error) {
+	changes, err := spc.GetPullRequestChanges(org, repo, number)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get PR changes for %s/%s#%d", org, repo, number)
+	}
+	var filenames []string
+	for _, change := range changes {
+		filenames = append(filenames, change.Path)
+	}
+	return filenames, nil
+}
+
+// loadReviewers returns all reviewers and approvers from all OWNERS files that
+// cover the provided filenames.
+func loadReviewers(ro repoowners.RepoOwner, filenames []string) sets.String {
+	reviewers := sets.String{}
+	for _, filename := range filenames {
+		reviewers = reviewers.Union(ro.Approvers(filename)).Union(ro.Reviewers(filename))
+	}
+	return reviewers
 }

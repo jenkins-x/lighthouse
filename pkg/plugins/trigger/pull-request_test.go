@@ -25,9 +25,71 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
+
+type fakeOwnersClient struct{}
+
+func (foc fakeOwnersClient) LoadRepoOwners(org, repo, base string) (repoowners.RepoOwner, error) {
+	return fakeRepoOwners{
+		fakeRepo: fakeRepo{
+			approvers: map[string]sets.String{
+				"":        sets.NewString("jx-bot"),
+				"CHANGED": sets.NewString("jx-bot"),
+			},
+			leafApprovers:  map[string]sets.String{},
+			approverOwners: map[string]string{},
+		},
+	}, nil
+}
+
+type fakeRepo struct {
+	approvers, leafApprovers map[string]sets.String
+	approverOwners           map[string]string
+}
+
+func (fr fakeRepo) Approvers(path string) sets.String {
+	return fr.approvers[path]
+}
+
+func (fr fakeRepo) LeafApprovers(path string) sets.String {
+	return fr.leafApprovers[path]
+}
+
+func (fr fakeRepo) FindApproverOwnersForFile(path string) string {
+	return fr.approverOwners[path]
+}
+
+func (fr fakeRepo) IsNoParentOwners(path string) bool {
+	return false
+}
+
+type fakeRepoOwners struct {
+	fakeRepo
+}
+
+func (fro fakeRepoOwners) FindLabelsForFile(path string) sets.String {
+	return sets.NewString()
+}
+
+func (fro fakeRepoOwners) FindReviewersOwnersForFile(path string) string {
+	return ""
+}
+
+func (fro fakeRepoOwners) LeafReviewers(path string) sets.String {
+	return sets.NewString()
+}
+
+func (fro fakeRepoOwners) Reviewers(path string) sets.String {
+	return sets.NewString()
+}
+
+func (fro fakeRepoOwners) RequiredReviewers(path string) sets.String {
+	return sets.NewString()
+}
 
 func TestTrusted(t *testing.T) {
 	const rando = "random-person"
@@ -35,9 +97,10 @@ func TestTrusted(t *testing.T) {
 	const sister = "trusted-org-member"
 	const friend = "repo-collaborator"
 
-	var testcases = []struct {
+	testcases := []struct {
 		name     string
 		author   string
+		branch   string
 		labels   []string
 		onlyOrg  bool
 		expected bool
@@ -85,6 +148,22 @@ func TestTrusted(t *testing.T) {
 				OrgMembers:    map[string][]string{"kubernetes": {sister}, "kubernetes-incubator": {member, fake2.Bot}},
 				Collaborators: []string{friend},
 				IssueComments: map[int][]*scm.Comment{},
+				PullRequests: map[int]*scm.PullRequest{
+					1: {
+						Author: scm.User{Login: tc.author},
+						Number: 1,
+						Head: scm.PullRequestBranch{
+							Sha: "cafe",
+						},
+						Base: scm.PullRequestBranch{
+							Ref: tc.branch,
+							Repo: scm.Repository{
+								Namespace: "org",
+								Name:      "repo",
+							},
+						},
+					},
+				},
 			}
 			trigger := &plugins.Trigger{
 				TrustedOrg:     "kubernetes",
@@ -96,7 +175,7 @@ func TestTrusted(t *testing.T) {
 					Name: label,
 				})
 			}
-			_, actual, err := TrustedPullRequest(g, trigger, tc.author, "kubernetes-incubator", "random-repo", 1, labels)
+			_, actual, err := TrustedPullRequest(g, &fakeOwnersClient{}, trigger, tc.author, "kubernetes-incubator", "random-repo", 1, labels)
 			if err != nil {
 				t.Fatalf("Didn't expect error: %s", err)
 			}
@@ -108,7 +187,7 @@ func TestTrusted(t *testing.T) {
 }
 
 func TestHandlePullRequest(t *testing.T) {
-	var testcases = []struct {
+	testcases := []struct {
 		name string
 
 		Author        string
@@ -283,6 +362,7 @@ func TestHandlePullRequest(t *testing.T) {
 			LauncherClient:    fakeLauncher,
 			Config:            &config.Config{},
 			Logger:            logrus.WithField("plugin", pluginName),
+			OwnersClient:      &fakeOwnersClient{},
 		}
 
 		presubmits := map[string][]job.Presubmit{

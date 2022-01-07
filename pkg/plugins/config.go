@@ -300,6 +300,10 @@ type Trigger struct {
 	// ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs
 	// that could run but do not run.
 	ElideSkippedContexts bool `json:"elide_skipped_contexts,omitempty"`
+	// NoExternalTrigger controls if pipelines are triggered for users outside the org who
+	// who are in the OWNERS file. Set it false for third party bot accounts
+	// like renovate/dependabot.
+	NoExternalTrigger bool `json:"no_external_trigger,omitempty"`
 }
 
 // Heart contains the configuration for the heart plugin.

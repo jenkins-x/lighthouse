@@ -61,10 +61,11 @@ type testcase struct {
 	IssueLabels          []string
 	IgnoreOkToTest       bool
 	ElideSkippedContexts bool
+	NoExternalTrigger    bool
 }
 
 func TestHandleGenericComment(t *testing.T) {
-	var testcases = []testcase{
+	testcases := []testcase{
 		{
 			name: "Not a PR.",
 
@@ -91,6 +92,29 @@ func TestHandleGenericComment(t *testing.T) {
 			State:       "open",
 			IsPR:        true,
 			ShouldBuild: false,
+		},
+		{
+			name: "Comment by a bot (not in org) which is in owners file with no_external_trigger set to true",
+
+			Author:            "jx-bot",
+			PRAuthor:          "jx-bot",
+			Body:              "/ok-to-test",
+			State:             "open",
+			IsPR:              true,
+			ShouldBuild:       true,
+			NoExternalTrigger: false,
+			AddedLabels:       issueLabels(labels.OkToTest),
+		},
+		{
+			name: "Comment by a bot (not in org) which is in owners file with no_external_trigger set to true",
+
+			Author:            "jx-bot",
+			PRAuthor:          "jx-bot",
+			Body:              "/ok-to-test",
+			State:             "open",
+			IsPR:              true,
+			ShouldBuild:       false,
+			NoExternalTrigger: true,
 		},
 		{
 			name: "Irrelevant comment leads to no action.",
@@ -879,6 +903,7 @@ func TestHandleGenericComment(t *testing.T) {
 				LauncherClient:    fakeLauncher,
 				Config:            fakeConfig,
 				Logger:            logrus.WithField("plugin", pluginName),
+				OwnersClient:      &fakeOwnersClient{},
 			}
 			presubmits := tc.Presubmits
 			if presubmits == nil {
@@ -931,6 +956,7 @@ func TestHandleGenericComment(t *testing.T) {
 			trigger := &plugins.Trigger{
 				IgnoreOkToTest:       tc.IgnoreOkToTest,
 				ElideSkippedContexts: tc.ElideSkippedContexts,
+				NoExternalTrigger:    tc.NoExternalTrigger,
 			}
 
 			log.Printf("running case %s", tc.name)
@@ -989,7 +1015,7 @@ func validate(name string, fakeLauncher *fake.Launcher, g *fake2.SCMClient, tc t
 }
 
 func TestRetestFilter(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name           string
 		failedContexts sets.String
 		allContexts    sets.String

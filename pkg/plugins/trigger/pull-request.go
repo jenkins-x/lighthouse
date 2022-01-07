@@ -42,7 +42,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 		// When a PR is opened, if the author is in the org then build it.
 		// Otherwise, ask for "/ok-to-test". There's no need to look for previous
 		// "/ok-to-test" comments since the PR was just opened!
-		member, err := TrustedUser(c.SCMProviderClient, trigger, author, org, repo)
+		member, err := TrustedUser(c.SCMProviderClient, c.OwnersClient, c.SCMProviderClient, trigger, author, org, repo, num)
 		if err != nil {
 			return fmt.Errorf("could not check membership: %s", err)
 		}
@@ -57,7 +57,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 	case scm.ActionReopen:
 		// When a PR is reopened, check that the user is in the org or that an org
 		// member had said "/ok-to-test" before building, resulting in label ok-to-test.
-		l, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
+		l, trusted, err := TrustedPullRequest(c.SCMProviderClient, c.OwnersClient, trigger, author, org, repo, num, nil)
 		if err != nil {
 			return fmt.Errorf("could not validate PR: %s", err)
 		} else if trusted {
@@ -85,7 +85,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 	case scm.ActionLabel:
 		// When a PR is LGTMd, if it is untrusted then build it once.
 		if pr.Label.Name == labels.LGTM {
-			_, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
+			_, trusted, err := TrustedPullRequest(c.SCMProviderClient, c.OwnersClient, trigger, author, org, repo, num, nil)
 			if err != nil {
 				return fmt.Errorf("could not validate PR: %s", err)
 			} else if !trusted {
@@ -115,7 +115,7 @@ func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHoo
 	org, repo, a := orgRepoAuthor(pr.PullRequest)
 	author := string(a)
 	num := pr.PullRequest.Number
-	l, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
+	l, trusted, err := TrustedPullRequest(c.SCMProviderClient, c.OwnersClient, trigger, author, org, repo, num, nil)
 	if err != nil {
 		return fmt.Errorf("could not validate PR: %s", err)
 	} else if trusted {
@@ -193,9 +193,9 @@ I understand the commands that are listed [here](https://jenkins-x.io/v3/develop
 
 // TrustedPullRequest returns whether or not the given PR should be tested.
 // It first checks if the author is in the org, then looks for "ok-to-test" label.
-func TrustedPullRequest(spc scmProviderClient, trigger *plugins.Trigger, author, org, repo string, num int, l []*scm.Label) ([]*scm.Label, bool, error) {
+func TrustedPullRequest(spc scmProviderClient, oc ownersClient, trigger *plugins.Trigger, author, org, repo string, num int, l []*scm.Label) ([]*scm.Label, bool, error) {
 	// First check if the author is a member of the org.
-	if orgMember, err := TrustedUser(spc, trigger, author, org, repo); err != nil {
+	if orgMember, err := TrustedUser(spc, oc, spc, trigger, author, org, repo, num); err != nil {
 		return l, false, fmt.Errorf("error checking %s for trust: %v", author, err)
 	} else if orgMember {
 		return l, true, nil

@@ -51,14 +51,14 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	}
 
 	// Skip untrusted users comments.
-	trusted, err := TrustedUser(c.SCMProviderClient, trigger, commentAuthor, org, repo)
+	trusted, err := TrustedUser(c.SCMProviderClient, c.OwnersClient, c.SCMProviderClient, trigger, commentAuthor, org, repo, number)
 	if err != nil {
 		return fmt.Errorf("error checking trust of %s: %v", commentAuthor, err)
 	}
 	var l []*scm.Label
 	if !trusted {
 		// Skip untrusted PRs.
-		l, trusted, err = TrustedPullRequest(c.SCMProviderClient, trigger, gc.IssueAuthor.Login, org, repo, number, nil)
+		l, trusted, err = TrustedPullRequest(c.SCMProviderClient,c.OwnersClient, trigger, gc.IssueAuthor.Login, org, repo, number, nil)
 		if err != nil {
 			return err
 		}
