@@ -29,6 +29,7 @@ type pollingController struct {
 	pollstate                   pollstate.Interface
 	logger                      *logrus.Entry
 	contextMatchPatternCompiled *regexp.Regexp
+	requireReleaseSuccess       bool
 	notifier                    func(webhook *scm.WebhookWrapper) error
 }
 
@@ -36,7 +37,7 @@ func (c *pollingController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hello from lighthouse poller\n"))
 }
 
-func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, contextMatchPatternCompiled *regexp.Regexp, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
+func NewPollingController(repositoryNames []string, gitServer string, scmClient *scm.Client, contextMatchPatternCompiled *regexp.Regexp, requireReleaseSuccess bool, fb filebrowser.Interface, notifier func(webhook *scm.WebhookWrapper) error) (*pollingController, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger())
 	if gitServer == "" {
 		gitServer = "https://github.com"
@@ -47,6 +48,7 @@ func NewPollingController(repositoryNames []string, gitServer string, scmClient 
 		logger:                      logger,
 		scmClient:                   scmClient,
 		contextMatchPatternCompiled: contextMatchPatternCompiled,
+		requireReleaseSuccess:       requireReleaseSuccess,
 		fb:                          fb,
 		notifier:                    notifier,
 		pollstate:                   pollstate.NewMemoryPollState(),
@@ -113,12 +115,17 @@ func (c *pollingController) PollReleases() {
 			}
 
 			// lets check we have not triggered this before
-			hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha)
+			hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha, true)
 			if err != nil {
 				return errors.Wrapf(err, "failed to check for status ")
 			}
 			if hasStatus {
 				return nil
+			}
+
+			if c.requireReleaseSuccess {
+				// We have not been able to find a successful release status so invalidate cache to retry
+				c.pollstate.Invalidate(fullName, "release", sha)
 			}
 
 			l.Infof("triggering release webhook")
@@ -206,7 +213,7 @@ func (c *pollingController) pollPullRequest(ctx context.Context, l *logrus.Entry
 		return nil
 	}
 
-	hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha)
+	hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha, false)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check for status ")
 	}
@@ -241,7 +248,7 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 		return nil
 	}
 
-	hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha)
+	hasStatus, err := c.hasStatusForSHA(ctx, l, fullName, sha, false)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check for status ")
 	}
@@ -275,7 +282,7 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 	return nil
 }
 
-func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry, fullName string, sha string) (bool, error) {
+func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry, fullName string, sha string, isRelease bool) (bool, error) {
 	opts := scm.ListOptions{
 		Page: 1,
 	}
@@ -284,7 +291,7 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 		return false, errors.Wrapf(err, "failed to list status")
 	}
 	for _, s := range statuses {
-		if c.isMatchingStatus(s) {
+		if c.isMatchingStatus(s, isRelease) {
 			l.WithField("Statuses", statuses).Info("the SHA has CI statuses so not triggering")
 			return true, nil
 		}
@@ -292,7 +299,13 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	return false, nil
 }
 
-func (c *pollingController) isMatchingStatus(s *scm.Status) bool {
+func (c *pollingController) isMatchingStatus(s *scm.Status, isRelease bool) bool {
+	if isRelease && c.requireReleaseSuccess {
+		if s.State != scm.StateSuccess {
+			return false
+		}
+	}
+
 	if c.contextMatchPatternCompiled != nil {
 		return c.contextMatchPatternCompiled.MatchString(s.Label)
 	}

@@ -44,6 +44,7 @@ type options struct {
 	contextMatchPattern    string
 	runOnce                bool
 	dryRun                 bool
+	requireReleaseSuccess  bool
 	disablePollRelease     bool
 	disablePollPullRequest bool
 	pollPeriod             time.Duration
@@ -71,6 +72,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Disable POSTing to the webhook service and just log the webhooks instead.")
 	fs.BoolVar(&o.disablePollRelease, "no-release", false, "Disable polling for new commits on the main branch (releases) - mostly used for easier testing/debugging.")
 	fs.BoolVar(&o.disablePollPullRequest, "no-pr", false, "Disable polling for Pull Request changes - mostly used for easier testing/debugging.")
+	fs.BoolVar(&o.requireReleaseSuccess, "require-release-success", false, "Keep polling releases until the most recent commit status is successful.")
 
 	fs.StringVar(&o.namespace, "namespace", "jx", "The namespace to listen in")
 	fs.StringVar(&o.repoNames, "repo", "", "The git repository names to poll. If not specified all the repositories are polled")
@@ -218,7 +220,7 @@ func main() {
 		logrus.WithError(err).Fatal("failed to create scm client")
 	}
 
-	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, contextMatchPatternCompiled, fb, o.notifier)
+	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, contextMatchPatternCompiled, o.requireReleaseSuccess, fb, o.notifier)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
