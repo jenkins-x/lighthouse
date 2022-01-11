@@ -40,6 +40,9 @@ logLevel: "info"
 # logStackSkip -- Comma separated stack frames to skip from the log
 logStackSkip: ""
 
+# scope -- limit permissions to namespace privileges
+scope: "cluster"
+
 cluster:
   crds:
     # cluster.crds.create -- Create custom resource definitions
