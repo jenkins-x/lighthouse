@@ -278,6 +278,13 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []job.Presubmit, 
 		return err
 	}
 
+	// If there is no eventguid from the scm provider, let's skip the build
+	// Also, for now, let's skip only github, not sure how other SCM providers handle GUID
+	if eventGUID == "" && os.Getenv("GIT_KIND") == "github" {
+		c.Logger.Infof("Skipping build as event GUID is missing for provider %s", os.Getenv("GIT_KIND"))
+		return fmt.Errorf("event GUID is empty")
+	}
+
 	var errors []error
 	for _, job := range requestedJobs {
 		c.Logger.Infof("Starting %s build.", job.Name)

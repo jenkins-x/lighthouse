@@ -17,6 +17,7 @@ limitations under the License.
 package trigger
 
 import (
+	"os"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -259,7 +260,7 @@ func TestHandlePullRequest(t *testing.T) {
 	}
 	for _, tc := range testcases {
 		t.Logf("running scenario %q", tc.name)
-
+		os.Setenv("GIT_KIND", "github")
 		g := &fake2.SCMClient{
 			PullRequestComments: map[int][]*scm.Comment{},
 			OrgMembers:          map[string][]string{"org": {"t"}},
@@ -317,6 +318,7 @@ func TestHandlePullRequest(t *testing.T) {
 					},
 				},
 			},
+			GUID: "test-guid",
 		}
 		if tc.prChanges {
 			pr.Changes = scm.PullRequestHookChanges{
