@@ -17,3 +17,11 @@ type LighthouseJobListerExpansion interface{}
 // LighthouseJobNamespaceListerExpansion allows custom methods to be added to
 // LighthouseJobNamespaceLister.
 type LighthouseJobNamespaceListerExpansion interface{}
+
+// LighthousePipelineSecurityPolicyListerExpansion allows custom methods to be added to
+// LighthousePipelineSecurityPolicyLister.
+type LighthousePipelineSecurityPolicyListerExpansion interface{}
+
+// LighthousePipelineSecurityPolicyNamespaceListerExpansion allows custom methods to be added to
+// LighthousePipelineSecurityPolicyNamespaceLister.
+type LighthousePipelineSecurityPolicyNamespaceListerExpansion interface{}

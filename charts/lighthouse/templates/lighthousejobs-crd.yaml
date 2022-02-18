@@ -1,8 +1,10 @@
 {{- if .Values.cluster.crds.create }}
 {{- if .Capabilities.APIVersions.Has "apiextensions.k8s.io/v1" }}
 {{ .Files.Get "config/lighthousejobs.lighthouse.jenkins.io-v1.yaml" }}
+{{ .Files.Get "config/lighthousepipelinesecuritypolicies.lighthouse.jenkins.io-v1.yaml" }}
 {{- else }}
 {{ .Files.Get "config/lighthousejobs.lighthouse.jenkins.io.yaml" }}
+{{ .Files.Get "config/lighthousepipelinesecuritypolicies.lighthouse.jenkins.io.yaml" }}
 {{- end }}
 
 {{- end -}}

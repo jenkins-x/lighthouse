@@ -1,8 +1,9 @@
 {{- if .Values.engines.tekton }}
-kind: Role
+---
+kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: {{ template "tektoncontroller.name" . }}
+  name: {{ template "tektoncontroller.name" . }}-cluster-scoped
 rules:
 - apiGroups:
   - tekton.dev

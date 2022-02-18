@@ -39,12 +39,13 @@ import (
 type options struct {
 	port int
 
-	configPath    string
-	jobConfigPath string
-	botName       string
-	gitServerURL  string
-	gitKind       string
-	namespace     string
+	configPath      string
+	jobConfigPath   string
+	botName         string
+	gitServerURL    string
+	gitKind         string
+	namespace       string
+	configNamespace string
 
 	runOnce bool
 
@@ -81,7 +82,8 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.IntVar(&o.maxRecordsPerPool, "max-records-per-pool", 1000, "The maximum number of history records stored for an individual Keeper pool.")
 	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store keeper action history. GCS writes will use the default object ACL for the bucket")
 	fs.StringVar(&o.statusURI, "status-path", "", "The /local/path or gs://path/to/object to store status controller state. GCS writes will use the default object ACL for the bucket.")
-	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in (set blank to listen in all namespaces)")
+	fs.StringVar(&o.configNamespace, "config-namespace", "jx", "The configuration namespace (defaults to: jx)")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -102,9 +104,12 @@ func main() {
 	if err := o.Validate(); err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
+	if o.configNamespace == "" {
+		o.configNamespace = "jx"
+	}
 
 	configAgent := &config.Agent{}
-	cfgMapWatcher, err := watcher.SetupConfigMapWatchers(o.namespace, configAgent, nil)
+	cfgMapWatcher, err := watcher.SetupConfigMapWatchers(o.configNamespace, configAgent, nil)
 	if err != nil {
 		logrus.WithError(err).Fatal("error starting config map watcher")
 	}

@@ -1,3 +1,4 @@
+---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -28,24 +29,7 @@ rules:
 - apiGroups:
   - lighthouse.jenkins.io
   resources:
-  - lighthousejobs
+  - lighthousepipelinesecuritypolicies
   verbs:
-  - create
-  - delete
   - list
-  - update
   - get
-  - watch
-  - patch
-- apiGroups:
-  - lighthouse.jenkins.io
-  resources:
-  - lighthousejobs/status
-  verbs:
-  - create
-  - delete
-  - list
-  - update
-  - get
-  - watch
-  - patch

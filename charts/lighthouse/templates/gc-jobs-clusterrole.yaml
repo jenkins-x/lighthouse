@@ -1,0 +1,14 @@
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "gcJobs.name" . }}-cluster-scoped
+rules:
+  - apiGroups:
+      - lighthouse.jenkins.io
+    resources:
+      - lighthousejobs
+    verbs:
+      - delete
+      - list
+      - get

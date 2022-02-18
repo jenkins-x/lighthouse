@@ -20,6 +20,10 @@ func (c *FakeLighthouseV1alpha1) LighthouseJobs(namespace string) v1alpha1.Light
 	return &FakeLighthouseJobs{c, namespace}
 }
 
+func (c *FakeLighthouseV1alpha1) LighthousePipelineSecurityPolicies(namespace string) v1alpha1.LighthousePipelineSecurityPolicyInterface {
+	return &FakeLighthousePipelineSecurityPolicies{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeLighthouseV1alpha1) RESTClient() rest.Interface {

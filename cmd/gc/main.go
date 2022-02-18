@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"time"
 
@@ -19,12 +18,10 @@ import (
 type options struct {
 	namespace string
 	maxAge    time.Duration
+	verbose   bool
 }
 
 func (o *options) Validate() error {
-	if o.namespace == "" {
-		return fmt.Errorf("no --namespace given")
-	}
 	return nil
 }
 
@@ -33,7 +30,8 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 
 	var o options
 	fs.DurationVar(&o.maxAge, "max-age", 7*24*time.Hour, "Maximum age to keep LighthouseJobs.")
-	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in (If should listen in all just leave empty - but ClusterRole is needed)")
+	fs.BoolVar(&o.verbose, "verbose", false, "Increase verbosity to verbose level")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -48,6 +46,9 @@ func main() {
 	if err := o.Validate(); err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
+	if o.verbose {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 
 	cfg, err := clients.GetConfig("", "")
 	if err != nil {
@@ -58,35 +59,49 @@ func main() {
 		logrus.WithError(err).Fatal("Could not create Lighthouse API client")
 	}
 
-	lhInterface := lhClient.LighthouseV1alpha1().LighthouseJobs(o.namespace)
-
-	jobList, err := lhInterface.List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		logrus.WithError(err).Fatalf("Could not list LighthouseJobs in namespace %s", o.namespace)
-	}
-
-	now := time.Now()
-
-	for _, job := range jobList.Items {
-		j := job
-		completionTime := j.Status.CompletionTime
-		if completionTime != nil && completionTime.Add(o.maxAge).Before(now) {
-			// The job completed at least maxAge ago, so delete it.
-			err = deleteLighthouseJob(lhInterface, &j)
-			if err != nil {
-				logrus.WithError(err).Fatalf("Failed to delete LighthouseJob %s", j.Name)
-			}
-		} else if completionTime == nil && j.Status.StartTime.Add(o.maxAge).Before(now) {
-			// The job never completed, but was created at least maxAge ago, so delete it.
-			err = deleteLighthouseJob(lhInterface, &j)
-			if err != nil {
-				logrus.WithError(err).Fatalf("Failed to delete LighthouseJob %s", j.Name)
-			}
-		}
+	if !cleanUp(lhClient, o.namespace, o.maxAge) {
+		logrus.Errorln("Failed to clean up at least one job, exiting with failure")
+		os.Exit(1)
 	}
 }
 
+func cleanUp(lhClient *clientset.Clientset, namespace string, maxAge time.Duration) bool {
+	lhInterface := lhClient.LighthouseV1alpha1().LighthouseJobs(namespace)
+
+	jobList, err := lhInterface.List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		logrus.WithError(err).Fatalf("Could not list LighthouseJobs in namespace '%s'", namespace)
+	}
+
+	now := time.Now()
+	result := true
+
+	for _, job := range jobList.Items {
+		logrus.Debugf("Checking job name=%s from %s completed at %s", job.Name, job.Namespace, job.Status.CompletionTime)
+
+		j := job
+		completionTime := j.Status.CompletionTime
+		if completionTime != nil && completionTime.Add(maxAge).Before(now) {
+			// The job completed at least maxAge ago, so delete it.
+			err = deleteLighthouseJob(lhInterface, &j)
+			if err != nil {
+				logrus.WithError(err).Errorf("Failed to delete LighthouseJob %s/%s", j.Namespace, j.Name)
+				result = false
+			}
+		} else if completionTime == nil && j.Status.StartTime.Add(maxAge).Before(now) {
+			// The job never completed, but was created at least maxAge ago, so delete it.
+			err = deleteLighthouseJob(lhInterface, &j)
+			if err != nil {
+				logrus.WithError(err).Errorf("Failed to delete LighthouseJob %s/%s", j.Namespace, j.Name)
+				result = false
+			}
+		}
+	}
+
+	return result
+}
+
 func deleteLighthouseJob(lhInterface lhclient.LighthouseJobInterface, lhJob *v1alpha1.LighthouseJob) error {
-	logrus.Infof("Deleting LighthouseJob %s", lhJob.Name)
+	logrus.Infof("Deleting LighthouseJob %s/%s", lhJob.Namespace, lhJob.Name)
 	return lhInterface.Delete(context.TODO(), lhJob.Name, *metav1.NewDeleteOptions(0))
 }

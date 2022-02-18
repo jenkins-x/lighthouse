@@ -48,12 +48,12 @@ type LighthouseJobReconciler struct {
 }
 
 // NewLighthouseJobReconciler returns a new controller for syncing LighthouseJobs and commit statuses
-func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, ns string) (*LighthouseJobReconciler, error) {
-	return NewLighthouseJobReconcilerWithConfig(client, scheme, ns, nil, nil, nil)
+func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, ns string, configNs string) (*LighthouseJobReconciler, error) {
+	return NewLighthouseJobReconcilerWithConfig(client, scheme, ns, configNs, nil, nil, nil)
 }
 
 // NewLighthouseJobReconcilerWithConfig takes returns a new controller for syncing LighthouseJobs and commit statuses using the provided config map watcher and configs
-func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.Scheme, ns string, configMapWatcher *watcher.ConfigMapWatcher, jobConfig *config.Agent, pluginConfig *plugins.ConfigAgent) (*LighthouseJobReconciler, error) {
+func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.Scheme, ns string, configNs string, configMapWatcher *watcher.ConfigMapWatcher, jobConfig *config.Agent, pluginConfig *plugins.ConfigAgent) (*LighthouseJobReconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName)
 
 	if jobConfig == nil {
@@ -65,7 +65,7 @@ func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.
 
 	if configMapWatcher == nil {
 		var err error
-		configMapWatcher, err = watcher.SetupConfigMapWatchers(ns, jobConfig, pluginConfig)
+		configMapWatcher, err = watcher.SetupConfigMapWatchers(configNs, jobConfig, pluginConfig)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 		}

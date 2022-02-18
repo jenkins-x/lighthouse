@@ -2,8 +2,9 @@ package inrepo
 
 import (
 	"context"
-	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"strings"
+
+	"github.com/tektoncd/pipeline/pkg/apis/config"
 
 	"github.com/pkg/errors"
 

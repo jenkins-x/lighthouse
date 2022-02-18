@@ -27,6 +27,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
+	launcherPkg "github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
@@ -136,8 +137,21 @@ type scmProviderClient interface {
 	PRRefFmt() string
 }
 
+type Repository struct {
+	Namespace string
+	Name      string
+}
+
+func (r Repository) GetFullRepositoryName() string {
+	return r.Namespace + "/" + r.Name
+}
+
+func NewScmInfoFromGoScm(repo scm.Repository) launcherPkg.ScmInfo {
+	return Repository{repo.Namespace, repo.Name}
+}
+
 type launcher interface {
-	Launch(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
+	Launch(*v1alpha1.LighthouseJob, launcherPkg.ScmInfo) (*v1alpha1.LighthouseJob, error)
 }
 
 // Client holds the necessary structures to work with prow via logging, github, kubernetes and its configuration.
@@ -283,7 +297,7 @@ func runRequested(c Client, pr *scm.PullRequest, requestedJobs []job.Presubmit, 
 		c.Logger.Infof("Starting %s build.", job.Name)
 		pj := jobutil.NewPresubmit(c.Logger, pr, baseSHA, job, eventGUID, c.SCMProviderClient.PRRefFmt())
 		c.Logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
-		if _, err := c.LauncherClient.Launch(&pj); err != nil {
+		if _, err := c.LauncherClient.Launch(&pj, Repository{pr.Base.Repo.Namespace, pr.Base.Repo.Name}); err != nil {
 			c.Logger.WithError(err).Error("Failed to create LighthouseJob.")
 			errors = append(errors, err)
 			if _, statusErr := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, failedStatusForMetapipelineCreation(job.Context, err)); statusErr != nil {

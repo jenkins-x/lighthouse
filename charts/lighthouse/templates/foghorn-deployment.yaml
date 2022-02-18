@@ -25,7 +25,7 @@ spec:
         image: {{ tpl .Values.foghorn.image.repository . }}:{{ tpl .Values.foghorn.image.tag . }}
         imagePullPolicy: {{ tpl .Values.foghorn.image.pullPolicy . }}
         args:
-          - "--namespace={{ .Release.Namespace }}"
+          - "--config-namespace={{ .Release.Namespace }}"
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"

@@ -12,6 +12,7 @@ type LighthouseV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	LighthouseBreakpointsGetter
 	LighthouseJobsGetter
+	LighthousePipelineSecurityPoliciesGetter
 }
 
 // LighthouseV1alpha1Client is used to interact with features provided by the lighthouse.jenkins.io group.
@@ -25,6 +26,10 @@ func (c *LighthouseV1alpha1Client) LighthouseBreakpoints(namespace string) Light
 
 func (c *LighthouseV1alpha1Client) LighthouseJobs(namespace string) LighthouseJobInterface {
 	return newLighthouseJobs(c, namespace)
+}
+
+func (c *LighthouseV1alpha1Client) LighthousePipelineSecurityPolicies(namespace string) LighthousePipelineSecurityPolicyInterface {
+	return newLighthousePipelineSecurityPolicies(c, namespace)
 }
 
 // NewForConfig creates a new LighthouseV1alpha1Client for the given config.

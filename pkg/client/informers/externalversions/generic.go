@@ -41,6 +41,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Lighthouse().V1alpha1().LighthouseBreakpoints().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("lighthousejobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Lighthouse().V1alpha1().LighthouseJobs().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("lighthousepipelinesecuritypolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Lighthouse().V1alpha1().LighthousePipelineSecurityPolicies().Informer()}, nil
 
 	}
 

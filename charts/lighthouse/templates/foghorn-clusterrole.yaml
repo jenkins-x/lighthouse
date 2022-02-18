@@ -1,0 +1,42 @@
+#
+# Foghorn watches for LighthouseJobs. It can observe a single namespace or multiple namespaces for jobs.
+# ConfigMaps and Secrets are usually stored in same namespace as the Foghorn controller is.
+#
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+    name: {{ template "foghorn.name" . }}-cluster-scoped
+rules:
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - get
+  - watch
+  - patch
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousejobs/status
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - get
+  - watch
+  - patch
+- apiGroups:
+  - lighthouse.jenkins.io
+  resources:
+  - lighthousepipelinesecuritypolicies
+  verbs:
+  - list
+  - get

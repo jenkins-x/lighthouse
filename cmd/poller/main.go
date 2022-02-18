@@ -38,7 +38,7 @@ type options struct {
 	gitKind                string
 	gitToken               string
 	hmacToken              string
-	namespace              string
+	configNamespace        string
 	repoNames              string
 	hookEndpoint           string
 	contextMatchPattern    string
@@ -74,7 +74,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.BoolVar(&o.disablePollPullRequest, "no-pr", false, "Disable polling for Pull Request changes - mostly used for easier testing/debugging.")
 	fs.BoolVar(&o.requireReleaseSuccess, "require-release-success", false, "Keep polling releases until the most recent commit status is successful.")
 
-	fs.StringVar(&o.namespace, "namespace", "jx", "The namespace to listen in")
+	fs.StringVar(&o.configNamespace, "config-namespace", "jx", "The configNamespace to listen for configuration")
 	fs.StringVar(&o.repoNames, "repo", "", "The git repository names to poll. If not specified all the repositories are polled")
 	fs.StringVar(&o.hookEndpoint, "hook", os.Getenv("POLL_HOOK_ENDPOINT"), "The hook endpoint to post to")
 
@@ -122,7 +122,7 @@ func main() {
 	}
 
 	configAgent := &config.Agent{}
-	cfgMapWatcher, err := watcher.SetupConfigMapWatchers(o.namespace, configAgent, nil)
+	cfgMapWatcher, err := watcher.SetupConfigMapWatchers(o.configNamespace, configAgent, nil)
 	if err != nil {
 		logrus.WithError(err).Fatal("error starting config map watcher")
 	}

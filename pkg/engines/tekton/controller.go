@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/jenkins-x/lighthouse/pkg/security"
 	"os"
 	"text/template"
 
@@ -34,12 +35,13 @@ type LighthouseJobReconciler struct {
 	dashboardURL      string
 	dashboardTemplate string
 	namespace         string
+	policiesNamespace string
 	breakpointGetter  func() []*lighthousev1alpha1.LighthouseBreakpoint
 	disableLogging    bool
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string, breakpointGetter func() []*lighthousev1alpha1.LighthouseBreakpoint) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string, policiesNamespace string, breakpointGetter func() []*lighthousev1alpha1.LighthouseBreakpoint) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
@@ -51,6 +53,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 		dashboardURL:      dashboardURL,
 		dashboardTemplate: dashboardTemplate,
 		namespace:         namespace,
+		policiesNamespace: policiesNamespace,
 		breakpointGetter:  breakpointGetter,
 		idGenerator:       &epochBuildIDGenerator{},
 	}
@@ -114,11 +117,12 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if len(pipelineRunList.Items) == 0 {
 		if job.Status.State == lighthousev1alpha1.TriggeredState {
 			// construct a pipeline run
-			pipelineRun, err := makePipelineRun(ctx, job, breakpoints, r.namespace, r.logger, r.idGenerator, r.apiReader)
+			pipelineRun, err := makePipelineRun(ctx, job, breakpoints, req.Namespace, r.logger, r.idGenerator, r.apiReader)
 			if err != nil {
 				r.logger.Errorf("Failed to make pipeline run: %s", err)
 				return ctrl.Result{}, err
 			}
+			r.logger.Infof("Job namespace=%v, PipelineRun namespace=%v", job.GetNamespace(), pipelineRun.GetNamespace())
 			// link it to the current lighthouse job
 			if err := ctrl.SetControllerReference(&job, pipelineRun, r.scheme); err != nil {
 				r.logger.Errorf("Failed to set owner reference: %s", err)
@@ -149,6 +153,11 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 			err = r.retryModifyJob(ctx, req.NamespacedName, &job, f)
 			if err != nil {
+				return ctrl.Result{}, err
+			}
+
+			if err := security.ApplySecurityPolicyForTektonPipelineRun(ctx, r.client, pipelineRun, r.policiesNamespace); err != nil {
+				r.logger.Errorf("Cannot create pipeline run due to security issue: %s", err)
 				return ctrl.Result{}, err
 			}
 
@@ -202,7 +211,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 func (r *LighthouseJobReconciler) getPipelingetPipelineTargetURLeTargetURL(pipelineRun pipelinev1beta1.PipelineRun) string {
 	if r.dashboardTemplate == "" {
-		return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", trimDashboardURL(r.dashboardURL), r.namespace, pipelineRun.Name)
+		return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", trimDashboardURL(r.dashboardURL), pipelineRun.Namespace, pipelineRun.Name)
 	}
 	funcMap := map[string]interface{}{}
 	tmpl, err := template.New("value.gotmpl").Option("missingkey=error").Funcs(funcMap).Parse(r.dashboardTemplate)

@@ -14,7 +14,8 @@ import (
 )
 
 type options struct {
-	namespace string
+	namespace       string
+	configNamespace string
 }
 
 func (o *options) Validate() error {
@@ -23,7 +24,8 @@ func (o *options) Validate() error {
 
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
-	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in (use empty to listen on all namespaces)")
+	fs.StringVar(&o.configNamespace, "config-namespace", "jx", "Namespace where configmaps are placed (default to: jx)")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -46,6 +48,12 @@ func main() {
 		logrus.WithError(err).Fatal("Invalid options")
 	}
 
+	if o.configNamespace == "" {
+		o.configNamespace = "jx"
+	}
+
+	logrus.Infof("Starting Lighthouse Foghorn, will listen in '%s' namespace for LighthouseJobs and in '%s' for configuration", o.namespace, o.configNamespace)
+
 	cfg, err := clients.GetConfig("", "")
 	if err != nil {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
@@ -56,7 +64,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace)
+	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace, o.configNamespace)
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to instantiate reconciler")
 	}

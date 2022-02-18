@@ -29,7 +29,6 @@ spec:
               image: {{ tpl .Values.gcJobs.image.repository . }}:{{ tpl .Values.gcJobs.image.tag . }}
               imagePullPolicy: {{ tpl .Values.gcJobs.image.pullPolicy . }}
               args:
-                - "--namespace={{ .Release.Namespace }}"
                 - "--max-age={{ .Values.gcJobs.maxAge }}"
               name: {{ template "gcJobs.name" . }}
               resources: {}

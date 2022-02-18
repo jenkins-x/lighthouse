@@ -1,0 +1,56 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.0
+  creationTimestamp: null
+  name: lighthousepipelinesecuritypolicies.lighthouse.jenkins.io
+spec:
+  group: lighthouse.jenkins.io
+  names:
+    kind: LighthousePipelineSecurityPolicy
+    listKind: LighthousePipelineSecurityPolicyList
+    plural: lighthousepipelinesecuritypolicies
+    shortNames:
+    - lhpsp
+    singular: lighthousepipelinesecuritypolicy
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              enforce:
+                properties:
+                  namespace:
+                    type: string
+                  serviceAccountName:
+                    type: string
+                type: object
+              repositoryPattern:
+                type: string
+            required:
+            - enforce
+            - repositoryPattern
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

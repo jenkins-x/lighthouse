@@ -294,7 +294,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		expectedAnnotations map[string]string
 	}{
 		{
-			name: "periodic job, no extra labels",
+			name:    "periodic job, no extra labels",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -311,7 +311,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "periodic job, extra labels",
+			name:    "periodic job, extra labels",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -331,7 +331,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "presubmit job",
+			name:    "presubmit job",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -367,7 +367,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "presubmit job with nested repos",
+			name:    "presubmit job with nested repos",
 			gitKind: "gitlab",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -400,12 +400,12 @@ func TestNewLighthouseJob(t *testing.T) {
 				util.LastCommitSHALabel:      "1234abcd",
 			},
 			expectedAnnotations: map[string]string{
-				util.CloneURIAnnotation: "https://gitlab.jx.com/org/group/repo.git",
+				util.CloneURIAnnotation:      "https://gitlab.jx.com/org/group/repo.git",
 				util.LighthouseJobAnnotation: "job",
 			},
 		},
 		{
-			name: "non-github presubmit job",
+			name:    "non-github presubmit job",
 			gitKind: "gerrit",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -438,7 +438,7 @@ func TestNewLighthouseJob(t *testing.T) {
 				util.LighthouseJobAnnotation: "job",
 			},
 		}, {
-			name: "job with name too long to fit in a label",
+			name:    "job with name too long to fit in a label",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
@@ -474,7 +474,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "periodic job, extra labels, extra annotations",
+			name:    "periodic job, extra labels, extra annotations",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",

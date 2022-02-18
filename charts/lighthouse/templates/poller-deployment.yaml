@@ -37,7 +37,7 @@ spec:
         image: {{ tpl .Values.poller.image.repository . }}:{{ tpl .Values.poller.image.tag . }}
         imagePullPolicy: {{ tpl .Values.poller.image.pullPolicy . }}
         args:
-          - "--namespace={{ .Release.Namespace }}"
+          - "--config-namespace={{ .Release.Namespace }}"
           {{- if .Values.poller.contextMatchPattern }}
           - "--context-match-pattern={{ .Values.poller.contextMatchPattern }}"
           {{- end }}

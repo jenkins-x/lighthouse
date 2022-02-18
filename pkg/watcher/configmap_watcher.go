@@ -45,6 +45,7 @@ type ConfigMapEntryCallback struct {
 // SetupConfigMapWatchers takes a config agent and plugin agent, each potentially nil, and sets up the appropriate watchers for them.
 func SetupConfigMapWatchers(ns string, configAgent *config.Agent, pluginAgent *plugins.ConfigAgent) (*ConfigMapWatcher, error) {
 	var callbacks []ConfigMapCallback
+	logrus.Infof("Setting up ConfigMapWatchers for '%v' namespace", ns)
 
 	if configAgent != nil {
 		onConfigYamlChange := func(text string) {

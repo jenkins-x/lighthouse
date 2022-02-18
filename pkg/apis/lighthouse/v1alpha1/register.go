@@ -34,6 +34,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&LighthouseBreakpointList{},
 		&LighthouseJob{},
 		&LighthouseJobList{},
+		&LighthousePipelineSecurityPolicy{},
+		&LighthousePipelineSecurityPolicyList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -5,3 +5,5 @@ package v1alpha1
 type LighthouseBreakpointExpansion interface{}
 
 type LighthouseJobExpansion interface{}
+
+type LighthousePipelineSecurityPolicyExpansion interface{}

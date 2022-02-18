@@ -5,7 +5,7 @@ git:
   # git.server -- Git server URL
   server: ""
 
-# lighthouseJobNamespace -- Namespace where `LighthouseJob`s and `Pod`s are created
+# lighthouseJobNamespace -- Namespace where `LighthouseJob`s and `Pod`s are created by default
 # @default -- Deployment namespace
 lighthouseJobNamespace: ""
 

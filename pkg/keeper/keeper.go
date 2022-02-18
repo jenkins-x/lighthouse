@@ -43,6 +43,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
+	launcherPkg "github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -58,8 +59,12 @@ import (
 // For mocking out sleep during unit tests.
 var sleep = time.Sleep
 
+type ScmInfo interface {
+	GetFullRepositoryName() string
+}
+
 type launcher interface {
-	Launch(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
+	Launch(*v1alpha1.LighthouseJob, launcherPkg.ScmInfo) (*v1alpha1.LighthouseJob, error)
 }
 
 type scmProviderClient interface {
@@ -351,6 +356,8 @@ func (c *DefaultController) Sync() error {
 	var err error
 	if len(prs) > 0 {
 		start := time.Now()
+		c.logger.Infof("Syncing LightHouseJobs from '%s' namespace", c.ns)
+
 		lhjList, err := c.lhClient.LighthouseV1alpha1().LighthouseJobs(c.ns).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list LighthouseJobs from the cluster.")
@@ -1207,7 +1214,7 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]job.Presubm
 			pj := jobutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
 			c.logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
-			if _, err := c.launcherClient.Launch(&pj); err != nil {
+			if _, err := c.launcherClient.Launch(&pj, pr.Repository); err != nil {
 				c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to create pipeline on the cluster.")
 				return fmt.Errorf("failed to create a pipeline for job: %q, PRs: %v: %v", spec.Job, prNumbers(prs), err)
 			}
@@ -1627,6 +1634,10 @@ type Repository struct {
 	NameWithOwner githubql.String
 	URL           githubql.String
 	Owner         SCMUser
+}
+
+func (r Repository) GetFullRepositoryName() string {
+	return string(r.NameWithOwner)
 }
 
 // SCMUser holds the username

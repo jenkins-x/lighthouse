@@ -12,6 +12,8 @@ type Interface interface {
 	LighthouseBreakpoints() LighthouseBreakpointInformer
 	// LighthouseJobs returns a LighthouseJobInformer.
 	LighthouseJobs() LighthouseJobInformer
+	// LighthousePipelineSecurityPolicies returns a LighthousePipelineSecurityPolicyInformer.
+	LighthousePipelineSecurityPolicies() LighthousePipelineSecurityPolicyInformer
 }
 
 type version struct {
@@ -33,4 +35,9 @@ func (v *version) LighthouseBreakpoints() LighthouseBreakpointInformer {
 // LighthouseJobs returns a LighthouseJobInformer.
 func (v *version) LighthouseJobs() LighthouseJobInformer {
 	return &lighthouseJobInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// LighthousePipelineSecurityPolicies returns a LighthousePipelineSecurityPolicyInformer.
+func (v *version) LighthousePipelineSecurityPolicies() LighthousePipelineSecurityPolicyInformer {
+	return &lighthousePipelineSecurityPolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

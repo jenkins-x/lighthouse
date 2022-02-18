@@ -1,19 +1,9 @@
 ---
-kind: Role
+kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: {{ template "gcJobs.name" . }}
+  name: {{ template "webhooks.name" . }}-cluster-scoped
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  - configmaps
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - lighthouse.jenkins.io
   resources:
@@ -38,3 +28,4 @@ rules:
   - get
   - watch
   - patch
+

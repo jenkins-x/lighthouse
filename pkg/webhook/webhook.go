@@ -38,6 +38,7 @@ type WebhooksController struct {
 
 	path                    string
 	namespace               string
+	configNamespace         string
 	pluginFilename          string
 	configFilename          string
 	server                  *Server
@@ -50,14 +51,15 @@ type WebhooksController struct {
 }
 
 // NewWebhooksController creates and configures the controller
-func NewWebhooksController(path, namespace, botName, pluginFilename, configFilename string) (*WebhooksController, error) {
+func NewWebhooksController(path, namespace, configNamespace, botName, pluginFilename, configFilename string) (*WebhooksController, error) {
 	o := &WebhooksController{
-		path:           path,
-		namespace:      namespace,
-		pluginFilename: pluginFilename,
-		configFilename: configFilename,
-		botName:        botName,
-		logWebHooks:    os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true",
+		path:            path,
+		namespace:       namespace,
+		configNamespace: configNamespace,
+		pluginFilename:  pluginFilename,
+		configFilename:  configFilename,
+		botName:         botName,
+		logWebHooks:     os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true",
 	}
 	if o.logWebHooks {
 		logrus.Info("enabling webhook logging")
@@ -295,7 +297,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 	}
 	entry := logrus.WithField(operation, webhook.Kind())
 	if o.disabledExternalPlugins == nil {
-		o.disabledExternalPlugins, err = externalplugincfg.LoadDisabledPlugins(entry, kubeClient, o.namespace)
+		o.disabledExternalPlugins, err = externalplugincfg.LoadDisabledPlugins(entry, kubeClient, o.configNamespace)
 		if err != nil {
 			err = errors.Wrap(err, "failed to load disabled external plugins")
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
@@ -482,7 +484,7 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 	pluginAgent := &plugins.ConfigAgent{}
 
 	var err error
-	o.ConfigMapWatcher, err = watcher.SetupConfigMapWatchers(o.namespace, configAgent, pluginAgent)
+	o.ConfigMapWatcher, err = watcher.SetupConfigMapWatchers(o.configNamespace, configAgent, pluginAgent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create ConfigMap watcher")
 	}

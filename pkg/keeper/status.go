@@ -318,6 +318,8 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]prWit
 	queryMap := sc.config().Keeper.Queries.QueryMap()
 	processed := sets.NewString()
 
+	sc.logger.Infof("Updating status for PRs: %v", all)
+
 	process := func(pr *PullRequest) {
 		processed.Insert(pr.prKey())
 		log := sc.logger.WithFields(pr.logFields())
