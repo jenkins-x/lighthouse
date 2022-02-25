@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/karlseguin/ccache/v2"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -72,8 +72,7 @@ func TestCreateAgentIntegration(t *testing.T) {
 	s.FileBrowsers, err = filebrowser.NewFileBrowsers(serverURL, fb)
 	assert.NoError(t, err)
 
-	s.InRepoCache, err = lru.New(5000)
-	assert.NoError(t, err)
+	s.InRepoCache = lru.New(lru.Configure())
 
 	s.ClientAgent = &plugins.ClientAgent{
 		BotName:           "test-bot",
