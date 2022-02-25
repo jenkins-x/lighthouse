@@ -53,8 +53,9 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 
 	key := owner + "/" + repo + "/" + ref
 	c := s.InRepoCache
-	if x, found := c.Get(key); found {
-		pa := x.(*plugins.Agent)
+	if x := c.Get(key); x != nil {
+		value := x.Value()
+		pa := value.(*plugins.Agent)
 		if pa != nil {
 			return *pa, nil
 		}
@@ -63,8 +64,8 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 	if err != nil {
 		return pc, errors.Wrapf(err, "failed to create agent")
 	}
-	c.Add(key, &pc)
-	duration := time.Now().Sub(start)
+	c.Set(key, &pc, time.Minute * 10)
+	duration := time.Since(start)
 	l.WithField("Duration", duration.String()).Info("created configAgent")
 	return pc, nil
 }

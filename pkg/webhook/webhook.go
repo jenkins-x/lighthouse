@@ -14,7 +14,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -27,6 +26,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
+	lru "github.com/karlseguin/ccache/v2"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -509,10 +509,7 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to parse server URL %s", o.gitServerURL)
 	}
 
-	cache, err := lru.New(5000)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create in-repo LRU cache")
-	}
+	cache := lru.New(lru.Configure())
 
 	server := &Server{
 		ConfigAgent: configAgent,
@@ -520,7 +517,7 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 		Metrics:     promMetrics,
 		ServerURL:   serverURL,
 		InRepoCache: cache,
-		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
+		// TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil
 }

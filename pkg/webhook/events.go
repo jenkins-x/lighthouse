@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/karlseguin/ccache/v2"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
