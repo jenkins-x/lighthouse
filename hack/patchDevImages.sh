@@ -68,7 +68,7 @@ for val in {0..5}; do
     image_names=(webhooks keeper foghorn gc-jobs tekton-controller jenkins-controller)
 
     full_image_name=""
-    if [ -n "${registry+}" ]
+    if [ -n "${registry}" ]
      then full_image_name="${full_image_name}${registry}/"
     fi
     if [ -n "${user}" ]
