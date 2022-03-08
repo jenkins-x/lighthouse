@@ -65,7 +65,7 @@ func (c *Client) ListAllPullRequestsForFullNameRepo(fullName string, opts scm.Pu
 	var pagePRs []*scm.PullRequest
 	var err error
 	for resp == nil || opts.Page <= resp.Page.Last {
-		pagePRs, resp, err = c.client.PullRequests.List(ctx, fullName, opts)
+		pagePRs, resp, err = c.client.PullRequests.List(ctx, fullName, &opts)
 		if err != nil {
 			return nil, err
 		}
@@ -199,7 +199,7 @@ func (c *Client) FindPullRequestsByAuthor(owner, repo string, author string) ([]
 	var pullRequests []*scm.PullRequest
 	var err error
 	firstRun := false
-	opts := scm.PullRequestListOptions{
+	opts := &scm.PullRequestListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
