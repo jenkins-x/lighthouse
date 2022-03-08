@@ -161,7 +161,7 @@ func (c *pollingController) PollPullRequests() {
 
 		l.Info("polling for new commit on main branch")
 
-		opts := scm.PullRequestListOptions{
+		opts := &scm.PullRequestListOptions{
 			Open: true,
 
 			// TODO use last update poll?
