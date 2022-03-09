@@ -102,7 +102,7 @@ func makeFakePullRequestEvent(action scm.Action, branch string) scm.PullRequestH
 }
 
 func TestCherryPickUnapprovedLabel(t *testing.T) {
-	var testcases = []struct {
+	testcases := []struct {
 		name          string
 		branch        string
 		action        scm.Action
@@ -172,7 +172,7 @@ func TestCherryPickUnapprovedLabel(t *testing.T) {
 			labels:        tc.labels,
 			added:         []string{},
 			removed:       []string{},
-			commentsAdded: make(map[int][]string, 0),
+			commentsAdded: make(map[int][]string),
 		}
 
 		event := makeFakePullRequestEvent(tc.action, tc.branch)

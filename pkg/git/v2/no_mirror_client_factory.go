@@ -133,7 +133,7 @@ func (c *noMirrorClientFactory) ClientFor(org, repo string, sparseCheckoutPatter
 			return nil, err
 		}
 	}
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 	l.WithField("Duration", duration.String()).Debug("cloned repository")
 	return repoClient, nil
 }

@@ -194,7 +194,7 @@ func TestInterrupts(t *testing.T) {
 	lock.Unlock()
 }
 
-func generateCerts(url string) (string, string, error) {
+func generateCerts(url string) (string, string, error) { //nolint:unused
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate private key: %v", err)
@@ -251,7 +251,7 @@ func generateCerts(url string) (string, string, error) {
 	if err := keyOut.Close(); err != nil {
 		return "", "", fmt.Errorf("error closing key.pem: %s", err)
 	}
-	if err := os.Chmod(keyOut.Name(), 0600); err != nil {
+	if err := os.Chmod(keyOut.Name(), 0o600); err != nil {
 		return "", "", fmt.Errorf("could not change permissions on key.pem: %v", err)
 	}
 	return certOut.Name(), keyOut.Name(), nil

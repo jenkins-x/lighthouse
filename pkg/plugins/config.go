@@ -22,7 +22,6 @@ import (
 	"path"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
@@ -204,31 +203,6 @@ type Approve struct {
 	IgnoreReviewState *bool `json:"ignore_review_state,omitempty"`
 	// IgnoreUpdateBot makes the approve plugin ignore PRs with the label updatebot
 	IgnoreUpdateBot *bool `json:"ignore_updatebot,omitempty"`
-}
-
-var (
-	warnImplicitSelfApprove time.Time
-	warnReviewActsAsApprove time.Time
-	warnLock                sync.RWMutex // Rare updates and concurrent readers, so reuse the same lock
-)
-
-func warnDeprecated(last *time.Time, freq time.Duration, msg string) {
-	// have we warned within the last freq?
-	warnLock.RLock()
-	fresh := time.Now().Sub(*last) <= freq
-	warnLock.RUnlock()
-	if fresh { // we've warned recently
-		return
-	}
-	// Warning is stale, will we win the race to warn?
-	warnLock.Lock()
-	defer warnLock.Unlock()
-	now := time.Now()           // Recalculate now, we might wait awhile for the lock
-	if now.Sub(*last) <= freq { // Nope, we lost
-		return
-	}
-	*last = now
-	logrus.Warn(msg)
 }
 
 // HasSelfApproval checks if it has self-approval

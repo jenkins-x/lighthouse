@@ -20,7 +20,6 @@ package override
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -38,10 +37,6 @@ import (
 )
 
 const pluginName = "override"
-
-var (
-	overrideRe = regexp.MustCompile(`(?mi)^/(?:lh-)?override( (.+?)\s*)?$`)
-)
 
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
@@ -75,24 +70,22 @@ func presubmitForContext(jc config.JobConfig, org, repo, context string) *job.Pr
 	return nil
 }
 
-var (
-	plugin = plugins.Plugin{
-		Description: "The override plugin allows repo admins to force a github status context to pass",
-		Commands: []plugins.Command{{
-			Name: "override",
-			Arg: &plugins.CommandArg{
-				Pattern: `[^\r\n]+`,
-			},
-			Description: "Forces a github status context to green (one per line).",
-			WhoCanUse:   "Repo administrators",
-			Action: plugins.
-				Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-					return handle(match.Arg, pc.SCMProviderClient, pc.LighthouseClient, pc.Config.JobConfig, pc.Logger, e)
-				}).
-				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
-		}},
-	}
-)
+var plugin = plugins.Plugin{
+	Description: "The override plugin allows repo admins to force a github status context to pass",
+	Commands: []plugins.Command{{
+		Name: "override",
+		Arg: &plugins.CommandArg{
+			Pattern: `[^\r\n]+`,
+		},
+		Description: "Forces a github status context to green (one per line).",
+		WhoCanUse:   "Repo administrators",
+		Action: plugins.
+			Invoke(func(match plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				return handle(match.Arg, pc.SCMProviderClient, pc.LighthouseClient, pc.Config.JobConfig, pc.Logger, e)
+			}).
+			When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+	}},
+}
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
@@ -201,7 +194,7 @@ Only the following contexts were expected:
 		if pre := presubmitForContext(jc, org, repo, status.Label); pre != nil {
 			baseSHA, err := spc.GetRef(org, repo, "heads/"+pr.Base.Ref)
 			if err != nil {
-				resp := fmt.Sprintf("Cannot get base ref of PR")
+				resp := "Cannot get base ref of PR"
 				log.WithError(err).Warn(resp)
 				return spc.CreateComment(org, repo, number, e.IsPR, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(user), resp))
 			}

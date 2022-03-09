@@ -384,7 +384,7 @@ type ActivityRecord struct {
 	StartTime       *metav1.Time           `json:"startTime,omitempty"`
 	CompletionTime  *metav1.Time           `json:"completionTime,omitempty"`
 	Stages          []*ActivityStageOrStep `json:"stages,omitempty"`
-	Steps           []*ActivityStageOrStep `json:"steps,omitEmpty"`
+	Steps           []*ActivityStageOrStep `json:"steps,omitempty"`
 }
 
 // ActivityStageOrStep represents a stage of an activity

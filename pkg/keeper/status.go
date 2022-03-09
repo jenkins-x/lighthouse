@@ -163,7 +163,7 @@ func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (strin
 	for _, l1 := range q.Labels {
 		var found bool
 		for _, l2 := range pr.Labels.Nodes {
-			if strings.ToLower(string(l2.Name)) == strings.ToLower(string(l1)) {
+			if strings.EqualFold(string(l2.Name), string(l1)) {
 				found = true
 				break
 			}
@@ -393,7 +393,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]prWit
 
 func (sc *statusController) load() {
 	// TODO: We need to do a new solution for stored state some day, but for now, no state, so this is a no-op. (apb)
-	return
+	return //nolint: gosimple
 }
 
 func (sc *statusController) save(ticker *time.Ticker) {
@@ -479,9 +479,7 @@ func (sc *statusController) search() []PullRequest {
 		prs, err = graphQLSearch(sc.spc.Query, sc.logger, query, sc.LatestPR.Time, now)
 	} else {
 		kq := keeper.Query{}
-		for _, r := range repos.List() {
-			kq.Repos = append(kq.Repos, r)
-		}
+		kq.Repos = append(kq.Repos, repos.List()...)
 
 		prs, err = restAPISearch(sc.spc, sc.logger, keeper.Queries{kq}, sc.LatestPR.Time, now)
 	}

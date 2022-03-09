@@ -34,19 +34,11 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/bwmarrin/snowflake"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-type lighthouseJobClient interface {
-	Create(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
-	List(metav1.ListOptions) (*v1alpha1.LighthouseJobList, error)
-	UpdateStatus(*v1alpha1.LighthouseJob) (*v1alpha1.LighthouseJob, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.LighthouseJob, err error)
-}
 
 type jenkinsClient interface {
 	Build(*v1alpha1.LighthouseJob, string) error
@@ -63,8 +55,6 @@ type Controller struct {
 	log              *logrus.Entry
 	cfg              config.Getter
 	node             *snowflake.Node
-	// if skip report job results to github
-	skipReport bool
 	// selector that will be applied on Lighthouse jobs.
 	selector string
 

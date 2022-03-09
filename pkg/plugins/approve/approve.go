@@ -91,30 +91,28 @@ type state struct {
 	htmlURL   string
 }
 
-var (
-	plugin = plugins.Plugin{
-		Description: `The approve plugin implements a pull request approval process that manages the '` + labels.Approved + `' label and an approval notification comment. Approval is achieved when the set of users that have approved the PR is capable of approving every file changed by the PR. A user is able to approve a file if their username or an alias they belong to is listed in the 'approvers' section of an OWNERS file in the directory of the file or higher in the directory tree.
+var plugin = plugins.Plugin{
+	Description: `The approve plugin implements a pull request approval process that manages the '` + labels.Approved + `' label and an approval notification comment. Approval is achieved when the set of users that have approved the PR is capable of approving every file changed by the PR. A user is able to approve a file if their username or an alias they belong to is listed in the 'approvers' section of an OWNERS file in the directory of the file or higher in the directory tree.
 <br>
 <br>Per-repo configuration may be used to require that PRs link to an associated issue before approval is granted. It may also be used to specify that the PR authors implicitly approve their own PRs.
 <br>For more information see <a href="https://git.github.com/jenkins-x/lighthouse/pkg/prow/plugins/approve/approvers/README.md">here</a>.`,
-		ConfigHelpProvider: configHelp,
-		ReviewEventHandler: handleReviewEvent,
-		PullRequestHandler: handlePullRequestEvent,
-		Commands: []plugins.Command{{
-			Name: "lgtm|approve",
-			Arg: &plugins.CommandArg{
-				Pattern:  "no-issue|cancel",
-				Optional: true,
-			},
-			Description: "Approves a pull request",
-			Featured:    true,
-			WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
-			Action: plugins.
-				Invoke(handleGenericCommentEvent).
-				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.NotIssueState("closed")),
-		}},
-	}
-)
+	ConfigHelpProvider: configHelp,
+	ReviewEventHandler: handleReviewEvent,
+	PullRequestHandler: handlePullRequestEvent,
+	Commands: []plugins.Command{{
+		Name: "lgtm|approve",
+		Arg: &plugins.CommandArg{
+			Pattern:  "no-issue|cancel",
+			Optional: true,
+		},
+		Description: "Approves a pull request",
+		Featured:    true,
+		WhoCanUse:   "Users listed as 'approvers' in appropriate OWNERS files.",
+		Action: plugins.
+			Invoke(handleGenericCommentEvent).
+			When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.NotIssueState("closed")),
+	}},
+}
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
@@ -274,7 +272,6 @@ func handleReview(log *logrus.Entry, spc scmProviderClient, oc ownersClient, ser
 			htmlURL:   re.PullRequest.Link,
 		},
 	)
-
 }
 
 func handlePullRequestEvent(pc plugins.Agent, pre scm.PullRequestHook) error {
@@ -306,7 +303,7 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient
 		return err
 	}
 	if pre.Action == scm.ActionLabel &&
-		(strings.ToLower(pre.Label.Name) != strings.ToLower(labels.Approved) || pre.Sender.Login == botName || pre.PullRequest.State == "closed") {
+		(!strings.EqualFold(pre.Label.Name, labels.Approved) || pre.Sender.Login == botName || pre.PullRequest.State == "closed") {
 		return nil
 	}
 
@@ -387,7 +384,7 @@ func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, baseU
 	}
 	hasApprovedLabel := false
 	for _, label := range issueLabels {
-		if strings.ToLower(label.Name) == strings.ToLower(labels.Approved) {
+		if strings.EqualFold(label.Name, labels.Approved) {
 			hasApprovedLabel = true
 		}
 		if opts.IgnoreUpdateBotLabel() && strings.ToLower(label.Name) == strings.ToLower(labels.UpdateBot) {
@@ -494,7 +491,7 @@ func humanAddedApproved(spc scmProviderClient, log *logrus.Entry, org, repo stri
 		lastAdded := scm.ListedIssueEvent{}
 		for _, event := range events {
 			// Only consider "approved" label added events.
-			if event.Event != scmprovider.IssueActionLabeled || strings.ToLower(event.Label.Name) != strings.ToLower(labels.Approved) {
+			if event.Event != scmprovider.IssueActionLabeled || !strings.EqualFold(event.Label.Name, labels.Approved) {
 				continue
 			}
 			lastAdded = *event

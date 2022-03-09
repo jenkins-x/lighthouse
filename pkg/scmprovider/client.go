@@ -168,10 +168,6 @@ func (c *Client) repositoryName(owner string, repo string) string {
 	return fmt.Sprintf("%s/%s", owner, repo)
 }
 
-func (c *Client) createListOptions() scm.ListOptions {
-	return scm.ListOptions{}
-}
-
 // FileNotFound happens when github cannot find the file requested by GetFile().
 type FileNotFound struct {
 	org, repo, path, commit string

@@ -47,23 +47,21 @@ const (
 	grumpyURL  = "https://upload.wikimedia.org/wikipedia/commons/e/ee/Grumpy_Cat_by_Gage_Skidmore.jpg"
 )
 
-var (
-	plugin = plugins.Plugin{
-		Description:        "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
-		ConfigHelpProvider: configHelp,
-		Commands: []plugins.Command{{
-			Name: "meow|meowvie",
-			Arg: &plugins.CommandArg{
-				Pattern:  `.+`,
-				Optional: true,
-			},
-			Description: "Add a cat image to the issue or PR",
-			Action: plugins.
-				Invoke(handleGenericComment).
-				When(plugins.Action(scm.ActionCreate)),
-		}},
-	}
-)
+var plugin = plugins.Plugin{
+	Description:        "The cat plugin adds a cat image to an issue or PR in response to the `/meow` command.",
+	ConfigHelpProvider: configHelp,
+	Commands: []plugins.Command{{
+		Name: "meow|meowvie",
+		Arg: &plugins.CommandArg{
+			Pattern:  `.+`,
+			Optional: true,
+		},
+		Description: "Add a cat image to the issue or PR",
+		Action: plugins.
+			Invoke(handleGenericComment).
+			When(plugins.Action(scm.ActionCreate)),
+	}},
+}
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
@@ -86,11 +84,10 @@ type clowder interface {
 }
 
 type realClowder struct {
-	url     string
-	lock    sync.RWMutex
-	update  time.Time
-	key     string
-	keyPath string
+	url    string
+	lock   sync.RWMutex
+	update time.Time
+	key    string
 }
 
 func (c *realClowder) setKey(keyPath string, log *logrus.Entry) {

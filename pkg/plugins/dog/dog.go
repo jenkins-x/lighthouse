@@ -87,10 +87,6 @@ func init() {
 	plugins.RegisterPlugin(pluginName, createPlugin(dogURL))
 }
 
-type agent interface {
-	ScmProviderClient() *scmprovider.Client
-}
-
 type scmProviderClient interface {
 	CreateComment(owner, repo string, number int, pr bool, comment string) error
 	QuoteAuthorForComment(string) string

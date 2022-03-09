@@ -48,9 +48,7 @@ func (c *fakeClient) AssignPR(owner, repo string, number int, assignees []string
 	var missing scmprovider.MissingUsers
 	sort.Strings(assignees)
 	if len(assignees) > 10 {
-		for _, who := range assignees[10:] {
-			missing.Users = append(missing.Users, who)
-		}
+		missing.Users = append(missing.Users, assignees[10:]...)
 		for _, who := range assignees[:10] {
 			c.assigned[who]++
 		}
@@ -116,7 +114,7 @@ func newFakeClient(contribs []string) *fakeClient {
 }
 
 func TestParseLogins(t *testing.T) {
-	var testcases = []struct {
+	testcases := []struct {
 		name   string
 		text   string
 		logins []string
@@ -162,7 +160,7 @@ func TestParseLogins(t *testing.T) {
 // TestAssignAndReview tests that the handle function uses the github client
 // to correctly create and/or delete assignments and PR review requests.
 func TestAssignAndReview(t *testing.T) {
-	var testcases = []struct {
+	testcases := []struct {
 		name        string
 		body        string
 		commenter   string
