@@ -1,14 +1,19 @@
 package security
 
+//
+// Lighthouse Pipeline Security
+// ============================
+//   See ./README.md
+//
+
 import (
 	"context"
 	"fmt"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,6 +21,63 @@ import (
 
 type ScmInfo interface {
 	GetFullRepositoryName() string
+}
+
+// ApplySecurityPolicyForLighthouseJob applies security restrictions if ANY policy was matched
+func ApplySecurityPolicyForLighthouseJob(c clientset.Interface, request *v1alpha1.LighthouseJob, repo ScmInfo, policiesNs string) error {
+	policy, err, matchedAnyPolicy := findSecurityPolicyForRepository(c, repo.GetFullRepositoryName(), policiesNs)
+	if err != nil {
+		return errors.Wrapf(err, "cannot apply security policy for a job")
+	}
+	if matchedAnyPolicy {
+		logrus.Infof("Selected LighthousePipelineSecurityPolicy name=%v for repository %v", policy.Name, repo.GetFullRepositoryName())
+
+		// optionally enforce a namespace
+		if policy.IsEnforcingNamespace() {
+			request.SetNamespace(policy.Spec.Enforce.Namespace)
+		}
+
+		// mark a job that it hits a security policy
+		associateLighthouseJobWithPolicy(request, &policy)
+
+		return nil
+	}
+	logrus.Infof("Job '%s' does not match any LighthousePipelineSecurityPolicy, not applying any policy", request.Name)
+	return nil
+}
+
+// ApplySecurityPolicyForTektonPipelineRun optionally applies enforcements from `kind: LighthousePipelineSecurityPolicy` if there was matched any during `kind: LighthouseJob` processing
+func ApplySecurityPolicyForTektonPipelineRun(ctx context.Context, c client.Client, run *tektonv1beta1.PipelineRun, policiesNamespace string) error {
+	// Tekton PipelineRun inherits labels from LighthouseJob, including a label that contains policy name
+	policyName := getPolicyNameAttachedToTektonPipelineRun(run)
+
+	// policies are optional
+	if policyName == "" {
+		logrus.Infof("No LighthousePipelineSecurityPolicy matched for this PipelineRun")
+		return nil
+	}
+
+	var policy v1alpha1.LighthousePipelineSecurityPolicy
+	// policy was assigned by web hooks handler, but is no longer accessible
+	if err := c.Get(ctx, types.NamespacedName{Name: policyName, Namespace: policiesNamespace}, &policy); err != nil {
+		return errors.Wrapf(err, "Cannot find LighthousePipelineSecurityPolicy of name %v in '%v' namespace", policyName, policiesNamespace)
+	}
+
+	// optionally apply service account name
+	if policy.IsEnforcingServiceAccount() {
+		logrus.Infof("Enforcing a serviceAccountName = %v", policy.Spec.Enforce.ServiceAccountName)
+		run.Spec.ServiceAccountName = policy.Spec.Enforce.ServiceAccountName
+	}
+
+	// optionally set allowed maximum execution time
+	if policy.IsEnforcingMaximumPipelineDuration() {
+		//  enforces a maximum execution time to a pipeline in two cases:
+		//      a) when it is not set explicitly
+		//      b) when it is longer than maximum specified in the LighthousePipelineSecurityPolicy
+		run.Spec.Timeout = policy.GetMaximumDurationForPipeline(run.Spec.Timeout)
+	}
+
+	return nil
 }
 
 // findSecurityPolicyForRepository Finds a valid `kind: LighthousePipelineSecurityPolicy` that selector `.spec.RepositoryPattern` would match full repository name (do not confuse with url)
@@ -56,59 +118,18 @@ func findSecurityPolicyForRepository(c clientset.Interface, repository string, p
 	return policy, nil, true
 }
 
-// ApplySecurityPolicyForJob applies security restrictions if ANY policy was matched
-func ApplySecurityPolicyForJob(c clientset.Interface, request *v1alpha1.LighthouseJob, repo ScmInfo, policiesNs string) error {
-	policy, err, matchedAnyPolicy := findSecurityPolicyForRepository(c, repo.GetFullRepositoryName(), policiesNs)
-	if err != nil {
-		return errors.Wrapf(err, "cannot apply security policy for a job")
-	}
-	if matchedAnyPolicy {
-		logrus.Infof("Selected LighthousePipelineSecurityPolicy name=%v for repository %v", policy.Name, repo.GetFullRepositoryName())
-
-		// optionally enforce a namespace
-		if policy.Spec.Enforce.Namespace != "" {
-			request.SetNamespace(policy.Spec.Enforce.Namespace)
-		}
-
-		// mark a job that it hits a security policy
-		labels := request.GetLabels()
-		labels[SecurityAnnotationName] = policy.Name
-		request.SetLabels(labels)
-		return nil
-	}
-	logrus.Infof("Job '%s' does not match any LighthousePipelineSecurityPolicy, not applying any policy", request.Name)
-	return nil
-}
-
-// ApplySecurityPolicyForTektonPipelineRun optionally applies enforcements from `kind: LighthousePipelineSecurityPolicy` if there was matched any during `kind: LighthouseJob` processing
-func ApplySecurityPolicyForTektonPipelineRun(ctx context.Context, c client.Client, run *tektonv1beta1.PipelineRun, ns string) error {
-	policyName := getPipelineRunHavingAttachedPolicy(run)
-	// policies are optional
-	if policyName == "" {
-		logrus.Infof("No LighthousePipelineSecurityPolicy matched for this PipelineRun")
-		return nil
-	}
-
-	var policy v1alpha1.LighthousePipelineSecurityPolicy
-	// policy was assigned by web hooks handler, but is no longer accessible
-	if err := c.Get(ctx, types.NamespacedName{Name: policyName, Namespace: ns}, &policy); err != nil {
-		return errors.Wrapf(err, "Cannot find LighthousePipelineSecurityPolicy of name %v in '%v' namespace", policyName, ns)
-	}
-
-	// optionally apply service account name
-	if policy.Spec.Enforce.ServiceAccountName != "" {
-		logrus.Infof("Enforcing a serviceAccountName = %v", policy.Spec.Enforce.ServiceAccountName)
-		run.Spec.ServiceAccountName = policy.Spec.Enforce.ServiceAccountName
-	}
-
-	return nil
-}
-
-// getPipelineRunHavingAttachedPolicy retrieves a policy name from a label
-func getPipelineRunHavingAttachedPolicy(run *tektonv1beta1.PipelineRun) string {
+// getPolicyNameAttachedToTektonPipelineRun retrieves a policy name from a label
+func getPolicyNameAttachedToTektonPipelineRun(run *tektonv1beta1.PipelineRun) string {
 	labels := run.GetLabels()
-	if val, ok := labels[SecurityAnnotationName]; ok {
+	if val, ok := labels[PolicyAnnotationName]; ok {
 		return val
 	}
 	return ""
+}
+
+// associateLighthouseJobWithPolicy marks a job that it hits a security policy. Later lighthouse-tekton-controller is using this link.
+func associateLighthouseJobWithPolicy(request *v1alpha1.LighthouseJob, policy *v1alpha1.LighthousePipelineSecurityPolicy) {
+	labels := request.GetLabels()
+	labels[PolicyAnnotationName] = policy.Name
+	request.SetLabels(labels)
 }

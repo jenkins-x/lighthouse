@@ -28,7 +28,7 @@ func NewLauncher(lhClient clientset.Interface, ns string) PipelineLauncher {
 // TODO: This should be moved somewhere else, probably, and needs some kind of unit testing (apb)
 func (b *launcherImpl) Launch(request *v1alpha1.LighthouseJob, source ScmInfo) (*v1alpha1.LighthouseJob, error) {
 	// security first
-	if err := security.ApplySecurityPolicyForJob(b.lhClient, request, source, b.namespace); err != nil {
+	if err := security.ApplySecurityPolicyForLighthouseJob(b.lhClient, request, source, b.namespace); err != nil {
 		return nil, errors.Wrapf(err, "cannot apply a security policy for LighthouseJob. Cancelling LighthouseJob scheduling due to invalid security settings")
 	}
 	// default to main namespace if it wasn't specified by e.g. LighthousePipelineSecurityPolicy

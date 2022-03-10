@@ -1,5 +1,5 @@
 package security
 
 const (
-	SecurityAnnotationName = "lighthouse.jenkins-x.io/securityPolicyName"
+	PolicyAnnotationName = "lighthouse.jenkins-x.io/securityPolicyName"
 )

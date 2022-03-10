@@ -2,10 +2,9 @@ package v1alpha1
 
 import (
 	"fmt"
-	"regexp"
-
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"regexp"
 )
 
 // +genclient
@@ -19,6 +18,29 @@ type LighthousePipelineSecurityPolicy struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec SecurityPolicySpec `json:"spec"`
+}
+
+func (in *LighthousePipelineSecurityPolicy) IsEnforcingMaximumPipelineDuration() bool {
+	if in.Spec.Enforce.MaximumPipelineDuration == nil {
+		return false
+	}
+	return in.Spec.Enforce.MaximumPipelineDuration.Duration.String() != "0s"
+}
+
+func (in *LighthousePipelineSecurityPolicy) IsEnforcingServiceAccount() bool {
+	return in.Spec.Enforce.ServiceAccountName != ""
+}
+
+func (in *LighthousePipelineSecurityPolicy) IsEnforcingNamespace() bool {
+	return in.Spec.Enforce.Namespace != ""
+}
+
+func (in *LighthousePipelineSecurityPolicy) GetMaximumDurationForPipeline(pipelineDuration *metav1.Duration) *metav1.Duration {
+	// when pipeline duration is longer than allowed, then set a maximum allowed
+	if in.IsEnforcingMaximumPipelineDuration() && pipelineDuration.Duration > in.Spec.Enforce.MaximumPipelineDuration.Duration {
+		return in.Spec.Enforce.MaximumPipelineDuration
+	}
+	return pipelineDuration
 }
 
 // SecurityPolicySpec defines a policy specification
@@ -37,8 +59,9 @@ func (in *SecurityPolicySpec) IsRepositoryMatchingPattern(repository string) (bo
 
 // SecurityPolicyEnforcementSpec specifies actual restrictions that will be applied, for example: enforced namespace or enforced usage of specific ServiceAccount
 type SecurityPolicyEnforcementSpec struct {
-	Namespace          string `json:"namespace,omitempty" protobuf:"bytes,1,opt,name=namespace"`
-	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,2,opt,name=serviceAccountName"`
+	Namespace               string           `json:"namespace,omitempty" protobuf:"bytes,1,opt,name=namespace"`
+	ServiceAccountName      string           `json:"serviceAccountName,omitempty" protobuf:"bytes,2,opt,name=serviceAccountName"`
+	MaximumPipelineDuration *metav1.Duration `json:"maximumPipelineDuration,omitempty" protobuf:"bytes,3,opt,name=maximumPipelineDuration"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

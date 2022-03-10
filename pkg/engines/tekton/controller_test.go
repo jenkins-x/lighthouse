@@ -132,7 +132,7 @@ func TestReconcile(t *testing.T) {
 			defer bpWatcher.Stop()
 
 			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns, bpWatcher.GetBreakpoints)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns, ns, bpWatcher.GetBreakpoints)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 			reconciler.disableLogging = true
 
