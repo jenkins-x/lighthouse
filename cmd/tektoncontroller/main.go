@@ -31,7 +31,7 @@ func (o *options) Validate() error {
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
-	fs.StringVar(&o.policiesNamespace, "policies-namespace", "jx", "Namespace where `kind: LighthousePipelineSecurityPolicy` are stored")
+	fs.StringVar(&o.policiesNamespace, "policies-namespace", "", "Namespace where `kind: LighthousePipelineSecurityPolicy` are stored (use empty to listen in all namespaces)")
 	fs.StringVar(&o.dashboardURL, "dashboard-url", "", "The base URL for the Tekton Dashboard to link to for build reports")
 	fs.StringVar(&o.dashboardTemplate, "dashboard-template", "", "The template expression for generating the URL to the build report based on the PipelineRun parameters. If not specified defaults to $LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	err := fs.Parse(args)
@@ -78,7 +78,7 @@ func main() {
 	}
 	defer bpWatcher.Stop()
 
-	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.dashboardTemplate, o.namespace, o.policiesNamespace, bpWatcher.GetBreakpoints)
+	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), lhClient, o.dashboardURL, o.dashboardTemplate, o.namespace, o.policiesNamespace, bpWatcher.GetBreakpoints)
 	if err = reconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}

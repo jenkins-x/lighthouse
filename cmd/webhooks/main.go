@@ -26,11 +26,13 @@ type options struct {
 	port        int
 	jsonLog     bool
 
-	namespace       string
-	configNamespace string
-	pluginFilename  string
-	configFilename  string
-	botName         string
+	namespace            string
+	defaultJobsNamespace string
+	configNamespace      string
+	policiesNamespace    string
+	pluginFilename       string
+	configFilename       string
+	botName              string
 }
 
 func (o *options) Validate() error {
@@ -51,7 +53,9 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.configFilename, "config-file", "", "Path to the config.yaml file. If not specified it is loaded from the 'config' ConfigMap")
 	fs.StringVar(&o.botName, "bot-name", "", "The name of the bot user to run as. Defaults to $GIT_USER if not specified.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in (use empty to listen in all namespaces)")
-	fs.StringVar(&o.configNamespace, "config-namespace", "jx", "The namespace to listen for configuration (default to: jx)")
+	fs.StringVar(&o.defaultJobsNamespace, "default-jobs-namespace", "jx", "The namespace where are jobs spawned by default")
+	fs.StringVar(&o.configNamespace, "config-namespace", "", "The namespace to listen for configuration (use empty to listen in all namespaces)")
+	fs.StringVar(&o.policiesNamespace, "policies-namespace", "", "The namespace to listen for Security Policies (use empty to listen in all namespaces)")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -73,11 +77,8 @@ func main() {
 	if o.jsonLog {
 		logrus.SetFormatter(logrusutil.CreateDefaultFormatter())
 	}
-	if o.configNamespace == "" {
-		o.configNamespace = "jx"
-	}
 
-	controller, err := webhook.NewWebhooksController(o.path, o.namespace, o.configNamespace, o.botName, o.pluginFilename, o.configFilename)
+	controller, err := webhook.NewWebhooksController(o.path, o.namespace, o.configNamespace, o.policiesNamespace, o.defaultJobsNamespace, o.botName, o.pluginFilename, o.configFilename)
 	if err != nil {
 		logrus.WithError(err).Fatal("failed to set up controller")
 	}

@@ -18,6 +18,7 @@ rules:
   - create
   - list
   - watch
+
 - apiGroups:
   - ""
   resources:
@@ -26,6 +27,7 @@ rules:
   - get
   - list
   - watch
+
 - apiGroups:
   - lighthouse.jenkins.io
   resources:

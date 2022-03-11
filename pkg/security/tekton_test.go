@@ -2,6 +2,7 @@ package security
 
 import (
 	"context"
+	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"testing"
 	"time"
 
@@ -9,16 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 // When there are no any policies defined
 // Then nothing in PipelineRun should be changed
 func TestApplySecurityPolicyForTektonPipelineRun_MatchesNoAnyPolicyAsThereAreNoAnyAvailable(t *testing.T) {
 	// fake client returns no any policy, so the security module will do nothing
-	client := fake.NewClientBuilder().Build()
+	client := fake.NewSimpleClientset()
 
 	run := tektonv1beta1.PipelineRun{}
 	run.Name = "release-pipeline"
@@ -54,7 +52,7 @@ func TestApplySecurityPolicyForTektonPipelineRun_EnforcesDurationFromPolicy(t *t
 		PolicyAnnotationName: "mypolicy", // this attached policy matches our test policy
 	})
 
-	client := createFakeClient().WithObjects(&policy).Build()
+	client := fake.NewSimpleClientset(&policy)
 
 	// before policy is applied
 	assert.Equal(t, "5h0m0s", run.Spec.Timeout.Duration.String())
@@ -81,7 +79,7 @@ func TestApplySecurityPolicyForTektonPipelineRun_DoesNotEnforceDurationWhenPipel
 		PolicyAnnotationName: "mypolicy", // matches our test policy
 	})
 
-	client := createFakeClient().WithObjects(&policy).Build()
+	client := fake.NewSimpleClientset(&policy)
 
 	_ = ApplySecurityPolicyForTektonPipelineRun(context.TODO(), client, &run, "some-ns")
 
@@ -104,7 +102,7 @@ func TestApplySecurityPolicyForTektonPipelineRun_EnforcesServiceAccountIfDefined
 		PolicyAnnotationName: "mypolicy", // matches our test policy
 	})
 
-	client := createFakeClient().WithObjects(&policy).Build()
+	client := fake.NewSimpleClientset(&policy)
 	_ = ApplySecurityPolicyForTektonPipelineRun(context.TODO(), client, &run, "some-ns")
 
 	assert.Equal(t, "restricted-access-service-account", run.Spec.ServiceAccountName)
@@ -126,16 +124,8 @@ func TestApplySecurityPolicyForTektonPipelineRun_DoesNotMatchPolicy(t *testing.T
 		PolicyAnnotationName: "some-other-policy", // DOES NOT MATCH OUR POLICY
 	})
 
-	client := createFakeClient().WithObjects(&policy).Build()
+	client := fake.NewSimpleClientset(&policy)
 	err := ApplySecurityPolicyForTektonPipelineRun(context.TODO(), client, &run, "some-ns")
 
 	assert.Contains(t, err.Error(), "Cannot find LighthousePipelineSecurityPolicy of name some-other-policy in 'some-ns' namespace")
-}
-
-func createFakeClient() *fake.ClientBuilder {
-	scheme := runtime.NewScheme()
-	groupVersion, _ := schema.ParseGroupVersion("lighthouse.jenkins.io/v1alpha1")
-	scheme.AddKnownTypes(groupVersion, &v1alpha1.LighthousePipelineSecurityPolicy{})
-
-	return fake.NewClientBuilder().WithScheme(scheme)
 }

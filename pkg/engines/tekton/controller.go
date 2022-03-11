@@ -10,6 +10,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/security"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
@@ -29,6 +30,7 @@ var apiGVStr = lighthousev1alpha1.SchemeGroupVersion.String()
 // LighthouseJobReconciler reconciles a LighthouseJob object
 type LighthouseJobReconciler struct {
 	client            client.Client
+	lhClient          clientset.Interface
 	apiReader         client.Reader
 	logger            *logrus.Entry
 	scheme            *runtime.Scheme
@@ -42,7 +44,7 @@ type LighthouseJobReconciler struct {
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string, policiesNamespace string, breakpointGetter func() []*lighthousev1alpha1.LighthouseBreakpoint) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, lhClient clientset.Interface, dashboardURL string, dashboardTemplate string, namespace string, policiesNamespace string, breakpointGetter func() []*lighthousev1alpha1.LighthouseBreakpoint) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
@@ -51,6 +53,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 		apiReader:         apiReader,
 		logger:            logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
 		scheme:            scheme,
+		lhClient:          lhClient,
 		dashboardURL:      dashboardURL,
 		dashboardTemplate: dashboardTemplate,
 		namespace:         namespace,
@@ -157,7 +160,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				return ctrl.Result{}, err
 			}
 
-			if err := security.ApplySecurityPolicyForTektonPipelineRun(ctx, r.client, pipelineRun, r.policiesNamespace); err != nil {
+			if err := security.ApplySecurityPolicyForTektonPipelineRun(ctx, r.lhClient, pipelineRun, r.policiesNamespace); err != nil {
 				r.logger.Errorf("Cannot create pipeline run due to security issue: %s", err)
 				return ctrl.Result{}, err
 			}

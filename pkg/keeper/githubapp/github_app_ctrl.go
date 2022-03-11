@@ -23,37 +23,41 @@ import (
 )
 
 type gitHubAppKeeperController struct {
-	controllers        []keeper.Controller
-	ownerTokenFinder   *util.OwnerTokensDir
-	gitServer          string
-	githubAppSecretDir string
-	configAgent        *config.Agent
-	botName            string
-	gitKind            string
-	maxRecordsPerPool  int
-	historyURI         string
-	statusURI          string
-	ns                 string
-	logger             *logrus.Entry
-	m                  sync.Mutex
+	controllers          []keeper.Controller
+	ownerTokenFinder     *util.OwnerTokensDir
+	gitServer            string
+	githubAppSecretDir   string
+	configAgent          *config.Agent
+	botName              string
+	gitKind              string
+	maxRecordsPerPool    int
+	historyURI           string
+	statusURI            string
+	ns                   string
+	policiesNs           string
+	defaultJobsNamespace string
+	logger               *logrus.Entry
+	m                    sync.Mutex
 }
 
 // NewGitHubAppKeeperController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
-func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string, ns string) (keeper.Controller, error) {
+func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string, ns string, policiesNs string, defaultJobsNs string) (keeper.Controller, error) {
 
 	gitServer := util.GithubServer
 	return &gitHubAppKeeperController{
-		ownerTokenFinder:  util.NewOwnerTokensDir(gitServer, githubAppSecretDir),
-		gitServer:         gitServer,
-		configAgent:       configAgent,
-		botName:           botName,
-		gitKind:           gitKind,
-		maxRecordsPerPool: maxRecordsPerPool,
-		historyURI:        historyURI,
-		statusURI:         statusURI,
-		ns:                ns,
-		logger:            logrus.NewEntry(logrus.StandardLogger()),
+		ownerTokenFinder:     util.NewOwnerTokensDir(gitServer, githubAppSecretDir),
+		gitServer:            gitServer,
+		configAgent:          configAgent,
+		botName:              botName,
+		gitKind:              gitKind,
+		maxRecordsPerPool:    maxRecordsPerPool,
+		historyURI:           historyURI,
+		statusURI:            statusURI,
+		ns:                   ns,
+		policiesNs:           policiesNs,
+		defaultJobsNamespace: defaultJobsNs,
+		logger:               logrus.NewEntry(logrus.StandardLogger()),
 	}, nil
 
 }
@@ -174,7 +178,7 @@ func (g *gitHubAppKeeperController) createOwnerController(owner string, configGe
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient := launcher.NewLauncher(lhClient, g.ns)
+	launcherClient := launcher.NewLauncher(lhClient, g.ns, g.policiesNs, g.defaultJobsNamespace)
 	c, err := keeper.NewController(gitproviderClient, gitproviderClient, nil, launcherClient, tektonClient, lhClient, g.ns, configGetter, gitClient, g.maxRecordsPerPool, g.historyURI, g.statusURI, nil)
 	return c, err
 }

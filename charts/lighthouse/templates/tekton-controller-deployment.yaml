@@ -24,6 +24,7 @@ spec:
         image: {{ printf "%s:%s" (tpl .Values.tektoncontroller.image.repository .) (tpl .Values.tektoncontroller.image.tag .) }}
         imagePullPolicy: {{ tpl .Values.tektoncontroller.image.pullPolicy . }}
         args:
+          - "--policies-namespace={{ .Release.Namespace }}"
           - --dashboard-url={{ .Values.tektoncontroller.dashboardURL }}
           - --dashboard-template={{ .Values.tektoncontroller.dashboardTemplate }}
         ports:

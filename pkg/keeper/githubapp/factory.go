@@ -19,10 +19,10 @@ import (
 
 // NewKeeperController creates a new controller; either regular or a GitHub App flavour
 // depending on the $GITHUB_APP_SECRET_DIR environment variable
-func NewKeeperController(configAgent *config.Agent, botName string, gitKind string, gitToken string, serverURL string, maxRecordsPerPool int, historyURI string, statusURI string, ns string) (keeper.Controller, error) {
+func NewKeeperController(configAgent *config.Agent, botName string, gitKind string, gitToken string, serverURL string, maxRecordsPerPool int, historyURI string, statusURI string, ns string, policiesNs string, defaultJobsNs string) (keeper.Controller, error) {
 	githubAppSecretDir := util.GetGitHubAppSecretDir()
 	if githubAppSecretDir != "" {
-		return NewGitHubAppKeeperController(githubAppSecretDir, configAgent, botName, gitKind, maxRecordsPerPool, historyURI, statusURI, ns)
+		return NewGitHubAppKeeperController(githubAppSecretDir, configAgent, botName, gitKind, maxRecordsPerPool, historyURI, statusURI, ns, policiesNs, defaultJobsNs)
 	}
 
 	var scmClient *scm.Client
@@ -86,7 +86,7 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	launcherClient := launcher.NewLauncher(lhClient, ns)
+	launcherClient := launcher.NewLauncher(lhClient, ns, policiesNs, defaultJobsNs)
 	c, err := keeper.NewController(gitproviderClient, gitproviderClient, fileBrowsers, launcherClient, tektonClient, lhClient, ns, configAgent.Config, gitClient, maxRecordsPerPool, historyURI, statusURI, nil)
 	return c, err
 }

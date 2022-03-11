@@ -81,7 +81,7 @@ func TestCreateAgentIntegration(t *testing.T) {
 		KubernetesClient:  kubeClient,
 		GitClient:         gitClient,
 		LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs("jx"),
-		LauncherClient:    launcher.NewLauncher(lhClient, "jx"),
+		LauncherClient:    launcher.NewLauncher(lhClient, "jx", "jx", "jx"),
 	}
 
 	l := logrus.WithField("Repository", scm.Join(owner, repo)+"@"+ref)

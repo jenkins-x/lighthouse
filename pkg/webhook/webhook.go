@@ -39,6 +39,8 @@ type WebhooksController struct {
 	path                    string
 	namespace               string
 	configNamespace         string
+	policiesNamespace       string
+	defaultJobsNamespace    string
 	pluginFilename          string
 	configFilename          string
 	server                  *Server
@@ -51,15 +53,17 @@ type WebhooksController struct {
 }
 
 // NewWebhooksController creates and configures the controller
-func NewWebhooksController(path, namespace, configNamespace, botName, pluginFilename, configFilename string) (*WebhooksController, error) {
+func NewWebhooksController(path, namespace, configNamespace, policiesNamespace, defaultJobsNamespace, botName, pluginFilename, configFilename string) (*WebhooksController, error) {
 	o := &WebhooksController{
-		path:            path,
-		namespace:       namespace,
-		configNamespace: configNamespace,
-		pluginFilename:  pluginFilename,
-		configFilename:  configFilename,
-		botName:         botName,
-		logWebHooks:     os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true",
+		path:                 path,
+		namespace:            namespace,
+		configNamespace:      configNamespace,
+		pluginFilename:       pluginFilename,
+		defaultJobsNamespace: defaultJobsNamespace,
+		configFilename:       configFilename,
+		policiesNamespace:    policiesNamespace,
+		botName:              botName,
+		logWebHooks:          os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true",
 	}
 	if o.logWebHooks {
 		logrus.Info("enabling webhook logging")
@@ -81,7 +85,7 @@ func NewWebhooksController(path, namespace, configNamespace, botName, pluginFile
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
 	}
-	o.launcher = launcher.NewLauncher(lhClient, o.namespace)
+	o.launcher = launcher.NewLauncher(lhClient, o.namespace, o.policiesNamespace, o.defaultJobsNamespace)
 
 	return o, nil
 }

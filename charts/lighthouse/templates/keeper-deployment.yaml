@@ -35,6 +35,10 @@ spec:
       - name: {{ template "keeper.name" . }}
         image: {{ tpl .Values.keeper.image.repository . }}:{{ tpl .Values.keeper.image.tag . }}
         imagePullPolicy: {{ tpl .Values.keeper.image.pullPolicy . }}
+        args:
+          - "--default-jobs-namespace={{ .Release.Namespace }}"
+          - "--config-namespace={{ .Release.Namespace }}"
+          - "--policies-namespace={{ .Release.Namespace }}"
         ports:
           - name: http
             containerPort: {{ .Values.keeper.service.internalPort }}

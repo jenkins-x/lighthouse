@@ -39,13 +39,15 @@ import (
 type options struct {
 	port int
 
-	configPath      string
-	jobConfigPath   string
-	botName         string
-	gitServerURL    string
-	gitKind         string
-	namespace       string
-	configNamespace string
+	configPath           string
+	jobConfigPath        string
+	botName              string
+	gitServerURL         string
+	gitKind              string
+	namespace            string
+	defaultJobsNamespace string
+	policiesNamespace    string
+	configNamespace      string
 
 	runOnce bool
 
@@ -83,7 +85,9 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.historyURI, "history-uri", "", "The /local/path or gs://path/to/object to store keeper action history. GCS writes will use the default object ACL for the bucket")
 	fs.StringVar(&o.statusURI, "status-path", "", "The /local/path or gs://path/to/object to store status controller state. GCS writes will use the default object ACL for the bucket.")
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in (set blank to listen in all namespaces)")
-	fs.StringVar(&o.configNamespace, "config-namespace", "jx", "The configuration namespace (defaults to: jx)")
+	fs.StringVar(&o.defaultJobsNamespace, "default-jobs-namespace", "jx", "The namespace where are jobs spawned by default (defaults to 'jx')")
+	fs.StringVar(&o.configNamespace, "config-namespace", "", "The configuration namespace (use empty to listen in all namespaces)")
+	fs.StringVar(&o.policiesNamespace, "policies-namespace", "", "The namespace to listen for Security Policies (use empty to listen in all namespaces)")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -142,7 +146,7 @@ func main() {
 	}
 
 	cfg := configAgent.Config
-	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)
+	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace, o.policiesNamespace, o.defaultJobsNamespace)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}

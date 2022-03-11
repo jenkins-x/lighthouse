@@ -12,15 +12,19 @@ import (
 
 // launcherImpl default launcher
 type launcherImpl struct {
-	lhClient  clientset.Interface
-	namespace string
+	lhClient             clientset.Interface
+	namespace            string
+	policiesNamespace    string
+	defaultJobsNamespace string
 }
 
 // NewLauncher creates a new builder
-func NewLauncher(lhClient clientset.Interface, ns string) PipelineLauncher {
+func NewLauncher(lhClient clientset.Interface, ns string, policiesNs string, defaultJobsNamespace string) PipelineLauncher {
 	b := &launcherImpl{
-		lhClient:  lhClient,
-		namespace: ns,
+		lhClient:             lhClient,
+		namespace:            ns,
+		policiesNamespace:    policiesNs,
+		defaultJobsNamespace: defaultJobsNamespace,
 	}
 	return b
 }
@@ -29,12 +33,12 @@ func NewLauncher(lhClient clientset.Interface, ns string) PipelineLauncher {
 // TODO: This should be moved somewhere else, probably, and needs some kind of unit testing (apb)
 func (b *launcherImpl) Launch(request *v1alpha1.LighthouseJob, source ScmInfo) (*v1alpha1.LighthouseJob, error) {
 	// security first
-	if err := security.ApplySecurityPolicyForLighthouseJob(b.lhClient, request, source, b.namespace); err != nil {
+	if err := security.ApplySecurityPolicyForLighthouseJob(b.lhClient, request, source, b.policiesNamespace); err != nil {
 		return nil, errors.Wrapf(err, "cannot apply a security policy for LighthouseJob. Cancelling LighthouseJob scheduling due to invalid security settings")
 	}
 	// default to main namespace if it wasn't specified by e.g. LighthousePipelineSecurityPolicy
 	if request.GetNamespace() == "" {
-		request.SetNamespace(b.namespace)
+		request.SetNamespace(b.defaultJobsNamespace)
 	}
 
 	appliedJob, err := b.lhClient.LighthouseV1alpha1().LighthouseJobs(request.ObjectMeta.Namespace).Create(context.TODO(), request, metav1.CreateOptions{})

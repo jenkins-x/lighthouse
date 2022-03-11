@@ -25,6 +25,7 @@ rules:
   resources:
   - lighthousebreakpoints
   - lighthousejobs
+  - lighthousepipelinesecuritypolicies
   verbs:
   - get
   - update

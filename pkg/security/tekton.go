@@ -2,17 +2,16 @@ package security
 
 import (
 	"context"
+	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ApplySecurityPolicyForTektonPipelineRun optionally applies enforcements from `kind: LighthousePipelineSecurityPolicy` if there was matched any during `kind: LighthouseJob` processing
-func ApplySecurityPolicyForTektonPipelineRun(ctx context.Context, c client.Client, run *tektonv1beta1.PipelineRun, policiesNamespace string) error {
+func ApplySecurityPolicyForTektonPipelineRun(ctx context.Context, c clientset.Interface, run *tektonv1beta1.PipelineRun, policiesNamespace string) error {
 	// Tekton PipelineRun inherits labels from LighthouseJob, including a label that contains policy name
 	policyName := getPolicyNameAttachedToTektonPipelineRun(run)
 
@@ -22,9 +21,9 @@ func ApplySecurityPolicyForTektonPipelineRun(ctx context.Context, c client.Clien
 		return nil
 	}
 
-	var policy v1alpha1.LighthousePipelineSecurityPolicy
-	// policy was assigned by web hooks handler, but is no longer accessible
-	if err := c.Get(ctx, types.NamespacedName{Name: policyName, Namespace: policiesNamespace}, &policy); err != nil {
+	// policy was assigned by web hooks handler, but could be no longer accessible
+	policy, err := c.LighthouseV1alpha1().LighthousePipelineSecurityPolicies(policiesNamespace).Get(ctx, policyName, v1.GetOptions{})
+	if err != nil {
 		return errors.Wrapf(err, "Cannot find LighthousePipelineSecurityPolicy of name %v in '%v' namespace", policyName, policiesNamespace)
 	}
 
