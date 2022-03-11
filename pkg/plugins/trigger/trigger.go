@@ -137,16 +137,18 @@ type scmProviderClient interface {
 	PRRefFmt() string
 }
 
+// Repository represents a repository in SCM
 type Repository struct {
 	Namespace string
 	Name      string
 }
 
+// GetFullRepositoryName returns a full organization + repository name
 func (r Repository) GetFullRepositoryName() string {
 	return r.Namespace + "/" + r.Name
 }
 
-func NewScmInfoFromGoScm(repo scm.Repository) launcherPkg.ScmInfo {
+func newScmInfoFromGoScm(repo scm.Repository) launcherPkg.ScmInfo {
 	return Repository{repo.Namespace, repo.Name}
 }
 

@@ -4,6 +4,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 )
 
+// ScmInfo represents a repository in SCM
 type ScmInfo interface {
 	GetFullRepositoryName() string
 }

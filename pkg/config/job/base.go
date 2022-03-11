@@ -74,7 +74,7 @@ type Base struct {
 	pipelineLoader func(*Base) error
 }
 
-// LoadPipeline() loads the pipeline specification if its not already been loaded
+// LoadPipeline loads the pipeline specification if its not already been loaded
 func (b *Base) LoadPipeline(logger *logrus.Entry) error {
 	if b.PipelineRunSpec != nil || b.pipelineLoader == nil {
 		return nil

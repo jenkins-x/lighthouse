@@ -76,7 +76,7 @@ func (cm RegexpChangeMatcher) SetChangeRegexes() (RegexpChangeMatcher, error) {
 	return cm, nil
 }
 
-// SetChangeRegexes validates and compiles internal regexes
+// SetIgnoreChangeRegexes validates and compiles internal regexes
 func (cm RegexpChangeMatcher) SetIgnoreChangeRegexes() (RegexpChangeMatcher, error) {
 	if cm.IgnoreChanges != "" {
 		re, err := regexp.Compile(cm.IgnoreChanges)

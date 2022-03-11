@@ -21,6 +21,7 @@ type LighthousePipelineSecurityPolicy struct {
 	Spec SecurityPolicySpec `json:"spec"`
 }
 
+// IsEnforcingMaximumPipelineDuration answers if it may enforce job timeout
 func (in *LighthousePipelineSecurityPolicy) IsEnforcingMaximumPipelineDuration() bool {
 	if in.Spec.Enforce.MaximumPipelineDuration == nil {
 		return false
@@ -28,14 +29,17 @@ func (in *LighthousePipelineSecurityPolicy) IsEnforcingMaximumPipelineDuration()
 	return in.Spec.Enforce.MaximumPipelineDuration.Duration.String() != "0s"
 }
 
+// IsEnforcingServiceAccount answers if it would enforce a service account name to the job
 func (in *LighthousePipelineSecurityPolicy) IsEnforcingServiceAccount() bool {
 	return in.Spec.Enforce.ServiceAccountName != ""
 }
 
+// IsEnforcingNamespace answers if it will enforce a namespace where job will spawn
 func (in *LighthousePipelineSecurityPolicy) IsEnforcingNamespace() bool {
 	return in.Spec.Enforce.Namespace != ""
 }
 
+// GetMaximumDurationForPipeline takes Pipeline's timeout setting, compares with policy and if Pipeline maximum timeout is too long than allowed, then a new value will be returned with allowed value
 func (in *LighthousePipelineSecurityPolicy) GetMaximumDurationForPipeline(pipelineDuration *metav1.Duration) *metav1.Duration {
 	// when pipeline duration is longer than allowed, then set a maximum allowed
 	if in.IsEnforcingMaximumPipelineDuration() && pipelineDuration.Duration > in.Spec.Enforce.MaximumPipelineDuration.Duration {
@@ -50,6 +54,7 @@ type SecurityPolicySpec struct {
 	Enforce           SecurityPolicyEnforcementSpec `json:"enforce"`
 }
 
+// IsRepositoryMatchingPattern is checking if repository of given name (organization + "/" + repository name) matches a regex pattern
 func (in *SecurityPolicySpec) IsRepositoryMatchingPattern(repository string) (bool, error) {
 	pattern, err := regexp.Compile(in.RepositoryPattern)
 	if err != nil {

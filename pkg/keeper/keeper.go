@@ -59,6 +59,7 @@ import (
 // For mocking out sleep during unit tests.
 var sleep = time.Sleep
 
+// ScmInfo represents a repository in SCM
 type ScmInfo interface {
 	GetFullRepositoryName() string
 }
@@ -1636,6 +1637,7 @@ type Repository struct {
 	Owner         SCMUser
 }
 
+// GetFullRepositoryName returns a full repository name including organization + repository name
 func (r Repository) GetFullRepositoryName() string {
 	return string(r.NameWithOwner)
 }
