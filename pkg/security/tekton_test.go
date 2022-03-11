@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+// When there are no any policies defined
+// Then nothing in PipelineRun should be changed
 func TestApplySecurityPolicyForTektonPipelineRun_MatchesNoAnyPolicyAsThereAreNoAnyAvailable(t *testing.T) {
 	// fake client returns no any policy, so the security module will do nothing
 	client := fake.NewClientBuilder().Build()
@@ -85,6 +87,9 @@ func TestApplySecurityPolicyForTektonPipelineRun_DoesNotEnforceDurationWhenPipel
 	assert.Equal(t, "9m0s", run.Spec.Timeout.Duration.String(), "assert that pipeline will not have enforced 15 minutes timeout, but will keep 9 minutes because it is lower than 15 minutes")
 }
 
+// Given POLICY "mypolicy" has definition to enforce a Service Account
+// When POLICY is applied on PipelineRun
+// Then a PipelineRun field .Spec.ServiceAccountName equals to POLICY's service account enforcement
 func TestApplySecurityPolicyForTektonPipelineRun_EnforcesServiceAccountIfDefinedInPolicy(t *testing.T) {
 	policy := v1alpha1.LighthousePipelineSecurityPolicy{}
 	policy.Name = "mypolicy"
@@ -104,9 +109,27 @@ func TestApplySecurityPolicyForTektonPipelineRun_EnforcesServiceAccountIfDefined
 	assert.Equal(t, "restricted-access-service-account", run.Spec.ServiceAccountName)
 }
 
-//func Test_DoesNotMatchPolicy(t *testing.T) {
-//
-//}
+// Given we define policy1
+// And PipelineRun with referenced OTHER POLICY (that does not exist)
+// When we try to apply that OTHER POLICY
+// Then we get an error
+func TestApplySecurityPolicyForTektonPipelineRun_DoesNotMatchPolicy(t *testing.T) {
+	policy := v1alpha1.LighthousePipelineSecurityPolicy{}
+	policy.Name = "policy1"
+	policy.Namespace = "some-ns"
+
+	run := tektonv1beta1.PipelineRun{}
+	run.Name = "release-pipeline"
+	run.Spec.ServiceAccountName = "tekton-bot"
+	run.SetLabels(map[string]string{
+		PolicyAnnotationName: "some-other-policy", // DOES NOT MATCH OUR POLICY
+	})
+
+	client := createFakeClient().WithObjects(&policy).Build()
+	err := ApplySecurityPolicyForTektonPipelineRun(context.TODO(), client, &run, "some-ns")
+
+	assert.Contains(t, err.Error(), "Cannot find LighthousePipelineSecurityPolicy of name some-other-policy in 'some-ns' namespace")
+}
 
 func createFakeClient() *fake.ClientBuilder {
 	scheme := runtime.NewScheme()
