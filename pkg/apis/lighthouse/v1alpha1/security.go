@@ -2,9 +2,10 @@ package v1alpha1
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
 )
 
 // +genclient

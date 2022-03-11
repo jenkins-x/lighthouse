@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/jenkins-x/lighthouse/pkg/security"
 	"os"
 	"text/template"
+
+	"github.com/jenkins-x/lighthouse/pkg/security"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"

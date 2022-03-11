@@ -32,6 +32,8 @@ spec:
             properties:
               enforce:
                 properties:
+                  maximumPipelineDuration:
+                    type: string
                   namespace:
                     type: string
                   serviceAccountName:

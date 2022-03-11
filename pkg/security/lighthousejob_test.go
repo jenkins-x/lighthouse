@@ -1,10 +1,11 @@
 package security
 
 import (
+	"testing"
+
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestAssociateLighthouseJobWithPolicy(t *testing.T) {
