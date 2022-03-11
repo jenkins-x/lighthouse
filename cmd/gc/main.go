@@ -8,7 +8,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
-	lhclient "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/typed/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
@@ -83,14 +82,14 @@ func cleanUp(lhClient *clientset.Clientset, namespace string, maxAge time.Durati
 		completionTime := j.Status.CompletionTime
 		if completionTime != nil && completionTime.Add(maxAge).Before(now) {
 			// The job completed at least maxAge ago, so delete it.
-			err = deleteLighthouseJob(lhInterface, &j)
+			err = deleteLighthouseJob(lhClient, &j)
 			if err != nil {
 				logrus.WithError(err).Errorf("Failed to delete LighthouseJob %s/%s", j.Namespace, j.Name)
 				result = false
 			}
 		} else if completionTime == nil && j.Status.StartTime.Add(maxAge).Before(now) {
 			// The job never completed, but was created at least maxAge ago, so delete it.
-			err = deleteLighthouseJob(lhInterface, &j)
+			err = deleteLighthouseJob(lhClient, &j)
 			if err != nil {
 				logrus.WithError(err).Errorf("Failed to delete LighthouseJob %s/%s", j.Namespace, j.Name)
 				result = false
@@ -101,7 +100,7 @@ func cleanUp(lhClient *clientset.Clientset, namespace string, maxAge time.Durati
 	return result
 }
 
-func deleteLighthouseJob(lhInterface lhclient.LighthouseJobInterface, lhJob *v1alpha1.LighthouseJob) error {
+func deleteLighthouseJob(lhClient *clientset.Clientset, lhJob *v1alpha1.LighthouseJob) error {
 	logrus.Infof("Deleting LighthouseJob %s/%s", lhJob.Namespace, lhJob.Name)
-	return lhInterface.Delete(context.TODO(), lhJob.Name, *metav1.NewDeleteOptions(0))
+	return lhClient.LighthouseV1alpha1().LighthouseJobs(lhJob.Namespace).Delete(context.TODO(), lhJob.Name, *metav1.NewDeleteOptions(0))
 }
