@@ -283,7 +283,7 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 }
 
 func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry, fullName string, sha string, isRelease bool) (bool, error) {
-	statuses, err := c.ListAllStatus(ctx, fullName, sha)
+	statuses, err := c.ListAllStatuses(ctx, fullName, sha)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to list status")
 	}
@@ -296,7 +296,7 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 	return false, nil
 }
 
-func (c *pollingController) ListAllStatus(ctx context.Context, fullName string, sha string) ([]*scm.Status, error) {
+func (c *pollingController) ListAllStatuses(ctx context.Context, fullName string, sha string) ([]*scm.Status, error) {
 	allStatuses := []*scm.Status{}
 	page := 1
 	size := 100
