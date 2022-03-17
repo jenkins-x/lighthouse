@@ -283,10 +283,7 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 }
 
 func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry, fullName string, sha string, isRelease bool) (bool, error) {
-	opts := scm.ListOptions{
-		Page: 1,
-	}
-	statuses, _, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+	statuses, err := c.ListAllStatus(ctx, fullName, sha)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to list status")
 	}
@@ -297,6 +294,28 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 		}
 	}
 	return false, nil
+}
+
+func (c *pollingController) ListAllStatus(ctx context.Context, fullName string, sha string) ([]*scm.Status, error) {
+	allStatuses := []*scm.Status{}
+	page := 1
+	size := 100
+	opts := scm.ListOptions{
+		Page: page,
+		Size: size,
+	}
+	for {
+		statuses, _, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+		if err != nil {
+			return allStatuses, err
+		}
+		allStatuses = append(allStatuses, statuses...)
+		if len(statuses) < size {
+			break
+		}
+		page++
+	}
+	return allStatuses, nil
 }
 
 func (c *pollingController) isMatchingStatus(s *scm.Status, isRelease bool) bool {
