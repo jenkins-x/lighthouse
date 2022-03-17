@@ -305,15 +305,15 @@ func (c *pollingController) ListAllStatus(ctx context.Context, fullName string, 
 			Page: page,
 			Size: size,
 		}
-		statuses, _, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+		statuses, response, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
 		if err != nil {
 			return allStatuses, err
 		}
 		allStatuses = append(allStatuses, statuses...)
-		if len(statuses) < size {
+		page = response.Page.Next
+		if page == 0 {
 			break
 		}
-		page++
 	}
 	return allStatuses, nil
 }
