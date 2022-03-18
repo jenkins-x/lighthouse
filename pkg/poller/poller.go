@@ -302,7 +302,6 @@ func (c *pollingController) ListAllStatuses(ctx context.Context, fullName string
 	for {
 		opts := scm.ListOptions{
 			Page: page,
-			Size: 100,
 		}
 		statuses, response, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
 		if err != nil {
