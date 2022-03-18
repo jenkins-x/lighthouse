@@ -299,11 +299,10 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 func (c *pollingController) ListAllStatuses(ctx context.Context, fullName string, sha string) ([]*scm.Status, error) {
 	allStatuses := []*scm.Status{}
 	page := 1
-	size := 100
 	for {
 		opts := scm.ListOptions{
 			Page: page,
-			Size: size,
+			Size: 100,
 		}
 		statuses, response, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
 		if err != nil {
