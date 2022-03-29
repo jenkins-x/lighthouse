@@ -309,11 +309,8 @@ func (c *pollingController) ListAllStatuses(ctx context.Context, fullName string
 			return allStatuses, err
 		}
 		allStatuses = append(allStatuses, statuses...)
-		if response == nil {
-			break
-		}
 		// Check for an invalid value for the next page
-		if response.Page.Next <= page {
+		if response == nil || response.Page.Next <= page {
 			break
 		}
 		page = response.Page.Next
