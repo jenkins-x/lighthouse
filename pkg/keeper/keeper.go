@@ -356,7 +356,12 @@ func (c *DefaultController) Sync() error {
 			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list LighthouseJobs from the cluster.")
 			return err
 		}
-		c.logger.WithField("duration", time.Since(start).String()).Debug("Listed LighthouseJobs from the cluster.")
+
+		if len(lhjList.Items) > 200 {
+			c.logger.Warn("Over 200+ lighthouse jobs in the cluster, this could lead to keeper failing readiness and liveness probes")
+		}
+
+		c.logger.WithField("duration", time.Since(start).String()).WithField("lighthouse-job-quantity", len(lhjList.Items)).Debug("Listed LighthouseJobs from the cluster.")
 		lhjs = lhjList.Items
 
 		// TODO: Support blockers with non-graphql
