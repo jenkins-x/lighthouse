@@ -9,4 +9,4 @@ spec:
             pattern: |
               version: (.*)
             files:
-              - "charts/jx3/lighthouse/defaults.yaml"
+              - "charts/jxgh/lighthouse/defaults.yaml"

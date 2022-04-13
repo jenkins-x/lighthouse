@@ -19,6 +19,7 @@ package jobutil
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -30,10 +31,13 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
+)
+
+const (
+	maxGenerateNamePrefix = 32
 )
 
 // lighthouseClient a minimalistic lighthouse client required by the aborter
@@ -44,17 +48,17 @@ type lighthouseClient interface {
 // NewLighthouseJob initializes a LighthouseJob out of a LighthouseJobSpec.
 func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotations map[string]string) v1alpha1.LighthouseJob {
 	labels, annotations := LabelsAndAnnotationsForSpec(spec, extraLabels, extraAnnotations)
-	newID, _ := uuid.NewV1()
 
+	generateName := GenerateName(&spec)
 	return v1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "lighthouse.jenkins.io/v1alpha1",
 			Kind:       "LighthouseJob",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        newID.String(),
-			Labels:      labels,
-			Annotations: annotations,
+			GenerateName: generateName,
+			Labels:       labels,
+			Annotations:  annotations,
 		},
 		Spec: spec,
 	}
@@ -92,7 +96,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string, prRefFmt string) v1alpha1.R
 // NewPresubmit converts a config.Presubmit into a builder.PipelineOptions.
 // The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a gitprovider.EventGUID label.
-func NewPresubmit(pr *scm.PullRequest, baseSHA string, job job.Presubmit, eventGUID string, prRefFmt string) v1alpha1.LighthouseJob {
+func NewPresubmit(logger *logrus.Entry, pr *scm.PullRequest, baseSHA string, job job.Presubmit, eventGUID string, prRefFmt string) v1alpha1.LighthouseJob {
 	refs := createRefs(pr, baseSHA, prRefFmt)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
@@ -103,12 +107,12 @@ func NewPresubmit(pr *scm.PullRequest, baseSHA string, job job.Presubmit, eventG
 		annotations[k] = v
 	}
 	labels[scmprovider.EventGUID] = eventGUID
-	return NewLighthouseJob(PresubmitSpec(job, refs), labels, annotations)
+	return NewLighthouseJob(PresubmitSpec(logger, job, refs), labels, annotations)
 }
 
 // PresubmitSpec initializes a PipelineOptionsSpec for a given presubmit job.
-func PresubmitSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.Base)
+func PresubmitSpec(logger *logrus.Entry, p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(logger, p.Base)
 	pjs.Type = job.PresubmitJob
 	pjs.Context = p.Context
 	pjs.RerunCommand = p.RerunCommand
@@ -124,8 +128,8 @@ func PresubmitSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSp
 }
 
 // PostsubmitSpec initializes a PipelineOptionsSpec for a given postsubmit job.
-func PostsubmitSpec(p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.Base)
+func PostsubmitSpec(logger *logrus.Entry, p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(logger, p.Base)
 	pjs.Type = job.PostsubmitJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
@@ -140,16 +144,16 @@ func PostsubmitSpec(p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJob
 }
 
 // PeriodicSpec initializes a PipelineOptionsSpec for a given periodic job.
-func PeriodicSpec(p job.Periodic) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.Base)
+func PeriodicSpec(logger *logrus.Entry, p job.Periodic) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(logger, p.Base)
 	pjs.Type = job.PeriodicJob
 
 	return pjs
 }
 
 // BatchSpec initializes a PipelineOptionsSpec for a given batch job and ref spec.
-func BatchSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(p.Base)
+func BatchSpec(logger *logrus.Entry, p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(logger, p.Base)
 	pjs.Type = job.BatchJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
@@ -157,7 +161,15 @@ func BatchSpec(p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	return pjs
 }
 
-func specFromJobBase(jb job.Base) v1alpha1.LighthouseJobSpec {
+func specFromJobBase(logger *logrus.Entry, jb job.Base) v1alpha1.LighthouseJobSpec {
+	// if we have not yet loaded the PipelineRunSpec then lets do it now
+	if jb.PipelineRunSpec == nil {
+		logger = logger.WithField("JobName", jb.Name)
+		err := jb.LoadPipeline(logger)
+		if err != nil {
+			logger.WithError(err).Warn("failed to lazy load the PipelineRunSpec")
+		}
+	}
 	var namespace string
 	if jb.Namespace != nil {
 		namespace = *jb.Namespace
@@ -182,8 +194,42 @@ func completePrimaryRefs(refs v1alpha1.Refs, jb job.Base) *v1alpha1.Refs {
 	}
 	refs.SkipSubmodules = jb.SkipSubmodules
 	// TODO
-	//refs.CloneDepth = jb.CloneDepth
+	// refs.CloneDepth = jb.CloneDepth
 	return &refs
+}
+
+// GenerateName generates a meaningful name for the LighthouseJob from the spec
+func GenerateName(spec *v1alpha1.LighthouseJobSpec) string {
+	if spec.Refs == nil {
+		return "missingref"
+	}
+
+	branch := spec.Refs.BaseRef
+	if len(spec.Refs.Pulls) > 0 {
+		branch = "pr-" + strconv.Itoa(spec.Refs.Pulls[0].Number)
+	}
+	name := addNonEmptyParts(spec.Refs.Org, spec.Refs.Repo, branch, spec.Context)
+	name = util.ToValidName(name)
+	if len(name) > maxGenerateNamePrefix {
+		name = name[len(name)-maxGenerateNamePrefix:]
+	}
+	name = strings.TrimPrefix(name, "-")
+	name = util.ToValidName(name)
+
+	if !strings.HasSuffix(name, "-") {
+		name += "-"
+	}
+	return name
+}
+
+func addNonEmptyParts(values ...string) string {
+	var parts []string
+	for _, v := range values {
+		if v != "" {
+			parts = append(parts, v)
+		}
+	}
+	return strings.Join(parts, "-")
 }
 
 // LighthouseJobFields extracts logrus fields from a LighthouseJob useful for logging.
@@ -261,6 +307,11 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 	// let's validate labels
 	for key, value := range labels {
 		if errs := validation.IsValidLabelValue(value); len(errs) > 0 {
+			// ToDo: Use util.GitKind function instead
+			// For nested repos only in gitlab, we do not want to remove the sub group name, which comes before /
+			if key == util.RepoLabel && os.Getenv("GIT_KIND") == "gitlab" {
+				value = strings.Replace(value, "/", "-", -1)
+			}
 			// try to use basename of a path, if path contains invalid //
 			base := filepath.Base(value)
 			if errs := validation.IsValidLabelValue(base); len(errs) == 0 {
@@ -285,7 +336,6 @@ func LabelsAndAnnotationsForSpec(spec v1alpha1.LighthouseJobSpec, extraLabels, e
 	for k, v := range extraAnnotations {
 		annotations[k] = v
 	}
-
 	return labels, annotations
 }
 
@@ -304,6 +354,10 @@ func LabelsAndAnnotationsForJob(lj v1alpha1.LighthouseJob, buildID string) (map[
 	if extraAnnotations = lj.ObjectMeta.Annotations; extraAnnotations == nil {
 		extraAnnotations = map[string]string{}
 	}
+	// ensure the opentelemetry annotations holding trace context
+	// won't be copied to other resources
+	delete(extraAnnotations, "lighthouse.jenkins-x.io/traceparent")
+	delete(extraAnnotations, "lighthouse.jenkins-x.io/tracestate")
 	return LabelsAndAnnotationsForSpec(lj.Spec, extraLabels, extraAnnotations)
 }
 

@@ -364,7 +364,12 @@ func handle(wantLGTM bool, config *plugins.Configuration, ownersClient repoowner
 				if commit == nil {
 					commit = &scm.Commit{}
 				}
-				treeHash := commit.Tree.Sha
+				var treeHash string
+				if commit.Tree.Sha != "" {
+					treeHash = commit.Tree.Sha
+				} else {
+					treeHash = commit.Sha
+				}
 				log.WithField("tree", treeHash).Info("Adding comment to store tree-hash.")
 				if err := spc.CreateComment(org, repoName, number, true, fmt.Sprintf(addLGTMLabelNotification, treeHash)); err != nil {
 					log.WithError(err).Error("Failed to add comment.")
@@ -460,7 +465,12 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, config *plugins
 			if err != nil {
 				log.WithField("sha", pe.PullRequest.Head.Sha).WithError(err).Error("Failed to get commit.")
 			}
-			treeHash := commit.Tree.Sha
+			var treeHash string
+			if commit.Tree.Sha != "" {
+				treeHash = commit.Tree.Sha
+			} else {
+				treeHash = commit.Sha
+			}
 			if treeHash == lastLgtmTreeHash {
 				// Don't remove the label, PR code hasn't changed
 				log.Infof("Keeping LGTM label as the tree-hash remained the same: %s", treeHash)

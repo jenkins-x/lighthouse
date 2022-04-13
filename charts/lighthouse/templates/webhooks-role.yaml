@@ -6,13 +6,23 @@ rules:
 - apiGroups:
   - ""
   resources:
+  {{- if eq .Values.scope "cluster" }}
   - namespaces
+  {{- end }}
   - configmaps
   - secrets
   verbs:
   - get
   - update
   - create
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
   - list
   - watch
 - apiGroups:

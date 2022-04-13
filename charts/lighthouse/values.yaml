@@ -16,7 +16,7 @@ githubApp:
   # githubApp.enabled -- Enables GitHub app authentication
   enabled: false
 
-  # githubApp.username -- GitHub app user name 
+  # githubApp.username -- GitHub app user name
   username:  "jenkins-x[bot]"
 
 # user -- Git user name (used when GitHub app authentication is not enabled)
@@ -31,8 +31,20 @@ hmacToken: ""
 # hmacTokenEnabled -- Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud
 hmacTokenEnabled: true
 
-# logFormat -- Log format
+# logFormat -- Log format either json or stackdriver
 logFormat: "json"
+
+# logService -- The name of the service registered with logging
+logService: ""
+
+# logLevel -- The logging level: debug, info, warn
+logLevel: "info"
+
+# logStackSkip -- Comma separated stack frames to skip from the log
+logStackSkip: ""
+
+# scope -- limit permissions to namespace privileges
+scope: "cluster"
 
 cluster:
   crds:
@@ -41,10 +53,11 @@ cluster:
 
 image:
   # image.parentRepository -- Docker registry to pull images from
-  parentRepository: gcr.io/jenkinsxio
+  parentRepository: ghcr.io/jenkins-x
 
   # image.tag -- Docker images tag
-  tag: 0.0.750
+  # the following tag is latest on the main branch, it's a specific version on a git tag
+  tag: latest
 
   # image.pullPolicy -- Image pull policy
   pullPolicy: IfNotPresent
@@ -52,6 +65,19 @@ image:
 # env -- Environment variables
 env:
   JX_DEFAULT_IMAGE: ""
+
+
+externalPlugins:
+- name: cd-indicators
+  requiredResources:
+  - kind: Service
+    namespace: jx
+    name: cd-indicators
+- name: lighthouse-webui-plugin
+  requiredResources:
+  - kind: Service
+    namespace: jx
+    name: lighthouse-webui-plugin
 
 gcJobs:
   # gcJobs.maxAge -- Max age from which `LighthouseJob`s will be deleted
@@ -68,6 +94,9 @@ gcJobs:
 
   # gcJobs.concurrencyPolicy -- Drives the job's concurrency policy
   concurrencyPolicy: Forbid
+
+  # gcJobs.backoffLimit -- Drives the job's backoff limit
+  backoffLimit: 6
 
   image:
     # gcJobs.image.repository -- Template for computing the gc job docker image repository
@@ -157,6 +186,9 @@ webhooks:
 
     # webhooks.ingress.annotations -- Webhooks ingress annotations
     annotations: {}
+    
+    # webhooks.ingress.ingressClassName -- Webhooks ingress ingressClassName
+    ingressClassName: null
 
     # webhooks.ingress.hosts -- Webhooks ingress host names
     hosts: []
@@ -329,7 +361,7 @@ keeper:
   # keeper.env -- Lets you define keeper specific environment variables
   env: {}
 
-  # keeper.service -- Service settings for the webhooks controller
+  # keeper.service -- Service settings for the keeper controller
   service:
     type: ClusterIP
     externalPort: 80
@@ -374,6 +406,93 @@ keeper:
   affinity: {}
 
   # keeper.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the keeper pods
+  tolerations: []
+
+poller:
+  # poller.enabled -- Whether to enable or disable the poller component
+  enabled: false
+
+  # poller.replicaCount -- Number of replicas
+  replicaCount: 1
+
+  # poller.terminationGracePeriodSeconds -- Termination grace period for poller pods
+  terminationGracePeriodSeconds: 30
+
+  image:
+    # poller.image.repository -- Template for computing the poller controller docker image repository
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-poller"
+
+    # poller.image.tag -- Template for computing the poller controller docker image tag
+    tag: "{{ .Values.image.tag }}"
+
+    # poller.image.pullPolicy -- Template for computing the poller controller docker image pull policy
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+
+  # poller.podAnnotations -- Annotations applied to the poller pods
+  podAnnotations: {}
+
+  # poller.env -- Lets you define poller specific environment variables
+  env:
+    # poller.env.POLL_PERIOD the default time period between polling releases and pull requests
+    POLL_PERIOD: 20s
+
+    # poller.env.POLL_RELEASE_PERIOD the time period between polling releases
+    # POLL_RELEASE_PERIOD: 20s
+
+    # poller.env.POLL_PULL_REQUEST_PERIOD the time period between polling pull requests
+    # POLL_PULL_REQUEST_PERIOD: 20s
+
+    # poller.env.POLL_HOOK_ENDPOINT the hook service endpoint to post webhooks to
+    POLL_HOOK_ENDPOINT: http://hook/hook/poll
+
+  # poller.contextMatchPattern -- Regex pattern to use to match commit status context
+  contextMatchPattern: ""
+
+  # poller.requireReleaseSuccess -- Keep polling releases until the most recent commit status is successful
+  requireReleaseSuccess: false
+
+  resources:
+    # poller.resources.limits -- Resource limits applied to the poller pods
+    limits:
+      cpu: 400m
+      memory: 512Mi
+
+    # poller.resources.requests -- Resource requests applied to the poller pods
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  # poller.probe -- Liveness and readiness probes settings
+  probe:
+    path: /
+
+  # keeper.internalPort -- The internal port used to view metrics etc
+  internalPort: 8888
+
+  # poller.livenessProbe -- Liveness probe configuration
+  livenessProbe:
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  # poller.readinessProbe -- Readiness probe configuration
+  readinessProbe:
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+  datadog:
+    # poller.datadog.enabled -- Enables datadog
+    enabled: "true"
+
+  # poller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the poller pods
+  nodeSelector: {}
+
+  # poller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the poller pods
+  affinity: {}
+
+  # poller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the poller pods
   tolerations: []
 
 engines:

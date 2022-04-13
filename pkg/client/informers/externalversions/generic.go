@@ -37,6 +37,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=lighthouse.jenkins.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("lighthousebreakpoints"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Lighthouse().V1alpha1().LighthouseBreakpoints().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("lighthousejobs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Lighthouse().V1alpha1().LighthouseJobs().Informer()}, nil
 

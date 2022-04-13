@@ -66,12 +66,22 @@ spec:
             value: "{{ .Values.logFormat }}"
           - name: "LOGRUS_FORMAT"
             value: "{{ .Values.logFormat }}"
+          - name: LOGRUS_SERVICE
+            value: "{{ .Values.logService | default .Chart.Name }}"
+          - name: LOGRUS_SERVICE_VERSION
+            value: "{{ .Chart.Version }}"
+          - name: LOGRUS_STACK_SKIP
+            value: "{{ .Values.logStackSkip }}"
 {{- if hasKey .Values "env" }}
 {{- range $pkey, $pval := .Values.env }}
           - name: {{ $pkey }}
             value: {{ quote $pval }}
 {{- end }}
 {{- end }}
+        envFrom:
+        - secretRef:
+            name: jx-boot-job-env-vars
+            optional: true
         ports:
         - containerPort: {{ .Values.webhooks.service.internalPort }}
         livenessProbe:

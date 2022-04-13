@@ -29,6 +29,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/gittest"
+
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -1023,6 +1025,8 @@ func TestCheckMergeLabels(t *testing.T) {
 }
 
 func TestTakeAction(t *testing.T) {
+	defaultBranch := gittest.GetDefaultBranch(t)
+
 	sleep = func(time.Duration) {}
 	defer func() { sleep = time.Sleep }()
 
@@ -1377,8 +1381,8 @@ func TestTakeAction(t *testing.T) {
 				cc:         &keeper.ContextPolicy{},
 				org:        "o",
 				repo:       "r",
-				branch:     "master",
-				sha:        "master",
+				branch:     defaultBranch,
+				sha:        defaultBranch,
 			}
 			genPulls := func(nums []int) []PullRequest {
 				var prs []PullRequest
@@ -1389,7 +1393,7 @@ func TestTakeAction(t *testing.T) {
 					if err := lg.AddCommit("o", "r", map[string][]byte{fmt.Sprintf("%d", i): []byte("WOW")}); err != nil {
 						t.Fatalf("Error adding commit: %v", err)
 					}
-					if err := lg.Checkout("o", "r", "master"); err != nil {
+					if err := lg.Checkout("o", "r", defaultBranch); err != nil {
 						t.Fatalf("Error checking out master: %v", err)
 					}
 					oid := githubql.String(fmt.Sprintf("origin/pr-%d", i))

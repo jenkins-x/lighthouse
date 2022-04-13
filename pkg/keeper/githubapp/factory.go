@@ -27,7 +27,7 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 
 	var scmClient *scm.Client
 	var err error
-	if gitKind == "gitea" {
+	if gitKind == "gitea" || gitKind == "bitbucketcloud" {
 		// gitea returns 403 if the gitToken isn't passed here
 		scmClient, err = factory.NewClient(gitKind, serverURL, gitToken, factory.SetUsername(botName))
 	} else {
@@ -45,11 +45,6 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 	gitClient.SetCredentials(botName, func() []byte {
 		return []byte(gitToken)
 	})
-
-	fileBrowsers, err := filebrowser.NewFileBrowsers(serverURL, filebrowser.NewFileBrowserFromScmClient(gitproviderClient))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create the git file browsers")
-	}
 
 	u, err := url.Parse(serverURL)
 	if err != nil {
@@ -82,7 +77,7 @@ func NewKeeperController(configAgent *config.Agent, botName string, gitKind stri
 		return nil, errors.Wrapf(err, "failed to create git client factory for server %s", serverURL)
 	}
 	fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
-	fileBrowsers, err = filebrowser.NewFileBrowsers(serverURL, fb)
+	fileBrowsers, err := filebrowser.NewFileBrowsers(serverURL, fb)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create git file browser")
 	}

@@ -4,11 +4,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jenkins-x/go-scm/scm/factory"
+	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
+
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,19 +20,17 @@ func TestMergeConfigIntegration(t *testing.T) {
 		t.SkipNow()
 		return
 	}
-	scmClient, _ := factory.NewClient("github", "https://github.com", token)
-	scmProvider := scmprovider.ToClient(scmClient, "my-bot")
-
 	repoOwner := "jenkins-x"
 	repoName := "lighthouse-test-project"
 	sha := ""
 	cfg := &config.Config{}
 	pluginCfg := &plugins.Configuration{}
 
-	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, filebrowser.NewFileBrowserFromScmClient(scmProvider))
+	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser("test_data", true))
 	require.NoError(t, err, "failed to create filebrowsers")
 
-	flag, err := MergeTriggers(cfg, pluginCfg, fileBrowsers, NewResolverCache(), repoOwner, repoName, sha)
+	fc := filebrowser.NewFetchCache()
+	flag, err := MergeTriggers(cfg, pluginCfg, fileBrowsers, fc, NewResolverCache(), repoOwner, repoName, sha)
 	require.NoError(t, err, "failed to merge configs")
 	assert.True(t, flag, "did not return merge flag")
 

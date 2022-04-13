@@ -143,24 +143,24 @@ After the installation, any changes merged into the _master_ branch of this conf
   Once the installation succeeded, we will make further changes to the configuration via pull request to the configuration repository.
 
     ```bash
-    install_namepsace=lighthouse
+    install_namespace=lighthouse
 
-    kubectl create namespace $install_namepsace
-    kubectl create cm config -n $install_namepsace --from-file=config.yaml
-    kubectl create cm plugins -n $install_namepsace --from-file=plugins.yaml
+    kubectl create namespace $install_namespace
+    kubectl create cm config -n $install_namespace --from-file=config.yaml
+    kubectl create cm plugins -n $install_namespace --from-file=plugins.yaml
     ```
 
 - Configure the Helm chart repository
 
     ```bash
-    helm repo add lighthouse https://storage.googleapis.com/jenkinsxio/charts
+    helm repo add lighthouse https://jenkins-x-charts.github.io/repo
     helm repo update
     ```
 
 - Install Lighthouse using Helm.
 
     ```bash
-    install_namepsace=lighthouse
+    install_namespace=lighthouse
     bot_user=<github-username-of-bot-user>
     bot_token=<oauthtoken-bot-user>
     webhook_secret=<generated-webhook-secret>
@@ -187,9 +187,6 @@ After the installation, any changes merged into the _master_ branch of this conf
     engines:
       jx: false
       tekton: true
-
-    configMaps:
-      create: true
   
     webhooks:
       ingress:
@@ -207,10 +204,10 @@ After the installation, any changes merged into the _master_ branch of this conf
     ```bash
     GITHUB_TOKEN=<oauthtoken-bot-user>
 
-    install_namepsace=lighthouse
+    install_namespace=lighthouse
     bot_user=<github-username-of-bot-user>
     repo_name=lighthouse-config
-    webhook_url=$(kubectl get ingress -n $install_namepsace -o=jsonpath='http://{.items[0].spec.rules[0].host}'/hook)
+    webhook_url=$(kubectl get ingress -n $install_namespace -o=jsonpath='http://{.items[0].spec.rules[0].host}'/hook)
     webhook_secret=<generated-webhook-secret>
 
     cat <<EOF | gh api -X POST repos/$bot_user/$repo_name/hooks --input -
@@ -337,10 +334,10 @@ Now that we have Lighthouse installed, we can create a sample project and config
 - To build the pipeline, you need the _git-clone_ and _buildpack_ Tasks from the Tekton Task Catalog.
 
     ```bash
-    install_namepsace=lighthouse
+    install_namespace=lighthouse
 
-    kubectl apply -n $install_namepsace -f https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-clone/0.2/git-clone.yaml
-    kubectl apply -n $install_namepsace -f https://raw.githubusercontent.com/tektoncd/catalog/master/task/buildpacks/0.1/buildpacks.yaml  
+    kubectl apply -n $install_namespace -f https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-clone/0.2/git-clone.yaml
+    kubectl apply -n $install_namespace -f https://raw.githubusercontent.com/tektoncd/catalog/master/task/buildpacks/0.1/buildpacks.yaml  
     ```
 
 - Now you can create the actual Tektone Pipeline
@@ -567,10 +564,10 @@ Now we need to add the sample project to the Lighthouse configuration and setup 
   Once the pull request merged, you can verify the Lighthouse configuration in the cluster.
 
     ```bash
-    install_namepsace=lighthouse
+    install_namespace=lighthouse
 
-    kubectl -n $install_namepsace get cm config -o yaml
-    kubectl -n $install_namepsace get cm plugins -o yaml
+    kubectl -n $install_namespace get cm config -o yaml
+    kubectl -n $install_namespace get cm plugins -o yaml
     ```
 
 - Last but not least, let's create a webhook for the sample project.
@@ -578,7 +575,7 @@ Now we need to add the sample project to the Lighthouse configuration and setup 
     ```bash
     bot_user=<github-username-of-bot-user>
     sample_repo_name=hello
-    webhook_url=$(kubectl get ingress -n $install_namepsace -o=jsonpath='http://{.items[0].spec.rules[0].host}'/hook)
+    webhook_url=$(kubectl get ingress -n $install_namespace -o=jsonpath='http://{.items[0].spec.rules[0].host}'/hook)
     webhook_secret=<generated-webhook-secret>
 
     cat <<EOF | gh api -X POST repos/$bot_user/$sample_repo_name/hooks --input -

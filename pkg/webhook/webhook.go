@@ -2,11 +2,17 @@ package webhook
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+
+	"github.com/jenkins-x/go-scm/pkg/hmac"
+
+	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/jenkins-x/go-scm/scm"
@@ -30,15 +36,17 @@ import (
 type WebhooksController struct {
 	ConfigMapWatcher *watcher.ConfigMapWatcher
 
-	path           string
-	namespace      string
-	pluginFilename string
-	configFilename string
-	server         *Server
-	botName        string
-	gitServerURL   string
-	gitClient      git.Client
-	launcher       launcher.PipelineLauncher
+	path                    string
+	namespace               string
+	pluginFilename          string
+	configFilename          string
+	server                  *Server
+	botName                 string
+	gitServerURL            string
+	gitClient               git.Client
+	launcher                launcher.PipelineLauncher
+	disabledExternalPlugins []string
+	logWebHooks             bool
 }
 
 // NewWebhooksController creates and configures the controller
@@ -49,6 +57,10 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 		pluginFilename: pluginFilename,
 		configFilename: configFilename,
 		botName:        botName,
+		logWebHooks:    os.Getenv("LIGHTHOUSE_LOG_WEBHOOKS") == "true",
+	}
+	if o.logWebHooks {
+		logrus.Info("enabling webhook logging")
 	}
 	var err error
 	o.server, err = o.createHookServer()
@@ -120,8 +132,47 @@ func (o *WebhooksController) isReady() bool {
 	return true
 }
 
-// HandleWebhookRequests handles incoming events
+// HandleWebhookRequests handles incoming webhook events
 func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *http.Request) {
+	o.handleWebhookOrPollRequest(w, r, "Webhook", func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
+		return scmClient.Webhooks.Parse(r, o.secretFn)
+	})
+}
+
+// HandlePollingRequests handles incoming polling events
+func (o *WebhooksController) HandlePollingRequests(w http.ResponseWriter, r *http.Request) {
+	o.handleWebhookOrPollRequest(w, r, "Pollhook", func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
+		data, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read poll payload")
+		}
+		wh := &scm.WebhookWrapper{}
+		err = json.Unmarshal(data, wh)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal WebhookWrapper payload")
+		}
+		hook, err := wh.ToWebhook()
+		if err != nil {
+			return nil, err
+		}
+
+		key, err := o.secretFn(hook)
+		if err != nil {
+			return hook, err
+		} else if key == "" {
+			return hook, nil
+		}
+
+		sig := r.Header.Get("X-Hub-Signature")
+		if !hmac.ValidatePrefix(data, []byte(key), sig) {
+			return hook, scm.ErrSignatureInvalid
+		}
+		return hook, err
+	})
+}
+
+// handleWebhookOrPollRequest handles incoming events
+func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r *http.Request, operation string, parseWebhook func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error)) {
 	if r.Method != http.MethodPost {
 		// liveness probe etc
 		logrus.WithField("method", r.Method).Debug("invalid http method so returning 200")
@@ -153,7 +204,7 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 		return
 	}
 
-	webhook, err := scmClient.Webhooks.Parse(r, o.secretFn)
+	webhook, err := parseWebhook(scmClient, r)
 	if err != nil {
 		logrus.Warnf("failed to parse webhook: %s", err.Error())
 
@@ -228,7 +279,7 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 				opts.Scheme = o.server.ServerURL.Scheme
 			}
 		}
-		gitFactory, err := gitv2.NewClientFactory(configureOpts)
+		gitFactory, err := gitv2.NewNoMirrorClientFactory(configureOpts)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to create git client factory for server %s", o.gitServerURL)
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
@@ -242,13 +293,22 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 			return
 		}
 	}
+	entry := logrus.WithField(operation, webhook.Kind())
+	if o.disabledExternalPlugins == nil {
+		o.disabledExternalPlugins, err = externalplugincfg.LoadDisabledPlugins(entry, kubeClient, o.namespace)
+		if err != nil {
+			err = errors.Wrap(err, "failed to load disabled external plugins")
+			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+			return
+		}
+	}
 
-	l, output, err := o.ProcessWebHook(logrus.WithField("Webhook", webhook.Kind()), webhook)
+	l, output, err := o.ProcessWebHook(entry, webhook)
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 	}
 	// Demux events only to external plugins that require this event.
-	if external := util.ExternalPluginsForEvent(o.server.Plugins, string(webhook.Kind()), webhook.Repository().FullName); len(external) > 0 {
+	if external := util.ExternalPluginsForEvent(o.server.Plugins, string(webhook.Kind()), webhook.Repository().FullName, o.disabledExternalPlugins); len(external) > 0 {
 		go util.CallExternalPluginsWithWebhook(l, external, webhook, util.HMACToken(), &o.server.wg)
 	}
 
@@ -279,6 +339,11 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 	}
 
 	l = l.WithFields(fields)
+
+	if o.logWebHooks {
+		l.WithField("WebHook", webhook).Info("webhook")
+	}
+
 	_, ok := webhook.(*scm.PingHook)
 	if ok {
 		l.Info("received ping")

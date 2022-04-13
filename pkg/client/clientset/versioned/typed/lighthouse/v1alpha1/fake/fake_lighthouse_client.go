@@ -12,6 +12,10 @@ type FakeLighthouseV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeLighthouseV1alpha1) LighthouseBreakpoints(namespace string) v1alpha1.LighthouseBreakpointInterface {
+	return &FakeLighthouseBreakpoints{c, namespace}
+}
+
 func (c *FakeLighthouseV1alpha1) LighthouseJobs(namespace string) v1alpha1.LighthouseJobInterface {
 	return &FakeLighthouseJobs{c, namespace}
 }

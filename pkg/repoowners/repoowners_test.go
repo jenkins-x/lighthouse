@@ -24,6 +24,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jenkins-x/lighthouse/pkg/gittest"
+
 	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
 	"github.com/jenkins-x/lighthouse/pkg/git/localgit"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
@@ -102,6 +104,7 @@ func patternAll(values ...string) map[string]sets.String {
 }
 
 func getTestClient(
+	defaultBranch string,
 	files map[string][]byte,
 	enableMdYaml,
 	skipCollab,
@@ -111,7 +114,8 @@ func getTestClient(
 	extraBranchesAndFiles map[string]map[string][]byte,
 ) (*Client, func(), error) {
 	testAliasesFile := map[string][]byte{
-		"OWNERS_ALIASES": []byte("aliases:\n  Best-approvers:\n  - carl\n  - cjwagner\n  best-reviewers:\n  - Carl\n  - BOB"),
+		"OWNERS_ALIASES": []byte("aliases:\n  Best-approvers:\n  - carl\n  - cjwagner\n  best-reviewers:\n  - Carl\n  - BOB\n" +
+			"foreignAliases:\n- name: another-repo\n"),
 	}
 
 	localGit, git, err := localgit.New()
@@ -140,14 +144,21 @@ func getTestClient(
 				}
 			}
 		}
-		if err := localGit.Checkout("org", "repo", "master"); err != nil {
+		if err := localGit.Checkout("org", "repo", defaultBranch); err != nil {
 			return nil, nil, err
 		}
 	}
 
 	return &Client{
-			git:    git,
-			spc:    &fake.SCMClient{Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"}},
+			git: git,
+			spc: &fake.SCMClient{
+				Collaborators: []string{"cjwagner", "k8s-ci-robot", "alice", "bob", "carl", "mml", "maggie"},
+				RemoteFiles: map[string]map[string]string{
+					"OWNERS_ALIASES": {
+						"HEAD": "aliases:\n  best-approvers:\n  - blahonga\n",
+					},
+				},
+			},
 			logger: logrus.WithField("client", "repoowners"),
 			cache:  make(map[string]cacheEntry),
 
@@ -175,6 +186,8 @@ func getTestClient(
 }
 
 func TestOwnersDirExcludes(t *testing.T) {
+	defaultBranch := gittest.GetDefaultBranch(t)
+
 	validatorExcluded := func(t *testing.T, ro *RepoOwners) {
 		for dir := range ro.approvers {
 			if strings.Contains(dir, "src") {
@@ -213,13 +226,13 @@ func TestOwnersDirExcludes(t *testing.T) {
 	}
 
 	getRepoOwnersWithExcludes := func(t *testing.T, defaults []string, byRepo map[string][]string) *RepoOwners {
-		client, cleanup, err := getTestClient(testFiles, true, false, true, defaults, byRepo, nil)
+		client, cleanup, err := getTestClient(gittest.GetDefaultBranch(t), testFiles, true, false, true, defaults, byRepo, nil)
 		if err != nil {
 			t.Fatalf("Error creating test client: %v.", err)
 		}
 		defer cleanup()
 
-		ro, err := client.LoadRepoOwners("org", "repo", "master")
+		ro, err := client.LoadRepoOwners("org", "repo", defaultBranch)
 		if err != nil {
 			t.Fatalf("Unexpected error loading RepoOwners: %v.", err)
 		}
@@ -271,6 +284,8 @@ func TestOwnersDirExcludes(t *testing.T) {
 }
 
 func TestOwnersRegexpFiltering(t *testing.T) {
+	defaultBranch := gittest.GetDefaultBranch(t)
+
 	tests := map[string]sets.String{
 		"re/a/go.go":   sets.NewString("re/all", "re/go", "re/go-in-a"),
 		"re/a/md.md":   sets.NewString("re/all", "re/md-in-a"),
@@ -280,13 +295,13 @@ func TestOwnersRegexpFiltering(t *testing.T) {
 		"re/b/md.md":   sets.NewString("re/all"),
 	}
 
-	client, cleanup, err := getTestClient(testFilesRe, true, false, true, nil, nil, nil)
+	client, cleanup, err := getTestClient(gittest.GetDefaultBranch(t), testFilesRe, true, false, true, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Error creating test client: %v.", err)
 	}
 	defer cleanup()
 
-	r, err := client.LoadRepoOwners("org", "repo", "master")
+	r, err := client.LoadRepoOwners("org", "repo", defaultBranch)
 	if err != nil {
 		t.Fatalf("Unexpected error loading RepoOwners: %v.", err)
 	}
@@ -304,6 +319,8 @@ func strP(str string) *string {
 }
 
 func TestLoadRepoOwners(t *testing.T) {
+	defaultBranch := gittest.GetDefaultBranch(t)
+
 	tests := []struct {
 		name              string
 		mdEnabled         bool
@@ -435,7 +452,7 @@ func TestLoadRepoOwners(t *testing.T) {
 		},
 		{
 			name:   "OWNERS from master branch while release branch diverges",
-			branch: strP("master"),
+			branch: strP(defaultBranch),
 			extraBranchesAndFiles: map[string]map[string][]byte{
 				"release-1.10": {
 					"src/doc/OWNERS": []byte("approvers:\n - maggie\n"),
@@ -496,14 +513,14 @@ func TestLoadRepoOwners(t *testing.T) {
 
 	for _, test := range tests {
 		t.Logf("Running scenario %q", test.name)
-		client, cleanup, err := getTestClient(testFiles, test.mdEnabled, test.skipCollaborators, test.aliasesFileExists, nil, nil, test.extraBranchesAndFiles)
+		client, cleanup, err := getTestClient(defaultBranch, testFiles, test.mdEnabled, test.skipCollaborators, test.aliasesFileExists, nil, nil, test.extraBranchesAndFiles)
 		if err != nil {
 			t.Errorf("Error creating test client: %v.", err)
 			continue
 		}
 		defer cleanup()
 
-		base := "master"
+		base := defaultBranch
 		if test.branch != nil {
 			base = *test.branch
 		}
@@ -554,6 +571,8 @@ func TestLoadRepoOwners(t *testing.T) {
 }
 
 func TestLoadRepoAliases(t *testing.T) {
+	defaultBranch := gittest.GetDefaultBranch(t)
+
 	tests := []struct {
 		name string
 
@@ -572,7 +591,7 @@ func TestLoadRepoAliases(t *testing.T) {
 			name:            "Normal aliases file",
 			aliasFileExists: true,
 			expectedRepoAliases: RepoAliases{
-				"best-approvers": sets.NewString("carl", "cjwagner"),
+				"best-approvers": sets.NewString("carl", "cjwagner", "blahonga"),
 				"best-reviewers": sets.NewString("carl", "bob"),
 			},
 		},
@@ -594,13 +613,13 @@ func TestLoadRepoAliases(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		client, cleanup, err := getTestClient(testFiles, false, false, test.aliasFileExists, nil, nil, test.extraBranchesAndFiles)
+		client, cleanup, err := getTestClient(gittest.GetDefaultBranch(t), testFiles, false, false, test.aliasFileExists, nil, nil, test.extraBranchesAndFiles)
 		if err != nil {
 			t.Errorf("[%s] Error creating test client: %v.", test.name, err)
 			continue
 		}
 
-		branch := "master"
+		branch := defaultBranch
 		if test.branch != nil {
 			branch = *test.branch
 		}

@@ -23,6 +23,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	errors2 "github.com/pkg/errors"
 )
 
 // RemoteResolverFactory knows how to construct remote resolvers for
@@ -76,8 +78,9 @@ func (f *sshRemoteResolverFactory) PublishRemote(_, repo string) RemoteResolver 
 }
 
 type httpResolverFactory struct {
-	scheme string
-	host   string
+	scheme  string
+	host    string
+	urlUser bool
 	// Optional, either both or none must be set
 	username LoginGetter
 	token    TokenGetter
@@ -88,7 +91,18 @@ type httpResolverFactory struct {
 func (f *httpResolverFactory) CentralRemote(org, repo string) RemoteResolver {
 	return HTTPResolver(func() (*url.URL, error) {
 		path := f.gitClonePath(org, repo)
-		return &url.URL{Scheme: applyDefaultScheme(f.scheme), Host: f.host, Path: path}, nil
+		u := &url.URL{Scheme: applyDefaultScheme(f.scheme), Host: f.host, Path: path}
+		if f.urlUser && f.username != nil && f.token != nil {
+			user, err := f.username()
+			if err != nil {
+				return nil, errors2.Wrapf(err, "failed to get git username")
+			}
+			token := f.token()
+			if token != nil && user != "" {
+				u.User = url.UserPassword(user, string(token))
+			}
+		}
+		return u, nil
 	}, f.username, f.token)
 }
 

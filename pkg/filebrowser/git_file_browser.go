@@ -1,50 +1,73 @@
 package filebrowser
 
 import (
-	"github.com/jenkins-x/lighthouse/pkg/util"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/git/v2"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type gitFileBrowser struct {
 	clientFactory git.ClientFactory
 	clientsLock   sync.RWMutex
 	clients       map[string]*repoClientFacade
+	pullTimes     map[string]int64
 }
 
 const headBranchPrefix = "HEAD branch:"
+
+var (
+	shaRegex = regexp.MustCompile("\\b[0-9a-f]{7,40}\\b")
+)
 
 // NewFileBrowserFromGitClient creates a new file browser from an Scm client
 func NewFileBrowserFromGitClient(clientFactory git.ClientFactory) Interface {
 	return &gitFileBrowser{
 		clientFactory: clientFactory,
 		clients:       map[string]*repoClientFacade{},
+		pullTimes:     map[string]int64{},
 	}
+}
+
+func (f *gitFileBrowser) WithDir(owner, repo, ref string, fc FetchCache, fn func(dir string) error) error {
+	return f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
+		dir := repoClient.Directory()
+		return fn(dir)
+	})
 }
 
 func (f *gitFileBrowser) GetMainAndCurrentBranchRefs(_, _, eventRef string) ([]string, error) {
 	return []string{"", eventRef}, nil
 }
 
-func (f *gitFileBrowser) GetFile(owner, repo, path, ref string) (answer []byte, err error) {
-	err = f.withRepoClient(owner, repo, ref, func(repoClient git.RepoClient) error {
+func (f *gitFileBrowser) GetFile(owner, repo, path, ref string, fc FetchCache) (answer []byte, err error) {
+	err = f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
 		f := repoPath(repoClient, path)
-		var err error
+		exists, err := util.FileExists(f)
+		if err != nil {
+			return errors.Wrapf(err, "failed to check if file exists %s", f)
+		}
+		if !exists {
+			answer = nil
+			return nil
+		}
 		answer, err = ioutil.ReadFile(f) // #nosec
 		return err
 	})
 	return
 }
 
-func (f *gitFileBrowser) ListFiles(owner, repo, path, ref string) (answer []*scm.FileEntry, err error) {
-	err = f.withRepoClient(owner, repo, ref, func(repoClient git.RepoClient) error {
+func (f *gitFileBrowser) ListFiles(owner, repo, path, ref string, fc FetchCache) (answer []*scm.FileEntry, err error) {
+	err = f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
 		dir := repoPath(repoClient, path)
 		exists, err := util.DirExists(dir)
 		if err != nil {
@@ -89,7 +112,7 @@ func repoPath(repoClient git.RepoClient, path string) string {
 	return filepath.Join(dir, path)
 }
 
-func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fn func(repoClient git.RepoClient) error) error {
+func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, fn func(repoClient git.RepoClient) error) error {
 	client := f.getOrCreateClient(owner, repo)
 
 	var repoClient git.RepoClient
@@ -110,7 +133,7 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fn func(repoCli
 	}
 	if err == nil {
 		repoClient = client.repoClient
-		err = client.UseRef(ref)
+		err = client.UseRef(ref, fc)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to switch to ref %s", ref)
 		}
@@ -149,8 +172,13 @@ type repoClientFacade struct {
 	ref        string
 }
 
+var (
+	// maxRefFetchSeconds number of seconds to reuse the git fetch to avoid slowing things down too much
+	maxRefFetchSeconds = int64(20)
+)
+
 // UseRef this method should only be used within the lock
-func (c *repoClientFacade) UseRef(ref string) error {
+func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		ref = c.mainBranch
@@ -159,9 +187,27 @@ func (c *repoClientFacade) UseRef(ref string) error {
 	if strings.HasPrefix(ref, "refs/heads/") {
 		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
 	}
-	if c.ref == ref {
+
+	shouldFetch := fc.ShouldFetch(c.fullName, ref)
+	isSHA := IsSHA(ref)
+	if shouldFetch && isSHA {
+		// lets check if we've already fetched this sha
+		sha, err := c.repoClient.HasSHA(ref)
+		if err == nil && sha != "" {
+			shouldFetch = false
+			logrus.StandardLogger().WithFields(map[string]interface{}{
+				"Name": c.fullName,
+				"Ref":  ref,
+				"File": "git_file_browser",
+			}).Debug("not fetching ref as we already have it")
+		}
+	}
+
+	if c.ref == ref && !shouldFetch {
 		return nil
 	}
+
+	start := time.Now()
 
 	// lets switch to the main branch first before we go to a custom sha/ref
 	if c.ref != "" && c.ref != c.mainBranch {
@@ -171,15 +217,24 @@ func (c *repoClientFacade) UseRef(ref string) error {
 		}
 	}
 
-	if ref != c.mainBranch {
-		err := c.repoClient.FetchRef(ref)
-		if err != nil {
-			return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+	if shouldFetch {
+		if ref != c.mainBranch {
+			err := c.repoClient.FetchRef(ref)
+			if err != nil {
+				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+			}
+		} else {
+			err := c.repoClient.Fetch()
+			if err != nil {
+				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+			}
 		}
-	} else {
-		err := c.repoClient.Fetch()
-		if err != nil {
-			return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+		if !isSHA {
+			// lets pull any new changes into the main branch
+			err := c.repoClient.Pull()
+			if err != nil {
+				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+			}
 		}
 	}
 	c.ref = ref
@@ -187,6 +242,14 @@ func (c *repoClientFacade) UseRef(ref string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to checkout repository %s ref %s", c.fullName, ref)
 	}
+
+	duration := time.Now().Sub(start)
+	logrus.StandardLogger().WithFields(map[string]interface{}{
+		"Name":     c.fullName,
+		"Ref":      ref,
+		"File":     "git_file_browser",
+		"Duration": duration.String(),
+	}).Debug("fetched and checked out ref")
 	return nil
 }
 
@@ -225,4 +288,9 @@ func runCmd(dir, cmd string, arg ...string) (string, error) {
 		return text, errors.Wrapf(err, "failed to run command in dir %s: %s, %v: %s", dir, cmd, arg, text)
 	}
 	return text, nil
+}
+
+// IsSHA returns true if the given ref is a git sha
+func IsSHA(ref string) bool {
+	return shaRegex.MatchString(ref)
 }

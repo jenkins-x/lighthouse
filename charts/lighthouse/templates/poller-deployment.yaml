@@ -1,0 +1,135 @@
+{{- if .Values.poller.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "poller.name" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app: {{ template "poller.name" . }}
+spec:
+  replicas: {{ .Values.poller.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: {{ template "poller.name" . }}
+  template:
+    metadata:
+{{- if or .Values.poller.datadog.enabled .Values.poller.podAnnotations }}
+      annotations:
+{{- if .Values.poller.datadog.enabled }}
+        ad.datadoghq.com/poller.logs: '[{"source":"lighthouse","service":"poller"}]'
+{{- end }}
+{{- if .Values.poller.podAnnotations }}
+{{ toYaml .Values.poller.podAnnotations | indent 8 }}
+{{- end }}
+{{- end }}
+      labels:
+        app: {{ template "poller.name" . }}
+    spec:
+      serviceAccountName: {{ template "poller.name" . }}
+      terminationGracePeriodSeconds: {{ .Values.poller.terminationGracePeriodSeconds }}
+      containers:
+      - name: {{ template "poller.name" . }}
+        image: {{ tpl .Values.poller.image.repository . }}:{{ tpl .Values.poller.image.tag . }}
+        imagePullPolicy: {{ tpl .Values.poller.image.pullPolicy . }}
+        args:
+          - "--namespace={{ .Release.Namespace }}"
+          {{- if .Values.poller.contextMatchPattern }}
+          - "--context-match-pattern={{ .Values.poller.contextMatchPattern }}"
+          {{- end }}
+          {{- if .Values.poller.requireReleaseSuccess }}
+          - --require-release-success
+          {{- end }}
+        ports:
+          - name: http
+            containerPort: {{ .Values.poller.internalPort }}
+            protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.poller.probe.path }}
+            port: http
+          initialDelaySeconds: {{ .Values.poller.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.poller.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.poller.livenessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.poller.livenessProbe.timeoutSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.poller.probe.path }}
+            port: http
+          periodSeconds: {{ .Values.poller.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.poller.readinessProbe.successThreshold }}
+          timeoutSeconds: {{ .Values.poller.readinessProbe.timeoutSeconds }}
+        env:
+        - name: "GIT_KIND"
+          value: "{{ .Values.git.kind }}"
+        - name: "GIT_SERVER"
+          value: "{{ .Values.git.server }}"
+{{- if .Values.githubApp.enabled }}
+        - name: "GITHUB_APP_SECRET_DIR"
+          value: "/secrets/githubapp/tokens"
+{{- else }}
+        - name: "GIT_USER"
+          value: {{ .Values.user }}
+        - name: "GIT_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-oauth-token
+              key: oauth
+{{- end }}
+        - name: "HMAC_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: "lighthouse-hmac-token"
+              key: hmac
+              optional: {{ not .Values.hmacTokenEnabled }}
+        - name: "JX_LOG_FORMAT"
+          value: "{{ .Values.logFormat }}"
+        - name: "LOGRUS_FORMAT"
+          value: "{{ .Values.logFormat }}"
+        - name: LOGRUS_SERVICE
+          value: "{{ .Values.logService | default .Chart.Name }}"
+        - name: LOGRUS_SERVICE_VERSION
+          value: "{{ .Chart.Version }}"
+        - name: LOGRUS_STACK_SKIP
+          value: "{{ .Values.logStackSkip }}"
+{{- if hasKey .Values.poller "env" }}
+{{- range $pkey, $pval := .Values.poller.env }}
+        - name: {{ $pkey }}
+          value: {{ quote  $pval }}
+{{- end }}
+{{- end }}
+        envFrom:
+        - secretRef:
+            name: jx-boot-job-env-vars
+            optional: true
+        resources:
+{{ toYaml .Values.poller.resources | indent 10 }}
+{{- if .Values.githubApp.enabled }}
+        volumeMounts:
+        - name: githubapp-tokens
+          mountPath: /secrets/githubapp/tokens
+          readOnly: true
+{{- end }}
+{{- if .Values.githubApp.enabled }}
+      volumes:
+      - name: githubapp-tokens
+        secret:
+          secretName: tide-githubapp-tokens
+{{- end }}
+{{- with .Values.poller.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.poller.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.poller.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

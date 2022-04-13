@@ -18,6 +18,9 @@ package webhook
 
 import (
 	"strings"
+	"time"
+
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
@@ -30,8 +33,12 @@ import (
 // if the repository is configured to use in repository configuration then we create the use the repository specific
 // configuration
 func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.Agent, error) {
+	start := time.Now()
 	pc := plugins.NewAgent(s.ConfigAgent, s.Plugins, s.ClientAgent, s.ServerURL, l)
 	fullName := scm.Join(owner, repo)
+	if pc.Config == nil {
+		return pc, errors.Errorf("no config available. maybe the ConfigMap got deleted")
+	}
 	if !pc.Config.InRepoConfigEnabled(fullName) {
 		return pc, nil
 	}
@@ -57,13 +64,16 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 		return pc, errors.Wrapf(err, "failed to create agent")
 	}
 	c.Add(key, &pc)
+	duration := time.Now().Sub(start)
+	l.WithField("Duration", duration.String()).Info("created configAgent")
 	return pc, nil
 }
 
 func (s *Server) createAgent(pc *plugins.Agent, owner, repo, ref string) error {
 	var err error
 	cache := inrepo.NewResolverCache()
-	pc.Config, pc.PluginConfig, err = inrepo.Generate(s.FileBrowsers, cache, pc.Config, pc.PluginConfig, owner, repo, ref)
+	fc := filebrowser.NewFetchCache()
+	pc.Config, pc.PluginConfig, err = inrepo.Generate(s.FileBrowsers, fc, cache, pc.Config, pc.PluginConfig, owner, repo, ref)
 	if err != nil {
 		return errors.Wrapf(err, "failed to calculate in repo config")
 	}

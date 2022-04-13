@@ -1,5 +1,11 @@
 {{- if .Values.webhooks.ingress.enabled }}
+{{- if .Capabilities.APIVersions.Has "networking.k8s.io/v1" }}
+apiVersion: networking.k8s.io/v1
+{{- else if .Capabilities.APIVersions.Has "networking.k8s.io/v1beta1" }}
+apiVersion: networking.k8s.io/v1beta1
+{{- else }}
 apiVersion: extensions/v1beta1
+{{- end }}
 kind: Ingress
 metadata:
   name: {{ template "webhooks.name" . }}
@@ -8,13 +14,25 @@ metadata:
   annotations:
     {{- toYaml .Values.webhooks.ingress.annotations | nindent 4 }}
 spec:
+  {{- if semverCompare ">=1.18-0" .Capabilities.KubeVersion.Version }}
+  ingressClassName: {{ .Values.webhooks.ingress.ingressClassName }}
+  {{- end }}
   rules:
   {{- range .Values.webhooks.ingress.hosts }}
   - host: {{ . | quote }}
     http:
       paths:
         - backend:
+        {{- if $.Capabilities.APIVersions.Has "networking.k8s.io/v1" }}
+            service:
+              name: {{ default (include "webhooks.name" $) $.Values.webhooks.serviceName }}
+              port:
+                number: {{ $.Values.webhooks.service.externalPort }}
+          path: /
+          pathType: ImplementationSpecific
+        {{- else }}
             serviceName: {{ default (include "webhooks.name" $) $.Values.webhooks.serviceName }}
             servicePort: {{ $.Values.webhooks.service.externalPort }}
+        {{- end }}
   {{- end }}
 {{- end }}

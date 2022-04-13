@@ -236,7 +236,7 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 	}
 
 	// Trigger external plugins if appropriate
-	if external := util.ExternalPluginsForEvent(r.pluginConfig, util.LighthousePayloadTypeActivity, fmt.Sprintf("%s/%s", owner, repo)); len(external) > 0 {
+	if external := util.ExternalPluginsForEvent(r.pluginConfig, util.LighthousePayloadTypeActivity, fmt.Sprintf("%s/%s", owner, repo), nil); len(external) > 0 {
 		go util.CallExternalPluginsWithActivityRecord(r.logger, external, activity, util.HMACToken(), r.wg)
 	}
 

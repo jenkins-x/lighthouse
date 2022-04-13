@@ -17,8 +17,13 @@ limitations under the License.
 package jobutil
 
 import (
+	"os"
 	"reflect"
 	"testing"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/stretchr/testify/assert"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -29,6 +34,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/diff"
+)
+
+var (
+	logger = logrus.WithField("client", "git")
 )
 
 func TestPostsubmitSpec(t *testing.T) {
@@ -95,7 +104,7 @@ func TestPostsubmitSpec(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		actual := PostsubmitSpec(tc.p, tc.refs)
+		actual := PostsubmitSpec(logger, tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
 		}
@@ -196,7 +205,7 @@ func TestPresubmitSpec(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		actual := PresubmitSpec(tc.p, tc.refs)
+		actual := PresubmitSpec(logger, tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
 		}
@@ -267,7 +276,7 @@ func TestBatchSpec(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		actual := BatchSpec(tc.p, tc.refs)
+		actual := BatchSpec(logger, tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
 		}
@@ -277,6 +286,7 @@ func TestBatchSpec(t *testing.T) {
 func TestNewLighthouseJob(t *testing.T) {
 	var testCases = []struct {
 		name                string
+		gitKind             string
 		spec                v1alpha1.LighthouseJobSpec
 		labels              map[string]string
 		expectedLabels      map[string]string
@@ -285,6 +295,7 @@ func TestNewLighthouseJob(t *testing.T) {
 	}{
 		{
 			name: "periodic job, no extra labels",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PeriodicJob,
@@ -301,6 +312,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PeriodicJob,
@@ -320,6 +332,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		},
 		{
 			name: "presubmit job",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PresubmitJob,
@@ -354,7 +367,46 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
+			name: "presubmit job with nested repos",
+			gitKind: "gitlab",
+			spec: v1alpha1.LighthouseJobSpec{
+				Job:  "job",
+				Type: job.PresubmitJob,
+				Refs: &v1alpha1.Refs{
+					Org:     "org",
+					Repo:    "group/repo",
+					BaseSHA: "abcd1234",
+					Pulls: []v1alpha1.Pull{
+						{
+							Number: 1,
+							SHA:    "1234abcd",
+						},
+					},
+					CloneURI: "https://gitlab.jx.com/org/group/repo.git",
+				},
+				Context: "pr-build",
+			},
+			labels: map[string]string{},
+			expectedLabels: map[string]string{
+				job.CreatedByLighthouseLabel: "true",
+				util.LighthouseJobAnnotation: "job",
+				job.LighthouseJobTypeLabel:   "presubmit",
+				util.OrgLabel:                "org",
+				util.RepoLabel:               "group-repo",
+				util.PullLabel:               "1",
+				util.BranchLabel:             "PR-1",
+				util.ContextLabel:            "pr-build",
+				util.BaseSHALabel:            "abcd1234",
+				util.LastCommitSHALabel:      "1234abcd",
+			},
+			expectedAnnotations: map[string]string{
+				util.CloneURIAnnotation: "https://gitlab.jx.com/org/group/repo.git",
+				util.LighthouseJobAnnotation: "job",
+			},
+		},
+		{
 			name: "non-github presubmit job",
+			gitKind: "gerrit",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PresubmitJob,
@@ -387,6 +439,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		}, {
 			name: "job with name too long to fit in a label",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
 				Type: job.PresubmitJob,
@@ -422,6 +475,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		},
 		{
 			name: "periodic job, extra labels, extra annotations",
+			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
 				Type: job.PeriodicJob,
@@ -446,6 +500,7 @@ func TestNewLighthouseJob(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			os.Setenv("GIT_KIND", testCase.gitKind)
 			pj := NewLighthouseJob(testCase.spec, testCase.labels, testCase.annotations)
 			if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
 				t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
@@ -584,7 +639,7 @@ func TestSpecFromJobBase(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pj := specFromJobBase(tc.jobBase)
+			pj := specFromJobBase(logger, tc.jobBase)
 			if err := tc.verify(pj); err != nil {
 				t.Fatalf("Verification failed: %v", err)
 			}
@@ -684,5 +739,75 @@ func TestPartitionActive(t *testing.T) {
 				t.Errorf("didn't find aborted job %#v", job)
 			}
 		}
+	}
+}
+
+func TestGenerateName(t *testing.T) {
+	tests := []struct {
+		expected string
+		spec     v1alpha1.LighthouseJobSpec
+	}{
+		{
+			expected: "myorg-myrepo-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "myorg",
+					Repo: "myrepo",
+				},
+			},
+		},
+		{
+			expected: "st-organsation-my-repo-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "1st.Organsation",
+					Repo: "MY_REPO",
+				},
+			},
+		},
+		{
+			expected: "myorg-myrepo-main-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:     "myorg",
+					Repo:    "myrepo",
+					BaseRef: "main",
+				},
+			},
+		},
+		{
+			expected: "myorg-myrepo-pr-123-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "myorg",
+					Repo: "myrepo",
+					Pulls: []v1alpha1.Pull{
+						{
+							Number: 123,
+						},
+					},
+				},
+			},
+		},
+		{
+			expected: "repo-with-very-long-name-pr-123-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Refs: &v1alpha1.Refs{
+					Org:  "organisation-with-long-name",
+					Repo: "repo-with-very-long-name",
+					Pulls: []v1alpha1.Pull{
+						{
+							Number: 123,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		spec := &tc.spec
+		actual := GenerateName(spec)
+		assert.Equal(t, tc.expected, actual, "for spec %#v", spec)
 	}
 }

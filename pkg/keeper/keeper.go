@@ -356,7 +356,12 @@ func (c *DefaultController) Sync() error {
 			c.logger.WithField("duration", time.Since(start).String()).Debug("Failed to list LighthouseJobs from the cluster.")
 			return err
 		}
-		c.logger.WithField("duration", time.Since(start).String()).Debug("Listed LighthouseJobs from the cluster.")
+
+		if len(lhjList.Items) > 200 {
+			c.logger.Warn("Over 200+ lighthouse jobs in the cluster, this could lead to keeper failing readiness and liveness probes")
+		}
+
+		c.logger.WithField("duration", time.Since(start).String()).WithField("lighthouse-job-quantity", len(lhjList.Items)).Debug("Listed LighthouseJobs from the cluster.")
 		lhjs = lhjList.Items
 
 		// TODO: Support blockers with non-graphql
@@ -835,7 +840,6 @@ func accumulateBatch(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs 
 // accumulate returns the supplied PRs sorted into three buckets based on their
 // accumulated state across the presubmits.
 func accumulate(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs []v1alpha1.LighthouseJob, log *logrus.Entry) (successes, pendings, missings []PullRequest, missingTests map[int][]job.Presubmit) {
-
 	missingTests = map[int][]job.Presubmit{}
 	for _, pr := range prs {
 		// Accumulate the best result for each job (Passing > Pending > Failing/Unknown)
@@ -1195,15 +1199,15 @@ func (c *DefaultController) trigger(sp subpool, presubmits map[int][]job.Presubm
 	triggeredContexts := sets.NewString()
 	for _, pr := range prs {
 		for _, ps := range presubmits[int(pr.Number)] {
-			if triggeredContexts.Has(string(ps.Context)) {
+			if triggeredContexts.Has(ps.Context) {
 				continue
 			}
-			triggeredContexts.Insert(string(ps.Context))
+			triggeredContexts.Insert(ps.Context)
 			var spec v1alpha1.LighthouseJobSpec
 			if len(prs) == 1 {
-				spec = jobutil.PresubmitSpec(ps, refs)
+				spec = jobutil.PresubmitSpec(c.logger, ps, refs)
 			} else {
-				spec = jobutil.BatchSpec(ps, refs)
+				spec = jobutil.BatchSpec(c.logger, ps, refs)
 			}
 			pj := jobutil.NewLighthouseJob(spec, ps.Labels, ps.Annotations)
 			start := time.Now()
@@ -1262,6 +1266,15 @@ func (c *DefaultController) takeAction(sp subpool, batchPending, successes, pend
 	disableTrigger := strings.ToLower(os.Getenv("LIGHTHOUSE_TRIGGER_ON_MISSING"))
 	if disableTrigger == "disable" || strings.HasPrefix(disableTrigger, "disable") {
 		return Wait, nil, nil
+	}
+	if disableTrigger != "" {
+		fullName := sp.org + "/" + sp.repo
+		disableRepos := strings.Split(disableTrigger, ",")
+		for _, disableRepo := range disableRepos {
+			if strings.TrimSpace(disableRepo) == fullName {
+				return Wait, nil, nil
+			}
+		}
 	}
 	// If we have no serial jobs pending or successful, trigger one.
 	if len(missings) > 0 && len(pendings) == 0 && len(successes) == 0 {
@@ -1360,7 +1373,8 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 	repo := sp.repo
 	sharedConfig := c.config()
 	cache := inrepo.NewResolverCache()
-	cfg, _, err := inrepo.Generate(c.fileBrowsers, cache, sharedConfig, nil, owner, repo, "")
+	fc := filebrowser.NewFetchCache()
+	cfg, _, err := inrepo.Generate(c.fileBrowsers, fc, cache, sharedConfig, nil, owner, repo, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to calculate in repo config")
 	}
@@ -1383,7 +1397,6 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 }
 
 func (c *DefaultController) commentOnPRsWithFailedMerge(prs []PullRequest, errorString string) error {
-
 	commentBody := fmt.Sprintf("Failed to merge this PR due to:\n>%s\n", errorString)
 
 	var errs []error
@@ -1401,7 +1414,7 @@ func (c *DefaultController) commentOnPRsWithFailedMerge(prs []PullRequest, error
 }
 
 func (c *DefaultController) syncSubpool(sp subpool, blocks []blockers.Blocker) (Pool, error) {
-	sp.log.Infof("Syncing subpool: %d PRs, %d PJs.", len(sp.prs), len(sp.ljs))
+	sp.log.Infof("Syncing subpool: %d PRs, %d LJs.", len(sp.prs), len(sp.ljs))
 	successes, pendings, missings, missingSerialTests := accumulate(sp.presubmits, sp.prs, sp.ljs, sp.log)
 	batchMerge, batchPending := accumulateBatch(sp.presubmits, sp.prs, sp.ljs, sp.log)
 	sp.log.WithFields(logrus.Fields{
@@ -1777,7 +1790,6 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load labels for PR %s", pr.Link)
 			}
-
 			prLabels := make(map[string]struct{})
 			for _, l := range pr.Labels {
 				prLabels[l.Name] = struct{}{}

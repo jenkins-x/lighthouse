@@ -31,10 +31,13 @@
 - [TaskResource](#TaskResource)
 - [TaskResources](#TaskResources)
 - [TaskResult](#TaskResult)
+- [TaskRunDebug](#TaskRunDebug)
+- [TimeoutFields](#TimeoutFields)
 - [WhenExpressions](#WhenExpressions)
 - [WorkspaceBinding](#WorkspaceBinding)
 - [WorkspaceDeclaration](#WorkspaceDeclaration)
 - [WorkspacePipelineTaskBinding](#WorkspacePipelineTaskBinding)
+- [WorkspaceUsage](#WorkspaceUsage)
 
 
 ## ArrayOrString
@@ -53,6 +56,9 @@ ArrayOrString is a type that can hold a single string or string array.<br />Used
 
 | Stanza | Type | Required | Description |
 |---|---|---|---|
+| `apiVersion` | string | No | +optional |
+| `kind` | string | No | +optional |
+| `spec` | [RawExtension](./k8s-io-apimachinery-pkg-runtime.md#RawExtension) | No | Spec is a specification of a custom task<br />+optional |
 | `metadata` | [PipelineTaskMetadata](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineTaskMetadata) | No | +optional |
 | `resources` | *[TaskResources](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskResources) | No | Resources is a list input and output resource to run the task<br />Resources are represented in TaskRuns as bindings to instances of<br />PipelineResources.<br />+optional |
 | `params` | [][ParamSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#ParamSpec) | No | Params is a list of input parameters required to run the task. Params<br />must be supplied as inputs in TaskRuns unless they declare a default<br />value.<br />+optional |
@@ -158,6 +164,7 @@ PipelineRunSpec defines the desired state of PipelineRun
 | `serviceAccountName` | string | No | +optional |
 | `serviceAccountNames` | [][PipelineRunSpecServiceAccountName](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineRunSpecServiceAccountName) | No | Deprecated: use taskRunSpecs.ServiceAccountName instead<br />+optional |
 | `status` | [PipelineRunSpecStatus](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PipelineRunSpecStatus) | No | Used for cancelling a pipelinerun (and maybe more later on)<br />+optional |
+| `timeouts` | *[TimeoutFields](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TimeoutFields) | No | This is an alpha field. You must set the "enable-api-fields" feature flag to "alpha"<br />for this field to be supported.<br /><br />Time after which the Pipeline times out.<br />Currently three keys are accepted in the map<br />pipeline, tasks and finally<br />with Timeouts.pipeline >= Timeouts.tasks + Timeouts.finally<br />+optional |
 | `timeout` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Time after which the Pipeline times out. Defaults to never.<br />Refer to Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration<br />+optional |
 | `podTemplate` | *[PodTemplate](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PodTemplate) | No | PodTemplate holds pod specific configuration |
 | `workspaces` | [][WorkspaceBinding](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#WorkspaceBinding) | No | Workspaces holds a set of workspace bindings that must match names<br />with those declared in the pipeline.<br />+optional |
@@ -266,6 +273,7 @@ PipelineTaskRunSpec  can be used to configure specific<br />specs for a concrete
 | `pipelineTaskName` | string | No |  |
 | `taskServiceAccountName` | string | No |  |
 | `taskPodTemplate` | *[PodTemplate](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#PodTemplate) | No |  |
+| `debug` | *[TaskRunDebug](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#TaskRunDebug) | No | +optional |
 
 ## PipelineWorkspaceDeclaration
 
@@ -311,7 +319,8 @@ Sidecar has nearly the same data structure as Step, consisting of a Container an
 | `stdin` | bool | No | Whether this container should allocate a buffer for stdin in the container runtime. If this<br />is not set, reads from stdin in the container will always result in EOF.<br />Default is false.<br />+optional |
 | `stdinOnce` | bool | No | Whether the container runtime should close the stdin channel after it has been opened by<br />a single attach. When stdin is true the stdin stream will remain open across multiple attach<br />sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the<br />first client attaches to stdin, and then remains open and accepts data until the client disconnects,<br />at which time stdin is closed and remains closed until the container is restarted. If this<br />flag is false, a container processes that reads from stdin will never receive an EOF.<br />Default is false<br />+optional |
 | `tty` | bool | No | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.<br />Default is false.<br />+optional |
-| `script` | string | No | Script is the contents of an executable file to execute.<br /><br />If Script is not empty, the Step cannot have an Command or Args. |
+| `script` | string | No | Script is the contents of an executable file to execute.<br /><br />If Script is not empty, the Step cannot have an Command or Args.<br />+optional |
+| `workspaces` | [][WorkspaceUsage](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#WorkspaceUsage) | No | This is an alpha field. You must set the "enable-api-fields" feature flag to "alpha"<br />for this field to be supported.<br /><br />Workspaces is a list of workspaces from the Task that this Sidecar wants<br />exclusive access to. Adding a workspace to this list means that any<br />other Step or Sidecar that does not also request this Workspace will<br />not have access to it.<br />+optional |
 
 ## Step
 
@@ -341,8 +350,10 @@ Step embeds the Container type, which allows it to include fields not<br />provi
 | `stdin` | bool | No | Whether this container should allocate a buffer for stdin in the container runtime. If this<br />is not set, reads from stdin in the container will always result in EOF.<br />Default is false.<br />+optional |
 | `stdinOnce` | bool | No | Whether the container runtime should close the stdin channel after it has been opened by<br />a single attach. When stdin is true the stdin stream will remain open across multiple attach<br />sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the<br />first client attaches to stdin, and then remains open and accepts data until the client disconnects,<br />at which time stdin is closed and remains closed until the container is restarted. If this<br />flag is false, a container processes that reads from stdin will never receive an EOF.<br />Default is false<br />+optional |
 | `tty` | bool | No | Whether this container should allocate a TTY for itself, also requires 'stdin' to be true.<br />Default is false.<br />+optional |
-| `script` | string | No | Script is the contents of an executable file to execute.<br /><br />If Script is not empty, the Step cannot have an Command and the Args will be passed to the Script. |
-| `timeout` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Timeout is the time after which the step times out. Defaults to never.<br />Refer to Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration |
+| `script` | string | No | Script is the contents of an executable file to execute.<br /><br />If Script is not empty, the Step cannot have an Command and the Args will be passed to the Script.<br />+optional |
+| `timeout` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Timeout is the time after which the step times out. Defaults to never.<br />Refer to Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration<br />+optional |
+| `workspaces` | [][WorkspaceUsage](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1beta1.md#WorkspaceUsage) | No | This is an alpha field. You must set the "enable-api-fields" feature flag to "alpha"<br />for this field to be supported.<br /><br />Workspaces is a list of workspaces from the Task that this Step wants<br />exclusive access to. Adding a workspace to this list means that any<br />other Step or Sidecar that does not also request this Workspace will<br />not have access to it.<br />+optional |
+| `onError` | string | No | OnError defines the exiting behavior of a container on error<br />can be set to [ continue | fail ]<br />fail indicates exit the taskRun if the container exits with non-zero exit code<br />continue indicates continue executing the rest of the steps irrespective of the container exit code |
 
 ## TaskKind
 
@@ -385,6 +396,24 @@ TaskResult used to describe the results of a task
 | `name` | string | Yes | Name the given name |
 | `description` | string | Yes | Description is a human-readable description of the result<br />+optional |
 
+## TaskRunDebug
+
+TaskRunDebug defines the breakpoint config for a particular TaskRun
+
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `breakpoint` | []string | No | +optional |
+
+## TimeoutFields
+
+
+
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `pipeline` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Pipeline sets the maximum allowed duration for execution of the entire pipeline. The sum of individual timeouts for tasks and finally must not exceed this value. |
+| `tasks` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Tasks sets the maximum allowed duration of this pipeline's tasks |
+| `finally` | *[Duration](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Duration) | No | Finally sets the maximum allowed duration of this pipeline's finally |
+
 ## WhenExpressions
 
 WhenExpressions are used to specify whether a Task should be executed or skipped<br />All of them need to evaluate to True for a guarded Task to be executed.
@@ -426,5 +455,14 @@ WorkspacePipelineTaskBinding describes how a workspace passed into the pipeline 
 | `name` | string | Yes | Name is the name of the workspace as declared by the task |
 | `workspace` | string | Yes | Workspace is the name of the workspace declared by the pipeline |
 | `subPath` | string | No | SubPath is optionally a directory on the volume which should be used<br />for this binding (i.e. the volume will be mounted at this sub directory).<br />+optional |
+
+## WorkspaceUsage
+
+WorkspaceUsage is used by a Step or Sidecar to declare that it wants isolated access<br />to a Workspace defined in a Task.
+
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Name is the name of the workspace this Step or Sidecar wants access to. |
+| `mountPath` | string | Yes | MountPath is the path that the workspace should be mounted to inside the Step or Sidecar,<br />overriding any MountPath specified in the Task's WorkspaceDeclaration. |
 
 

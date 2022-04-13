@@ -1,0 +1,377 @@
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x/lighthouse.git
+    lighthouse.jenkins-x.io/job: github
+  creationTimestamp: null
+  generateName: nkins-x-lighthouse-pr-813-github-
+  labels:
+    created-by-lighthouse: "true"
+    lighthouse.jenkins-x.io/baseSHA: e8d56b5ee9671599c75644af574a251dd3b94a5c
+    lighthouse.jenkins-x.io/branch: master
+    lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
+    lighthouse.jenkins-x.io/context: github
+    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    lighthouse.jenkins-x.io/job: github
+    lighthouse.jenkins-x.io/lastCommitSHA: dd64c739442d505cf5381e2a14b60968e8a0d86e
+    lighthouse.jenkins-x.io/refs.org: jenkins-x
+    lighthouse.jenkins-x.io/refs.pull: "813"
+    lighthouse.jenkins-x.io/refs.repo: lighthouse
+    lighthouse.jenkins-x.io/type: presubmit
+  name: nkins-x-lighthouse-pr-813-github-mz4c7
+  namespace: jx
+  ownerReferences:
+  - apiVersion: lighthouse.jenkins.io/v1alpha1
+    controller: true
+    kind: LighthouseJob
+    name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    uid: ""
+  resourceVersion: "1"
+spec:
+  params:
+  - name: BUILD_ID
+    value: "7828158075477027098"
+  - name: JOB_NAME
+    value: github
+  - name: JOB_SPEC
+    value: type:presubmit
+  - name: JOB_TYPE
+    value: presubmit
+  - name: PULL_BASE_REF
+    value: master
+  - name: PULL_BASE_SHA
+    value: e8d56b5ee9671599c75644af574a251dd3b94a5c
+  - name: PULL_NUMBER
+    value: "813"
+  - name: PULL_PULL_SHA
+    value: dd64c739442d505cf5381e2a14b60968e8a0d86e
+  - name: PULL_REFS
+    value: master:e8d56b5ee9671599c75644af574a251dd3b94a5c,813:dd64c739442d505cf5381e2a14b60968e8a0d86e
+  - name: REPO_NAME
+    value: lighthouse
+  - name: REPO_OWNER
+    value: jenkins-x
+  - name: REPO_URL
+    value: https://github.com/jenkins-x/lighthouse.git
+  pipelineSpec:
+    params:
+    - default: gcr.io/christiewilson-catfactory
+      name: image-registry
+    - description: the unique build number
+      name: BUILD_ID
+      type: string
+    - description: the name of the job which is the trigger context name
+      name: JOB_NAME
+      type: string
+    - description: the specification of the job
+      name: JOB_SPEC
+      type: string
+    - description: '''the kind of job: postsubmit or presubmit'''
+      name: JOB_TYPE
+      type: string
+    - description: the base git reference of the pull request
+      name: PULL_BASE_REF
+      type: string
+    - description: the git sha of the base of the pull request
+      name: PULL_BASE_SHA
+      type: string
+    - default: ""
+      description: git pull request number
+      name: PULL_NUMBER
+      type: string
+    - default: ""
+      description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+      name: PULL_PULL_REF
+      type: string
+    - default: ""
+      description: git revision to checkout (branch, tag, sha, ref…)
+      name: PULL_PULL_SHA
+      type: string
+    - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+      name: PULL_REFS
+      type: string
+    - description: git repository name
+      name: REPO_NAME
+      type: string
+    - description: git repository owner (user or organisation)
+      name: REPO_OWNER
+      type: string
+    - description: git url to clone
+      name: REPO_URL
+      type: string
+    tasks:
+    - name: fetch-from-git
+      params:
+      - name: url
+        value: https://github.com/GoogleContainerTools/skaffold
+      - name: revision
+        value: v0.32.0
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      taskRef:
+        name: git-clone
+      workspaces:
+      - name: output
+        workspace: git-source
+    - name: skaffold-unit-tests
+      params:
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      runAfter:
+      - fetch-from-git
+      taskRef:
+        name: unit-tests
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: build-skaffold-web
+      params:
+      - name: IMAGE
+        value: $(params.image-registry)/leeroy-web
+      - name: CONTEXT
+        value: examples/microservices/leeroy-web
+      - name: DOCKERFILE
+        value: $(workspaces.source.path)/examples/microservices/leeroy-web/Dockerfile
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      runAfter:
+      - skaffold-unit-tests
+      taskRef:
+        name: kaniko
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: build-skaffold-app
+      params:
+      - name: IMAGE
+        value: $(params.image-registry)/leeroy-app
+      - name: CONTEXT
+        value: examples/microservices/leeroy-app
+      - name: DOCKERFILE
+        value: $(workspaces.source.path)/examples/microservices/leeroy-app/Dockerfile
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      runAfter:
+      - skaffold-unit-tests
+      taskRef:
+        name: kaniko
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: deploy-app
+      params:
+      - name: imageURL
+        value: $(params.image-registry)/leeroy-app@$(tasks.build-skaffold-app.results.IMAGE_DIGEST)
+      - name: path
+        value: $(workspaces.source.path)/examples/microservices/leeroy-app/kubernetes/deployment.yaml
+      - name: yqArg
+        value: -d1
+      - name: yamlPathToImage
+        value: spec.template.spec.containers[0].image
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      taskRef:
+        name: demo-deploy-kubectl
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: deploy-web
+      params:
+      - name: imageURL
+        value: $(params.image-registry)/leeroy-web@$(tasks.build-skaffold-web.results.IMAGE_DIGEST)
+      - name: path
+        value: $(workspaces.source.path)/examples/microservices/leeroy-web/kubernetes/deployment.yaml
+      - name: yqArg
+        value: -d1
+      - name: yamlPathToImage
+        value: spec.template.spec.containers[0].image
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      taskRef:
+        name: demo-deploy-kubectl
+      workspaces:
+      - name: source
+        workspace: git-source
+    workspaces:
+    - name: git-source
+  podTemplate: {}
+  resources:
+  - name: jenkins-x-charts-jx-build-templ-wbbx6
+    resourceRef:
+      apiVersion: tekton.dev/v1beta1
+      name: jenkins-x-charts-jx-build-templ-wbbx6
+  serviceAccountName: tekton-bot
+  taskRunSpecs:
+  - debug:
+      breakpoint:
+      - onFailure
+    pipelineTaskName: my-task
+  - debug:
+      breakpoint:
+      - onFailure
+    pipelineTaskName: fetch-from-git
+  - debug:
+      breakpoint:
+      - onFailure
+    pipelineTaskName: skaffold-unit-tests
+  - debug:
+      breakpoint:
+      - onFailure
+    pipelineTaskName: build-skaffold-web
+  - debug:
+      breakpoint:
+      - onFailure
+    pipelineTaskName: build-skaffold-app
+  - debug:
+      breakpoint:
+      - onFailure
+    pipelineTaskName: deploy-app
+  - debug:
+      breakpoint:
+      - onFailure
+    pipelineTaskName: deploy-web
+  timeout: 240h0m0s
+status: {}

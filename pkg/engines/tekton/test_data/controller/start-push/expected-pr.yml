@@ -2,6 +2,8 @@ metadata:
   annotations:
     lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x/lighthouse.git
     lighthouse.jenkins-x.io/job: github
+  creationTimestamp: null
+  generateName: jenkins-x-lighthouse-main-github-
   labels:
     created-by-lighthouse: "true"
     lighthouse.jenkins-x.io/baseSHA: e8d56b5ee9671599c75644af574a251dd3b94a5c
@@ -14,46 +16,45 @@ metadata:
     lighthouse.jenkins-x.io/refs.org: jenkins-x
     lighthouse.jenkins-x.io/refs.repo: lighthouse
     lighthouse.jenkins-x.io/type: postsubmit
-  name: github-mz4c7
-  generateName: github-
+  name: jenkins-x-lighthouse-main-github-mz4c7
   namespace: jx
-  resourceVersion: '1'
   ownerReferences:
-    - apiVersion: lighthouse.jenkins.io/v1alpha1
-      kind: LighthouseJob
-      name: f46327af-b47e-11ea-b797-9256b7b8d9b0
-      Controller: true
+  - apiVersion: lighthouse.jenkins.io/v1alpha1
+    controller: true
+    kind: LighthouseJob
+    name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    uid: ""
+  resourceVersion: "1"
 spec:
   params:
-    - name: BUILD_ID
-      value: "7828158075477027098"
-    - name: JOB_NAME
-      value: github
-    - name: JOB_SPEC
-      value: type:postsubmit
-    - name: JOB_TYPE
-      value: postsubmit
-    - name: PULL_BASE_REF
-      value: main
-    - name: PULL_BASE_SHA
-      value: e8d56b5ee9671599c75644af574a251dd3b94a5c
-    - name: PULL_REFS
-      value: main:e8d56b5ee9671599c75644af574a251dd3b94a5c
-    - name: REPO_NAME
-      value: lighthouse
-    - name: REPO_OWNER
-      value: jenkins-x
-    - name: REPO_URL
-      value: https://github.com/jenkins-x/lighthouse.git
-    - name: branch-name
-      value: main
-    - name: repo-url
-      value: https://github.com/jenkins-x/lighthouse.git
+  - name: BUILD_ID
+    value: "7828158075477027098"
+  - name: JOB_NAME
+    value: github
+  - name: JOB_SPEC
+    value: type:postsubmit
+  - name: JOB_TYPE
+    value: postsubmit
+  - name: PULL_BASE_REF
+    value: main
+  - name: PULL_BASE_SHA
+    value: e8d56b5ee9671599c75644af574a251dd3b94a5c
+  - name: PULL_REFS
+    value: main:e8d56b5ee9671599c75644af574a251dd3b94a5c
+  - name: REPO_NAME
+    value: lighthouse
+  - name: REPO_OWNER
+    value: jenkins-x
+  - name: REPO_URL
+    value: https://github.com/jenkins-x/lighthouse.git
+  - name: branch-name
+    value: main
+  - name: repo-url
+    value: https://github.com/jenkins-x/lighthouse.git
   pipelineRef:
     apiVersion: tekton.dev/v1beta1
     name: jenkins-x-charts-jx-build-templ-wbbx6-7
-  podTemplate:
-    schedulerName: ""
+  podTemplate: {}
   serviceAccountName: tekton-bot
   timeout: 24h0m0s
 status: {}

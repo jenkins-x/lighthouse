@@ -253,7 +253,7 @@ func TestNeedDemux(t *testing.T) {
 			})
 			s := &Server{Plugins: pa}
 
-			gotPlugins := util.ExternalPluginsForEvent(s.Plugins, string(test.eventType), test.srcRepo)
+			gotPlugins := util.ExternalPluginsForEvent(s.Plugins, string(test.eventType), test.srcRepo, nil)
 			if len(gotPlugins) != len(test.expected) {
 				t.Fatalf("expected plugins: %+v, got: %+v", test.expected, gotPlugins)
 			}

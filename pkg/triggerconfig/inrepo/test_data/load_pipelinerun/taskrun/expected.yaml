@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
+  name: cheese
 spec:
   pipelineSpec:
     params:
@@ -50,7 +51,7 @@ spec:
       name: REPO_URL
       type: string
     tasks:
-    - name: default
+    - name: cheese
       params:
       - name: PARAM
         value: $(params.PARAM)
@@ -127,6 +128,7 @@ spec:
         - description: git url to clone
           name: REPO_URL
           type: string
+        spec: null
         stepTemplate:
           env:
           - name: BUILD_ID

@@ -19,6 +19,7 @@ package logrusutil
 
 import (
 	"os"
+	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil/stackdriver"
 	"github.com/sirupsen/logrus"
@@ -56,7 +57,15 @@ func CreateDefaultFormatter() logrus.Formatter {
 	}
 
 	if os.Getenv("LOGRUS_FORMAT") == "stackdriver" {
-		return &stackdriver.Formatter{}
+		f := &stackdriver.Formatter{
+			Service: os.Getenv("LOGRUS_SERVICE"),
+			Version: os.Getenv("LOGRUS_SERVICE_VERSION"),
+		}
+		ss := os.Getenv("LOGRUS_STACK_SPLIT")
+		if ss != "" {
+			f.StackSkip = strings.Split(ss, ",")
+		}
+		return f
 	}
 
 	jsonFormat := &logrus.JSONFormatter{}

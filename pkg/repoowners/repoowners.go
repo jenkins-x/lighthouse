@@ -77,6 +77,7 @@ type FullConfig struct {
 type scmProviderClient interface {
 	ListCollaborators(org, repo string) ([]scm.User, error)
 	GetRef(org, repo, ref string) (string, error)
+	GetFile(org, repo, filepath, ref string) ([]byte, error)
 }
 
 type cacheEntry struct {
@@ -132,6 +133,19 @@ func NewClient(
 
 // RepoAliases defines groups of people to be used in OWNERS files
 type RepoAliases map[string]sets.String
+
+// ForeignAlias contains a
+type ForeignAlias struct {
+	Org  string `json:"org"`
+	Repo string `json:"name"`
+	Ref  string `json:"ref,omitempty"`
+}
+
+// OwnerAliases contains the parsed OWNER_ALIASES config.
+type OwnerAliases struct {
+	Aliases        map[string][]string `json:"aliases,omitempty"`
+	ForeignAliases []ForeignAlias      `json:"foreignAliases,omitempty"`
+}
 
 // RepoOwner is an interface to work with repoowners
 type RepoOwner interface {
@@ -192,7 +206,7 @@ func (c *Client) LoadRepoAliases(org, repo, base string) (RepoAliases, error) {
 			return nil, err
 		}
 
-		entry.aliases = loadAliasesFrom(gitRepo.Dir, log)
+		entry.aliases = c.loadAliasesFrom(gitRepo.Dir, log, org)
 		entry.sha = sha
 		c.cache[fullName] = entry
 	}
@@ -228,7 +242,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 
 		if entry.aliases == nil || entry.sha != sha {
 			// aliases must be loaded
-			entry.aliases = loadAliasesFrom(gitRepo.Dir, log)
+			entry.aliases = c.loadAliasesFrom(gitRepo.Dir, log, org)
 		}
 
 		excludeConfig := c.config.OwnersDirExcludes
@@ -294,7 +308,7 @@ func (a RepoAliases) ExpandAliases(logins sets.String) sets.String {
 	return logins
 }
 
-func loadAliasesFrom(baseDir string, log *logrus.Entry) RepoAliases {
+func (c *Client) loadAliasesFrom(baseDir string, log *logrus.Entry, org string) RepoAliases {
 	path := filepath.Join(baseDir, aliasesFileName)
 	b, err := ioutil.ReadFile(path) // #nosec
 	if os.IsNotExist(err) {
@@ -304,20 +318,48 @@ func loadAliasesFrom(baseDir string, log *logrus.Entry) RepoAliases {
 		log.WithError(err).Warnf("Failed to read alias file %q. Using empty alias map.", path)
 		return nil
 	}
-	config := &struct {
-		Data map[string][]string `json:"aliases,omitempty"`
-	}{}
-	if err := yaml.Unmarshal(b, config); err != nil {
-		log.WithError(err).Errorf("Failed to unmarshal aliases from %q. Using empty alias map.", path)
-		return nil
-	}
-
 	result := make(RepoAliases)
-	for alias, expanded := range config.Data {
-		result[scmprovider.NormLogin(alias)] = normLogins(expanded)
+	err = c.parseAliases(result, b, log, org)
+	if err != nil {
+		log.WithError(err).Errorf("Failed to unmarshal aliases from %q.", path)
 	}
 	log.Infof("Loaded %d aliases from %q.", len(result), path)
 	return result
+}
+
+func (c *Client) parseAliases(result RepoAliases, b []byte, log *logrus.Entry, org string) error {
+	config := &OwnerAliases{}
+	err := yaml.Unmarshal(b, config)
+	if err != nil {
+		return err
+	}
+	if config.ForeignAliases != nil {
+		for _, r := range config.ForeignAliases {
+			if r.Ref == "" {
+				r.Ref = "HEAD"
+			}
+			if r.Org == "" {
+				r.Org = org
+			}
+			b, err = c.spc.GetFile(r.Org, r.Repo, aliasesFileName, r.Ref)
+			if err == nil {
+				err = c.parseAliases(result, b, log, org)
+			}
+		}
+	}
+	if result == nil {
+		result = make(RepoAliases)
+	}
+	for alias, expanded := range config.Aliases {
+		normAlias := scmprovider.NormLogin(alias)
+		normExpanded := normLogins(expanded)
+		if result[normAlias] == nil {
+			result[normAlias] = normExpanded
+		} else {
+			result[normAlias].Insert(normExpanded.UnsortedList()...)
+		}
+	}
+	return err
 }
 
 func loadOwnersFrom(baseDir string, mdYaml bool, aliases RepoAliases, dirExcludes sets.String, log *logrus.Entry) (*RepoOwners, error) {

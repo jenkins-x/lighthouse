@@ -124,6 +124,15 @@ func TestLabel(t *testing.T) {
 			commenter:             orgMember,
 		},
 		{
+			name:                  "Add Single Team Label",
+			body:                  "/team ops",
+			repoLabels:            []string{"area/infra", "team/ops"},
+			issueLabels:           []string{"area/infra"},
+			expectedNewLabels:     formatLabels("team/ops"),
+			expectedRemovedLabels: []string{},
+			commenter:             orgMember,
+		},
+		{
 			name:                  "Add Single Triage Label",
 			body:                  "/triage needs-information",
 			repoLabels:            []string{"area/infra", "triage/needs-information"},
@@ -339,6 +348,15 @@ func TestLabel(t *testing.T) {
 			issueLabels:           []string{"area/infra", "wg/policy"},
 			expectedNewLabels:     []string{},
 			expectedRemovedLabels: formatLabels("wg/policy"),
+			commenter:             orgMember,
+		},
+		{
+			name:                  "Remove Team Label",
+			body:                  "/remove-team ops",
+			repoLabels:            []string{"area/infra", "team/ops"},
+			issueLabels:           []string{"area/infra", "team/ops"},
+			expectedNewLabels:     []string{},
+			expectedRemovedLabels: formatLabels("team/ops"),
 			commenter:             orgMember,
 		},
 		{
