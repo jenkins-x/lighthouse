@@ -118,6 +118,7 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, 
 	var repoClient git.RepoClient
 	var err error
 	client.lock.Lock()
+	defer client.lock.Unlock()
 	if client.repoClient == nil {
 		client.repoClient, err = f.clientFactory.ClientFor(owner, repo)
 		if err != nil {
@@ -144,7 +145,6 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, 
 			}
 		}
 	}
-	client.lock.Unlock()
 	return err
 }
 
