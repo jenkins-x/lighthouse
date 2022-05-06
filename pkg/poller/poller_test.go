@@ -128,7 +128,7 @@ func TestPollerPullRequests(t *testing.T) {
 }
 
 func TestListAllStatuses(t *testing.T) {
-	sha := "master"
+	sha := "mysha1234"
 	fullName := repoNames[0]
 
 	scmClient, fakeData := scmfake.NewDefault()
