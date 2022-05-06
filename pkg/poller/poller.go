@@ -17,6 +17,7 @@ import (
 
 var (
 	censor = func(content []byte) []byte { return content }
+	StatusesPageSize = 100
 )
 
 type pollingController struct {
@@ -302,7 +303,7 @@ func (c *pollingController) ListAllStatuses(ctx context.Context, fullName string
 	for {
 		opts := scm.ListOptions{
 			Page: page,
-			Size: 100,
+			Size: StatusesPageSize,
 		}
 		statuses, response, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
 		if err != nil {
