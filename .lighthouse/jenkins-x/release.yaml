@@ -22,7 +22,6 @@ spec:
         - name: next-version
           resources: {}
         - name: jx-variables
-          resources: {}
         - name: release-binary
           resources: {}
         - name: build-and-push-image:webhooks
