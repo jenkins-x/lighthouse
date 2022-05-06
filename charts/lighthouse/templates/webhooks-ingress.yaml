@@ -36,3 +36,12 @@ spec:
         {{- end }}
   {{- end }}
 {{- end }}
+
+{{- if .Values.webhooks.ingress.tls.enabled }}
+  tls:
+  - hosts:
+    {{- range .Values.webhooks.ingress.hosts }}
+    - {{ . | quote }}
+    {{- end }}
+    secretName: {{ $.Values.webhooks.ingress.tls.secretName }}
+{{- end }}
