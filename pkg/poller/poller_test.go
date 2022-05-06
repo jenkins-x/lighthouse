@@ -1,10 +1,12 @@
 package poller_test
 
 import (
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
+	"context"
 
 	scmfake "github.com/jenkins-x/go-scm/scm/driver/fake"
 
@@ -123,4 +125,26 @@ func TestPollerPullRequests(t *testing.T) {
 	pushHook := pushHooks[0]
 	assert.NotNil(t, pushHook, "no PushHook")
 	t.Logf("created PushHook %#v", pushHook)
+}
+
+func TestListAllStatuses(t *testing.T) {
+	sha := "mysha1234"
+	fullName := repoNames[0]
+
+	scmClient, fakeData := scmfake.NewDefault()
+	fakeData.Statuses = map[string][]*scm.Status{sha: {}}
+	// Populate fake data with more entries than the page size to ensure there
+	// are multiple pages of data
+	statusesCount := poller.StatusesPageSize + 1
+	for i := 0; i < statusesCount; i++ {
+		status := scm.Status{}
+		fakeData.Statuses[sha] = append(fakeData.Statuses[sha], &status)
+	}
+
+	p, err := poller.NewPollingController(repoNames, gitServer, scmClient, nil, requireReleaseSuccess, nil, nil)
+	require.NoError(t, err, "failed to create PollingController")
+
+	statuses, err := p.ListAllStatuses(context.TODO(), fullName, sha)
+	assert.Nil(t, err, "failed to list statuses")
+	require.Len(t, statuses, statusesCount, fmt.Sprintf("should have %d statuses", statusesCount))
 }

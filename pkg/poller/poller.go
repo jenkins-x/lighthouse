@@ -17,6 +17,7 @@ import (
 
 var (
 	censor = func(content []byte) []byte { return content }
+	StatusesPageSize = 100
 )
 
 type pollingController struct {
@@ -283,10 +284,7 @@ func (c *pollingController) pollPullRequestPushHook(ctx context.Context, l *logr
 }
 
 func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry, fullName string, sha string, isRelease bool) (bool, error) {
-	opts := scm.ListOptions{
-		Page: 1,
-	}
-	statuses, _, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+	statuses, err := c.ListAllStatuses(ctx, fullName, sha)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to list status")
 	}
@@ -297,6 +295,28 @@ func (c *pollingController) hasStatusForSHA(ctx context.Context, l *logrus.Entry
 		}
 	}
 	return false, nil
+}
+
+func (c *pollingController) ListAllStatuses(ctx context.Context, fullName string, sha string) ([]*scm.Status, error) {
+	allStatuses := []*scm.Status{}
+	page := 1
+	for {
+		opts := scm.ListOptions{
+			Page: page,
+			Size: StatusesPageSize,
+		}
+		statuses, response, err := c.scmClient.Repositories.ListStatus(ctx, fullName, sha, opts)
+		if err != nil {
+			return allStatuses, err
+		}
+		allStatuses = append(allStatuses, statuses...)
+		// Check for an invalid value for the next page
+		if response == nil || response.Page.Next <= page {
+			break
+		}
+		page = response.Page.Next
+	}
+	return allStatuses, nil
 }
 
 func (c *pollingController) isMatchingStatus(s *scm.Status, isRelease bool) bool {
