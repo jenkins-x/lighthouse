@@ -166,6 +166,8 @@ func BlobURLForProvider(providerType string, baseURL *url.URL, owner, repo, bran
 		return u
 	case "gitlab":
 		return fmt.Sprintf("%s/%s/%s/-/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
+	case "gitea":
+		return fmt.Sprintf("%s/%s/%s/src/branch/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
 	default:
 		return fmt.Sprintf("%s/%s/%s/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
 	}
