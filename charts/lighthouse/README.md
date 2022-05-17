@@ -71,7 +71,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `foghorn.resources.requests` | object | Resource requests applied to the foghorn pods | `{"cpu":"80m","memory":"128Mi"}` |
 | `foghorn.terminationGracePeriodSeconds` | int | Termination grace period for foghorn pods | `180` |
 | `foghorn.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods | `[]` |
-| `gcJobs.backoffLimit` | int | Set the backoff limit for failed cronJobs | `6` |
+| `gcJobs.backoffLimit` | int | Drives the job's backoff limit | `6` |
 | `gcJobs.concurrencyPolicy` | string | Drives the job's concurrency policy | `"Forbid"` |
 | `gcJobs.failedJobsHistoryLimit` | int | Drives the failed jobs history limit | `1` |
 | `gcJobs.image.pullPolicy` | string | Template for computing the gc job docker image pull policy | `"{{ .Values.image.pullPolicy }}"` |
@@ -128,6 +128,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `logStackSkip` | string | Comma separated stack frames to skip from the log | `""` |
 | `oauthToken` | string | Git token (used when GitHub app authentication is not enabled) | `""` |
 | `poller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the poller pods | `{}` |
+| `poller.contextMatchPattern` | string | Regex pattern to use to match commit status context | `""` |
 | `poller.datadog.enabled` | string | Enables datadog | `"true"` |
 | `poller.enabled` | bool | Whether to enable or disable the poller component | `false` |
 | `poller.env` | object | Lets you define poller specific environment variables | `{"POLL_HOOK_ENDPOINT":"http://hook/hook/poll","POLL_PERIOD":"20s"}` |
@@ -141,11 +142,12 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `poller.probe` | object | Liveness and readiness probes settings | `{"path":"/"}` |
 | `poller.readinessProbe` | object | Readiness probe configuration | `{"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `poller.replicaCount` | int | Number of replicas | `1` |
+| `poller.requireReleaseSuccess` | bool | Keep polling releases until the most recent commit status is successful | `false` |
 | `poller.resources.limits` | object | Resource limits applied to the poller pods | `{"cpu":"400m","memory":"512Mi"}` |
 | `poller.resources.requests` | object | Resource requests applied to the poller pods | `{"cpu":"100m","memory":"128Mi"}` |
 | `poller.terminationGracePeriodSeconds` | int | Termination grace period for poller pods | `30` |
 | `poller.tolerations` | list | [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the poller pods | `[]` |
-| `scope` | string | set scope to either `cluster` or `namespace` for permissions | `cluster` |
+| `scope` | string | limit permissions to namespace privileges | `"cluster"` |
 | `tektoncontroller.affinity` | object | [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods | `{}` |
 | `tektoncontroller.dashboardTemplate` | string | Go template expression for URLs in the dashboard if not using Tekton dashboard | `""` |
 | `tektoncontroller.dashboardURL` | string | the dashboard URL (e.g. Tekton dashboard) | `""` |
@@ -169,7 +171,7 @@ helm uninstall my-lighthouse --namespace lighthouse
 | `webhooks.ingress.annotations` | object | Webhooks ingress annotations | `{}` |
 | `webhooks.ingress.enabled` | bool | Enable webhooks ingress | `false` |
 | `webhooks.ingress.hosts` | list | Webhooks ingress host names | `[]` |
-| `webhooks.ingress.ingressClassName` | string | Ingress class name | `null` |
+| `webhooks.ingress.ingressClassName` | string | Webhooks ingress ingressClassName | `nil` |
 | `webhooks.labels` | object | allow optional labels to be added to the webhook deployment | `{}` |
 | `webhooks.livenessProbe` | object | Liveness probe configuration | `{"initialDelaySeconds":60,"periodSeconds":10,"successThreshold":1,"timeoutSeconds":1}` |
 | `webhooks.nodeSelector` | object | [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods | `{}` |
