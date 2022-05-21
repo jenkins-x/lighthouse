@@ -852,6 +852,8 @@ func URLForFile(providerType string, serverURL string, owner string, repo string
 		return fmt.Sprintf("%s/projects/%s/repos/%s/browse/%s", serverURL, strings.ToUpper(owner), repo, path)
 	case "gitlab":
 		return fmt.Sprintf("%s/%s/%s/-/blob/master/%s", serverURL, owner, repo, path)
+	case "gitea":
+		return fmt.Sprintf("%s/%s/%s/src/branch/master/%s", serverURL, owner, repo, path)
 	default:
 		return fmt.Sprintf("%s/%s/%s/blob/master/%s", serverURL, owner, repo, path)
 	}
