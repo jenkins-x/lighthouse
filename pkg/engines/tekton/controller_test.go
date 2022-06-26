@@ -38,10 +38,8 @@ const (
 	dashboardTemplate = "#/namespaces/{{ .Namespace }}/pipelineruns/{{ .PipelineRun }}"
 )
 
-var (
-	// generateTestOutput enable to regenerate the expected output
-	generateTestOutput = false
-)
+// generateTestOutput enable to regenerate the expected output
+var generateTestOutput = false
 
 type seededRandIDGenerator struct{}
 
@@ -51,8 +49,6 @@ func (s *seededRandIDGenerator) GenerateBuildID() string {
 
 func TestReconcile(t *testing.T) {
 	testCases := []string{
-		"debug-pr-no-taskRunSpecs",
-		"debug-pr",
 		"update-job",
 		"start-pullrequest",
 		"start-batch-pullrequest",
@@ -155,7 +151,7 @@ func TestReconcile(t *testing.T) {
 				if generateTestOutput {
 					data, err := yaml.Marshal(updatedPR)
 					require.NoError(t, err, "failed to marshal expected PR %#v", updatedPR)
-					err = ioutil.WriteFile(expectedPRFile, data, 0644)
+					err = ioutil.WriteFile(expectedPRFile, data, 0o644)
 					require.NoError(t, err, "failed to save file %s", expectedPRFile)
 					t.Logf("saved expected PR file %s\n", expectedPRFile)
 				} else {
@@ -177,7 +173,7 @@ func TestReconcile(t *testing.T) {
 				if generateTestOutput {
 					data, err := yaml.Marshal(updatedJob)
 					require.NoError(t, err, "failed to marshal expected job %#v", updatedJob)
-					err = ioutil.WriteFile(expectedJobFile, data, 0644)
+					err = ioutil.WriteFile(expectedJobFile, data, 0o644)
 					require.NoError(t, err, "failed to save file %s", expectedJobFile)
 					t.Logf("saved expected Job file %s\n", expectedJobFile)
 				} else {

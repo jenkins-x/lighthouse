@@ -3,14 +3,10 @@ package tekton
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
-
-	"github.com/jenkins-x/lighthouse/pkg/util"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
@@ -41,8 +37,6 @@ type epochBuildIDGenerator struct{}
 func (e *epochBuildIDGenerator) GenerateBuildID() string {
 	return strconv.FormatInt(time.Now().UnixNano()/1000000, 10)
 }
-
-var reProwExtraRef = regexp.MustCompile(`PROW_EXTRA_GIT_REF_(\d+)`)
 
 func trimDashboardURL(base string) string {
 	return strings.TrimSuffix(strings.TrimSuffix(base, "#"), "/")
@@ -142,90 +136,7 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, breakpoints
 			},
 		})
 	}
-
-	// lets apply any breakpoints...
-	taskNames := findAllTaskNames(&p)
-	for _, taskName := range taskNames {
-		filterValues := resolveBreakpointFilter(&p, taskName, lj)
-		debug := filterValues.ResolveDebug(breakpoints)
-		if debug != nil {
-			found := false
-			for i := range p.Spec.TaskRunSpecs {
-				trs := &p.Spec.TaskRunSpecs[i]
-				if trs.PipelineTaskName == taskName {
-					trs.Debug = debug
-					found = true
-					break
-				}
-			}
-			if !found {
-				p.Spec.TaskRunSpecs = append(p.Spec.TaskRunSpecs, tektonv1beta1.PipelineTaskRunSpec{
-					PipelineTaskName: taskName,
-					Debug:            debug,
-				})
-			}
-		}
-	}
 	return &p, nil
-}
-
-// findAllTaskNames finds all the task names from either the PR.Spec.TaskRunspecs or PR.Spec.PipelineSpec.Tasks
-// so we know which task names may require debug
-func findAllTaskNames(p *tektonv1beta1.PipelineRun) []string {
-	var answer []string
-
-	for i := range p.Spec.TaskRunSpecs {
-		trs := &p.Spec.TaskRunSpecs[i]
-		answer = append(answer, trs.PipelineTaskName)
-	}
-	ps := p.Spec.PipelineSpec
-	if ps != nil {
-		for i := range ps.Tasks {
-			t := &ps.Tasks[i]
-			if t.Name != "" && util.StringArrayIndex(answer, t.Name) < 0 {
-				answer = append(answer, t.Name)
-			}
-		}
-	}
-	return answer
-}
-
-func resolveBreakpointFilter(p *tektonv1beta1.PipelineRun, name string, lj v1alpha1.LighthouseJob) *v1alpha1.LighthousePipelineFilter {
-	filterValues := &v1alpha1.LighthousePipelineFilter{
-		Type:    lj.Spec.Type,
-		Context: lj.Spec.Context,
-	}
-	branch := ""
-	if lj.Labels != nil {
-		branch = lj.Labels[util.BranchLabel]
-	}
-	refs := lj.Spec.Refs
-	if refs != nil {
-		filterValues.Owner = refs.Org
-		filterValues.Repository = refs.Repo
-		if branch == "" {
-			for _, p := range refs.Pulls {
-				if p.Number > 0 {
-					branch = fmt.Sprintf("PR-%d", p.Number)
-					break
-				}
-			}
-		}
-		if branch == "" {
-			branch = refs.BaseRef
-		}
-	}
-	filterValues.Branch = branch
-
-	if lj.Labels != nil {
-		if filterValues.Owner == "" {
-			filterValues.Owner = lj.Labels[util.OrgLabel]
-		}
-		if filterValues.Repository == "" {
-			filterValues.Repository = lj.Labels[util.RepoLabel]
-		}
-	}
-	return filterValues
 }
 
 type gitTaskParamNames struct {
