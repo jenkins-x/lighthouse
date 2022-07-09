@@ -22,7 +22,7 @@ func (c *Client) GetRepoLabels(owner, repo string) ([]*scm.Label, error) {
 	var labels []*scm.Label
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
@@ -54,7 +54,7 @@ func (c *Client) ListCollaborators(owner, repo string) ([]scm.User, error) {
 	var collabs []scm.User
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
@@ -105,7 +105,7 @@ func (c *Client) ListStatuses(owner, repo, ref string) ([]*scm.Status, error) {
 	var statuses []*scm.Status
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {

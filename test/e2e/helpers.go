@@ -466,7 +466,7 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 // ExpectThatPullRequestHasCommentMatching returns an error if the PR does not have a comment matching the provided function
 func ExpectThatPullRequestHasCommentMatching(scmClient *scm.Client, pr *scm.PullRequest, matchFunc func(comments []*scm.Comment) error) error {
 	f := func() error {
-		comments, _, err := scmClient.PullRequests.ListComments(context.Background(), pr.Repository().FullName, pr.Number, scm.ListOptions{})
+		comments, _, err := scmClient.PullRequests.ListComments(context.Background(), pr.Repository().FullName, pr.Number, &scm.ListOptions{})
 		if err != nil {
 			return err
 		}
@@ -487,7 +487,7 @@ func WaitForPullRequestCommitStatus(scmClient *scm.Client, pr *scm.PullRequest, 
 		if err != nil {
 			return err
 		}
-		statuses, _, err := scmClient.Repositories.ListStatus(context.Background(), repo.FullName, updatedPR.Sha, scm.ListOptions{})
+		statuses, _, err := scmClient.Repositories.ListStatus(context.Background(), repo.FullName, updatedPR.Sha, &scm.ListOptions{})
 		if err != nil {
 			logInfof("error fetching commit statuses for PR %s/%s/%d: %s\n", repo.Namespace, repo.Name, updatedPR.Number, err)
 			return err
@@ -528,7 +528,7 @@ func WaitForPullRequestCommitStatus(scmClient *scm.Client, pr *scm.PullRequest, 
 
 // GetCommitStatus retrieves the status check with the specified name for the specified sha
 func GetCommitStatus(scmClient *scm.Client, repoName string, sha string, statusName string) (*scm.Status, error) {
-	statuses, _, err := scmClient.Repositories.ListStatus(context.Background(), repoName, sha, scm.ListOptions{})
+	statuses, _, err := scmClient.Repositories.ListStatus(context.Background(), repoName, sha, &scm.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to list commit status for %s in %s", sha, repoName)
 	}
