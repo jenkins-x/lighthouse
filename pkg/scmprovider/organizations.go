@@ -14,7 +14,7 @@ func (c *Client) ListTeams(org string) ([]*scm.Team, error) {
 	var teams []*scm.Team
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
@@ -37,7 +37,7 @@ func (c *Client) ListTeamMembers(id int, role string) ([]*scm.TeamMember, error)
 	var members []*scm.TeamMember
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
@@ -60,7 +60,7 @@ func (c *Client) ListOrgMembers(org string) ([]*scm.TeamMember, error) {
 	var members []*scm.TeamMember
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {

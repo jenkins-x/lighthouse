@@ -16,7 +16,7 @@ func (c *Client) ListReviews(owner, repo string, number int) ([]*scm.Review, err
 	var reviews []*scm.Review
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {

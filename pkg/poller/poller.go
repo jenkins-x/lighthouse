@@ -301,7 +301,7 @@ func (c *pollingController) ListAllStatuses(ctx context.Context, fullName string
 	allStatuses := []*scm.Status{}
 	page := 1
 	for {
-		opts := scm.ListOptions{
+		opts := &scm.ListOptions{
 			Page: page,
 			Size: StatusesPageSize,
 		}

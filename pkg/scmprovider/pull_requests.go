@@ -97,7 +97,7 @@ func (c *Client) ListPullRequestComments(owner, repo string, number int) ([]*scm
 	var comments []*scm.Comment
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
@@ -121,7 +121,7 @@ func (c *Client) GetPullRequestChanges(org, repo string, number int) ([]*scm.Cha
 	var changes []*scm.Change
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
