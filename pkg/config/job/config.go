@@ -78,40 +78,6 @@ func (c *Config) Merge(other Config) error {
 
 // Init sets defaults and initializes Config
 func (c *Config) Init(lh lighthouse.Config) error {
-	decoration := c.DecorationRequested()
-	if decoration {
-		// if c.Plank.DefaultDecorationConfig == nil {
-		// 	return errors.New("no default decoration config provided for plank")
-		// }
-		// if c.Plank.DefaultDecorationConfig.UtilityImages == nil {
-		// 	return errors.New("no default decoration image pull specs provided for plank")
-		// }
-		// if c.Plank.DefaultDecorationConfig.GCSConfiguration == nil {
-		// 	return errors.New("no default GCS decoration config provided for plank")
-		// }
-		// if c.Plank.DefaultDecorationConfig.GCSCredentialsSecret == "" {
-		// 	return errors.New("no default GCS credentials secret provided for plank")
-		// }
-		// for _, vs := range c.Presubmits {
-		// 	for i := range vs {
-		// 		// if ps.Decorate {
-		// 		// 	ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
-		// 		// }
-		// 	}
-		// }
-		// for _, js := range c.Postsubmits {
-		// 	for i := range js {
-		// 		// if ps.Decorate {
-		// 		// 	ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
-		// 		// }
-		// 	}
-		// }
-		// for i := range c.Periodics {
-		// 	// if ps.Decorate {
-		// 	// 	ps.DecorationConfig = ps.DecorationConfig.ApplyDefault(c.Plank.DefaultDecorationConfig)
-		// 	// }
-		// }
-	}
 	for _, ps := range c.Presubmits {
 		for i := range ps {
 			ps[i].SetDefaults(lh.PodNamespace)

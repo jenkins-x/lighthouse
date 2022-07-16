@@ -36,31 +36,31 @@ build: build-webhooks build-poller build-keeper build-foghorn build-tekton-contr
 
 .PHONY: build-webhooks
 build-webhooks: ## Build the webhooks controller binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
+	$(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
 
 .PHONY: build-poller
 build-poller: ## Build the poller controller binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(POLLER_EXECUTABLE) $(POLLER_MAIN_SRC_FILE)
+	$(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(POLLER_EXECUTABLE) $(POLLER_MAIN_SRC_FILE)
 
 .PHONY: build-keeper
 build-keeper: ## Build the keeper controller binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
+	$(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
 
 .PHONY: build-foghorn
 build-foghorn: ## Build the foghorn controller binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
+	$(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
 
 .PHONY: build-gc-jobs
 build-gc-jobs: ## Build the GC jobs binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE) $(GC_JOBS_MAIN_SRC_FILE)
+	$(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE) $(GC_JOBS_MAIN_SRC_FILE)
 
 .PHONY: build-tekton-controller
 build-tekton-controller: ## Build the Tekton controller binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTON_CONTROLLER_EXECUTABLE) $(TEKTON_CONTROLLER_MAIN_SRC_FILE)
+	$(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTON_CONTROLLER_EXECUTABLE) $(TEKTON_CONTROLLER_MAIN_SRC_FILE)
 
 .PHONY: build-jenkins-controller
 build-jenkins-controller: ## Build the Jenkins controller binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
+	$(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
 
 .PHONY: release
 release: linux
