@@ -49,6 +49,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	if err != nil {
 		return err
 	}
+	c.Logger.Tracef("Fetched pull request: %+v", pr)
 
 	// Skip untrusted users comments.
 	trusted, err := TrustedUser(c.SCMProviderClient, trigger, commentAuthor, org, repo)
