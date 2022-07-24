@@ -421,7 +421,7 @@ func TestCommandGetMatches(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			matches, err := tc.command.GetMatches(tc.content)
 			if err != nil {
-				t.Errorf("an error has occured %w", err)
+				t.Errorf("an error has occured %v", err)
 			} else {
 				if !reflect.DeepEqual(tc.expected, matches) {
 					t.Errorf("expected matches %q, but got %q", tc.expected, matches)
