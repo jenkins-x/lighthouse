@@ -20,6 +20,7 @@ type MergeDetails struct {
 func (c *Client) GetPullRequest(owner, repo string, number int) (*scm.PullRequest, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
+	// Isn't pr.Base.Ref populated?
 	pr, _, err := c.client.PullRequests.Find(ctx, fullName, number)
 	if err != nil {
 		return nil, err

@@ -44,12 +44,12 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	if commentAuthor == botName {
 		c.Logger.Warn("Comment is made by the bot, for production installs it is recommended to use a different bot user account that your personal one")
 	}
-
+	c.Logger.WithField("event", gc).Trace("Generic comment event")
 	pr, err := c.SCMProviderClient.GetPullRequest(org, repo, number)
 	if err != nil {
 		return err
 	}
-	c.Logger.Tracef("Fetched pull request: %+v", pr)
+	c.Logger.WithField("pull_request", pr).Trace("Fetched pull request")
 
 	// Skip untrusted users comments.
 	trusted, err := TrustedUser(c.SCMProviderClient, trigger, commentAuthor, org, repo)
