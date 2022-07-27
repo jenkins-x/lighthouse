@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
@@ -289,8 +290,14 @@ func (c *clientFactory) ClientFor(org, repo string, sparseCheckoutPatterns []str
 	}
 
 	// initialize the new derivative repo from the cache
-	if err := repoClientCloner.Clone(cacheDir, sparseCheckoutPatterns); err != nil {
+	if err := repoClientCloner.Clone(cacheDir); err != nil {
 		return nil, err
+	}
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
+	if sparseCheckout && len(sparseCheckoutPatterns) > 0 {
+		if err := repoClient.SetSparseCheckoutPatterns(sparseCheckoutPatterns); err != nil {
+			return nil, err
+		}
 	}
 
 	duration := time.Now().Sub(start)

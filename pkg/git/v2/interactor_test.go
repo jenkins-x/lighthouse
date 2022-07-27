@@ -79,7 +79,7 @@ func TestInteractor_Clone(t *testing.T) {
 				dir:      testCase.dir,
 				logger:   logrus.WithField("test", testCase.name),
 			}
-			actualErr := i.Clone(testCase.from, nil)
+			actualErr := i.Clone(testCase.from)
 			if testCase.expectedErr && actualErr == nil {
 				t.Errorf("%s: expected an error but got none", testCase.name)
 			}

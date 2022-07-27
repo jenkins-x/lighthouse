@@ -3,6 +3,7 @@ package git
 import (
 	"io/ioutil"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -124,8 +125,14 @@ func (c *noMirrorClientFactory) ClientFor(org, repo string, sparseCheckoutPatter
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to resolve remote for %s/%s", org, repo)
 	}
-	if err := repoClientCloner.Clone(remote, sparseCheckoutPatterns); err != nil {
+	if err := repoClientCloner.Clone(remote); err != nil {
 		return nil, err
+	}
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
+	if sparseCheckout && len(sparseCheckoutPatterns) > 0 {
+		if err := repoClient.SetSparseCheckoutPatterns(sparseCheckoutPatterns); err != nil {
+			return nil, err
+		}
 	}
 	duration := time.Now().Sub(start)
 	l.WithField("Duration", duration.String()).Debug("cloned repository")

@@ -71,6 +71,8 @@ type Interactor interface {
 	HasSHA(ref string) (string, error)
 	// Pull pulls any changes into a branch from the remote
 	Pull() error
+	// SetSparseCheckoutPatterns initialises att set patterns for sparse checkout
+	SetSparseCheckoutPatterns(sparseCheckoutPatterns []string) error
 }
 
 // cacher knows how to cache and update repositories in a central cache
@@ -84,7 +86,7 @@ type cacher interface {
 // cloner knows how to clone repositories from a central cache
 type cloner interface {
 	// Clone clones the repository from a local path.
-	Clone(from string, sparseCheckoutPatterns []string) error
+	Clone(from string) error
 }
 
 // MergeOpt holds options for git merge operations.
@@ -111,21 +113,22 @@ func (i *interactor) Clean() error {
 }
 
 // Clone clones the repository from a repository.
-func (i *interactor) Clone(repo string, sparseCheckoutPatterns []string) error {
+func (i *interactor) Clone(repo string) error {
 	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
-	if sparseCheckout && len(sparseCheckoutPatterns) > 0 {
-		return i.SparseClone(repo, sparseCheckoutPatterns)
-	}
 	i.logger.Debugf("Creating a clone of the repo at %s from %s", i.dir, repo)
-	if out, err := i.executor.Run("clone", "--no-checkout", "--depth=1", repo, i.dir); err != nil {
+	args := []string{"clone", "--no-checkout", "--depth=1"}
+	if sparseCheckout {
+		args = append(args, "--filter=blob:none")
+	}
+	if out, err := i.executor.Run(append(args, repo, i.dir)...); err != nil {
 		return fmt.Errorf("error creating a clone: %v %v", err, string(out))
 	}
 	return nil
 }
 
-func (i *interactor) SparseClone(repo string, sparseCheckoutPatterns []string) error {
-	if out, err := i.executor.Run("clone", "--no-checkout", "--depth=1", "--filter=blob:none", "--sparse", repo, i.dir); err != nil {
-		return fmt.Errorf("failed to clone repository: %v. output: %s", err, string(out))
+func (i *interactor) SetSparseCheckoutPatterns(sparseCheckoutPatterns []string) error {
+	if out, err := i.executor.Run("sparse-checkout", "init"); err != nil {
+		return fmt.Errorf("failed to init sparse checkout: %v. output: %s", err, string(out))
 	}
 	if out, err := i.executor.Run(append([]string{"sparse-checkout", "set"}, sparseCheckoutPatterns...)...); err != nil {
 		return fmt.Errorf("failed to set sparse checkout patterns to %v: %v. output: %s", sparseCheckoutPatterns, err, string(out))

@@ -2,9 +2,11 @@ package filebrowser
 
 import (
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -114,8 +116,7 @@ func repoPath(repoClient git.RepoClient, path string) string {
 
 func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, sparseCheckoutPatterns []string, fn func(repoClient git.RepoClient) error) error {
 	client := f.getOrCreateClient(owner, repo)
-
-	var repoClient git.RepoClient
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
 	var err error
 	client.lock.Lock()
 	defer client.lock.Unlock()
@@ -123,6 +124,10 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, 
 		client.repoClient, err = f.clientFactory.ClientFor(owner, repo, sparseCheckoutPatterns)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create repo client")
+		}
+	} else if sparseCheckout && len(sparseCheckoutPatterns) > 0 {
+		if err := client.repoClient.SetSparseCheckoutPatterns(sparseCheckoutPatterns); err != nil {
+			return errors.Wrapf(err, "failed to set sparse checkout patterns")
 		}
 	}
 	if client.mainBranch == "" {
@@ -133,13 +138,12 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, 
 		}
 	}
 	if err == nil {
-		repoClient = client.repoClient
 		err = client.UseRef(ref, fc)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to switch to ref %s", ref)
 		}
 		if err == nil {
-			err = fn(repoClient)
+			err = fn(client.repoClient)
 			if err != nil {
 				err = errors.Wrapf(err, "failed to process repo %s/%s refref %s", owner, repo, ref)
 			}
@@ -230,10 +234,10 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 			}
 		}
 		if !isSHA {
-			// lets pull any new changes into the main branch
-			err := c.repoClient.Pull()
+			// lets merge any new changes into the main branch
+			_, err := c.repoClient.Merge("FETCH_HEAD")
 			if err != nil {
-				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+				return errors.Wrapf(err, "failed to merge repository %s", c.fullName)
 			}
 		}
 	}
