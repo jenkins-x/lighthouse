@@ -3,9 +3,6 @@ package git
 import (
 	"io/ioutil"
 	"os"
-	"path"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -111,54 +108,24 @@ func (c *noMirrorClientFactory) ClientFromDir(org, repo, dir string) (RepoClient
 }
 
 // ClientFor returns a repository client for the specified repository.
-// This function may take a long time if it is the first time cloning the repo.
-// In that case, it must do a full git mirror clone. For large repos, this can
-// take a while. Once that is done, it will do a git fetch instead of a clone,
-// which will usually take at most a few seconds.
 func (c *noMirrorClientFactory) ClientFor(org, repo string, sparseCheckoutPatterns []string) (RepoClient, error) {
 	start := time.Now()
-	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
-	cacheKey := repo
-	if sparseCheckout {
-		replacer := strings.NewReplacer(".", "_", "/", "_")
-		cacheKey = cacheKey + replacer.Replace(strings.Join(sparseCheckoutPatterns, "-"))
-	}
-	cacheDir := path.Join(c.cacheDir, org, cacheKey)
-	l := c.logger.WithFields(logrus.Fields{"org": org, "repo": repo, "dir": cacheDir})
-	l.Debug("Creating a client from the cache.")
-
-	_, repoClientCloner, repoClient, err := c.bootstrapClients(org, repo, cacheDir)
+	repoDir, err := ioutil.TempDir(c.cacheDirBase, "gitrepo")
 	if err != nil {
 		return nil, err
 	}
-	c.masterLock.Lock()
-	if _, exists := c.repoLocks[cacheDir]; !exists {
-		c.repoLocks[cacheDir] = &sync.Mutex{}
-	}
-	c.masterLock.Unlock()
-	c.repoLocks[cacheDir].Lock()
-	defer c.repoLocks[cacheDir].Unlock()
-	if _, err := os.Stat(path.Join(cacheDir, ".git", "HEAD")); os.IsNotExist(err) {
-		// we have not yet cloned this repo, we need to do a full clone
-		if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil && !os.IsExist(err) {
-			return nil, err
-		}
-
-		remote, err := c.remotes.CentralRemote(org, repo)()
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to resolve remote for %s/%s", org, repo)
-		}
-		if err := repoClientCloner.Clone(remote, sparseCheckoutPatterns); err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		// something unexpected happened
+	l := c.logger.WithFields(logrus.Fields{"org": org, "repo": repo, "dir": repoDir})
+	l.Debug("Creating a client.")
+	_, repoClientCloner, repoClient, err := c.bootstrapClients(org, repo, repoDir)
+	if err != nil {
 		return nil, err
-	} else {
-		// we have cloned the repo previously, but will refresh it
-		if err := repoClient.Fetch(); err != nil {
-			return nil, err
-		}
+	}
+	remote, err := c.remotes.CentralRemote(org, repo)()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to resolve remote for %s/%s", org, repo)
+	}
+	if err := repoClientCloner.Clone(remote, sparseCheckoutPatterns); err != nil {
+		return nil, err
 	}
 	duration := time.Now().Sub(start)
 	l.WithField("Duration", duration.String()).Debug("cloned repository")
