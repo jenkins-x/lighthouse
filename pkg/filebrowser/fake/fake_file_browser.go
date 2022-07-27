@@ -63,7 +63,7 @@ func (f *fakeFileBrowser) getPath(owner, repo, path, ref string) string {
 	return filepath.Join(f.dir, path)
 }
 
-func (f *fakeFileBrowser) WithDir(owner, repo, ref string, fc filebrowser.FetchCache, fn func(dir string) error) error {
+func (f *fakeFileBrowser) WithDir(owner, repo, ref string, fc filebrowser.FetchCache, sparseCheckoutPatterns []string, fn func(dir string) error) error {
 	dir := f.getPath(owner, repo, "", ref)
 	return fn(dir)
 }

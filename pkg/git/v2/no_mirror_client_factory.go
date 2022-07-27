@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -113,17 +115,19 @@ func (c *noMirrorClientFactory) ClientFromDir(org, repo, dir string) (RepoClient
 // In that case, it must do a full git mirror clone. For large repos, this can
 // take a while. Once that is done, it will do a git fetch instead of a clone,
 // which will usually take at most a few seconds.
-func (c *noMirrorClientFactory) ClientFor(org, repo string) (RepoClient, error) {
+func (c *noMirrorClientFactory) ClientFor(org, repo string, sparseCheckoutPatterns []string) (RepoClient, error) {
 	start := time.Now()
-	cacheDir := path.Join(c.cacheDir, org, repo)
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
+	cacheKey := repo
+	if sparseCheckout {
+		replacer := strings.NewReplacer(".", "_", "/", "_")
+		cacheKey = cacheKey + replacer.Replace(strings.Join(sparseCheckoutPatterns, "-"))
+	}
+	cacheDir := path.Join(c.cacheDir, org, cacheKey)
 	l := c.logger.WithFields(logrus.Fields{"org": org, "repo": repo, "dir": cacheDir})
 	l.Debug("Creating a client from the cache.")
 
-	repoDir, err := ioutil.TempDir(c.cacheDirBase, "gitrepo")
-	if err != nil {
-		return nil, err
-	}
-	_, repoClientCloner, repoClient, err := c.bootstrapClients(org, repo, repoDir)
+	_, repoClientCloner, repoClient, err := c.bootstrapClients(org, repo, cacheDir)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +138,7 @@ func (c *noMirrorClientFactory) ClientFor(org, repo string) (RepoClient, error) 
 	c.masterLock.Unlock()
 	c.repoLocks[cacheDir].Lock()
 	defer c.repoLocks[cacheDir].Unlock()
-	if _, err := os.Stat(path.Join(cacheDir, "HEAD")); os.IsNotExist(err) {
+	if _, err := os.Stat(path.Join(cacheDir, ".git", "HEAD")); os.IsNotExist(err) {
 		// we have not yet cloned this repo, we need to do a full clone
 		if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil && !os.IsExist(err) {
 			return nil, err
@@ -144,7 +148,7 @@ func (c *noMirrorClientFactory) ClientFor(org, repo string) (RepoClient, error) 
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to resolve remote for %s/%s", org, repo)
 		}
-		if err := repoClientCloner.Clone(remote); err != nil {
+		if err := repoClientCloner.Clone(remote, sparseCheckoutPatterns); err != nil {
 			return nil, err
 		}
 	} else if err != nil {
