@@ -235,7 +235,7 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 		}
 		if !isSHA {
 			// lets merge any new changes into the main branch
-			_, err := c.repoClient.Merge("FETCH_HEAD")
+			_, err := runCmd(c.repoClient.Directory(), "git", "merge", "FETCH_HEAD")
 			if err != nil {
 				return errors.Wrapf(err, "failed to merge repository %s", c.fullName)
 			}
