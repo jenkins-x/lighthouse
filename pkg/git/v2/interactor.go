@@ -113,7 +113,7 @@ func (i *interactor) Clean() error {
 // Clone clones the repository from a repository.
 func (i *interactor) Clone(repo string, sparseCheckoutPatterns []string) error {
 	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
-	if sparseCheckout && sparseCheckoutPatterns != nil {
+	if sparseCheckout && len(sparseCheckoutPatterns) > 0 {
 		return i.SparseClone(repo, sparseCheckoutPatterns)
 	}
 	i.logger.Debugf("Creating a clone of the repo at %s from %s", i.dir, repo)
