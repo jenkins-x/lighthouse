@@ -139,4 +139,4 @@ replace (
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.8.0
 )
 
-go 1.17
+go 1.18.4
