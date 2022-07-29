@@ -413,6 +413,7 @@ func retryCmd(l *logrus.Entry, dir, cmd string, arg ...string) ([]byte, error) {
 			sleepyTime *= 2
 			continue
 		}
+		l.Debugf("Running %s %v succeeded with output %s.", cmd, arg, string(b))
 		break
 	}
 	return b, err
