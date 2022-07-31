@@ -1,6 +1,6 @@
 module github.com/jenkins-x/lighthouse/hack
 
-go 1.15
+go 1.18
 
 require (
 	gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e // indirect
