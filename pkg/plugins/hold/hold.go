@@ -64,6 +64,8 @@ type scmProviderClient interface {
 	AddLabel(owner, repo string, number int, label string, pr bool) error
 	RemoveLabel(owner, repo string, number int, label string, pr bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
+	CreateComment(owner, repo string, number int, pr bool, comment string) error
+	QuoteAuthorForComment(string) string
 }
 
 func handleGenericComment(cancel bool, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
@@ -82,6 +84,25 @@ func handle(cancel bool, spc scmProviderClient, log *logrus.Entry, e *scmprovide
 	issueLabels, err := spc.GetIssueLabels(e.Repo.Namespace, e.Repo.Name, e.Number, e.IsPR)
 	if err != nil {
 		return fmt.Errorf("failed to get the labels on %s/%s#%d: %v", e.Repo.Namespace, e.Repo.Name, e.Number, err)
+	}
+
+	isAuthorPrAssignee := false
+	for _, assignee := range e.Assignees {
+		if assignee == e.Author {
+			isAuthorPrAssignee = true
+			break
+		}
+	}
+
+	if !isAuthorPrAssignee && e.Author != e.IssueAuthor {
+		resp := ""
+		if f(labels.Hold, issueLabels) {
+			resp = "you cannot hold cancel this PR."
+		} else {
+			resp = "you cannot hold this PR."
+		}
+		log.Infof("Commenting with \"%s\".", resp)
+		return spc.CreateComment(e.Repo.Namespace, e.Repo.Name, e.Number, true, plugins.FormatResponseRaw(e.Body, e.Link, spc.QuoteAuthorForComment(e.Author.Login), resp))
 	}
 
 	hasLabel := f(labels.Hold, issueLabels)
