@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -70,6 +71,8 @@ type Interactor interface {
 	HasSHA(ref string) (string, error)
 	// Pull pulls any changes into a branch from the remote
 	Pull() error
+	// SetSparseCheckoutPatterns initialises att set patterns for sparse checkout
+	SetSparseCheckoutPatterns(sparseCheckoutPatterns []string) error
 }
 
 // cacher knows how to cache and update repositories in a central cache
@@ -109,11 +112,26 @@ func (i *interactor) Clean() error {
 	return os.RemoveAll(i.dir)
 }
 
-// Clone clones the repository from a local path.
-func (i *interactor) Clone(from string) error {
-	i.logger.Debugf("Creating a clone of the repo at %s from %s", i.dir, from)
-	if out, err := i.executor.Run("clone", from, i.dir); err != nil {
+// Clone clones the repository from a repository.
+func (i *interactor) Clone(repo string) error {
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
+	i.logger.Debugf("Creating a clone of the repo at %s from %s", i.dir, repo)
+	args := []string{"clone", "--no-checkout", "--depth=1"}
+	if sparseCheckout {
+		args = append(args, "--filter=blob:none")
+	}
+	if out, err := i.executor.Run(append(args, repo, i.dir)...); err != nil {
 		return fmt.Errorf("error creating a clone: %v %v", err, string(out))
+	}
+	return nil
+}
+
+func (i *interactor) SetSparseCheckoutPatterns(sparseCheckoutPatterns []string) error {
+	if out, err := i.executor.Run("sparse-checkout", "init"); err != nil {
+		return fmt.Errorf("failed to init sparse checkout: %v. output: %s", err, string(out))
+	}
+	if out, err := i.executor.Run(append([]string{"sparse-checkout", "set"}, sparseCheckoutPatterns...)...); err != nil {
+		return fmt.Errorf("failed to set sparse checkout patterns to %v: %v. output: %s", sparseCheckoutPatterns, err, string(out))
 	}
 	return nil
 }
@@ -125,7 +143,7 @@ func (i *interactor) MirrorClone() error {
 	if err != nil {
 		return fmt.Errorf("could not resolve remote for cloning: %v", err)
 	}
-	out, err := i.executor.Run("clone", "--mirror", remote, i.dir)
+	out, err := i.executor.Run("clone", "--mirror", "--depth=1", remote, i.dir)
 	if err != nil {
 		// the returned error is not being reported
 		i.logger.Errorf("error creating a mirror clone: %v %v", err, string(out))

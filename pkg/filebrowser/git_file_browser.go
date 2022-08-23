@@ -2,9 +2,11 @@ package filebrowser
 
 import (
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -38,8 +40,8 @@ func NewFileBrowserFromGitClient(clientFactory git.ClientFactory) Interface {
 	}
 }
 
-func (f *gitFileBrowser) WithDir(owner, repo, ref string, fc FetchCache, fn func(dir string) error) error {
-	return f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
+func (f *gitFileBrowser) WithDir(owner, repo, ref string, fc FetchCache, sparseCheckoutPatterns []string, fn func(dir string) error) error {
+	return f.withRepoClient(owner, repo, ref, fc, sparseCheckoutPatterns, func(repoClient git.RepoClient) error {
 		dir := repoClient.Directory()
 		return fn(dir)
 	})
@@ -50,7 +52,7 @@ func (f *gitFileBrowser) GetMainAndCurrentBranchRefs(_, _, eventRef string) ([]s
 }
 
 func (f *gitFileBrowser) GetFile(owner, repo, path, ref string, fc FetchCache) (answer []byte, err error) {
-	err = f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
+	err = f.withRepoClient(owner, repo, ref, fc, []string{"/" + path}, func(repoClient git.RepoClient) error {
 		f := repoPath(repoClient, path)
 		exists, err := util.FileExists(f)
 		if err != nil {
@@ -67,7 +69,7 @@ func (f *gitFileBrowser) GetFile(owner, repo, path, ref string, fc FetchCache) (
 }
 
 func (f *gitFileBrowser) ListFiles(owner, repo, path, ref string, fc FetchCache) (answer []*scm.FileEntry, err error) {
-	err = f.withRepoClient(owner, repo, ref, fc, func(repoClient git.RepoClient) error {
+	err = f.withRepoClient(owner, repo, ref, fc, []string{"/" + path + "/*"}, func(repoClient git.RepoClient) error {
 		dir := repoPath(repoClient, path)
 		exists, err := util.DirExists(dir)
 		if err != nil {
@@ -112,17 +114,20 @@ func repoPath(repoClient git.RepoClient, path string) string {
 	return filepath.Join(dir, path)
 }
 
-func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, fn func(repoClient git.RepoClient) error) error {
+func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, sparseCheckoutPatterns []string, fn func(repoClient git.RepoClient) error) error {
 	client := f.getOrCreateClient(owner, repo)
-
-	var repoClient git.RepoClient
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
 	var err error
 	client.lock.Lock()
 	defer client.lock.Unlock()
 	if client.repoClient == nil {
-		client.repoClient, err = f.clientFactory.ClientFor(owner, repo)
+		client.repoClient, err = f.clientFactory.ClientFor(owner, repo, sparseCheckoutPatterns)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create repo client")
+		}
+	} else if sparseCheckout && len(sparseCheckoutPatterns) > 0 {
+		if err := client.repoClient.SetSparseCheckoutPatterns(sparseCheckoutPatterns); err != nil {
+			return errors.Wrapf(err, "failed to set sparse checkout patterns")
 		}
 	}
 	if client.mainBranch == "" {
@@ -133,13 +138,12 @@ func (f *gitFileBrowser) withRepoClient(owner, repo, ref string, fc FetchCache, 
 		}
 	}
 	if err == nil {
-		repoClient = client.repoClient
 		err = client.UseRef(ref, fc)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to switch to ref %s", ref)
 		}
 		if err == nil {
-			err = fn(repoClient)
+			err = fn(client.repoClient)
 			if err != nil {
 				err = errors.Wrapf(err, "failed to process repo %s/%s refref %s", owner, repo, ref)
 			}
@@ -230,10 +234,10 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 			}
 		}
 		if !isSHA {
-			// lets pull any new changes into the main branch
-			err := c.repoClient.Pull()
+			// lets merge any new changes into the main branch
+			_, err := runCmd(c.repoClient.Directory(), "git", "merge", "FETCH_HEAD")
 			if err != nil {
-				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
+				return errors.Wrapf(err, "failed to merge repository %s", c.fullName)
 			}
 		}
 	}

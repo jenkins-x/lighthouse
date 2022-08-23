@@ -25,6 +25,7 @@ type Client interface {
 	SetRemote(remote string)
 	SetCredentials(user string, tokenGenerator func() []byte)
 	Clone(repo string) (*Repo, error)
+	SparseClone(repo string, sparseCheckoutPatterns []string) (*Repo, error)
 }
 
 // client can clone repos. It keeps a local cache, so successive clones of the
@@ -150,18 +151,8 @@ func (c *client) Clone(repo string) (*Repo, error) {
 		if err := os.Mkdir(filepath.Dir(cache), os.ModePerm); err != nil && !os.IsExist(err) {
 			return nil, err
 		}
-		prefix := ""
-		repoText := repo
-		if c.gitKind == kindBitbucketServer {
-			prefix = "scm/"
-			idx := strings.Index(repo, "/")
+		remote := getRemote(repo, c, base)
 
-			// to clone on bitbucket we need to lower case the projectKey owner
-			if idx > 0 {
-				repoText = fmt.Sprintf("%s/%s", strings.ToLower(repo[0:idx]), repo[idx+1:])
-			}
-		}
-		remote := fmt.Sprintf("%s/%s%s", base, prefix, repoText)
 		if b, err := retryCmd(c.logger, "", c.git, "clone", "--mirror", remote, cache); err != nil {
 			return nil, fmt.Errorf("git cache clone error: %v. output: %s", err, string(b))
 		}
@@ -191,6 +182,69 @@ func (c *client) Clone(repo string) (*Repo, error) {
 		user:   user,
 		pass:   pass,
 	}, nil
+}
+
+func (c *client) SparseClone(repo string, sparseCheckoutPatterns []string) (*Repo, error) {
+	// Make pattern part of cache key somehow.
+	replacer := strings.NewReplacer(".", "_", "/", "_")
+	cacheKey := repo + replacer.Replace(strings.Join(sparseCheckoutPatterns, "-"))
+	c.lockRepo(cacheKey)
+	defer c.unlockRepo(cacheKey)
+
+	base := c.base
+	user, pass := c.getCredentials()
+	if user != "" && pass != "" {
+		host, scheme := gitHostAndScheme(c.base)
+		base = fmt.Sprintf("%s://%s:%s@%s", scheme, user, pass, host)
+	}
+	cache := filepath.Join(c.dir, cacheKey)
+	if _, err := os.Stat(cache); os.IsNotExist(err) {
+		// Cache miss, clone it now.
+		c.logger.Infof("Cloning %s for the first time.", repo)
+		if err := os.Mkdir(filepath.Dir(cache), os.ModePerm); err != nil && !os.IsExist(err) {
+			return nil, err
+		}
+		remote := getRemote(repo, c, base)
+
+		if b, err := retryCmd(c.logger, "", c.git, "clone", "--no-checkout", "--filter=blob:none", "--sparse", "--depth=1", remote, cache); err != nil {
+			return nil, fmt.Errorf("failed to clone repository: %v. output: %s", err, string(b))
+		}
+		if b, err := retryCmd(c.logger, cache, c.git, append([]string{"sparse-checkout", "set"}, sparseCheckoutPatterns...)...); err != nil {
+			return nil, fmt.Errorf("failed to set sparse checkout patterns to %v: %v. output: %s", sparseCheckoutPatterns, err, string(b))
+		}
+	} else if err != nil {
+		return nil, err
+	} else {
+		// Cache hit. Do a git fetch to keep updated.
+		c.logger.Infof("Fetching %s.", repo)
+		if b, err := retryCmd(c.logger, cache, c.git, "fetch", "--depth=1"); err != nil {
+			return nil, fmt.Errorf("git fetch error: %v. output: %s", err, string(b))
+		}
+	}
+	return &Repo{
+		Dir:    cache,
+		logger: c.logger,
+		git:    c.git,
+		base:   base,
+		repo:   repo,
+		user:   user,
+		pass:   pass,
+	}, nil
+}
+
+func getRemote(repo string, c *client, base string) string {
+	prefix := ""
+	repoText := repo
+	if c.gitKind == kindBitbucketServer {
+		prefix = "scm/"
+		idx := strings.Index(repo, "/")
+
+		// to clone on bitbucket we need to lower case the projectKey owner
+		if idx > 0 {
+			repoText = fmt.Sprintf("%s/%s", strings.ToLower(repo[0:idx]), repo[idx+1:])
+		}
+	}
+	return fmt.Sprintf("%s/%s%s", base, prefix, repoText)
 }
 
 func gitHostAndScheme(s string) (string, string) {
@@ -359,6 +413,7 @@ func retryCmd(l *logrus.Entry, dir, cmd string, arg ...string) ([]byte, error) {
 			sleepyTime *= 2
 			continue
 		}
+		l.Debugf("Running %s %v succeeded with output %s.", cmd, arg, string(b))
 		break
 	}
 	return b, err

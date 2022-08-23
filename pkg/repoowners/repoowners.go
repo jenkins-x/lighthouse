@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -221,6 +222,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	cloneRef := fmt.Sprintf("%s/%s", org, repo)
 	fullName := fmt.Sprintf("%s:%s", cloneRef, base)
 	mdYaml := c.mdYAMLEnabled(org, repo)
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
 
 	sha, err := c.spc.GetRef(org, repo, fmt.Sprintf("heads/%s", base))
 	if err != nil {
@@ -231,11 +233,20 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	defer c.lock.Unlock()
 	entry, ok := c.cache[fullName]
 	if !ok || entry.sha != sha || entry.owners == nil || entry.owners.enableMDYAML != mdYaml {
-		gitRepo, err := c.git.Clone(cloneRef)
+		var gitRepo *git2.Repo
+		if sparseCheckout {
+			sparseCheckoutPatterns := []string{"/OWNERS_ALIASES", "OWNERS"}
+			if mdYaml {
+				sparseCheckoutPatterns = append(sparseCheckoutPatterns, "*.md")
+			}
+			gitRepo, err = c.git.SparseClone(cloneRef, sparseCheckoutPatterns)
+		} else {
+			gitRepo, err = c.git.Clone(cloneRef)
+			defer gitRepo.Clean()
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to clone %s: %v", cloneRef, err)
 		}
-		defer gitRepo.Clean()
 		if err := gitRepo.Checkout(base); err != nil {
 			return nil, err
 		}

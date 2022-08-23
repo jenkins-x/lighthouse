@@ -249,7 +249,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 				go func(p string, h plugins.PullRequestHandler) {
 					defer s.wg.Done()
 					if err := h(agent, *pr); err != nil {
-						agent.Logger.WithError(err).Error("Error handling PullRequestEvent.")
+						agent.Logger.WithField("plugin", p).WithError(err).Error("Error handling PullRequestEvent.")
 					}
 				}(p, h.PullRequestHandler)
 			}
