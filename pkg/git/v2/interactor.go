@@ -116,7 +116,7 @@ func (i *interactor) Clean() error {
 func (i *interactor) Clone(repo string) error {
 	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
 	i.logger.Debugf("Creating a clone of the repo at %s from %s", i.dir, repo)
-	args := []string{"clone", "--no-checkout", "--depth=1"}
+	args := []string{"clone", "--no-checkout", "--depth=10", "--no-single-branch"}
 	if sparseCheckout {
 		args = append(args, "--filter=blob:none")
 	}
@@ -143,7 +143,7 @@ func (i *interactor) MirrorClone() error {
 	if err != nil {
 		return fmt.Errorf("could not resolve remote for cloning: %v", err)
 	}
-	out, err := i.executor.Run("clone", "--mirror", "--depth=1", remote, i.dir)
+	out, err := i.executor.Run("clone", "--mirror", "--depth=10", "--no-single-branch", remote, i.dir)
 	if err != nil {
 		// the returned error is not being reported
 		i.logger.Errorf("error creating a mirror clone: %v %v", err, string(out))
