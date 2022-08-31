@@ -42,12 +42,12 @@ func TestInteractor_Clone(t *testing.T) {
 			dir:  "/else",
 			from: "/somewhere",
 			responses: map[string]execResponse{
-				"clone --no-checkout --depth=1 /somewhere /else": {
+				"clone --no-checkout --depth=10 --no-single-branch /somewhere /else": {
 					out: []byte(`ok`),
 				},
 			},
 			expectedCalls: [][]string{
-				{"clone", "--no-checkout", "--depth=1", "/somewhere", "/else"},
+				{"clone", "--no-checkout", "--depth=10", "--no-single-branch", "/somewhere", "/else"},
 			},
 			expectedErr: false,
 		},
@@ -56,12 +56,12 @@ func TestInteractor_Clone(t *testing.T) {
 			dir:  "/else",
 			from: "/somewhere",
 			responses: map[string]execResponse{
-				"clone --no-checkout --depth=1 /somewhere /else": {
+				"clone --no-checkout --depth=10 --no-single-branch /somewhere /else": {
 					err: errors.New("oops"),
 				},
 			},
 			expectedCalls: [][]string{
-				{"clone", "--no-checkout", "--depth=1", "/somewhere", "/else"},
+				{"clone", "--no-checkout", "--depth=10", "--no-single-branch", "/somewhere", "/else"},
 			},
 			expectedErr: true,
 		},
@@ -109,12 +109,12 @@ func TestInteractor_MirrorClone(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"clone --mirror --depth=1 someone.com /else": {
+				"clone --mirror --depth=10 --no-single-branch someone.com /else": {
 					out: []byte(`ok`),
 				},
 			},
 			expectedCalls: [][]string{
-				{"clone", "--mirror", "--depth=1", "someone.com", "/else"},
+				{"clone", "--mirror", "--depth=10", "--no-single-branch", "someone.com", "/else"},
 			},
 			expectedErr: false,
 		},
@@ -135,12 +135,12 @@ func TestInteractor_MirrorClone(t *testing.T) {
 				return "someone.com", nil
 			},
 			responses: map[string]execResponse{
-				"clone --mirror --depth=1 someone.com /else": {
+				"clone --mirror --depth=10 --no-single-branch someone.com /else": {
 					err: errors.New("oops"),
 				},
 			},
 			expectedCalls: [][]string{
-				{"clone", "--mirror", "--depth=1", "someone.com", "/else"},
+				{"clone", "--mirror", "--depth=10", "--no-single-branch", "someone.com", "/else"},
 			},
 			expectedErr: true,
 		},

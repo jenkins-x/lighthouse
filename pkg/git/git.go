@@ -206,7 +206,7 @@ func (c *client) SparseClone(repo string, sparseCheckoutPatterns []string) (*Rep
 		}
 		remote := getRemote(repo, c, base)
 
-		if b, err := retryCmd(c.logger, "", c.git, "clone", "--no-checkout", "--filter=blob:none", "--sparse", "--depth=1", remote, cache); err != nil {
+		if b, err := retryCmd(c.logger, "", c.git, "clone", "--no-checkout", "--filter=blob:none", "--sparse", "--depth=10", "--no-single-branch", remote, cache); err != nil {
 			return nil, fmt.Errorf("failed to clone repository: %v. output: %s", err, string(b))
 		}
 		if b, err := retryCmd(c.logger, cache, c.git, append([]string{"sparse-checkout", "set"}, sparseCheckoutPatterns...)...); err != nil {
@@ -217,7 +217,7 @@ func (c *client) SparseClone(repo string, sparseCheckoutPatterns []string) (*Rep
 	} else {
 		// Cache hit. Do a git fetch to keep updated.
 		c.logger.Infof("Fetching %s.", repo)
-		if b, err := retryCmd(c.logger, cache, c.git, "fetch", "--depth=1"); err != nil {
+		if b, err := retryCmd(c.logger, cache, c.git, "fetch", "--depth=10"); err != nil {
 			return nil, fmt.Errorf("git fetch error: %v. output: %s", err, string(b))
 		}
 	}
