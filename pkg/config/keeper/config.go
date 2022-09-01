@@ -35,7 +35,7 @@ type Config struct {
 	// Queries represents a list of GitHub search queries that collectively
 	// specify the set of PRs that meet merge requirements.
 	Queries Queries `json:"queries,omitempty"`
-	// The default merge type for lighthouse to use, and in the normal merge type list will override this. Defaults to "merge"
+	// The default merge type for lighthouse to use, and the merge_method list will override this. Defaults to "merge"
 	DefaultMergeType PullRequestMergeType `json:"default_merge_method,omitempty"`
 	// A key/value pair of an org/repo as the key and merge method to override
 	// the default method of merge. Valid options are squash, rebase, and merge.

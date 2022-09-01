@@ -14,6 +14,7 @@ The following configuration fields are available:
 * `status_update_period`: The field specifies how often Tide will update GitHub status contexts.
    Defaults to the value of `sync_period`.
 * `queries`: List of queries (described below).
+* `default_merge_method`: The default merge type for lighthouse to use, and the merge_method list will override this. Defaults to "merge"
 * `merge_method`: A key/value pair of an `org/repo` as the key and merge method to override
    the default method of merge as value. Valid options are `squash`, `rebase`, and `merge`.
    Defaults to `merge`.
