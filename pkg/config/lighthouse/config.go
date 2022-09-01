@@ -38,18 +38,18 @@ type Config struct {
 
 	// TODO: Move this out of the main config.
 	Jenkinses []JenkinsConfig `json:"jenkinses,omitempty"`
-	// LighthouseJobNamespace is the namespace in the cluster that prow
+	// LighthouseJobNamespace is the namespace in the cluster that lighthouse
 	// components will use for looking up LighthouseJobs. The namespace
-	// needs to exist and will not be created by prow.
+	// needs to exist and will not be created by lighthouse.
 	// Defaults to "default".
 	LighthouseJobNamespace string `json:"prowjob_namespace,omitempty"`
-	// PodNamespace is the namespace in the cluster that prow
+	// PodNamespace is the namespace in the cluster that lighthouse
 	// components will use for looking up Pods owned by LighthouseJobs.
-	// The namespace needs to exist and will not be created by prow.
+	// The namespace needs to exist and will not be created by lighthouse.
 	// Defaults to "default".
 	PodNamespace string `json:"pod_namespace,omitempty"`
 	// LogLevel enables dynamically updating the log level of the
-	// standard logger that is used by all prow components.
+	// standard logger that is used by all lighthouse components.
 	//
 	// Valid values:
 	//
@@ -64,7 +64,7 @@ type Config struct {
 	OwnersDirExcludes *OwnersDirExcludes `json:"owners_dir_excludes,omitempty"`
 	// Pub/Sub Subscriptions that we want to listen to
 	PubSubSubscriptions PubsubSubscriptions `json:"pubsub_subscriptions,omitempty"`
-	// GitHubOptions allows users to control how prow applications display GitHub website links.
+	// GitHubOptions allows users to control how lighthouse applications display GitHub website links.
 	GitHubOptions GitHubOptions `json:"github,omitempty"`
 	// ProviderConfig contains optional SCM provider information
 	ProviderConfig *ProviderConfig `json:"providerConfig,omitempty"`
@@ -113,7 +113,7 @@ func (c *Config) Parse() error {
 
 // InRepoConfig to enable configuration inside the source code of a repository
 //
-// this struct mirrors the similar struct inside prow
+// this struct mirrors the similar struct inside lighthouse
 type InRepoConfig struct {
 	// Enabled describes whether InRepoConfig is enabled for a given repository. This can
 	// be set globally, per org or per repo using '*', 'org' or 'org/repo' as key. The
