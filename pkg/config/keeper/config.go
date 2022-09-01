@@ -35,6 +35,8 @@ type Config struct {
 	// Queries represents a list of GitHub search queries that collectively
 	// specify the set of PRs that meet merge requirements.
 	Queries Queries `json:"queries,omitempty"`
+	// The default merge type for lighthouse to use, and the merge_method list will override this. Defaults to "merge"
+	DefaultMergeType PullRequestMergeType `json:"default_merge_method,omitempty"`
 	// A key/value pair of an org/repo as the key and merge method to override
 	// the default method of merge. Valid options are squash, rebase, and merge.
 	MergeType map[string]PullRequestMergeType `json:"merge_method,omitempty"`
@@ -95,7 +97,7 @@ func (c *Config) MergeMethod(org, repo string) PullRequestMergeType {
 			return ov
 		}
 
-		return MergeMerge
+		return c.DefaultMergeType
 	}
 
 	return v
@@ -128,6 +130,9 @@ func (c *Config) MergeCommitTemplate(org, repo string) MergeCommitTemplate {
 
 // Parse initializes and validates the Config
 func (c *Config) Parse() error {
+	if c.DefaultMergeType == "" {
+		c.DefaultMergeType = MergeMerge
+	}
 	if c.SyncPeriodString == "" {
 		c.SyncPeriod = time.Minute
 	} else {
