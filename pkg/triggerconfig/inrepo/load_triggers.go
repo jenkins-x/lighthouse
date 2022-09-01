@@ -43,7 +43,7 @@ func MergeTriggers(cfg *config.Config, pluginCfg *plugins.Configuration, fileBro
 // LoadTriggerConfig loads the `lighthouse.yaml` configuration files in the repository
 func LoadTriggerConfig(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, ownerName string, repoName string, sha string) (*triggerconfig.Config, error) {
 	var answer *triggerconfig.Config
-	err := fileBrowsers.LighthouseGitFileBrowser().WithDir(ownerName, repoName, sha, fc, func(dir string) error {
+	err := fileBrowsers.LighthouseGitFileBrowser().WithDir(ownerName, repoName, sha, fc, []string{"/.lighthouse/**"}, func(dir string) error {
 		path := filepath.Join(dir, ".lighthouse")
 		exists, err := util.DirExists(path)
 		if err != nil {

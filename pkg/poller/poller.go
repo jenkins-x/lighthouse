@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	censor = func(content []byte) []byte { return content }
+	censor           = func(content []byte) []byte { return content }
 	StatusesPageSize = 100
 )
 
@@ -85,7 +85,7 @@ func (c *pollingController) PollReleases() {
 		ref := ""
 		sha := ""
 		fc := filebrowser.NewFetchCache()
-		err := c.fb.WithDir(owner, repo, ref, fc, func(dir string) error {
+		err := c.fb.WithDir(owner, repo, ref, fc, nil, func(dir string) error {
 			executor, err := git.NewCensoringExecutor(dir, censor, l)
 			if err != nil {
 				return errors.Wrapf(err, "failed to create git executor")
