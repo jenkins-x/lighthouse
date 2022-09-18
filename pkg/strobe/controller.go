@@ -1,4 +1,4 @@
-package periodics
+package strobe
 
 import (
 	"time"
@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	controllerName = "periodics-controller"
+	controllerName = "strobe"
 )
 
 type LighthousePeriodicJobController struct {

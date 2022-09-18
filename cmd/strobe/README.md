@@ -1,6 +1,6 @@
-# Periodics
+# Strobe
 
-Periodics is a controller that implements the periodic jobs defined in the
+Strobe is a controller that implements the periodic jobs defined in the
 Lighthouse config ConfigMap:
 
 ```yaml

@@ -8,7 +8,7 @@ POLLER_EXECUTABLE := poller
 KEEPER_EXECUTABLE := keeper
 FOGHORN_EXECUTABLE := foghorn
 GC_JOBS_EXECUTABLE := gc-jobs
-PERIODICS_EXECUTABLE := periodics
+STROBE_EXECUTABLE := strobe
 TEKTON_CONTROLLER_EXECUTABLE := lighthouse-tekton-controller
 JENKINS_CONTROLLER_EXECUTABLE := jenkins-controller
 
@@ -17,7 +17,7 @@ POLLER_MAIN_SRC_FILE=cmd/poller/main.go
 KEEPER_MAIN_SRC_FILE=cmd/keeper/main.go
 FOGHORN_MAIN_SRC_FILE=cmd/foghorn/main.go
 GC_JOBS_MAIN_SRC_FILE=cmd/gc/main.go
-PERIODICS_MAIN_SRC_FILE=cmd/periodics/main.go
+STROBE_MAIN_SRC_FILE=cmd/strobe/main.go
 TEKTON_CONTROLLER_MAIN_SRC_FILE=cmd/tektoncontroller/main.go
 JENKINS_CONTROLLER_MAIN_SRC_FILE=cmd/jenkins/main.go
 
@@ -56,9 +56,9 @@ build-foghorn: ## Build the foghorn controller binary for the native OS
 build-gc-jobs: ## Build the GC jobs binary for the native OS
 	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE) $(GC_JOBS_MAIN_SRC_FILE)
 
-.PHONY: build-periodics
-build-periodics: ## Build the periodics controller binary for the native OS
-	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(PERIODICS_EXECUTABLE) $(PERIODICS_MAIN_SRC_FILE)
+.PHONY: build-strobe
+build-strobe: ## Build the strobe controller binary for the native OS
+	$(GO) build -i -ldflags "$(GO_LDFLAGS)" -o bin/$(STROBE_EXECUTABLE) $(STROBE_MAIN_SRC_FILE)
 
 .PHONY: build-tekton-controller
 build-tekton-controller: ## Build the Tekton controller binary for the native OS
@@ -75,7 +75,7 @@ release: linux
 linux: build-linux
 
 .PHONY: build-linux
-build-linux: build-webhooks-linux build-poller-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-periodics-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
+build-linux: build-webhooks-linux build-poller-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-strobe-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
 
 .PHONY: build-webhooks-linux ## Build the webhook controller binary for Linux
 build-webhooks-linux:
@@ -97,9 +97,9 @@ build-foghorn-linux: ## Build the foghorn controller binary for Linux
 build-gc-jobs-linux: ## Build the GC jobs binary for Linux
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE) $(GC_JOBS_MAIN_SRC_FILE)
 
-.PHONY: build-periodics-linux
-build-periodics-linux: ## Build the periodics controller binary for Linux
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(PERIODICS_EXECUTABLE) $(PERIODICS_MAIN_SRC_FILE)
+.PHONY: build-strobe-linux
+build-strobe-linux: ## Build the strobe controller binary for Linux
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(STROBE_EXECUTABLE) $(STROBE_MAIN_SRC_FILE)
 
 .PHONY: build-tekton-controller-linux
 build-tekton-controller-linux: ## Build the Tekton controller binary for Linux

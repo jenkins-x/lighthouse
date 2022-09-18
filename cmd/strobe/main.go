@@ -23,7 +23,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
-	"github.com/jenkins-x/lighthouse/pkg/periodics"
+	"github.com/jenkins-x/lighthouse/pkg/strobe"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/sirupsen/logrus"
@@ -48,7 +48,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 }
 
 func main() {
-	logrusutil.ComponentInit("periodics")
+	logrusutil.ComponentInit("strobe")
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
 
@@ -80,7 +80,7 @@ func main() {
 	go o.enqueuePeriodicJobs(configCh, queue)
 
 	// Create and start controller
-	controller := periodics.NewLighthousePeriodicJobController(queue, lighthouseJobClient, configAgent)
+	controller := strobe.NewLighthousePeriodicJobController(queue, lighthouseJobClient, configAgent)
 	controller.Run(1, util.Stopper())
 }
 
