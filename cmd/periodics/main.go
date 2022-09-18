@@ -84,6 +84,8 @@ func main() {
 	controller.Run(1, util.Stopper())
 }
 
+// enqueuePeriodicJobs waits for changes to the Lighthouse config and queues
+// each periodic job using its name and namespace as the key
 func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workqueue.RateLimitingInterface) {
 	for configDelta := range configCh {
 		logrus.Info("Lighthouse config updated")

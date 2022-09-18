@@ -22,7 +22,6 @@ type LighthousePeriodicJobController struct {
 	configAgent         *config.Agent
 }
 
-// NewPeriodicLighthouseJobReconciler creates a PeriodicLighthouseJob reconciler
 func NewLighthousePeriodicJobController(queue workqueue.RateLimitingInterface, lighthouseJobClient lighthousev1alpha1.LighthouseJobInterface, configAgent *config.Agent) *LighthousePeriodicJobController {
 	return &LighthousePeriodicJobController{
 		logger:              logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
@@ -49,6 +48,7 @@ func (c *LighthousePeriodicJobController) runWorker() {
 	}
 }
 
+// processNextItem takes items from the queue and reconciles them
 func (c *LighthousePeriodicJobController) processNextItem() bool {
 	// Wait until there is a new item in the working queue
 	key, quit := c.queue.Get()
