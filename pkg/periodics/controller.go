@@ -76,7 +76,7 @@ func (c *LighthousePeriodicJobController) handleErr(err error, key interface{}) 
 		return
 	}
 
-	// Retry with backoff if there was reconciliation error
+	// Retry with backoff if there was a reconciliation error
 	c.logger.WithError(err).Infof("Failed to reconcile periodic job %s", key)
 	c.queue.AddRateLimited(key)
 }
