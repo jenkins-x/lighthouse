@@ -1,0 +1,10 @@
+FROM alpine:3.16
+
+RUN apk add --update --no-cache ca-certificates git \
+    && adduser -D -u 1000 jx
+
+ENV JX_HOME /home/jx
+USER 1000
+
+COPY ./bin/periodics /home/jx/
+ENTRYPOINT ["/home/jx/periodics"]
