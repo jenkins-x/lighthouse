@@ -85,6 +85,8 @@ func (c *LighthousePeriodicJobController) handleErr(err error, key interface{}) 
 func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) error {
 	c.logger.Info("Reconciling periodic job %s...", req)
 
+	// Retrieve the latest Lighthouse config and search for the definition of
+	// the periodic job being reconciled
 	for _, periodic := range c.configAgent.Config().JobConfig.Periodics {
 		if periodic.Name == req.Name && periodic.Namespace != nil && *periodic.Namespace == req.Namespace {
 			c.logger.Info("Periodic job configuration found!")
@@ -93,6 +95,8 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) error {
 			return nil
 		}
 	}
+
+	// TODO: Finish the controller implementation by scheduling LighthouseJobs
 
 	c.logger.Infof("Periodic job %s reconciled successfully!", req)
 	return nil
