@@ -46,6 +46,8 @@ type Presubmit struct {
 	// (Default: `/test <job name>`)
 	RerunCommand string       `json:"rerun_command,omitempty"`
 	JenkinsSpec  *JenkinsSpec `json:"jenkins_spec,omitempty"`
+	// SkipDraftPRBuild controls if we want to build a PR in draft mode
+	SkipDraftPRBuild bool `default:"false" json:"skip_draft_pr_build,omitempty"`
 
 	// We'll set these when we load it.
 	// re *regexp.Regexp // from Trigger.

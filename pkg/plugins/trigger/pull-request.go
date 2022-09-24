@@ -270,5 +270,15 @@ func buildAll(c Client, pr *scm.PullRequest, eventGUID string, elideSkippedConte
 	if err != nil {
 		return err
 	}
+
+	for _, v := range c.Config.GetPresubmits(pr.Base.Repo) {
+		// For multiple pre submits this wont run any of the pre-submits, which is not desirable
+		fmt.Println(v.Name, " ", v.SkipDraftPRBuild)
+		if v.SkipDraftPRBuild && pr.Draft {
+			c.Logger.Debug("Skipping build for draft PR")
+			return nil
+		}
+	}
+
 	return RunAndSkipJobs(c, pr, toTest, toSkip, eventGUID, elideSkippedContexts)
 }
