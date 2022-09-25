@@ -57,7 +57,6 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to create Lighthouse client")
 	}
-	lighthouseJobClient := lighthouseClient.LighthouseV1alpha1().LighthouseJobs(o.namespace)
 
 	// Create rate limited queue. We will add the names of periodic jobs to this
 	// queue as they are updated in the Lighthouse config
@@ -80,7 +79,7 @@ func main() {
 	go o.enqueuePeriodicJobs(configCh, queue)
 
 	// Create and start controller
-	controller := strobe.NewLighthousePeriodicJobController(queue, lighthouseJobClient, configAgent)
+	controller := strobe.NewLighthousePeriodicJobController(queue, lighthouseClient, configAgent)
 	controller.Run(1, util.Stopper())
 }
 

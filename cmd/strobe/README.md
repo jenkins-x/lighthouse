@@ -5,8 +5,18 @@ Lighthouse config ConfigMap:
 
 ```yaml
 periodics:
-- name: test
-  cron: "@midnight"
+- name: hello-world
+  namespace: lighthouse
+  cron: "*/1 * * * *"
+  agent: tekton-pipeline
+  pipeline_run_spec:
+    pipelineSpec:
+      tasks:
+      - name: hello-world
+        taskSpec:
+          steps:
+          - image: busybox
+            script: echo 'Hello World!'
 ```
 
 This is done by watching the ConfigMap and adding each periodic job definition
