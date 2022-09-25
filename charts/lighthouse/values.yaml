@@ -233,10 +233,10 @@ foghorn:
   tolerations: []
 
 strobe:
-  # strobe.replicaCount -- Whether to enable to strobe controller
+  # strobe.enabled -- Whether to enable the strobe controller
   enabled: false
 
-  # strobe.replicaCount -- Number of replicas
+  # strobe.replicaCount -- Number of replicas of the strobe controller
   replicaCount: 1
 
   image:
@@ -260,7 +260,7 @@ strobe:
       cpu: 100m
       memory: 256Mi
 
-  # strobe.terminationGracePeriodSeconds -- Termination grace period for strobe controller pods
+  # strobe.terminationGracePeriodSeconds -- Termination grace period for the strobe controller pods
   terminationGracePeriodSeconds: 1
 
   # strobe.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the strobe controller pods
