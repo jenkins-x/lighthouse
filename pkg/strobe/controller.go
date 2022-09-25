@@ -196,18 +196,6 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		return reconcileAfter, nil
 	}
 
-	// Make sure we're not too late to start by checking that the difference
-	// between the last missed schedule and now is less than 30 seconds. 30
-	// seconds was chosen since it is half of the smallest possible periodic job
-	// interval so when a new periodic job is defined there will be at least 30
-	// seconds between its first two runs (rather than two runs being scheduled
-	// very close together if it happens to be defined just before its next
-	// schedule time)
-	if lastMissedScheduleTime.Add(30 * time.Second).Before(now) {
-		c.logger.Infof("Periodic job %s is too late to start", req)
-		return reconcileAfter, nil
-	}
-
 	// Schedule a job for the last missed schedule. We use the last missed
 	// schedule time to generate the job name to act as a lock to prevent
 	// duplicate jobs from being created for the same time
