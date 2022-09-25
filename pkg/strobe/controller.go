@@ -208,6 +208,7 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		hash = hash[0:maxHashLength]
 	}
 	suffix := "-" + hash
+	// Kubernetes resource names have a maximum length:
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
 	maxNameLength := 253
 	lighthouseJobName := req.Name
