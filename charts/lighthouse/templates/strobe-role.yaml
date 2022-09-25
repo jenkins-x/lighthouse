@@ -7,7 +7,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - namespaces
   - configmaps
   verbs:
   - get
@@ -18,9 +17,7 @@ rules:
   resources:
   - lighthousejobs
   verbs:
-  - get
   - list
-  - watch
   - create
 - apiGroups:
   - lighthouse.jenkins.io
