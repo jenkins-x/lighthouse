@@ -45,6 +45,13 @@ spec:
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION --build-arg=VERSION=$VERSION
+        - name: build-container-build:strobe
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/strobe/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-strobe:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:foghorn
           resources: {}
           script: |

@@ -6,5 +6,5 @@ RUN apk add --update --no-cache ca-certificates git \
 ENV JX_HOME /home/jx
 USER 1000
 
-COPY ./bin/periodics /home/jx/
-ENTRYPOINT ["/home/jx/periodics"]
+COPY ./bin/strobe /home/jx/
+ENTRYPOINT ["/home/jx/strobe"]
