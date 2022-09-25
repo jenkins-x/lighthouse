@@ -63,7 +63,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 			return err
 		}
 		if !trusted {
-			resp := fmt.Sprintf("Cannot trigger testing until a trusted user reviews the PR and leaves an `/ok-to-test` message.")
+			resp := "Cannot trigger testing until a trusted user reviews the PR and leaves an `/ok-to-test` message."
 			c.Logger.Infof("Commenting \"%s\".", resp)
 			return c.SCMProviderClient.CreateComment(org, repo, number, true, plugins.FormatResponseRaw(gc.Body, gc.Link, c.SCMProviderClient.QuoteAuthorForComment(gc.Author.Login), resp))
 		}
