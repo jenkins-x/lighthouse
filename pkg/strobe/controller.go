@@ -180,13 +180,8 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	nextNextScheduleTime := cron.Next(nextScheduleTime)
 	interval := nextNextScheduleTime.Sub(nextScheduleTime)
 	earliestScheduleTime := nextScheduleTime.Add(-2 * interval)
-	// ...and we also do not want to consider any time before the configuration
-	// for this job was first observed...
-	if earliestScheduleTime.Before(c.periodicJobFirstObserved[req.NamespacedName]) {
-		earliestScheduleTime = c.periodicJobFirstObserved[req.NamespacedName]
-	}
 	// ...and we also do not want to consider any time before this job was last
-	// scheduled
+	// scheduled...
 	var lastScheduleTime time.Time
 	for _, lighthouseJob := range matchingLighthouseJobs {
 		scheduleTime := lighthouseJob.CreationTimestamp.Time
@@ -200,6 +195,13 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	}
 	if earliestScheduleTime.Before(lastScheduleTime) {
 		earliestScheduleTime = lastScheduleTime
+	}
+	// ...and if we were unable to determine when the job was last scheduled
+	// then we also do not want to consider any time before the configuration
+	// for this job was first observed. This prevents a job from being scheduled
+	// as soon as it is defined
+	if lastScheduleTime.IsZero() && earliestScheduleTime.Before(c.periodicJobFirstObserved[req.NamespacedName]) {
+		earliestScheduleTime = c.periodicJobFirstObserved[req.NamespacedName]
 	}
 	// We are now ready to calculate the last schedule time that we missed
 	var lastMissedScheduleTime time.Time
