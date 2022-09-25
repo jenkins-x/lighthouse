@@ -179,8 +179,8 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	nextNextScheduleTime := cron.Next(nextScheduleTime)
 	interval := nextNextScheduleTime.Sub(nextScheduleTime)
 	earliestScheduleTime := nextScheduleTime.Add(-2 * interval)
-	//...and we also do not want to consider any time before this job was first
-	// observed...
+	// ...and we also do not want to consider any time before the configuration
+	// for this job was first observed...
 	if earliestScheduleTime.Before(c.periodicJobFirstObserved[req.NamespacedName.String()]) {
 		earliestScheduleTime = c.periodicJobFirstObserved[req.NamespacedName.String()]
 	}
