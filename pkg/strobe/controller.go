@@ -201,7 +201,6 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	// duplicate jobs from being created for the same time
 	hasher := fnv.New32a()
 	hasher.Write([]byte(req.Name + lastMissedScheduleTime.String()))
-	print(hasher.Sum32())
 	hash := fmt.Sprint(hasher.Sum32())
 	// The hash should only by of a certain length
 	maxHashLength := 10
