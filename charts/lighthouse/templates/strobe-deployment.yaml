@@ -37,7 +37,7 @@ spec:
 {{- end }}
 {{- end }}
         resources:
-{{ toYaml .Values.strobe.resources | indent 12 }}
+{{ toYaml .Values.strobe.resources | indent 10 }}
       terminationGracePeriodSeconds: {{ .Values.strobe.terminationGracePeriodSeconds }}
 {{- with .Values.strobe.nodeSelector }}
       nodeSelector:
