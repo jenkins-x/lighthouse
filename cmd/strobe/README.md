@@ -6,7 +6,6 @@ Lighthouse config ConfigMap:
 ```yaml
 periodics:
 - name: hello-world
-  namespace: lighthouse
   cron: "*/1 * * * *"
   agent: tekton-pipeline
   pipeline_run_spec:

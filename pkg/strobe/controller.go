@@ -117,12 +117,17 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		return reconcileAfter, nil
 	}
 
+	// Fix the current time to simplify calculations
+	now := time.Now()
+
 	// Parse cron schedule
 	cron, err := cron.Parse(periodicJobConfig.Cron)
 	if err != nil {
 		c.logger.Info("Failed to parse cron schedule")
 		return reconcileAfter, nil
 	}
+	nextScheduleTime := cron.Next(now)
+	reconcileAfter = nextScheduleTime.Sub(now)
 
 	// Find matching LighthouseJobs
 	lighthouseJobList, err := c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).List(context.TODO(), metav1.ListOptions{})
@@ -139,6 +144,20 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		}
 	}
 
+	// Bail if we have reached the maximum concurrency for this job
+	if periodicJobConfig.MaxConcurrency > 0 {
+		var activeLighthouseJobs []v1alpha1.LighthouseJob
+		for _, lighthouseJob := range matchingLighthouseJobs {
+			if lighthouseJob.Status.CompletionTime == nil {
+				activeLighthouseJobs = append(activeLighthouseJobs, lighthouseJob)
+			}
+		}
+		if len(activeLighthouseJobs) > periodicJobConfig.MaxConcurrency {
+			c.logger.Infof("Maximum concurrency limit for periodic job %s reached!", req)
+			return reconcileAfter, nil
+		}
+	}
+
 	// Determine last schedule time
 	var lastScheduleTime time.Time
 	for _, lighthouseJob := range matchingLighthouseJobs {
@@ -152,14 +171,9 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		}
 	}
 
-	// Fix the current time to simplify calculations
-	now := time.Now()
-
 	// If we have been unable to find the last schedule time or the last
 	// schedule time is too far in the past then we set the last schedule time
 	// to a recently passed schedule time
-	nextScheduleTime := cron.Next(now)
-	reconcileAfter = nextScheduleTime.Sub(now)
 	nextNextScheduleTime := cron.Next(nextScheduleTime)
 	// This is the time duration between schedules
 	interScheduleDuration := nextNextScheduleTime.Sub(nextScheduleTime)
