@@ -28,14 +28,19 @@ type LighthousePeriodicJobController struct {
 	queue            workqueue.RateLimitingInterface
 	lighthouseClient clientset.Interface
 	configAgent      *config.Agent
+	// periodicJobFirstObserved is a map of jobs to the time when they were
+	// first observed in the Lighthouse configuration. This is used to make sure
+	// that we do not schedule a job for a time before it was defined
+	periodicJobFirstObserved map[string]time.Time
 }
 
 func NewLighthousePeriodicJobController(queue workqueue.RateLimitingInterface, lighthouseClient clientset.Interface, configAgent *config.Agent) *LighthousePeriodicJobController {
 	return &LighthousePeriodicJobController{
-		logger:           logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
-		queue:            queue,
-		lighthouseClient: lighthouseClient,
-		configAgent:      configAgent,
+		logger:                   logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
+		queue:                    queue,
+		lighthouseClient:         lighthouseClient,
+		configAgent:              configAgent,
+		periodicJobFirstObserved: make(map[string]time.Time),
 	}
 }
 
@@ -104,6 +109,8 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 		}
 	}
 	c.logger.Errorf("Failed to find configuration for periodic job %s", req)
+	// Clear the first observation time as it is no longer defined
+	delete(c.periodicJobFirstObserved, req.NamespacedName.String())
 	return nil
 }
 
@@ -119,6 +126,12 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 
 	// Fix the current time to simplify calculations
 	now := time.Now()
+
+	// If this is the first time we seeing this job configuration then set it's
+	// first observation time
+	if _, ok := c.periodicJobFirstObserved[req.NamespacedName.String()]; !ok {
+		c.periodicJobFirstObserved[req.NamespacedName.String()] = now
+	}
 
 	// Parse cron schedule
 	cron, err := cron.Parse(periodicJobConfig.Cron)
@@ -158,7 +171,8 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		}
 	}
 
-	// Determine last schedule time
+	// Determine the last missed schedule time. We start by trying to determine
+	// the last schedule time
 	var lastScheduleTime time.Time
 	for _, lighthouseJob := range matchingLighthouseJobs {
 		scheduleTime := lighthouseJob.CreationTimestamp.Time
@@ -170,23 +184,15 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 			}
 		}
 	}
-
-	// If we have been unable to find the last schedule time or the last
-	// schedule time is too far in the past then we set the last schedule time
-	// to a recently passed schedule time
-	nextNextScheduleTime := cron.Next(nextScheduleTime)
-	// This is the time duration between schedules
-	interScheduleDuration := nextNextScheduleTime.Sub(nextScheduleTime)
-	// We look no more than two schedules back as that is enough to ensure at
-	// least one expected schedule between then and now
-	earliestScheduleTime := nextScheduleTime.Add(-2 * interScheduleDuration)
-	if lastScheduleTime.IsZero() || lastScheduleTime.Before(earliestScheduleTime) {
-		lastScheduleTime = earliestScheduleTime
+	// Do not schedule the job for a time before it was first observed
+	earliestScheduleTime := c.periodicJobFirstObserved[req.NamespacedName.String()]
+	// Do not schedule the job for a time before it was last scheduled
+	if earliestScheduleTime.Before(lastScheduleTime) {
+		earliestScheduleTime = lastScheduleTime
 	}
-
 	// Calculate the last schedule time that we missed
 	var lastMissedScheduleTime time.Time
-	for t := cron.Next(lastScheduleTime); !t.After(now); t = cron.Next(t) {
+	for t := cron.Next(earliestScheduleTime); !t.After(now); t = cron.Next(t) {
 		lastMissedScheduleTime = t
 	}
 
