@@ -1,0 +1,13 @@
+{{- if .Values.strobe.enabled }}
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "strobe.name" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "strobe.name" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ template "strobe.name" . }}
+{{- end }}

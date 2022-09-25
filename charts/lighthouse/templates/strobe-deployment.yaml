@@ -1,0 +1,54 @@
+{{- if .Values.strobe.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "strobe.name" . }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    app: {{ template "strobe.name" . }}
+spec:
+  replicas: {{ .Values.strobe.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ template "strobe.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "strobe.name" . }}
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ template "strobe.name" . }}
+      containers:
+      - name: {{ template "strobe.name" . }}
+        image: {{ tpl .Values.strobe.image.repository . }}:{{ tpl .Values.strobe.image.tag . }}
+        imagePullPolicy: {{ tpl .Values.strobe.image.pullPolicy . }}
+        args:
+          - "--namespace={{ .Release.Namespace }}"
+{{- if hasKey .Values "env" }}
+        env:
+{{- range $pkey, $pval := .Values.env }}
+          - name: {{ $pkey }}
+            value: {{ quote $pval }}
+{{- end }}
+{{- end }}
+        resources:
+{{ toYaml .Values.strobe.resources | indent 12 }}
+      terminationGracePeriodSeconds: {{ .Values.strobe.terminationGracePeriodSeconds }}
+{{- with .Values.strobe.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.strobe.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.strobe.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}

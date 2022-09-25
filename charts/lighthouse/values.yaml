@@ -232,6 +232,45 @@ foghorn:
   # foghorn.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods
   tolerations: []
 
+strobe:
+  # strobe.replicaCount -- Whether to enable to strobe controller
+  enabled: false
+
+  # strobe.replicaCount -- Number of replicas
+  replicaCount: 1
+
+  image:
+    # strobe.image.repository -- Template for computing the strobe controller docker image repository
+    repository: "{{ .Values.image.parentRepository }}/lighthouse-strobe"
+
+    # strobe.image.tag -- Template for computing the strobe controller docker image tag
+    tag: "{{ .Values.image.tag }}"
+
+    # strobe.image.pullPolicy -- Template for computing the strobe controller docker image pull policy
+    pullPolicy: "{{ .Values.image.pullPolicy }}"
+
+  resources:
+    # strobe.resources.requests -- Resource requests applied to the strobe controller pods
+    requests:
+      cpu: 80m
+      memory: 128Mi
+
+    # strobe.resources.limits -- Resource limits applied to the strobe controller pods
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+  # strobe.terminationGracePeriodSeconds -- Termination grace period for strobe controller pods
+  terminationGracePeriodSeconds: 1
+
+  # strobe.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the strobe controller pods
+  nodeSelector: {}
+
+  # strobe.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the strobe controller pods
+  affinity: {}
+
+  # strobe.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the strobe controller pods
+  tolerations: []
 
 tektoncontroller:
   # tektoncontroller.dashboardURL -- the dashboard URL (e.g. Tekton dashboard)

@@ -1,0 +1,6 @@
+{{- if .Values.strobe.enabled }}
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: {{ template "strobe.name" . }}
+{{- end }}

@@ -36,6 +36,11 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "strobe.name" -}}
+{{- $name := default "strobe" .Values.strobe.nameOverride -}}
+{{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "tektoncontroller.name" -}}
 {{- $name := default "tekton-controller" .Values.tektoncontroller.nameOverride -}}
 {{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
