@@ -222,7 +222,9 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 
 	// Tekton Controller requires that `Refs` is not nil...
 	// https://github.com/jenkins-x/lighthouse/blob/v1.6.5/pkg/engines/tekton/utils.go#L84
-	lighthouseJobSpec.Refs = &v1alpha1.Refs{}
+	if lighthouseJobSpec.Refs == nil {
+		lighthouseJobSpec.Refs = &v1alpha1.Refs{}
+	}
 	// ...and `BaseRef` is used to generate the name of the PipelineRun
 	// https://github.com/jenkins-x/lighthouse/blob/v1.6.5/pkg/jobutil/jobutil.go#L207
 	lighthouseJobSpec.Refs.BaseRef = req.Name
