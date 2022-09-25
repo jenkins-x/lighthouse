@@ -30,6 +30,7 @@ type Presubmit struct {
 	RegexpChangeMatcher
 	Reporter
 	// AlwaysRun automatically for every PR, or only when a comment triggers it.
+	// However if A PR contains files that are included by the ignore changes regex, then a build wont be triggered
 	AlwaysRun bool `json:"always_run"`
 	// RequireRun if this value is true and AlwaysRun is false then we need to manually trigger this context for the PR to be allowed to auto merge.
 	RequireRun bool `json:"require_run,omitempty"`
@@ -47,7 +48,7 @@ type Presubmit struct {
 	JenkinsSpec  *JenkinsSpec `json:"jenkins_spec,omitempty"`
 
 	// We'll set these when we load it.
-	//re *regexp.Regexp // from Trigger.
+	// re *regexp.Regexp // from Trigger.
 }
 
 // SetDefaults initializes default values
@@ -108,18 +109,21 @@ func (p Presubmit) ShouldRun(baseRef string, changes ChangedFilesProvider, force
 	if !p.CouldRun(baseRef) {
 		return false, nil
 	}
+
+	// Evaluate regex expressions before checking if pre-submit jobs are always supposed to run
+	if determined, shouldRun, err := p.RegexpChangeMatcher.ShouldRun(changes); err != nil {
+		return false, err
+	} else if determined {
+		return shouldRun, nil
+	}
+
 	// TODO temporary disable RequireRun
-	//if p.AlwaysRun || p.RequireRun {
+	// if p.AlwaysRun || p.RequireRun {
 	if p.AlwaysRun {
 		return true, nil
 	}
 	if forced {
 		return true, nil
-	}
-	if determined, shouldRun, err := p.RegexpChangeMatcher.ShouldRun(changes); err != nil {
-		return false, err
-	} else if determined {
-		return shouldRun, nil
 	}
 	return defaults, nil
 }
