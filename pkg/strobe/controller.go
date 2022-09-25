@@ -127,7 +127,7 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	// Fix the current time to simplify calculations
 	now := time.Now()
 
-	// If this is the first time we seeing this job configuration then set it's
+	// If this is the first time we seeing this job configuration then set its
 	// first observation time
 	if _, ok := c.periodicJobFirstObserved[req.NamespacedName.String()]; !ok {
 		c.periodicJobFirstObserved[req.NamespacedName.String()] = now
@@ -171,8 +171,21 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		}
 	}
 
-	// Determine the last missed schedule time. We start by trying to determine
-	// the last schedule time
+	// We now want to calculate the last schedule time that we missed to
+	// determine whether we need to schedule a job. To prevent an incorrect
+	// clock from eating up all the CPU and memory of this controller we want to
+	// limit how far we look back. Firstly, we know that the last missed
+	// schedule time will be after the 2 intervals before the next schedule...
+	nextNextScheduleTime := cron.Next(nextScheduleTime)
+	interval := nextNextScheduleTime.Sub(nextScheduleTime)
+	earliestScheduleTime := nextScheduleTime.Add(-2 * interval)
+	//...and we also do not want to consider any time before this job was first
+	// observed...
+	if earliestScheduleTime.Before(c.periodicJobFirstObserved[req.NamespacedName.String()]) {
+		earliestScheduleTime = c.periodicJobFirstObserved[req.NamespacedName.String()]
+	}
+	// ...and we also do not want to consider any time before this job was last
+	// scheduled
 	var lastScheduleTime time.Time
 	for _, lighthouseJob := range matchingLighthouseJobs {
 		scheduleTime := lighthouseJob.CreationTimestamp.Time
@@ -184,13 +197,10 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 			}
 		}
 	}
-	// Do not schedule the job for a time before it was first observed
-	earliestScheduleTime := c.periodicJobFirstObserved[req.NamespacedName.String()]
-	// Do not schedule the job for a time before it was last scheduled
 	if earliestScheduleTime.Before(lastScheduleTime) {
 		earliestScheduleTime = lastScheduleTime
 	}
-	// Calculate the last schedule time that we missed
+	// We are now ready to calculate the last schedule time that we missed
 	var lastMissedScheduleTime time.Time
 	for t := cron.Next(earliestScheduleTime); !t.After(now); t = cron.Next(t) {
 		lastMissedScheduleTime = t
