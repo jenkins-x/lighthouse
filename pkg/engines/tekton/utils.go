@@ -75,11 +75,15 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, breakpoints
 	// Add parameters instead of env vars.
 	env := lj.Spec.GetEnvVars()
 	env[v1alpha1.BuildIDEnv] = buildID
-	env[v1alpha1.RepoURLEnv] = lj.Spec.Refs.CloneURI
+	if lj.Spec.Refs != nil {
+		env[v1alpha1.RepoURLEnv] = lj.Spec.Refs.CloneURI
+	}
 	var batchedRefsVals []string
-	for _, pull := range lj.Spec.Refs.Pulls {
-		if pull.Ref != "" {
-			batchedRefsVals = append(batchedRefsVals, pull.Ref)
+	if lj.Spec.Refs != nil {
+		for _, pull := range lj.Spec.Refs.Pulls {
+			if pull.Ref != "" {
+				batchedRefsVals = append(batchedRefsVals, pull.Ref)
+			}
 		}
 	}
 	if len(batchedRefsVals) > 0 {

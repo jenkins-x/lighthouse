@@ -215,11 +215,36 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		return reconcileAfter, nil
 	}
 
-	// Schedule a job for the last missed schedule. We use the last missed
-	// schedule time to generate the job name to act as a lock to prevent
-	// duplicate jobs from being created for the same time
+	// Generate LighthouseJob
+	lighthouseJob := generateLighthouseJob(c.logger, periodicJobConfig, lastMissedScheduleTime)
+
+	// Create LighthouseJob
+	lighthouseJob, err = c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).Create(context.TODO(), lighthouseJob, metav1.CreateOptions{})
+	if err != nil {
+		c.logger.Errorf("Failed to create periodic job %s", req)
+		return reconcileAfter, err
+	}
+	c.logger.Infof("LighthouseJob %s created!", lighthouseJob.Name)
+
+	// Upgrade LighthouseJob with triggered status
+	lighthouseJob.Status = v1alpha1.LighthouseJobStatus{
+		State: v1alpha1.TriggeredState,
+	}
+	_, err = c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).UpdateStatus(context.TODO(), lighthouseJob, metav1.UpdateOptions{})
+	if err != nil {
+		c.logger.Errorf("Failed to upgrade periodic job %s", req)
+		return reconcileAfter, err
+	}
+	c.logger.Infof("LighthouseJob %s updated!", lighthouseJob.Name)
+
+	return reconcileAfter, nil
+}
+
+func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic, lastMissedScheduleTime time.Time) *v1alpha1.LighthouseJob {
+	// We use the last missed schedule time to generate the job name to act as a
+	// lock to prevent duplicate jobs from being created for the same time
 	hasher := fnv.New32a()
-	hasher.Write([]byte(req.Name + lastMissedScheduleTime.UTC().String()))
+	hasher.Write([]byte(periodicJobConfig.Name + lastMissedScheduleTime.UTC().String()))
 	hash := fmt.Sprint(hasher.Sum32())
 	// The hash should only by of a certain length
 	maxHashLength := 10
@@ -230,26 +255,16 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	// Kubernetes resource names have a maximum length:
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
 	maxNameLength := 253
-	lighthouseJobName := req.Name
+	lighthouseJobName := periodicJobConfig.Name
 	if len(lighthouseJobName) > maxNameLength-len(suffix) {
 		lighthouseJobName = lighthouseJobName[0 : maxNameLength-len(suffix)]
 	}
 	lighthouseJobName += suffix
 
-	// Generate LighthouseJob
-	lighthouseJobSpec := jobutil.PeriodicSpec(c.logger, *periodicJobConfig)
-
-	// Tekton Controller requires that `Refs` is not nil...
-	// https://github.com/jenkins-x/lighthouse/blob/v1.6.5/pkg/engines/tekton/utils.go#L84
-	if lighthouseJobSpec.Refs == nil {
-		lighthouseJobSpec.Refs = &v1alpha1.Refs{}
-	}
-	// ...and `BaseRef` is used to generate the name of the PipelineRun
-	// https://github.com/jenkins-x/lighthouse/blob/v1.6.5/pkg/jobutil/jobutil.go#L207
-	lighthouseJobSpec.Refs.BaseRef = req.Name
-
+	lighthouseJobSpec := jobutil.PeriodicSpec(logger, *periodicJobConfig)
 	labels, annotations := jobutil.LabelsAndAnnotationsForSpec(lighthouseJobSpec, periodicJobConfig.Labels, periodicJobConfig.Annotations)
-	lighthouseJob := &v1alpha1.LighthouseJob{
+
+	return &v1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "lighthouse.jenkins.io/v1alpha1",
 			Kind:       "LighthouseJob",
@@ -261,24 +276,4 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		},
 		Spec: lighthouseJobSpec,
 	}
-
-	// Create LighthouseJob
-	lighthouseJob, err = c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).Create(context.TODO(), lighthouseJob, metav1.CreateOptions{})
-	if err != nil {
-		c.logger.Errorf("Failed to create periodic job %s", req)
-		return reconcileAfter, err
-	}
-	c.logger.Infof("LighthouseJob %s created!", lighthouseJobName)
-	// Upgrade LighthouseJob with triggered status
-	lighthouseJob.Status = v1alpha1.LighthouseJobStatus{
-		State: v1alpha1.TriggeredState,
-	}
-	_, err = c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).UpdateStatus(context.TODO(), lighthouseJob, metav1.UpdateOptions{})
-	if err != nil {
-		c.logger.Errorf("Failed to upgrade periodic job %s", req)
-		return reconcileAfter, err
-	}
-	c.logger.Infof("LighthouseJob %s updated!", lighthouseJobName)
-
-	return reconcileAfter, nil
 }

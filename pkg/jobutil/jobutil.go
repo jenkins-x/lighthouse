@@ -200,6 +200,11 @@ func completePrimaryRefs(refs v1alpha1.Refs, jb job.Base) *v1alpha1.Refs {
 
 // GenerateName generates a meaningful name for the LighthouseJob from the spec
 func GenerateName(spec *v1alpha1.LighthouseJobSpec) string {
+	// Periodic jobs do not have any refs so just return the job name
+	if spec.Type == job.PeriodicJob {
+		return fmt.Sprintf("%s-", spec.Job)
+	}
+
 	if spec.Refs == nil {
 		return "missingref"
 	}
