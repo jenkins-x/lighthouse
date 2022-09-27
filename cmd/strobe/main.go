@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -27,6 +28,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/robfig/cron.v2"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -83,7 +85,7 @@ func main() {
 	controller.Run(1, util.Stopper())
 }
 
-// enqueuePeriodicJobs waits for changes to the Lighthouse config and queues
+// enqueuePeriodicJobs watches for changes to the Lighthouse config and queues
 // each periodic job using its name and namespace as the key
 func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workqueue.RateLimitingInterface) {
 	for configDelta := range configCh {
@@ -93,15 +95,29 @@ func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workque
 			if periodic.Namespace == nil || *periodic.Namespace == "" {
 				// This should not be possible as long as configuration defaults
 				// are being applied properly
-				logrus.Fatalf("Periodic job configuration %s has missing Namespace", periodic.Name)
+				logrus.Infof("Periodic job configuration %s has missing Namespace, skipping...", periodic.Name)
+				continue
 			}
+
 			// If a Namespace was specified then ignore periodic jobs that do not match
 			if o.namespace != "" && *periodic.Namespace != o.namespace {
 				logrus.Info("Periodic job configuration %s specifies an external Namespace %s, skipping...", periodic.Name, periodic.Namespace)
 				continue
 			}
+
+			// Parse cron schedule and calculate its next schedule time
+			cron, err := cron.Parse(periodic.Cron)
+			if err != nil {
+				logrus.WithError(err).Error("Failed to parse cron schedule for periodic job %s, skipping...", periodic.Name)
+				continue
+			}
+			now := time.Now()
+			nextScheduleTime := cron.Next(now)
+
+			// Enqueue periodic job at its next schedule time. This prevents
+			// jobs from being scheduled as soon as they are defined
 			key := ctrl.Request{NamespacedName: types.NamespacedName{Name: periodic.Name, Namespace: *periodic.Namespace}}
-			queue.AddRateLimited(key)
+			queue.AddAfter(key, nextScheduleTime.Sub(now))
 		}
 	}
 }

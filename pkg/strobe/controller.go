@@ -13,8 +13,8 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/robfig/cron.v2"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -29,19 +29,14 @@ type LighthousePeriodicJobController struct {
 	queue            workqueue.RateLimitingInterface
 	lighthouseClient clientset.Interface
 	configAgent      *config.Agent
-	// periodicJobFirstObserved is a map of jobs to the time when they were
-	// first observed in the Lighthouse configuration. This is used to make sure
-	// that we do not schedule a job for a time before it was defined
-	periodicJobFirstObserved map[types.NamespacedName]time.Time
 }
 
 func NewLighthousePeriodicJobController(queue workqueue.RateLimitingInterface, lighthouseClient clientset.Interface, configAgent *config.Agent) *LighthousePeriodicJobController {
 	return &LighthousePeriodicJobController{
-		logger:                   logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
-		queue:                    queue,
-		lighthouseClient:         lighthouseClient,
-		configAgent:              configAgent,
-		periodicJobFirstObserved: make(map[types.NamespacedName]time.Time),
+		logger:           logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
+		queue:            queue,
+		lighthouseClient: lighthouseClient,
+		configAgent:      configAgent,
 	}
 }
 
@@ -110,8 +105,6 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 		}
 	}
 	c.logger.Errorf("Failed to find configuration for periodic job %s", req)
-	// Clear the first observation time as it is no longer defined
-	delete(c.periodicJobFirstObserved, req.NamespacedName)
 	return nil
 }
 
@@ -166,12 +159,6 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	// Fix the current time to simplify calculations
 	now := time.Now()
 
-	// If this is the first time we seeing this job configuration then set its
-	// first observation time
-	if _, ok := c.periodicJobFirstObserved[req.NamespacedName]; !ok {
-		c.periodicJobFirstObserved[req.NamespacedName] = now
-	}
-
 	// Parse cron schedule
 	cron, err := cron.Parse(periodicJobConfig.Cron)
 	if err != nil {
@@ -222,7 +209,7 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	interval := nextNextScheduleTime.Sub(nextScheduleTime)
 	earliestScheduleTime := nextScheduleTime.Add(-2 * interval)
 	// ...and we also do not want to consider any time before this job was last
-	// scheduled...
+	// scheduled
 	var lastScheduleTime time.Time
 	for _, lighthouseJob := range matchingLighthouseJobs {
 		scheduleTime := lighthouseJob.CreationTimestamp.Time
@@ -236,13 +223,6 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	}
 	if earliestScheduleTime.Before(lastScheduleTime) {
 		earliestScheduleTime = lastScheduleTime
-	}
-	// ...and if we were unable to determine when the job was last scheduled
-	// then we also do not want to consider any time before the configuration
-	// for this job was first observed. This prevents a job from being scheduled
-	// as soon as it is defined
-	if lastScheduleTime.IsZero() && earliestScheduleTime.Before(c.periodicJobFirstObserved[req.NamespacedName]) {
-		earliestScheduleTime = c.periodicJobFirstObserved[req.NamespacedName]
 	}
 	// We are now ready to calculate the last schedule time that we missed
 	var lastMissedScheduleTime time.Time
@@ -261,13 +241,14 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 
 	// Create LighthouseJob
 	lighthouseJob, err = c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).Create(context.TODO(), lighthouseJob, metav1.CreateOptions{})
-	if err != nil {
+	// Note that we ignore the error if the LighthouseJob already exists
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		c.logger.Errorf("Failed to create periodic job %s", req)
 		return reconcileAfter, err
 	}
 	c.logger.Infof("LighthouseJob %s created!", lighthouseJob.Name)
 
-	// Upgrade LighthouseJob with triggered status
+	// Update LighthouseJob with triggered status
 	lighthouseJob.Status = v1alpha1.LighthouseJobStatus{
 		State: v1alpha1.TriggeredState,
 	}
@@ -276,7 +257,7 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 		c.logger.Errorf("Failed to upgrade periodic job %s", req)
 		return reconcileAfter, err
 	}
-	c.logger.Infof("LighthouseJob %s updated!", lighthouseJob.Name)
+	c.logger.Infof("LighthouseJob %s triggered!", lighthouseJob.Name)
 
 	return reconcileAfter, nil
 }
