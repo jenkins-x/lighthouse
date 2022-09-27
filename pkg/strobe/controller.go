@@ -175,7 +175,10 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	// Parse cron schedule
 	cron, err := cron.Parse(periodicJobConfig.Cron)
 	if err != nil {
-		c.logger.Info("Failed to parse cron schedule")
+		c.logger.WithError(err).Error("Failed to parse cron schedule")
+		// There is no point raising the error because we will still not be able
+		// to parse the cron schedule on retry. Instead, we wait for the
+		// operator to update the config with a valid cron
 		return reconcileAfter, nil
 	}
 	nextScheduleTime := cron.Next(now)
