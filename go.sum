@@ -747,8 +747,8 @@ github.com/jcmturner/gofork v1.0.0/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/U
 github.com/jcmturner/goidentity/v6 v6.0.1/go.mod h1:X1YW3bgtvwAXju7V3LCIMpY0Gbxyjn/mY9zx4tFonSg=
 github.com/jcmturner/gokrb5/v8 v8.4.2/go.mod h1:sb+Xq/fTY5yktf/VxLsE3wlfPqQjp0aWNYyvBVK62bc=
 github.com/jcmturner/rpc/v2 v2.0.3/go.mod h1:VUJYCIDm3PVOEHw8sgt091/20OJjskO/YJki3ELg/Hc=
-github.com/jenkins-x/go-scm v1.11.20 h1:om/dRudizC6c7ZlMfWELh0mcqPkDuk+F5Rd0O9z0fRs=
-github.com/jenkins-x/go-scm v1.11.20/go.mod h1:cbC955zV/JFaMiw+OEg+sx7XTr2cdagvkrWCjrAs3ag=
+github.com/jenkins-x/go-scm v1.11.21 h1:92Uoa2j30Vx8CiX8/1k9GJ296t8N3JVO8etvrkHTDe0=
+github.com/jenkins-x/go-scm v1.11.21/go.mod h1:cbC955zV/JFaMiw+OEg+sx7XTr2cdagvkrWCjrAs3ag=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jgautheron/goconst v1.5.1/go.mod h1:aAosetZ5zaeC/2EfMeRswtxUFBpe2Hr7HzkgX4fanO4=
 github.com/jhump/protoreflect v1.6.1/go.mod h1:RZQ/lnuN+zqeRVpQigTwO6o0AJUkxbnSnpuG7toUTG4=
