@@ -20,10 +20,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-const (
-	controllerName = "strobe"
-)
-
 type LighthousePeriodicJobController struct {
 	logger           *logrus.Entry
 	queue            workqueue.RateLimitingInterface
@@ -33,7 +29,7 @@ type LighthousePeriodicJobController struct {
 
 func NewLighthousePeriodicJobController(queue workqueue.RateLimitingInterface, lighthouseClient clientset.Interface, configAgent *config.Agent) *LighthousePeriodicJobController {
 	return &LighthousePeriodicJobController{
-		logger:           logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
+		logger:           logrus.NewEntry(logrus.StandardLogger()),
 		queue:            queue,
 		lighthouseClient: lighthouseClient,
 		configAgent:      configAgent,

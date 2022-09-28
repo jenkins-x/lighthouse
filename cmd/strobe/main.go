@@ -17,18 +17,22 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"time"
 
+	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/strobe"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/robfig/cron.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -78,16 +82,32 @@ func main() {
 
 	// Enqueue periodic jobs for reconciliation as changes to the Lighthouse
 	// config are received
-	go o.enqueuePeriodicJobs(configCh, queue)
+	go o.enqueuePeriodicJobs(lighthouseClient, configCh, queue)
 
 	// Create and start controller
 	controller := strobe.NewLighthousePeriodicJobController(queue, lighthouseClient, configAgent)
 	controller.Run(1, util.Stopper())
 }
 
-// enqueuePeriodicJobs watches for changes to the Lighthouse config and queues
-// each periodic job using its name and namespace as the key
-func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workqueue.RateLimitingInterface) {
+// enqueuePeriodicJobs enqueues all existing periodic jobs and then enqueues
+// periodic jobs by watching for changes to the Lighthouse config
+func (o options) enqueuePeriodicJobs(lighthouseClient clientset.Interface, configCh <-chan config.Delta, queue workqueue.RateLimitingInterface) {
+	// List and enqueue all existing periodic LighthouseJobs. This allows the
+	// controller to recover from missed schedule times if it crashes or is
+	// restarted
+	lighthouseJobList, err := lighthouseClient.LighthouseV1alpha1().LighthouseJobs(o.namespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to list LighthouseJobs")
+	}
+	for _, lighthouseJob := range lighthouseJobList.Items {
+		if lighthouseJob.Spec.Type == job.PeriodicJob && len(lighthouseJob.Spec.Job) > 0 && len(lighthouseJob.Spec.Namespace) > 0 {
+			key := ctrl.Request{NamespacedName: types.NamespacedName{Name: lighthouseJob.Spec.Job, Namespace: lighthouseJob.Spec.Namespace}}
+			queue.Add(key)
+			logrus.Infof("Periodic job %s enqueued!", key)
+		}
+	}
+
+	// Watch for config changes and enqueue periodic jobs
 	for configDelta := range configCh {
 		logrus.Info("Lighthouse config updated")
 		config := configDelta.After
@@ -105,10 +125,13 @@ func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workque
 				continue
 			}
 
+			// Define queue key
+			key := ctrl.Request{NamespacedName: types.NamespacedName{Name: periodic.Name, Namespace: *periodic.Namespace}}
+
 			// Parse cron schedule and calculate its next schedule time
 			cron, err := cron.Parse(periodic.Cron)
 			if err != nil {
-				logrus.WithError(err).Errorf("Failed to parse cron schedule for periodic job %s, skipping...", periodic.Name)
+				logrus.WithError(err).Errorf("Failed to parse cron schedule for periodic job %s, skipping...", key)
 				continue
 			}
 			now := time.Now()
@@ -116,9 +139,8 @@ func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workque
 
 			// Enqueue periodic job at its next schedule time. This prevents
 			// jobs from being scheduled as soon as they are defined
-			key := ctrl.Request{NamespacedName: types.NamespacedName{Name: periodic.Name, Namespace: *periodic.Namespace}}
 			queue.AddAfter(key, nextScheduleTime.Sub(now))
-			logrus.Infof("Periodic job %s enqueued!", periodic.Name)
+			logrus.Infof("Periodic job %s enqueued!", key)
 		}
 	}
 }
