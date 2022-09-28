@@ -64,7 +64,7 @@ func (s *Server) CreateAgent(l *logrus.Entry, owner, repo, ref string) (plugins.
 		return pc, errors.Wrapf(err, "failed to create agent")
 	}
 	c.Add(key, &pc)
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 	l.WithField("Duration", duration.String()).Info("created configAgent")
 	return pc, nil
 }
