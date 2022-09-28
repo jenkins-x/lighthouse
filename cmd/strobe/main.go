@@ -104,7 +104,7 @@ func (o options) enqueuePeriodicJobs(lighthouseClient clientset.Interface, confi
 	// unavailable at schedule time.
 	//
 	// Note that CronJobs do not suffer from this problem since the creation
-	// timestamp can always be used to determine the earliest schedule time:
+	// timestamp can be used to determine the earliest schedule time:
 	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/cronjob/utils.go#L71-L77
 	lighthouseJobList, err := lighthouseClient.LighthouseV1alpha1().LighthouseJobs(o.namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
