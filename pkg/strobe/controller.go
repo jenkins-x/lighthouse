@@ -248,6 +248,12 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	}
 	c.logger.Infof("LighthouseJob %s created!", lighthouseJob.Name)
 
+	// Finish reconciliation if the job has already been triggered
+	if len(lighthouseJob.Status.State) > 0 {
+		c.logger.Infof("LighthouseJob %s has already been triggered!", lighthouseJob.Name)
+		return reconcileAfter, nil
+	}
+
 	// Update LighthouseJob with triggered status
 	lighthouseJob.Status = v1alpha1.LighthouseJobStatus{
 		State: v1alpha1.TriggeredState,

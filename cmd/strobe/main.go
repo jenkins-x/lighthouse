@@ -101,14 +101,14 @@ func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workque
 
 			// If a Namespace was specified then ignore periodic jobs that do not match
 			if o.namespace != "" && *periodic.Namespace != o.namespace {
-				logrus.Info("Periodic job configuration %s specifies an external Namespace %s, skipping...", periodic.Name, periodic.Namespace)
+				logrus.Infof("Periodic job configuration %s specifies an external Namespace %s, skipping...", periodic.Name, periodic.Namespace)
 				continue
 			}
 
 			// Parse cron schedule and calculate its next schedule time
 			cron, err := cron.Parse(periodic.Cron)
 			if err != nil {
-				logrus.WithError(err).Error("Failed to parse cron schedule for periodic job %s, skipping...", periodic.Name)
+				logrus.WithError(err).Errorf("Failed to parse cron schedule for periodic job %s, skipping...", periodic.Name)
 				continue
 			}
 			now := time.Now()
@@ -118,6 +118,7 @@ func (o options) enqueuePeriodicJobs(configCh <-chan config.Delta, queue workque
 			// jobs from being scheduled as soon as they are defined
 			key := ctrl.Request{NamespacedName: types.NamespacedName{Name: periodic.Name, Namespace: *periodic.Namespace}}
 			queue.AddAfter(key, nextScheduleTime.Sub(now))
+			logrus.Infof("Periodic job %s enqueued!", periodic.Name)
 		}
 	}
 }
