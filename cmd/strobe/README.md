@@ -24,4 +24,4 @@ controller](https://github.com/kubernetes/kubernetes/blob/v1.25.2/pkg/controller
 
 Note that if Strobe misses a schedule time for a particular periodic job due to
 crashing or being restarted it will attempt to schedule a job only for the last
-time missed.
+missed time.
