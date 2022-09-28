@@ -97,14 +97,14 @@ func (o options) enqueuePeriodicJobs(lighthouseClient clientset.Interface, confi
 	// from a missed schedule time due to a crash or restart.
 	//
 	// Note that if there are no existing LighthouseJobs for a particular
-	// periodic job then there is no way to know whether the periodic job was
-	// previously defined and so in this case we do nothing until the next
-	// schedule time; in other words, it is possible for the first schedule time
-	// for a particular periodic job to be missed if this controller is
-	// unavailable at schedule time.
+	// periodic job then there is no way to know how long ago it was defined and
+	// so in this case we do nothing until the next schedule time; in other
+	// words, it is possible for the first schedule time for a particular
+	// periodic job to be missed if this controller is unavailable at schedule
+	// time.
 	//
 	// Note that CronJobs do not suffer from this problem since the creation
-	// timestamp can be used to determine the earliest schedule time:
+	// timestamp can always be used to determine the earliest schedule time:
 	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/cronjob/utils.go#L71-L77
 	lighthouseJobList, err := lighthouseClient.LighthouseV1alpha1().LighthouseJobs(o.namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
