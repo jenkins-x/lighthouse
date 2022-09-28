@@ -106,7 +106,8 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 
 func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic, lastMissedScheduleTime time.Time) *v1alpha1.LighthouseJob {
 	// We use the last missed schedule time to generate the job name to act as a
-	// lock to prevent duplicate jobs from being created for the same time
+	// lock to prevent duplicate jobs from being created for the same time. We
+	// use UTC time to ensure the representation is the same across machines
 	hasher := fnv.New32a()
 	hasher.Write([]byte(periodicJobConfig.Name + lastMissedScheduleTime.UTC().String()))
 	hash := fmt.Sprint(hasher.Sum32())
@@ -234,11 +235,14 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 
 	// Generate LighthouseJob
 	lighthouseJob := generateLighthouseJob(c.logger, periodicJobConfig, lastMissedScheduleTime)
+	lighthouseJobName := lighthouseJob.Name
 
 	// Create LighthouseJob
 	lighthouseJob, err = c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).Create(context.TODO(), lighthouseJob, metav1.CreateOptions{})
-	// Note that we ignore the error if the LighthouseJob already exists
-	if err != nil && !k8serrors.IsAlreadyExists(err) {
+	if k8serrors.IsAlreadyExists(err) {
+		lighthouseJob, err = c.lighthouseClient.LighthouseV1alpha1().LighthouseJobs(req.Namespace).Get(context.TODO(), lighthouseJobName, metav1.GetOptions{})
+	}
+	if err != nil {
 		c.logger.Errorf("Failed to create periodic job %s", req)
 		return reconcileAfter, err
 	}

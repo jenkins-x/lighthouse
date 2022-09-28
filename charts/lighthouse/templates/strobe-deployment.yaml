@@ -8,8 +8,7 @@ metadata:
     app: {{ template "strobe.name" . }}
 spec:
   replicas: {{ .Values.strobe.replicaCount }}
-  strategy:
-    type: Recreate
+  minReadySeconds: 10
   selector:
     matchLabels:
       app: {{ template "strobe.name" . }}
