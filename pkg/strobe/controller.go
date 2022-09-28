@@ -107,9 +107,9 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic, lastMissedScheduleTime time.Time) *v1alpha1.LighthouseJob {
 	// We use the last missed schedule time to generate the job name to act as a
 	// lock to prevent duplicate jobs from being created for the same time. We
-	// use UTC time to ensure the representation is the same across machines
+	// use Unix time to ensure the representation is the same across machines
 	hasher := fnv.New32a()
-	hasher.Write([]byte(periodicJobConfig.Name + lastMissedScheduleTime.UTC().String()))
+	hasher.Write([]byte(periodicJobConfig.Name + string(lastMissedScheduleTime.Unix())))
 	hash := fmt.Sprint(hasher.Sum32())
 	// The hash should only by of a certain length
 	maxHashLength := 10
