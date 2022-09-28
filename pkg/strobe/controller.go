@@ -109,7 +109,7 @@ func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic
 	// lock to prevent duplicate jobs from being created for the same time. We
 	// use Unix time to ensure the representation is the same across machines
 	hasher := fnv.New32a()
-	hasher.Write([]byte(periodicJobConfig.Name + string(lastMissedScheduleTime.Unix())))
+	hasher.Write([]byte(periodicJobConfig.Name + fmt.Sprint(lastMissedScheduleTime.Unix())))
 	hash := fmt.Sprint(hasher.Sum32())
 	// The hash should only by of a certain length
 	maxHashLength := 10
