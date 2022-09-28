@@ -92,9 +92,20 @@ func main() {
 // enqueuePeriodicJobs enqueues all existing periodic jobs and then enqueues
 // periodic jobs by watching for changes to the Lighthouse config
 func (o options) enqueuePeriodicJobs(lighthouseClient clientset.Interface, configCh <-chan config.Delta, queue workqueue.RateLimitingInterface) {
-	// List and enqueue all existing periodic LighthouseJobs. This allows the
-	// controller to recover from missed schedule times if it crashes or is
-	// restarted
+	// List and enqueue all existing periodic LighthouseJobs. This allows us to
+	// determine the periodic jobs that were scheduled in the past and recover
+	// from a missed schedule time due to a crash or restart.
+	//
+	// Note that if there are no existing LighthouseJobs for a particular
+	// periodic job then there is no way to know whether the periodic job was
+	// previously defined and so in this case we do nothing until the next
+	// schedule time; in other words, it is possible for the first schedule time
+	// for a particular periodic job to be missed if this controller is
+	// unavailable at schedule time.
+	//
+	// Note that CronJobs do not suffer from this problem since the creation
+	// timestamp can always be used to determine the earliest schedule time:
+	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/cronjob/utils.go#L71-L77
 	lighthouseJobList, err := lighthouseClient.LighthouseV1alpha1().LighthouseJobs(o.namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to list LighthouseJobs")
