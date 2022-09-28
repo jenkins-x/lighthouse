@@ -21,3 +21,7 @@ periodics:
 This is done by watching the ConfigMap and processing each periodic job by name.
 Inspiration is taken from the [Kubernetes CronJob
 controller](https://github.com/kubernetes/kubernetes/blob/v1.25.2/pkg/controller/cronjob/cronjob_controllerv2.go).
+
+Note that if Strobe misses a schedule time for a particular periodic job due to
+crashing or being restarted it will attempt to schedule a job only for the last
+time missed.
