@@ -72,7 +72,7 @@ func (c *LighthousePeriodicJobController) processNextItem() bool {
 	c.handleErr(err, key)
 
 	// Enqueue next job
-	if reconcileAfter != 0 {
+	if reconcileAfter > 0 {
 		c.queue.AddAfter(key, reconcileAfter)
 	}
 
