@@ -104,9 +104,11 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 }
 
 func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic, lastMissedScheduleTime time.Time) *v1alpha1.LighthouseJob {
-	// We generate a deterministic name using the last missed schedule time so
-	// that it acts as a lock to prevent duplicate jobs from being created for
-	// the same schedule time. Inspired by:
+	// We generate a deterministic LighthouseJob name using the last missed
+	// schedule time. This acts as a lock to prevent duplicate LighthouseJobs
+	// from being created for the same schedule time. This also allows us to
+	// find the LighthouseJob if the controller crashes after creating it but
+	// before updating its status to trigger it. Inspired by:
 	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/cronjob/utils.go#L181-L184
 	suffix := fmt.Sprintf("-%d", lastMissedScheduleTime.Unix()/60)
 	// Kubernetes resource names have a maximum length of 253:
