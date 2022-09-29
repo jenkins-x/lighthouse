@@ -15,6 +15,28 @@ import (
 
 func TestGenerateLighthouseJob(t *testing.T) {
 	namespace := "lighthouse"
+	pipelineRunSpec := &tektonv1beta1.PipelineRunSpec{
+		PipelineSpec: &tektonv1beta1.PipelineSpec{
+			Tasks: []tektonv1beta1.PipelineTask{
+				{
+					Name: "hello-world",
+					TaskSpec: &tektonv1beta1.EmbeddedTask{
+						TaskSpec: tektonv1beta1.TaskSpec{
+							Steps: []tektonv1beta1.Step{
+								{
+									Container: v1.Container{
+										Image: "busybox",
+									},
+									Script: "echo 'Hello World!'",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
 	expectedLighthouseJob := &v1alpha1.LighthouseJob{
 		ObjectMeta: metav1.ObjectMeta{
 			// It is important for the LighthouseJob name to remain
@@ -31,61 +53,21 @@ func TestGenerateLighthouseJob(t *testing.T) {
 			},
 		},
 		Spec: v1alpha1.LighthouseJobSpec{
-			Type:      job.PeriodicJob,
-			Agent:     job.TektonPipelineAgent,
-			Namespace: namespace,
-			Job:       "hello-world",
-			PipelineRunSpec: &tektonv1beta1.PipelineRunSpec{
-				PipelineSpec: &tektonv1beta1.PipelineSpec{
-					Tasks: []tektonv1beta1.PipelineTask{
-						{
-							Name: "hello-world",
-							TaskSpec: &tektonv1beta1.EmbeddedTask{
-								TaskSpec: tektonv1beta1.TaskSpec{
-									Steps: []tektonv1beta1.Step{
-										{
-											Container: v1.Container{
-												Image: "busybox",
-											},
-											Script: "echo 'Hello World!'",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			Type:            job.PeriodicJob,
+			Agent:           job.TektonPipelineAgent,
+			Namespace:       namespace,
+			Job:             "hello-world",
+			PipelineRunSpec: pipelineRunSpec,
 		},
 	}
 
 	periodicJobConfig := &job.Periodic{
 		Cron: "*/1 * * * *",
 		Base: job.Base{
-			Name:      "hello-world",
-			Namespace: &namespace,
-			Agent:     job.TektonPipelineAgent,
-			PipelineRunSpec: &tektonv1beta1.PipelineRunSpec{
-				PipelineSpec: &tektonv1beta1.PipelineSpec{
-					Tasks: []tektonv1beta1.PipelineTask{
-						{
-							Name: "hello-world",
-							TaskSpec: &tektonv1beta1.EmbeddedTask{
-								TaskSpec: tektonv1beta1.TaskSpec{
-									Steps: []tektonv1beta1.Step{
-										{
-											Container: v1.Container{
-												Image: "busybox",
-											},
-											Script: "echo 'Hello World!'",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			Name:            "hello-world",
+			Namespace:       &namespace,
+			Agent:           job.TektonPipelineAgent,
+			PipelineRunSpec: pipelineRunSpec,
 		},
 	}
 
