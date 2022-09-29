@@ -3,7 +3,6 @@ package strobe
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -15,7 +14,6 @@ import (
 	"gopkg.in/robfig/cron.v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -106,23 +104,17 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 }
 
 func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic, lastMissedScheduleTime time.Time) *v1alpha1.LighthouseJob {
-	// We generate the name of the LighthouseJob using the last missed schedule
-	// time. We use Unix time to ensure that the representation is the same
-	// across machines. The name acts like a lock to prevent duplicate jobs from
-	// being created for the same schedule time. This allows multiple instances
-	// of this controller to be running at the same time without creating
-	// duplicate jobs which is useful when doing a rolling update. Inspired by:
-	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/controller_utils.go#L1152-L1167
-	hasher := fnv.New32a()
-	hasher.Write([]byte(periodicJobConfig.Name + fmt.Sprint(lastMissedScheduleTime.Unix())))
-	hash := rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
-	suffix := "-" + hash
-	// Kubernetes resource names have a maximum length:
+	// We generate a deterministic name using the last missed schedule time so
+	// that it acts as a lock to prevent duplicate jobs from being created for
+	// the same schedule time. Inspired by:
+	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/cronjob/utils.go#L181-L184
+	suffix := fmt.Sprintf("-%d", lastMissedScheduleTime.Unix()/60)
+	// Kubernetes resource names have a maximum length of 253:
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
-	maxNameLength := 253
+	maximumNameLength := 253
 	lighthouseJobName := periodicJobConfig.Name
-	if len(lighthouseJobName) > maxNameLength-len(suffix) {
-		lighthouseJobName = lighthouseJobName[0 : maxNameLength-len(suffix)]
+	if len(lighthouseJobName)+len(suffix) > maximumNameLength {
+		lighthouseJobName = lighthouseJobName[0 : maximumNameLength-len(suffix)]
 	}
 	lighthouseJobName += suffix
 
