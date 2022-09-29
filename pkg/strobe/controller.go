@@ -15,6 +15,7 @@ import (
 	"gopkg.in/robfig/cron.v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -105,17 +106,16 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 }
 
 func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic, lastMissedScheduleTime time.Time) *v1alpha1.LighthouseJob {
-	// We use the last missed schedule time to generate the job name to act as a
-	// lock to prevent duplicate jobs from being created for the same time. We
-	// use Unix time to ensure the representation is the same across machines
+	// We use the last missed schedule time to generate the job name. We use
+	// Unix time to ensure the representation is the same across machines. The
+	// name acts like a lock to prevent duplicate jobs from being created for
+	// the same schedule time. This allows multiple instances of Strobe to be
+	// running at the same time without duplicate jobs which is useful when
+	// doing a rolling update. Inspired by:
+	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/controller_utils.go#L1152-L1167
 	hasher := fnv.New32a()
 	hasher.Write([]byte(periodicJobConfig.Name + fmt.Sprint(lastMissedScheduleTime.Unix())))
-	hash := fmt.Sprint(hasher.Sum32())
-	// The hash should only by of a certain length
-	maxHashLength := 10
-	if len(hash) > maxHashLength {
-		hash = hash[0:maxHashLength]
-	}
+	hash := rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
 	suffix := "-" + hash
 	// Kubernetes resource names have a maximum length:
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
@@ -130,10 +130,6 @@ func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic
 	labels, annotations := jobutil.LabelsAndAnnotationsForSpec(lighthouseJobSpec, periodicJobConfig.Labels, periodicJobConfig.Annotations)
 
 	return &v1alpha1.LighthouseJob{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "lighthouse.jenkins.io/v1alpha1",
-			Kind:       "LighthouseJob",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        lighthouseJobName,
 			Labels:      labels,
