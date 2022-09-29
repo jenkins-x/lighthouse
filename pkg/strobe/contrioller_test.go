@@ -89,6 +89,6 @@ func TestGenerateLighthouseJob(t *testing.T) {
 		},
 	}
 
-	lighthouseJob := generateLighthouseJob(logrus.NewEntry(logrus.StandardLogger()), periodicJobConfig, time.Date(2022, 0, 0, 0, 0, 0, 0, time.UTC))
-	assert.Equal(t, expectedLighthouseJob, lighthouseJob)
+	actualLighthouseJob := generateLighthouseJob(logrus.NewEntry(logrus.StandardLogger()), periodicJobConfig, time.Date(2022, 0, 0, 0, 0, 0, 0, time.UTC))
+	assert.Equal(t, expectedLighthouseJob, actualLighthouseJob)
 }
