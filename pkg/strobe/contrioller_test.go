@@ -17,6 +17,9 @@ func TestGenerateLighthouseJob(t *testing.T) {
 	namespace := "lighthouse"
 	expectedLighthouseJob := &v1alpha1.LighthouseJob{
 		ObjectMeta: metav1.ObjectMeta{
+			// It is important for the LighthouseJob name to remain
+			// deterministic across releases to prevent duplicate jobs from
+			// being created for the same schedule time during a rolling update
 			Name: "hello-world-27303840",
 			Labels: map[string]string{
 				"created-by-lighthouse":        "true",
