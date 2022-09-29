@@ -106,12 +106,12 @@ func (c *LighthousePeriodicJobController) findLighthousePeriodicJobConfig(req ct
 }
 
 func generateLighthouseJob(logger *logrus.Entry, periodicJobConfig *job.Periodic, lastMissedScheduleTime time.Time) *v1alpha1.LighthouseJob {
-	// We use the last missed schedule time to generate the job name. We use
-	// Unix time to ensure the representation is the same across machines. The
-	// name acts like a lock to prevent duplicate jobs from being created for
-	// the same schedule time. This allows multiple instances of Strobe to be
-	// running at the same time without duplicate jobs which is useful when
-	// doing a rolling update. Inspired by:
+	// We generate the name of the LighthouseJob using the last missed schedule
+	// time. We use Unix time to ensure that the representation is the same
+	// across machines. The name acts like a lock to prevent duplicate jobs from
+	// being created for the same schedule time. This allows multiple instances
+	// of this controller to be running at the same time without creating
+	// duplicate jobs which is useful when doing a rolling update. Inspired by:
 	// https://github.com/kubernetes/kubernetes/blob/v1.24.6/pkg/controller/controller_utils.go#L1152-L1167
 	hasher := fnv.New32a()
 	hasher.Write([]byte(periodicJobConfig.Name + fmt.Sprint(lastMissedScheduleTime.Unix())))
