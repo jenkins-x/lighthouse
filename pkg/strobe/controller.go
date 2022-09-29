@@ -191,7 +191,7 @@ func (c *LighthousePeriodicJobController) reconcile(req ctrl.Request) (reconcile
 	// determine whether we need to schedule a job. To prevent an incorrect
 	// clock from eating up all the CPU and memory of this controller we want to
 	// limit how far we look back. Firstly, we know that the last missed
-	// schedule time will be after the 2 intervals before the next schedule...
+	// schedule time will be after 2 intervals before the next schedule...
 	nextNextScheduleTime := cron.Next(nextScheduleTime)
 	interval := nextNextScheduleTime.Sub(nextScheduleTime)
 	earliestScheduleTime := nextScheduleTime.Add(-2 * interval)
