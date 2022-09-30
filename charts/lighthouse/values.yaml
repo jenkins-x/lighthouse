@@ -125,6 +125,7 @@ webhooks:
 
   # webhooks.labels -- allow optional labels to be added to the webhook deployment
   labels: {}
+  podLabels: {}
 
   # webhooks.podAnnotations -- Annotations applied to the webhooks pods
   podAnnotations: {}
