@@ -53,7 +53,7 @@ type Config struct {
 	//
 	// Valid values:
 	//
-	// "debug", "info", "warn", "warning", "error", "fatal", "panic"
+	// "trace", "debug", "info", "warn", "warning", "error", "fatal", "panic"
 	//
 	// Defaults to "info".
 	LogLevel string `json:"log_level,omitempty"`
