@@ -8,13 +8,10 @@ spec:
   concurrencyPolicy: {{ .Values.gcJobs.concurrencyPolicy }}
   failedJobsHistoryLimit: {{ .Values.gcJobs.failedJobsHistoryLimit }}
   jobTemplate:
-    metadata:
-      creationTimestamp: null
     spec:
       backoffLimit: {{ .Values.gcJobs.backoffLimit }}
       template:
         metadata:
-          creationTimestamp: null
           labels:
             app: {{ template "gcJobs.name" . }}
             release: {{ .Release.Name }}
@@ -31,6 +28,9 @@ spec:
               args:
                 - "--namespace={{ .Release.Namespace }}"
                 - "--max-age={{ .Values.gcJobs.maxAge }}"
+              env:
+              - name: LOG_LEVEL
+                value: "{{ .Values.gcJobs.logLevel }}"
               name: {{ template "gcJobs.name" . }}
               resources: {}
               terminationMessagePath: /dev/termination-log
