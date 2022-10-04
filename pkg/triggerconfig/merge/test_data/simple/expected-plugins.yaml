@@ -19,7 +19,6 @@ config_updater:
       name: config
     env/prow/plugins.yaml:
       name: plugins
-heart: {}
 label:
   additional_labels: null
 owners:
@@ -38,7 +37,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   - dog

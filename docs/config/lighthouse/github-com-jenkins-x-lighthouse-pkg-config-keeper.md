@@ -19,6 +19,7 @@ Config is the config for the keeper pool.
 | `sync_period` | string | No | SyncPeriodString compiles into SyncPeriod at load time. |
 | `status_update_period` | string | No | StatusUpdatePeriodString compiles into StatusUpdatePeriod at load time. |
 | `queries` | [Queries](./github-com-jenkins-x-lighthouse-pkg-config-keeper.md#Queries) | No | Queries represents a list of GitHub search queries that collectively<br />specify the set of PRs that meet merge requirements. |
+| `default_merge_method` | [PullRequestMergeType](./github-com-jenkins-x-lighthouse-pkg-config-keeper.md#PullRequestMergeType) | No | The default merge type for lighthouse to use, and the merge_method list will override this. Defaults to "merge" |
 | `merge_method` | map[string][PullRequestMergeType](./github-com-jenkins-x-lighthouse-pkg-config-keeper.md#PullRequestMergeType) | No | A key/value pair of an org/repo as the key and merge method to override<br />the default method of merge. Valid options are squash, rebase, and merge. |
 | `merge_commit_template` | map[string][MergeCommitTemplate](./github-com-jenkins-x-lighthouse-pkg-config-keeper.md#MergeCommitTemplate) | No | A key/value pair of an org/repo as the key and Go template to override<br />the default merge commit title and/or message. Template is passed the<br />PullRequest struct (prow/github/types.go#PullRequest) |
 | `target_url` | string | No | URL for keeper status contexts.<br />We can consider allowing this to be set separately for separate repos, or<br />allowing it to be a template. |

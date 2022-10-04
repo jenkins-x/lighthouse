@@ -78,7 +78,6 @@ func TestReconcile(t *testing.T) {
 		Cat:                  plugins.Cat{},
 		CherryPickUnapproved: plugins.CherryPickUnapproved{},
 		ConfigUpdater:        plugins.ConfigUpdater{},
-		Heart:                plugins.Heart{},
 		Label:                plugins.Label{},
 		Lgtm:                 nil,
 		RepoMilestone:        nil,

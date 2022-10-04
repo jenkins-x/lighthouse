@@ -22,7 +22,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - dog
   - pony
