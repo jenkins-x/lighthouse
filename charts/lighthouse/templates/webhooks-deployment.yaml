@@ -70,6 +70,8 @@ spec:
             value: "{{ .Values.logFormat }}"
           - name: LOGRUS_SERVICE
             value: "{{ .Values.logService | default .Chart.Name }}"
+          - name: LOG_LEVEL
+            value: "{{ .Values.webhooks.logLevel }}"
           - name: LOGRUS_SERVICE_VERSION
             value: "{{ .Chart.Version }}"
           - name: LOGRUS_STACK_SKIP

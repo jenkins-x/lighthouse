@@ -37,6 +37,9 @@ spec:
         imagePullPolicy: {{ tpl .Values.keeper.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
+        env:
+        - name: LOG_LEVEL
+          value: "{{ .Values.keeper.logLevel }}"
         ports:
           - name: http
             containerPort: {{ .Values.keeper.service.internalPort }}

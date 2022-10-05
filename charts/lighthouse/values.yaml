@@ -34,9 +34,6 @@ logFormat: "json"
 # logService -- The name of the service registered with logging
 logService: ""
 
-# logLevel -- The logging level: debug, info, warn
-logLevel: "info"
-
 # logStackSkip -- Comma separated stack frames to skip from the log
 logStackSkip: ""
 
@@ -77,6 +74,9 @@ externalPlugins:
     name: lighthouse-webui-plugin
 
 gcJobs:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # gcJobs.maxAge -- Max age from which `LighthouseJob`s will be deleted
   maxAge: 168h
 
@@ -106,6 +106,9 @@ gcJobs:
     pullPolicy: "{{ .Values.image.pullPolicy }}"
 
 webhooks:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # webhooks.replicaCount -- Number of replicas
   replicaCount: 1
 
@@ -197,6 +200,9 @@ webhooks:
   customDeploymentTriggerCommand: ""
 
 foghorn:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # foghorn.replicaCount -- Number of replicas
   replicaCount: 1
   
@@ -235,6 +241,9 @@ foghorn:
 
 
 tektoncontroller:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # tektoncontroller.dashboardURL -- the dashboard URL (e.g. Tekton dashboard)
   dashboardURL: ''
   # tektoncontroller.dashboardTemplate -- Go template expression for URLs in the dashboard if not using Tekton dashboard
@@ -284,6 +293,9 @@ tektoncontroller:
     annotations: {}
 
 jenkinscontroller:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # jenkinscontroller.jenkinsURL -- The URL of the Jenkins instance
   jenkinsURL:
 
@@ -334,6 +346,9 @@ jenkinscontroller:
     annotations: {}
 
 keeper:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # keeper.statusContextLabel -- Label used to report status to git provider
   statusContextLabel: "Lighthouse Merge Status"
 
@@ -407,6 +422,9 @@ keeper:
   tolerations: []
 
 poller:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # poller.enabled -- Whether to enable or disable the poller component
   enabled: false
 
