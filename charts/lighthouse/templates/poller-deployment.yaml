@@ -44,6 +44,9 @@ spec:
           {{- if .Values.poller.requireReleaseSuccess }}
           - --require-release-success
           {{- end }}
+        env:
+        - name: LOG_LEVEL
+          value: "{{ .Values.poller.logLevel }}"
         ports:
           - name: http
             containerPort: {{ .Values.poller.internalPort }}
