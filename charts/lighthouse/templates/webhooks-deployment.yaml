@@ -19,6 +19,9 @@ spec:
     metadata:
       labels:
         app: {{ template "webhooks.name" . }}
+{{- if  .Values.webhooks.podLabels }}
+{{ toYaml .Values.webhooks.podLabels | indent 8 }}
+{{- end }}
 {{- if or .Values.webhooks.podAnnotations .Values.podAnnotations }}
       annotations:
 {{- if .Values.webhooks.podAnnotations }}
