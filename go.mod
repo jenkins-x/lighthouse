@@ -12,7 +12,7 @@ require (
 	github.com/h2non/gock v1.0.9
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jenkins-x/go-scm v1.11.29
+	github.com/jenkins-x/go-scm v1.11.32
 	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
