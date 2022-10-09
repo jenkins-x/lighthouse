@@ -36,7 +36,6 @@ data:
       maps: {}
 {{- end }}
     external_plugins: {}
-    heart: {}
     label:
       additional_labels: null
     owners: {}

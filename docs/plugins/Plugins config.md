@@ -8,7 +8,6 @@
 - [ConfigUpdater](#ConfigUpdater)
 - [Configuration](#Configuration)
 - [ExternalPlugin](#ExternalPlugin)
-- [Heart](#Heart)
 - [Label](#Label)
 - [Lgtm](#Lgtm)
 - [Milestone](#Milestone)
@@ -98,7 +97,6 @@ Configuration is the top-level serialization target for plugin Configuration.
 | Cat | `cat` | [Cat](#Cat) | No |  |
 | CherryPickUnapproved | `cherry_pick_unapproved` | [CherryPickUnapproved](#CherryPickUnapproved) | No |  |
 | ConfigUpdater | `config_updater` | [ConfigUpdater](#ConfigUpdater) | No |  |
-| Heart | `heart` | [Heart](#Heart) | No |  |
 | Label | `label` | [Label](#Label) | No |  |
 | Lgtm | `lgtm` | [][Lgtm](#Lgtm) | No |  |
 | RepoMilestone | `repo_milestone` | map[string][Milestone](#Milestone) | No |  |
@@ -118,16 +116,6 @@ ExternalPlugin holds configuration for registering an external<br />plugin in pr
 | Name | `name` | string | Yes | Name of the plugin. |
 | Endpoint | `endpoint` | string | No | Endpoint is the location of the external plugin. Defaults to<br />the name of the plugin, ie. "http://{{name}}". |
 | Events | `events` | []string | No | Events are the events that need to be demuxed by the hook<br />server to the external plugin. If no events are specified,<br />everything is sent. |
-
-## Heart
-
-Heart contains the configuration for the heart plugin.
-
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Adorees | `adorees` | []string | No | Adorees is a list of GitHub logins for members<br />for whom we will add emojis to comments |
-| CommentRegexp | `commentregexp` | string | No | CommentRegexp is the regular expression for comments<br />made by adorees that the plugin adds emojis to.<br />If not specified, the plugin will not add emojis to<br />any comments.<br />Compiles into CommentRe during config load. |
-| CommentRe | `-` | *regexp.Regexp | No |  |
 
 ## Label
 

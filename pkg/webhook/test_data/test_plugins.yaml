@@ -167,7 +167,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571894662:
@@ -181,7 +180,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571895246:
@@ -195,7 +193,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571895891:
@@ -209,7 +206,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571896320:
@@ -223,7 +219,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571896790:
@@ -237,7 +232,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571897282:
@@ -251,7 +245,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571897827:
@@ -265,7 +258,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571898660:
@@ -279,7 +271,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571949995:
@@ -293,7 +284,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1571950767:
@@ -307,7 +297,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1572887193:
@@ -321,7 +310,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1572984770:
@@ -335,7 +323,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1572986766:
@@ -349,7 +336,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573012037:
@@ -363,7 +349,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573140190:
@@ -377,7 +362,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573228621:
@@ -391,7 +375,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573229082:
@@ -405,7 +388,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573747562:
@@ -419,7 +401,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573750315:
@@ -433,7 +414,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573755780:
@@ -447,7 +427,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573763379:
@@ -461,7 +440,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573765794:
@@ -475,7 +453,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573766355:
@@ -489,7 +466,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573767637:
@@ -503,7 +479,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573768320:
@@ -517,7 +492,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573768902:
@@ -531,7 +505,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/bdd-gh-1573770044:
@@ -545,7 +518,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/environment-braidsalt-production:
@@ -559,7 +531,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
   test-org/environment-braidsalt-staging:
@@ -573,7 +544,6 @@ plugins:
   - size
   - trigger
   - wip
-  - heart
   - cat
   - override
 requiresig: {}

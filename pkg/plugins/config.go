@@ -56,7 +56,6 @@ type Configuration struct {
 	Cat                  Cat                    `json:"cat,omitempty"`
 	CherryPickUnapproved CherryPickUnapproved   `json:"cherry_pick_unapproved,omitempty"`
 	ConfigUpdater        ConfigUpdater          `json:"config_updater,omitempty"`
-	Heart                Heart                  `json:"heart,omitempty"`
 	Label                Label                  `json:"label,omitempty"`
 	Lgtm                 []Lgtm                 `json:"lgtm,omitempty"`
 	RepoMilestone        map[string]Milestone   `json:"repo_milestone,omitempty"`
@@ -300,20 +299,6 @@ type Trigger struct {
 	// ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs
 	// that could run but do not run.
 	ElideSkippedContexts bool `json:"elide_skipped_contexts,omitempty"`
-}
-
-// Heart contains the configuration for the heart plugin.
-type Heart struct {
-	// Adorees is a list of GitHub logins for members
-	// for whom we will add emojis to comments
-	Adorees []string `json:"adorees,omitempty"`
-	// CommentRegexp is the regular expression for comments
-	// made by adorees that the plugin adds emojis to.
-	// If not specified, the plugin will not add emojis to
-	// any comments.
-	// Compiles into CommentRe during config load.
-	CommentRegexp string         `json:"commentregexp,omitempty"`
-	CommentRe     *regexp.Regexp `json:"-"`
 }
 
 // Milestone contains the configuration options for the milestone and
@@ -751,12 +736,6 @@ func compileRegexpsAndDurations(pc *Configuration) error {
 		return err
 	}
 	pc.CherryPickUnapproved.BranchRe = branchRe
-
-	commentRe, err := regexp.Compile(pc.Heart.CommentRegexp)
-	if err != nil {
-		return err
-	}
-	pc.Heart.CommentRe = commentRe
 
 	rs := pc.RequireMatchingLabel
 	for i := range rs {
