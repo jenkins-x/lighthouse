@@ -191,7 +191,7 @@ verify-code-unchanged:
 
 CONTROLLER_GEN := $(GOPATH)/bin/controller-gen
 $(CONTROLLER_GEN):
-	pushd /tmp; $(GO) get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0; popd
+	$(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0
 
 crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
@@ -201,9 +201,7 @@ docs: job-docs plugins-docs config-docs trigger-docs crds-docs ## Builds generat
 
 DOCS_GEN := bin/gen-docs
 $(DOCS_GEN):
-	$(GO) build -o bin/gen-docs ./hack/struct-docs.go
-
-	pushd /tmp; $(GO) get -u sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0; popd
+	cd hack && $(GO) build -o ../$(DOCS_GEN) struct-docs.go
 
 .PHONY: crds-docs
 crds-docs: $(DOCS_GEN)

@@ -1,0 +1,64 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.0
+  creationTimestamp: null
+  name: lighthousebreakpoints.lighthouse.jenkins.io
+spec:
+  group: lighthouse.jenkins.io
+  names:
+    kind: LighthouseBreakpoint
+    listKind: LighthouseBreakpointList
+    plural: lighthousebreakpoints
+    shortNames:
+    - lhbp
+    singular: lighthousebreakpoint
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              debug:
+                properties:
+                  breakpoint:
+                    items:
+                      type: string
+                    type: array
+                type: object
+              filter:
+                properties:
+                  branch:
+                    type: string
+                  context:
+                    type: string
+                  owner:
+                    type: string
+                  repository:
+                    type: string
+                  task:
+                    type: string
+                  type:
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
