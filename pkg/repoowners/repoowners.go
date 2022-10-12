@@ -242,7 +242,9 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 			gitRepo, err = c.git.SparseClone(cloneRef, sparseCheckoutPatterns)
 		} else {
 			gitRepo, err = c.git.Clone(cloneRef)
-			defer gitRepo.Clean()
+			if gitRepo != nil {
+				defer gitRepo.Clean()
+			}
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to clone %s: %v", cloneRef, err)
