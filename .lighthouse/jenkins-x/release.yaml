@@ -99,11 +99,7 @@ spec:
             git commit -a -m "chore: release $VERSION" --allow-empty
             git tag -fa v$VERSION -m "Release version $VERSION"
             git push --force origin v$VERSION
-        - command:
-          - jx-updatebot
-          - pr
-          image: ghcr.io/jenkins-x/jx-updatebot:0.3.12
-          name: promote-release
+        - name: promote-release
           resources: {}
   podTemplate: {}
   serviceAccountName: tekton-bot
