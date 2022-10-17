@@ -18,7 +18,6 @@ package repoowners
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -323,7 +322,7 @@ func (a RepoAliases) ExpandAliases(logins sets.String) sets.String {
 
 func (c *Client) loadAliasesFrom(baseDir string, log *logrus.Entry, org string) RepoAliases {
 	path := filepath.Join(baseDir, aliasesFileName)
-	b, err := ioutil.ReadFile(path) // #nosec
+	b, err := os.ReadFile(path) // #nosec
 	if os.IsNotExist(err) {
 		log.WithError(err).Infof("No alias file exists at %q. Using empty alias map.", path)
 		return nil
@@ -444,7 +443,7 @@ func (o *RepoOwners) walkFunc(path string, info os.FileInfo, err error) error {
 		return nil
 	}
 
-	b, err := ioutil.ReadFile(path) // #nosec
+	b, err := os.ReadFile(path) // #nosec
 	if err != nil {
 		log.WithError(err).Errorf("Failed to read the OWNERS file.")
 		return nil
@@ -507,7 +506,7 @@ var mdStructuredHeaderRegex = regexp.MustCompile("^---\n(.|\n)*\n---")
 // If no yaml header is found, do nothing
 // Returns an error if the file cannot be read or the yaml header is found but cannot be unmarshalled.
 func decodeOwnersMdConfig(path string, config *SimpleConfig) error {
-	fileBytes, err := ioutil.ReadFile(path) // #nosec
+	fileBytes, err := os.ReadFile(path) // #nosec
 	if err != nil {
 		return err
 	}
