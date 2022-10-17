@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -24,7 +23,7 @@ import (
 
 // ParseExternalPluginEvent parses a webhook relayed to an external plugin
 func ParseExternalPluginEvent(req *http.Request, secretToken string) (scm.Webhook, *v1alpha1.ActivityRecord, error) {
-	data, err := ioutil.ReadAll(
+	data, err := io.ReadAll(
 		io.LimitReader(req.Body, 10000000),
 	)
 	if err != nil {
@@ -239,7 +238,7 @@ func dispatch(endpoint string, payload []byte, h http.Header) error {
 		return err
 	}
 	defer resp.Body.Close()
-	rb, err := ioutil.ReadAll(resp.Body)
+	rb, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

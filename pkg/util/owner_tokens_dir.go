@@ -1,7 +1,7 @@
 package util
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -25,7 +25,7 @@ func (o *OwnerTokensDir) FindToken(owner string) (string, error) {
 	dir := o.dir
 	ownerURL := URLJoin(o.gitServer, owner)
 	prefix := ownerURL + "="
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to list files in dir %s", dir)
 	}
@@ -38,7 +38,7 @@ func (o *OwnerTokensDir) FindToken(owner string) (string, error) {
 
 		logrus.Tracef("loading file %s", name)
 		/* #nosec */
-		data, err := ioutil.ReadFile(name)
+		data, err := os.ReadFile(name)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to load file %s", name)
 		}
