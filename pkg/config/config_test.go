@@ -18,7 +18,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -829,20 +828,20 @@ periodics:
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// save the config
-			prowConfigDir, err := ioutil.TempDir("", "prowConfig")
+			prowConfigDir, err := os.MkdirTemp("", "prowConfig")
 			if err != nil {
 				t.Fatalf("fail to make tempdir: %v", err)
 			}
 			defer os.RemoveAll(prowConfigDir)
 
 			prowConfig := filepath.Join(prowConfigDir, "config.yaml")
-			if err := ioutil.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
+			if err := os.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
 				t.Fatalf("fail to write prow config: %v", err)
 			}
 
 			jobConfig := ""
 			if len(tc.jobConfigs) > 0 {
-				jobConfigDir, err := ioutil.TempDir("", "jobConfig")
+				jobConfigDir, err := os.MkdirTemp("", "jobConfig")
 				if err != nil {
 					t.Fatalf("fail to make tempdir: %v", err)
 				}
@@ -852,7 +851,7 @@ periodics:
 				if len(tc.jobConfigs) == 1 {
 					// a single file
 					jobConfig = filepath.Join(jobConfigDir, "config.yaml")
-					if err := ioutil.WriteFile(jobConfig, []byte(tc.jobConfigs[0]), 0666); err != nil {
+					if err := os.WriteFile(jobConfig, []byte(tc.jobConfigs[0]), 0666); err != nil {
 						t.Fatalf("fail to write job config: %v", err)
 					}
 				} else {
@@ -860,7 +859,7 @@ periodics:
 					jobConfig = jobConfigDir
 					for idx, config := range tc.jobConfigs {
 						subConfig := filepath.Join(jobConfigDir, fmt.Sprintf("config_%d.yaml", idx))
-						if err := ioutil.WriteFile(subConfig, []byte(config), 0666); err != nil {
+						if err := os.WriteFile(subConfig, []byte(config), 0666); err != nil {
 							t.Fatalf("fail to write job config: %v", err)
 						}
 					}
@@ -1068,7 +1067,7 @@ func TestSecretAgentLoading(t *testing.T) {
 	changedTokenValue := "121f3cb3e7f70feeb35f9204f5a988d7292c7ba0"
 
 	// Creating a temporary directory.
-	secretDir, err := ioutil.TempDir("", "secretDir")
+	secretDir, err := os.MkdirTemp("", "secretDir")
 	if err != nil {
 		t.Fatalf("fail to create a temporary directory: %v", err)
 	}
@@ -1076,13 +1075,13 @@ func TestSecretAgentLoading(t *testing.T) {
 
 	// Launch the first temporary secret.
 	firstTempSecret := filepath.Join(secretDir, "firstTempSecret")
-	if err := ioutil.WriteFile(firstTempSecret, []byte(tempTokenValue), 0666); err != nil {
+	if err := os.WriteFile(firstTempSecret, []byte(tempTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
 
 	// Launch the second temporary secret.
 	secondTempSecret := filepath.Join(secretDir, "secondTempSecret")
-	if err := ioutil.WriteFile(secondTempSecret, []byte(tempTokenValue), 0666); err != nil {
+	if err := os.WriteFile(secondTempSecret, []byte(tempTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
 
@@ -1103,10 +1102,10 @@ func TestSecretAgentLoading(t *testing.T) {
 	}
 
 	// Change the values of the files.
-	if err := ioutil.WriteFile(firstTempSecret, []byte(changedTokenValue), 0666); err != nil {
+	if err := os.WriteFile(firstTempSecret, []byte(changedTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
-	if err := ioutil.WriteFile(secondTempSecret, []byte(changedTokenValue), 0666); err != nil {
+	if err := os.WriteFile(secondTempSecret, []byte(changedTokenValue), 0666); err != nil {
 		t.Fatalf("fail to write secret: %v", err)
 	}
 
