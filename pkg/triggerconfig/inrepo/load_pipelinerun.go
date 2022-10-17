@@ -3,7 +3,7 @@ package inrepo
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -307,7 +307,7 @@ func loadTaskByURL(uri string) (*tektonv1beta1.Task, error) {
 	}
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read body from URL %s", uri)
 	}
