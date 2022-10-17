@@ -2,7 +2,6 @@ package tekton
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -151,7 +150,7 @@ func TestReconcile(t *testing.T) {
 				if generateTestOutput {
 					data, err := yaml.Marshal(updatedPR)
 					require.NoError(t, err, "failed to marshal expected PR %#v", updatedPR)
-					err = ioutil.WriteFile(expectedPRFile, data, 0o644)
+					err = os.WriteFile(expectedPRFile, data, 0o644)
 					require.NoError(t, err, "failed to save file %s", expectedPRFile)
 					t.Logf("saved expected PR file %s\n", expectedPRFile)
 				} else {
@@ -173,7 +172,7 @@ func TestReconcile(t *testing.T) {
 				if generateTestOutput {
 					data, err := yaml.Marshal(updatedJob)
 					require.NoError(t, err, "failed to marshal expected job %#v", updatedJob)
-					err = ioutil.WriteFile(expectedJobFile, data, 0o644)
+					err = os.WriteFile(expectedJobFile, data, 0o644)
 					require.NoError(t, err, "failed to save file %s", expectedJobFile)
 					t.Logf("saved expected Job file %s\n", expectedJobFile)
 				} else {
@@ -200,7 +199,7 @@ func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, st
 	}
 	if exists {
 		lhjob := &v1alpha1.LighthouseJob{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, fileName, err
 		}
@@ -227,7 +226,7 @@ func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.Pipe
 	}
 	if exists {
 		pr := &tektonv1beta1.PipelineRun{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, fileName, err
 		}
@@ -248,7 +247,7 @@ func loadObservedPipeline(dir string) (*tektonv1beta1.Pipeline, error) {
 	}
 	if exists {
 		p := &tektonv1beta1.Pipeline{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, err
 		}
