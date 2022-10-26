@@ -828,11 +828,7 @@ periodics:
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// save the config
-			prowConfigDir, err := os.MkdirTemp("", "prowConfig")
-			if err != nil {
-				t.Fatalf("fail to make tempdir: %v", err)
-			}
-			defer os.RemoveAll(prowConfigDir)
+			prowConfigDir := t.TempDir()
 
 			prowConfig := filepath.Join(prowConfigDir, "config.yaml")
 			if err := os.WriteFile(prowConfig, []byte(tc.prowConfig), 0666); err != nil {
@@ -841,11 +837,7 @@ periodics:
 
 			jobConfig := ""
 			if len(tc.jobConfigs) > 0 {
-				jobConfigDir, err := os.MkdirTemp("", "jobConfig")
-				if err != nil {
-					t.Fatalf("fail to make tempdir: %v", err)
-				}
-				defer os.RemoveAll(jobConfigDir)
+				jobConfigDir := t.TempDir()
 
 				// cover both job config as a file & a dir
 				if len(tc.jobConfigs) == 1 {
@@ -1067,11 +1059,7 @@ func TestSecretAgentLoading(t *testing.T) {
 	changedTokenValue := "121f3cb3e7f70feeb35f9204f5a988d7292c7ba0"
 
 	// Creating a temporary directory.
-	secretDir, err := os.MkdirTemp("", "secretDir")
-	if err != nil {
-		t.Fatalf("fail to create a temporary directory: %v", err)
-	}
-	defer os.RemoveAll(secretDir)
+	secretDir := t.TempDir()
 
 	// Launch the first temporary secret.
 	firstTempSecret := filepath.Join(secretDir, "firstTempSecret")

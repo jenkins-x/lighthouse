@@ -106,17 +106,14 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 
 	logger := logrus.WithField("client", "git")
 
-	baseDir, err := os.MkdirTemp("", "localdir")
-	require.NoError(t, err, "failed to find git binary")
+	baseDir := t.TempDir()
 	fmt.Println(baseDir)
 
 	fc := filebrowser.NewFetchCache()
 
-	defer os.RemoveAll(baseDir)
-
 	repoDir := filepath.Join(baseDir, "org", "repo")
 
-	err = os.MkdirAll(repoDir, 0700)
+	err := os.MkdirAll(repoDir, 0700)
 	require.NoError(t, err, "failed to make repo dir")
 
 	userGetter := func() (name, email string, err error) {
