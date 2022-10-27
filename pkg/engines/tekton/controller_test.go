@@ -6,17 +6,13 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"testing"
-
-	"github.com/jenkins-x/lighthouse/pkg/watcher"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	fakelh "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
@@ -94,40 +90,8 @@ func TestReconcile(t *testing.T) {
 			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
 
-			lhClient := fakelh.NewSimpleClientset()
-
-			if strings.HasPrefix(tc, "debug") {
-				branch := "master"
-				if tc == "debug-pr-no-taskRunSpecs" {
-					branch = "PR-813"
-				}
-				lhClient = fakelh.NewSimpleClientset(
-					&lighthousev1alpha1.LighthouseBreakpoint{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "my-bp",
-							Namespace: ns,
-						},
-						Spec: lighthousev1alpha1.LighthouseBreakpointSpec{
-							Filter: lighthousev1alpha1.LighthousePipelineFilter{
-								Owner:      "jenkins-x",
-								Repository: "lighthouse",
-								Branch:     branch,
-								Context:    "github",
-								Task:       "",
-							},
-							Debug: tektonv1beta1.TaskRunDebug{
-								Breakpoint: []string{"onFailure"},
-							},
-						},
-					},
-				)
-			}
-			bpWatcher, err := watcher.NewBreakpointWatcher(lhClient, ns, nil)
-			require.NoError(t, err, "failed to create BreakpointWatcher")
-			defer bpWatcher.Stop()
-
 			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns, bpWatcher.GetBreakpoints)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 			reconciler.disableLogging = true
 
