@@ -1,7 +1,6 @@
 package filebrowser
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -62,7 +61,7 @@ func (f *gitFileBrowser) GetFile(owner, repo, path, ref string, fc FetchCache) (
 			answer = nil
 			return nil
 		}
-		answer, err = ioutil.ReadFile(f) // #nosec
+		answer, err = os.ReadFile(f) // #nosec
 		return err
 	})
 	return
@@ -78,11 +77,19 @@ func (f *gitFileBrowser) ListFiles(owner, repo, path, ref string, fc FetchCache)
 		if !exists {
 			return nil
 		}
-		fileNames, err := ioutil.ReadDir(dir)
+		entries, err := os.ReadDir(dir)
 		if err != nil {
 			return errors.Wrapf(err, "failed to list files in directory %s", dir)
 		}
-		for _, f := range fileNames {
+		infos := make([]os.FileInfo, 0, len(entries))
+		for _, entry := range entries {
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			infos = append(infos, info)
+		}
+		for _, f := range infos {
 			name := f.Name()
 			if name == ".git" {
 				continue

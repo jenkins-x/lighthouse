@@ -3,7 +3,7 @@ package inrepo
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -51,7 +51,7 @@ func LoadTriggerConfig(fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.Fe
 		}
 		m := map[string]*triggerconfig.Config{}
 		if exists {
-			fs, err := ioutil.ReadDir(path)
+			fs, err := os.ReadDir(path)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read dir %s", path)
 			}
@@ -130,7 +130,7 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 	if !exists {
 		return nil, nil
 	}
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read file %s with sha %s", filePath, sha)
 	}
@@ -203,7 +203,7 @@ func loadLocalFile(dir, name, sha string) ([]byte, error) {
 		return nil, errors.Wrapf(err, "failed to find file %s", path)
 	}
 	if exists {
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read file %s with sha %s", path, sha)
 		}
@@ -269,7 +269,7 @@ func getPipelineFromURL(path string) ([]byte, error) {
 
 	defer resp.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read body from URL %s", path)
 	}

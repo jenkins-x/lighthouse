@@ -3,7 +3,6 @@ package jenkins
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -62,7 +61,7 @@ func (jc *Client) doRequest(method string, url string, data io.Reader, headers m
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, body, err
 	}

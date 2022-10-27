@@ -5,8 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -18,8 +17,6 @@ import (
 	"text/template"
 	"time"
 
-	util2 "github.com/jenkins-x/lighthouse/test/e2e/util"
-
 	"github.com/cenkalti/backoff"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
@@ -29,8 +26,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	util2 "github.com/jenkins-x/lighthouse/test/e2e/util"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -219,7 +218,7 @@ func CreateBaseRepository(botUser, approver string, botClient *scm.Client, gitCl
 		return nil, nil, errors.Wrapf(err, "couldn't marshal OWNERS yaml")
 	}
 
-	err = ioutil.WriteFile(ownersFile, ownersYaml, 0600)
+	err = os.WriteFile(ownersFile, ownersYaml, 0600)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "couldn't write to %s", ownersFile)
 	}
@@ -312,11 +311,11 @@ func ProcessConfigAndPlugins(owner, repo, namespace, agent, jenkinsURL string) (
 	cfgFile := filepath.Join("test_data", "example-config.tmpl.yml")
 	pluginFile := filepath.Join("test_data", "example-plugins.tmpl.yml")
 
-	rawConfig, err := ioutil.ReadFile(cfgFile) /* #nosec */
+	rawConfig, err := os.ReadFile(cfgFile) /* #nosec */
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "reading config template %s", cfgFile)
 	}
-	rawPlugins, err := ioutil.ReadFile(pluginFile) /* #nosec */
+	rawPlugins, err := os.ReadFile(pluginFile) /* #nosec */
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "reading plugins template %s", pluginFile)
 	}
@@ -429,7 +428,7 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 	}
 	pluginMap.Data["plugins.yaml"] = string(pluginData)
 
-	tmpDir, err := ioutil.TempDir("", "kubectl")
+	tmpDir, err := os.MkdirTemp("", "kubectl")
 	if err != nil {
 		return errors.Wrapf(err, "creating temp directory")
 	}
@@ -448,11 +447,11 @@ func ApplyConfigAndPluginsConfigMaps(cfg *config.Config, pluginsCfg *plugins.Con
 	cfgFile := filepath.Join(tmpDir, "config-map.yaml")
 	pluginFile := filepath.Join(tmpDir, "plugins-map.yaml")
 
-	err = ioutil.WriteFile(cfgFile, cfgYaml, 0600)
+	err = os.WriteFile(cfgFile, cfgYaml, 0600)
 	if err != nil {
 		return errors.Wrapf(err, "writing config map to %s", cfgFile)
 	}
-	err = ioutil.WriteFile(pluginFile, pluginYaml, 0600)
+	err = os.WriteFile(pluginFile, pluginYaml, 0600)
 	if err != nil {
 		return errors.Wrapf(err, "writing plugins map to %s", pluginFile)
 	}
@@ -548,7 +547,7 @@ func BuildLog(url string) (string, error) {
 		return "", errors.Errorf("unexpected HTTP response status %d", resp.StatusCode)
 	}
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
