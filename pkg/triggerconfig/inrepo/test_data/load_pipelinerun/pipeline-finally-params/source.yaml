@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: cheese
+spec:
+  pipelineSpec:
+    tasks:
+    - name: from-build-pack
+      taskSpec:
+        steps:
+        - image: common-image
+          name: common-build
+          env:
+          - name: FOO
+            value: one
+    finally:
+    - name: lint-pr-comment
+      taskSpec:
+        metadata: {}
+        stepTemplate:
+          name: ""
+        steps:
+        - name: lint-pr-comment
+          image: ghcr.io/jenkins-x/jx-gitops:0.3.1
+          script: |
+            #!/bin/sh
+            set -x
+            . .jx/variables.sh
+            jx gitops pr comment -c "$(cat issues.md)"

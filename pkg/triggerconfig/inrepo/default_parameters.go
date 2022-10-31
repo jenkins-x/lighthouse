@@ -125,6 +125,21 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 		}
 	}
 
+	for i := range ps.Finally {
+		task := &ps.Finally[i]
+		task.Params = addDefaultParameters(task.Params, defaultParameters)
+		if task.TaskSpec != nil {
+			task.TaskSpec.Params = addDefaultParameterSpecs(task.TaskSpec.Params, defaultParameterSpecs)
+
+			// lets create a step template if its not already defined
+			if task.TaskSpec.StepTemplate == nil {
+				task.TaskSpec.StepTemplate = &corev1.Container{}
+			}
+			stepTemplate := task.TaskSpec.StepTemplate
+			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
+		}
+	}
+
 	// lets validate to make sure its valid
 	ctx := context.TODO()
 	// lets enable alpha fields
