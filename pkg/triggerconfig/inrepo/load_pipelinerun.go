@@ -263,49 +263,55 @@ func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) er
 	}
 	for i := range tasksAndFinally {
 		pipelineTasks := tasksAndFinally[i]
-		for j := range pipelineTasks {
-			pt := &pipelineTasks[j]
-			if pt.TaskSpec != nil {
-				ts := &pt.TaskSpec.TaskSpec
-				clearStepTemplateImage := false
-				var steps []tektonv1beta1.Step
-				for k := range ts.Steps {
-					step := ts.Steps[k]
-					image := step.Image
-					if image == "" && ts.StepTemplate != nil {
-						// lets default to the step image so we can share uses across steps
-						image = ts.StepTemplate.Image
-						if strings.HasPrefix(image, "uses:") {
-							clearStepTemplateImage = true
-						}
-					}
-					if !strings.HasPrefix(image, "uses:") {
-						steps = append(steps, step)
-						continue
-					}
-					sourceURI := strings.TrimPrefix(image, "uses:")
+		if err := processUsesStepsHelper(resolver, prs, pipelineTasks); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-					loc := &UseLocation{
-						PipelineRunSpec: &prs.Spec,
-						PipelineSpec:    prs.Spec.PipelineSpec,
-						PipelineTask:    pt,
-						TaskName:        pt.Name,
-						TaskSpec:        ts,
+func processUsesStepsHelper(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun, pipelineTasks []tektonv1beta1.PipelineTask) error {
+	for i := range pipelineTasks {
+		pt := &pipelineTasks[i]
+		if pt.TaskSpec != nil {
+			ts := &pt.TaskSpec.TaskSpec
+			clearStepTemplateImage := false
+			var steps []tektonv1beta1.Step
+			for j := range ts.Steps {
+				step := ts.Steps[j]
+				image := step.Image
+				if image == "" && ts.StepTemplate != nil {
+					// lets default to the step image so we can share uses across steps
+					image = ts.StepTemplate.Image
+					if strings.HasPrefix(image, "uses:") {
+						clearStepTemplateImage = true
 					}
-					replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step, ts, loc)
-					if err != nil {
-						return errors.Wrapf(err, "failed to resolve git URI %s for step %s", sourceURI, step.Name)
-					}
-					steps = append(steps, replaceSteps...)
 				}
-				ts.Steps = steps
-				if clearStepTemplateImage && ts.StepTemplate != nil {
-					ts.StepTemplate.Image = ""
+				if !strings.HasPrefix(image, "uses:") {
+					steps = append(steps, step)
+					continue
 				}
+				sourceURI := strings.TrimPrefix(image, "uses:")
+
+				loc := &UseLocation{
+					PipelineRunSpec: &prs.Spec,
+					PipelineSpec:    prs.Spec.PipelineSpec,
+					PipelineTask:    pt,
+					TaskName:        pt.Name,
+					TaskSpec:        ts,
+				}
+				replaceSteps, err := resolver.UsesSteps(sourceURI, pt.Name, step, ts, loc)
+				if err != nil {
+					return errors.Wrapf(err, "failed to resolve git URI %s for step %s", sourceURI, step.Name)
+				}
+				steps = append(steps, replaceSteps...)
+			}
+			ts.Steps = steps
+			if clearStepTemplateImage && ts.StepTemplate != nil {
+				ts.StepTemplate.Image = ""
 			}
 		}
 	}
-
 	return nil
 }
 
