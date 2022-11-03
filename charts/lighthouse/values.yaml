@@ -51,7 +51,7 @@ image:
 
   # image.tag -- Docker images tag
   # the following tag is latest on the main branch, it's a specific version on a git tag
-  tag: latest
+  tag: 1.10.10
 
   # image.pullPolicy -- Image pull policy
   pullPolicy: IfNotPresent
@@ -100,7 +100,7 @@ gcJobs:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
 
     # gcJobs.image.tag -- Template for computing the gc job docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.10.10
 
     # gcJobs.image.pullPolicy -- Template for computing the gc job docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -120,7 +120,7 @@ webhooks:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-webhooks"
 
     # webhooks.image.tag -- Template for computing the webhooks controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.10.10
 
     # webhooks.image.pullPolicy -- Template for computing the webhooks controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -214,7 +214,7 @@ foghorn:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-foghorn"
 
     # foghorn.image.tag -- Template for computing the foghorn controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.10.10
 
     # foghorn.image.pullPolicy -- Template for computing the foghorn controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -260,7 +260,7 @@ tektoncontroller:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"
 
     # tektoncontroller.image.tag -- Template for computing the tekton controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.10.10
 
     # tektoncontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -313,7 +313,7 @@ jenkinscontroller:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"
 
     # jenkinscontroller.image.tag -- Template for computing the tekton controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.10.10
 
     # jenkinscontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -363,7 +363,7 @@ keeper:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-keeper"
 
     # keeper.image.tag -- Template for computing the keeper controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.10.10
 
     # keeper.image.pullPolicy -- Template for computing the keeper controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
@@ -439,7 +439,7 @@ poller:
     repository: "{{ .Values.image.parentRepository }}/lighthouse-poller"
 
     # poller.image.tag -- Template for computing the poller controller docker image tag
-    tag: "{{ .Values.image.tag }}"
+    tag: 1.10.10
 
     # poller.image.pullPolicy -- Template for computing the poller controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
