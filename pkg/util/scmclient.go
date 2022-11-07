@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
@@ -155,6 +156,10 @@ func GetSCMToken(gitKind string) (string, error) {
 		if pathErr == nil {
 			return value, nil
 		}
+		multiErr := multierror.Error{
+			Errors: []error{err, pathErr},
+		}
+		err = multiErr.ErrorOrNil()
 	}
 	return value, err
 }
