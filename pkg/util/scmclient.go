@@ -156,6 +156,7 @@ func GetSCMToken(gitKind string) (string, error) {
 		if pathErr == nil {
 			return value, nil
 		}
+		// Construct multi error to avoid hiding issues
 		multiErr := multierror.Error{
 			Errors: []error{err, pathErr},
 		}
