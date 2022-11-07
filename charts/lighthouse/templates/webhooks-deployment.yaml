@@ -52,7 +52,7 @@ spec:
 {{- else }}
           - name: "GIT_USER"
             value: {{ .Values.user }}
-{{- if .Values.useOAuthTokenVolume }}
+{{- if .Values.oauthTokenVolumeMount }}
           - name: "GIT_TOKEN_PATH"
             value: /secrets/lighthouse-oauth-token/oauth
 {{- else }}
@@ -115,7 +115,7 @@ spec:
           - name: githubapp-tokens
             mountPath: /secrets/githubapp/tokens
             readOnly: true
-{{- else if .Values.useOAuthTokenVolume }}
+{{- else if .Values.oauthTokenVolumeMount }}
           - name: lighthouse-oauth-token
             mountPath: /secrets/lighthouse-oauth-token
             readOnly: true
@@ -125,7 +125,7 @@ spec:
         - name: githubapp-tokens
           secret:
             secretName: tide-githubapp-tokens
-{{- else if .Values.useOAuthTokenVolume }}
+{{- else if .Values.oauthTokenVolumeMount }}
         - name: lighthouse-oauth-token
           secret:
             secretName: lighthouse-oauth-token
