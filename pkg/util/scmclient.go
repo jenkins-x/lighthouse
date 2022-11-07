@@ -144,14 +144,14 @@ func GetBotName(cfg config.Getter) string {
 func GetSCMToken(gitKind string) (string, error) {
 	envName := "GIT_TOKEN"
 	value := os.Getenv(envName)
-	var err
+	var err error
 	if value == "" {
 		err = fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
 	}
 	// If we could not retrieve the Git token from the environment then attempt
 	// to read it from the filesystem
 	if err != nil {
-		value, pathErr := GetSCMTokenPath()
+		value, pathErr := GetSCMTokenPath(gitKind)
 		if pathErr == nil {
 			return value, nil
 		}
@@ -160,7 +160,7 @@ func GetSCMToken(gitKind string) (string, error) {
 }
 
 // GetSCMTokenPath gets the SCM secret from the filesystem
-func GetSCMTokenPath(gitKind) (string, error) {
+func GetSCMTokenPath(gitKind string) (string, error) {
 	envName := "GIT_TOKEN_PATH"
 	value := os.Getenv(envName)
 	if value == "" {
@@ -168,7 +168,7 @@ func GetSCMTokenPath(gitKind) (string, error) {
 	}
 	b, err := os.ReadFile(value)
     if err != nil {
-        "", err
+        return "", err
     }
 	return string(b), nil
 }
