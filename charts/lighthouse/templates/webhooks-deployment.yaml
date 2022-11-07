@@ -115,8 +115,7 @@ spec:
           - name: githubapp-tokens
             mountPath: /secrets/githubapp/tokens
             readOnly: true
-{{- end }}
-{{- if .Values.useOAuthTokenVolume }}
+{{- else if .Values.useOAuthTokenVolume }}
           - name: lighthouse-oauth-token
             mountPath: /secrets/lighthouse-oauth-token
             readOnly: true
@@ -126,8 +125,7 @@ spec:
         - name: githubapp-tokens
           secret:
             secretName: tide-githubapp-tokens
-{{- end }}
-{{- if .Values.useOAuthTokenVolume }}
+{{- else if .Values.useOAuthTokenVolume }}
         - name: lighthouse-oauth-token
           secret:
             secretName: lighthouse-oauth-token

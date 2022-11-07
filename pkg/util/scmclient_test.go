@@ -2,8 +2,8 @@ package util_test
 
 import (
 	"os"
-	"testing"
 	"path/filepath"
+	"testing"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"

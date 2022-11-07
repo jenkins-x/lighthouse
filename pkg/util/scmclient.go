@@ -167,9 +167,9 @@ func GetSCMTokenPath(gitKind string) (string, error) {
 		return value, fmt.Errorf("no token path available for git kind %s at environment variable $%s", gitKind, envName)
 	}
 	b, err := os.ReadFile(value)
-    if err != nil {
-        return "", err
-    }
+	if err != nil {
+		return "", err
+	}
 	return string(b), nil
 }
 
