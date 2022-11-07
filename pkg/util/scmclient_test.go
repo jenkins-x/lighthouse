@@ -51,7 +51,7 @@ func TestGetSCMTokenFailure(t *testing.T) {
 	require.Error(t, err)
 }
 
-// This test ensures that GIT_TOKEN takes priority over GIT_TOKEN_PATH
+// This test ensures that GIT_TOKEN takes priority over GIT_TOKEN_PATH for backwards compatibility
 func TestGetSCMTokenOverridesPath(t *testing.T) {
 	os.Setenv("GIT_TOKEN", "mytokenfromenvvar")
 	os.Setenv("GIT_TOKEN_PATH", filepath.Join("test_data", "secret_dir", "git-token"))
