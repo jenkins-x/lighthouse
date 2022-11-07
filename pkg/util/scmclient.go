@@ -149,8 +149,8 @@ func GetSCMToken(gitKind string) (string, error) {
 	if value == "" {
 		err = fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
 	}
-	// If we could not retrieve the Git token from the environment then attempt
-	// to read it from the filesystem
+	// If we could not retrieve the Git token from the specified environment
+	// variable then attempt to read it from the filesystem
 	if err != nil {
 		value, pathErr := GetSCMTokenPath(gitKind)
 		if pathErr == nil {
