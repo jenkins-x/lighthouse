@@ -151,9 +151,9 @@ func GetSCMToken(gitKind string) (string, error) {
 	// If we could not retrieve the Git token from the environment then attempt
 	// to read it from the filesystem
 	if err != nil {
-		value, pathErr := GetSCMTokenPath(gitKind)
-		if pathErr != nil {
-			err = pathErr
+		value, pathErr := GetSCMTokenPath()
+		if pathErr == nil {
+			return value, nil
 		}
 	}
 	return value, err
@@ -168,7 +168,7 @@ func GetSCMTokenPath(gitKind) (string, error) {
 	}
 	b, err := os.ReadFile(value)
     if err != nil {
-        value, err
+        "", err
     }
 	return string(b), nil
 }
