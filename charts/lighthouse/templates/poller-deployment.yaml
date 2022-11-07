@@ -75,10 +75,10 @@ spec:
         - name: "GIT_USER"
           value: {{ .Values.user }}
 {{- if .Values.useOAuthTokenVolume }}
-          - name: "GIT_TOKEN"
+          - name: "GIT_TOKEN_PATH"
             value: /secrets/lighthouse-oauth-token/oauth
 {{- else }}
-          - name: "GIT_TOKEN_PATH"
+          - name: "GIT_TOKEN"
             valueFrom:
               secretKeyRef:
                 name: lighthouse-oauth-token
