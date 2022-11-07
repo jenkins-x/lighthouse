@@ -75,14 +75,14 @@ spec:
         - name: "GIT_USER"
           value: {{ .Values.user }}
 {{- if .Values.useOAuthTokenVolume }}
-          - name: "GIT_TOKEN_PATH"
-            value: /secrets/lighthouse-oauth-token/oauth
+        - name: "GIT_TOKEN_PATH"
+          value: /secrets/lighthouse-oauth-token/oauth
 {{- else }}
-          - name: "GIT_TOKEN"
-            valueFrom:
-              secretKeyRef:
-                name: lighthouse-oauth-token
-                key: oauth
+        - name: "GIT_TOKEN"
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-oauth-token
+              key: oauth
 {{- end }}
 {{- end }}
         - name: "HMAC_TOKEN"
@@ -117,25 +117,25 @@ spec:
 {{ toYaml .Values.poller.resources | indent 10 }}
         volumeMounts:
 {{- if .Values.githubApp.enabled }}
-          - name: githubapp-tokens
-            mountPath: /secrets/githubapp/tokens
-            readOnly: true
-{{- end }}
-{{- if .Values.useOAuthTokenVolume }}
-          - name: lighthouse-oauth-token
-            mountPath: /secrets/lighthouse-oauth-token
-            readOnly: true
-{{- end }}
-        volumes:
-{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
-          secret:
-            secretName: tide-githubapp-tokens
+          mountPath: /secrets/githubapp/tokens
+          readOnly: true
 {{- end }}
 {{- if .Values.useOAuthTokenVolume }}
         - name: lighthouse-oauth-token
-          secret:
-            secretName: lighthouse-oauth-token
+          mountPath: /secrets/lighthouse-oauth-token
+          readOnly: true
+{{- end }}
+      volumes:
+{{- if .Values.githubApp.enabled }}
+      - name: githubapp-tokens
+        secret:
+          secretName: tide-githubapp-tokens
+{{- end }}
+{{- if .Values.useOAuthTokenVolume }}
+      - name: lighthouse-oauth-token
+        secret:
+          secretName: lighthouse-oauth-token
 {{- end }}
 {{- with .Values.poller.nodeSelector }}
       nodeSelector:

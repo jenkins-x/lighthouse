@@ -85,7 +85,7 @@ spec:
             mountPath: /secrets/lighthouse-oauth-token
             readOnly: true
 {{- end }}
-        volumes:
+      volumes:
 {{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
           secret:
