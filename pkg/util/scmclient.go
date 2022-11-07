@@ -159,7 +159,7 @@ func GetSCMToken(gitKind string) (string, error) {
 	return value, err
 }
 
-// GetSCMTokenPath gets the SCM secret from the filesystem
+// GetSCMTokenPath retrieves the SCM secret from the filesystem
 func GetSCMTokenPath(gitKind string) (string, error) {
 	envName := "GIT_TOKEN_PATH"
 	value := os.Getenv(envName)

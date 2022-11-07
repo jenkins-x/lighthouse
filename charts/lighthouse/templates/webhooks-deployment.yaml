@@ -52,11 +52,16 @@ spec:
 {{- else }}
           - name: "GIT_USER"
             value: {{ .Values.user }}
+{{- if .Values.useOAuthTokenVolume }}
           - name: "GIT_TOKEN"
+            value: /secrets/lighthouse-oauth-token/oauth
+{{- else }}
+          - name: "GIT_TOKEN_PATH"
             valueFrom:
               secretKeyRef:
                 name: lighthouse-oauth-token
                 key: oauth
+{{- end }}
 {{- end }}
           - name: "HMAC_TOKEN"
             valueFrom:
@@ -105,15 +110,27 @@ spec:
           timeoutSeconds: {{ .Values.webhooks.readinessProbe.timeoutSeconds }}
         resources:
 {{ toYaml .Values.webhooks.resources | indent 12 }}
-{{- if .Values.githubApp.enabled }}
         volumeMounts:
+{{- if .Values.githubApp.enabled }}
           - name: githubapp-tokens
             mountPath: /secrets/githubapp/tokens
             readOnly: true
-      volumes:
+{{- end }}
+{{- if .Values.useOAuthTokenVolume }}
+          - name: lighthouse-oauth-token
+            mountPath: /secrets/lighthouse-oauth-token
+            readOnly: true
+{{- end }}
+        volumes:
+{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
           secret:
             secretName: tide-githubapp-tokens
+{{- end }}
+{{- if .Values.useOAuthTokenVolume }}
+        - name: lighthouse-oauth-token
+          secret:
+            secretName: lighthouse-oauth-token
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.webhooks.terminationGracePeriodSeconds }}
 {{- with .Values.webhooks.nodeSelector }}

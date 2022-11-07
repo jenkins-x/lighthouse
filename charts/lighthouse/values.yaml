@@ -22,6 +22,9 @@ user: ""
 # oauthToken -- Git token (used when GitHub app authentication is not enabled)
 oauthToken: ""
 
+# useOAuthTokenVolume -- Mount OAuth token as a volume
+useOAuthTokenVolume: false
+
 # hmacToken -- Secret used for webhooks
 hmacToken: ""
 

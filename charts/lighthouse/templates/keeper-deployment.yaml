@@ -67,11 +67,16 @@ spec:
 {{- else }}
         - name: "GIT_USER"
           value: {{ .Values.user }}
-        - name: "GIT_TOKEN"
-          valueFrom:
-            secretKeyRef:
-              name: lighthouse-oauth-token
-              key: oauth
+{{- if .Values.useOAuthTokenVolume }}
+          - name: "GIT_TOKEN"
+            value: /secrets/lighthouse-oauth-token/oauth
+{{- else }}
+          - name: "GIT_TOKEN_PATH"
+            valueFrom:
+              secretKeyRef:
+                name: lighthouse-oauth-token
+                key: oauth
+{{- end }}
 {{- end }}
         - name: "JX_LOG_FORMAT"
           value: "{{ .Values.logFormat }}"
@@ -99,11 +104,27 @@ spec:
             optional: true
         resources:
 {{ toYaml .Values.keeper.resources | indent 10 }}
-{{- if .Values.githubApp.enabled }}
         volumeMounts:
+{{- if .Values.githubApp.enabled }}
+          - name: githubapp-tokens
+            mountPath: /secrets/githubapp/tokens
+            readOnly: true
+{{- end }}
+{{- if .Values.useOAuthTokenVolume }}
+          - name: lighthouse-oauth-token
+            mountPath: /secrets/lighthouse-oauth-token
+            readOnly: true
+{{- end }}
+        volumes:
+{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
-          mountPath: /secrets/githubapp/tokens
-          readOnly: true
+          secret:
+            secretName: tide-githubapp-tokens
+{{- end }}
+{{- if .Values.useOAuthTokenVolume }}
+        - name: lighthouse-oauth-token
+          secret:
+            secretName: lighthouse-oauth-token
 {{- end }}
 {{- if .Values.githubApp.enabled }}
       volumes:
