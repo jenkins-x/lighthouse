@@ -10,23 +10,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// This test ensures that we can retrieve the Git token from the environment
 func TestGetSCMToken(t *testing.T) {
 	os.Setenv("GIT_TOKEN", "mytokenfromenvvar")
-	token, err := util.GetSCMToken("github")
 
+	token, err := util.GetSCMToken("github")
 	require.NoError(t, err, "failed to get SCM token")
 	assert.Equal(t, "mytokenfromenvvar", token, "failed to get expected SCM token: %s", token)
 }
 
+// This test ensures that we can retrieve the Git token from the filesystem
 func TestGetSCMTokenPath(t *testing.T) {
 	err := os.Unsetenv("GIT_TOKEN")
 	require.NoError(t, err, "failed to unset environment variable GIT_TOKEN")
 
 	os.Setenv("GIT_TOKEN_PATH", filepath.Join("test_data", "secret_dir", "git-token"))
-	token, err := util.GetSCMToken("github")
 
+	token, err := util.GetSCMToken("github")
 	require.NoError(t, err, "failed to get SCM token")
 	assert.Equal(t, "mytokenfrompath", token, "failed to get expected SCM token: %s", token)
+}
+
+// This test ensures that GIT_TOKEN takes priority over GIT_TOKEN_PATH for backwards compatibility
+func TestGetSCMTokenOverridesPath(t *testing.T) {
+	os.Setenv("GIT_TOKEN", "mytokenfromenvvar")
+	os.Setenv("GIT_TOKEN_PATH", filepath.Join("test_data", "secret_dir", "git-token"))
+
+	token, err := util.GetSCMToken("github")
+	require.NoError(t, err, "failed to get SCM token")
+	assert.Equal(t, "mytokenfromenvvar", token, "failed to get expected SCM token: %s", token)
 }
 
 // This test ensures that we receive an error if path GIT_TOKEN_PATH does not exist
@@ -35,6 +47,7 @@ func TestGetSCMTokenPathMissing(t *testing.T) {
 	require.NoError(t, err, "failed to unset environment variable GIT_TOKEN")
 
 	os.Setenv("GIT_TOKEN_PATH", filepath.Join("test_data", "secret_dir", "does-not-exist"))
+
 	_, err = util.GetSCMToken("github")
 	require.Error(t, err)
 }
@@ -49,14 +62,4 @@ func TestGetSCMTokenFailure(t *testing.T) {
 
 	_, err = util.GetSCMToken("github")
 	require.Error(t, err)
-}
-
-// This test ensures that GIT_TOKEN takes priority over GIT_TOKEN_PATH for backwards compatibility
-func TestGetSCMTokenOverridesPath(t *testing.T) {
-	os.Setenv("GIT_TOKEN", "mytokenfromenvvar")
-	os.Setenv("GIT_TOKEN_PATH", filepath.Join("test_data", "secret_dir", "git-token"))
-	token, err := util.GetSCMToken("github")
-
-	require.NoError(t, err, "failed to get SCM token")
-	assert.Equal(t, "mytokenfromenvvar", token, "failed to get expected SCM token: %s", token)
 }
