@@ -32,7 +32,7 @@ func TestGetSCMTokenPath(t *testing.T) {
 }
 
 // This test ensures that GIT_TOKEN takes priority over GIT_TOKEN_PATH for backwards compatibility
-func TestGetSCMTokenOverridesPath(t *testing.T) {
+func TestGetSCMTokenPathFallback(t *testing.T) {
 	os.Setenv("GIT_TOKEN", "mytokenfromenvvar")
 	os.Setenv("GIT_TOKEN_PATH", filepath.Join("test_data", "secret_dir", "git-token"))
 
@@ -42,7 +42,7 @@ func TestGetSCMTokenOverridesPath(t *testing.T) {
 }
 
 // This test ensures that we receive an error if path GIT_TOKEN_PATH does not exist
-func TestGetSCMTokenPathMissing(t *testing.T) {
+func TestGetSCMTokenPathMissingError(t *testing.T) {
 	err := os.Unsetenv("GIT_TOKEN")
 	require.NoError(t, err, "failed to unset environment variable GIT_TOKEN")
 
@@ -53,7 +53,7 @@ func TestGetSCMTokenPathMissing(t *testing.T) {
 }
 
 // This test ensures that we receive an error if neither GIT_TOKEN or GIT_TOKEN_PATH are set
-func TestGetSCMTokenFailure(t *testing.T) {
+func TestGetSCMTokenUnsetError(t *testing.T) {
 	err := os.Unsetenv("GIT_TOKEN")
 	require.NoError(t, err, "failed to unset environment variable GIT_TOKEN")
 
