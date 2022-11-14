@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -256,8 +257,22 @@ func processUsesSteps(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun) er
 	if ps == nil {
 		return nil
 	}
-	for i := range ps.Tasks {
-		pt := &ps.Tasks[i]
+	tasksAndFinally := [][]v1beta1.PipelineTask{
+		ps.Tasks,
+		ps.Finally,
+	}
+	for i := range tasksAndFinally {
+		pipelineTasks := tasksAndFinally[i]
+		if err := processUsesStepsHelper(resolver, prs, pipelineTasks); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func processUsesStepsHelper(resolver *UsesResolver, prs *tektonv1beta1.PipelineRun, pipelineTasks []tektonv1beta1.PipelineTask) error {
+	for i := range pipelineTasks {
+		pt := &pipelineTasks[i]
 		if pt.TaskSpec != nil {
 			ts := &pt.TaskSpec.TaskSpec
 			clearStepTemplateImage := false
