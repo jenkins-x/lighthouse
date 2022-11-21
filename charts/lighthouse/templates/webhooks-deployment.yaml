@@ -9,7 +9,9 @@ metadata:
 {{ toYaml .Values.webhooks.labels | indent 4 }}
 {{- end }}
   annotations:
+{{- if not .Values.hmacSecretName }}
     checksum/config: {{ include (print $.Template.BasePath "/hmacsecret.yaml") . | sha256sum }}
+{{- end }}
 spec:
   replicas: {{ .Values.webhooks.replicaCount }}
   selector:
@@ -55,13 +57,13 @@ spec:
           - name: "GIT_TOKEN"
             valueFrom:
               secretKeyRef:
-                name: lighthouse-oauth-token
+                name: {{ .Values.oauthSecretName | default "lighthouse-oauth-token" }}
                 key: oauth
 {{- end }}
           - name: "HMAC_TOKEN"
             valueFrom:
               secretKeyRef:
-                name: "lighthouse-hmac-token"
+                name: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
                 key: hmac
                 optional: {{ not .Values.hmacTokenEnabled }}
           - name: "JX_LOG_FORMAT"

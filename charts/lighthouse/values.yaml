@@ -22,8 +22,14 @@ user: ""
 # oauthToken -- Git token (used when GitHub app authentication is not enabled)
 oauthToken: ""
 
+# oauthSecretName -- Existing Git token secret
+oauthSecretName: ""
+
 # hmacToken -- Secret used for webhooks
 hmacToken: ""
+
+# hmacSecretName -- Existing hmac secret to use for webhooks
+hmacSecretName: ""
 
 # hmacTokenEnabled -- Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud
 hmacTokenEnabled: true
