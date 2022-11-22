@@ -81,14 +81,14 @@ spec:
         - name: "GIT_TOKEN"
           valueFrom:
             secretKeyRef:
-              name: lighthouse-oauth-token
+              name: {{ .Values.oauthSecretName | default "lighthouse-oauth-token" }}
               key: oauth
 {{- end }}
 {{- end }}
         - name: "HMAC_TOKEN"
           valueFrom:
             secretKeyRef:
-              name: "lighthouse-hmac-token"
+              name: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
               key: hmac
               optional: {{ not .Values.hmacTokenEnabled }}
         - name: "JX_LOG_FORMAT"
