@@ -25,6 +25,10 @@ oauthToken: ""
 # oauthSecretName -- Existing Git token secret
 oauthSecretName: ""
 
+# oauthTokenVolumeMount -- Mount Git token as a volume instead of using an environment variable Secret reference (used when GitHub app authentication is not enabled)
+oauthTokenVolumeMount:
+  enabled: false
+
 # hmacToken -- Secret used for webhooks
 hmacToken: ""
 

@@ -37,11 +37,16 @@ spec:
 {{- else }}
           - name: "GIT_USER"
             value: {{ .Values.user }}
+{{- if .Values.oauthTokenVolumeMount.enabled }}
+          - name: "GIT_TOKEN_PATH"
+            value: /secrets/lighthouse-oauth-token/oauth
+{{- else }}
           - name: "GIT_TOKEN"
             valueFrom:
               secretKeyRef:
                 name: {{ .Values.oauthSecretName | default "lighthouse-oauth-token" }}
                 key: oauth
+{{- end }}
 {{- end }}
           - name: "HMAC_TOKEN"
             valueFrom:
@@ -69,15 +74,25 @@ spec:
 {{- end }}
         resources:
 {{ toYaml .Values.foghorn.resources | indent 12 }}
-{{- if .Values.githubApp.enabled }}
         volumeMounts:
+{{- if .Values.githubApp.enabled }}
           - name: githubapp-tokens
             mountPath: /secrets/githubapp/tokens
             readOnly: true
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+          - name: lighthouse-oauth-token
+            mountPath: /secrets/lighthouse-oauth-token
+            readOnly: true
+{{- end }}
       volumes:
+{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
           secret:
             secretName: tide-githubapp-tokens
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+        - name: lighthouse-oauth-token
+          secret:
+            secretName: lighthouse-oauth-token
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.foghorn.terminationGracePeriodSeconds }}
 {{- with .Values.foghorn.nodeSelector }}
