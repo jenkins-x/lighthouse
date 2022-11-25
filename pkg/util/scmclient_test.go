@@ -64,6 +64,7 @@ func TestGetSCMTokenUnsetError(t *testing.T) {
 	require.Error(t, err)
 }
 
+// The following tests verify that the HMACToken function works
 func TestHMACToken(t *testing.T) {
 	tests := map[string]struct {
 		envVars   map[string]string
