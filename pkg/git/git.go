@@ -3,7 +3,6 @@ package git
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -67,7 +66,7 @@ func (c *client) Clean() error {
 // NewClient returns a client that talks to GitHub. It will fail if git is not
 // in the PATH.
 func NewClient(serverURL string, gitKind string) (Client, error) {
-	t, err := ioutil.TempDir("", "git")
+	t, err := os.MkdirTemp("", "git")
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +147,7 @@ func (c *client) Clone(repo string) (*Repo, error) {
 	if _, err := os.Stat(cache); os.IsNotExist(err) {
 		// Cache miss, clone it now.
 		c.logger.Infof("Cloning %s for the first time.", repo)
-		if err := os.Mkdir(filepath.Dir(cache), os.ModePerm); err != nil && !os.IsExist(err) {
+		if err := os.MkdirAll(filepath.Dir(cache), os.ModePerm); err != nil && !os.IsExist(err) {
 			return nil, err
 		}
 		remote := getRemote(repo, c, base)
@@ -165,7 +164,7 @@ func (c *client) Clone(repo string) (*Repo, error) {
 			return nil, fmt.Errorf("git fetch error: %v. output: %s", err, string(b))
 		}
 	}
-	t, err := ioutil.TempDir("", "git")
+	t, err := os.MkdirTemp("", "git")
 	if err != nil {
 		return nil, err
 	}

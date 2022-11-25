@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,7 +38,7 @@ func GetGitHubAppAPIUser() (string, error) {
 	}
 
 	/* #nosec */
-	data, err := ioutil.ReadFile(userFile)
+	data, err := os.ReadFile(userFile)
 	if err != nil {
 		return "", errors.Wrapf(err, "reading username file in secrets directory for GitHub App integration %s", secretsDir)
 	}

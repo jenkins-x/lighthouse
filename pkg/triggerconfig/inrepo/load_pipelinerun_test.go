@@ -2,7 +2,6 @@ package inrepo
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,7 +27,7 @@ var (
 
 func TestLoadPipelineRunTest(t *testing.T) {
 	sourceDir := filepath.Join("test_data", "load_pipelinerun")
-	fs, err := ioutil.ReadDir(sourceDir)
+	fs, err := os.ReadDir(sourceDir)
 	require.NoError(t, err, "failed to read source Dir %s", sourceDir)
 
 	fileBrowser := fbfake.NewFakeFileBrowser("test_data", true)
@@ -102,7 +101,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			expectedPath := filepath.Join(dir, fmt.Sprintf("expected%s.yaml", suffix))
 
 			message := "load file " + path
-			data, err := ioutil.ReadFile(path)
+			data, err := os.ReadFile(path)
 			require.NoError(t, err, "failed to load "+message)
 
 			pr, err := LoadTektonResourceAsPipelineRun(resolver, data)
@@ -120,11 +119,11 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			require.NoError(t, err, "failed to marshal generated PipelineRun for "+message)
 
 			if generateTestOutput {
-				err = ioutil.WriteFile(expectedPath, data, 0666)
+				err = os.WriteFile(expectedPath, data, 0666)
 				require.NoError(t, err, "failed to save file %s", expectedPath)
 				continue
 			}
-			expectedData, err := ioutil.ReadFile(expectedPath)
+			expectedData, err := os.ReadFile(expectedPath)
 			require.NoError(t, err, "failed to load file "+expectedPath)
 
 			text := strings.TrimSpace(string(data))

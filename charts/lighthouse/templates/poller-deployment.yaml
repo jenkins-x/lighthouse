@@ -44,9 +44,6 @@ spec:
           {{- if .Values.poller.requireReleaseSuccess }}
           - --require-release-success
           {{- end }}
-        env:
-        - name: LOG_LEVEL
-          value: "{{ .Values.poller.logLevel }}"
         ports:
           - name: http
             containerPort: {{ .Values.poller.internalPort }}
@@ -77,20 +74,27 @@ spec:
 {{- else }}
         - name: "GIT_USER"
           value: {{ .Values.user }}
+{{- if .Values.oauthTokenVolumeMount.enabled }}
+        - name: "GIT_TOKEN_PATH"
+          value: /secrets/lighthouse-oauth-token/oauth
+{{- else }}
         - name: "GIT_TOKEN"
           valueFrom:
             secretKeyRef:
-              name: lighthouse-oauth-token
+              name: {{ .Values.oauthSecretName | default "lighthouse-oauth-token" }}
               key: oauth
+{{- end }}
 {{- end }}
         - name: "HMAC_TOKEN"
           valueFrom:
             secretKeyRef:
-              name: "lighthouse-hmac-token"
+              name: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
               key: hmac
               optional: {{ not .Values.hmacTokenEnabled }}
         - name: "JX_LOG_FORMAT"
           value: "{{ .Values.logFormat }}"
+        - name: LOG_LEVEL
+          value: "{{ .Values.poller.logLevel }}"
         - name: "LOGRUS_FORMAT"
           value: "{{ .Values.logFormat }}"
         - name: LOGRUS_SERVICE
@@ -111,17 +115,25 @@ spec:
             optional: true
         resources:
 {{ toYaml .Values.poller.resources | indent 10 }}
-{{- if .Values.githubApp.enabled }}
         volumeMounts:
+{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
           mountPath: /secrets/githubapp/tokens
           readOnly: true
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+        - name: lighthouse-oauth-token
+          mountPath: /secrets/lighthouse-oauth-token
+          readOnly: true
 {{- end }}
-{{- if .Values.githubApp.enabled }}
       volumes:
+{{- if .Values.githubApp.enabled }}
       - name: githubapp-tokens
         secret:
           secretName: tide-githubapp-tokens
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+      - name: lighthouse-oauth-token
+        secret:
+          secretName: lighthouse-oauth-token
 {{- end }}
 {{- with .Values.poller.nodeSelector }}
       nodeSelector:

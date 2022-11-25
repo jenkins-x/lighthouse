@@ -1,7 +1,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
@@ -19,7 +18,7 @@ func NewNoMirrorClientFactory(opts ...ClientFactoryOpt) (ClientFactory, error) {
 		opt(&o)
 	}
 
-	cacheDir, err := ioutil.TempDir(*o.CacheDirBase, "gitcache")
+	cacheDir, err := os.MkdirTemp(*o.CacheDirBase, "gitcache")
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +110,7 @@ func (c *noMirrorClientFactory) ClientFromDir(org, repo, dir string) (RepoClient
 // ClientFor returns a repository client for the specified repository.
 func (c *noMirrorClientFactory) ClientFor(org, repo string, sparseCheckoutPatterns []string) (RepoClient, error) {
 	start := time.Now()
-	repoDir, err := ioutil.TempDir(c.cacheDirBase, "gitrepo")
+	repoDir, err := os.MkdirTemp(c.cacheDirBase, "gitrepo")
 	if err != nil {
 		return nil, err
 	}

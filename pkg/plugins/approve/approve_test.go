@@ -18,8 +18,8 @@ package approve
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -48,7 +48,7 @@ func TestPluginConfig(t *testing.T) {
 
 	pa := &plugins.ConfigAgent{}
 
-	b, err := ioutil.ReadFile("../../plugins.yaml")
+	b, err := os.ReadFile("../../plugins.yaml")
 	if err != nil {
 		t.Fatalf("Failed to read plugin config: %v.", err)
 	}

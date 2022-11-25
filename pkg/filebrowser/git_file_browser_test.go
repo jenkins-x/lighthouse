@@ -2,7 +2,6 @@ package filebrowser_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,17 +106,14 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 
 	logger := logrus.WithField("client", "git")
 
-	baseDir, err := ioutil.TempDir("", "localdir")
-	require.NoError(t, err, "failed to find git binary")
+	baseDir := t.TempDir()
 	fmt.Println(baseDir)
 
 	fc := filebrowser.NewFetchCache()
 
-	defer os.RemoveAll(baseDir)
-
 	repoDir := filepath.Join(baseDir, "org", "repo")
 
-	err = os.MkdirAll(repoDir, 0700)
+	err := os.MkdirAll(repoDir, 0700)
 	require.NoError(t, err, "failed to make repo dir")
 
 	userGetter := func() (name, email string, err error) {
@@ -139,7 +135,7 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	}
 	t.Logf("using default branch: %s\n", defaultBranch)
 
-	err = ioutil.WriteFile(filepath.Join(repoDir, "README.md"), []byte("README"), 0600)
+	err = os.WriteFile(filepath.Join(repoDir, "README.md"), []byte("README"), 0600)
 	require.NoError(t, err, "failed to write README.md file")
 
 	_, err = executor.Run("init", ".")
@@ -164,7 +160,7 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	_, err = executor.Run("checkout", "-b", "update-1")
 	require.NoError(t, err, "failed to create new branch")
 
-	err = ioutil.WriteFile(filepath.Join(repoDir, "README.md"), []byte("README-update-1"), 0600)
+	err = os.WriteFile(filepath.Join(repoDir, "README.md"), []byte("README-update-1"), 0600)
 	require.NoError(t, err, "failed write updated README.md")
 
 	_, err = executor.Run("commit", "-a", "-m", "update README.md")

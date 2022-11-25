@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
@@ -144,10 +145,38 @@ func GetBotName(cfg config.Getter) string {
 func GetSCMToken(gitKind string) (string, error) {
 	envName := "GIT_TOKEN"
 	value := os.Getenv(envName)
+	var err error
 	if value == "" {
-		return value, fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
+		err = fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
 	}
-	return value, nil
+	// If we could not retrieve the Git token from the environment then attempt
+	// to read it from the filesystem
+	if err != nil {
+		value, pathErr := getSCMTokenFromPath(gitKind)
+		if pathErr == nil {
+			return value, nil
+		}
+		// Construct multi error to avoid hiding issues
+		multiErr := multierror.Error{
+			Errors: []error{err, pathErr},
+		}
+		err = multiErr.ErrorOrNil()
+	}
+	return value, err
+}
+
+// getSCMTokenFromPath retrieves the SCM secret from the filesystem
+func getSCMTokenFromPath(gitKind string) (string, error) {
+	envName := "GIT_TOKEN_PATH"
+	value := os.Getenv(envName)
+	if value == "" {
+		return value, fmt.Errorf("no token path available for git kind %s at environment variable $%s", gitKind, envName)
+	}
+	b, err := os.ReadFile(value)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 // HMACToken gets the HMAC token from the environment

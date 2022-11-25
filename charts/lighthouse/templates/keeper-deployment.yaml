@@ -37,9 +37,6 @@ spec:
         imagePullPolicy: {{ tpl .Values.keeper.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
-        env:
-        - name: LOG_LEVEL
-          value: "{{ .Values.keeper.logLevel }}"
         ports:
           - name: http
             containerPort: {{ .Values.keeper.service.internalPort }}
@@ -70,14 +67,21 @@ spec:
 {{- else }}
         - name: "GIT_USER"
           value: {{ .Values.user }}
+{{- if .Values.oauthTokenVolumeMount.enabled }}
+        - name: "GIT_TOKEN_PATH"
+          value: /secrets/lighthouse-oauth-token/oauth
+{{- else }}
         - name: "GIT_TOKEN"
           valueFrom:
             secretKeyRef:
-              name: lighthouse-oauth-token
+              name: {{ .Values.oauthSecretName | default "lighthouse-oauth-token" }}
               key: oauth
+{{- end }}
 {{- end }}
         - name: "JX_LOG_FORMAT"
           value: "{{ .Values.logFormat }}"
+        - name: LOG_LEVEL
+          value: "{{ .Values.keeper.logLevel }}"
         - name: "LOGRUS_FORMAT"
           value: "{{ .Values.logFormat }}"
         - name: LOGRUS_SERVICE
@@ -100,17 +104,25 @@ spec:
             optional: true
         resources:
 {{ toYaml .Values.keeper.resources | indent 10 }}
-{{- if .Values.githubApp.enabled }}
         volumeMounts:
+{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
           mountPath: /secrets/githubapp/tokens
           readOnly: true
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+        - name: lighthouse-oauth-token
+          mountPath: /secrets/lighthouse-oauth-token
+          readOnly: true
 {{- end }}
-{{- if .Values.githubApp.enabled }}
       volumes:
+{{- if .Values.githubApp.enabled }}
       - name: githubapp-tokens
         secret:
           secretName: tide-githubapp-tokens
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+      - name: lighthouse-oauth-token
+        secret:
+          secretName: lighthouse-oauth-token
 {{- end }}
 {{- with .Values.keeper.nodeSelector }}
       nodeSelector:
