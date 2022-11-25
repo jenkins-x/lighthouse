@@ -183,7 +183,7 @@ func getSCMTokenFromPath(gitKind string) (string, error) {
 func HMACToken() string {
 	hmacToken := os.Getenv("HMAC_TOKEN")
 	// For backwards compatibility we only attempt to read from the filesystem
-	// if the token is not set
+	// if the HMAC token is not set in the environment
 	if len(hmacToken) == 0 {
 		// If HMAC_TOKEN_PATH is specified then attempt to read from the filesystem
 		hmacTokenPath := os.Getenv("HMAC_TOKEN_PATH")
