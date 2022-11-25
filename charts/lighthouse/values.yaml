@@ -38,6 +38,10 @@ hmacSecretName: ""
 # hmacTokenEnabled -- Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud
 hmacTokenEnabled: true
 
+# hmacTokenVolumeMount -- Mount hmac token as a volume instead of using an environment variable Secret reference
+hmacTokenVolumeMount:
+  enabled: false
+
 # logFormat -- Log format either json or stackdriver
 logFormat: "json"
 

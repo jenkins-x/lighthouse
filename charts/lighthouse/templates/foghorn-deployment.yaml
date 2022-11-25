@@ -48,12 +48,18 @@ spec:
                 key: oauth
 {{- end }}
 {{- end }}
+{{- if .Values.hmacTokenEnabled }}
+{{- if .Values.hmacTokenVolumeMount.enabled }}
+          - name: "HMAC_TOKEN_PATH"
+            value: /secrets/lighthouse-hmac-token/hmac
+{{- else }}
           - name: "HMAC_TOKEN"
             valueFrom:
               secretKeyRef:
                 name: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
                 key: hmac
-                optional: {{ not .Values.hmacTokenEnabled }}
+{{- end }}
+{{- end }}
           - name: "JX_LOG_FORMAT"
             value: "{{ .Values.logFormat }}"
           - name: "LOGRUS_FORMAT"
@@ -84,6 +90,11 @@ spec:
             mountPath: /secrets/lighthouse-oauth-token
             readOnly: true
 {{- end }}
+{{- if .Values.hmacTokenVolumeMount.enabled }}
+          - name: lighthouse-hmac-token
+            mountPath: /secrets/lighthouse-hmac-token
+            readOnly: true
+{{- end }}
       volumes:
 {{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
@@ -93,6 +104,11 @@ spec:
         - name: lighthouse-oauth-token
           secret:
             secretName: lighthouse-oauth-token
+{{- end }}
+{{- if .Values.hmacTokenVolumeMount.enabled }}
+        - name: lighthouse-hmac-token
+          secret:
+            secretName: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.foghorn.terminationGracePeriodSeconds }}
 {{- with .Values.foghorn.nodeSelector }}
