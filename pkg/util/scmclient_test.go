@@ -72,21 +72,18 @@ func TestHMACToken(t *testing.T) {
 	}{
 		"missing env vars": {
 			envVars:   map[string]string{},
-			wantError: false,
 			hmacToken: "",
 		},
 		"hmac token env var": {
 			envVars: map[string]string{
 				"HMAC_TOKEN": "myhmactokenfromenvvar",
 			},
-			wantError: false,
 			hmacToken: "myhmactokenfromenvvar",
 		},
 		"hmac token path env var": {
 			envVars: map[string]string{
 				"HMAC_TOKEN_PATH": filepath.Join("test_data", "secret_dir", "hmac-token"),
 			},
-			wantError: false,
 			hmacToken: "myhmactokenfrompath",
 		},
 		"hmac token env var and path env var": {
@@ -94,14 +91,12 @@ func TestHMACToken(t *testing.T) {
 				"HMAC_TOKEN":      "myhmactokenfromenvvar",
 				"HMAC_TOKEN_PATH": filepath.Join("test_data", "secret_dir", "hmac-token"),
 			},
-			wantError: false,
 			hmacToken: "myhmactokenfrompath",
 		},
 		"hmac token missing path env var": {
 			envVars: map[string]string{
 				"HMAC_TOKEN_PATH": filepath.Join("test_data", "secret_dir", "does-not-exist"),
 			},
-			wantError: true,
 			hmacToken: "",
 		},
 	}
@@ -114,18 +109,14 @@ func TestHMACToken(t *testing.T) {
 			}
 
 			// Attempt to retrieve HMAC token
-			hmacToken, err := util.HMACToken()
-			if test.wantError {
-				require.Error(t, err, "successfully retrieved HMAC token")
-			} else {
-				require.NoError(t, err, "failed to retrieve HMAC token")
-				// Verify HMAC token value
-				assert.Equal(t, test.hmacToken, hmacToken, "failed to get expected HMAC token: %s", hmacToken)
-			}
+			hmacToken := util.HMACToken()
+
+			// Verify HMAC token value
+			assert.Equal(t, test.hmacToken, hmacToken, "failed to get expected HMAC token: %s", hmacToken)
 
 			// Unset environment variables
 			for envVarName := range test.envVars {
-				err = os.Unsetenv(envVarName)
+				err := os.Unsetenv(envVarName)
 				require.NoErrorf(t, err, "failed to unset environment variable %s", envVarName)
 			}
 		})

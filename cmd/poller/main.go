@@ -54,11 +54,7 @@ type options struct {
 
 func (o *options) Validate() error {
 	if o.hmacToken == "" {
-		hmacToken, err := util.HMACToken()
-		if err != nil {
-			return err
-		}
-		o.hmacToken = hmacToken
+		o.hmacToken = util.HMACToken()
 	}
 	return nil
 }

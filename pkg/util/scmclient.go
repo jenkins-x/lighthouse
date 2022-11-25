@@ -180,18 +180,19 @@ func getSCMTokenFromPath(gitKind string) (string, error) {
 }
 
 // HMACToken gets the HMAC token from the environment or the filesystem
-func HMACToken() (string, error) {
+func HMACToken() string {
 	hmacToken := os.Getenv("HMAC_TOKEN")
 	// If HMAC_TOKEN_PATH is specified then attempt to read from filesystem
 	hmacTokenPath := os.Getenv("HMAC_TOKEN_PATH")
 	if len(hmacTokenPath) > 0 {
 		b, err := os.ReadFile(hmacTokenPath)
 		if err != nil {
-			return "", err
+			logrus.Errorf("failed to read HMAC_TOKEN_PATH %s: %s", hmacTokenPath, err)
+			return hmacToken
 		}
 		hmacToken = string(b)
 	}
-	return hmacToken, nil
+	return hmacToken
 }
 
 // BlobURLForProvider gets the link to the blob for an individual file in a commit or branch
