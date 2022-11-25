@@ -90,7 +90,7 @@ spec:
             mountPath: /secrets/lighthouse-oauth-token
             readOnly: true
 {{- end }}
-{{- if .Values.hmacTokenVolumeMount.enabled }}
+{{- if and .Values.hmacTokenEnabled .Values.hmacTokenVolumeMount.enabled }}
           - name: lighthouse-hmac-token
             mountPath: /secrets/lighthouse-hmac-token
             readOnly: true
@@ -105,7 +105,7 @@ spec:
           secret:
             secretName: lighthouse-oauth-token
 {{- end }}
-{{- if .Values.hmacTokenVolumeMount.enabled }}
+{{- if and .Values.hmacTokenEnabled .Values.hmacTokenVolumeMount.enabled }}
         - name: lighthouse-hmac-token
           secret:
             secretName: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
