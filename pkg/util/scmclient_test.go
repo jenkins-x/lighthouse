@@ -92,7 +92,7 @@ func TestHMACToken(t *testing.T) {
 				"HMAC_TOKEN":      "myhmactokenfromenvvar",
 				"HMAC_TOKEN_PATH": filepath.Join("test_data", "secret_dir", "hmac-token"),
 			},
-			hmacToken: "myhmactokenfrompath",
+			hmacToken: "myhmactokenfromenvvar",
 		},
 		"hmac token missing path env var": {
 			envVars: map[string]string{

@@ -184,7 +184,7 @@ func HMACToken() string {
 	hmacToken := os.Getenv("HMAC_TOKEN")
 	// If HMAC_TOKEN_PATH is specified then attempt to read from the filesystem
 	hmacTokenPath := os.Getenv("HMAC_TOKEN_PATH")
-	if len(hmacTokenPath) > 0 {
+	if len(hmacToken) == 0 && len(hmacTokenPath) > 0 {
 		b, err := os.ReadFile(hmacTokenPath)
 		if err != nil {
 			logrus.Errorf("failed to read HMAC_TOKEN_PATH %s: %s", hmacTokenPath, err)
