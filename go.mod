@@ -17,24 +17,24 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/shurcooL/githubv4 v0.0.0-20191102174205-af46314aec7b
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.0
-	github.com/tektoncd/pipeline v0.33.4
+	github.com/tektoncd/pipeline v0.35.1
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
-	k8s.io/api v0.23.5
-	k8s.io/apimachinery v0.23.5
+	k8s.io/api v0.23.14
+	k8s.io/apimachinery v0.23.14
 	k8s.io/client-go v1.5.2
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
-	knative.dev/pkg v0.0.0-20220131144930-f4b57aef0006
+	knative.dev/pkg v0.0.0-20220329144915-0a1ec2e0d46c
 	sigs.k8s.io/controller-runtime v0.8.0
 	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
-	cloud.google.com/go/compute v1.3.0 // indirect
+	cloud.google.com/go/compute v1.5.0 // indirect
 	code.gitea.io/sdk/gitea v0.14.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
@@ -54,7 +54,6 @@ require (
 	github.com/emicklei/go-restful v2.15.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-kit/log v0.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
@@ -82,6 +81,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
@@ -95,16 +95,16 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
+	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
-	google.golang.org/api v0.67.0 // indirect
+	google.golang.org/api v0.70.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220207164111-0872dc986b00 // indirect
+	google.golang.org/genproto v0.0.0-20220303160752-862486edd9cc // indirect
 	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -113,8 +113,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.23.5 // indirect
 	k8s.io/component-base v0.23.5 // indirect
-	k8s.io/klog/v2 v2.40.1 // indirect
+	k8s.io/klog/v2 v2.60.1-0.20220317184644-43cc75f9ae89 // indirect
 	k8s.io/kube-openapi v0.0.0-20220124234850-424119656bbf // indirect
+	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
 
@@ -128,15 +129,9 @@ replace (
 
 	// gomodules.xyz breaks in Athens proxying
 	gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.2.0
-	k8s.io/api => k8s.io/api v0.22.15
-	k8s.io/apimachinery => k8s.io/apimachinery v0.22.15
-	k8s.io/client-go => k8s.io/client-go v0.22.15
-
-	// // Pinning to 0.22.15 because of these errors
-	// # k8s.io/component-base/config
-	// ../../go/pkg/mod/k8s.io/component-base@v0.23.5/config/types.go:130:26: undefined: resource.QuantityValue
-	// make: *** [Makefile:51: build-foghorn] Error 2
-	k8s.io/component-base => k8s.io/component-base v0.22.15
+	k8s.io/api => k8s.io/api v0.23.14
+	k8s.io/apimachinery => k8s.io/apimachinery v0.23.14
+	k8s.io/client-go => k8s.io/client-go v0.23.14
 
 	// controller-runtime has k8s 1.22 in go mod
 	// Pinning to 0.11.2 because of these errors
