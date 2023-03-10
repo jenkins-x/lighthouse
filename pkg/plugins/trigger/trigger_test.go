@@ -20,13 +20,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -347,7 +347,7 @@ func TestRunAndSkipJobs(t *testing.T) {
 			}
 
 			if actual, expected := fakeSCMClient.CreatedStatuses[pr.Head.Ref], testCase.expectedStatuses; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: created incorrect statuses: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: created incorrect statuses: %s", testCase.name, cmp.Diff(actual, expected))
 			}
 
 			observedCreatedLighthouseJobs := sets.NewString()

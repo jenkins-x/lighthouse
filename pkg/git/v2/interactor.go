@@ -155,7 +155,7 @@ func (i *interactor) MirrorClone() error {
 // Checkout runs git checkout.
 func (i *interactor) Checkout(commitlike string) error {
 	i.logger.Debugf("Checking out %q", commitlike)
-	if out, err := i.executor.Run("checkout", commitlike); err != nil {
+	if out, err := i.executor.Run("checkout", "--force", commitlike); err != nil {
 		return fmt.Errorf("error checking out %q: %v %v", commitlike, err, string(out))
 	}
 	return nil
