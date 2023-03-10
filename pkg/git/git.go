@@ -208,7 +208,7 @@ func (c *client) SparseClone(repo string, sparseCheckoutPatterns []string) (*Rep
 		if b, err := retryCmd(c.logger, "", c.git, "clone", "--no-checkout", "--filter=blob:none", "--sparse", "--depth=10", "--no-single-branch", remote, cache); err != nil {
 			return nil, fmt.Errorf("failed to clone repository: %v. output: %s", err, string(b))
 		}
-		if b, err := retryCmd(c.logger, cache, c.git, append([]string{"sparse-checkout", "set"}, sparseCheckoutPatterns...)...); err != nil {
+		if b, err := retryCmd(c.logger, cache, c.git, append([]string{"sparse-checkout", "set", "--no-cone"}, sparseCheckoutPatterns...)...); err != nil {
 			return nil, fmt.Errorf("failed to set sparse checkout patterns to %v: %v. output: %s", sparseCheckoutPatterns, err, string(b))
 		}
 	} else if err != nil {

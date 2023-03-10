@@ -130,7 +130,7 @@ func (i *interactor) SetSparseCheckoutPatterns(sparseCheckoutPatterns []string) 
 	if out, err := i.executor.Run("sparse-checkout", "init"); err != nil {
 		return fmt.Errorf("failed to init sparse checkout: %v. output: %s", err, string(out))
 	}
-	if out, err := i.executor.Run(append([]string{"sparse-checkout", "set"}, sparseCheckoutPatterns...)...); err != nil {
+	if out, err := i.executor.Run(append([]string{"sparse-checkout", "set", "--no-cone"}, sparseCheckoutPatterns...)...); err != nil {
 		return fmt.Errorf("failed to set sparse checkout patterns to %v: %v. output: %s", sparseCheckoutPatterns, err, string(out))
 	}
 	return nil
