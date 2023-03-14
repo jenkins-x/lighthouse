@@ -35,6 +35,7 @@ spec:
       - name: {{ template "keeper.name" . }}
         image: {{ tpl .Values.keeper.image.repository . }}:{{ tpl .Values.keeper.image.tag . }}
         imagePullPolicy: {{ tpl .Values.keeper.image.pullPolicy . }}
+        restartPolicy: {{ tpl .Values.keeper.restartPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
         ports:
