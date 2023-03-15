@@ -202,6 +202,8 @@ type Approve struct {
 	// * an APPROVE github review is equivalent to leaving an "/approve" message.
 	// * A REQUEST_CHANGES github review is equivalent to leaving an /approve cancel" message.
 	IgnoreReviewState *bool `json:"ignore_review_state,omitempty"`
+	// IgnoreUpdateBot makes the approve plugin ignore PRs with the label updatebot
+	IgnoreUpdateBot *bool `json:"ignore_updatebot,omitempty"`
 }
 
 var (
@@ -241,6 +243,14 @@ func (a Approve) HasSelfApproval() bool {
 func (a Approve) ConsiderReviewState() bool {
 	if a.IgnoreReviewState != nil {
 		return !*a.IgnoreReviewState
+	}
+	return true
+}
+
+// ConsiderReviewState checks if the rewview state is active
+func (a Approve) IgnoreUpdateBotLabel() bool {
+	if a.IgnoreUpdateBot != nil {
+		return *a.IgnoreUpdateBot
 	}
 	return true
 }
