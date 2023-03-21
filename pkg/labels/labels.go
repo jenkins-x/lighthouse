@@ -39,5 +39,6 @@ const (
 	NeedsSig        = "needs-sig"
 	OkToTest        = "ok-to-test"
 	Shrug           = "¯\\_(ツ)_/¯"
+	UpdateBot       = "updatebot"
 	WorkInProgress  = "do-not-merge/work-in-progress"
 )
