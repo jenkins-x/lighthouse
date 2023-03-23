@@ -134,7 +134,7 @@ func TestLabel(t *testing.T) {
 		},
 		{
 			name:                  "Add A Risk Label",
-			body:                  "/risk ops",
+			body:                  "/risk high",
 			repoLabels:            []string{"area/infra", "risk/high"},
 			issueLabels:           []string{"area/infra"},
 			expectedNewLabels:     formatLabels("risk/high"),
@@ -370,7 +370,7 @@ func TestLabel(t *testing.T) {
 		},
 		{
 			name:                  "Remove Risk Label",
-			body:                  "/remove-risk ops",
+			body:                  "/remove-risk low",
 			repoLabels:            []string{"area/infra", "risk/low"},
 			issueLabels:           []string{"area/infra", "risk/low"},
 			expectedNewLabels:     []string{},
