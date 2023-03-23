@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/fake"
 	clienttesting "k8s.io/client-go/testing"
@@ -1377,7 +1376,7 @@ func TestUpdateConfig(t *testing.T) {
 				if err != nil && errors.IsNotFound(err) {
 					t.Errorf("%s: Should have updated or created configmap for '%s'", tc.name, expected)
 				} else if !equality.Semantic.DeepEqual(expected, actual) {
-					t.Errorf("%s: incorrect ConfigMap state after update: %v", tc.name, diff.ObjectReflectDiff(expected, actual))
+					t.Errorf("%s: incorrect ConfigMap state after update: %v", tc.name, cmp.Diff(expected, actual))
 				}
 			}
 		})

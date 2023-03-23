@@ -22,13 +22,13 @@ import (
 	"reflect"
 	"testing"
 
+	cmp "github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func TestTestAllFilter(t *testing.T) {
@@ -343,10 +343,10 @@ func TestFilterPresubmits(t *testing.T) {
 				t.Errorf("%s: expected no error filtering presubmits, but got one: %v", testCase.name, err)
 			}
 			if !reflect.DeepEqual(actualToTrigger, testCase.expectedToTrigger) {
-				t.Errorf("%s: incorrect set of presubmits to skip: %s", testCase.name, diff.ObjectReflectDiff(actualToTrigger, testCase.expectedToTrigger))
+				t.Errorf("%s: incorrect set of presubmits to skip: %s", testCase.name, cmp.Diff(actualToTrigger, testCase.expectedToTrigger))
 			}
 			if !reflect.DeepEqual(actualToSkip, testCase.expectedToSkip) {
-				t.Errorf("%s: incorrect set of presubmits to skip: %s", testCase.name, diff.ObjectReflectDiff(actualToSkip, testCase.expectedToSkip))
+				t.Errorf("%s: incorrect set of presubmits to skip: %s", testCase.name, cmp.Diff(actualToSkip, testCase.expectedToSkip))
 			}
 		})
 	}
@@ -392,7 +392,7 @@ func TestDetermineSkippedPresubmits(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			if actual, expected := determineSkippedPresubmits(testCase.toTrigger, testCase.toSkipSuperset, logrus.WithField("test-case", testCase.name)), testCase.expectedToSkip; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: incorrect skipped presubmits determined: %v", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: incorrect skipped presubmits determined: %v", testCase.name, cmp.Diff(actual, expected))
 			}
 		})
 	}

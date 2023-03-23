@@ -19,6 +19,7 @@ package trigger
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -27,7 +28,6 @@ import (
 	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func TestCreateRefs(t *testing.T) {
@@ -49,7 +49,7 @@ func TestCreateRefs(t *testing.T) {
 		BaseLink: "https://example.com/kubernetes/repo/compare/abcdee...abcdef",
 	}
 	if actual := createRefs(pe); !equality.Semantic.DeepEqual(expected, actual) {
-		t.Errorf("diff between expected and actual refs:%s", diff.ObjectReflectDiff(expected, actual))
+		t.Errorf("diff between expected and actual refs:%s", cmp.Diff(expected, actual))
 	}
 }
 

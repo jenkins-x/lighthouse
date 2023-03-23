@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 var (
@@ -294,7 +294,7 @@ func TestNewLighthouseJob(t *testing.T) {
 		expectedAnnotations map[string]string
 	}{
 		{
-			name: "periodic job, no extra labels",
+			name:    "periodic job, no extra labels",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -311,7 +311,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "periodic job, extra labels",
+			name:    "periodic job, extra labels",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -331,7 +331,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "presubmit job",
+			name:    "presubmit job",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -367,7 +367,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "presubmit job with nested repos",
+			name:    "presubmit job with nested repos",
 			gitKind: "gitlab",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -400,12 +400,12 @@ func TestNewLighthouseJob(t *testing.T) {
 				util.LastCommitSHALabel:      "1234abcd",
 			},
 			expectedAnnotations: map[string]string{
-				util.CloneURIAnnotation: "https://gitlab.jx.com/org/group/repo.git",
+				util.CloneURIAnnotation:      "https://gitlab.jx.com/org/group/repo.git",
 				util.LighthouseJobAnnotation: "job",
 			},
 		},
 		{
-			name: "non-github presubmit job",
+			name:    "non-github presubmit job",
 			gitKind: "gerrit",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -438,7 +438,7 @@ func TestNewLighthouseJob(t *testing.T) {
 				util.LighthouseJobAnnotation: "job",
 			},
 		}, {
-			name: "job with name too long to fit in a label",
+			name:    "job with name too long to fit in a label",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job-created-by-someone-who-loves-very-very-very-long-names-so-long-that-it-does-not-fit-into-the-Kubernetes-label-so-it-needs-to-be-truncated-to-63-characters",
@@ -474,7 +474,7 @@ func TestNewLighthouseJob(t *testing.T) {
 			},
 		},
 		{
-			name: "periodic job, extra labels, extra annotations",
+			name:    "periodic job, extra labels, extra annotations",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
 				Job:  "job",
@@ -503,13 +503,13 @@ func TestNewLighthouseJob(t *testing.T) {
 			os.Setenv("GIT_KIND", testCase.gitKind)
 			pj := NewLighthouseJob(testCase.spec, testCase.labels, testCase.annotations)
 			if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-				t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, cmp.Diff(actual, expected))
 			}
 			if actual, expected := pj.Labels, testCase.expectedLabels; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, cmp.Diff(actual, expected))
 			}
 			if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: incorrect PipelineOptions annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: incorrect PipelineOptions annotations created: %s", testCase.name, cmp.Diff(actual, expected))
 			}
 		})
 	}
@@ -552,10 +552,10 @@ func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 	for _, testCase := range testCases {
 		pj := NewLighthouseJob(testCase.spec, nil, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, cmp.Diff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, cmp.Diff(actual, expected))
 		}
 	}
 }
@@ -600,7 +600,7 @@ func TestCreateRefs(t *testing.T) {
 		},
 	}
 	if actual := createRefs(pr, "abcdef", "refs/pull/%d/head"); !reflect.DeepEqual(expected, actual) {
-		t.Errorf("diff between expected and actual refs:%s", diff.ObjectReflectDiff(expected, actual))
+		t.Errorf("diff between expected and actual refs:%s", cmp.Diff(expected, actual))
 	}
 }
 
