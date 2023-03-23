@@ -2,13 +2,13 @@ package util
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Copy copies the the src directory recursively to the destination directory.
@@ -33,7 +33,7 @@ func Copy(src string, dst string, template bool) error {
 		return err
 	}
 
-	entries, err := ioutil.ReadDir(src)
+	entries, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func Copy(src string, dst string, template bool) error {
 			}
 		} else {
 			// Skip symlinks.
-			if entry.Mode()&os.ModeSymlink != 0 {
+			if entry.Type()&os.ModeSymlink != 0 {
 				continue
 			}
 

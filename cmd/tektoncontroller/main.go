@@ -4,8 +4,6 @@ import (
 	"flag"
 	"os"
 
-	"github.com/jenkins-x/lighthouse/pkg/watcher"
-
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	tektonengine "github.com/jenkins-x/lighthouse/pkg/engines/tekton"
@@ -66,17 +64,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	_, _, lhClient, _, err := clients.GetAPIClients()
-	if err != nil {
-		logrus.WithError(err).Fatal("Error creating lighthouse clients")
-	}
-	bpWatcher, err := watcher.NewBreakpointWatcher(lhClient, o.namespace, nil)
-	if err != nil {
-		logrus.WithError(err).Fatal("Unable to create breakpoint watcher")
-	}
-	defer bpWatcher.Stop()
-
-	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.dashboardTemplate, o.namespace, bpWatcher.GetBreakpoints)
+	reconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.dashboardTemplate, o.namespace)
 	if err = reconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}

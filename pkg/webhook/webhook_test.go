@@ -2,7 +2,6 @@ package webhook
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -126,13 +125,13 @@ func (suite *WebhookTestSuite) SetupSuite() {
 
 	workDir, err := os.Getwd()
 	assert.NoError(t, err)
-	configBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/test_data/test_config.yaml", workDir))
+	configBytes, err := os.ReadFile(fmt.Sprintf("%s/test_data/test_config.yaml", workDir))
 	assert.NoError(t, err)
 	loadedConfig, err := config.LoadYAMLConfig(configBytes)
 	configAgent.Set(loadedConfig)
 	assert.NoError(t, err)
 
-	pluginBytes, err := ioutil.ReadFile(fmt.Sprintf("%s/test_data/test_plugins.yaml", workDir))
+	pluginBytes, err := os.ReadFile(fmt.Sprintf("%s/test_data/test_plugins.yaml", workDir))
 	assert.NoError(t, err)
 	loadedPlugins, err := pluginAgent.LoadYAMLConfig(pluginBytes)
 	pluginAgent.Set(loadedPlugins)

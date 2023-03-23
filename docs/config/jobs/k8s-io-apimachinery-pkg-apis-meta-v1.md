@@ -60,6 +60,7 @@ ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the res
 | `time` | *[Time](./k8s-io-apimachinery-pkg-apis-meta-v1.md#Time) | No | Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'<br />+optional |
 | `fieldsType` | string | No | FieldsType is the discriminator for the different fields format and version.<br />There is currently only one possible value: "FieldsV1" |
 | `fieldsV1` | *[FieldsV1](./k8s-io-apimachinery-pkg-apis-meta-v1.md#FieldsV1) | No | FieldsV1 holds the first JSON version format as described in the "FieldsV1" type.<br />+optional |
+| `subresource` | string | No | Subresource is the name of the subresource used to update that object, or<br />empty string if the object was updated through the main resource. The<br />value of this field is used to distinguish between managers, even if they<br />share the same name. For example, a status update will be distinct from a<br />regular update using the same manager name.<br />Note that the APIVersion field is not related to the Subresource field and<br />it always corresponds to the version of the main resource. |
 
 ## ManagedFieldsOperationType
 
@@ -69,7 +70,7 @@ ManagedFieldsOperationType is the type of operation which lead to a ManagedField
 
 ## OwnerReference
 
-OwnerReference contains enough information to let you identify an owning<br />object. An owning object must be in the same namespace as the dependent, or<br />be cluster-scoped, so there is no namespace field.
+OwnerReference contains enough information to let you identify an owning<br />object. An owning object must be in the same namespace as the dependent, or<br />be cluster-scoped, so there is no namespace field.<br />+structType=atomic
 
 | Stanza | Type | Required | Description |
 |---|---|---|---|

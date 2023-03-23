@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/jenkins-x/lighthouse/test/e2e"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,6 +17,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/test/e2e"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -145,15 +144,15 @@ func ChatOpsTests() bool {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				newFile := filepath.Join(localClone.Dir, "README")
-				err = ioutil.WriteFile(newFile, []byte("Hello world"), 0600)
+				err = os.WriteFile(newFile, []byte("Hello world"), 0600)
 				e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
 
 				changedScriptFile := filepath.Join("test_data", "passingRepoScript.sh")
-				changedScript, err := ioutil.ReadFile(changedScriptFile) /* #nosec */
+				changedScript, err := os.ReadFile(changedScriptFile) /* #nosec */
 				Expect(err).ShouldNot(HaveOccurred())
 
 				scriptOutputFile := filepath.Join(localClone.Dir, "script.sh")
-				err = ioutil.WriteFile(scriptOutputFile, changedScript, 0600)
+				err = os.WriteFile(scriptOutputFile, changedScript, 0600)
 				Expect(err).ShouldNot(HaveOccurred())
 
 				e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
@@ -198,11 +197,11 @@ func ChatOpsTests() bool {
 
 			By("changing the PR to fail", func() {
 				failScriptFile := filepath.Join("test_data", "failingRepoScript.sh")
-				failScript, err := ioutil.ReadFile(failScriptFile) /* #nosec */
+				failScript, err := os.ReadFile(failScriptFile) /* #nosec */
 				Expect(err).ShouldNot(HaveOccurred())
 
 				scriptOutputFile := filepath.Join(localClone.Dir, "script.sh")
-				err = ioutil.WriteFile(scriptOutputFile, failScript, 0600)
+				err = os.WriteFile(scriptOutputFile, failScript, 0600)
 				Expect(err).ShouldNot(HaveOccurred())
 
 				e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Updating to fail")
@@ -318,14 +317,14 @@ type pipelineCRDInput struct {
 }
 
 func applyPipelineAndTask() error {
-	tmpDir, err := ioutil.TempDir("", "pipeline-and-task")
+	tmpDir, err := os.MkdirTemp("", "pipeline-and-task")
 	if err != nil {
 		return err
 	}
 	defer os.RemoveAll(tmpDir)
 
 	pAndTFile := filepath.Join("test_data", "tekton", "pipelineAndTask.tmpl.yaml")
-	rawPAndT, err := ioutil.ReadFile(pAndTFile)
+	rawPAndT, err := os.ReadFile(pAndTFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading pipeline/task template %s", pAndTFile)
 	}
@@ -354,7 +353,7 @@ func applyPipelineAndTask() error {
 	}
 
 	outputFile := filepath.Join(tmpDir, "pipelineAndTask.yaml")
-	err = ioutil.WriteFile(outputFile, pAndTBuf.Bytes(), 0644)
+	err = os.WriteFile(outputFile, pAndTBuf.Bytes(), 0644)
 	if err != nil {
 		return errors.Wrapf(err, "writing to output file %s", outputFile)
 	}

@@ -56,7 +56,6 @@ type Configuration struct {
 	Cat                  Cat                    `json:"cat,omitempty"`
 	CherryPickUnapproved CherryPickUnapproved   `json:"cherry_pick_unapproved,omitempty"`
 	ConfigUpdater        ConfigUpdater          `json:"config_updater,omitempty"`
-	Heart                Heart                  `json:"heart,omitempty"`
 	Label                Label                  `json:"label,omitempty"`
 	Lgtm                 []Lgtm                 `json:"lgtm,omitempty"`
 	RepoMilestone        map[string]Milestone   `json:"repo_milestone,omitempty"`
@@ -203,6 +202,8 @@ type Approve struct {
 	// * an APPROVE github review is equivalent to leaving an "/approve" message.
 	// * A REQUEST_CHANGES github review is equivalent to leaving an /approve cancel" message.
 	IgnoreReviewState *bool `json:"ignore_review_state,omitempty"`
+	// IgnoreUpdateBot makes the approve plugin ignore PRs with the label updatebot
+	IgnoreUpdateBot *bool `json:"ignore_updatebot,omitempty"`
 }
 
 var (
@@ -242,6 +243,14 @@ func (a Approve) HasSelfApproval() bool {
 func (a Approve) ConsiderReviewState() bool {
 	if a.IgnoreReviewState != nil {
 		return !*a.IgnoreReviewState
+	}
+	return true
+}
+
+// ConsiderReviewState checks if the rewview state is active
+func (a Approve) IgnoreUpdateBotLabel() bool {
+	if a.IgnoreUpdateBot != nil {
+		return *a.IgnoreUpdateBot
 	}
 	return true
 }
@@ -300,20 +309,6 @@ type Trigger struct {
 	// ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs
 	// that could run but do not run.
 	ElideSkippedContexts bool `json:"elide_skipped_contexts,omitempty"`
-}
-
-// Heart contains the configuration for the heart plugin.
-type Heart struct {
-	// Adorees is a list of GitHub logins for members
-	// for whom we will add emojis to comments
-	Adorees []string `json:"adorees,omitempty"`
-	// CommentRegexp is the regular expression for comments
-	// made by adorees that the plugin adds emojis to.
-	// If not specified, the plugin will not add emojis to
-	// any comments.
-	// Compiles into CommentRe during config load.
-	CommentRegexp string         `json:"commentregexp,omitempty"`
-	CommentRe     *regexp.Regexp `json:"-"`
 }
 
 // Milestone contains the configuration options for the milestone and
@@ -751,12 +746,6 @@ func compileRegexpsAndDurations(pc *Configuration) error {
 		return err
 	}
 	pc.CherryPickUnapproved.BranchRe = branchRe
-
-	commentRe, err := regexp.Compile(pc.Heart.CommentRegexp)
-	if err != nil {
-		return err
-	}
-	pc.Heart.CommentRe = commentRe
 
 	rs := pc.RequireMatchingLabel
 	for i := range rs {

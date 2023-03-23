@@ -2,7 +2,6 @@ package foghorn
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -78,7 +77,6 @@ func TestReconcile(t *testing.T) {
 		Cat:                  plugins.Cat{},
 		CherryPickUnapproved: plugins.CherryPickUnapproved{},
 		ConfigUpdater:        plugins.ConfigUpdater{},
-		Heart:                plugins.Heart{},
 		Label:                plugins.Label{},
 		Lgtm:                 nil,
 		RepoMilestone:        nil,
@@ -146,7 +144,7 @@ func loadLighthouseJob(dir string, baseFn string) (*lighthousev1alpha1.Lighthous
 	}
 	if exists {
 		lhjob := &lighthousev1alpha1.LighthouseJob{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, err
 		}

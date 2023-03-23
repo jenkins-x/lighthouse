@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,7 +54,7 @@ type options struct {
 
 func (o *options) Validate() error {
 	if o.hmacToken == "" {
-		o.hmacToken = os.Getenv("HMAC_TOKEN")
+		o.hmacToken = util.HMACToken()
 	}
 	return nil
 }
@@ -313,7 +313,7 @@ func (o *options) notifier(hook *scm.WebhookWrapper) error {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	l := logrus.WithFields(map[string]interface{}{
 		"Status":   resp.Status,
 		"Endpoint": o.hookEndpoint,

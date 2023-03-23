@@ -66,7 +66,7 @@ func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 	l.Infof("Issue comment %s.", ic.Action)
 	event := &scmprovider.GenericCommentEvent{
 		GUID:        ic.GUID,
-		IsPR:        ic.Issue.PullRequest,
+		IsPR:        ic.Issue.PullRequest != nil,
 		Action:      ic.Action,
 		Body:        ic.Comment.Body,
 		Link:        ic.Comment.Link,
@@ -79,7 +79,7 @@ func (s *Server) handleIssueCommentEvent(l *logrus.Entry, ic scm.IssueCommentHoo
 		IssueBody:   ic.Issue.Body,
 		IssueLink:   ic.Issue.Link,
 	}
-	if ic.Issue.PullRequest {
+	if ic.Issue.PullRequest != nil {
 		updatedPR, _, err := s.ClientAgent.SCMProviderClient.PullRequests.Find(context.Background(), fmt.Sprintf("%s/%s",
 			ic.Repo.Namespace, ic.Repo.Name), ic.Issue.Number)
 		if err != nil {
@@ -249,7 +249,7 @@ func (s *Server) handlePullRequestEvent(l *logrus.Entry, pr *scm.PullRequestHook
 				go func(p string, h plugins.PullRequestHandler) {
 					defer s.wg.Done()
 					if err := h(agent, *pr); err != nil {
-						agent.Logger.WithError(err).Error("Error handling PullRequestEvent.")
+						agent.Logger.WithField("plugin", p).WithError(err).Error("Error handling PullRequestEvent.")
 					}
 				}(p, h.PullRequestHandler)
 			}

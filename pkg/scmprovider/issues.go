@@ -70,7 +70,7 @@ func (c *Client) ListIssueEvents(org, repo string, number int) ([]*scm.ListedIss
 	var events []*scm.ListedIssueEvent
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
@@ -176,7 +176,7 @@ func (c *Client) ListIssueComments(org, repo string, number int) ([]*scm.Comment
 	var comments []*scm.Comment
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
@@ -200,7 +200,7 @@ func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.L
 	var labels []*scm.Label
 	var err error
 	firstRun := false
-	opts := scm.ListOptions{
+	opts := &scm.ListOptions{
 		Page: 1,
 	}
 	if pr {

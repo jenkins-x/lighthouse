@@ -2,22 +2,17 @@ package tekton
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"testing"
-
-	"github.com/jenkins-x/lighthouse/pkg/watcher"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	fakelh "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
@@ -38,10 +33,8 @@ const (
 	dashboardTemplate = "#/namespaces/{{ .Namespace }}/pipelineruns/{{ .PipelineRun }}"
 )
 
-var (
-	// generateTestOutput enable to regenerate the expected output
-	generateTestOutput = false
-)
+// generateTestOutput enable to regenerate the expected output
+var generateTestOutput = false
 
 type seededRandIDGenerator struct{}
 
@@ -51,8 +44,6 @@ func (s *seededRandIDGenerator) GenerateBuildID() string {
 
 func TestReconcile(t *testing.T) {
 	testCases := []string{
-		"debug-pr-no-taskRunSpecs",
-		"debug-pr",
 		"update-job",
 		"start-pullrequest",
 		"start-batch-pullrequest",
@@ -99,40 +90,8 @@ func TestReconcile(t *testing.T) {
 			err = pipelinev1beta1.AddToScheme(scheme)
 			assert.NoError(t, err)
 
-			lhClient := fakelh.NewSimpleClientset()
-
-			if strings.HasPrefix(tc, "debug") {
-				branch := "master"
-				if tc == "debug-pr-no-taskRunSpecs" {
-					branch = "PR-813"
-				}
-				lhClient = fakelh.NewSimpleClientset(
-					&lighthousev1alpha1.LighthouseBreakpoint{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "my-bp",
-							Namespace: ns,
-						},
-						Spec: lighthousev1alpha1.LighthouseBreakpointSpec{
-							Filter: lighthousev1alpha1.LighthousePipelineFilter{
-								Owner:      "jenkins-x",
-								Repository: "lighthouse",
-								Branch:     branch,
-								Context:    "github",
-								Task:       "",
-							},
-							Debug: tektonv1beta1.TaskRunDebug{
-								Breakpoint: []string{"onFailure"},
-							},
-						},
-					},
-				)
-			}
-			bpWatcher, err := watcher.NewBreakpointWatcher(lhClient, ns, nil)
-			require.NoError(t, err, "failed to create BreakpointWatcher")
-			defer bpWatcher.Stop()
-
 			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns, bpWatcher.GetBreakpoints)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 			reconciler.disableLogging = true
 
@@ -155,7 +114,7 @@ func TestReconcile(t *testing.T) {
 				if generateTestOutput {
 					data, err := yaml.Marshal(updatedPR)
 					require.NoError(t, err, "failed to marshal expected PR %#v", updatedPR)
-					err = ioutil.WriteFile(expectedPRFile, data, 0644)
+					err = os.WriteFile(expectedPRFile, data, 0o644)
 					require.NoError(t, err, "failed to save file %s", expectedPRFile)
 					t.Logf("saved expected PR file %s\n", expectedPRFile)
 				} else {
@@ -177,7 +136,7 @@ func TestReconcile(t *testing.T) {
 				if generateTestOutput {
 					data, err := yaml.Marshal(updatedJob)
 					require.NoError(t, err, "failed to marshal expected job %#v", updatedJob)
-					err = ioutil.WriteFile(expectedJobFile, data, 0644)
+					err = os.WriteFile(expectedJobFile, data, 0o644)
 					require.NoError(t, err, "failed to save file %s", expectedJobFile)
 					t.Logf("saved expected Job file %s\n", expectedJobFile)
 				} else {
@@ -204,7 +163,7 @@ func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, st
 	}
 	if exists {
 		lhjob := &v1alpha1.LighthouseJob{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, fileName, err
 		}
@@ -231,7 +190,7 @@ func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.Pipe
 	}
 	if exists {
 		pr := &tektonv1beta1.PipelineRun{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, fileName, err
 		}
@@ -252,7 +211,7 @@ func loadObservedPipeline(dir string) (*tektonv1beta1.Pipeline, error) {
 	}
 	if exists {
 		p := &tektonv1beta1.Pipeline{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, err
 		}

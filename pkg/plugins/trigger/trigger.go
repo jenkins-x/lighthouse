@@ -302,7 +302,13 @@ func skipRequested(c Client, pr *scm.PullRequest, skippedJobs []job.Presubmit) e
 			continue
 		}
 		c.Logger.Infof("Skipping %s build.", job.Name)
-		if _, err := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, skippedStatusFor(job.Context)); err != nil {
+		status := skippedStatusFor(job.Context)
+		if _, err := c.SCMProviderClient.CreateStatus(pr.Base.Repo.Namespace, pr.Base.Repo.Name, pr.Head.Ref, status); err != nil {
+			c.Logger.WithError(err).
+				WithField("status", status).
+				WithField("repo", pr.Base.Repo.Namespace+"/"+pr.Base.Repo.Name).
+				WithField("head", pr.Head.Ref).
+				Warnf("Failed creating status for build %s", job.Name)
 			errors = append(errors, err)
 		}
 	}

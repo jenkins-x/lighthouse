@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -142,7 +142,7 @@ func (o *WebhooksController) HandleWebhookRequests(w http.ResponseWriter, r *htt
 // HandlePollingRequests handles incoming polling events
 func (o *WebhooksController) HandlePollingRequests(w http.ResponseWriter, r *http.Request) {
 	o.handleWebhookOrPollRequest(w, r, "Pollhook", func(scmClient *scm.Client, r *http.Request) (scm.Webhook, error) {
-		data, err := ioutil.ReadAll(r.Body)
+		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read poll payload")
 		}
@@ -182,7 +182,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 
 	cfg := o.server.ConfigAgent.Config
 
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		logrus.Errorf("failed to Read Body: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Read Body: %s", err.Error()))
@@ -196,7 +196,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 		return
 	}
 
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	_, scmClient, serverURL, _, err := util.GetSCMClient("", cfg)
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())

@@ -8,7 +8,6 @@
 - [ConfigUpdater](#ConfigUpdater)
 - [Configuration](#Configuration)
 - [ExternalPlugin](#ExternalPlugin)
-- [Heart](#Heart)
 - [Label](#Label)
 - [Lgtm](#Lgtm)
 - [Milestone](#Milestone)
@@ -96,7 +95,6 @@ Configuration is the top-level serialization target for plugin Configuration.
 | `cat` | [Cat](./github-com-jenkins-x-lighthouse-pkg-plugins.md#Cat) | No |  |
 | `cherry_pick_unapproved` | [CherryPickUnapproved](./github-com-jenkins-x-lighthouse-pkg-plugins.md#CherryPickUnapproved) | No |  |
 | `config_updater` | [ConfigUpdater](./github-com-jenkins-x-lighthouse-pkg-plugins.md#ConfigUpdater) | No |  |
-| `heart` | [Heart](./github-com-jenkins-x-lighthouse-pkg-plugins.md#Heart) | No |  |
 | `label` | [Label](./github-com-jenkins-x-lighthouse-pkg-plugins.md#Label) | No |  |
 | `lgtm` | [][Lgtm](./github-com-jenkins-x-lighthouse-pkg-plugins.md#Lgtm) | No |  |
 | `repo_milestone` | map[string][Milestone](./github-com-jenkins-x-lighthouse-pkg-plugins.md#Milestone) | No |  |
@@ -116,15 +114,6 @@ ExternalPlugin holds configuration for registering an external<br />plugin in pr
 | `name` | string | Yes | Name of the plugin. |
 | `endpoint` | string | No | Endpoint is the location of the external plugin. Defaults to<br />the name of the plugin, ie. "http://{{name}}". |
 | `events` | []string | No | Events are the events that need to be demuxed by the hook<br />server to the external plugin. If no events are specified,<br />everything is sent. |
-
-## Heart
-
-Heart contains the configuration for the heart plugin.
-
-| Stanza | Type | Required | Description |
-|---|---|---|---|
-| `adorees` | []string | No | Adorees is a list of GitHub logins for members<br />for whom we will add emojis to comments |
-| `commentregexp` | string | No | CommentRegexp is the regular expression for comments<br />made by adorees that the plugin adds emojis to.<br />If not specified, the plugin will not add emojis to<br />any comments.<br />Compiles into CommentRe during config load. |
 
 ## Label
 

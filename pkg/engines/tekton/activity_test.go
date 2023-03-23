@@ -1,7 +1,7 @@
 package tekton_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -55,7 +55,7 @@ func loadPipelineRun(t *testing.T, dir string) *v1beta1.PipelineRun {
 	fileName := filepath.Join(dir, "pr.yaml")
 	if assertFileExists(t, fileName) {
 		pr := &v1beta1.PipelineRun{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if assert.NoError(t, err, "Failed to load file %s", fileName) {
 			err = yaml.Unmarshal(data, pr)
 			if assert.NoError(t, err, "Failed to unmarshall YAML file %s", fileName) {
@@ -70,7 +70,7 @@ func loadRecord(t *testing.T, dir string) *v1alpha1.ActivityRecord {
 	fileName := filepath.Join(dir, "record.yaml")
 	if assertFileExists(t, fileName) {
 		record := &v1alpha1.ActivityRecord{}
-		data, err := ioutil.ReadFile(fileName)
+		data, err := os.ReadFile(fileName)
 		if assert.NoError(t, err, "Failed to load file %s", fileName) {
 			err = yaml.Unmarshal(data, record)
 			if assert.NoError(t, err, "Failed to unmarshall YAML file %s", fileName) {

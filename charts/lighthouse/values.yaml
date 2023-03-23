@@ -22,20 +22,31 @@ user: ""
 # oauthToken -- Git token (used when GitHub app authentication is not enabled)
 oauthToken: ""
 
+# oauthSecretName -- Existing Git token secret
+oauthSecretName: ""
+
+# oauthTokenVolumeMount -- Mount Git token as a volume instead of using an environment variable Secret reference (used when GitHub app authentication is not enabled)
+oauthTokenVolumeMount:
+  enabled: false
+
 # hmacToken -- Secret used for webhooks
 hmacToken: ""
 
+# hmacSecretName -- Existing hmac secret to use for webhooks
+hmacSecretName: ""
+
 # hmacTokenEnabled -- Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud
 hmacTokenEnabled: true
+
+# hmacTokenVolumeMount -- Mount hmac token as a volume instead of using an environment variable Secret reference
+hmacTokenVolumeMount:
+  enabled: false
 
 # logFormat -- Log format either json or stackdriver
 logFormat: "json"
 
 # logService -- The name of the service registered with logging
 logService: ""
-
-# logLevel -- The logging level: debug, info, warn
-logLevel: "info"
 
 # logStackSkip -- Comma separated stack frames to skip from the log
 logStackSkip: ""
@@ -77,6 +88,9 @@ externalPlugins:
     name: lighthouse-webui-plugin
 
 gcJobs:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # gcJobs.maxAge -- Max age from which `LighthouseJob`s will be deleted
   maxAge: 168h
 
@@ -106,6 +120,9 @@ gcJobs:
     pullPolicy: "{{ .Values.image.pullPolicy }}"
 
 webhooks:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # webhooks.replicaCount -- Number of replicas
   replicaCount: 1
 
@@ -125,6 +142,7 @@ webhooks:
 
   # webhooks.labels -- allow optional labels to be added to the webhook deployment
   labels: {}
+  podLabels: {}
 
   # webhooks.podAnnotations -- Annotations applied to the webhooks pods
   podAnnotations: {}
@@ -202,6 +220,9 @@ webhooks:
   customDeploymentTriggerCommand: ""
 
 foghorn:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # foghorn.replicaCount -- Number of replicas
   replicaCount: 1
   
@@ -240,6 +261,9 @@ foghorn:
 
 
 tektoncontroller:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # tektoncontroller.dashboardURL -- the dashboard URL (e.g. Tekton dashboard)
   dashboardURL: ''
   # tektoncontroller.dashboardTemplate -- Go template expression for URLs in the dashboard if not using Tekton dashboard
@@ -289,6 +313,9 @@ tektoncontroller:
     annotations: {}
 
 jenkinscontroller:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # jenkinscontroller.jenkinsURL -- The URL of the Jenkins instance
   jenkinsURL:
 
@@ -339,6 +366,9 @@ jenkinscontroller:
     annotations: {}
 
 keeper:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # keeper.statusContextLabel -- Label used to report status to git provider
   statusContextLabel: "Lighthouse Merge Status"
 
@@ -412,6 +442,9 @@ keeper:
   tolerations: []
 
 poller:
+  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  logLevel: "info"
+
   # poller.enabled -- Whether to enable or disable the poller component
   enabled: false
 

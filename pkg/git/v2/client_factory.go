@@ -17,10 +17,10 @@ limitations under the License.
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
@@ -34,7 +34,7 @@ type ClientFactory interface {
 	// been cloned to the given directory.
 	ClientFromDir(org, repo, dir string) (RepoClient, error)
 	// ClientFor creates a client that operates on a new clone of the repo.
-	ClientFor(org, repo string) (RepoClient, error)
+	ClientFor(org, repo string, sparseCheckoutPatterns []string) (RepoClient, error)
 
 	// Clean removes the caches used to generate clients
 	Clean() error
@@ -133,7 +133,7 @@ func NewClientFactory(opts ...ClientFactoryOpt) (ClientFactory, error) {
 		opt(&o)
 	}
 
-	cacheDir, err := ioutil.TempDir(*o.CacheDirBase, "gitcache")
+	cacheDir, err := os.MkdirTemp(*o.CacheDirBase, "gitcache")
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func NewClientFactory(opts ...ClientFactoryOpt) (ClientFactory, error) {
 // NewLocalClientFactory allows for the creation of repository clients
 // based on a local filepath remote for testing
 func NewLocalClientFactory(baseDir string, gitUser UserGetter, censor Censor) (ClientFactory, error) {
-	cacheDir, err := ioutil.TempDir("", "gitcache")
+	cacheDir, err := os.MkdirTemp("", "gitcache")
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func (c *clientFactory) ClientFromDir(org, repo, dir string) (RepoClient, error)
 // In that case, it must do a full git mirror clone. For large repos, this can
 // take a while. Once that is done, it will do a git fetch instead of a clone,
 // which will usually take at most a few seconds.
-func (c *clientFactory) ClientFor(org, repo string) (RepoClient, error) {
+func (c *clientFactory) ClientFor(org, repo string, sparseCheckoutPatterns []string) (RepoClient, error) {
 	start := time.Now()
 	cacheDir := path.Join(c.cacheDir, org, repo)
 	l := c.logger.WithFields(logrus.Fields{"org": org, "repo": repo, "dir": cacheDir})
@@ -255,7 +255,7 @@ func (c *clientFactory) ClientFor(org, repo string) (RepoClient, error) {
 		return nil, err
 	}
 
-	repoDir, err := ioutil.TempDir(c.cacheDirBase, "gitrepo")
+	repoDir, err := os.MkdirTemp(c.cacheDirBase, "gitrepo")
 	if err != nil {
 		return nil, err
 	}
@@ -291,6 +291,12 @@ func (c *clientFactory) ClientFor(org, repo string) (RepoClient, error) {
 	// initialize the new derivative repo from the cache
 	if err := repoClientCloner.Clone(cacheDir); err != nil {
 		return nil, err
+	}
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
+	if sparseCheckout && len(sparseCheckoutPatterns) > 0 {
+		if err := repoClient.SetSparseCheckoutPatterns(sparseCheckoutPatterns); err != nil {
+			return nil, err
+		}
 	}
 
 	duration := time.Now().Sub(start)

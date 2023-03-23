@@ -37,24 +37,37 @@ spec:
 {{- else }}
           - name: "GIT_USER"
             value: {{ .Values.user }}
+{{- if .Values.oauthTokenVolumeMount.enabled }}
+          - name: "GIT_TOKEN_PATH"
+            value: /secrets/lighthouse-oauth-token/oauth
+{{- else }}
           - name: "GIT_TOKEN"
             valueFrom:
               secretKeyRef:
-                name: lighthouse-oauth-token
+                name: {{ .Values.oauthSecretName | default "lighthouse-oauth-token" }}
                 key: oauth
 {{- end }}
+{{- end }}
+{{- if .Values.hmacTokenEnabled }}
+{{- if .Values.hmacTokenVolumeMount.enabled }}
+          - name: "HMAC_TOKEN_PATH"
+            value: /secrets/lighthouse-hmac-token/hmac
+{{- else }}
           - name: "HMAC_TOKEN"
             valueFrom:
               secretKeyRef:
-                name: "lighthouse-hmac-token"
+                name: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
                 key: hmac
-                optional: {{ not .Values.hmacTokenEnabled }}
+{{- end }}
+{{- end }}
           - name: "JX_LOG_FORMAT"
             value: "{{ .Values.logFormat }}"
           - name: "LOGRUS_FORMAT"
             value: "{{ .Values.logFormat }}"
           - name: LOGRUS_SERVICE
             value: "{{ .Values.logService | default .Chart.Name }}"
+          - name: LOG_LEVEL
+            value: "{{ .Values.foghorn.logLevel }}"
           - name: LOGRUS_SERVICE_VERSION
             value: "{{ .Chart.Version }}"
           - name: LOGRUS_STACK_SKIP
@@ -67,15 +80,35 @@ spec:
 {{- end }}
         resources:
 {{ toYaml .Values.foghorn.resources | indent 12 }}
-{{- if .Values.githubApp.enabled }}
         volumeMounts:
+{{- if .Values.githubApp.enabled }}
           - name: githubapp-tokens
             mountPath: /secrets/githubapp/tokens
             readOnly: true
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+          - name: lighthouse-oauth-token
+            mountPath: /secrets/lighthouse-oauth-token
+            readOnly: true
+{{- end }}
+{{- if and .Values.hmacTokenEnabled .Values.hmacTokenVolumeMount.enabled }}
+          - name: lighthouse-hmac-token
+            mountPath: /secrets/lighthouse-hmac-token
+            readOnly: true
+{{- end }}
       volumes:
+{{- if .Values.githubApp.enabled }}
         - name: githubapp-tokens
           secret:
             secretName: tide-githubapp-tokens
+{{- else if .Values.oauthTokenVolumeMount.enabled }}
+        - name: lighthouse-oauth-token
+          secret:
+            secretName: lighthouse-oauth-token
+{{- end }}
+{{- if and .Values.hmacTokenEnabled .Values.hmacTokenVolumeMount.enabled }}
+        - name: lighthouse-hmac-token
+          secret:
+            secretName: {{ .Values.hmacSecretName | default "lighthouse-hmac-token" }}
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.foghorn.terminationGracePeriodSeconds }}
 {{- with .Values.foghorn.nodeSelector }}

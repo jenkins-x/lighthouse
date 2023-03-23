@@ -19,7 +19,6 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -165,7 +164,7 @@ func loadConfigFromFiles(prowConfig, jobConfig string) (*Config, error) {
 
 // yamlToConfig converts a yaml file into a Config object
 func yamlToConfig(path string, nc interface{}) error {
-	b, err := ioutil.ReadFile(path) // #nosec
+	b, err := os.ReadFile(path) // #nosec
 	if err != nil {
 		return fmt.Errorf("error reading %s: %v", path, err)
 	}

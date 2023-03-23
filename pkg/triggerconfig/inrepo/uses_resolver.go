@@ -3,7 +3,6 @@ package inrepo
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -121,7 +120,7 @@ func (r *UsesResolver) GetData(path string, ignoreNotExist bool) ([]byte, error)
 			}
 		}
 		/* #nosec */
-		data, err := ioutil.ReadFile(path)
+		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read file %s", path)
 		}

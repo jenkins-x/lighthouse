@@ -1,4 +1,4 @@
-FROM alpine:3.12
+FROM alpine:3.17
 
 RUN apk add --update --no-cache ca-certificates git \
     && adduser -D -u 1000 jx

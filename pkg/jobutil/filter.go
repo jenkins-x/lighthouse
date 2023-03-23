@@ -73,7 +73,6 @@ func AggregateFilter(filters []Filter) Filter {
 // FilterPresubmits determines which presubmits should run and which should be skipped
 // by evaluating the user-provided filter.
 func FilterPresubmits(filter Filter, changes job.ChangedFilesProvider, branch string, presubmits []job.Presubmit, logger *logrus.Entry) ([]job.Presubmit, []job.Presubmit, error) {
-
 	var toTrigger []job.Presubmit
 	var namesToTrigger []string
 	var toSkipSuperset []job.Presubmit

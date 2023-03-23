@@ -18,10 +18,10 @@ package repoowners
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -221,6 +221,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	cloneRef := fmt.Sprintf("%s/%s", org, repo)
 	fullName := fmt.Sprintf("%s:%s", cloneRef, base)
 	mdYaml := c.mdYAMLEnabled(org, repo)
+	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
 
 	sha, err := c.spc.GetRef(org, repo, fmt.Sprintf("heads/%s", base))
 	if err != nil {
@@ -231,11 +232,22 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 	defer c.lock.Unlock()
 	entry, ok := c.cache[fullName]
 	if !ok || entry.sha != sha || entry.owners == nil || entry.owners.enableMDYAML != mdYaml {
-		gitRepo, err := c.git.Clone(cloneRef)
+		var gitRepo *git2.Repo
+		if sparseCheckout {
+			sparseCheckoutPatterns := []string{"/OWNERS_ALIASES", "OWNERS"}
+			if mdYaml {
+				sparseCheckoutPatterns = append(sparseCheckoutPatterns, "*.md")
+			}
+			gitRepo, err = c.git.SparseClone(cloneRef, sparseCheckoutPatterns)
+		} else {
+			gitRepo, err = c.git.Clone(cloneRef)
+			if gitRepo != nil {
+				defer gitRepo.Clean()
+			}
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to clone %s: %v", cloneRef, err)
 		}
-		defer gitRepo.Clean()
 		if err := gitRepo.Checkout(base); err != nil {
 			return nil, err
 		}
@@ -310,7 +322,7 @@ func (a RepoAliases) ExpandAliases(logins sets.String) sets.String {
 
 func (c *Client) loadAliasesFrom(baseDir string, log *logrus.Entry, org string) RepoAliases {
 	path := filepath.Join(baseDir, aliasesFileName)
-	b, err := ioutil.ReadFile(path) // #nosec
+	b, err := os.ReadFile(path) // #nosec
 	if os.IsNotExist(err) {
 		log.WithError(err).Infof("No alias file exists at %q. Using empty alias map.", path)
 		return nil
@@ -431,7 +443,7 @@ func (o *RepoOwners) walkFunc(path string, info os.FileInfo, err error) error {
 		return nil
 	}
 
-	b, err := ioutil.ReadFile(path) // #nosec
+	b, err := os.ReadFile(path) // #nosec
 	if err != nil {
 		log.WithError(err).Errorf("Failed to read the OWNERS file.")
 		return nil
@@ -494,7 +506,7 @@ var mdStructuredHeaderRegex = regexp.MustCompile("^---\n(.|\n)*\n---")
 // If no yaml header is found, do nothing
 // Returns an error if the file cannot be read or the yaml header is found but cannot be unmarshalled.
 func decodeOwnersMdConfig(path string, config *SimpleConfig) error {
-	fileBytes, err := ioutil.ReadFile(path) // #nosec
+	fileBytes, err := os.ReadFile(path) // #nosec
 	if err != nil {
 		return err
 	}

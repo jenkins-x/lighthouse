@@ -1,7 +1,6 @@
 package fake
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -41,7 +40,7 @@ func (f *fakeFileBrowser) GetFile(owner, repo, path, ref string, fc filebrowser.
 		return nil, nil
 	}
 	/* #nosec */
-	return ioutil.ReadFile(fileName)
+	return os.ReadFile(fileName)
 }
 
 func (f *fakeFileBrowser) getPath(owner, repo, path, ref string) string {
@@ -63,7 +62,7 @@ func (f *fakeFileBrowser) getPath(owner, repo, path, ref string) string {
 	return filepath.Join(f.dir, path)
 }
 
-func (f *fakeFileBrowser) WithDir(owner, repo, ref string, fc filebrowser.FetchCache, fn func(dir string) error) error {
+func (f *fakeFileBrowser) WithDir(owner, repo, ref string, fc filebrowser.FetchCache, sparseCheckoutPatterns []string, fn func(dir string) error) error {
 	dir := f.getPath(owner, repo, "", ref)
 	return fn(dir)
 }
@@ -77,13 +76,20 @@ func (f *fakeFileBrowser) ListFiles(owner, repo, path, ref string, fc filebrowse
 	if !exists {
 		return nil, nil
 	}
-	fileNames, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read dir %s", dir)
 	}
-
+	infos := make([]os.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		infos = append(infos, info)
+	}
 	var answer []*scm.FileEntry
-	for _, f := range fileNames {
+	for _, f := range infos {
 		name := f.Name()
 		t := "file"
 		if f.IsDir() {

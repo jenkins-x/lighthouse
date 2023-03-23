@@ -19,7 +19,7 @@ package updateconfig
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -1166,15 +1166,15 @@ func TestUpdateConfig(t *testing.T) {
 				event.PullRequest.MergeSha = tc.mergeCommit
 			}
 
-			invalidYaml, err := ioutil.ReadFile(filepath.Join("test_data", "invalid-yaml.yaml"))
+			invalidYaml, err := os.ReadFile(filepath.Join("test_data", "invalid-yaml.yaml"))
 			if err != nil {
 				t.Fatalf("couldn't read test_data/invalid-yaml.yaml: %v", err)
 			}
-			validConfig, err := ioutil.ReadFile(filepath.Join("test_data", "valid-config.yaml"))
+			validConfig, err := os.ReadFile(filepath.Join("test_data", "valid-config.yaml"))
 			if err != nil {
 				t.Fatalf("couldn't read test_data/valid-config.yaml: %v", err)
 			}
-			invalidConfig, err := ioutil.ReadFile(filepath.Join("test_data", "invalid-config.yaml"))
+			invalidConfig, err := os.ReadFile(filepath.Join("test_data", "invalid-config.yaml"))
 			if err != nil {
 				t.Fatalf("couldn't read test_data/invalid-config.yaml: %v", err)
 			}

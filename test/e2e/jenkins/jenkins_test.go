@@ -4,6 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"testing"
+	"text/template"
+
 	"github.com/cenkalti/backoff"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jenkins-x/go-scm/scm"
@@ -15,13 +23,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
-	"testing"
-	"text/template"
 )
 
 const (
@@ -50,7 +51,7 @@ func TestJenkins(t *testing.T) {
 var _ = BeforeSuite(func() {
 	By("setting up logging")
 	if os.Getenv("E2E_QUIET_LOG") == "true" {
-		logrus.SetOutput(ioutil.Discard)
+		logrus.SetOutput(io.Discard)
 	}
 
 	By("ensuring environment configured")
@@ -143,7 +144,7 @@ func ChatOpsTests() bool {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			newFile := filepath.Join(localClone.Dir, "README")
-			err = ioutil.WriteFile(newFile, []byte("Hello world"), 0600)
+			err = os.WriteFile(newFile, []byte("Hello world"), 0600)
 			e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "add", newFile)
 			e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Adding for test PR")
 
@@ -204,11 +205,11 @@ func ChatOpsTests() bool {
 
 			By("creating a failing go file")
 			failFile := filepath.Join("test_data", "main.go.failing")
-			failFileContent, err := ioutil.ReadFile(filepath.Clean(failFile))
+			failFileContent, err := os.ReadFile(filepath.Clean(failFile))
 			Expect(err).ShouldNot(HaveOccurred())
 
 			outFile := filepath.Join(localClone.Dir, "main.go")
-			err = ioutil.WriteFile(outFile, failFileContent, 0600)
+			err = os.WriteFile(outFile, failFileContent, 0600)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			e2e.ExpectCommandExecution(localClone.Dir, 1, 0, "git", "commit", "-a", "-m", "Updating main.go for failing test PR")

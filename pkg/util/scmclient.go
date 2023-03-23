@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/go-scm/scm/transport"
@@ -144,15 +145,58 @@ func GetBotName(cfg config.Getter) string {
 func GetSCMToken(gitKind string) (string, error) {
 	envName := "GIT_TOKEN"
 	value := os.Getenv(envName)
+	var err error
 	if value == "" {
-		return value, fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
+		err = fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
 	}
-	return value, nil
+	// If we could not retrieve the Git token from the environment then attempt
+	// to read it from the filesystem
+	if err != nil {
+		value, pathErr := getSCMTokenFromPath(gitKind)
+		if pathErr == nil {
+			return value, nil
+		}
+		// Construct multi error to avoid hiding issues
+		multiErr := multierror.Error{
+			Errors: []error{err, pathErr},
+		}
+		err = multiErr.ErrorOrNil()
+	}
+	return value, err
 }
 
-// HMACToken gets the HMAC token from the environment
+// getSCMTokenFromPath retrieves the SCM secret from the filesystem
+func getSCMTokenFromPath(gitKind string) (string, error) {
+	envName := "GIT_TOKEN_PATH"
+	value := os.Getenv(envName)
+	if value == "" {
+		return value, fmt.Errorf("no token path available for git kind %s at environment variable $%s", gitKind, envName)
+	}
+	b, err := os.ReadFile(value)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+// HMACToken gets the HMAC token from the environment or filesystem
 func HMACToken() string {
-	return os.Getenv("HMAC_TOKEN")
+	hmacToken := os.Getenv("HMAC_TOKEN")
+	// For backwards compatibility we only attempt to read from the filesystem
+	// if the HMAC token is not set in the environment
+	if len(hmacToken) == 0 {
+		// If HMAC_TOKEN_PATH is specified then attempt to read from the filesystem
+		hmacTokenPath := os.Getenv("HMAC_TOKEN_PATH")
+		if len(hmacTokenPath) > 0 {
+			b, err := os.ReadFile(hmacTokenPath)
+			if err != nil {
+				logrus.Errorf("failed to read HMAC_TOKEN_PATH %s: %s", hmacTokenPath, err)
+				return hmacToken
+			}
+			hmacToken = string(b)
+		}
+	}
+	return hmacToken
 }
 
 // BlobURLForProvider gets the link to the blob for an individual file in a commit or branch
@@ -166,6 +210,8 @@ func BlobURLForProvider(providerType string, baseURL *url.URL, owner, repo, bran
 		return u
 	case "gitlab":
 		return fmt.Sprintf("%s/%s/%s/-/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
+	case "gitea":
+		return fmt.Sprintf("%s/%s/%s/src/branch/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
 	default:
 		return fmt.Sprintf("%s/%s/%s/blob/%s/%v", strings.TrimSuffix(baseURL.String(), "/"), owner, repo, branch, fullPath)
 	}

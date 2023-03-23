@@ -1,7 +1,7 @@
 package merge_test
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -78,7 +78,7 @@ func TestMergeTriggerConfig(t *testing.T) {
 
 func TestMergeTriggerConfigFiles(t *testing.T) {
 	sourceData := "test_data"
-	fileNames, err := ioutil.ReadDir(sourceData)
+	fileNames, err := os.ReadDir(sourceData)
 	assert.NoError(t, err)
 
 	repoOwner := "myorg"
@@ -126,7 +126,7 @@ func TestMergeTriggerConfigFiles(t *testing.T) {
 }
 
 func LoadTrimmedText(t *testing.T, expectedConfigFile string) string {
-	expectData, err := ioutil.ReadFile(expectedConfigFile)
+	expectData, err := os.ReadFile(expectedConfigFile)
 	require.NoError(t, err, "failed to load results %s", expectedConfigFile)
 	expectedText := strings.TrimSpace(string(expectData))
 	return expectedText
@@ -143,7 +143,7 @@ func ToYAMLString(t *testing.T, cfg interface{}, testName string) string {
 func LoadYAMLFile(t *testing.T, fileName string, dest interface{}) {
 	require.FileExists(t, fileName)
 
-	data, err := ioutil.ReadFile(fileName)
+	data, err := os.ReadFile(fileName)
 	require.NoError(t, err, "failed to read file %s", fileName)
 
 	err = yaml.Unmarshal(data, dest)
