@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"sync"
 
@@ -49,6 +50,8 @@ type Server struct {
 }
 
 const failedCommentCoerceFmt = "Could not coerce %s event to a GenericCommentEvent. Unknown 'action': %q."
+
+var zeroSha = regexp.MustCompile("\\b0{7,40}\\b")
 
 func (s *Server) getPlugins(org, repo string) map[string]plugins.Plugin {
 	return s.Plugins.GetPlugins(org, repo, s.ClientAgent.SCMProviderClient.Driver.String())
@@ -181,6 +184,10 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		"ref":                    pe.Ref,
 		"head":                   pe.After,
 	})
+	if zeroSha.MatchString(pe.After) {
+		l.Info("Ignoring deletion of branch.")
+		return
+	}
 	l.Info("Push event.")
 
 	// lets invoke the agent creation async as this can take a little while

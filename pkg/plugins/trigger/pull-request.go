@@ -205,7 +205,7 @@ func TrustedPullRequest(spc scmProviderClient, trigger *plugins.Trigger, author,
 		var err error
 		l, err = spc.GetIssueLabels(org, repo, num, true)
 		if err != nil {
-			return l, false, err
+			return l, false, fmt.Errorf("error getting issue labels: %v", err)
 		}
 	}
 	return l, scmprovider.HasLabel(labels.OkToTest, l), nil

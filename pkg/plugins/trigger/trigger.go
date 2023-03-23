@@ -275,7 +275,7 @@ func validateContextOverlap(toRun, toSkip []job.Presubmit) error {
 func runRequested(c Client, pr *scm.PullRequest, requestedJobs []job.Presubmit, eventGUID string) error {
 	baseSHA, err := c.SCMProviderClient.GetRef(pr.Base.Repo.Namespace, pr.Base.Repo.Name, "heads/"+pr.Base.Ref)
 	if err != nil {
-		return err
+		return fmt.Errorf("fail to fetch reference from git provider: %v", err)
 	}
 
 	var errors []error
