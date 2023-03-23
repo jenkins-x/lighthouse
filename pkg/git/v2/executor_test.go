@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -107,7 +108,7 @@ func TestCensoringExecutor_Run(t *testing.T) {
 						t.Errorf("%s: got incorrect command: %v", testCase.name, diff.StringDiff(command, testCase.git))
 					}
 					if !reflect.DeepEqual(args, testCase.args) {
-						t.Errorf("%s: got incorrect args: %v", testCase.name, diff.ObjectReflectDiff(args, testCase.args))
+						t.Errorf("%s: got incorrect args: %v", testCase.name, cmp.Diff(args, testCase.args))
 					}
 					return testCase.executeOut, testCase.executeErr
 				},

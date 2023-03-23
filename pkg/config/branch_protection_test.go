@@ -21,9 +21,9 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 var (
@@ -115,23 +115,23 @@ func TestBranchRequirements(t *testing.T) {
 		}
 		masterActual, masterActualIfPresent, masterOptional := BranchRequirements("o", "r", "master", presubmits)
 		if !reflect.DeepEqual(masterActual, tc.masterExpected) {
-			t.Errorf("%s: identified incorrect required contexts on branch master: %s", tc.name, diff.ObjectReflectDiff(masterActual, tc.masterExpected))
+			t.Errorf("%s: identified incorrect required contexts on branch master: %s", tc.name, cmp.Diff(masterActual, tc.masterExpected))
 		}
 		if !reflect.DeepEqual(masterOptional, tc.masterOptional) {
-			t.Errorf("%s: identified incorrect optional contexts on branch master: %s", tc.name, diff.ObjectReflectDiff(masterOptional, tc.masterOptional))
+			t.Errorf("%s: identified incorrect optional contexts on branch master: %s", tc.name, cmp.Diff(masterOptional, tc.masterOptional))
 		}
 		if !reflect.DeepEqual(masterActualIfPresent, tc.masterIfPresent) {
-			t.Errorf("%s: identified incorrect if-present contexts on branch master: %s", tc.name, diff.ObjectReflectDiff(masterActualIfPresent, tc.masterIfPresent))
+			t.Errorf("%s: identified incorrect if-present contexts on branch master: %s", tc.name, cmp.Diff(masterActualIfPresent, tc.masterIfPresent))
 		}
 		otherActual, otherActualIfPresent, otherOptional := BranchRequirements("o", "r", "other", presubmits)
 		if !reflect.DeepEqual(masterActual, tc.masterExpected) {
-			t.Errorf("%s: identified incorrect required contexts on branch other: : %s", tc.name, diff.ObjectReflectDiff(otherActual, tc.otherExpected))
+			t.Errorf("%s: identified incorrect required contexts on branch other: : %s", tc.name, cmp.Diff(otherActual, tc.otherExpected))
 		}
 		if !reflect.DeepEqual(otherOptional, tc.otherOptional) {
-			t.Errorf("%s: identified incorrect optional contexts on branch other: %s", tc.name, diff.ObjectReflectDiff(otherOptional, tc.otherOptional))
+			t.Errorf("%s: identified incorrect optional contexts on branch other: %s", tc.name, cmp.Diff(otherOptional, tc.otherOptional))
 		}
 		if !reflect.DeepEqual(otherActualIfPresent, tc.otherIfPresent) {
-			t.Errorf("%s: identified incorrect if-present contexts on branch other: %s", tc.name, diff.ObjectReflectDiff(otherActualIfPresent, tc.otherIfPresent))
+			t.Errorf("%s: identified incorrect if-present contexts on branch other: %s", tc.name, cmp.Diff(otherActualIfPresent, tc.otherIfPresent))
 		}
 	}
 }

@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func TestSearch(t *testing.T) {
@@ -143,7 +143,7 @@ func TestSearch(t *testing.T) {
 					"searchCursor": tc.cursors[i],
 				}
 				if !equality.Semantic.DeepEqual(expected, actual) {
-					t.Errorf("call %d vars do not match:\n%s", i, diff.ObjectReflectDiff(expected, actual))
+					t.Errorf("call %d vars do not match:\n%s", i, cmp.Diff(expected, actual))
 				}
 				ret := result.(*searchQuery)
 				err := tc.errs[i]
@@ -166,7 +166,7 @@ func TestSearch(t *testing.T) {
 			}
 			// Always check prs because we might return some results on error
 			if !reflect.DeepEqual(tc.expected, prs) {
-				t.Errorf("prs do not match:\n%s", diff.ObjectReflectDiff(tc.expected, prs))
+				t.Errorf("prs do not match:\n%s", cmp.Diff(tc.expected, prs))
 			}
 		})
 	}

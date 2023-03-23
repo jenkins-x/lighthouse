@@ -6,12 +6,15 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 )
 
-// GetRef retruns the ref from repository
+// GetRef returns the ref from repository
 func (c *Client) GetRef(owner, repo, ref string) (string, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
-	answer, _, err := c.client.Git.FindRef(ctx, fullName, ref)
-	return answer, err
+	answer, res, err := c.client.Git.FindRef(ctx, fullName, ref)
+	if err != nil {
+		return "", connectErrorHandle(res, err)
+	}
+	return answer, nil
 }
 
 // DeleteRef deletes the ref from repository

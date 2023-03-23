@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func TestPublisher_Commit(t *testing.T) {
@@ -125,7 +125,7 @@ func TestPublisher_Commit(t *testing.T) {
 				t.Errorf("%s: expected no error but got one: %v", testCase.name, actualErr)
 			}
 			if actual, expected := e.records, testCase.expectedCalls; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: got incorrect git calls: %v", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: got incorrect git calls: %v", testCase.name, cmp.Diff(actual, expected))
 			}
 		})
 	}
@@ -233,7 +233,7 @@ func TestPublisher_PushToFork(t *testing.T) {
 				t.Errorf("%s: expected no error but got one: %v", testCase.name, actualErr)
 			}
 			if actual, expected := e.records, testCase.expectedCalls; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: got incorrect git calls: %v", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: got incorrect git calls: %v", testCase.name, cmp.Diff(actual, expected))
 			}
 		})
 	}
@@ -341,7 +341,7 @@ func TestPublisher_PushToCentral(t *testing.T) {
 				t.Errorf("%s: expected no error but got one: %v", testCase.name, actualErr)
 			}
 			if actual, expected := e.records, testCase.expectedCalls; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: got incorrect git calls: %v", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: got incorrect git calls: %v", testCase.name, cmp.Diff(actual, expected))
 			}
 		})
 	}

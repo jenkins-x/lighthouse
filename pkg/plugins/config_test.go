@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/utils/diff"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestValidateExternalPlugins(t *testing.T) {
@@ -131,7 +131,7 @@ func TestSetDefault_Maps(t *testing.T) {
 			}
 			for k, n := range tc.expected {
 				if an := actual[k]; !reflect.DeepEqual(an, n) {
-					t.Errorf("%s - %s: unexpected value. Diff: %v", tc.name, k, diff.ObjectReflectDiff(an, n))
+					t.Errorf("%s - %s: unexpected value. Diff: %v", tc.name, k, cmp.Diff(an, n))
 				}
 			}
 		})
