@@ -133,6 +133,15 @@ func TestLabel(t *testing.T) {
 			commenter:             orgMember,
 		},
 		{
+			name:                  "Add A Risk Label",
+			body:                  "/risk ops",
+			repoLabels:            []string{"area/infra", "risk/high"},
+			issueLabels:           []string{"area/infra"},
+			expectedNewLabels:     formatLabels("risk/high"),
+			expectedRemovedLabels: []string{},
+			commenter:             orgMember,
+		},
+		{
 			name:                  "Add Single Triage Label",
 			body:                  "/triage needs-information",
 			repoLabels:            []string{"area/infra", "triage/needs-information"},
@@ -357,6 +366,15 @@ func TestLabel(t *testing.T) {
 			issueLabels:           []string{"area/infra", "team/ops"},
 			expectedNewLabels:     []string{},
 			expectedRemovedLabels: formatLabels("team/ops"),
+			commenter:             orgMember,
+		},
+		{
+			name:                  "Remove Risk Label",
+			body:                  "/remove-risk ops",
+			repoLabels:            []string{"area/infra", "risk/low"},
+			issueLabels:           []string{"area/infra", "risk/low"},
+			expectedNewLabels:     []string{},
+			expectedRemovedLabels: formatLabels("risk/low"),
 			commenter:             orgMember,
 		},
 		{
