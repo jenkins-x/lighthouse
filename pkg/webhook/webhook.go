@@ -369,6 +369,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		fields["Commit.Author"] = pushHook.Commit.Author
 		fields["Commit.Message"] = pushHook.Commit.Message
 		fields["Commit.Committer.Name"] = pushHook.Commit.Committer.Name
+		l = l.WithFields(fields)
 
 		l.Info("invoking Push handler")
 
@@ -385,6 +386,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		fields["PR.Sha"] = pr.Sha
 		fields["PR.Title"] = pr.Title
 		fields["PR.Body"] = pr.Body
+		l = l.WithFields(fields)
 
 		l.Info("invoking PR handler")
 
@@ -399,6 +401,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		fields["Action"] = action.String()
 		fields["Ref.Sha"] = ref.Sha
 		fields["Sender.Name"] = sender.Name
+		l = l.WithFields(fields)
 
 		l.Info("invoking branch handler")
 
@@ -419,6 +422,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		fields["Sender.Body"] = sender.Name
 		fields["Sender.Login"] = sender.Login
 		fields["Kind"] = "IssueCommentHook"
+		l = l.WithFields(fields)
 
 		l.Info("invoking Issue Comment handler")
 
@@ -441,6 +445,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		fields["Author.Name"] = author.Name
 		fields["Author.Login"] = author.Login
 		fields["Author.Avatar"] = author.Avatar
+		l = l.WithFields(fields)
 
 		l.Info("invoking PR Comment handler")
 
@@ -463,6 +468,7 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		fields["Reviewer.Name"] = prReviewHook.Review.Author.Name
 		fields["Reviewer.Login"] = prReviewHook.Review.Author.Login
 		fields["Reviewer.Avatar"] = prReviewHook.Review.Author.Avatar
+		l = l.WithFields(fields)
 
 		l.Info("invoking PR Review handler")
 

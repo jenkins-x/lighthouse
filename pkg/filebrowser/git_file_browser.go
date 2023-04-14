@@ -183,18 +183,13 @@ type repoClientFacade struct {
 	ref        string
 }
 
-var (
-	// maxRefFetchSeconds number of seconds to reuse the git fetch to avoid slowing things down too much
-	maxRefFetchSeconds = int64(20)
-)
-
 // UseRef this method should only be used within the lock
 func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 	ref = strings.TrimSpace(ref)
 	if ref == "" {
 		ref = c.mainBranch
 	}
-	// lets remove the bitbucket cloud refs prefix
+	// let's remove the bitbucket cloud refs prefix
 	if strings.HasPrefix(ref, "refs/heads/") {
 		ref = "origin/" + strings.TrimPrefix(ref, "refs/heads/")
 	}
@@ -220,12 +215,10 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 
 	start := time.Now()
 
-	// lets switch to the main branch first before we go to a custom sha/ref
-	if c.ref != "" && c.ref != c.mainBranch {
-		err := c.repoClient.Checkout(c.mainBranch)
-		if err != nil {
-			return errors.Wrapf(err, "failed to checkout repository %s main branch %s", c.fullName, c.mainBranch)
-		}
+	// let's detach branch first before we go to a sha/ref
+	err := c.repoClient.Checkout("--detach")
+	if err != nil {
+		return errors.Wrapf(err, "failed to detach repository %s", c.fullName)
 	}
 
 	if shouldFetch {
@@ -235,21 +228,15 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
 			}
 		} else {
-			err := c.repoClient.Fetch()
+			// let's merge any new changes into the main branch. ref aught to always be the main branch unless it's a sha
+			_, err := runCmd(c.repoClient.Directory(), "git", "fetch", "origin", "--force", c.mainBranch+":"+c.mainBranch)
 			if err != nil {
-				return errors.Wrapf(err, "failed to fetch repository %s", c.fullName)
-			}
-		}
-		if !isSHA {
-			// lets merge any new changes into the main branch
-			_, err := runCmd(c.repoClient.Directory(), "git", "merge", "FETCH_HEAD")
-			if err != nil {
-				return errors.Wrapf(err, "failed to merge repository %s", c.fullName)
+				return errors.Wrapf(err, "failed to update local branch %s for repository %s", c.mainBranch, c.fullName)
 			}
 		}
 	}
 	c.ref = ref
-	err := c.repoClient.Checkout(ref)
+	err = c.repoClient.Checkout(ref)
 	if err != nil {
 		return errors.Wrapf(err, "failed to checkout repository %s ref %s", c.fullName, ref)
 	}
