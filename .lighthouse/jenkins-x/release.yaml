@@ -75,16 +75,19 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:latest --build-arg=VERSION=$VERSION
         - name: chart-docs
           resources: {}
-        - image: ghcr.io/jenkins-x/jx-changelog:0.0.43
+        - image: ghcr.io/jenkins-x/jx-boot:3.10.73
           name: changelog
           resources: {}
           script: |
             #!/usr/bin/env sh
             source .jx/variables.sh
 
-            sed -i -e "s/^version:.*/version: $VERSION/" ./charts/$REPO_NAME/Chart.yaml
-            sed -i -e "s/tag:.*/tag: $VERSION/" ./charts/$REPO_NAME/values.yaml;
-
+            if [ -d "charts/$REPO_NAME" ]; then
+              jx gitops yset -p version -v "$VERSION" -f ./charts/$REPO_NAME/Chart.yaml
+              jx gitops yset -p appVersion -v "$VERSION" -f ./charts/$REPO_NAME/Chart.yaml
+              jx gitops yset -p 'image.tag' -v "$VERSION" -f ./charts/$REPO_NAME/values.yaml;
+            else echo no charts; fi
+            
             jx changelog create --verbose --header-file=hack/changelog-header.md --version=$VERSION --rev=$PULL_BASE_SHA --output-markdown=changelog.md --prerelease
         - name: release-chart
           resources: {}
