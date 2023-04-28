@@ -2,12 +2,12 @@ package keeper
 
 import (
 	"context"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
-	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	untypedcorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,12 +115,12 @@ func TestRerunPipelineRunsWithRaceConditionFailure(t *testing.T) {
 			err := rerunPipelineRunsWithRaceConditionFailure(tektonClient, ns, nil)
 			assert.NoError(t, err)
 
-			prList, err := tektonClient.TektonV1alpha1().PipelineRuns(ns).List(context.TODO(), metav1.ListOptions{})
+			prList, err := tektonClient.TektonV1beta1().PipelineRuns(ns).List(context.TODO(), metav1.ListOptions{})
 			assert.NoError(t, err)
 
 			if tc.shouldRerun {
-				var updatedRun *pipelinev1alpha1.PipelineRun
-				var rerunRun *pipelinev1alpha1.PipelineRun
+				var updatedRun *pipelinev1beta1.PipelineRun
+				var rerunRun *pipelinev1beta1.PipelineRun
 				if len(prList.Items) != 2 {
 					t.Fatalf("Expected 2 PipelineRuns, but there are %d", len(prList.Items))
 				}
@@ -169,8 +169,8 @@ func TestRerunPipelineRunsWithRaceConditionFailure(t *testing.T) {
 	}
 }
 
-func makeTestPipelineRun(condition *kpgapis.Condition, baseRunName string, pipelineName string, sa string, namespace string, alreadyRerun bool) *pipelinev1alpha1.PipelineRun {
-	pr := &pipelinev1alpha1.PipelineRun{
+func makeTestPipelineRun(condition *kpgapis.Condition, baseRunName string, pipelineName string, sa string, namespace string, alreadyRerun bool) *pipelinev1beta1.PipelineRun {
+	pr := &pipelinev1beta1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: tektonAPIVersion,
 			Kind:       "PipelineRun",
@@ -180,14 +180,14 @@ func makeTestPipelineRun(condition *kpgapis.Condition, baseRunName string, pipel
 			Namespace:       namespace,
 			ResourceVersion: "12345678",
 		},
-		Spec: pipelinev1alpha1.PipelineRunSpec{
-			PipelineRef: &pipelinev1alpha1.PipelineRef{
+		Spec: pipelinev1beta1.PipelineRunSpec{
+			PipelineRef: &pipelinev1beta1.PipelineRef{
 				APIVersion: tektonAPIVersion,
 				Name:       pipelineName,
 			},
 			ServiceAccountName: sa,
 		},
-		Status: pipelinev1alpha1.PipelineRunStatus{},
+		Status: pipelinev1beta1.PipelineRunStatus{},
 	}
 
 	if alreadyRerun {

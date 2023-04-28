@@ -33,14 +33,14 @@ spec:
   - name: build_id
     value: "4"
   pipelineRef:
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     name: jenkins-x-lighthouse-pr-854-bbs-d5q9c-4
   podTemplate:
     schedulerName: ""
   resources:
   - name: jenkins-x-lighthouse-pr-854-bbs-d5q9c
     resourceRef:
-      apiVersion: tekton.dev/v1alpha1
+      apiVersion: tekton.dev/v1beta1
       name: jenkins-x-lighthouse-pr-854-bbs-d5q9c
   serviceAccountName: tekton-bot
   timeout: 240h0m0s
