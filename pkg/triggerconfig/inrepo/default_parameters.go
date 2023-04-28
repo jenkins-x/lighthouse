@@ -119,7 +119,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 			// lets create a step template if its not already defined
 			if task.TaskSpec.StepTemplate == nil {
-				task.TaskSpec.StepTemplate = &corev1.Container{}
+				task.TaskSpec.StepTemplate = &v1beta1.StepTemplate{}
 			}
 			stepTemplate := task.TaskSpec.StepTemplate
 			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
@@ -134,7 +134,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 			// lets create a step template if its not already defined
 			if task.TaskSpec.StepTemplate == nil {
-				task.TaskSpec.StepTemplate = &corev1.Container{}
+				task.TaskSpec.StepTemplate = &v1beta1.StepTemplate{}
 			}
 			stepTemplate := task.TaskSpec.StepTemplate
 			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
