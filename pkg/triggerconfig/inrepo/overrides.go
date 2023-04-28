@@ -9,9 +9,9 @@ import (
 func OverrideTaskSpec(ts *tektonv1beta1.TaskSpec, override *tektonv1beta1.TaskSpec) {
 	if override.StepTemplate != nil {
 		if ts.StepTemplate == nil {
-			ts.StepTemplate = &v1.Container{}
+			ts.StepTemplate = &tektonv1beta1.StepTemplate{}
 		}
-		OverrideContainer(ts.StepTemplate, override.StepTemplate, true)
+		OverrideTemplateWithTemplate(ts.StepTemplate, override.StepTemplate, true)
 		if override.StepTemplate.Image != "" {
 			ts.StepTemplate.Image = override.StepTemplate.Image
 		}
@@ -34,31 +34,36 @@ func OverrideStep(step *tektonv1beta1.Step, override *tektonv1beta1.Step) {
 	if override.Timeout != nil {
 		step.Timeout = override.Timeout
 	}
-	OverrideContainer(&step.Container, &override.Container, true)
+	OverrideStepWithStep(step, override, true)
 }
 
-// OverrideContainer overrides the container properties
-func OverrideContainer(c *v1.Container, override *v1.Container, modify bool) {
+// OverrideTemplateWithStep overrides the container properties
+func OverrideTemplateWithTemplate(c *tektonv1beta1.StepTemplate, override *tektonv1beta1.StepTemplate, modify bool) {
 	c.Env = OverrideEnv(c.Env, override.Env, modify)
 	c.EnvFrom = OverrideEnvFrom(c.EnvFrom, override.EnvFrom, modify)
 	if string(override.ImagePullPolicy) != "" && (modify || string(c.ImagePullPolicy) == "") {
 		c.ImagePullPolicy = override.ImagePullPolicy
 	}
-	if c.Lifecycle == nil {
-		c.Lifecycle = override.Lifecycle
-	}
-	if c.LivenessProbe == nil {
-		c.LivenessProbe = override.LivenessProbe
-	}
-	if c.ReadinessProbe == nil {
-		c.ReadinessProbe = override.ReadinessProbe
-	}
 	c.Resources = OverrideResources(c.Resources, override.Resources, modify)
 	if c.SecurityContext == nil {
 		c.SecurityContext = override.SecurityContext
 	}
-	if c.StartupProbe == nil {
-		c.StartupProbe = override.StartupProbe
+	if override.WorkingDir != "" && (modify || c.WorkingDir == "") {
+		c.WorkingDir = override.WorkingDir
+	}
+	c.VolumeMounts = OverrideVolumeMounts(c.VolumeMounts, override.VolumeMounts, modify)
+}
+
+// OverrideTemplateWithStep overrides the container properties
+func OverrideStepWithStep(c *tektonv1beta1.Step, override *tektonv1beta1.Step, modify bool) {
+	c.Env = OverrideEnv(c.Env, override.Env, modify)
+	c.EnvFrom = OverrideEnvFrom(c.EnvFrom, override.EnvFrom, modify)
+	if string(override.ImagePullPolicy) != "" && (modify || string(c.ImagePullPolicy) == "") {
+		c.ImagePullPolicy = override.ImagePullPolicy
+	}
+	c.Resources = OverrideResources(c.Resources, override.Resources, modify)
+	if c.SecurityContext == nil {
+		c.SecurityContext = override.SecurityContext
 	}
 	if override.WorkingDir != "" && (modify || c.WorkingDir == "") {
 		c.WorkingDir = override.WorkingDir
