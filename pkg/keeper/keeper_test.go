@@ -29,14 +29,19 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/gittest"
 
 	"github.com/jenkins-x/go-scm/scm"
 	fakescm "github.com/jenkins-x/go-scm/scm/driver/fake"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
+	"github.com/jenkins-x/lighthouse/pkg/git/localgit"
+	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
+	launcherfake "github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
@@ -44,12 +49,6 @@ import (
 	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/util/diff"
-
-	"github.com/jenkins-x/lighthouse/pkg/config"
-	"github.com/jenkins-x/lighthouse/pkg/git/localgit"
-	"github.com/jenkins-x/lighthouse/pkg/keeper/history"
-	launcherfake "github.com/jenkins-x/lighthouse/pkg/launcher/fake"
 )
 
 func testPullsMatchList(t *testing.T, test string, actual []PullRequest, expected []int) {
@@ -2484,10 +2483,10 @@ func TestPresubmitsByPull(t *testing.T) {
 			clearCompiledRegexes(jobs)
 		}
 		if !equality.Semantic.DeepEqual(presubmits, tc.expectedPresubmits) {
-			t.Errorf("got incorrect presubmit mapping: %v\n", diff.ObjectReflectDiff(tc.expectedPresubmits, presubmits))
+			t.Errorf("got incorrect presubmit mapping: %v\n", cmp.Diff(tc.expectedPresubmits, presubmits))
 		}
 		if got := c.changedFiles.changeCache; !reflect.DeepEqual(got, tc.expectedChangeCache) {
-			t.Errorf("got incorrect file change cache: %v", diff.ObjectReflectDiff(tc.expectedChangeCache, got))
+			t.Errorf("got incorrect file change cache: %v", cmp.Diff(tc.expectedChangeCache, got))
 		}
 	}
 }

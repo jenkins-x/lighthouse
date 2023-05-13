@@ -2,8 +2,9 @@ package inrepo
 
 import (
 	"context"
-	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"strings"
+
+	"github.com/tektoncd/pipeline/pkg/apis/config"
 
 	"github.com/pkg/errors"
 
@@ -118,7 +119,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 			// lets create a step template if its not already defined
 			if task.TaskSpec.StepTemplate == nil {
-				task.TaskSpec.StepTemplate = &corev1.Container{}
+				task.TaskSpec.StepTemplate = &v1beta1.StepTemplate{}
 			}
 			stepTemplate := task.TaskSpec.StepTemplate
 			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
@@ -133,7 +134,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 			// lets create a step template if its not already defined
 			if task.TaskSpec.StepTemplate == nil {
-				task.TaskSpec.StepTemplate = &corev1.Container{}
+				task.TaskSpec.StepTemplate = &v1beta1.StepTemplate{}
 			}
 			stepTemplate := task.TaskSpec.StepTemplate
 			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
@@ -147,7 +148,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 	// lets avoid missing workspaces causing issues
 	if len(prs.Spec.Workspaces) > 0 {
-		for i, _ := range prs.Spec.Workspaces {
+		for i := range prs.Spec.Workspaces {
 			w := &prs.Spec.Workspaces[i]
 			if w.Validate(ctx) != nil {
 				// lets default a workspace

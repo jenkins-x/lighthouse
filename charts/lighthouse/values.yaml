@@ -208,6 +208,12 @@ webhooks:
     # webhooks.ingress.hosts -- Webhooks ingress host names
     hosts: []
 
+    tls:
+      # webhooks.ingress.tls.enabled -- Enable webhooks ingress tls
+      enabled: false
+      # webhooks.ingress.tls.secretName -- Specify webhooks ingress tls secretName
+      secretName: ""
+
   # webhooks.customDeploymentTriggerCommand -- deployments can configure the ability to allow custom lighthouse triggers
   # using their own unique chat prefix, for example extending the default `/test` trigger prefix let them specify
   # `customDeploymentTriggerPrefix: foo` which means they can also use their own custom trigger /foo mycoolthing

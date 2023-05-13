@@ -130,7 +130,7 @@ func (i *interactor) SetSparseCheckoutPatterns(sparseCheckoutPatterns []string) 
 	if out, err := i.executor.Run("sparse-checkout", "init"); err != nil {
 		return fmt.Errorf("failed to init sparse checkout: %v. output: %s", err, string(out))
 	}
-	if out, err := i.executor.Run(append([]string{"sparse-checkout", "set"}, sparseCheckoutPatterns...)...); err != nil {
+	if out, err := i.executor.Run(append([]string{"sparse-checkout", "set", "--no-cone"}, sparseCheckoutPatterns...)...); err != nil {
 		return fmt.Errorf("failed to set sparse checkout patterns to %v: %v. output: %s", sparseCheckoutPatterns, err, string(out))
 	}
 	return nil
@@ -155,7 +155,7 @@ func (i *interactor) MirrorClone() error {
 // Checkout runs git checkout.
 func (i *interactor) Checkout(commitlike string) error {
 	i.logger.Debugf("Checking out %q", commitlike)
-	if out, err := i.executor.Run("checkout", commitlike); err != nil {
+	if out, err := i.executor.Run("checkout", "--force", commitlike); err != nil {
 		return fmt.Errorf("error checking out %q: %v %v", commitlike, err, string(out))
 	}
 	return nil

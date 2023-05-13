@@ -210,7 +210,7 @@ func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.L
 		for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
 			labels, resp, err = c.client.PullRequests.ListLabels(ctx, fullName, number, opts)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("fail to list labels: %v, response: %v", err, resp)
 			}
 			firstRun = true
 			allLabels = append(allLabels, labels...)
@@ -220,7 +220,7 @@ func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.L
 	for !firstRun || (resp != nil && opts.Page <= resp.Page.Last) {
 		labels, resp, err = c.client.Issues.ListLabels(ctx, fullName, number, opts)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("fail to list labels: %v, response: %v", err, resp)
 		}
 		firstRun = true
 		allLabels = append(allLabels, labels...)

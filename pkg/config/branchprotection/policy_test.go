@@ -21,7 +21,7 @@ import (
 	"sort"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/util/diff"
+	"github.com/google/go-cmp/cmp"
 )
 
 func normalize(policy *Policy) {
@@ -173,7 +173,7 @@ func TestApply(test *testing.T) {
 			normalize(&actual)
 			normalize(&tc.expected)
 			if !reflect.DeepEqual(actual, tc.expected) {
-				test.Errorf("bad merged policy:\n%s", diff.ObjectReflectDiff(tc.expected, actual))
+				test.Errorf("bad merged policy:\n%s", cmp.Diff(tc.expected, actual))
 			}
 		})
 	}

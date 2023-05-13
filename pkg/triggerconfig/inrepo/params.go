@@ -56,7 +56,7 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 			stepTemplate := ts.StepTemplate
 			created := false
 			if stepTemplate == nil {
-				stepTemplate = &corev1.Container{}
+				stepTemplate = &v1beta1.StepTemplate{}
 				created = true
 			}
 			stepTemplate.Env = useParameterEnvVars(stepTemplate.Env, parameters)

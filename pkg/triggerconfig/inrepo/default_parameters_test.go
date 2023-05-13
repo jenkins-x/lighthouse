@@ -3,7 +3,6 @@ package inrepo
 import (
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/assert"
@@ -43,20 +42,20 @@ func TestDefaultFinallyParameters(t *testing.T) {
 				Tasks: []v1beta1.PipelineTask{{
 					Name: "maintask",
 					TaskSpec: &v1beta1.EmbeddedTask{TaskSpec: v1beta1.TaskSpec{
-						Steps: []v1beta1.Step{{Container: v1.Container{
+						Steps: []v1beta1.Step{{
 							Name:  "mystep",
 							Image: "myimage",
-						}}},
+						}},
 					}},
 				}},
 
 				Finally: []v1beta1.PipelineTask{{
 					Name: "i-should-have-parameters",
 					TaskSpec: &v1beta1.EmbeddedTask{TaskSpec: v1beta1.TaskSpec{
-						Steps: []v1beta1.Step{{Container: v1.Container{
+						Steps: []v1beta1.Step{{
 							Name:  "finallystep",
 							Image: "finallyimage",
-						}}},
+						}},
 					}},
 				}},
 			},

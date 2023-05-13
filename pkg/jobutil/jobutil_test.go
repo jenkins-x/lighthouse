@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +34,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 var (
@@ -503,13 +503,13 @@ func TestNewLighthouseJob(t *testing.T) {
 			os.Setenv("GIT_KIND", testCase.gitKind)
 			pj := NewLighthouseJob(testCase.spec, testCase.labels, testCase.annotations)
 			if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-				t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, cmp.Diff(actual, expected))
 			}
 			if actual, expected := pj.Labels, testCase.expectedLabels; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, cmp.Diff(actual, expected))
 			}
 			if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-				t.Errorf("%s: incorrect PipelineOptions annotations created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+				t.Errorf("%s: incorrect PipelineOptions annotations created: %s", testCase.name, cmp.Diff(actual, expected))
 			}
 		})
 	}
@@ -552,10 +552,10 @@ func TestNewLighthouseJobWithAnnotations(t *testing.T) {
 	for _, testCase := range testCases {
 		pj := NewLighthouseJob(testCase.spec, nil, testCase.annotations)
 		if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, cmp.Diff(actual, expected))
 		}
 		if actual, expected := pj.Annotations, testCase.expectedAnnotations; !reflect.DeepEqual(actual, expected) {
-			t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, diff.ObjectReflectDiff(actual, expected))
+			t.Errorf("%s: incorrect PipelineOptions labels created: %s", testCase.name, cmp.Diff(actual, expected))
 		}
 	}
 }
@@ -600,7 +600,7 @@ func TestCreateRefs(t *testing.T) {
 		},
 	}
 	if actual := createRefs(pr, "abcdef", "refs/pull/%d/head"); !reflect.DeepEqual(expected, actual) {
-		t.Errorf("diff between expected and actual refs:%s", diff.ObjectReflectDiff(expected, actual))
+		t.Errorf("diff between expected and actual refs:%s", cmp.Diff(expected, actual))
 	}
 }
 

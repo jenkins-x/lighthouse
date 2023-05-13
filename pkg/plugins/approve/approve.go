@@ -389,7 +389,10 @@ func handle(log *logrus.Entry, spc scmProviderClient, repo approvers.Repo, baseU
 	for _, label := range issueLabels {
 		if strings.ToLower(label.Name) == strings.ToLower(labels.Approved) {
 			hasApprovedLabel = true
-			break
+		}
+		if opts.IgnoreUpdateBotLabel() && strings.ToLower(label.Name) == strings.ToLower(labels.UpdateBot) {
+			log.Info("updatebot label found, skipping approval process")
+			return nil
 		}
 	}
 	botName, err := spc.BotName()
