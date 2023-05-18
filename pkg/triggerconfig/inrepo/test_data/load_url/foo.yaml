@@ -18,4 +18,5 @@ spec:
                   memory: 200Mi
               workingDir: /workspace/source
   serviceAccountName: tekton-bot
-  timeout: 0h20m0s
+  timeouts:
+    pipeline: 20m

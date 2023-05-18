@@ -340,7 +340,7 @@ Now that we have Lighthouse installed, we can create a sample project and config
     kubectl apply -n $install_namespace -f https://raw.githubusercontent.com/tektoncd/catalog/master/task/buildpacks/0.1/buildpacks.yaml  
     ```
 
-- Now you can create the actual Tektone Pipeline
+- Now you can create the actual Tekton Pipeline
 
     ```bash
     docker_user=<docker-hub-user>
@@ -357,7 +357,7 @@ Now that we have Lighthouse installed, we can create a sample project and config
       - name: github
       - name: dockerhub
     ---
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     kind: PipelineResource
     metadata:
       name: buildpacks-app-image

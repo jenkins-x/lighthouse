@@ -7,9 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	fbfake "github.com/jenkins-x/lighthouse/pkg/filebrowser/fake"
-
-	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 
 	"github.com/stretchr/testify/assert"
@@ -29,8 +26,6 @@ func TestLoadPipelineRunTest(t *testing.T) {
 	sourceDir := filepath.Join("test_data", "load_pipelinerun")
 	fs, err := os.ReadDir(sourceDir)
 	require.NoError(t, err, "failed to read source Dir %s", sourceDir)
-
-	fileBrowser := fbfake.NewFakeFileBrowser("test_data", true)
 
 	// lets use a custom version stream sha
 	os.Setenv("LIGHTHOUSE_VERSIONSTREAM_JENKINS_X_JX3_PIPELINE_CATALOG", "myversionstreamref")
@@ -63,23 +58,9 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			continue
 		}
 
-		sourceURL := filebrowser.GitHubURL
-		if name == "uses-steps-custom-git" {
-			sourceURL = "https://my.gitserver.com"
-		}
-		fileBrowsers, err := filebrowser.NewFileBrowsers(sourceURL, fileBrowser)
 		require.NoError(t, err, "failed to create filebrowsers")
-		fc := filebrowser.NewFetchCache()
-
-		resolver := &UsesResolver{
-			FileBrowsers:     fileBrowsers,
-			FetchCache:       fc,
-			OwnerName:        "myorg",
-			LocalFileResolve: true,
-		}
 
 		dir := filepath.Join(sourceDir, name)
-		resolver.Dir = dir
 
 		i := 0
 		for i <= 10 {
@@ -104,7 +85,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			data, err := os.ReadFile(path)
 			require.NoError(t, err, "failed to load "+message)
 
-			pr, err := LoadTektonResourceAsPipelineRun(resolver, data)
+			pr, err := LoadTektonResourceAsPipelineRun(data, "myorg", "myRepo", "someSha")
 
 			if strings.HasSuffix(name, "-fails") {
 				require.Errorf(t, err, "expected failure for test %s", name)
