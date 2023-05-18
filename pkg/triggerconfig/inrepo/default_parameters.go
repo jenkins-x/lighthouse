@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/tektoncd/pipeline/pkg/apis/config"
-
 	"github.com/pkg/errors"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -104,6 +102,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 	if prs.Annotations != nil && prs.Annotations[DefaultParameters] == "false" {
 		return prs, nil
 	}
+
 	ps := prs.Spec.PipelineSpec
 	if ps == nil {
 		return prs, nil
@@ -126,6 +125,15 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 		}
 	}
 
+	for i := range ps.Params {
+		param := &ps.Params[i]
+		if param.Type == "" {
+			param.Type = "string"
+		}
+
+		ps.Params[i] = *param
+	}
+
 	for i := range ps.Finally {
 		task := &ps.Finally[i]
 		task.Params = addDefaultParameters(task.Params, defaultParameters)
@@ -143,8 +151,6 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 	// lets validate to make sure its valid
 	ctx := context.TODO()
-	// lets enable alpha fields
-	ctx = enableAlphaAPIFields(ctx)
 
 	// lets avoid missing workspaces causing issues
 	if len(prs.Spec.Workspaces) > 0 {
@@ -167,19 +173,6 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 		return prs, errors.Wrapf(err, "failed to validate generated PipelineRun")
 	}
 	return prs, nil
-}
-
-func enableAlphaAPIFields(ctx context.Context) context.Context {
-	featureFlags, _ := config.NewFeatureFlagsFromMap(map[string]string{
-		"enable-api-fields": "alpha",
-	})
-	cfg := &config.Config{
-		Defaults: &config.Defaults{
-			DefaultTimeoutMinutes: 60,
-		},
-		FeatureFlags: featureFlags,
-	}
-	return config.ToContext(ctx, cfg)
 }
 
 func addDefaultParameterSpecs(params []v1beta1.ParamSpec, defaults []v1beta1.ParamSpec) []v1beta1.ParamSpec {

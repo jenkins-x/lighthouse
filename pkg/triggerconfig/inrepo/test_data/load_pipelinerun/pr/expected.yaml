@@ -33,13 +33,13 @@ spec:
   - name: build_id
     value: "17"
   pipelineRef:
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
   podTemplate: {}
   resources:
   - name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
     resourceRef:
-      apiVersion: tekton.dev/v1alpha1
+      apiVersion: tekton.dev/v1beta1
       name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
   serviceAccountName: tekton-bot
   timeout: 240h0m0s
