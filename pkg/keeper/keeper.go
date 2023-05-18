@@ -1871,7 +1871,7 @@ func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {
 		return nil
 	}
 	gitKind := os.Getenv("GIT_KIND")
-	if gitKind != "bitbucketserver" {
+	if gitKind != "bitbucketserver" && gitKind != "bitbucketcloud" {
 		return nil
 	}
 
