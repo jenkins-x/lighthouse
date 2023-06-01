@@ -240,8 +240,8 @@ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpO
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imdario/mergo v0.3.13 h1:lFzP57bqS/wsqKssCGmtLAb8A0wKjLGrve2q3PPVcBk=
 github.com/imdario/mergo v0.3.13/go.mod h1:4lJ1jqUDcsbIECGy0RUJAXNIhg+6ocWgb1ALK2O4oXg=
-github.com/jenkins-x/go-scm v1.14.4 h1:MMu6yXhP41ImvNsrLlblcR+54KQAY4kXiUUY7f0+RQw=
-github.com/jenkins-x/go-scm v1.14.4/go.mod h1:uWimMe0cHQwPi720m4atIAMKmcG2WjyNe1/TRBc+pBo=
+github.com/jenkins-x/go-scm v1.14.5 h1:WVa1DkW5sBEucNF3EGPw7wp/rZrk1Sa0/BBKvoVBJL8=
+github.com/jenkins-x/go-scm v1.14.5/go.mod h1:uWimMe0cHQwPi720m4atIAMKmcG2WjyNe1/TRBc+pBo=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
