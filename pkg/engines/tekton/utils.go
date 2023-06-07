@@ -126,15 +126,26 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 		}
 	}
 	for _, key := range sets.StringKeySet(env).List() {
-		val := env[key]
-		// TODO: make this handle existing values/substitutions.
-		p.Spec.Params = append(p.Spec.Params, tektonv1beta1.Param{
-			Name: key,
-			Value: tektonv1beta1.ArrayOrString{
-				Type:      tektonv1beta1.ParamTypeString,
-				StringVal: val,
-			},
-		})
+		val := tektonv1beta1.ArrayOrString{
+			Type:      tektonv1beta1.ParamTypeString,
+			StringVal: env[key],
+		}
+		new_param := true
+		// update if param exists
+		for index, param := range p.Spec.Params {
+			if param.Name == key {
+				p.Spec.Params[index].Value = val
+				new_param = false
+				break
+			}
+		}
+		// append if new param
+		if new_param {
+			p.Spec.Params = append(p.Spec.Params, tektonv1beta1.Param{
+				Name:  key,
+				Value: val,
+			})
+		}
 	}
 	return &p, nil
 }
