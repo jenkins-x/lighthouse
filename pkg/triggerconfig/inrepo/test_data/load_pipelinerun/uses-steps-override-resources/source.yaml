@@ -1,0 +1,20 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: cheese
+spec:
+  pipelineSpec:
+    tasks:
+    - name: from-build-pack
+      taskSpec:
+        stepTemplate:
+          resources:
+            requests:
+              cpu: 600m
+          volumeMounts:
+          - mountPath: /tekton/home/npm-something-else
+            name: npmrc
+          workingDir: /workspace/my-source
+        steps:
+        - image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@1d39235ee9235d7d52d4025a8e59cb8bda04306a
+

@@ -1,0 +1,140 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/defaultParameters: "false"
+  creationTimestamp: null
+  name: cheese
+spec:
+  pipelineSpec:
+    tasks:
+    - name: cheese
+      taskSpec:
+        metadata: {}
+        spec: null
+        stepTemplate:
+          name: ""
+          resources:
+            requests:
+              cpu: 400m
+              memory: 512Mi
+          volumeMounts:
+          - mountPath: /home/jenkins
+            name: workspace-volume
+          - mountPath: /etc/podinfo
+            name: podinfo
+            readOnly: true
+          workingDir: /workspace/source
+        steps:
+        - args:
+          - -c
+          - 'mkdir -p $HOME; git config --global --add user.name ${GIT_AUTHOR_NAME:-jenkins-x-bot};
+            git config --global --add user.email ${GIT_AUTHOR_EMAIL:-jenkins-x@googlegroups.com};
+            git config --global credential.helper store; git clone $(params.REPO_URL)
+            $(params.subdirectory); echo cloned url: $(params.REPO_URL) to dir: $(params.subdirectory);
+            cd $(params.subdirectory); git checkout $(params.PULL_PULL_SHA); echo
+            checked out revision: $(params.PULL_PULL_SHA) to dir: $(params.subdirectory)'
+          command:
+          - /bin/sh
+          image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
+          name: git-clone
+          resources: {}
+          workingDir: /workspace
+        - args:
+          - gitops
+          - git
+          - setup
+          - --namespace
+          - jx-git-operator
+          command:
+          - jx
+          image: gcr.io/jenkinsxio/jx-cli:latest
+          name: git-setup
+          resources: {}
+          workingDir: /workspace
+        - args:
+          - '[ -d /builder/home ] || mkdir -p /builder && ln -s /tekton/home /builder/home'
+          command:
+          - /bin/sh
+          - -c
+          image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
+          name: setup-builder-home
+          resources: {}
+        - args:
+          - step
+          - git
+          - merge
+          - --verbose
+          - --baseSHA
+          - $(params.PULL_BASE_SHA)
+          - --sha
+          - $(params.PULL_PULL_SHA)
+          - --baseBranch
+          - $(params.PULL_BASE_REF)
+          command:
+          - jx
+          image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
+          name: git-merge
+          resources: {}
+        - args:
+          - gitops
+          - variables
+          command:
+          - jx
+          image: gcr.io/jenkinsxio/jx-cli:latest
+          name: jx-variables
+          resources: {}
+        - args:
+          - jx step credential -s npm-token -k file -f /builder/home/.npmrc --optional=true
+          command:
+          - /bin/sh
+          - -c
+          image: gcr.io/jenkinsxio/builder-nodejs:2.1.150-769
+          name: build-npmrc
+          resources: {}
+        - args:
+          - npm install
+          command:
+          - /bin/sh
+          - -c
+          image: gcr.io/jenkinsxio/builder-nodejs:2.1.150-769
+          name: build-npm-install
+          resources: {}
+        - args:
+          - CI=true DISPLAY=:99 npm test
+          command:
+          - /bin/sh
+          - -c
+          image: gcr.io/jenkinsxio/builder-nodejs:2.1.150-769
+          name: build-npm-test
+          resources: {}
+        - args:
+          - source .jx/variables.sh && cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson
+            /kaniko/.docker/config.json && /kaniko/executor $KANIKO_FLAGS --cache=true
+            --cache-dir=/workspace --context=/workspace/source --dockerfile=/workspace/source/Dockerfile
+            --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
+            --cache-repo=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/cache
+          command:
+          - /busybox/sh
+          - -c
+          image: gcr.io/jenkinsxio/kaniko:0.0.5
+          name: build-container-build
+          resources: {}
+        - args:
+          - source /workspace/source/.jx/variables.sh && jx preview create
+          command:
+          - /bin/bash
+          - -c
+          image: gcr.io/jenkinsxio/jx-cli:latest
+          name: promote-jx-preview
+          resources: {}
+        volumes:
+        - emptyDir: {}
+          name: workspace-volume
+        - downwardAPI:
+            items:
+            - fieldRef:
+                fieldPath: metadata.labels
+              path: labels
+          name: podinfo
+status: {}
