@@ -104,10 +104,6 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			data, err := os.ReadFile(path)
 			require.NoError(t, err, "failed to load "+message)
 
-			if strings.Contains(path, "custom-git") {
-				fmt.Printf("here!")
-			}
-
 			pr, err := LoadTektonResourceAsPipelineRun(resolver, data)
 
 			if strings.HasSuffix(name, "-fails") {

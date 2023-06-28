@@ -2,6 +2,7 @@ package inrepo
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -33,7 +34,7 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 	ps := loc.PipelineSpec
 	if ps != nil {
 		ps.Params = useParameterSpecs(ctx, ps.Params, parameterSpecs)
-		ps.Results = usePipelineResults(ps.Results, results)
+		ps.Results = usePipelineResults(ps.Results, results, loc.TaskName)
 		ps.Workspaces = usePipelineWorkspaces(ps.Workspaces, uses.Workspaces)
 	}
 	pt := loc.PipelineTask
@@ -169,7 +170,7 @@ func useParameterEnvVars(env []corev1.EnvVar, uses []v1beta1.Param) []corev1.Env
 	return env
 }
 
-func usePipelineResults(results []v1beta1.PipelineResult, uses []v1beta1.TaskResult) []v1beta1.PipelineResult {
+func usePipelineResults(results []v1beta1.PipelineResult, uses []v1beta1.TaskResult, taskName string) []v1beta1.PipelineResult {
 	for _, u := range uses {
 		found := false
 		for i := range results {
@@ -186,6 +187,7 @@ func usePipelineResults(results []v1beta1.PipelineResult, uses []v1beta1.TaskRes
 			results = append(results, v1beta1.PipelineResult{
 				Name:        u.Name,
 				Description: u.Description,
+				Value:       *v1beta1.NewStructuredValues(fmt.Sprintf("$(tasks.%s.results.%s)", taskName, u.Name)),
 			})
 		}
 	}

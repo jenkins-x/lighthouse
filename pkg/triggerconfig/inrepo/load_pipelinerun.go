@@ -122,7 +122,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*tekt
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal PipelineRun YAML %s", message)
 		}
-		prs.Spec.PipelineSpec.Results = []tektonv1beta1.PipelineResult{}
+
 		re, err := loadTektonRefsFromFilesPattern(prs)
 		if err != nil {
 			return prs, err
