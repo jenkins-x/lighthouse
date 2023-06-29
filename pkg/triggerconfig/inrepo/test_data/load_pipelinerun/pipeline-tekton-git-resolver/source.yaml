@@ -1,0 +1,68 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  creationTimestamp: null
+  name: pullrequest
+spec:
+  pipelineSpec:
+    tasks:
+      - name: git-clone-env-pr
+        taskRef:
+          params:
+            - name: url
+              value: https://github.com/jenkins-x/jx3-pipeline-catalog.git
+            - name: revision
+              value: master
+            - name: pathInRepo
+              value: tasks/git-clone/git-clone-env-pr.yaml
+          resolver: git
+        workspaces:
+          - name: output
+            workspace: pipeline-ws
+      - name: make-pr
+        runAfter:
+          - git-clone-env-pr
+        taskRef:
+          params:
+            - name: url
+              value: https://github.com/jenkins-x/jx3-pipeline-catalog.git
+            - name: revision
+              value: master
+            - name: pathInRepo
+              value: tasks/environment/pullrequest/make-pr.yaml
+          resolver: git
+        workspaces:
+          - name: output
+            workspace: pipeline-ws
+      - name: kubetest
+        runAfter:
+          - make-pr
+        taskRef:
+          params:
+            - name: url
+              value: https://github.com/jenkins-x/jx3-pipeline-catalog.git
+            - name: revision
+              value: master
+            - name: pathInRepo
+              value: tasks/kubetest/environment.yaml
+          resolver: git
+        workspaces:
+          - name: output
+            workspace: pipeline-ws
+    workspaces:
+      - name: pipeline-ws
+  serviceAccountName: tekton-bot
+  timeout: 12h0m0s
+  workspaces:
+    - name: pipeline-ws
+      volumeClaimTemplate:
+        metadata:
+          creationTimestamp: null
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+        status: {}
+status: {}
