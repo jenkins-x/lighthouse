@@ -18,15 +18,17 @@ package trigger
 
 import (
 	"fmt"
-	"net/url"
-
 	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"net/url"
 )
 
 func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error {
@@ -46,14 +48,19 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 		if err != nil {
 			return fmt.Errorf("could not check membership: %s", err)
 		}
-		if member {
-			c.Logger.Infof("Author %q is a member, Starting all jobs for new PR.", author)
-			return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
+		if !member {
+			c.Logger.Infof("Author is not a member, Welcome message to PR author %q.", author)
+			if err = welcomeMsg(c.SCMProviderClient, trigger, pr.PullRequest); err != nil {
+				return fmt.Errorf("could not welcome non-org member %q: %v", author, err)
+			}
+			return nil
 		}
-		c.Logger.Infof("Author is not a member, Welcome message to PR author %q.", author)
-		if err := welcomeMsg(c.SCMProviderClient, trigger, pr.PullRequest); err != nil {
-			return fmt.Errorf("could not welcome non-org member %q: %v", author, err)
+
+		if err = infoMsg(c, pr.PullRequest); err != nil {
+			return err
 		}
+		c.Logger.Infof("Author %q is a member, Starting all jobs for new PR.", author)
+		return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 	case scm.ActionReopen:
 		// When a PR is reopened, check that the user is in the org or that an org
 		// member had said "/ok-to-test" before building, resulting in label ok-to-test.
@@ -130,6 +137,51 @@ func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHoo
 		return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 	}
 	return nil
+}
+
+func infoMsg(c Client, pr scm.PullRequest) error {
+	if isSyntaxDeprecated := isPipelinesSyntaxDeprecated(c.Config, pr.Repository()); !isSyntaxDeprecated {
+		return nil
+	}
+
+	org, repo, a := orgRepoAuthor(pr)
+	author := string(a)
+
+	comment := fmt.Sprintf(`[jx-info] Hi @%s. We've detected that the pipelines in this repository are using a syntax that will soon be deprecated.
+We'll continue to update you through PRs as we progress. Please check [#8589](https://github.com/jenkins-x/jx/issues/8589) for further information.
+`, author)
+
+	if err := c.SCMProviderClient.CreateComment(org, repo, pr.Number, true, comment); err != nil {
+		return errors.Wrap(err, "failed to comment info message")
+	}
+	return nil
+}
+
+func isPipelinesSyntaxDeprecated(cfg *config.Config, repo scm.Repository) bool {
+	logger := logrus.WithField("repo", repo.FullName)
+	for _, pre := range cfg.GetPresubmits(repo) {
+		if pre.PipelineRunSpec == nil {
+			err := pre.LoadPipeline(logger)
+			if err != nil {
+				return false
+			}
+		}
+		if pre.IsResolvedWithUsesSyntax {
+			return true
+		}
+	}
+	for _, post := range cfg.GetPostsubmits(repo) {
+		if post.PipelineRunSpec == nil {
+			err := post.LoadPipeline(logger)
+			if err != nil {
+				return false
+			}
+		}
+		if post.IsResolvedWithUsesSyntax {
+			return true
+		}
+	}
+	return false
 }
 
 func welcomeMsg(spc scmProviderClient, trigger *plugins.Trigger, pr scm.PullRequest) error {
