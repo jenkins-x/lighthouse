@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-with-extra-params
+spec:
+  params:
+  - name: pl-param-x
+    type: string
+  - name: pl-param-y
+    type: string
+  tasks:
+  - name: add-params
+    taskRef:
+      name: add-params
+    params:
+    - name: a
+      value: "$(params.pl-param-x)"
+    - name: b
+      value: "$(params.pl-param-y)"

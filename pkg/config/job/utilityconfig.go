@@ -35,4 +35,7 @@ type UtilityConfig struct {
 	// CloneDepth is the depth of the clone that will be used.
 	// A depth of zero will do a full clone.
 	CloneDepth int `json:"clone_depth,omitempty"`
+	// IsResolvedWithUsesSyntax indicates how the pipeline was resolved. Used internally in lighthouse for determining
+	// if the pipeline syntax is deprecated.
+	IsResolvedWithUsesSyntax bool `json:"-"`
 }

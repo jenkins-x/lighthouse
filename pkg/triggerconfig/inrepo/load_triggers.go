@@ -12,6 +12,7 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
 
+	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
@@ -20,14 +21,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/merge"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
-)
-
-var (
-	// VersionStreamVersions allows you to register version stream values of ful repository names in the format
-	// `owner/name` mapping to the version SHA/branch/tag
-	VersionStreamVersions = map[string]string{}
-
-	ignoreUsesCache = os.Getenv("NO_USES_CACHE") == "true"
 )
 
 // MergeTriggers merges the configuration with any `lighthouse.yaml` files in the repository
@@ -163,7 +156,7 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 				return nil, err
 			}
 			r.SetPipelineLoader(func(base *job.Base) error {
-				err = loadJobBaseFromSourcePath(data, base, ownerName, repoName, sourcePath, sha)
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
 				if err != nil {
 					return errors.Wrapf(err, "failed to load source for presubmit %s", r.Name)
 				}
@@ -188,7 +181,7 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 				return nil, err
 			}
 			r.SetPipelineLoader(func(base *job.Base) error {
-				err = loadJobBaseFromSourcePath(data, base, ownerName, repoName, sourcePath, sha)
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
 				if err != nil {
 					return errors.Wrapf(err, "failed to load source for postsubmit %s", r.Name)
 				}
@@ -219,7 +212,7 @@ func loadLocalFile(dir, name, sha string) ([]byte, error) {
 	return nil, nil
 }
 
-func loadJobBaseFromSourcePath(data []byte, j *job.Base, ownerName, repoName, path, sha string) error {
+func loadJobBaseFromSourcePath(data []byte, fileBrowsers *filebrowser.FileBrowsers, fc filebrowser.FetchCache, cache *ResolverCache, j *job.Base, ownerName, repoName, path, sha string) error {
 	if data == nil {
 		_, err := url.ParseRequestURI(path)
 		if err == nil {
@@ -235,21 +228,31 @@ func loadJobBaseFromSourcePath(data []byte, j *job.Base, ownerName, repoName, pa
 		return errors.Errorf("empty file file %s in repo %s/%s for sha %s", path, ownerName, repoName, sha)
 	}
 
-	prs, err := LoadTektonResourceAsPipelineRun(data, ownerName, repoName, sha)
+	if strings.Contains(string(data), "image: uses:") {
+		j.IsResolvedWithUsesSyntax = true
+	}
+
+	dir := filepath.Dir(path)
+
+	message := fmt.Sprintf("in repo %s/%s with sha %s", ownerName, repoName, sha)
+
+	usesResolver := &UsesResolver{
+		FileBrowsers: fileBrowsers,
+		FetchCache:   fc,
+		Cache:        cache,
+		OwnerName:    ownerName,
+		RepoName:     repoName,
+		SHA:          sha,
+		Dir:          dir,
+		Message:      message,
+	}
+
+	prs, err := LoadTektonResourceAsPipelineRun(usesResolver, data)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to unmarshal YAML file %s in repo %s/%s with sha %s", path, ownerName, repoName, sha)
 	}
 	j.PipelineRunSpec = &prs.Spec
 	return nil
-}
-
-// VersionStreamEnvVar creates an environment variable name
-func VersionStreamEnvVar(owner string, repo string) string {
-	envVar := strings.ToUpper(fmt.Sprintf("LIGHTHOUSE_VERSIONSTREAM_%s_%s", owner, repo))
-	envVar = strings.ReplaceAll(envVar, "-", "_")
-	envVar = strings.ReplaceAll(envVar, " ", "_")
-	envVar = strings.ReplaceAll(envVar, ".", "_")
-	return envVar
 }
 
 func getPipelineFromURL(path string) ([]byte, error) {
@@ -275,6 +278,16 @@ func getPipelineFromURL(path string) ([]byte, error) {
 		return nil, errors.Wrapf(err, "failed to read body from URL %s", path)
 	}
 	return data, nil
+}
+
+// IsScmNotFound returns true if the error is a not found error
+func IsScmNotFound(err error) bool {
+	if err != nil {
+		// I think that we should instead rely on the http status (404)
+		// until jenkins-x go-scm is updated t return that in the error this works for github and gitlab
+		return strings.Contains(err.Error(), scm.ErrNotFound.Error())
+	}
+	return false
 }
 
 func basicAuthGit() string {

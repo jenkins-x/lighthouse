@@ -86,7 +86,8 @@ func TestLoadJobFromURL(t *testing.T) {
 		File("test_data/load_url/foo.yaml")
 
 	j := &job.Base{}
-	err := loadJobBaseFromSourcePath(nil, j, "", "", "https://raw.githubusercontent.com/rawlingsj/test/master/foo.yaml", "")
+	fc := filebrowser.NewFetchCache()
+	err := loadJobBaseFromSourcePath(nil, nil, fc, NewResolverCache(), j, "", "", "https://raw.githubusercontent.com/rawlingsj/test/master/foo.yaml", "")
 	assert.NoError(t, err, "should not have an error returned")
 	assert.Equal(t, "jenkinsxio/chuck:0.0.1", j.PipelineRunSpec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Image, "image name for task is not correct")
 }

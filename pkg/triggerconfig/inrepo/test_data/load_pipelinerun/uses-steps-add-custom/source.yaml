@@ -1,0 +1,32 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: cheese
+spec:
+  pipelineSpec:
+    tasks:
+    - name: from-build-pack
+      taskSpec:
+        stepTemplate:
+          image: uses:https://raw.githubusercontent.com/jenkins-x/jx3-pipeline-catalog/1d39235ee9235d7d52d4025a8e59cb8bda04306a/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml
+        steps:
+        - image: node:12-slim
+          name: my-first-step
+          script: |
+            #!/bin/sh
+            npm first thing
+        - name: jx-variables
+        - name: build-npm-install
+        - name: build-npm-test
+        - image: node:12-slim
+          name: my-pre-build-container
+          script: |
+            #!/bin/sh
+            npm pre build container
+        - name: build-container-build
+        - name: promote-jx-preview
+        - image: node:12-slim
+          name: my-final-step
+          script: |
+            #!/bin/sh
+            npm final thing

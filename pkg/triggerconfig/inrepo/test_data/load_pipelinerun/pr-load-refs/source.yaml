@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipelinerun-with-extra-params
+  annotations:
+    lighthouse.jenkins-x.io/loadFileRefs: ".*"
+spec:
+  params:
+  - name: pl-param-x
+    value: "100"
+  - name: pl-param-y
+    value: "200"
+    # the extra parameter
+  - name: pl-param-z
+    value: "300"
+  pipelineRef:
+    name: pipeline-with-extra-params

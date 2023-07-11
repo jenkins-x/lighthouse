@@ -1,0 +1,236 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  creationTimestamp: null
+  name: cheese
+spec:
+  params:
+  - name: BUILD_ID
+    value: ""
+  - name: JOB_NAME
+    value: ""
+  - name: JOB_SPEC
+    value: ""
+  - name: JOB_TYPE
+    value: ""
+  - name: PULL_BASE_REF
+    value: ""
+  - name: PULL_BASE_SHA
+    value: ""
+  - name: PULL_NUMBER
+    value: ""
+  - name: PULL_PULL_REF
+    value: ""
+  - name: PULL_PULL_SHA
+    value: ""
+  - name: PULL_REFS
+    value: ""
+  - name: REPO_NAME
+    value: ""
+  - name: REPO_OWNER
+    value: ""
+  - name: REPO_URL
+    value: ""
+  pipelineSpec:
+    params:
+    - description: the unique build number
+      name: BUILD_ID
+      type: string
+    - description: the name of the job which is the trigger context name
+      name: JOB_NAME
+      type: string
+    - description: the specification of the job
+      name: JOB_SPEC
+      type: string
+    - description: '''the kind of job: postsubmit or presubmit'''
+      name: JOB_TYPE
+      type: string
+    - description: the base git reference of the pull request
+      name: PULL_BASE_REF
+      type: string
+    - description: the git sha of the base of the pull request
+      name: PULL_BASE_SHA
+      type: string
+    - default: ""
+      description: git pull request number
+      name: PULL_NUMBER
+      type: string
+    - default: ""
+      description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+      name: PULL_PULL_REF
+      type: string
+    - default: ""
+      description: git revision to checkout (branch, tag, sha, ref…)
+      name: PULL_PULL_SHA
+      type: string
+    - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+      name: PULL_REFS
+      type: string
+    - description: git repository name
+      name: REPO_NAME
+      type: string
+    - description: git repository owner (user or organisation)
+      name: REPO_OWNER
+      type: string
+    - description: git url to clone
+      name: REPO_URL
+      type: string
+    tasks:
+    - name: from-build-pack
+      params:
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      taskSpec:
+        metadata: {}
+        params:
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - default: ""
+          description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
+        spec: null
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources:
+            requests:
+              cpu: 400m
+              memory: 512Mi
+          volumeMounts:
+          - mountPath: /tekton/home/npm
+            name: npmrc
+          workingDir: /workspace/source
+        steps:
+        - image: gcr.io/jenkinsxio/jx-boot:3.1.155
+          name: jx-variables
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            jx gitops variables
+        - image: node:12-slim
+          name: build-npm-install
+          resources: {}
+          script: |
+            #!/bin/sh
+            npm install
+        - image: node:12-slim
+          name: build-npm-test
+          resources: {}
+          script: |
+            #!/bin/sh
+            CI=true DISPLAY=:99 npm test
+        - image: gcr.io/kaniko-project/executor:debug-v1.3.0
+          name: build-container-build
+          resources: {}
+          script: |
+            #!/busybox/sh
+            source .jx/variables.sh
+            cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
+        - image: gcr.io/jenkinsxio/jx-preview:0.0.143
+          name: promote-jx-preview
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+            jx preview create
+        - image: ghcr.io/jenkins-x/jx-updatebot:0.0.82
+          name: promote-release
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+            jx updatebot argo promote --target-git-url https://github.com/myorg/my-staging-repo
+        volumes:
+        - name: npmrc
+          secret:
+            optional: true
+            secretName: npmrc
+status: {}

@@ -1,0 +1,1003 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/loadFileRefs: .*
+  creationTimestamp: null
+  name: demo-pipeline
+spec:
+  pipelineSpec:
+    params:
+    - default: gcr.io/christiewilson-catfactory
+      name: image-registry
+    - description: the unique build number
+      name: BUILD_ID
+      type: string
+    - description: the name of the job which is the trigger context name
+      name: JOB_NAME
+      type: string
+    - description: the specification of the job
+      name: JOB_SPEC
+      type: string
+    - description: '''the kind of job: postsubmit or presubmit'''
+      name: JOB_TYPE
+      type: string
+    - description: the base git reference of the pull request
+      name: PULL_BASE_REF
+      type: string
+    - description: the git sha of the base of the pull request
+      name: PULL_BASE_SHA
+      type: string
+    - default: ""
+      description: git pull request number
+      name: PULL_NUMBER
+      type: string
+    - default: ""
+      description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+      name: PULL_PULL_REF
+      type: string
+    - default: ""
+      description: git revision to checkout (branch, tag, sha, ref…)
+      name: PULL_PULL_SHA
+      type: string
+    - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+      name: PULL_REFS
+      type: string
+    - description: git repository name
+      name: REPO_NAME
+      type: string
+    - description: git repository owner (user or organisation)
+      name: REPO_OWNER
+      type: string
+    - description: git url to clone
+      name: REPO_URL
+      type: string
+    tasks:
+    - name: fetch-from-git
+      params:
+      - name: url
+        value: https://github.com/GoogleContainerTools/skaffold
+      - name: revision
+        value: v0.32.0
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      taskSpec:
+        metadata: {}
+        params:
+        - description: git url to clone
+          name: url
+          type: string
+        - default: master
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: revision
+          type: string
+        - default: "true"
+          description: defines if the resource should initialize and fetch the submodules
+          name: submodules
+          type: string
+        - default: "1"
+          description: performs a shallow clone where only the most recent commit(s)
+            will be fetched
+          name: depth
+          type: string
+        - default: "true"
+          description: defines if http.sslVerify should be set to true or false in
+            the global git config
+          name: sslVerify
+          type: string
+        - default: ""
+          description: subdirectory inside the "output" workspace to clone the git
+            repo into
+          name: subdirectory
+          type: string
+        - default: "false"
+          description: clean out the contents of the repo's destination directory
+            (if it already exists) before trying to clone the repo there
+          name: deleteExisting
+          type: string
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - default: ""
+          description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
+        results:
+        - description: The precise commit SHA that was fetched by this Task
+          name: commit
+        spec: null
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
+        steps:
+        - image: ko://github.com/tektoncd/pipeline/cmd/git-init
+          name: clone
+          resources: {}
+          script: |-
+            CHECKOUT_DIR="$(workspaces.output.path)/$(params.subdirectory)"
+            cleandir() {
+              # Delete any existing contents of the repo directory if it exists.
+              #
+              # We don't just "rm -rf $CHECKOUT_DIR" because $CHECKOUT_DIR might be "/"
+              # or the root of a mounted volume.
+              if [[ -d "$CHECKOUT_DIR" ]] ; then
+                # Delete non-hidden files and directories
+                rm -rf "$CHECKOUT_DIR"/*
+                # Delete files and directories starting with . but excluding ..
+                rm -rf "$CHECKOUT_DIR"/.[!.]*
+                # Delete files and directories starting with .. plus any other character
+                rm -rf "$CHECKOUT_DIR"/..?*
+              fi
+            }
+            if [[ "$(params.deleteExisting)" == "true" ]] ; then
+              cleandir
+            fi
+            /ko-app/git-init \
+              -url "$(params.url)" \
+              -revision "$(params.revision)" \
+              -path "$CHECKOUT_DIR" \
+              -sslVerify="$(params.sslVerify)" \
+              -submodules="$(params.submodules)" \
+              -depth="$(params.depth)"
+            cd "$CHECKOUT_DIR"
+            RESULT_SHA="$(git rev-parse HEAD | tr -d '\n')"
+            EXIT_CODE="$?"
+            if [ "$EXIT_CODE" != 0 ]
+            then
+              exit $EXIT_CODE
+            fi
+            # Make sure we don't add a trailing newline to the result!
+            echo -n "$RESULT_SHA" > $(results.commit.path)
+        workspaces:
+        - description: The git repo will be cloned onto the volume backing this workspace
+          name: output
+      workspaces:
+      - name: output
+        workspace: git-source
+    - name: skaffold-unit-tests
+      params:
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      runAfter:
+      - fetch-from-git
+      taskSpec:
+        metadata: {}
+        params:
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - default: ""
+          description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
+        spec: null
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
+        steps:
+        - env:
+          - name: GOPATH
+            value: /workspace/go
+          image: golang
+          name: run-tests
+          resources: {}
+          script: |-
+            # The intention behind this example Task is to run unit test, however we
+            # currently do nothing to ensure that a unit test issue doesn't cause this example
+            # to fail unnecessarily. In the future we could re-introduce the unit tests (since
+            # we are now pinning the version of Skaffold we pull) or use Tekton Pipelines unit tests.
+            echo "pass"
+          workingDir: $(workspaces.source.path)
+        workspaces:
+        - mountPath: /workspace/source/go/src/github.com/GoogleContainerTools/skaffold
+          name: source
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: build-skaffold-web
+      params:
+      - name: IMAGE
+        value: $(params.image-registry)/leeroy-web
+      - name: CONTEXT
+        value: examples/microservices/leeroy-web
+      - name: DOCKERFILE
+        value: $(workspaces.source.path)/examples/microservices/leeroy-web/Dockerfile
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      runAfter:
+      - skaffold-unit-tests
+      taskSpec:
+        metadata: {}
+        params:
+        - description: Name (reference) of the image to build.
+          name: IMAGE
+        - default: ./Dockerfile
+          description: Path to the Dockerfile to build.
+          name: DOCKERFILE
+        - default: ./
+          description: The build context used by Kaniko.
+          name: CONTEXT
+        - default: ""
+          name: EXTRA_ARGS
+        - default: gcr.io/kaniko-project/executor:latest
+          description: The image on which builds will run
+          name: BUILDER_IMAGE
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - default: ""
+          description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
+        results:
+        - description: Digest of the image just built.
+          name: IMAGE_DIGEST
+        spec: null
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
+        steps:
+        - command:
+          - /kaniko/executor
+          - $(params.EXTRA_ARGS)
+          - --dockerfile=$(params.DOCKERFILE)
+          - --context=$(workspaces.source.path)/$(params.CONTEXT)
+          - --destination=$(params.IMAGE)
+          - --oci-layout-path=$(workspaces.source.path)/$(params.CONTEXT)/image-digest
+          env:
+          - name: DOCKER_CONFIG
+            value: /tekton/home/.docker
+          image: $(params.BUILDER_IMAGE)
+          name: build-and-push
+          resources: {}
+          securityContext:
+            runAsUser: 0
+          workingDir: $(workspaces.source.path)
+        - args:
+          - -images=[{"name":"$(params.IMAGE)","type":"image","url":"$(params.IMAGE)","digest":"","OutputImageDir":"$(workspaces.source.path)/$(params.CONTEXT)/image-digest"}]
+          - -terminationMessagePath=$(params.CONTEXT)/image-digested
+          command:
+          - /ko-app/imagedigestexporter
+          image: ko://github.com/tektoncd/pipeline/cmd/imagedigestexporter
+          name: write-digest
+          resources: {}
+          securityContext:
+            runAsUser: 0
+          workingDir: $(workspaces.source.path)
+        - image: stedolan/jq
+          name: digest-to-results
+          resources: {}
+          script: cat $(params.CONTEXT)/image-digested | jq '.[0].value' -rj | tee
+            /tekton/results/IMAGE_DIGEST
+          workingDir: $(workspaces.source.path)
+        workspaces:
+        - name: source
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: build-skaffold-app
+      params:
+      - name: IMAGE
+        value: $(params.image-registry)/leeroy-app
+      - name: CONTEXT
+        value: examples/microservices/leeroy-app
+      - name: DOCKERFILE
+        value: $(workspaces.source.path)/examples/microservices/leeroy-app/Dockerfile
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      runAfter:
+      - skaffold-unit-tests
+      taskSpec:
+        metadata: {}
+        params:
+        - description: Name (reference) of the image to build.
+          name: IMAGE
+        - default: ./Dockerfile
+          description: Path to the Dockerfile to build.
+          name: DOCKERFILE
+        - default: ./
+          description: The build context used by Kaniko.
+          name: CONTEXT
+        - default: ""
+          name: EXTRA_ARGS
+        - default: gcr.io/kaniko-project/executor:latest
+          description: The image on which builds will run
+          name: BUILDER_IMAGE
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - default: ""
+          description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
+        results:
+        - description: Digest of the image just built.
+          name: IMAGE_DIGEST
+        spec: null
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
+        steps:
+        - command:
+          - /kaniko/executor
+          - $(params.EXTRA_ARGS)
+          - --dockerfile=$(params.DOCKERFILE)
+          - --context=$(workspaces.source.path)/$(params.CONTEXT)
+          - --destination=$(params.IMAGE)
+          - --oci-layout-path=$(workspaces.source.path)/$(params.CONTEXT)/image-digest
+          env:
+          - name: DOCKER_CONFIG
+            value: /tekton/home/.docker
+          image: $(params.BUILDER_IMAGE)
+          name: build-and-push
+          resources: {}
+          securityContext:
+            runAsUser: 0
+          workingDir: $(workspaces.source.path)
+        - args:
+          - -images=[{"name":"$(params.IMAGE)","type":"image","url":"$(params.IMAGE)","digest":"","OutputImageDir":"$(workspaces.source.path)/$(params.CONTEXT)/image-digest"}]
+          - -terminationMessagePath=$(params.CONTEXT)/image-digested
+          command:
+          - /ko-app/imagedigestexporter
+          image: ko://github.com/tektoncd/pipeline/cmd/imagedigestexporter
+          name: write-digest
+          resources: {}
+          securityContext:
+            runAsUser: 0
+          workingDir: $(workspaces.source.path)
+        - image: stedolan/jq
+          name: digest-to-results
+          resources: {}
+          script: cat $(params.CONTEXT)/image-digested | jq '.[0].value' -rj | tee
+            /tekton/results/IMAGE_DIGEST
+          workingDir: $(workspaces.source.path)
+        workspaces:
+        - name: source
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: deploy-app
+      params:
+      - name: imageURL
+        value: $(params.image-registry)/leeroy-app@$(tasks.build-skaffold-app.results.IMAGE_DIGEST)
+      - name: path
+        value: $(workspaces.source.path)/examples/microservices/leeroy-app/kubernetes/deployment.yaml
+      - name: yqArg
+        value: -d1
+      - name: yamlPathToImage
+        value: spec.template.spec.containers[0].image
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      taskSpec:
+        metadata: {}
+        params:
+        - description: Path to the manifest to apply
+          name: path
+        - description: Okay this is a hack, but I didn't feel right hard-coding `-d1`
+            down below
+          name: yqArg
+        - description: The path to the image to replace in the yaml manifest (arg
+            to yq)
+          name: yamlPathToImage
+        - description: The URL of the image to deploy
+          name: imageURL
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - default: ""
+          description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
+        spec: null
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
+        steps:
+        - args:
+          - w
+          - -i
+          - $(params.yqArg)
+          - $(params.path)
+          - $(params.yamlPathToImage)
+          - $(params.imageURL)
+          command:
+          - yq
+          image: mikefarah/yq
+          name: replace-image
+          resources: {}
+        - args:
+          - apply
+          - -f
+          - $(params.path)
+          command:
+          - kubectl
+          image: lachlanevenson/k8s-kubectl
+          name: run-kubectl
+          resources: {}
+        workspaces:
+        - name: source
+      workspaces:
+      - name: source
+        workspace: git-source
+    - name: deploy-web
+      params:
+      - name: imageURL
+        value: $(params.image-registry)/leeroy-web@$(tasks.build-skaffold-web.results.IMAGE_DIGEST)
+      - name: path
+        value: $(workspaces.source.path)/examples/microservices/leeroy-web/kubernetes/deployment.yaml
+      - name: yqArg
+        value: -d1
+      - name: yamlPathToImage
+        value: spec.template.spec.containers[0].image
+      - name: BUILD_ID
+        value: $(params.BUILD_ID)
+      - name: JOB_NAME
+        value: $(params.JOB_NAME)
+      - name: JOB_SPEC
+        value: $(params.JOB_SPEC)
+      - name: JOB_TYPE
+        value: $(params.JOB_TYPE)
+      - name: PULL_BASE_REF
+        value: $(params.PULL_BASE_REF)
+      - name: PULL_BASE_SHA
+        value: $(params.PULL_BASE_SHA)
+      - name: PULL_NUMBER
+        value: $(params.PULL_NUMBER)
+      - name: PULL_PULL_REF
+        value: $(params.PULL_PULL_REF)
+      - name: PULL_PULL_SHA
+        value: $(params.PULL_PULL_SHA)
+      - name: PULL_REFS
+        value: $(params.PULL_REFS)
+      - name: REPO_NAME
+        value: $(params.REPO_NAME)
+      - name: REPO_OWNER
+        value: $(params.REPO_OWNER)
+      - name: REPO_URL
+        value: $(params.REPO_URL)
+      taskSpec:
+        metadata: {}
+        params:
+        - description: Path to the manifest to apply
+          name: path
+        - description: Okay this is a hack, but I didn't feel right hard-coding `-d1`
+            down below
+          name: yqArg
+        - description: The path to the image to replace in the yaml manifest (arg
+            to yq)
+          name: yamlPathToImage
+        - description: The URL of the image to deploy
+          name: imageURL
+        - description: the unique build number
+          name: BUILD_ID
+          type: string
+        - description: the name of the job which is the trigger context name
+          name: JOB_NAME
+          type: string
+        - description: the specification of the job
+          name: JOB_SPEC
+          type: string
+        - description: '''the kind of job: postsubmit or presubmit'''
+          name: JOB_TYPE
+          type: string
+        - description: the base git reference of the pull request
+          name: PULL_BASE_REF
+          type: string
+        - description: the git sha of the base of the pull request
+          name: PULL_BASE_SHA
+          type: string
+        - default: ""
+          description: git pull request number
+          name: PULL_NUMBER
+          type: string
+        - default: ""
+          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+          name: PULL_PULL_REF
+          type: string
+        - default: ""
+          description: git revision to checkout (branch, tag, sha, ref…)
+          name: PULL_PULL_SHA
+          type: string
+        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+          name: PULL_REFS
+          type: string
+        - description: git repository name
+          name: REPO_NAME
+          type: string
+        - description: git repository owner (user or organisation)
+          name: REPO_OWNER
+          type: string
+        - description: git url to clone
+          name: REPO_URL
+          type: string
+        spec: null
+        stepTemplate:
+          env:
+          - name: BUILD_ID
+            value: $(params.BUILD_ID)
+          - name: JOB_NAME
+            value: $(params.JOB_NAME)
+          - name: JOB_SPEC
+            value: $(params.JOB_SPEC)
+          - name: JOB_TYPE
+            value: $(params.JOB_TYPE)
+          - name: PULL_BASE_REF
+            value: $(params.PULL_BASE_REF)
+          - name: PULL_BASE_SHA
+            value: $(params.PULL_BASE_SHA)
+          - name: PULL_NUMBER
+            value: $(params.PULL_NUMBER)
+          - name: PULL_PULL_REF
+            value: $(params.PULL_PULL_REF)
+          - name: PULL_PULL_SHA
+            value: $(params.PULL_PULL_SHA)
+          - name: PULL_REFS
+            value: $(params.PULL_REFS)
+          - name: REPO_NAME
+            value: $(params.REPO_NAME)
+          - name: REPO_OWNER
+            value: $(params.REPO_OWNER)
+          - name: REPO_URL
+            value: $(params.REPO_URL)
+          name: ""
+          resources: {}
+        steps:
+        - args:
+          - w
+          - -i
+          - $(params.yqArg)
+          - $(params.path)
+          - $(params.yamlPathToImage)
+          - $(params.imageURL)
+          command:
+          - yq
+          image: mikefarah/yq
+          name: replace-image
+          resources: {}
+        - args:
+          - apply
+          - -f
+          - $(params.path)
+          command:
+          - kubectl
+          image: lachlanevenson/k8s-kubectl
+          name: run-kubectl
+          resources: {}
+        workspaces:
+        - name: source
+      workspaces:
+      - name: source
+        workspace: git-source
+    workspaces:
+    - name: git-source
+status: {}
