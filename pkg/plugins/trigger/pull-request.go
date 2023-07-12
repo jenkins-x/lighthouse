@@ -148,7 +148,7 @@ func infoMsg(c Client, pr scm.PullRequest) error {
 	author := string(a)
 
 	comment := fmt.Sprintf(`[jx-info] Hi @%s. We've detected that the pipelines in this repository are using a syntax that will soon be deprecated.
-We'll continue to update you through PRs as we progress. Please check [#8589](https://github.com/jenkins-x/jx/issues/8589) for further information.
+We'll continue to update you through PRs as we progress. Please check [#8589](https://www.github.com/jenkins-x/jx/issues/8589) for further information.
 `, author)
 
 	if err := c.SCMProviderClient.CreateComment(org, repo, pr.Number, true, comment); err != nil {
