@@ -1,0 +1,30 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: save-results
+  labels:
+    app.kubernetes.io/version: "0.1"
+spec:
+  params:
+  - name: value_to_save
+    type: string
+    default: ""
+  results:
+  - name: "result_value"
+    description: "result_value"
+  stepTemplate:
+    imagePullPolicy: IfNotPresent
+    resources:
+      # override limits for all containers here
+      limits: {}
+    workingDir: /workspace/source
+  steps:
+    - name: save-result
+      image: ubuntu:jammy
+      script: |
+        #!/usr/bin/env sh
+        set -ex
+        result_value="$(params.value_to_save)"
+        echo "results.result_value.path is $(results.result_value.path)"
+        echo -n "${result_value}" > $(results.result_value.path)
+        echo "result_value is ${result_value}"
