@@ -1,0 +1,52 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: jx3-test-save-show-results
+spec:
+  pipelineSpec:
+    tasks:
+      - name: save-results
+        params:
+        - name: value_to_save
+          value: "test_demo"
+        taskSpec:
+          params:
+          - name: value_to_save
+            type: string
+            default: ""
+          results:
+          - name: "result_value"
+            description: "result_value"
+          stepTemplate:
+            imagePullPolicy: IfNotPresent
+            resources:
+              # override limits for all containers here
+              limits: {}
+            workingDir: /workspace/source
+          steps:
+            - image: uses:./test_data/load_pipelinerun/pipeline-params-from-tasks-results/save-results-task.yaml
+              name: ""
+      - name: display-results
+        runAfter:
+          - save-results
+        params:
+        - name: value_to_show
+          value: "$(tasks.save-results.results.result_value)"
+        taskSpec:
+          params:
+          - name: value_to_show
+            type: string
+            default: ""
+          stepTemplate:
+            imagePullPolicy: IfNotPresent
+            resources:
+              # override limits for all containers here
+              limits: {}
+            workingDir: /workspace/source
+          steps:
+            - image: uses:./test_data/load_pipelinerun/pipeline-params-from-tasks-results/show-results-task.yaml
+              name: ""
+  podTemplate: {}
+  serviceAccountName: tekton-bot
+  timeout: 00h30m0s
+status: {}

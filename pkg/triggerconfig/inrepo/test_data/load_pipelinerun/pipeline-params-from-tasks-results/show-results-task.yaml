@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: show-results
+  labels:
+    app.kubernetes.io/version: "0.1"
+spec:
+  params:
+  - name: value_to_show
+    type: string
+    default: ""
+  stepTemplate:
+    imagePullPolicy: IfNotPresent
+    resources:
+      # override limits for all containers here
+      limits: {}
+    workingDir: /workspace/source
+  steps:
+    - name: show-result
+      image: ubuntu:jammy
+      script: |
+        #!/usr/bin/env sh
+        set -ex
+        echo "tasks.save-results.results.result_value is $(tasks.save-results.results.result_value)"
+        value_to_show="$(params.value_to_show)"
+        echo "value_to_show is ${value_to_show}"

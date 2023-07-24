@@ -72,7 +72,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 
 	// lets preserve any parameters, results, workspaces on the ts before overriding...
 	ctx := context.TODO()
-	useTS.Params = useParameterSpecs(ctx, useTS.Params, ts.Params)
+	useTS.Params = useParameterSpecs(ctx, useTS.Params, ts.Params, nil)
 	useTS.Results = useResults(useTS.Results, ts.Results)
 	useTS.Workspaces = useWorkspaces(useTS.Workspaces, ts.Workspaces)
 	useTS.Sidecars = useSidecars(useTS.Sidecars, ts.Sidecars)
