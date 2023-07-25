@@ -28,9 +28,12 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
+	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/plugins/trigger"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,6 +42,7 @@ type Server struct {
 	ClientAgent    *plugins.ClientAgent
 	Plugins        *plugins.ConfigAgent
 	ConfigAgent    *config.Agent
+	PeriodicAgent  *trigger.PeriodicAgent
 	ServerURL      *url.URL
 	TokenGenerator func() []byte
 	Metrics        *Metrics
@@ -214,6 +218,7 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 				}(p, h.PushEventHandler)
 			}
 		}
+		s.PeriodicAgent.UpdatePeriodics(repo.Namespace, repo.Name, agent, pe)
 		l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 	}()
 }
@@ -358,6 +363,36 @@ func (s *Server) handleReviewEvent(l *logrus.Entry, re scm.ReviewHook) {
 	}()
 }
 
+func (s *Server) handleDeploymentStatusEvent(l *logrus.Entry, ds scm.DeploymentStatusHook) {
+	l = l.WithFields(logrus.Fields{
+		scmprovider.OrgLogField:  ds.Repo.Namespace,
+		scmprovider.RepoLogField: ds.Repo.Name,
+	})
+	l.Infof("Deployment %s.", ds.Action)
+
+	// lets invoke the agent creation async as this can take a little while
+	go func() {
+		repo := ds.Repo
+		agent, err := s.CreateAgent(l, repo.Namespace, repo.Name, ds.Deployment.Sha)
+		if err != nil {
+			agent.Logger.WithError(err).Error("Error creating agent for DeploymentStatusEvent.")
+			return
+		}
+		for p, h := range s.getPlugins(ds.Repo.Namespace, ds.Repo.Name) {
+			if h.DeploymentStatusHandler != nil {
+				s.wg.Add(1)
+				go func(p string, h plugins.DeploymentStatusHandler) {
+					defer s.wg.Done()
+					if err := h(agent, ds); err != nil {
+						agent.Logger.WithError(err).Error("Error handling ReviewEvent.")
+					}
+				}(p, h.DeploymentStatusHandler)
+			}
+		}
+	}()
+
+}
+
 func (s *Server) reportErrorToPullRequest(l *logrus.Entry, agent plugins.Agent, repo scm.Repository, pr *scm.PullRequestHook, err error) {
 	fileLink := repo.Link + "/blob/" + pr.PullRequest.Sha + "/"
 	message := "failed to trigger Pull Request pipeline\n" + util.ErrorToMarkdown(err, fileLink)
@@ -392,4 +427,36 @@ func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool 
 		l.Errorf(failedCommentCoerceFmt, "pull_request", action.String())
 		return false
 	}
+}
+
+func (s *Server) initializeFileBrowser(token string, gitCloneUser, gitServerURL string) error {
+	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
+		opts.Token = func() []byte {
+			return []byte(token)
+		}
+		opts.GitUser = func() (name, email string, err error) {
+			name = gitCloneUser
+			return
+		}
+		opts.Username = func() (login string, err error) {
+			login = gitCloneUser
+			return
+		}
+		if s.ServerURL.Host != "" {
+			opts.Host = s.ServerURL.Host
+		}
+		if s.ServerURL.Scheme != "" {
+			opts.Scheme = s.ServerURL.Scheme
+		}
+	}
+	gitFactory, err := gitv2.NewNoMirrorClientFactory(configureOpts)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create git client factory for server %s", gitServerURL)
+	}
+	fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
+	s.FileBrowsers, err = filebrowser.NewFileBrowsers(gitServerURL, fb)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create git filebrowser %s", gitServerURL)
+	}
+	return nil
 }

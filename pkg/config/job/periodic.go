@@ -19,10 +19,11 @@ package job
 // Periodic runs on a timer.
 type Periodic struct {
 	Base
+	Reporter
+	// The branch to build
+	Branch string `json:"branch"`
 	// Cron representation of job trigger time
 	Cron string `json:"cron"`
-	// Tags for config entries
-	Tags []string `json:"tags,omitempty"`
 }
 
 // SetDefaults initializes default values

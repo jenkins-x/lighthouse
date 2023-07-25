@@ -8,16 +8,17 @@ import (
 
 // Plugin defines a plugin and its handlers
 type Plugin struct {
-	Description           string
-	ExcludedProviders     sets.String
-	ConfigHelpProvider    ConfigHelpProvider
-	IssueHandler          IssueHandler
-	PullRequestHandler    PullRequestHandler
-	PushEventHandler      PushEventHandler
-	ReviewEventHandler    ReviewEventHandler
-	StatusEventHandler    StatusEventHandler
-	GenericCommentHandler GenericCommentHandler
-	Commands              []Command
+	Description             string
+	ExcludedProviders       sets.String
+	ConfigHelpProvider      ConfigHelpProvider
+	IssueHandler            IssueHandler
+	PullRequestHandler      PullRequestHandler
+	PushEventHandler        PushEventHandler
+	ReviewEventHandler      ReviewEventHandler
+	StatusEventHandler      StatusEventHandler
+	DeploymentStatusHandler DeploymentStatusHandler
+	GenericCommentHandler   GenericCommentHandler
+	Commands                []Command
 }
 
 // InvokeCommandHandler calls InvokeHandler on all commands

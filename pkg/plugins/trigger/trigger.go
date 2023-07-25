@@ -45,9 +45,10 @@ var plugin = plugins.Plugin{
 	Description: `The trigger plugin starts tests in reaction to commands and pull request events. It is responsible for ensuring that test jobs are only run on trusted PRs. A PR is considered trusted if the author is a member of the 'trusted organization' for the repository or if such a member has left an '/ok-to-test' command on the PR.
 <br>Trigger starts jobs automatically when a new trusted PR is created or when an untrusted PR becomes trusted, but it can also be used to start jobs manually via the '/test' command.
 <br>The '/retest' command can be used to rerun jobs that have reported failure.`,
-	ConfigHelpProvider: configHelp,
-	PullRequestHandler: handlePullRequest,
-	PushEventHandler:   handlePush,
+	ConfigHelpProvider:      configHelp,
+	PullRequestHandler:      handlePullRequest,
+	PushEventHandler:        handlePush,
+	DeploymentStatusHandler: handleDeploymentStatus,
 	Commands: []plugins.Command{{
 		Name:        "ok-to-test",
 		Description: "Marks a PR as 'trusted' and starts tests.",
@@ -73,6 +74,10 @@ var plugin = plugins.Plugin{
 			Invoke(handleGenericCommentEvent).
 			When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
 	}},
+}
+
+func handleDeploymentStatus(agent plugins.Agent, ds scm.DeploymentStatusHook) error {
+	return handleDeployment(getClient(agent), ds)
 }
 
 func init() {

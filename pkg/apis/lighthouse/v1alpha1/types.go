@@ -203,7 +203,7 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 		env[PullRefsEnv] = s.Refs.String()
 	}
 
-	if s.Type == job.PostsubmitJob || s.Type == job.BatchJob {
+	if s.Type != job.PresubmitJob {
 		return env
 	}
 

@@ -23,6 +23,10 @@ type ConfigSpec struct {
 
 	// Postsubmit zero or more postsubmits
 	Postsubmits []job.Postsubmit `json:"postsubmits,omitempty"`
+
+	Periodics []job.Periodic `json:"periodics,omitempty"`
+
+	Deployments []job.Deployment `json:"deployments,omitempty"`
 }
 
 // ConfigList contains a list of Config

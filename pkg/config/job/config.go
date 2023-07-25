@@ -33,7 +33,8 @@ type Config struct {
 	Presubmits  map[string][]Presubmit  `json:"presubmits,omitempty"`
 	Postsubmits map[string][]Postsubmit `json:"postsubmits,omitempty"`
 	// Periodics are not associated with any repo.
-	Periodics []Periodic `json:"periodics,omitempty"`
+	Periodics   []Periodic              `json:"periodics,omitempty"`
+	Deployments map[string][]Deployment `json:"deployments,omitempty"`
 }
 
 func resolvePresets(name string, labels map[string]string, spec *v1.PodSpec, presets []Preset) error {

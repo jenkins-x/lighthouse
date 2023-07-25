@@ -251,6 +251,16 @@ func (c *Config) GetPostsubmits(repository scm.Repository) []job.Postsubmit {
 	return answer
 }
 
+// GetDeployments lets return all the deployments
+func (c *Config) GetDeployments(repository scm.Repository) []job.Deployment {
+	fullNames := util.FullNames(repository)
+	var answer []job.Deployment
+	for _, fn := range fullNames {
+		answer = append(answer, c.Deployments[fn]...)
+	}
+	return answer
+}
+
 // GetPresubmits lets return all the pre submits for the given repo
 func (c *Config) GetPresubmits(repository scm.Repository) []job.Presubmit {
 	fullNames := util.FullNames(repository)
@@ -262,9 +272,9 @@ func (c *Config) GetPresubmits(repository scm.Repository) []job.Presubmit {
 }
 
 // BranchRequirements partitions status contexts for a given org, repo branch into three buckets:
-//  - contexts that are always required to be present
-//  - contexts that are required, _if_ present
-//  - contexts that are always optional
+//   - contexts that are always required to be present
+//   - contexts that are required, _if_ present
+//   - contexts that are always optional
 func BranchRequirements(org, repo, branch string, presubmits map[string][]job.Presubmit) ([]string, []string, []string) {
 	jobs, ok := presubmits[org+"/"+repo]
 	if !ok {
