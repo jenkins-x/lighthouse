@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -218,7 +219,11 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 				}(p, h.PushEventHandler)
 			}
 		}
-		s.PeriodicAgent.UpdatePeriodics(repo.Namespace, repo.Name, agent, pe)
+		// Update periodics from the default branch
+		refBranch := strings.TrimPrefix(pe.Ref, "refs/heads/")
+		if refBranch == pe.Repository().Branch {
+			s.PeriodicAgent.UpdatePeriodics(repo.Namespace, repo.Name, agent, pe)
+		}
 		l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 	}()
 }

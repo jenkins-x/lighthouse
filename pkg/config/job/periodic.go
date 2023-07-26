@@ -20,8 +20,6 @@ package job
 type Periodic struct {
 	Base
 	Reporter
-	// The branch to build
-	Branch string `json:"branch"`
 	// Cron representation of job trigger time
 	Cron string `json:"cron"`
 }

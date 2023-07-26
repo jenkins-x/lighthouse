@@ -37,6 +37,10 @@ func (p PeriodicAgent) UpdatePeriodics(org string, repo string, agent plugins.Ag
 	// Probably better then to just create CronJobs that create LighthouseJobs/PipelineRuns using kubectl/tkn.
 	// Possibly with the Pipeline stored as separate resource and then either have the LighthouseJob refer to it or do tkn pipeline start.
 	// With proper labels these CronJobs/Pipelines could be handled fairly efficiently
+	// So with LighthouseJobs it could be rendered and put in a configmap which is mounted in the cronjob.
+	// Then kubectl apply -f to create the job and then to set the status kubectl patch LighthouseJob myresource --type=merge --subresource status --patch 'status: {state: triggered}'
+	// Would really only need to run StartPeriodics when in a new cluster. How do I know when it is needed? I would
+	// need to store in cluster when StartPeriodics has been run.
 	repoPeriodics := maps.Clone(p.Periodics[fullName])
 	if repoPeriodics == nil {
 		repoPeriodics = make(map[string]PeriodicExec)
@@ -87,9 +91,8 @@ func (p *PeriodicExec) Run() {
 		labels[k] = v
 	}
 	refs := v1alpha1.Refs{
-		Org:     p.Owner,
-		Repo:    p.Repo,
-		BaseRef: p.Branch,
+		Org:  p.Owner,
+		Repo: p.Repo,
 	}
 	l := logrus.WithField(scmprovider.RepoLogField, p.Repo).WithField(scmprovider.OrgLogField, p.Owner)
 
