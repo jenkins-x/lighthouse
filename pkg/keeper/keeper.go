@@ -1779,7 +1779,8 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 
 		prs, err := spc.ListAllPullRequestsForFullNameRepo(repo, searchOpts)
 		if err != nil {
-			return nil, errors.Wrapf(err, "listing all open pull requests for %s", repo)
+			log.WithError(err).Warnf("listing all open pull requests for %s failed, skipping repository", repo)
+			continue
 		}
 
 		var repoData *scm.Repository
