@@ -1,10 +1,14 @@
 package trigger
 
 import (
-	"regexp"
+	"context"
+	"encoding/json"
+	"fmt"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -14,147 +18,424 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/triggerconfig/inrepo"
+	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/exp/maps"
-	"gopkg.in/robfig/cron.v2"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	applybatchv1 "k8s.io/client-go/applyconfigurations/batch/v1"
+	applyv1 "k8s.io/client-go/applyconfigurations/core/v1"
+	kubeclient "k8s.io/client-go/kubernetes"
+	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
+	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 type PeriodicAgent struct {
-	Cron      *cron.Cron
-	Periodics map[string]map[string]PeriodicExec
+	Namespace string
 }
 
-func (p PeriodicAgent) UpdatePeriodics(org string, repo string, agent plugins.Agent, pe *scm.PushHook) {
-	fullName := org + "/" + repo
-	// FIXME Here is a race condition with StartPeriodics so that if StartPeriodics and UpdatePeriodics update
-	// for a repo at the same time a periodic could be scheduled multiple times
-	// Another potential cause for duplicate jobs is that multiple lighthouse webhook processes could run at the same time
-	// StartPeriodics is likely so slow though that the risk for missed jobs are greater though
-	// Ideally an external lock should be used to synchronise, but it is unlikely to work well. It would probably be better to use something external
-	// Maybe integrate with Tekton Triggers, but that would mean another moving part...
-	// https://github.com/tektoncd/triggers/tree/main/examples/v1beta1/cron
-	// Probably better then to just create CronJobs that create LighthouseJobs/PipelineRuns using kubectl/tkn.
-	// Possibly with the Pipeline stored as separate resource and then either have the LighthouseJob refer to it or do tkn pipeline start.
-	// With proper labels these CronJobs/Pipelines could be handled fairly efficiently
-	// So with LighthouseJobs it could be rendered and put in a configmap which is mounted in the cronjob.
-	// Then kubectl apply -f to create the job and then to set the status kubectl patch LighthouseJob myresource --type=merge --subresource status --patch 'status: {state: triggered}'
-	// Would really only need to run StartPeriodics when in a new cluster. How do I know when it is needed? I would
-	// need to store in cluster when StartPeriodics has been run.
-	repoPeriodics := maps.Clone(p.Periodics[fullName])
-	if repoPeriodics == nil {
-		repoPeriodics = make(map[string]PeriodicExec)
-		p.Periodics[fullName] = repoPeriodics
+const fieldManager = "lighthouse"
+const initializedField = "isPeriodicsInitialized"
+const initStartedField = "periodicsInitializationStarted"
+
+func (pa *PeriodicAgent) UpdatePeriodics(kc kubeclient.Interface, agent plugins.Agent, pe *scm.PushHook) {
+	repo := pe.Repository()
+	fullName := repo.FullName
+	l := logrus.WithField(scmprovider.RepoLogField, repo.Name).WithField(scmprovider.OrgLogField, repo.Namespace)
+	if !hasChanges(pe, agent) {
+		return
 	}
-	l := logrus.WithField(scmprovider.RepoLogField, repo).WithField(scmprovider.OrgLogField, org)
-	for _, periodic := range agent.Config.Periodics {
-		exec, exists := repoPeriodics[periodic.Name]
-		if !exists || hasChanged(exec.Periodic, periodic, pe, l) {
-			// New or changed. Changed will have old entry removed below
-			addPeriodic(l, periodic, org, repo, agent.LauncherClient, p.Cron, fullName, p.Periodics[fullName])
-		} else {
-			// Nothing to change
-			delete(repoPeriodics, periodic.Name)
+	cmInterface := kc.CoreV1().ConfigMaps(pa.Namespace)
+	cjInterface := kc.BatchV1().CronJobs(pa.Namespace)
+	cmList, cronList, done := pa.getExistingResources(l, cmInterface, cjInterface,
+		fmt.Sprintf("app=lighthouse-webhooks,component=periodic,repo=%s,trigger", fullName))
+	if done {
+		return
+	}
+
+	getExistingConfigMap := func(p job.Periodic) *corev1.ConfigMap {
+		for i, cm := range cmList.Items {
+			if cm.Labels["trigger"] == p.Name {
+				cmList.Items[i] = corev1.ConfigMap{}
+				return &cm
+			}
+		}
+		return nil
+	}
+	getExistingCron := func(p job.Periodic) *batchv1.CronJob {
+		for i, cj := range cronList.Items {
+			if cj.Labels["trigger"] == p.Name {
+				cronList.Items[i] = batchv1.CronJob{}
+				return &cj
+			}
+		}
+		return nil
+	}
+
+	if pa.UpdatePeriodicsForRepo(
+		agent.Config.Periodics,
+		fullName,
+		l,
+		getExistingConfigMap,
+		getExistingCron,
+		repo.Namespace,
+		repo.Name,
+		cmInterface,
+		cjInterface) {
+		return
+	}
+
+	for _, cj := range cronList.Items {
+		if cj.Name != "" {
+			deleteCronJob(cjInterface, &cj)
 		}
 	}
-	// Deschedule periodic no longer found in repo
-	for _, periodic := range repoPeriodics {
-		p.Cron.Remove(periodic.EntryID)
+	for _, cm := range cmList.Items {
+		if cm.Name != "" {
+			deleteConfigMap(cmInterface, &cm)
+		}
 	}
 }
 
-// hasChanged return true if any fields have changed except pipelineLoader and PipelineRunSpec since lazyLoading means you can't compare these
-// Also check if the file pointed to by SourcePath has changed
-func hasChanged(existing, imported job.Periodic, pe *scm.PushHook, l *logrus.Entry) bool {
-	if !cmp.Equal(existing, imported, cmpopts.IgnoreFields(job.Periodic{}, "pipelineLoader", "PipelineRunSpec")) {
+// hasChanges return true if any triggers.yaml or file pointed to by SourcePath has changed
+func hasChanges(pe *scm.PushHook, agent plugins.Agent) bool {
+	changedFiles, err := listPushEventChanges(*pe)()
+	if err != nil {
+		return false
+	}
+	lighthouseFiles := make(map[string]bool)
+	for _, changedFile := range changedFiles {
+		if strings.HasPrefix(changedFile, ".lighthouse/") {
+			_, changedFile = filepath.Split(changedFile)
+			if changedFile == "triggers.yaml" {
+				return true
+			}
+			lighthouseFiles[changedFile] = true
+		}
+	}
+	for _, p := range agent.Config.Periodics {
+		_, sourcePath := filepath.Split(p.SourcePath)
+		if lighthouseFiles[sourcePath] {
+			return true
+		}
+	}
+	return false
+}
+
+func (pa *PeriodicAgent) PeriodicsInitialized(namespace string, kc kubeclient.Interface) bool {
+	cmInterface := kc.CoreV1().ConfigMaps(namespace)
+	cm, err := cmInterface.Get(context.TODO(), util.ProwConfigMapName, metav1.GetOptions{})
+	if err != nil {
+		logrus.Errorf("Can't get ConfigMap config. Can't check if periodics as initialized")
 		return true
 	}
-	// Since We don't know which directory SourcePath is relative to we check for any file with that name
-	changeMatcher := job.RegexpChangeMatcher{RunIfChanged: regexp.QuoteMeta(existing.SourcePath)}
-	_, run, err := changeMatcher.ShouldRun(listPushEventChanges(*pe))
+	isInit := cm.Data[initializedField]
+	if "true" == isInit {
+		return true
+	}
+	if isInit == "pending" {
+		initStarted, err := strconv.ParseInt(cm.Data[initStartedField], 10, 64)
+		// If started less than 24 hours ago we assume it still goes on so return true
+		if err == nil && time.Unix(initStarted, 0).Before(time.Now().Add(-24*time.Hour)) {
+			return true
+		}
+	}
+	cmApply, err := applyv1.ExtractConfigMap(cm, fieldManager)
+	cmApply.Data[initializedField] = "pending"
+	cm.Data[initStartedField] = strconv.FormatInt(time.Now().Unix(), 10)
+	_, err = cmInterface.Apply(context.TODO(), cmApply, metav1.ApplyOptions{FieldManager: "lighthouse"})
 	if err != nil {
-		l.WithError(err).Warnf("Can't determine if %s has changed, assumes it hasn't", existing.SourcePath)
+		// Somebody else has updated the configmap, so don't initialize periodics now
+		return true
 	}
-	return run
+	return false
 }
 
-type PeriodicExec struct {
-	job.Periodic
-	Owner, Repo    string
-	LauncherClient launcher
-	EntryID        cron.EntryID
-}
-
-func (p *PeriodicExec) Run() {
-	labels := make(map[string]string)
-	for k, v := range p.Labels {
-		labels[k] = v
-	}
-	refs := v1alpha1.Refs{
-		Org:  p.Owner,
-		Repo: p.Repo,
-	}
-	l := logrus.WithField(scmprovider.RepoLogField, p.Repo).WithField(scmprovider.OrgLogField, p.Owner)
-
-	pj := jobutil.NewLighthouseJob(jobutil.PeriodicSpec(l, p.Periodic, refs), labels, p.Annotations)
-	l.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
-	_, err := p.LauncherClient.Launch(&pj)
-	if err != nil {
-		l.WithError(err).Error("Failed to create lighthouse job for cron ")
-	}
-}
-
-func StartPeriodics(configAgent *config.Agent, launcher launcher, fileBrowsers *filebrowser.FileBrowsers, periodicAgent *PeriodicAgent) {
-	cronAgent := cron.New()
-	periodicAgent.Cron = cronAgent
-	periodics := make(map[string]map[string]PeriodicExec)
-	periodicAgent.Periodics = periodics
+func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgent *config.Agent, fileBrowsers *filebrowser.FileBrowsers) {
+	// TODO: Add lock so 2 InitializePeriodics can't run at the same time
 	resolverCache := inrepo.NewResolverCache()
 	fc := filebrowser.NewFetchCache()
 	c := configAgent.Config()
-	for fullName := range c.InRepoConfig.Enabled {
-		repoPeriodics := make(map[string]PeriodicExec)
+	cmInterface := kc.CoreV1().ConfigMaps(pa.Namespace)
+	cjInterface := kc.BatchV1().CronJobs(pa.Namespace)
+	cmList, cronList, done := pa.getExistingResources(nil, cmInterface, cjInterface, "app=lighthouse-webhooks,component=periodic,repo,trigger")
+	if done {
+		return
+	}
+	cmMap := make(map[string]map[string]*corev1.ConfigMap)
+	for _, cm := range cmList.Items {
+		cmMap[cm.Labels["repo"]][cm.Labels["trigger"]] = &cm
+	}
+	cronMap := make(map[string]map[string]*batchv1.CronJob)
+	for _, cronjob := range cronList.Items {
+		cronMap[cronjob.Labels["repo"]][cronjob.Labels["trigger"]] = &cronjob
+	}
+
+	for fullName := range filterPeriodics(c.InRepoConfig.Enabled, configAgent) {
+		repoCronJobs, repoCronExists := cronMap[fullName]
+		repoCM, repoCmExists := cmMap[fullName]
 		org, repo := scm.Split(fullName)
 		if org == "" {
 			logrus.Errorf("Wrong format of %s, not owner/repo", fullName)
 			continue
 		}
 		l := logrus.WithField(scmprovider.RepoLogField, repo).WithField(scmprovider.OrgLogField, org)
-		// TODO use github code search to see if any periodics exists before loading?
-		// in:file filename:trigger.yaml path:.lighthouse repo:fullName periodics
-		// Would need to accommodate for rate limit since only 10 searches per minute are allowed
-		// This should make the next TODO less important since not as many clones would be created
 		// TODO Ensure that the repo clones are removed and deregistered as soon as possible
+		// One solution would be to run InitializePeriodics in a separate job
 		cfg, err := inrepo.LoadTriggerConfig(fileBrowsers, fc, resolverCache, org, repo, "")
 		if err != nil {
 			l.Error(errors.Wrapf(err, "failed to calculate in repo config"))
+			// Keeping existing cronjobs if trigger config can not be read
+			delete(cronMap, fullName)
+			delete(cmMap, fullName)
 			continue
 		}
-
-		for _, periodic := range cfg.Spec.Periodics {
-			addPeriodic(l, periodic, org, repo, launcher, cronAgent, fullName, repoPeriodics)
+		getExistingCron := func(p job.Periodic) *batchv1.CronJob {
+			if repoCronExists {
+				cj, cjExists := repoCronJobs[p.Name]
+				if cjExists {
+					delete(repoCronJobs, p.Name)
+					return cj
+				}
+			}
+			return nil
 		}
-		if len(repoPeriodics) > 0 {
-			periodics[fullName] = repoPeriodics
+
+		getExistingConfigMap := func(p job.Periodic) *corev1.ConfigMap {
+			if repoCmExists {
+				cm, cmExist := repoCM[p.Name]
+				if cmExist {
+					delete(repoCM, p.Name)
+					return cm
+				}
+			}
+			return nil
+		}
+
+		if pa.UpdatePeriodicsForRepo(cfg.Spec.Periodics, fullName, l, getExistingConfigMap, getExistingCron, org, repo, cmInterface, cjInterface) {
+			return
 		}
 	}
 
-	cronAgent.Start()
+	// Removing CronJobs not corresponding to any found triggers
+	for _, repoCron := range cronMap {
+		for _, aCron := range repoCron {
+			deleteCronJob(cjInterface, aCron)
+		}
+	}
+	for _, repoCm := range cmMap {
+		for _, cm := range repoCm {
+			deleteConfigMap(cmInterface, cm)
+		}
+	}
+	cmInterface.Apply(context.TODO(),
+		(&applyv1.ConfigMapApplyConfiguration{}).
+			WithName("config").
+			WithData(map[string]string{initializedField: "true"}),
+		metav1.ApplyOptions{Force: true, FieldManager: "lighthouse"})
 }
 
-func addPeriodic(l *logrus.Entry, periodic job.Periodic, owner, repo string, launcher launcher, cronAgent *cron.Cron, fullName string, repoPeriodics map[string]PeriodicExec) {
-	exec := PeriodicExec{
-		Periodic:       periodic,
-		Owner:          owner,
-		Repo:           repo,
-		LauncherClient: launcher,
-	}
-	var err error
-	exec.EntryID, err = cronAgent.AddJob(periodic.Cron, &exec)
+func deleteConfigMap(cmInterface typedv1.ConfigMapInterface, cm *corev1.ConfigMap) {
+	err := cmInterface.Delete(context.TODO(), cm.Name, metav1.DeleteOptions{})
 	if err != nil {
-		l.WithError(err).Errorf("failed to schedule job %s", periodic.Name)
-	} else {
-		repoPeriodics[periodic.Name] = exec
-		l.Infof("Periodic %s is scheduled since it is new or has changed", periodic.Name)
+		logrus.WithError(err).
+			Errorf("Failed to delete ConfigMap %s corresponding to removed trigger %s for repo %s",
+				cm.Name, cm.Labels["trigger"], cm.Labels["repo"])
+	}
+}
+
+func deleteCronJob(cjInterface typedbatchv1.CronJobInterface, cj *batchv1.CronJob) {
+	err := cjInterface.Delete(context.TODO(), cj.Name, metav1.DeleteOptions{})
+	if err != nil {
+		logrus.WithError(err).
+			Errorf("Failed to delete CronJob %s corresponding to removed trigger %s for repo %s",
+				cj.Name, cj.Labels["trigger"], cj.Labels["repo"])
+	}
+}
+
+func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
+	periodics []job.Periodic,
+	fullName string,
+	l *logrus.Entry,
+	getExistingConfigMap func(p job.Periodic) *corev1.ConfigMap,
+	getExistingCron func(p job.Periodic) *batchv1.CronJob,
+	org string,
+	repo string,
+	cmInterface typedv1.ConfigMapInterface,
+	cjInterface typedbatchv1.CronJobInterface,
+) bool {
+	for _, p := range periodics {
+		labels := map[string]string{
+			"app":       "lighthouse-webhooks",
+			"component": "periodic",
+			"repo":      fullName,
+			"trigger":   p.Name,
+		}
+		for k, v := range p.Labels {
+			// don't overwrite labels since that would disturb the logic
+			_, predef := labels[k]
+			if !predef {
+				labels[k] = v
+			}
+		}
+
+		resourceName := fmt.Sprintf("lighthouse-%s-%s", fullName, p.Name)
+
+		err := p.LoadPipeline(l)
+		if err != nil {
+			l.WithError(err).Warnf("Failed to load pipeline %s from %s", p.Name, p.SourcePath)
+			continue
+		}
+		refs := v1alpha1.Refs{
+			Org:  org,
+			Repo: repo,
+		}
+
+		pj := jobutil.NewLighthouseJob(jobutil.PeriodicSpec(l, p, refs), labels, p.Annotations)
+		lighthouseData, err := json.Marshal(pj)
+
+		// Only apply if any value have changed
+		existingCm := getExistingConfigMap(p)
+
+		if existingCm == nil || existingCm.Data["lighthousejob.yaml"] != string(lighthouseData) {
+			var cm *applyv1.ConfigMapApplyConfiguration
+			if existingCm != nil {
+				cm, err = applyv1.ExtractConfigMap(existingCm, fieldManager)
+				if err != nil {
+					l.Error(errors.Wrapf(err, "failed to extract ConfigMap"))
+					return true
+				}
+			} else {
+				cm = (&applyv1.ConfigMapApplyConfiguration{}).WithName(resourceName).WithLabels(labels)
+			}
+			cm.Data["lighthousejob.yaml"] = string(lighthouseData)
+
+			_, err := cmInterface.Apply(context.TODO(), cm, metav1.ApplyOptions{Force: true, FieldManager: fieldManager})
+			if err != nil {
+				return false
+			}
+		}
+		existingCron := getExistingCron(p)
+		if existingCron == nil || existingCron.Spec.Schedule != p.Cron {
+			var cj *applybatchv1.CronJobApplyConfiguration
+			if existingCron != nil {
+				cj, err = applybatchv1.ExtractCronJob(existingCron, fieldManager)
+				if err != nil {
+					l.Error(errors.Wrapf(err, "failed to extract CronJob"))
+					return true
+				}
+			} else {
+				cj = pa.constructCronJob(resourceName, *cj.Name, labels)
+			}
+			cj.Spec.Schedule = &p.Cron
+			_, err := cjInterface.Apply(context.TODO(), cj, metav1.ApplyOptions{Force: true, FieldManager: fieldManager})
+			if err != nil {
+				return false
+			}
+		}
+	}
+	return false
+}
+
+func (pa *PeriodicAgent) getExistingResources(
+	l *logrus.Entry,
+	cmInterface typedv1.ConfigMapInterface,
+	cjInterface typedbatchv1.CronJobInterface,
+	selector string,
+) (*corev1.ConfigMapList, *batchv1.CronJobList, bool) {
+	cmList, err := cmInterface.List(context.TODO(), metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		l.Error("Can't get periodic ConfigMaps. Periodics will not be initialized", err)
+		return nil, nil, true
+	}
+
+	cronList, err := cjInterface.List(context.TODO(), metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		l.Error("Can't get periodic CronJobs. Periodics will not be initialized", err)
+		return nil, nil, true
+	}
+	return cmList, cronList, false
+}
+
+func (pa *PeriodicAgent) constructCronJob(resourceName, configMapName string, labels map[string]string) *applybatchv1.CronJobApplyConfiguration {
+	const volumeName = "ligthousejob"
+	return (&applybatchv1.CronJobApplyConfiguration{}).
+		WithName(resourceName).
+		WithLabels(labels).
+		WithSpec((&applybatchv1.CronJobSpecApplyConfiguration{}).
+			WithJobTemplate((&applybatchv1.JobTemplateSpecApplyConfiguration{}).
+				WithLabels(labels).
+				WithSpec((&applybatchv1.JobSpecApplyConfiguration{}).
+					WithBackoffLimit(0).
+					WithTemplate((&applyv1.PodTemplateSpecApplyConfiguration{}).
+						WithLabels(labels).
+						WithSpec((&applyv1.PodSpecApplyConfiguration{}).
+							WithEnableServiceLinks(false).
+							// TODO: Get service account from somewhere?
+							WithServiceAccountName("lighthouse-webhooks").
+							WithRestartPolicy("Never").
+							WithContainers((&applyv1.ContainerApplyConfiguration{}).
+								WithName("create-lighthousejob").
+								// TODO: make image configurable. Should have yq as well
+
+								WithImage("bitnami/kubectl").
+								WithCommand("/bin/sh").
+								WithArgs("-c", `
+yq '.metadata.name = "'$HOSTNAME'"' /config/lighthousejob.yaml | kubectl apply -f 
+kubectl patch LighthouseJob $HOSTNAME --type=merge --subresource status --patch 'status: {state: triggered}'
+`).
+								WithVolumeMounts((&applyv1.VolumeMountApplyConfiguration{}).
+									WithName(volumeName).
+									WithMountPath("/config"))).
+							WithVolumes((&applyv1.VolumeApplyConfiguration{}).
+								WithName(volumeName).
+								WithConfigMap((&applyv1.ConfigMapVolumeSourceApplyConfiguration{}).
+									WithName(configMapName))))))))
+}
+
+func filterPeriodics(enabled map[string]*bool, agent *config.Agent) map[string]*bool {
+	_, scmClient, _, _, err := util.GetSCMClient("", agent.Config)
+	if err != nil {
+		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
+		return enabled
+	}
+	if scmClient.Contents == nil {
+		return enabled
+	}
+
+	enable := true
+	hasPeriodics := make(map[string]*bool)
+	for fullName := range enabled {
+		list, _, err := scmClient.Contents.List(context.TODO(), fullName, ".lighthouse", "HEAD")
+		if err != nil {
+			continue
+		}
+		for _, file := range list {
+			if file.Type == "dir" {
+				triggers, _, err := scmClient.Contents.Find(context.TODO(), fullName, file.Path+"/triggers.yaml", "HEAD")
+				if err != nil {
+					continue
+				}
+				if strings.Contains(string(triggers.Data), "periodics:") {
+					hasPeriodics[fullName] = &enable
+				}
+			}
+		}
+		delayForRate(scmClient.Rate())
+	}
+
+	return hasPeriodics
+}
+
+func delayForRate(r scm.Rate) {
+	if r.Remaining < 100 {
+		duration := time.Duration(r.Reset - time.Now().Unix())
+		logrus.Warnf("waiting for %s seconds until rate limit reset: %+v", duration, r)
+		time.Sleep(duration * time.Second)
 	}
 }

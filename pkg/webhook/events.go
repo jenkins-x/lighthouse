@@ -222,7 +222,7 @@ func (s *Server) handlePushEvent(l *logrus.Entry, pe *scm.PushHook) {
 		// Update periodics from the default branch
 		refBranch := strings.TrimPrefix(pe.Ref, "refs/heads/")
 		if refBranch == pe.Repository().Branch {
-			s.PeriodicAgent.UpdatePeriodics(repo.Namespace, repo.Name, agent, pe)
+			s.PeriodicAgent.UpdatePeriodics(s.ClientAgent.KubernetesClient, agent, pe)
 		}
 		l.WithField("count", strconv.Itoa(c)).Info("number of push handlers")
 	}()

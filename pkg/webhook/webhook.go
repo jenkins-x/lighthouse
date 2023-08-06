@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -28,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	kubeclient "k8s.io/client-go/kubernetes"
 )
 
 // WebhooksController holds the command line arguments
@@ -60,8 +60,11 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	if o.logWebHooks {
 		logrus.Info("enabling webhook logging")
 	}
-	var err error
-	o.server, err = o.createHookServer()
+	_, kubeClient, lhClient, _, err := clients.GetAPIClients()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
+	}
+	o.server, err = o.createHookServer(kubeClient)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Hook Server")
 	}
@@ -73,10 +76,6 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	}
 	o.gitClient = gitClient
 
-	_, _, lhClient, _, err := clients.GetAPIClients()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
-	}
 	o.launcher = launcher.NewLauncher(lhClient, o.namespace)
 
 	return o, nil
@@ -474,7 +473,7 @@ func (o *WebhooksController) secretFn(webhook scm.Webhook) (string, error) {
 	return util.HMACToken(), nil
 }
 
-func (o *WebhooksController) createHookServer() (*Server, error) {
+func (o *WebhooksController) createHookServer(kc kubeclient.Interface) (*Server, error) {
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
 
@@ -517,14 +516,12 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 		Metrics:       promMetrics,
 		ServerURL:     serverURL,
 		InRepoCache:   cache,
-		PeriodicAgent: &trigger.PeriodicAgent{},
+		PeriodicAgent: &trigger.PeriodicAgent{Namespace: o.namespace},
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 
-	// If we don't use sparse checkout this would become unreasonably slow
-	// TODO: Also add separate toggle
-	sparseCheckout, _ := strconv.ParseBool(os.Getenv("SPARSE_CHECKOUT"))
-	if sparseCheckout {
+	// TODO: Add toggle
+	if !server.PeriodicAgent.PeriodicsInitialized(o.namespace, kc) {
 		if server.FileBrowsers == nil {
 			ghaSecretDir := util.GetGitHubAppSecretDir()
 
@@ -539,7 +536,7 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 			}
 		}
 		if server.FileBrowsers != nil {
-			go trigger.StartPeriodics(configAgent, server.ClientAgent.LauncherClient, server.FileBrowsers, server.PeriodicAgent)
+			go server.PeriodicAgent.InitializePeriodics(kc, configAgent, server.FileBrowsers)
 		}
 	}
 
