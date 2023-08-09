@@ -33,6 +33,7 @@ import (
 
 type PeriodicAgent struct {
 	Namespace string
+	SCMClient *scm.Client
 }
 
 const fieldManager = "lighthouse"
@@ -154,6 +155,15 @@ func (pa *PeriodicAgent) PeriodicsInitialized(namespace string, kc kubeclient.In
 
 func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgent *config.Agent, fileBrowsers *filebrowser.FileBrowsers) {
 	// TODO: Add lock so 2 InitializePeriodics can't run at the same time
+	if pa.SCMClient == nil {
+		_, scmClient, _, _, err := util.GetSCMClient("", configAgent.Config)
+		if err != nil {
+			logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
+			return
+		}
+		pa.SCMClient = scmClient
+	}
+
 	resolverCache := inrepo.NewResolverCache()
 	fc := filebrowser.NewFetchCache()
 	c := configAgent.Config()
@@ -172,7 +182,7 @@ func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgen
 		cronMap[cronjob.Labels["repo"]][cronjob.Labels["trigger"]] = &cronjob
 	}
 
-	for fullName := range filterPeriodics(c.InRepoConfig.Enabled, configAgent) {
+	for fullName := range pa.filterPeriodics(c.InRepoConfig.Enabled, configAgent) {
 		repoCronJobs, repoCronExists := cronMap[fullName]
 		repoCM, repoCmExists := cmMap[fullName]
 		org, repo := scm.Split(fullName)
@@ -280,7 +290,7 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 			}
 		}
 
-		resourceName := fmt.Sprintf("lighthouse-%s-%s", fullName, p.Name)
+		resourceName := fmt.Sprintf("lighthouse-%s-%s-%s", org, repo, p.Name)
 
 		err := p.LoadPipeline(l)
 		if err != nil {
@@ -309,10 +319,14 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 			} else {
 				cm = (&applyv1.ConfigMapApplyConfiguration{}).WithName(resourceName).WithLabels(labels)
 			}
+			if cm.Data == nil {
+				cm.Data = make(map[string]string)
+			}
 			cm.Data["lighthousejob.yaml"] = string(lighthouseData)
 
 			_, err := cmInterface.Apply(context.TODO(), cm, metav1.ApplyOptions{Force: true, FieldManager: fieldManager})
 			if err != nil {
+				l.WithError(err).Errorf("failed to apply configmap")
 				return false
 			}
 		}
@@ -326,11 +340,12 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 					return true
 				}
 			} else {
-				cj = pa.constructCronJob(resourceName, *cj.Name, labels)
+				cj = pa.constructCronJob(resourceName, resourceName, labels)
 			}
 			cj.Spec.Schedule = &p.Cron
 			_, err := cjInterface.Apply(context.TODO(), cj, metav1.ApplyOptions{Force: true, FieldManager: fieldManager})
 			if err != nil {
+				l.WithError(err).Errorf("failed to apply cronjob")
 				return false
 			}
 		}
@@ -398,26 +413,21 @@ kubectl patch LighthouseJob $HOSTNAME --type=merge --subresource status --patch 
 									WithName(configMapName))))))))
 }
 
-func filterPeriodics(enabled map[string]*bool, agent *config.Agent) map[string]*bool {
-	_, scmClient, _, _, err := util.GetSCMClient("", agent.Config)
-	if err != nil {
-		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
-		return enabled
-	}
-	if scmClient.Contents == nil {
+func (pa *PeriodicAgent) filterPeriodics(enabled map[string]*bool, agent *config.Agent) map[string]*bool {
+	if pa.SCMClient.Contents == nil {
 		return enabled
 	}
 
 	enable := true
 	hasPeriodics := make(map[string]*bool)
 	for fullName := range enabled {
-		list, _, err := scmClient.Contents.List(context.TODO(), fullName, ".lighthouse", "HEAD")
+		list, _, err := pa.SCMClient.Contents.List(context.TODO(), fullName, ".lighthouse", "HEAD")
 		if err != nil {
 			continue
 		}
 		for _, file := range list {
 			if file.Type == "dir" {
-				triggers, _, err := scmClient.Contents.Find(context.TODO(), fullName, file.Path+"/triggers.yaml", "HEAD")
+				triggers, _, err := pa.SCMClient.Contents.Find(context.TODO(), fullName, file.Path+"/triggers.yaml", "HEAD")
 				if err != nil {
 					continue
 				}
@@ -426,7 +436,7 @@ func filterPeriodics(enabled map[string]*bool, agent *config.Agent) map[string]*
 				}
 			}
 		}
-		delayForRate(scmClient.Rate())
+		delayForRate(pa.SCMClient.Rate())
 	}
 
 	return hasPeriodics
