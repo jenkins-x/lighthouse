@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -154,7 +155,6 @@ func (pa *PeriodicAgent) PeriodicsInitialized(namespace string, kc kubeclient.In
 }
 
 func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgent *config.Agent, fileBrowsers *filebrowser.FileBrowsers) {
-	// TODO: Add lock so 2 InitializePeriodics can't run at the same time
 	if pa.SCMClient == nil {
 		_, scmClient, _, _, err := util.GetSCMClient("", configAgent.Config)
 		if err != nil {
@@ -182,7 +182,7 @@ func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgen
 		cronMap[cronjob.Labels["repo"]][cronjob.Labels["trigger"]] = &cronjob
 	}
 
-	for fullName := range pa.filterPeriodics(c.InRepoConfig.Enabled, configAgent) {
+	for fullName := range pa.filterPeriodics(c.InRepoConfig.Enabled) {
 		repoCronJobs, repoCronExists := cronMap[fullName]
 		repoCM, repoCmExists := cmMap[fullName]
 		org, repo := scm.Split(fullName)
@@ -379,6 +379,10 @@ func (pa *PeriodicAgent) getExistingResources(
 
 func (pa *PeriodicAgent) constructCronJob(resourceName, configMapName string, labels map[string]string) *applybatchv1.CronJobApplyConfiguration {
 	const volumeName = "ligthousejob"
+	serviceAccount, found := os.LookupEnv("SERVICE_ACCOUNT")
+	if !found {
+		serviceAccount = "lighthouse-webhooks"
+	}
 	return (&applybatchv1.CronJobApplyConfiguration{}).
 		WithName(resourceName).
 		WithLabels(labels).
@@ -391,18 +395,17 @@ func (pa *PeriodicAgent) constructCronJob(resourceName, configMapName string, la
 						WithLabels(labels).
 						WithSpec((&applyv1.PodSpecApplyConfiguration{}).
 							WithEnableServiceLinks(false).
-							// TODO: Get service account from somewhere?
-							WithServiceAccountName("lighthouse-webhooks").
+							WithServiceAccountName(serviceAccount).
 							WithRestartPolicy("Never").
 							WithContainers((&applyv1.ContainerApplyConfiguration{}).
 								WithName("create-lighthousejob").
-								// TODO: make image configurable. Should have yq as well
-
 								WithImage("bitnami/kubectl").
 								WithCommand("/bin/sh").
 								WithArgs("-c", `
-yq '.metadata.name = "'$HOSTNAME'"' /config/lighthousejob.yaml | kubectl apply -f 
-kubectl patch LighthouseJob $HOSTNAME --type=merge --subresource status --patch 'status: {state: triggered}'
+set -o errexit
+create_output=$(kubectl create -f /config/lighthousejob.yaml)
+[[ $create_output =~ (.*)\  ]]
+kubectl patch ${BASH_REMATCH[1]} --type=merge --subresource status --patch 'status: {state: triggered}'
 `).
 								WithVolumeMounts((&applyv1.VolumeMountApplyConfiguration{}).
 									WithName(volumeName).
@@ -413,7 +416,7 @@ kubectl patch LighthouseJob $HOSTNAME --type=merge --subresource status --patch 
 									WithName(configMapName))))))))
 }
 
-func (pa *PeriodicAgent) filterPeriodics(enabled map[string]*bool, agent *config.Agent) map[string]*bool {
+func (pa *PeriodicAgent) filterPeriodics(enabled map[string]*bool) map[string]*bool {
 	if pa.SCMClient.Contents == nil {
 		return enabled
 	}
