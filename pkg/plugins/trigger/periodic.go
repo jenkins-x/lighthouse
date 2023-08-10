@@ -43,7 +43,6 @@ const initStartedField = "periodicsInitializationStarted"
 
 func (pa *PeriodicAgent) UpdatePeriodics(kc kubeclient.Interface, agent plugins.Agent, pe *scm.PushHook) {
 	repo := pe.Repository()
-	fullName := repo.FullName
 	l := logrus.WithField(scmprovider.RepoLogField, repo.Name).WithField(scmprovider.OrgLogField, repo.Namespace)
 	if !hasChanges(pe, agent) {
 		return
@@ -51,7 +50,7 @@ func (pa *PeriodicAgent) UpdatePeriodics(kc kubeclient.Interface, agent plugins.
 	cmInterface := kc.CoreV1().ConfigMaps(pa.Namespace)
 	cjInterface := kc.BatchV1().CronJobs(pa.Namespace)
 	cmList, cronList, done := pa.getExistingResources(l, cmInterface, cjInterface,
-		fmt.Sprintf("app=lighthouse-webhooks,component=periodic,repo=%s,trigger", fullName))
+		fmt.Sprintf("app=lighthouse-webhooks,component=periodic,org=%s,repo=%s,trigger", repo.Namespace, repo.Name))
 	if done {
 		return
 	}
@@ -77,14 +76,14 @@ func (pa *PeriodicAgent) UpdatePeriodics(kc kubeclient.Interface, agent plugins.
 
 	if pa.UpdatePeriodicsForRepo(
 		agent.Config.Periodics,
-		fullName,
 		l,
 		getExistingConfigMap,
 		getExistingCron,
 		repo.Namespace,
 		repo.Name,
 		cmInterface,
-		cjInterface) {
+		cjInterface,
+	) {
 		return
 	}
 
@@ -169,17 +168,17 @@ func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgen
 	c := configAgent.Config()
 	cmInterface := kc.CoreV1().ConfigMaps(pa.Namespace)
 	cjInterface := kc.BatchV1().CronJobs(pa.Namespace)
-	cmList, cronList, done := pa.getExistingResources(nil, cmInterface, cjInterface, "app=lighthouse-webhooks,component=periodic,repo,trigger")
+	cmList, cronList, done := pa.getExistingResources(nil, cmInterface, cjInterface, "app=lighthouse-webhooks,component=periodic,org,repo,trigger")
 	if done {
 		return
 	}
 	cmMap := make(map[string]map[string]*corev1.ConfigMap)
 	for _, cm := range cmList.Items {
-		cmMap[cm.Labels["repo"]][cm.Labels["trigger"]] = &cm
+		cmMap[cm.Labels["org"]+"/"+cm.Labels["repo"]][cm.Labels["trigger"]] = &cm
 	}
 	cronMap := make(map[string]map[string]*batchv1.CronJob)
 	for _, cronjob := range cronList.Items {
-		cronMap[cronjob.Labels["repo"]][cronjob.Labels["trigger"]] = &cronjob
+		cronMap[cronjob.Labels["org"]+"/"+cronjob.Labels["repo"]][cronjob.Labels["trigger"]] = &cronjob
 	}
 
 	for fullName := range pa.filterPeriodics(c.InRepoConfig.Enabled) {
@@ -223,7 +222,7 @@ func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgen
 			return nil
 		}
 
-		if pa.UpdatePeriodicsForRepo(cfg.Spec.Periodics, fullName, l, getExistingConfigMap, getExistingCron, org, repo, cmInterface, cjInterface) {
+		if pa.UpdatePeriodicsForRepo(cfg.Spec.Periodics, l, getExistingConfigMap, getExistingCron, org, repo, cmInterface, cjInterface) {
 			return
 		}
 	}
@@ -250,8 +249,8 @@ func deleteConfigMap(cmInterface typedv1.ConfigMapInterface, cm *corev1.ConfigMa
 	err := cmInterface.Delete(context.TODO(), cm.Name, metav1.DeleteOptions{})
 	if err != nil {
 		logrus.WithError(err).
-			Errorf("Failed to delete ConfigMap %s corresponding to removed trigger %s for repo %s",
-				cm.Name, cm.Labels["trigger"], cm.Labels["repo"])
+			Errorf("Failed to delete ConfigMap %s corresponding to removed trigger %s for repo %s/%s",
+				cm.Name, cm.Labels["trigger"], cm.Labels["org"], cm.Labels["repo"])
 	}
 }
 
@@ -266,7 +265,6 @@ func deleteCronJob(cjInterface typedbatchv1.CronJobInterface, cj *batchv1.CronJo
 
 func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 	periodics []job.Periodic,
-	fullName string,
 	l *logrus.Entry,
 	getExistingConfigMap func(p job.Periodic) *corev1.ConfigMap,
 	getExistingCron func(p job.Periodic) *batchv1.CronJob,
@@ -279,7 +277,8 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 		labels := map[string]string{
 			"app":       "lighthouse-webhooks",
 			"component": "periodic",
-			"repo":      fullName,
+			"org":       org,
+			"repo":      repo,
 			"trigger":   p.Name,
 		}
 		for k, v := range p.Labels {
