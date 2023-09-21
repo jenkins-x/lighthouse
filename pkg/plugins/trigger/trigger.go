@@ -170,8 +170,8 @@ func handlePullRequest(pc plugins.Agent, pr scm.PullRequestHook) error {
 	return handlePR(getClient(pc), pc.PluginConfig.TriggerFor(org, repo), pr)
 }
 
-func handleGenericCommentEvent(_ plugins.CommandMatch, pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
-	return handleGenericComment(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc)
+func handleGenericCommentEvent(cm plugins.CommandMatch, pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
+	return handleGenericCommentWithArg(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc, cm.Arg)
 }
 
 func handlePush(pc plugins.Agent, pe scm.PushHook) error {

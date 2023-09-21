@@ -30,7 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.GenericCommentEvent) error {
+func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.GenericCommentEvent) error{
+  return handleGenericCommentWithArg(c, trigger, gc, "")
+
+}
+func handleGenericCommentWithArg(c Client, trigger *plugins.Trigger, gc scmprovider.GenericCommentEvent, arg string) error {
 	org := gc.Repo.Namespace
 	repo := gc.Repo.Name
 	number := gc.Number
@@ -94,6 +98,14 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	if err != nil {
 		return err
 	}
+  if arg != "" {
+    for i := range toTest {
+      toTest[i].Base.PipelineRunParams = append(toTest[i].Base.PipelineRunParams , job.PipelineRunParam{
+        Name: "TRIGGER_COMMAND_ARG",
+        ValueTemplate: arg,
+      })
+    }
+  }
 	return RunAndSkipJobs(c, pr, toTest, toSkip, gc.GUID, trigger.ElideSkippedContexts)
 }
 
