@@ -77,13 +77,13 @@ var plugin = plugins.Plugin{
 
 func init() {
 	customTriggerCommand := os.Getenv(customerTriggerCommandEnvVar)
-	if customTriggerCommand != "" {
+  for _, trigger := range strings.Split(customTriggerCommand, ","){
 		customCommand := plugins.Command{
-			Name: customTriggerCommand,
+			Name: trigger,
 			Arg: &plugins.CommandArg{
 				Pattern: `[-\w]+(?:,[-\w]+)*`,
 			},
-			Description: fmt.Sprintf("Manually trigger /%s chatops commands.", customTriggerCommand),
+			Description: fmt.Sprintf("Manually trigger /%s chatops commands.", trigger),
 			Featured:    true,
 			Action: plugins.
 				Invoke(handleGenericCommentEvent).
