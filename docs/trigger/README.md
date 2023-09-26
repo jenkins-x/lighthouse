@@ -2,7 +2,7 @@
 
 You can enable use LH_CUSTOM_TRIGGER_COMMAND environment variable to add custom triggers. It takes in a comma seperated list of commands.
 
-When these commands are triggered using ChatOps Lighthouse will convert the command arg into TRIGGER_COMMAND_ARG enviroment variable which you can refer from the pipeline.
+When these commands are triggered using ChatOps, Lighthouse will store the command arg in TRIGGER_COMMAND_ARG PipelineRunPara which you can refer from the pipeline.
 
 eg:
 `
