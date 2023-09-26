@@ -76,23 +76,22 @@ var plugin = plugins.Plugin{
 }
 
 func init() {
-	customTriggerCommand := os.Getenv(customerTriggerCommandEnvVar)
+  customTriggerCommand := os.Getenv(customerTriggerCommandEnvVar)
   for _, trigger := range strings.Split(customTriggerCommand, ","){
-		customCommand := plugins.Command{
-			Name: trigger,
-			Arg: &plugins.CommandArg{
-				Pattern: `[-\w]+(?:,[-\w]+)*`,
-			},
-			Description: fmt.Sprintf("Manually trigger /%s chatops commands.", trigger),
-			Featured:    true,
-			Action: plugins.
-				Invoke(handleGenericCommentEvent).
-				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
-		}
-		plugin.Commands = append(plugin.Commands, customCommand)
-	}
-
-	plugins.RegisterPlugin(pluginName, plugin)
+    customCommand := plugins.Command{
+      Name: trigger,
+      Arg: &plugins.CommandArg{
+        Pattern: `[-\w]+(?:,[-\w]+)*`,
+      },
+      Description: fmt.Sprintf("Manually trigger /%s chatops commands.", trigger),
+      Featured:    true,
+      Action: plugins.
+        Invoke(handleGenericCommentEvent).
+        When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+    }
+    plugin.Commands = append(plugin.Commands, customCommand)
+  }
+  plugins.RegisterPlugin(pluginName, plugin)
 }
 
 func configHelp(config *plugins.Configuration, enabledRepos []string) (map[string]string, error) {
@@ -171,7 +170,7 @@ func handlePullRequest(pc plugins.Agent, pr scm.PullRequestHook) error {
 }
 
 func handleGenericCommentEvent(cm plugins.CommandMatch, pc plugins.Agent, gc scmprovider.GenericCommentEvent) error {
-	return handleGenericCommentWithArg(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc, cm.Arg)
+	return handleGenericComment(getClient(pc), pc.PluginConfig.TriggerFor(gc.Repo.Namespace, gc.Repo.Name), gc, cm.Arg)
 }
 
 func handlePush(pc plugins.Agent, pe scm.PushHook) error {

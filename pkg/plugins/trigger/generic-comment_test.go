@@ -61,6 +61,7 @@ type testcase struct {
 	IssueLabels          []string
 	IgnoreOkToTest       bool
 	ElideSkippedContexts bool
+  TriggerCommandArg    string
 }
 
 func TestHandleGenericComment(t *testing.T) {
@@ -829,6 +830,26 @@ func TestHandleGenericComment(t *testing.T) {
 			ShouldBuild: false,
 			IssueLabels: issueLabels(labels.LGTM, labels.Approved),
 		},
+    {
+			name:   "Trigger Command should pass args to the job as a PipelineRunParam TRIGGER_COMMAND_ARG",
+			Author: "trusted-member",
+			Body:   "/test jub",
+			State:  "open",
+			IsPR:   true,
+			Presubmits: map[string][]job.Presubmit{
+				"org/repo": {
+					{
+						Base: job.Base{
+							Name: "jub",
+						},
+						Trigger:      `(?m)^/test (?:.*? )?jub(?: .*?)?$`,
+						RerunCommand: `/test jub`,
+					},
+				},
+			},
+			ShouldBuild:   true,
+      TriggerCommandArg:    "jub",
+		},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -938,13 +959,13 @@ func TestHandleGenericComment(t *testing.T) {
 			// For instance on Issue/PR creation and modification.
 			// Let's call it twice to ensure idempotency.
 			if err := plugin.InvokeCommandHandler(&event, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, _ plugins.CommandMatch) error {
-				return handleGenericComment(c, trigger, *e)
+				return handleGenericComment(c, trigger, *e, tc.TriggerCommandArg)
 			}); err != nil {
 				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 			}
 			validate(tc.name, fakeLauncher, g, tc, t)
 			if err := plugin.InvokeCommandHandler(&event, func(_ plugins.CommandEventHandler, e *scmprovider.GenericCommentEvent, _ plugins.CommandMatch) error {
-				return handleGenericComment(c, trigger, *e)
+				return handleGenericComment(c, trigger, *e, tc.TriggerCommandArg)
 			}); err != nil {
 				t.Fatalf("%s: didn't expect error: %s", tc.name, err)
 			}
@@ -958,6 +979,7 @@ func validate(name string, fakeLauncher *fake.Launcher, g *fake2.SCMClient, tc t
 	for _, job := range fakeLauncher.Pipelines {
 		startedContexts.Insert(job.Spec.Context)
 	}
+  
 	if len(startedContexts) > 0 && !tc.ShouldBuild {
 		t.Errorf("Built but should not have: %+v", tc)
 	} else if len(startedContexts) == 0 && tc.ShouldBuild {
@@ -986,6 +1008,24 @@ func validate(name string, fakeLauncher *fake.Launcher, g *fake2.SCMClient, tc t
 	if !reflect.DeepEqual(labelsRemoved, tc.RemovedLabels) {
 		t.Errorf("%s: expected %q to be removed, got %q", name, tc.RemovedLabels, labelsRemoved)
 	}
+  if tc.TriggerCommandArg != "" {
+    for _, job := range fakeLauncher.Pipelines {
+      found := false
+      for _, param := range job.Spec.PipelineRunParams {
+        if param.Name == "TRIGGER_COMMAND_ARG" {
+          found = true
+
+          if param.ValueTemplate != tc.TriggerCommandArg {  
+            t.Errorf("PipelineRunParam had incorrect ValueTemplate: got %s, want %s", tc.TriggerCommandArg, param.ValueTemplate)
+          }
+            break
+        }
+      }
+      if !found {
+        t.Errorf("PipelineRunParam 'TRIGGER_COMMAND_ARG' was not added")
+      }
+    }
+  }
 }
 
 func TestRetestFilter(t *testing.T) {

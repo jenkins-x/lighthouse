@@ -30,11 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.GenericCommentEvent) error{
-  return handleGenericCommentWithArg(c, trigger, gc, "")
-
-}
-func handleGenericCommentWithArg(c Client, trigger *plugins.Trigger, gc scmprovider.GenericCommentEvent, arg string) error {
+func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.GenericCommentEvent, arg string) error {
 	org := gc.Repo.Namespace
 	repo := gc.Repo.Name
 	number := gc.Number
