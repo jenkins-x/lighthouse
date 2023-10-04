@@ -144,6 +144,8 @@ type LighthouseJobSpec struct {
 	// MaxConcurrency restricts the total number of instances
 	// of this job that can run in parallel at once
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
+  // Source to trigger for down stream agent
+  Source string `json:"source,omitempty"`
 	// PipelineRunSpec provides the basis for running the test as a Tekton Pipeline
 	// https://github.com/tektoncd/pipeline
 	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`

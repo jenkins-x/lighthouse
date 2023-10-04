@@ -182,6 +182,7 @@ func specFromJobBase(logger *logrus.Entry, jb job.Base) v1alpha1.LighthouseJobSp
 		PodSpec:           jb.Spec,
 		PipelineRunSpec:   jb.PipelineRunSpec,
 		PipelineRunParams: jb.PipelineRunParams,
+    Source:            jb.SourcePath,
 	}
 }
 
