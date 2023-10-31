@@ -754,18 +754,17 @@ func TestDividePool(t *testing.T) {
 			baseSHA: "123",
 		},
 	}
-	fc := &fgc{
-		refs: map[string]string{"k/t-i heads/master": "123"},
-	}
+	fc := &fgc{}
 	c := &DefaultController{
 		spc:    fc,
 		logger: logrus.WithField("component", "keeper"),
 	}
 	pulls := make(map[string]PullRequest)
-	for _, p := range testPulls {
+	for idx, p := range testPulls {
 		npr := PullRequest{Number: githubql.Int(p.number)}
 		npr.BaseRef.Name = githubql.String(p.branch)
 		npr.BaseRef.Prefix = "refs/heads/"
+		npr.BaseRefOID = githubql.String(testPJs[idx].baseSHA)
 		npr.Repository.Name = githubql.String(p.repo)
 		npr.Repository.Owner.Login = githubql.String(p.org)
 		npr.Repository.URL = githubql.String(fmt.Sprintf("https://github.com/%s/%s.git", p.org, p.repo))
@@ -794,10 +793,6 @@ func TestDividePool(t *testing.T) {
 	}
 	for _, sp := range sps {
 		name := fmt.Sprintf("%s/%s %s", sp.org, sp.repo, sp.branch)
-		sha := fc.refs[sp.org+"/"+sp.repo+" heads/"+sp.branch]
-		if sp.sha != sha {
-			t.Errorf("For subpool %s, got sha %s, expected %s.", name, sp.sha, sha)
-		}
 		if len(sp.prs) == 0 {
 			t.Errorf("Subpool %s has no PRs.", name)
 		}
