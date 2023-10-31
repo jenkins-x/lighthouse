@@ -1918,6 +1918,7 @@ func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequ
 		BaseRef:     baseRef,
 		HeadRefName: githubql.String(scmPR.Source),
 		HeadRefOID:  githubql.String(scmPR.Head.Sha),
+		BaseRefOID:  githubql.String(scmPR.Base.Sha),
 		Mergeable:   mergeable,
 		Repository:  scmRepoToGraphQLRepo(scmRepo),
 		Labels:      labels,
