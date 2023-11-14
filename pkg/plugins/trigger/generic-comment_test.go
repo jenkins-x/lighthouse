@@ -546,7 +546,6 @@ func TestHandleGenericComment(t *testing.T) {
 			AddedLabels:   issueLabels(labels.OkToTest),
 			RemovedLabels: issueLabels(labels.NeedsOkToTest),
 		},
-		/* TODO
 		{
 			name:   "/test of branch-sharded job",
 			Author: "trusted-member",
@@ -557,7 +556,7 @@ func TestHandleGenericComment(t *testing.T) {
 				"org/repo": {
 					{
 						Base: job.Base{
-							Name: "jab",
+							Name: "master-jab",
 						},
 						Brancher: job.Brancher{Branches: []string{"master"}},
 						Reporter: job.Reporter{
@@ -568,7 +567,7 @@ func TestHandleGenericComment(t *testing.T) {
 					},
 					{
 						Base: job.Base{
-							Name: "jab",
+							Name: "release-jab",
 						},
 						Brancher: job.Brancher{Branches: []string{"release"}},
 						Reporter: job.Reporter{
@@ -617,7 +616,6 @@ func TestHandleGenericComment(t *testing.T) {
 			},
 			ShouldReport: true,
 		},
-		*/
 		{
 			name:   "branch-sharded job. no shard matches base branch. Skipped statuses elided.",
 			Author: "trusted-member",
