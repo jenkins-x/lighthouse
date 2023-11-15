@@ -48,7 +48,7 @@ type Presubmit struct {
 	JenkinsSpec  *JenkinsSpec `json:"jenkins_spec,omitempty"`
 
 	// We'll set these when we load it.
-	// re *regexp.Regexp // from Trigger.
+	re *regexp.Regexp // from Trigger.
 }
 
 // SetDefaults initializes default values
@@ -91,6 +91,7 @@ func (p *Presubmit) SetRegexes() error {
 
 // ClearCompiledRegexes compiles and validates all the regular expressions
 func (p *Presubmit) ClearCompiledRegexes() {
+	p.re = nil
 	p.Brancher.re = nil
 	p.Brancher.reSkip = nil
 	p.RegexpChangeMatcher.reChanges = nil
@@ -153,12 +154,12 @@ func (p Presubmit) TriggerMatches(body string) bool {
 			return body == p.Trigger
 		}
 	}
-	return p.Trigger != "" && re != nil && re.MatchString(body)
+	return re != nil && re.MatchString(body)
 }
 
 // ContextRequired checks whether a context is required from github points of view (required check).
 func (p Presubmit) ContextRequired() bool {
-	return !p.Optional && !p.SkipReport
+	return !(p.Optional || p.SkipReport)
 }
 
 // Validate validates job base

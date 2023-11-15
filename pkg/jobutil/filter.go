@@ -79,6 +79,7 @@ func FilterPresubmits(filter Filter, changes job.ChangedFilesProvider, branch st
 	for _, presubmit := range presubmits {
 		matches, forced, defaults := filter(presubmit)
 		if !matches {
+			logger.WithField("presubmit", presubmit).Trace("doesn't match command filter")
 			continue
 		}
 		shouldRun, err := presubmit.ShouldRun(branch, changes, forced, defaults)
