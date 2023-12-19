@@ -112,10 +112,12 @@ func (p Presubmit) ShouldRun(baseRef string, changes ChangedFilesProvider, force
 	}
 
 	// Evaluate regex expressions before checking if pre-submit jobs are always supposed to run
-	if determined, shouldRun, err := p.RegexpChangeMatcher.ShouldRun(changes); err != nil {
-		return false, err
-	} else if determined {
-		return shouldRun, nil
+	if !forced {
+		if determined, shouldRun, err := p.RegexpChangeMatcher.ShouldRun(changes); err != nil {
+			return false, err
+		} else if determined {
+			return shouldRun, nil
+		}
 	}
 
 	// TODO temporary disable RequireRun
