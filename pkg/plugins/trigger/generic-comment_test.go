@@ -709,7 +709,7 @@ func TestHandleGenericComment(t *testing.T) {
 			name: "explicit /test for RunIfChanged job that doesn't need to run",
 
 			Author: "trusted-member",
-			Body:   "/test pull-jeb",
+			Body:   "/test jeb",
 			State:  "open",
 			IsPR:   true,
 			Presubmits: map[string][]job.Presubmit{
@@ -729,7 +729,7 @@ func TestHandleGenericComment(t *testing.T) {
 					},
 				},
 			},
-			ShouldBuild: false,
+			ShouldBuild: true,
 		},
 		{
 			name:   "/test all of run_if_changed job that has passed and needs to run",
