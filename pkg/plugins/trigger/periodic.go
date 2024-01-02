@@ -143,6 +143,10 @@ func (pa *PeriodicAgent) PeriodicsInitialized(namespace string, kc kubeclient.In
 		}
 	}
 	cmApply, err := applyv1.ExtractConfigMap(cm, fieldManager)
+	if err != nil {
+		logrus.Error(errors.Wrapf(err, "failed to extract ConfigMap"))
+		return true
+	}
 	cmApply.Data[initializedField] = "pending"
 	cm.Data[initStartedField] = strconv.FormatInt(time.Now().Unix(), 10)
 	_, err = cmInterface.Apply(context.TODO(), cmApply, metav1.ApplyOptions{FieldManager: "lighthouse"})
