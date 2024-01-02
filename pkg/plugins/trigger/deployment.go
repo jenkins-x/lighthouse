@@ -1,6 +1,8 @@
 package trigger
 
 import (
+	"strings"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
@@ -12,7 +14,7 @@ func handleDeployment(c Client, ds scm.DeploymentStatusHook) error {
 		if j.State != "" && j.State != ds.DeploymentStatus.State {
 			continue
 		}
-		if j.Environment != "" && j.Environment != ds.Deployment.Environment {
+		if j.Environment != "" && !strings.EqualFold(j.Environment, ds.Deployment.Environment) {
 			continue
 		}
 		labels := make(map[string]string)
