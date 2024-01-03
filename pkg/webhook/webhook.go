@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -520,8 +521,8 @@ func (o *WebhooksController) createHookServer(kc kubeclient.Interface) (*Server,
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 
-	// TODO: Add toggle
-	if !server.PeriodicAgent.PeriodicsInitialized(o.namespace, kc) {
+	initializePeriodics, _ := strconv.ParseBool(os.Getenv("INITIALIZE_PERIODICS"))
+	if initializePeriodics && !server.PeriodicAgent.PeriodicsInitialized(o.namespace, kc) {
 		if server.FileBrowsers == nil {
 			ghaSecretDir := util.GetGitHubAppSecretDir()
 
