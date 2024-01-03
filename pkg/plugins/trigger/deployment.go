@@ -32,10 +32,11 @@ func handleDeployment(c Client, ds scm.DeploymentStatusHook) error {
 		labels[scmprovider.EventGUID] = ds.DeploymentStatus.ID
 		pj := jobutil.NewLighthouseJob(jobutil.DeploymentSpec(c.Logger, j, refs), labels, j.Annotations)
 		c.Logger.WithFields(jobutil.LighthouseJobFields(&pj)).Info("Creating a new LighthouseJob.")
-		if _, err := c.LauncherClient.Launch(&pj); err != nil {
+		lj, err := c.LauncherClient.Launch(&pj)
+		if err != nil {
 			return err
 		}
-
+		c.Logger.WithFields(jobutil.LighthouseJobFields(lj)).Debug("LighthouseJob created")
 	}
 	return nil
 }

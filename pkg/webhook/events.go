@@ -389,7 +389,7 @@ func (s *Server) handleDeploymentStatusEvent(l *logrus.Entry, ds scm.DeploymentS
 				go func(p string, h plugins.DeploymentStatusHandler) {
 					defer s.wg.Done()
 					if err := h(agent, ds); err != nil {
-						agent.Logger.WithError(err).Error("Error handling ReviewEvent.")
+						agent.Logger.WithError(err).Error("Error handling DeploymentStatusEvent.")
 					}
 				}(p, h.DeploymentStatusHandler)
 			}
