@@ -161,9 +161,9 @@ func (c *Config) Validate(lh lighthouse.Config) error {
 	validPeriodics := sets.NewString()
 	// Ensure that the periodic durations are valid and specs exist.
 	for _, p := range c.Periodics {
-		if validPeriodics.Has(p.Name) {
-			return fmt.Errorf("duplicated periodic job : %s", p.Name)
-		}
+		//if validPeriodics.Has(p.Name) {
+		//	return fmt.Errorf("duplicated periodic job : %s", p.Name)
+		//}
 		validPeriodics.Insert(p.Name)
 		if err := p.Base.Validate(PeriodicJob, lh.PodNamespace); err != nil {
 			return fmt.Errorf("invalid periodic job %s: %v", p.Name, err)
