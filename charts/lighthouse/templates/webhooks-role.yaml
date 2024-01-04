@@ -11,6 +11,7 @@ rules:
   {{- end }}
   - configmaps
   - secrets
+  - cronjobs
   verbs:
   - get
   - update
