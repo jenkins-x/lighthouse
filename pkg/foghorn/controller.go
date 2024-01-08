@@ -3,6 +3,7 @@ package foghorn
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +18,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -121,7 +121,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	r.updateJobStatusForActivity(activityRecord, jobCopy)
 	r.reportStatus(activityRecord, jobCopy)
 
-	if !equality.Semantic.DeepEqual(job.Status, jobCopy.Status) {
+	if !reflect.DeepEqual(job.Status, jobCopy.Status) {
 		f := func(job *lighthousev1alpha1.LighthouseJob) error {
 			job.Status = jobCopy.Status
 			if err := r.client.Status().Update(ctx, job); err != nil {
