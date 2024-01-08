@@ -130,7 +130,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 			return nil
 		}
-		if err := r.retryModifyJob(ctx, req.NamespacedName, jobCopy, f); err != nil {
+		if err := r.retryModifyJob(ctx, req.NamespacedName, &job, f); err != nil {
 			r.logger.Errorf("Failed to update LighthouseJob status: %s", err)
 			return ctrl.Result{}, err
 		}
