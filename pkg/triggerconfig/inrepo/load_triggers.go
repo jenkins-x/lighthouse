@@ -228,6 +228,10 @@ func loadJobBaseFromSourcePath(data []byte, fileBrowsers *filebrowser.FileBrowse
 		return errors.Errorf("empty file file %s in repo %s/%s for sha %s", path, ownerName, repoName, sha)
 	}
 
+	if strings.Contains(string(data), "image: uses:") {
+		j.IsResolvedWithUsesSyntax = true
+	}
+
 	dir := filepath.Dir(path)
 
 	message := fmt.Sprintf("in repo %s/%s with sha %s", ownerName, repoName, sha)

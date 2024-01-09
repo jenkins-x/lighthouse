@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"k8s.io/utils/clock"
 	"sync"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
@@ -38,7 +39,6 @@ import (
 	"github.com/bwmarrin/snowflake"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/clock"
 )
 
 type lighthouseJobClient interface {

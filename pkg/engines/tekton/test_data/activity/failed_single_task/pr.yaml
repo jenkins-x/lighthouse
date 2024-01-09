@@ -33,14 +33,14 @@ spec:
   - name: build_id
     value: "7"
   pipelineRef:
-    apiVersion: tekton.dev/v1alpha1
+    apiVersion: tekton.dev/v1beta1
     name: jenkins-x-charts-jx-build-templ-wbbx6-7
   podTemplate:
     schedulerName: ""
   resources:
   - name: jenkins-x-charts-jx-build-templ-wbbx6
     resourceRef:
-      apiVersion: tekton.dev/v1alpha1
+      apiVersion: tekton.dev/v1beta1
       name: jenkins-x-charts-jx-build-templ-wbbx6
   serviceAccountName: tekton-bot
   timeout: 240h0m0s

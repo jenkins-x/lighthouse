@@ -2,6 +2,7 @@ package inrepo
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -19,21 +20,38 @@ type UseLocation struct {
 	TaskSpec        *v1beta1.TaskSpec
 }
 
+func getParamsFromTasksResults(loc *UseLocation) map[string]bool {
+	areParamsFromTasksResults := make(map[string]bool)
+	pipelineTasksAndFinally := loc.PipelineSpec.Tasks
+	pipelineTasksAndFinally = append(pipelineTasksAndFinally, loc.PipelineSpec.Finally...)
+	for _, pipelineTask := range pipelineTasksAndFinally {
+		params := pipelineTask.Params
+		for _, param := range params {
+			paramValStr := param.Value.StringVal
+			if strings.HasPrefix(paramValStr, "$(tasks.") && strings.Contains(paramValStr, ".results.") && strings.HasSuffix(paramValStr, ")") {
+				areParamsFromTasksResults[param.Name] = true
+			}
+		}
+	}
+	return areParamsFromTasksResults
+}
+
 // UseParametersAndResults adds the parameters from the used Task to the PipelineSpec if specified and the PipelineTask
 func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta1.TaskSpec) error {
 	parameterSpecs := uses.Params
 	parameters := ToParams(parameterSpecs)
 	results := uses.Results
+	areParamsFromTasksResults := getParamsFromTasksResults(loc)
 
 	prs := loc.PipelineRunSpec
 	if prs != nil {
-		prs.Params = useParameters(prs.Params, ToDefaultParams(parameterSpecs))
+		prs.Params = useParameters(prs.Params, ToDefaultParams(parameterSpecs), areParamsFromTasksResults)
 		prs.Workspaces = useWorkspaceBindings(prs.Workspaces, ToWorkspaceBindings(uses.Workspaces))
 	}
 	ps := loc.PipelineSpec
 	if ps != nil {
-		ps.Params = useParameterSpecs(ctx, ps.Params, parameterSpecs)
-		ps.Results = usePipelineResults(ps.Results, results)
+		ps.Params = useParameterSpecs(ctx, ps.Params, parameterSpecs, areParamsFromTasksResults)
+		ps.Results = usePipelineResults(ps.Results, results, loc.TaskName)
 		ps.Workspaces = usePipelineWorkspaces(ps.Workspaces, uses.Workspaces)
 	}
 	pt := loc.PipelineTask
@@ -42,11 +60,11 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 	}
 	trs := loc.TaskRunSpec
 	if trs != nil {
-		trs.Params = useParameters(trs.Params, parameters)
+		trs.Params = useParameters(trs.Params, parameters, areParamsFromTasksResults)
 	}
 	ts := loc.TaskSpec
 	if ts != nil {
-		ts.Params = useParameterSpecs(ctx, ts.Params, parameterSpecs)
+		ts.Params = useParameterSpecs(ctx, ts.Params, parameterSpecs, areParamsFromTasksResults)
 		ts.Results = useResults(ts.Results, results)
 		ts.Sidecars = useSidecars(ts.Sidecars, uses.Sidecars)
 		ts.Workspaces = useWorkspaces(ts.Workspaces, uses.Workspaces)
@@ -88,7 +106,7 @@ func ToDefaultParams(params []v1beta1.ParamSpec) []v1beta1.Param {
 	return answer
 }
 
-func useParameterSpecs(ctx context.Context, params []v1beta1.ParamSpec, uses []v1beta1.ParamSpec) []v1beta1.ParamSpec {
+func useParameterSpecs(ctx context.Context, params []v1beta1.ParamSpec, uses []v1beta1.ParamSpec, areParamsFromTasksResults map[string]bool) []v1beta1.ParamSpec {
 	for _, u := range uses {
 		found := false
 		for i := range params {
@@ -104,13 +122,15 @@ func useParameterSpecs(ctx context.Context, params []v1beta1.ParamSpec, uses []v
 		}
 		if !found {
 			u.SetDefaults(ctx)
-			params = append(params, u)
+			if areParamsFromTasksResults == nil || !areParamsFromTasksResults[u.Name] {
+				params = append(params, u)
+			}
 		}
 	}
 	return params
 }
 
-func useParameters(params []v1beta1.Param, uses []v1beta1.Param) []v1beta1.Param {
+func useParameters(params []v1beta1.Param, uses []v1beta1.Param, areParamsFromTasksResults map[string]bool) []v1beta1.Param {
 	for _, u := range uses {
 		found := false
 		for i := range params {
@@ -133,7 +153,9 @@ func useParameters(params []v1beta1.Param, uses []v1beta1.Param) []v1beta1.Param
 			}
 		}
 		if !found {
-			params = append(params, u)
+			if areParamsFromTasksResults == nil || !areParamsFromTasksResults[u.Name] {
+				params = append(params, u)
+			}
 		}
 	}
 	return params
@@ -169,7 +191,7 @@ func useParameterEnvVars(env []corev1.EnvVar, uses []v1beta1.Param) []corev1.Env
 	return env
 }
 
-func usePipelineResults(results []v1beta1.PipelineResult, uses []v1beta1.TaskResult) []v1beta1.PipelineResult {
+func usePipelineResults(results []v1beta1.PipelineResult, uses []v1beta1.TaskResult, taskName string) []v1beta1.PipelineResult {
 	for _, u := range uses {
 		found := false
 		for i := range results {
@@ -186,6 +208,7 @@ func usePipelineResults(results []v1beta1.PipelineResult, uses []v1beta1.TaskRes
 			results = append(results, v1beta1.PipelineResult{
 				Name:        u.Name,
 				Description: u.Description,
+				Value:       *v1beta1.NewStructuredValues(fmt.Sprintf("$(tasks.%s.results.%s)", taskName, u.Name)),
 			})
 		}
 	}

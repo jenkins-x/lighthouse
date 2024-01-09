@@ -25,7 +25,7 @@ spec:
         imagePullPolicy: {{ tpl .Values.jenkinscontroller.image.pullPolicy . }}
         args:
           - --namespace={{ .Release.Namespace }}
-          - --jenkins-url={{ required "A valid Jenkins URK is required!" .Values.jenkinscontroller.jenkinsURL }}
+          - --jenkins-url={{ required "A valid Jenkins URL is required!" .Values.jenkinscontroller.jenkinsURL }}
           - --jenkins-user={{ required "A valid Jenkins username is required!" .Values.jenkinscontroller.jenkinsUser }}
           - --jenkins-token-file=/var/jenkins/token
         ports:

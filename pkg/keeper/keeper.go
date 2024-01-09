@@ -620,13 +620,13 @@ func filterSubpool(spc scmProviderClient, sp *subpool) *subpool {
 
 // filterPR indicates if a PR should be filtered out of the subpool.
 // Specifically we filter out PRs that:
-// - Have known merge conflicts.
-// - Have failing or missing status contexts.
-// - Have pending required status contexts that are not associated with a
-//   PipelineActivity. (This ensures that the 'keeper' context indicates that the pending
-//   status is preventing merge. Required PipelineActivity statuses are allowed to be
-//   'pending' because this prevents kicking PRs from the pool when Keeper is
-//   retesting them.)
+//   - Have known merge conflicts.
+//   - Have failing or missing status contexts.
+//   - Have pending required status contexts that are not associated with a
+//     PipelineActivity. (This ensures that the 'keeper' context indicates that the pending
+//     status is preventing merge. Required PipelineActivity statuses are allowed to be
+//     'pending' because this prevents kicking PRs from the pool when Keeper is
+//     retesting them.)
 func filterPR(spc scmProviderClient, sp *subpool, pr *PullRequest) bool {
 	log := sp.log.WithFields(pr.logFields())
 	// Skip PRs that are known to be unmergeable.
@@ -1539,8 +1539,8 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 		org := string(pr.Repository.Owner.Login)
 		repo := string(pr.Repository.Name)
 		branch := string(pr.BaseRef.Name)
-		branchRef := string(pr.BaseRef.Prefix) + string(pr.BaseRef.Name)
 		cloneURL := string(pr.Repository.URL)
+		baseSHA := string(pr.BaseRefOID)
 		if cloneURL == "" {
 			return nil, errors.New("no clone URL specified for repository")
 		}
@@ -1549,22 +1549,18 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 		}
 		fn := poolKey(org, repo, branch)
 		if sps[fn] == nil {
-			sha, err := c.spc.GetRef(org, repo, strings.TrimPrefix(branchRef, "refs/"))
-			if err != nil {
-				return nil, err
-			}
 			sps[fn] = &subpool{
 				log: c.logger.WithFields(logrus.Fields{
 					"org":       org,
 					"repo":      repo,
 					"branch":    branch,
-					"base-sha":  sha,
+					"base-sha":  baseSHA,
 					"clone-url": cloneURL,
 				}),
 				org:      org,
 				repo:     repo,
 				branch:   branch,
-				sha:      sha,
+				sha:      baseSHA,
 				cloneURL: cloneURL,
 			}
 		}
@@ -1601,6 +1597,7 @@ type PullRequest struct {
 	BaseRef     GraphQLBaseRef
 	HeadRefName githubql.String `graphql:"headRefName"`
 	HeadRefOID  githubql.String `graphql:"headRefOid"`
+	BaseRefOID  githubql.String
 	Mergeable   githubql.MergeableState
 	Repository  Repository
 	Commits     struct {
@@ -1779,7 +1776,8 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 
 		prs, err := spc.ListAllPullRequestsForFullNameRepo(repo, searchOpts)
 		if err != nil {
-			return nil, errors.Wrapf(err, "listing all open pull requests for %s", repo)
+			log.WithError(err).Warnf("listing all open pull requests for %s failed, skipping repository", repo)
+			continue
 		}
 
 		var repoData *scm.Repository
@@ -1871,7 +1869,7 @@ func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {
 		return nil
 	}
 	gitKind := os.Getenv("GIT_KIND")
-	if gitKind != "bitbucketserver" {
+	if gitKind != "bitbucketserver" && gitKind != "bitbucketcloud" {
 		return nil
 	}
 
@@ -1920,6 +1918,7 @@ func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequ
 		BaseRef:     baseRef,
 		HeadRefName: githubql.String(scmPR.Source),
 		HeadRefOID:  githubql.String(scmPR.Head.Sha),
+		BaseRefOID:  githubql.String(scmPR.Base.Sha),
 		Mergeable:   mergeable,
 		Repository:  scmRepoToGraphQLRepo(scmRepo),
 		Labels:      labels,

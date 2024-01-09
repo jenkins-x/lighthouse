@@ -159,10 +159,10 @@ spec:
     results:
     - description: The precise commit SHA that was fetched by this Task
       name: commit
-      value: ""
+      value: $(tasks.from-build-pack.results.commit)
     - description: The precise URL that was fetched by this Task
       name: url
-      value: ""
+      value: $(tasks.from-build-pack.results.url)
     tasks:
     - name: from-build-pack
       params:
