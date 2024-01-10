@@ -68,7 +68,7 @@ func TestUpdatePeriodics(t *testing.T) {
 		List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	require.NoError(t, err, "failed to get ConfigMaps")
 	require.Len(t, cms.Items, 1)
-	require.Equal(t, lighthouseJob, cms.Items[0].Data["lighthousejob.yaml"])
+	require.Equal(t, lighthouseJob, cms.Items[0].Data["lighthousejob.json"])
 
 	cjs, err := kubeClient.BatchV1().CronJobs(namespace).List(context.TODO(), metav1.ListOptions{})
 	require.NoError(t, err, "failed to get CronJobs")
@@ -102,7 +102,7 @@ func TestInitializePeriodics(t *testing.T) {
 		List(context.TODO(), metav1.ListOptions{LabelSelector: selector})
 	require.NoError(t, err, "failed to get ConfigMaps")
 	require.Len(t, cms.Items, 1)
-	require.Equal(t, lighthouseJob, cms.Items[0].Data["lighthousejob.yaml"])
+	require.Equal(t, lighthouseJob, cms.Items[0].Data["lighthousejob.json"])
 
 	cjs, err := kubeClient.BatchV1().CronJobs(namespace).List(context.TODO(), metav1.ListOptions{})
 	require.NoError(t, err, "failed to get CronJobs")

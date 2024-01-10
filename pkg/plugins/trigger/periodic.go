@@ -306,7 +306,7 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 		}
 
 		pj := jobutil.NewLighthouseJob(jobutil.PeriodicSpec(l, p, refs), labels, p.Annotations)
-		lighthouseData, err := json.MarshalIndent(pj, "", "  ")
+		lighthouseData, err := json.Marshal(pj)
 
 		// Only apply if any value have changed
 		existingCm := getExistingConfigMap(p)
