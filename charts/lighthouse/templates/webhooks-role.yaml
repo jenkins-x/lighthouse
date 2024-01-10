@@ -11,7 +11,6 @@ rules:
   {{- end }}
   - configmaps
   - secrets
-  - cronjobs
   verbs:
   - get
   - update
@@ -24,6 +23,16 @@ rules:
   - services
   verbs:
   - get
+  - list
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - get
+  - update
+  - create
   - list
   - watch
 - apiGroups:
