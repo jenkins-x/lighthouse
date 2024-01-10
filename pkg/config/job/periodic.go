@@ -22,6 +22,8 @@ type Periodic struct {
 	Reporter
 	// Cron representation of job trigger time
 	Cron string `json:"cron"`
+	// Branch to run job on. If not set default branch for repository is used
+	Branch string `json:"branch,omitempty"`
 }
 
 // SetDefaults initializes default values

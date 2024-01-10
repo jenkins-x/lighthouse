@@ -301,8 +301,10 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 			continue
 		}
 		refs := v1alpha1.Refs{
-			Org:  org,
-			Repo: repo,
+			Org:      org,
+			Repo:     repo,
+			BaseRef:  p.Branch,
+			CloneURI: p.CloneURI,
 		}
 
 		pj := jobutil.NewLighthouseJob(jobutil.PeriodicSpec(l, p, refs), labels, p.Annotations)
@@ -402,7 +404,7 @@ func (pa *PeriodicAgent) constructCronJob(resourceName, configMapName string, la
 							WithContainers((&applyv1.ContainerApplyConfiguration{}).
 								WithName("create-lighthousejob").
 								WithImage("bitnami/kubectl").
-								WithCommand("/bin/sh").
+								WithCommand("/bin/bash").
 								WithArgs("-c", `
 set -o errexit
 create_output=$(kubectl create -f /config/lighthousejob.json)
