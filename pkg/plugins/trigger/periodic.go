@@ -386,8 +386,7 @@ func (pa *PeriodicAgent) constructCronJob(resourceName, configMapName string, la
 	if !found {
 		serviceAccount = "lighthouse-webhooks"
 	}
-	return (&applybatchv1.CronJobApplyConfiguration{}).
-		WithName(resourceName).
+	return applybatchv1.CronJob(resourceName, pa.Namespace).
 		WithLabels(labels).
 		WithSpec((&applybatchv1.CronJobSpecApplyConfiguration{}).
 			WithJobTemplate((&applybatchv1.JobTemplateSpecApplyConfiguration{}).
