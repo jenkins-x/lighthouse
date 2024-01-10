@@ -306,12 +306,12 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 		}
 
 		pj := jobutil.NewLighthouseJob(jobutil.PeriodicSpec(l, p, refs), labels, p.Annotations)
-		lighthouseData, err := json.Marshal(pj)
+		lighthouseData, err := json.MarshalIndent(pj, "", "  ")
 
 		// Only apply if any value have changed
 		existingCm := getExistingConfigMap(p)
 
-		if existingCm == nil || existingCm.Data["lighthousejob.yaml"] != string(lighthouseData) {
+		if existingCm == nil || existingCm.Data["lighthousejob.json"] != string(lighthouseData) {
 			var cm *applyv1.ConfigMapApplyConfiguration
 			if existingCm != nil {
 				cm, err = applyv1.ExtractConfigMap(existingCm, fieldManager)
@@ -325,7 +325,7 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 			if cm.Data == nil {
 				cm.Data = make(map[string]string)
 			}
-			cm.Data["lighthousejob.yaml"] = string(lighthouseData)
+			cm.Data["lighthousejob.json"] = string(lighthouseData)
 
 			_, err := cmInterface.Apply(context.TODO(), cm, metav1.ApplyOptions{Force: true, FieldManager: fieldManager})
 			if err != nil {
@@ -405,7 +405,7 @@ func (pa *PeriodicAgent) constructCronJob(resourceName, configMapName string, la
 								WithCommand("/bin/sh").
 								WithArgs("-c", `
 set -o errexit
-create_output=$(kubectl create -f /config/lighthousejob.yaml)
+create_output=$(kubectl create -f /config/lighthousejob.json)
 [[ $create_output =~ (.*)\  ]]
 kubectl patch ${BASH_REMATCH[1]} --type=merge --subresource status --patch 'status: {state: triggered}'
 `).
