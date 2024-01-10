@@ -320,7 +320,7 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 					return true
 				}
 			} else {
-				cm = (&applyv1.ConfigMapApplyConfiguration{}).WithName(resourceName).WithLabels(labels)
+				cm = applyv1.ConfigMap(resourceName, pa.Namespace).WithLabels(labels)
 			}
 			if cm.Data == nil {
 				cm.Data = make(map[string]string)
