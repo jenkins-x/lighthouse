@@ -18,6 +18,7 @@ rules:
   - list
   - watch
   - patch
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -37,6 +38,7 @@ rules:
   - list
   - watch
   - patch
+  - delete
 - apiGroups:
   - lighthouse.jenkins.io
   resources:
