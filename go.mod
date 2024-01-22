@@ -12,7 +12,7 @@ require (
 	github.com/h2non/gock v1.0.9
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jenkins-x/go-scm v1.14.25
+	github.com/jenkins-x/go-scm v1.14.26
 	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.20.1
@@ -27,7 +27,7 @@ require (
 	k8s.io/api v0.25.9
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.25.9
-	k8s.io/utils v0.0.0-20230209194617-a36077c30491
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	knative.dev/pkg v0.0.0-20221011175852-714b7630a836
 	sigs.k8s.io/controller-runtime v0.12.0
 	sigs.k8s.io/yaml v1.3.0
@@ -128,7 +128,7 @@ replace (
 	github.com/Azure/azure-sdk-for-go => github.com/Azure/azure-sdk-for-go v38.2.0+incompatible
 
 	// lets override the go-scm version from tektoncd
-	github.com/jenkins-x/go-scm => github.com/jenkins-x/go-scm v1.14.25
+	github.com/jenkins-x/go-scm => github.com/jenkins-x/go-scm v1.14.26
 
 	// gomodules.xyz breaks in Athens proxying
 	gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.2.0
