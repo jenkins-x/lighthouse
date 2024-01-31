@@ -18,6 +18,8 @@ package trigger
 
 import (
 	"fmt"
+	"net/url"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -28,7 +30,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"net/url"
 )
 
 func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error {
@@ -59,25 +60,7 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 		if err = infoMsg(c, pr.PullRequest); err != nil {
 			return err
 		}
-		c.Logger.Infof("Author %q is a member, Starting all jobs for new PR.", author)
-		return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
-	case scm.ActionReopen:
-		// When a PR is reopened, check that the user is in the org or that an org
-		// member had said "/ok-to-test" before building, resulting in label ok-to-test.
-		l, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
-		if err != nil {
-			return fmt.Errorf("could not validate PR: %s", err)
-		} else if trusted {
-			// Eventually remove need-ok-to-test
-			// Does not work for TrustedUser() == true since labels are not fetched in this case
-			if scmprovider.HasLabel(labels.NeedsOkToTest, l) {
-				if err := c.SCMProviderClient.RemoveLabel(org, repo, num, labels.NeedsOkToTest, true); err != nil {
-					return err
-				}
-			}
-			c.Logger.Info("Starting all jobs for updated PR.")
-			return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
-		}
+		return buildAllIfTrustedOrDraft(c, trigger, pr)
 	case scm.ActionEdited, scm.ActionUpdate:
 		// if someone changes the base of their PR, we will get this
 		// event and the changes field will list that the base SHA and
@@ -85,18 +68,22 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 		changes := pr.Changes
 		if changes.Base.Ref.From != "" || changes.Base.Sha.From != "" {
 			// the base of the PR changed and we need to re-test it
-			return buildAllIfTrusted(c, trigger, pr)
+			return buildAllIfTrustedOrDraft(c, trigger, pr)
 		}
-	case scm.ActionSync:
-		return buildAllIfTrusted(c, trigger, pr)
+	case scm.ActionReopen, scm.ActionSync:
+		return buildAllIfTrustedOrDraft(c, trigger, pr)
+	case scm.ActionReadyForReview, scm.ActionConvertedToDraft:
+		if trigger.SkipDraftPR {
+			return buildAllIfTrustedOrDraft(c, trigger, pr)
+		}
 	case scm.ActionLabel:
 		// When a PR is LGTMd, if it is untrusted then build it once.
 		if pr.Label.Name == labels.LGTM {
-			_, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
+			_, toTrigger, err := TrustedOrDraftPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, pr.PullRequest.Draft, nil)
 			if err != nil {
 				return fmt.Errorf("could not validate PR: %s", err)
-			} else if !trusted {
-				c.Logger.Info("Starting all jobs for untrusted PR with LGTM.")
+			} else if !toTrigger {
+				c.Logger.Info("Starting all jobs for untrusted or draft PR with LGTM.")
 				return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 			}
 		}
@@ -115,17 +102,19 @@ func orgRepoAuthor(pr scm.PullRequest) (string, string, login) {
 	return org, repo, login(author)
 }
 
-func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error {
-	// When a PR is updated, check that the user is in the org or that an org
-	// member has said "/ok-to-test" before building. There's no need to ask
-	// for "/ok-to-test" because we do that once when the PR is created.
+func buildAllIfTrustedOrDraft(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error {
+	// When a PR is updated, check if the user is trusted or if the PR is a draft.
 	org, repo, a := orgRepoAuthor(pr.PullRequest)
 	author := string(a)
 	num := pr.PullRequest.Number
-	l, trusted, err := TrustedPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, nil)
+	l, toTrigger, err := TrustedOrDraftPullRequest(c.SCMProviderClient, trigger, author, org, repo, num, pr.PullRequest.Draft, nil)
 	if err != nil {
 		return fmt.Errorf("could not validate PR: %s", err)
-	} else if trusted {
+	}
+
+	hasOkToTestLabel := scmprovider.HasLabel(labels.OkToTest, l)
+
+	if toTrigger {
 		// Eventually remove needs-ok-to-test
 		// Will not work for org members since labels are not fetched in this case
 		if scmprovider.HasLabel(labels.NeedsOkToTest, l) {
@@ -133,9 +122,28 @@ func buildAllIfTrusted(c Client, trigger *plugins.Trigger, pr scm.PullRequestHoo
 				return err
 			}
 		}
-		c.Logger.Info("Starting all jobs for updated PR.")
+
+		// We want to avoid launching exactly the same pipelines that were already launched just before (Draft or not)
+		// So we skip pipelines if trigger.SkipDraftPR, ActionReadyForReview or ActionConvertedToDraft and with ok-to-test label
+		if (pr.Action == scm.ActionReadyForReview || pr.Action == scm.ActionConvertedToDraft) && trigger.SkipDraftPR && hasOkToTestLabel {
+			return nil
+		}
+
+		c.Logger.Info("Starting all jobs for new/updated PR.")
 		return buildAll(c, &pr.PullRequest, pr.GUID, trigger.ElideSkippedContexts)
 	}
+
+	if trigger.SkipDraftPR && pr.PullRequest.Draft {
+		// Welcome Message for Draft PR
+		if err = welcomeMsgForDraftPR(c.SCMProviderClient, trigger, pr.PullRequest); err != nil {
+			return fmt.Errorf("could not welcome for draft pr %q: %v", author, err)
+		}
+		// Skip pipelines trigger if SkipDraftPR enabled and PR is a draft without OkToTest label
+		if !hasOkToTestLabel {
+			c.Logger.Infof("Skipping build for draft PR %d unless converted to `ready for review` or `/ok-to-test` comment is added.", num)
+		}
+	}
+
 	return nil
 }
 
@@ -242,16 +250,59 @@ I understand the commands that are listed [here](https://jenkins-x.io/v3/develop
 	return nil
 }
 
-// TrustedPullRequest returns whether or not the given PR should be tested.
-// It first checks if the author is in the org, then looks for "ok-to-test" label.
-func TrustedPullRequest(spc scmProviderClient, trigger *plugins.Trigger, author, org, repo string, num int, l []*scm.Label) ([]*scm.Label, bool, error) {
-	// First check if the author is a member of the org.
-	if orgMember, err := TrustedUser(spc, trigger, author, org, repo); err != nil {
-		return l, false, fmt.Errorf("error checking %s for trust: %v", author, err)
-	} else if orgMember {
-		return l, true, nil
+func welcomeMsgForDraftPR(spc scmProviderClient, trigger *plugins.Trigger, pr scm.PullRequest) error {
+	org, repo, _ := orgRepoAuthor(pr)
+
+	comment := "This is a draft PR with the scheduler `trigger.SkipDraftPR` parameter enabled on this repository.\n"
+
+	var errors []error
+
+	if trigger.IgnoreOkToTest {
+		comment += "Draft PRs cannot trigger pipelines with `/ok-to-test` in this repository. Collaborators can still trigger pipelines on the Draft PR using `/test all`."
+	} else {
+		comment += "To trigger pipelines on this draft PR, please mark it as ready for review by removing the draft status if you are trusted. Collaborators can also trigger tests on draft PRs using `/ok-to-test`."
+
+		if err := spc.AddLabel(org, repo, pr.Number, labels.NeedsOkToTest, true); err != nil {
+			errors = append(errors, err)
+		}
 	}
-	// Then check if PR has ok-to-test label
+
+	comment += fmt.Sprintf(`
+<details>
+
+%s
+</details>
+`, plugins.AboutThisBotWithoutCommands)
+
+	comments, err := spc.ListPullRequestComments(org, repo, pr.Number)
+	if err != nil {
+		errors = append(errors, err)
+	}
+
+	toComment := true
+	for _, c := range comments {
+		if c.Body == comment {
+			toComment = false
+			break
+		}
+	}
+
+	if toComment {
+		if err := spc.CreateComment(org, repo, pr.Number, true, comment); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+		return errorutil.NewAggregate(errors...)
+	}
+	return nil
+}
+
+// TrustedOrDraftPullRequest returns whether or not the given PR should be tested.
+// It first checks if the author is in the org, then looks for "ok-to-test" label.
+func TrustedOrDraftPullRequest(spc scmProviderClient, trigger *plugins.Trigger, author, org, repo string, num int, isDraft bool, l []*scm.Label) ([]*scm.Label, bool, error) {
+	// First get PR labels
 	if l == nil {
 		var err error
 		l, err = spc.GetIssueLabels(org, repo, num, true)
@@ -259,6 +310,13 @@ func TrustedPullRequest(spc scmProviderClient, trigger *plugins.Trigger, author,
 			return l, false, fmt.Errorf("error getting issue labels: %v", err)
 		}
 	}
+	// Then check if the author is a member of the org and if trigger.SkipDraftPR disabled or PR not in draft
+	if orgMember, err := TrustedUser(spc, trigger, author, org, repo); err != nil {
+		return l, false, fmt.Errorf("error checking %s for trust: %v", author, err)
+	} else if orgMember && (!trigger.SkipDraftPR || !isDraft) {
+		return l, true, nil
+	}
+	// Then check if PR has ok-to-test label (untrusted user or trigger.SkipDraftPR enabled && draft PR)
 	return l, scmprovider.HasLabel(labels.OkToTest, l), nil
 }
 

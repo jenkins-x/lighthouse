@@ -52,18 +52,18 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	c.Logger.WithField("pull_request", pr).Trace("Fetched pull request")
 
 	// Skip untrusted users comments.
-	trusted, err := TrustedUser(c.SCMProviderClient, trigger, commentAuthor, org, repo)
+	toTrigger, err := TrustedUser(c.SCMProviderClient, trigger, commentAuthor, org, repo)
 	if err != nil {
 		return fmt.Errorf("error checking trust of %s: %v", commentAuthor, err)
 	}
 	var l []*scm.Label
-	if !trusted {
-		// Skip untrusted PRs.
-		l, trusted, err = TrustedPullRequest(c.SCMProviderClient, trigger, gc.IssueAuthor.Login, org, repo, number, nil)
+	if !toTrigger {
+		// Skip PRs not ready to be triggered.
+		l, toTrigger, err = TrustedOrDraftPullRequest(c.SCMProviderClient, trigger, gc.IssueAuthor.Login, org, repo, number, pr.Draft, nil)
 		if err != nil {
 			return err
 		}
-		if !trusted {
+		if !toTrigger {
 			resp := "Cannot trigger testing until a trusted user reviews the PR and leaves an `/ok-to-test` message."
 			c.Logger.Infof("Commenting \"%s\".", resp)
 			return c.SCMProviderClient.CreateComment(org, repo, number, true, plugins.FormatResponseRaw(gc.Body, gc.Link, c.SCMProviderClient.QuoteAuthorForComment(gc.Author.Login), resp))
@@ -71,7 +71,7 @@ func handleGenericComment(c Client, trigger *plugins.Trigger, gc scmprovider.Gen
 	}
 
 	// At this point we can trust the PR, so we eventually update labels.
-	// Ensure we have labels before test, because TrustedPullRequest() won't be called
+	// Ensure we have labels before test, because TrustedOrDraftPullRequest() won't be called
 	// when commentAuthor is trusted.
 	if l == nil {
 		l, err = c.SCMProviderClient.GetIssueLabels(org, repo, number, gc.IsPR)
@@ -112,15 +112,16 @@ type SCMProviderClient interface {
 // FilterPresubmits determines which presubmits should run. We only want to
 // trigger jobs that should run, but the pool of jobs we filter to those that
 // should run depends on the type of trigger we just got:
-//  - if we get a /test foo, we only want to consider those jobs that match;
-//    jobs will default to run unless we can determine they shouldn't
-//  - if we got a /retest, we only want to consider those jobs that have
-//    already run and posted failing contexts to the PR or those jobs that
-//    have not yet run but would otherwise match /test all; jobs will default
-//    to run unless we can determine they shouldn't
-//  - if we got a /test all or an /ok-to-test, we want to consider any job
-//    that doesn't explicitly require a human trigger comment; jobs will
-//    default to not run unless we can determine that they should
+//   - if we get a /test foo, we only want to consider those jobs that match;
+//     jobs will default to run unless we can determine they shouldn't
+//   - if we got a /retest, we only want to consider those jobs that have
+//     already run and posted failing contexts to the PR or those jobs that
+//     have not yet run but would otherwise match /test all; jobs will default
+//     to run unless we can determine they shouldn't
+//   - if we got a /test all or an /ok-to-test, we want to consider any job
+//     that doesn't explicitly require a human trigger comment; jobs will
+//     default to not run unless we can determine that they should
+//
 // If a comment that we get matches more than one of the above patterns, we
 // consider the set of matching presubmits the union of the results from the
 // matching cases.

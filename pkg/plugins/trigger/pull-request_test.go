@@ -96,7 +96,7 @@ func TestTrusted(t *testing.T) {
 					Name: label,
 				})
 			}
-			_, actual, err := TrustedPullRequest(g, trigger, tc.author, "kubernetes-incubator", "random-repo", 1, labels)
+			_, actual, err := TrustedOrDraftPullRequest(g, trigger, tc.author, "kubernetes-incubator", "random-repo", 1, false, labels)
 			if err != nil {
 				t.Fatalf("Didn't expect error: %s", err)
 			}
@@ -117,6 +117,8 @@ func TestHandlePullRequest(t *testing.T) {
 		HasOkToTest   bool
 		prLabel       string
 		prChanges     bool
+		isDraftPR     bool
+		skipDraftPR   bool
 		prAction      scm.Action
 	}{
 		{
@@ -124,6 +126,24 @@ func TestHandlePullRequest(t *testing.T) {
 
 			Author:      "t",
 			ShouldBuild: true,
+			prAction:    scm.ActionOpen,
+		},
+		{
+			name: "Trusted user open draft PR with SkipDraftPR should not build and should comment",
+
+			Author:        "t",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionOpen,
+		},
+		{
+			name: "Trusted user open draft PR without SkipDraftPR should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			isDraftPR:   true,
 			prAction:    scm.ActionOpen,
 		},
 		{
@@ -135,10 +155,66 @@ func TestHandlePullRequest(t *testing.T) {
 			prAction:      scm.ActionOpen,
 		},
 		{
+			name: "Untrusted user open draft PR with SkipDraftPR should not build and should comment",
+
+			Author:        "u",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionOpen,
+		},
+		{
+			name: "Untrusted user open draft PR without SkipDraftPR should not build and should comment",
+
+			Author:        "u",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			prAction:      scm.ActionOpen,
+		},
+		{
 			name: "Trusted user reopen PR should build",
 
 			Author:      "t",
 			ShouldBuild: true,
+			prAction:    scm.ActionReopen,
+		},
+		{
+			name: "Trusted user reopen draft PR with SkipDraftPR with ok-to-test should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionReopen,
+		},
+		{
+			name: "Trusted user reopen draft PR without SkipDraftPR with ok-to-test should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			prAction:    scm.ActionReopen,
+		},
+		{
+			name: "Trusted user reopen draft PR with SkipDraftPR without ok-to-test should not build and should comment",
+
+			Author:        "t",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionReopen,
+		},
+		{
+			name: "Trusted user reopen draft PR without SkipDraftPR without ok-to-test should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			isDraftPR:   true,
 			prAction:    scm.ActionReopen,
 		},
 		{
@@ -157,6 +233,43 @@ func TestHandlePullRequest(t *testing.T) {
 			prAction:    scm.ActionReopen,
 		},
 		{
+			name: "Untrusted user reopen draft PR with SkipDraftPR with ok-to-test should build",
+
+			Author:      "u",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionReopen,
+		},
+		{
+			name: "Untrusted user reopen draft PR without SkipDraftPR with ok-to-test should build",
+
+			Author:      "u",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			prAction:    scm.ActionReopen,
+		},
+		{
+			name: "Untrusted user reopen draft PR with SkipDraftPR without ok-to-test should not build and should comment",
+
+			Author:        "u",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionReopen,
+		},
+		{
+			name: "Untrusted user reopen draft PR without SkipDraftPR without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			isDraftPR:   true,
+			prAction:    scm.ActionReopen,
+		},
+		{
 			name: "Trusted user edit PR with changes should build",
 
 			Author:      "t",
@@ -172,10 +285,68 @@ func TestHandlePullRequest(t *testing.T) {
 			prAction:    scm.ActionEdited,
 		},
 		{
+			name: "Trusted user edit draft PR with SkipDraftPR with ok-to-test with changes should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prChanges:   true,
+			prAction:    scm.ActionEdited,
+		},
+		{
+			name: "Trusted user edit draft PR without SkipDraftPR with ok-to-test with changes should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			prChanges:   true,
+			prAction:    scm.ActionEdited,
+		},
+		{
+			name: "Trusted user edit draft PR with SkipDraftPR without ok-to-test with changes should not build and should comment",
+
+			Author:        "t",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prChanges:     true,
+			prAction:      scm.ActionEdited,
+		},
+		{
+			name: "Trusted user edit draft PR without SkipDraftPR without ok-to-test with changes should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			isDraftPR:   true,
+			prChanges:   true,
+			prAction:    scm.ActionEdited,
+		},
+		{
 			name: "Untrusted user edit PR without changes and without ok-to-test should not build",
 
 			Author:      "u",
 			ShouldBuild: false,
+			prAction:    scm.ActionEdited,
+		},
+		{
+			name: "Untrusted user edit draft PR with SkipDraftPR without changes and without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionEdited,
+		},
+		{
+			name: "Untrusted user edit draft PR without SkipDraftPR without changes and without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			isDraftPR:   true,
 			prAction:    scm.ActionEdited,
 		},
 		{
@@ -187,11 +358,50 @@ func TestHandlePullRequest(t *testing.T) {
 			prAction:    scm.ActionEdited,
 		},
 		{
+			name: "Untrusted user edit draft PR with SkipDraftPR with changes and without ok-to-test should not build and should comment",
+
+			Author:        "u",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			prChanges:     true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionEdited,
+		},
+		{
+			name: "Untrusted user edit draft PR without SkipDraftPR with changes and without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			prChanges:   true,
+			isDraftPR:   true,
+			prAction:    scm.ActionEdited,
+		},
+		{
 			name: "Untrusted user edit PR without changes and with ok-to-test should not build",
 
 			Author:      "u",
 			ShouldBuild: false,
 			HasOkToTest: true,
+			prAction:    scm.ActionEdited,
+		},
+		{
+			name: "Untrusted user edit draft PR with SkipDraftPR without changes and with ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionEdited,
+		},
+		{
+			name: "Untrusted user edit draft PR without SkipDraftPR without changes and with ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			isDraftPR:   true,
 			prAction:    scm.ActionEdited,
 		},
 		{
@@ -204,10 +414,76 @@ func TestHandlePullRequest(t *testing.T) {
 			prAction:    scm.ActionEdited,
 		},
 		{
+			name: "Untrusted user edit draft PR with SkipDraftPR with changes and with ok-to-test should build",
+
+			Author:      "u",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			prChanges:   true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionEdited,
+		},
+		{
+			name: "Untrusted user edit draft PR without SkipDraftPR with changes and with ok-to-test should build",
+
+			Author:      "u",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			prChanges:   true,
+			isDraftPR:   true,
+			prAction:    scm.ActionEdited,
+		},
+		{
 			name: "Trusted user sync PR should build",
 
 			Author:      "t",
 			ShouldBuild: true,
+			prAction:    scm.ActionSync,
+		},
+		{
+			name: "Trusted user sync draft PR with SkipDraftPR with ok-to-test should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionSync,
+		},
+		{
+			name: "Trusted user sync draft PR without SkipDraftPR with ok-to-test should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			prAction:    scm.ActionSync,
+		},
+		{
+			name: "Trusted user sync draft PR with SkipDraftPR without ok-to-test should not build and should comment",
+
+			Author:        "t",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionSync,
+		},
+		{
+			name: "Trusted user sync draft PR without SkipDraftPR without ok-to-test should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			isDraftPR:   true,
+			prAction:    scm.ActionSync,
+		},
+		{
+			name: "Untrusted user sync PR with ok-to-test should build",
+
+			Author:      "u",
+			ShouldBuild: true,
+			HasOkToTest: true,
 			prAction:    scm.ActionSync,
 		},
 		{
@@ -218,11 +494,40 @@ func TestHandlePullRequest(t *testing.T) {
 			prAction:    scm.ActionSync,
 		},
 		{
-			name: "Untrusted user sync PR with ok-to-test should build",
+			name: "Untrusted user sync draft PR with SkipDraftPR with ok-to-test should build",
 
 			Author:      "u",
 			ShouldBuild: true,
 			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionSync,
+		},
+		{
+			name: "Untrusted user sync draft PR without SkipDraftPR with ok-to-test should build",
+
+			Author:      "u",
+			ShouldBuild: true,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			prAction:    scm.ActionSync,
+		},
+		{
+			name: "Untrusted user sync draft PR with SkipDraftPR without ok-to-test should not build and should comment",
+
+			Author:        "u",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionSync,
+		},
+		{
+			name: "Untrusted user sync draft PR without SkipDraftPR without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			isDraftPR:   true,
 			prAction:    scm.ActionSync,
 		},
 		{
@@ -256,6 +561,158 @@ func TestHandlePullRequest(t *testing.T) {
 			ShouldBuild: false,
 			prAction:    scm.ActionClose,
 		},
+		// The Trusted user has already trigger the pipelines during Ready for Review so no need to trigger them again here
+		{
+			name: "Trusted user convert PR to draft with SkipDraftPR with ok-to-test should not build",
+
+			Author:      "t",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionConvertedToDraft,
+		},
+		{
+			name: "Trusted user convert PR to draft with SkipDraftPR without ok-to-test should not build and should comment",
+
+			Author:        "t",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionConvertedToDraft,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Trusted user convert PR to draft without SkipDraftPR with ok-to-test should not build",
+
+			Author:      "t",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			prAction:    scm.ActionConvertedToDraft,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Trusted user convert PR to draft without SkipDraftPR without ok-to-test should not build",
+
+			Author:      "t",
+			ShouldBuild: false,
+			isDraftPR:   true,
+			prAction:    scm.ActionConvertedToDraft,
+		},
+		// The Untrusted user has already trigger the pipelines during Ready for Review so no need to trigger them again here
+		{
+			name: "Untrusted user convert PR to draft with SkipDraftPR with ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			skipDraftPR: true,
+			prAction:    scm.ActionConvertedToDraft,
+		},
+		{
+			name: "Untrusted user convert PR to draft with SkipDraftPR without ok-to-test should not build and should comment",
+
+			Author:        "u",
+			ShouldBuild:   false,
+			ShouldComment: true,
+			isDraftPR:     true,
+			skipDraftPR:   true,
+			prAction:      scm.ActionConvertedToDraft,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Untrusted user convert PR to draft without SkipDraftPR with ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			isDraftPR:   true,
+			prAction:    scm.ActionConvertedToDraft,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Untrusted user convert PR to draft without SkipDraftPR without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			isDraftPR:   true,
+			prAction:    scm.ActionConvertedToDraft,
+		},
+		// The Trusted user has already trigger the pipelines during Draft so no need to trigger them again here
+		{
+			name: "Trusted user convert draft PR to ready for review with SkipDraftPR with ok-to-test should not build",
+
+			Author:      "t",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			skipDraftPR: true,
+			prAction:    scm.ActionReadyForReview,
+		},
+		// The Trusted user hasn't already trigger the pipelines during Draft so we can trigger them here
+		{
+			name: "Trusted user convert draft PR to ready for review with SkipDraftPR without ok-to-test should build",
+
+			Author:      "t",
+			ShouldBuild: true,
+			skipDraftPR: true,
+			prAction:    scm.ActionReadyForReview,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Trusted user convert draft PR to ready for review without SkipDraftPR with ok-to-test should not build",
+
+			Author:      "t",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			prAction:    scm.ActionReadyForReview,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Trusted user convert draft PR to ready for review without SkipDraftPR without ok-to-test should not build",
+
+			Author:      "t",
+			ShouldBuild: false,
+			prAction:    scm.ActionReadyForReview,
+		},
+		// The Untrusted user has already trigger the pipelines during Draft so no need to trigger them again here
+		{
+			name: "Untrusted user convert draft PR to ready for review with SkipDraftPR with ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			skipDraftPR: true,
+			prAction:    scm.ActionReadyForReview,
+		},
+		// The Untrusted user hasn't already trigger the pipelines during Draft but is not trusted so we should act like the default behavior
+		{
+			name: "Untrusted user convert draft PR to ready for review with SkipDraftPR without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			skipDraftPR: true,
+			prAction:    scm.ActionReadyForReview,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Untrusted user convert draft PR to ready for review without SkipDraftPR with ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			HasOkToTest: true,
+			prAction:    scm.ActionReadyForReview,
+		},
+		// SkipDraftPR disabled so we don't trigger pipelines like default situation
+		{
+			name: "Untrusted user convert draft PR to ready for review without SkipDraftPR without ok-to-test should not build",
+
+			Author:      "u",
+			ShouldBuild: false,
+			prAction:    scm.ActionReadyForReview,
+		},
 	}
 	for _, tc := range testcases {
 		t.Logf("running scenario %q", tc.name)
@@ -266,6 +723,7 @@ func TestHandlePullRequest(t *testing.T) {
 			PullRequests: map[int]*scm.PullRequest{
 				0: {
 					Number: 0,
+					Draft:  tc.isDraftPR,
 					Author: scm.User{Login: tc.Author},
 					Base: scm.PullRequestBranch{
 						Ref: "master",
@@ -307,6 +765,7 @@ func TestHandlePullRequest(t *testing.T) {
 			Label:  scm.Label{Name: tc.prLabel},
 			PullRequest: scm.PullRequest{
 				Number: 0,
+				Draft:  tc.isDraftPR,
 				Author: scm.User{Login: tc.Author},
 				Base: scm.PullRequestBranch{
 					Ref: "master",
@@ -333,6 +792,7 @@ func TestHandlePullRequest(t *testing.T) {
 		trigger := &plugins.Trigger{
 			TrustedOrg:     "org",
 			OnlyOrgMembers: true,
+			SkipDraftPR:    tc.skipDraftPR,
 		}
 		if err := handlePR(c, trigger, pr); err != nil {
 			t.Fatalf("Didn't expect error: %s", err)
