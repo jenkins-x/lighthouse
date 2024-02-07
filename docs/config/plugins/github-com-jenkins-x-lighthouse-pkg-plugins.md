@@ -210,6 +210,7 @@ Trigger specifies a configuration for a single trigger.<br /><br />The configura
 | `only_org_members` | bool | No | OnlyOrgMembers requires PRs and/or /ok-to-test comments to come from org members.<br />By default, trigger also include repo collaborators. |
 | `ignore_ok_to_test` | bool | No | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users. |
 | `elide_skipped_contexts` | bool | No | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run. |
+| `skip_draft_pr` | bool | No | SkipDraftPR when enabled, skips triggering pipelines for draft PRs<br />unless /ok-to-test is added. |
 
 ## Welcome
 

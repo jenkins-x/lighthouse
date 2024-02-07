@@ -534,6 +534,7 @@ Now we need to add the sample project to the Lighthouse configuration and setup 
       - $bot_user/$sample_repo_name
       ignore_ok_to_test: false
       elide_skipped_contexts: false
+      skip_draft_pr: false
     plugins:
       $bot_user/$config_repo_name:
       - config-updater
