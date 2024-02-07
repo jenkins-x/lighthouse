@@ -526,7 +526,7 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 		Metrics:     promMetrics,
 		ServerURL:   serverURL,
 		InRepoCache: cache,
-		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
+		// TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
 	return server, nil
 }

@@ -205,7 +205,7 @@ func TestPresubmitSpec(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		actual := PresubmitSpec(logger, tc.p, tc.refs)
+		actual, _ := PresubmitSpec(logger, tc.p, tc.refs)
 		if expected := tc.expected; !reflect.DeepEqual(actual, expected) {
 			t.Errorf("%s: actual %#v != expected %#v", tc.name, actual, expected)
 		}
@@ -639,7 +639,7 @@ func TestSpecFromJobBase(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			pj := specFromJobBase(logger, tc.jobBase)
+			pj, _ := specFromJobBase(logger, tc.jobBase)
 			if err := tc.verify(pj); err != nil {
 				t.Fatalf("Verification failed: %v", err)
 			}

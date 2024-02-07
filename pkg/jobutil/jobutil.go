@@ -96,7 +96,7 @@ func createRefs(pr *scm.PullRequest, baseSHA string, prRefFmt string) v1alpha1.R
 // NewPresubmit converts a config.Presubmit into a builder.PipelineOptions.
 // The builder.Refs are configured correctly per the pr, baseSHA.
 // The eventGUID becomes a gitprovider.EventGUID label.
-func NewPresubmit(logger *logrus.Entry, pr *scm.PullRequest, baseSHA string, job job.Presubmit, eventGUID string, prRefFmt string) v1alpha1.LighthouseJob {
+func NewPresubmit(logger *logrus.Entry, pr *scm.PullRequest, baseSHA string, job job.Presubmit, eventGUID string, prRefFmt string) (v1alpha1.LighthouseJob, error) {
 	refs := createRefs(pr, baseSHA, prRefFmt)
 	labels := make(map[string]string)
 	for k, v := range job.Labels {
@@ -107,12 +107,19 @@ func NewPresubmit(logger *logrus.Entry, pr *scm.PullRequest, baseSHA string, job
 		annotations[k] = v
 	}
 	labels[scmprovider.EventGUID] = eventGUID
-	return NewLighthouseJob(PresubmitSpec(logger, job, refs), labels, annotations)
+	preSubmitSpec, err := PresubmitSpec(logger, job, refs)
+	if err != nil {
+		return v1alpha1.LighthouseJob{}, err
+	}
+	return NewLighthouseJob(preSubmitSpec, labels, annotations), nil
 }
 
 // PresubmitSpec initializes a PipelineOptionsSpec for a given presubmit job.
-func PresubmitSpec(logger *logrus.Entry, p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(logger, p.Base)
+func PresubmitSpec(logger *logrus.Entry, p job.Presubmit, refs v1alpha1.Refs) (v1alpha1.LighthouseJobSpec, error) {
+	pjs, err := specFromJobBase(logger, p.Base)
+	if err != nil {
+		return pjs, err
+	}
 	pjs.Type = job.PresubmitJob
 	pjs.Context = p.Context
 	pjs.RerunCommand = p.RerunCommand
@@ -124,12 +131,12 @@ func PresubmitSpec(logger *logrus.Entry, p job.Presubmit, refs v1alpha1.Refs) v1
 		}
 	}
 
-	return pjs
+	return pjs, nil
 }
 
 // PostsubmitSpec initializes a PipelineOptionsSpec for a given postsubmit job.
 func PostsubmitSpec(logger *logrus.Entry, p job.Postsubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(logger, p.Base)
+	pjs, _ := specFromJobBase(logger, p.Base)
 	pjs.Type = job.PostsubmitJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
@@ -145,7 +152,7 @@ func PostsubmitSpec(logger *logrus.Entry, p job.Postsubmit, refs v1alpha1.Refs) 
 
 // PeriodicSpec initializes a PipelineOptionsSpec for a given periodic job.
 func PeriodicSpec(logger *logrus.Entry, p job.Periodic) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(logger, p.Base)
+	pjs, _ := specFromJobBase(logger, p.Base)
 	pjs.Type = job.PeriodicJob
 
 	return pjs
@@ -153,7 +160,7 @@ func PeriodicSpec(logger *logrus.Entry, p job.Periodic) v1alpha1.LighthouseJobSp
 
 // BatchSpec initializes a PipelineOptionsSpec for a given batch job and ref spec.
 func BatchSpec(logger *logrus.Entry, p job.Presubmit, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
-	pjs := specFromJobBase(logger, p.Base)
+	pjs, _ := specFromJobBase(logger, p.Base)
 	pjs.Type = job.BatchJob
 	pjs.Context = p.Context
 	pjs.Refs = completePrimaryRefs(refs, p.Base)
@@ -161,13 +168,22 @@ func BatchSpec(logger *logrus.Entry, p job.Presubmit, refs v1alpha1.Refs) v1alph
 	return pjs
 }
 
-func specFromJobBase(logger *logrus.Entry, jb job.Base) v1alpha1.LighthouseJobSpec {
+func specFromJobBase(logger *logrus.Entry, jb job.Base) (v1alpha1.LighthouseJobSpec, error) {
 	// if we have not yet loaded the PipelineRunSpec then lets do it now
 	if jb.PipelineRunSpec == nil {
 		logger = logger.WithField("JobName", jb.Name)
 		err := jb.LoadPipeline(logger)
 		if err != nil {
 			logger.WithError(err).Warn("failed to lazy load the PipelineRunSpec")
+			return v1alpha1.LighthouseJobSpec{
+				Agent:             jb.Agent,
+				Job:               jb.Name,
+				Namespace:         *jb.Namespace,
+				MaxConcurrency:    jb.MaxConcurrency,
+				PodSpec:           jb.Spec,
+				PipelineRunSpec:   jb.PipelineRunSpec,
+				PipelineRunParams: jb.PipelineRunParams,
+			}, err
 		}
 	}
 	var namespace string
@@ -182,7 +198,7 @@ func specFromJobBase(logger *logrus.Entry, jb job.Base) v1alpha1.LighthouseJobSp
 		PodSpec:           jb.Spec,
 		PipelineRunSpec:   jb.PipelineRunSpec,
 		PipelineRunParams: jb.PipelineRunParams,
-	}
+	}, nil
 }
 
 func completePrimaryRefs(refs v1alpha1.Refs, jb job.Base) *v1alpha1.Refs {
