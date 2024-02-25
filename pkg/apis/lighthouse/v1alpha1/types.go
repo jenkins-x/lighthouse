@@ -191,10 +191,6 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 
 	env[JobSpecEnv] = fmt.Sprintf("type:%s", s.Type)
 
-	if s.Type == job.PeriodicJob {
-		return env
-	}
-
 	if s.Refs != nil {
 		env[RepoOwnerEnv] = s.Refs.Org
 		env[RepoNameEnv] = s.Refs.Repo
@@ -203,7 +199,7 @@ func (s *LighthouseJobSpec) GetEnvVars() map[string]string {
 		env[PullRefsEnv] = s.Refs.String()
 	}
 
-	if s.Type == job.PostsubmitJob || s.Type == job.BatchJob {
+	if s.Type != job.PresubmitJob {
 		return env
 	}
 

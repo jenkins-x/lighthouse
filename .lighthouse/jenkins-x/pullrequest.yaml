@@ -22,6 +22,14 @@ spec:
         - name: jx-variables
         - name: build-make-linux
           resources: {}
+        - name: protect-credentials
+          securityContext:
+            runAsUser: 0
+          resources: {}
+          image: ghcr.io/distroless/busybox
+          script: |
+            #!/bin/sh
+            cp -a /tekton/home/.git-credentials /tekton/home/.git-credentials.bak
         - name: build-make-test
           resources: {}
         - name: build-container-build:webhooks
@@ -73,6 +81,21 @@ spec:
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
+        - image: ghcr.io/jenkins-x/jx-boot:3.10.131
+          name: release-chart
+          resources: {}
+          script: |
+            #!/usr/bin/env sh
+            source .jx/variables.sh
+            if [ -d "charts/$REPO_NAME" ]; then
+              jx gitops yset -p version -v "$VERSION" -f ./charts/$REPO_NAME/Chart.yaml
+              jx gitops yset -p appVersion -v "$VERSION" -f ./charts/$REPO_NAME/Chart.yaml
+              jx gitops yset -p image.tag -v "$VERSION" -f ./charts/$REPO_NAME/values.yaml;
+            else echo no charts; fi
+            
+            mv /tekton/home/.git-credentials.bak /tekton/home/.git-credentials
+            
+            jx gitops helm release
   podTemplate: {}
   serviceAccountName: tekton-bot
   timeout: 240h0m0s

@@ -18,5 +18,11 @@ func CombineConfigs(a, b *triggerconfig.Config) *triggerconfig.Config {
 	for _, r := range b.Spec.Postsubmits {
 		a.Spec.Postsubmits = append(a.Spec.Postsubmits, r)
 	}
+	for _, r := range b.Spec.Periodics {
+		a.Spec.Periodics = append(a.Spec.Periodics, r)
+	}
+	for _, r := range b.Spec.Deployments {
+		a.Spec.Deployments = append(a.Spec.Deployments, r)
+	}
 	return a
 }

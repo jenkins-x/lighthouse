@@ -17,6 +17,8 @@ rules:
   - create
   - list
   - watch
+  - patch
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -25,6 +27,18 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - get
+  - update
+  - create
+  - list
+  - watch
+  - patch
+  - delete
 - apiGroups:
   - lighthouse.jenkins.io
   resources:

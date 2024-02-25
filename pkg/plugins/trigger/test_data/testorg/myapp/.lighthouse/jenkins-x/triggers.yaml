@@ -1,0 +1,10 @@
+apiVersion: config.lighthouse.jenkins-x.io/v1alpha1
+kind: TriggerConfig
+spec:
+  periodics:
+    - name: dailyjob
+      cron: "0 4 * * MON-FRI"
+      source: dailyjob.yaml
+      pipeline_run_params:
+        - name: GREETINGS
+          valueTemplate: 'Howdy!'

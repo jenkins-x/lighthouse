@@ -35,6 +35,8 @@ const (
 	PostsubmitJob PipelineKind = "postsubmit"
 	// Periodic job means it runs on a time-basis, unrelated to git changes.
 	PeriodicJob PipelineKind = "periodic"
+	// Deployment job means it runs on deployment status event
+	DeploymentJob PipelineKind = "deployment"
 	// BatchJob tests multiple unmerged PRs at the same time.
 	BatchJob PipelineKind = "batch"
 )

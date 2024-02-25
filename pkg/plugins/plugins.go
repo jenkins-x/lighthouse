@@ -63,6 +63,8 @@ type PullRequestHandler func(Agent, scm.PullRequestHook) error
 // StatusEventHandler defines the function contract for a scm.Status handler.
 type StatusEventHandler func(Agent, scm.Status) error
 
+type DeploymentStatusHandler func(Agent, scm.DeploymentStatusHook) error
+
 // PushEventHandler defines the function contract for a scm.PushHook handler.
 type PushEventHandler func(Agent, scm.PushHook) error
 

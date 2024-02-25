@@ -95,6 +95,8 @@ func mergeConfigs(m map[string]*triggerconfig.Config) (*triggerconfig.Config, er
 	// lets check for duplicates
 	presubmitNames := map[string]string{}
 	postsubmitNames := map[string]string{}
+	periodicNames := map[string]string{}
+	deploymentNames := map[string]string{}
 	for file, cfg := range m {
 		for _, ps := range cfg.Spec.Presubmits {
 			name := ps.Name
@@ -112,6 +114,24 @@ func mergeConfigs(m map[string]*triggerconfig.Config) (*triggerconfig.Config, er
 				postsubmitNames[name] = file
 			} else {
 				return nil, errors.Errorf("duplicate postsubmit %s in file %s and %s", name, otherFile, file)
+			}
+		}
+		for _, ps := range cfg.Spec.Periodics {
+			name := ps.Name
+			otherFile := periodicNames[name]
+			if otherFile == "" {
+				periodicNames[name] = file
+			} else {
+				return nil, errors.Errorf("duplicate periodic %s in file %s and %s", name, otherFile, file)
+			}
+		}
+		for _, ps := range cfg.Spec.Deployments {
+			name := ps.Name
+			otherFile := deploymentNames[name]
+			if otherFile == "" {
+				deploymentNames[name] = file
+			} else {
+				return nil, errors.Errorf("duplicate deployment %s in file %s and %s", name, otherFile, file)
 			}
 		}
 		answer = merge.CombineConfigs(answer, cfg)
@@ -193,6 +213,57 @@ func loadConfigFile(filePath string, fileBrowsers *filebrowser.FileBrowsers, fc 
 			})
 		}
 	}
+	for i := range repoConfig.Spec.Deployments {
+		r := &repoConfig.Spec.Deployments[i]
+		sourcePath := r.SourcePath
+		if sourcePath != "" {
+			if r.Agent == "" {
+				r.Agent = job.TektonPipelineAgent
+			}
+			// lets load the local file data now as we have locked the git file system
+			data, err := loadLocalFile(dir, sourcePath, sha)
+			if err != nil {
+				return nil, err
+			}
+			r.SetPipelineLoader(func(base *job.Base) error {
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				if err != nil {
+					return errors.Wrapf(err, "failed to load source for deployment %s", r.Name)
+				}
+				r.Base = *base
+				if r.Agent == "" && r.PipelineRunSpec != nil {
+					r.Agent = job.TektonPipelineAgent
+				}
+				return nil
+			})
+		}
+	}
+	for i := range repoConfig.Spec.Periodics {
+		r := &repoConfig.Spec.Periodics[i]
+		sourcePath := r.SourcePath
+		if sourcePath != "" {
+			if r.Agent == "" {
+				r.Agent = job.TektonPipelineAgent
+			}
+			// lets load the local file data now as we have locked the git file system
+			data, err := loadLocalFile(dir, sourcePath, sha)
+			if err != nil {
+				return nil, err
+			}
+			r.SetPipelineLoader(func(base *job.Base) error {
+				err = loadJobBaseFromSourcePath(data, fileBrowsers, fc, cache, base, ownerName, repoName, sourcePath, sha)
+				if err != nil {
+					return errors.Wrapf(err, "failed to load source for periodic %s", r.Name)
+				}
+				r.Base = *base
+				if r.Agent == "" && r.PipelineRunSpec != nil {
+					r.Agent = job.TektonPipelineAgent
+				}
+				return nil
+			})
+		}
+	}
+
 	return repoConfig, nil
 }
 

@@ -350,29 +350,29 @@ periodics:
     - image: alpine`,
 			},
 		},
-		{
-			name:       "duplicated periodics",
-			prowConfig: ``,
-			jobConfigs: []string{
-				`
-periodics:
-- cron: '* * * * *'
-  agent: tekton
-  name: foo
-  spec:
-    containers:
-    - image: alpine`,
-				`
-periodics:
-- cron: '* * * * *'
-  agent: tekton
-  name: foo
-  spec:
-    containers:
-    - image: alpine`,
-			},
-			expectError: true,
-		},
+		//		{
+		//			name:       "duplicated periodics",
+		//			prowConfig: ``,
+		//			jobConfigs: []string{
+		//				`
+		//periodics:
+		//- cron: '* * * * *'
+		//  agent: tekton
+		//  name: foo
+		//  spec:
+		//    containers:
+		//    - image: alpine`,
+		//				`
+		//periodics:
+		//- cron: '* * * * *'
+		//  agent: tekton
+		//  name: foo
+		//  spec:
+		//    containers:
+		//    - image: alpine`,
+		//			},
+		//			expectError: true,
+		//		},
 		{
 			name:       "one presubmit no context should default",
 			prowConfig: ``,

@@ -64,6 +64,35 @@ func ConfigMerge(cfg *config.Config, pluginsCfg *plugins.Configuration, repoConf
 		}
 		cfg.Postsubmits[repoKey] = ps
 	}
+	if len(repoConfig.Spec.Periodics) > 0 {
+		cfg.Periodics = append(cfg.Periodics, repoConfig.Spec.Periodics...)
+	}
+	if len(repoConfig.Spec.Deployments) > 0 {
+		// lets make a new map to avoid concurrent modifications
+		m := map[string][]job.Deployment{}
+		if cfg.Deployments != nil {
+			for k, v := range cfg.Deployments {
+				m[k] = append([]job.Deployment{}, v...)
+			}
+		}
+		cfg.Deployments = m
+
+		ps := cfg.Deployments[repoKey]
+		for _, p := range repoConfig.Spec.Deployments {
+			found := false
+			for i := range ps {
+				pt2 := &ps[i]
+				if pt2.Name == p.Name {
+					ps[i] = p
+					found = true
+				}
+			}
+			if !found {
+				ps = append(ps, p)
+			}
+		}
+		cfg.Deployments[repoKey] = ps
+	}
 
 	// lets make sure we've got a trigger added
 	idx := len(pluginsCfg.Triggers) - 1

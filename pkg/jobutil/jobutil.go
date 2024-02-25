@@ -143,10 +143,22 @@ func PostsubmitSpec(logger *logrus.Entry, p job.Postsubmit, refs v1alpha1.Refs) 
 	return pjs
 }
 
+// DeploymentSpec initializes a PipelineOptionsSpec for a given deployment job.
+func DeploymentSpec(logger *logrus.Entry, p job.Deployment, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
+	pjs := specFromJobBase(logger, p.Base)
+	pjs.Type = job.DeploymentJob
+	pjs.Context = p.Context
+	pjs.Refs = completePrimaryRefs(refs, p.Base)
+
+	return pjs
+}
+
 // PeriodicSpec initializes a PipelineOptionsSpec for a given periodic job.
-func PeriodicSpec(logger *logrus.Entry, p job.Periodic) v1alpha1.LighthouseJobSpec {
+func PeriodicSpec(logger *logrus.Entry, p job.Periodic, refs v1alpha1.Refs) v1alpha1.LighthouseJobSpec {
 	pjs := specFromJobBase(logger, p.Base)
 	pjs.Type = job.PeriodicJob
+	pjs.Context = p.Context
+	pjs.Refs = completePrimaryRefs(refs, p.Base)
 
 	return pjs
 }

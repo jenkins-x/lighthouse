@@ -8,28 +8,27 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
-	"github.com/jenkins-x/go-scm/pkg/hmac"
-
-	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
-
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/jenkins-x/go-scm/pkg/hmac"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
-	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
+	"github.com/jenkins-x/lighthouse/pkg/externalplugincfg"
 	"github.com/jenkins-x/lighthouse/pkg/git"
-	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/plugins/trigger"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/version"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	kubeclient "k8s.io/client-go/kubernetes"
 )
 
 // WebhooksController holds the command line arguments
@@ -62,8 +61,11 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	if o.logWebHooks {
 		logrus.Info("enabling webhook logging")
 	}
-	var err error
-	o.server, err = o.createHookServer()
+	_, kubeClient, lhClient, _, err := clients.GetAPIClients()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
+	}
+	o.server, err = o.createHookServer(kubeClient)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create Hook Server")
 	}
@@ -75,10 +77,6 @@ func NewWebhooksController(path, namespace, botName, pluginFilename, configFilen
 	}
 	o.gitClient = gitClient
 
-	_, _, lhClient, _, err := clients.GetAPIClients()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
-	}
 	o.launcher = launcher.NewLauncher(lhClient, o.namespace)
 
 	return o, nil
@@ -220,29 +218,16 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 
 	ghaSecretDir := util.GetGitHubAppSecretDir()
 
-	var gitCloneUser string
-	var token string
-	if ghaSecretDir != "" {
-		gitCloneUser = util.GitHubAppGitRemoteUsername
-		tokenFinder := util.NewOwnerTokensDir(serverURL, ghaSecretDir)
-		token, err = tokenFinder.FindToken(webhook.Repository().Namespace)
-		if err != nil {
-			logrus.Errorf("failed to read owner token: %s", err.Error())
-			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: failed to read owner token: %s", err.Error()))
-			return
-		}
-	} else {
-		gitCloneUser = util.GetBotName(cfg)
-		token, err = util.GetSCMToken(util.GitKind(cfg))
-		if err != nil {
-			logrus.Errorf("no scm token specified: %s", err.Error())
-			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: no scm token specified: %s", err.Error()))
-			return
-		}
+	gitCloneUser, token, err := getCredentials(ghaSecretDir, serverURL, webhook.Repository().Namespace, cfg)
+	if err != nil {
+		logrus.Error(err.Error())
+		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+		return
 	}
 	_, kubeClient, lhClient, _, err := clients.GetAPIClients()
 	if err != nil {
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
+		return
 	}
 
 	o.gitClient.SetCredentials(gitCloneUser, func() []byte {
@@ -260,35 +245,8 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 	}
 
 	if o.server.FileBrowsers == nil {
-		configureOpts := func(opts *gitv2.ClientFactoryOpts) {
-			opts.Token = func() []byte {
-				return []byte(token)
-			}
-			opts.GitUser = func() (name, email string, err error) {
-				name = gitCloneUser
-				return
-			}
-			opts.Username = func() (login string, err error) {
-				login = gitCloneUser
-				return
-			}
-			if o.server.ServerURL.Host != "" {
-				opts.Host = o.server.ServerURL.Host
-			}
-			if o.server.ServerURL.Scheme != "" {
-				opts.Scheme = o.server.ServerURL.Scheme
-			}
-		}
-		gitFactory, err := gitv2.NewNoMirrorClientFactory(configureOpts)
+		err := o.server.initializeFileBrowser(token, gitCloneUser, o.gitServerURL)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to create git client factory for server %s", o.gitServerURL)
-			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
-			return
-		}
-		fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
-		o.server.FileBrowsers, err = filebrowser.NewFileBrowsers(o.gitServerURL, fb)
-		if err != nil {
-			err = errors.Wrapf(err, "failed to create git filebrowsers%s", o.gitServerURL)
 			responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
 			return
 		}
@@ -316,6 +274,24 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 	if err != nil {
 		l.Debugf("failed to process the webhook: %v", err)
 	}
+}
+
+func getCredentials(ghaSecretDir string, serverURL string, owner string, cfg func() *config.Config) (gitCloneUser string, token string, err error) {
+	if ghaSecretDir != "" {
+		gitCloneUser = util.GitHubAppGitRemoteUsername
+		tokenFinder := util.NewOwnerTokensDir(serverURL, ghaSecretDir)
+		token, err = tokenFinder.FindToken(owner)
+		if err != nil {
+			err = errors.Wrap(err, "failed to read owner token")
+		}
+	} else {
+		gitCloneUser = util.GetBotName(cfg)
+		token, err = util.GetSCMToken(util.GitKind(cfg))
+		if err != nil {
+			err = errors.Wrap(err, "no scm token specified")
+		}
+	}
+	return
 }
 
 // ProcessWebHook process a webhook
@@ -475,6 +451,21 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 		o.server.handleReviewEvent(l, *prReviewHook)
 		return l, "processed PR review hook", nil
 	}
+	deploymentStatusHook, ok := webhook.(*scm.DeploymentStatusHook)
+	if ok {
+		action := deploymentStatusHook.Action
+		fields["Action"] = action.String()
+		status := deploymentStatusHook.DeploymentStatus
+		fields["Status.State"] = status.State
+		fields["Status.Author"] = status.Author
+		fields["Status.LogLink"] = status.LogLink
+		l = l.WithFields(fields)
+
+		l.Info("invoking PR Review handler")
+
+		o.server.handleDeploymentStatusEvent(l, *deploymentStatusHook)
+		return l, "processed PR review hook", nil
+	}
 	l.Debugf("unknown kind %s webhook %#v", webhook.Kind(), webhook)
 	return l, fmt.Sprintf("unknown hook %s", webhook.Kind()), nil
 }
@@ -483,7 +474,7 @@ func (o *WebhooksController) secretFn(webhook scm.Webhook) (string, error) {
 	return util.HMACToken(), nil
 }
 
-func (o *WebhooksController) createHookServer() (*Server, error) {
+func (o *WebhooksController) createHookServer(kc kubeclient.Interface) (*Server, error) {
 	configAgent := &config.Agent{}
 	pluginAgent := &plugins.ConfigAgent{}
 
@@ -521,13 +512,35 @@ func (o *WebhooksController) createHookServer() (*Server, error) {
 	}
 
 	server := &Server{
-		ConfigAgent: configAgent,
-		Plugins:     pluginAgent,
-		Metrics:     promMetrics,
-		ServerURL:   serverURL,
-		InRepoCache: cache,
+		ConfigAgent:   configAgent,
+		Plugins:       pluginAgent,
+		Metrics:       promMetrics,
+		ServerURL:     serverURL,
+		InRepoCache:   cache,
+		PeriodicAgent: &trigger.PeriodicAgent{Namespace: o.namespace},
 		//TokenGenerator: secretAgent.GetTokenGenerator(o.webhookSecretFile),
 	}
+
+	initializePeriodics, _ := strconv.ParseBool(os.Getenv("INITIALIZE_PERIODICS"))
+	if initializePeriodics && !server.PeriodicAgent.PeriodicsInitialized(o.namespace, kc) {
+		if server.FileBrowsers == nil {
+			ghaSecretDir := util.GetGitHubAppSecretDir()
+
+			gitCloneUser, token, err := getCredentials(ghaSecretDir, o.gitServerURL, "", configAgent.Config)
+			if err != nil {
+				logrus.Error(err.Error())
+			} else {
+				err = server.initializeFileBrowser(token, gitCloneUser, o.gitServerURL)
+				if err != nil {
+					logrus.Error(err.Error())
+				}
+			}
+		}
+		if server.FileBrowsers != nil {
+			go server.PeriodicAgent.InitializePeriodics(kc, configAgent, server.FileBrowsers)
+		}
+	}
+
 	return server, nil
 }
 

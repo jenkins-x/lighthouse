@@ -42,6 +42,10 @@ spec:
         args:
           - "--namespace={{ .Release.Namespace }}"
         env:
+          - name: SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"
           - name: "LH_CUSTOM_TRIGGER_COMMAND"
