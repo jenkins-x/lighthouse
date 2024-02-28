@@ -169,6 +169,8 @@ func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.P
 
 	if pr.Spec.PipelineSpec != nil {
 		pipelineSpec = pr.Spec.PipelineSpec
+	} else if pr.Spec.PipelineRef.Name == "" {
+		return nil, nil
 	} else {
 		pipeline := tektonv1beta1.Pipeline{ObjectMeta: metav1.ObjectMeta{Name: pr.Spec.PipelineRef.Name, Namespace: pr.Namespace}}
 		key := client.ObjectKeyFromObject(&pipeline)
