@@ -526,9 +526,7 @@ func (c *DefaultController) GetPools() []Pool {
 	c.m.Lock()
 	defer c.m.Unlock()
 	answer := []Pool{}
-	for _, p := range c.pools {
-		answer = append(answer, p)
-	}
+	answer = append(answer, c.pools...)
 	return answer
 }
 

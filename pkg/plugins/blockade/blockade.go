@@ -88,13 +88,6 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 
 type blockCalc func([]*scm.Change, []blockade) summary
 
-type client struct {
-	spc scmProviderClient
-	log *logrus.Entry
-
-	blockCalc blockCalc
-}
-
 func handlePullRequest(pc plugins.Agent, pre scm.PullRequestHook) error {
 	cp, err := pc.CommentPruner()
 	if err != nil {

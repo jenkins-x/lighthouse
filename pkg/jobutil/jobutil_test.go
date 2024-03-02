@@ -36,9 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-var (
-	logger = logrus.WithField("client", "git")
-)
+var logger = logrus.WithField("client", "git")
 
 func TestPostsubmitSpec(t *testing.T) {
 	tests := []struct {
@@ -284,7 +282,7 @@ func TestBatchSpec(t *testing.T) {
 }
 
 func TestNewLighthouseJob(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name                string
 		gitKind             string
 		spec                v1alpha1.LighthouseJobSpec
@@ -437,7 +435,8 @@ func TestNewLighthouseJob(t *testing.T) {
 			expectedAnnotations: map[string]string{
 				util.LighthouseJobAnnotation: "job",
 			},
-		}, {
+		},
+		{
 			name:    "job with name too long to fit in a label",
 			gitKind: "github",
 			spec: v1alpha1.LighthouseJobSpec{
@@ -516,7 +515,7 @@ func TestNewLighthouseJob(t *testing.T) {
 }
 
 func TestNewLighthouseJobWithAnnotations(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name                string
 		spec                v1alpha1.LighthouseJobSpec
 		annotations         map[string]string

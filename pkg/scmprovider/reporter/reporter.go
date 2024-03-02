@@ -53,11 +53,7 @@ func ShouldReport(lhj *v1alpha1.LighthouseJob, validTypes []job.PipelineKind) bo
 		}
 	}
 
-	if !valid {
-		return false
-	}
-
-	return true
+	return valid
 }
 
 // Report is creating/updating/removing report comments in the SCM provider based on the state of

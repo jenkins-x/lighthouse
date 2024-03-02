@@ -24,8 +24,6 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
@@ -39,11 +37,6 @@ import (
 const (
 	maxGenerateNamePrefix = 32
 )
-
-// lighthouseClient a minimalistic lighthouse client required by the aborter
-type lighthouseClient interface {
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.LighthouseJob, err error)
-}
 
 // NewLighthouseJob initializes a LighthouseJob out of a LighthouseJobSpec.
 func NewLighthouseJob(spec v1alpha1.LighthouseJobSpec, extraLabels, extraAnnotations map[string]string) v1alpha1.LighthouseJob {

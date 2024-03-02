@@ -122,7 +122,7 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 
 			var jobList lighthousev1alpha1.LighthouseJobList
-			err = c.List(nil, &jobList, client.InNamespace(ns))
+			err = c.List(context.TODO(), &jobList, client.InNamespace(ns))
 			assert.NoError(t, err)
 			assert.Len(t, jobList.Items, 1)
 			// Ignore status.starttime since that's always going to be different

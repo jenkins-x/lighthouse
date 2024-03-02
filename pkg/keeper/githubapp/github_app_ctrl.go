@@ -23,25 +23,23 @@ import (
 )
 
 type gitHubAppKeeperController struct {
-	controllers        []keeper.Controller
-	ownerTokenFinder   *util.OwnerTokensDir
-	gitServer          string
-	githubAppSecretDir string
-	configAgent        *config.Agent
-	botName            string
-	gitKind            string
-	maxRecordsPerPool  int
-	historyURI         string
-	statusURI          string
-	ns                 string
-	logger             *logrus.Entry
-	m                  sync.Mutex
+	controllers       []keeper.Controller
+	ownerTokenFinder  *util.OwnerTokensDir
+	gitServer         string
+	configAgent       *config.Agent
+	botName           string
+	gitKind           string
+	maxRecordsPerPool int
+	historyURI        string
+	statusURI         string
+	ns                string
+	logger            *logrus.Entry
+	m                 sync.Mutex
 }
 
 // NewGitHubAppKeeperController creates a GitHub App style controller which needs to process each github owner
 // using a separate git provider client due to the way GitHub App tokens work
 func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config.Agent, botName string, gitKind string, maxRecordsPerPool int, historyURI string, statusURI string, ns string) (keeper.Controller, error) {
-
 	gitServer := util.GithubServer
 	return &gitHubAppKeeperController{
 		ownerTokenFinder:  util.NewOwnerTokensDir(gitServer, githubAppSecretDir),
@@ -55,7 +53,6 @@ func NewGitHubAppKeeperController(githubAppSecretDir string, configAgent *config
 		ns:                ns,
 		logger:            logrus.NewEntry(logrus.StandardLogger()),
 	}, nil
-
 }
 
 func (g *gitHubAppKeeperController) Sync() error {
@@ -188,7 +185,8 @@ func createKeeperGitHubAppScmClient(gitServer string, token string) (*scm.Client
 		Scheme:      "token",
 		Credentials: token,
 	}
-	tr := &transport.Custom{Base: auth,
+	tr := &transport.Custom{
+		Base: auth,
 		Before: func(r *http.Request) {
 			r.Header.Set("Accept", "application/vnd.github.machine-man-preview+json")
 		},

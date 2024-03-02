@@ -69,12 +69,6 @@ func ParseExternalPluginEvent(req *http.Request, secretToken string) (scm.Webhoo
 	}
 }
 
-func parseActivity(l *logrus.Entry, req *http.Request, data []byte) (*v1alpha1.ActivityRecord, error) {
-	ar := new(v1alpha1.ActivityRecord)
-	err := json.Unmarshal(data, ar)
-	return ar, err
-}
-
 func parseWebhook(l *logrus.Entry, req *http.Request, data []byte) (scm.Webhook, error) {
 	kind := req.Header.Get(LighthouseWebhookKindHeader)
 	if kind == "" {

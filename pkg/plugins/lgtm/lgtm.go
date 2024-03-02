@@ -55,34 +55,32 @@ type commentPruner interface {
 	PruneComments(pr bool, shouldPrune func(*scm.Comment) bool)
 }
 
-var (
-	plugin = plugins.Plugin{
-		Description:        "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
-		ConfigHelpProvider: configHelp,
-		PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
-			return handlePullRequestEvent(pc, pe)
+var plugin = plugins.Plugin{
+	Description:        "The lgtm plugin manages the application and removal of the 'lgtm' (Looks Good To Me) label which is typically used to gate merging.",
+	ConfigHelpProvider: configHelp,
+	PullRequestHandler: func(pc plugins.Agent, pe scm.PullRequestHook) error {
+		return handlePullRequestEvent(pc, pe)
+	},
+	ReviewEventHandler: handlePullRequestReviewEvent,
+	Commands: []plugins.Command{{
+		Name: "lgtm",
+		Arg: &plugins.CommandArg{
+			Pattern:  "no-issue|cancel",
+			Optional: true,
 		},
-		ReviewEventHandler: handlePullRequestReviewEvent,
-		Commands: []plugins.Command{{
-			Name: "lgtm",
-			Arg: &plugins.CommandArg{
-				Pattern:  "no-issue|cancel",
-				Optional: true,
-			},
-			Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
-			WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
-			Action: plugins.
-				Invoke(func(m plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
-					cp, err := pc.CommentPruner()
-					if err != nil {
-						return err
-					}
-					return handleGenericComment(m.Arg == "cancel", pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
-				}).
-				When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
-		}},
-	}
-)
+		Description: "Adds or removes the 'lgtm' label which is typically used to gate merging.",
+		WhoCanUse:   "Collaborators on the repository. '/lgtm cancel' can be used additionally by the PR author.",
+		Action: plugins.
+			Invoke(func(m plugins.CommandMatch, pc plugins.Agent, e scmprovider.GenericCommentEvent) error {
+				cp, err := pc.CommentPruner()
+				if err != nil {
+					return err
+				}
+				return handleGenericComment(m.Arg == "cancel", pc.SCMProviderClient, pc.PluginConfig, pc.OwnersClient, pc.Logger, cp, e)
+			}).
+			When(plugins.Action(scm.ActionCreate), plugins.IsPR(), plugins.IssueState("open")),
+	}},
+}
 
 func init() {
 	plugins.RegisterPlugin(pluginName, plugin)
@@ -116,7 +114,7 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 			configInfoStrings = append(configInfoStrings, "<li>"+configInfoStickyLgtmTeam(opts.StickyLgtmTeam)+"</li>")
 			isConfigured = true
 		}
-		configInfoStrings = append(configInfoStrings, fmt.Sprintf("</ul>"))
+		configInfoStrings = append(configInfoStrings, "</ul>")
 		if isConfigured {
 			configInfo[orgRepo] = strings.Join(configInfoStrings, "\n")
 		}

@@ -58,11 +58,6 @@ func (f FakeRepo) IsNoParentOwners(path string) bool {
 	return f.noParentOwnersMap[path]
 }
 
-type dir struct {
-	fullPath  string
-	approvers sets.String
-}
-
 func canonicalize(path string) string {
 	if path == "." {
 		return ""
@@ -206,7 +201,8 @@ func TestGetLeafApprovers(t *testing.T) {
 			filenames: []string{"a/d/test.go", "b/test.go"},
 			expectedMap: map[string]sets.String{
 				"a/d": setToLower(dApprovers),
-				"b":   setToLower(bApprovers)},
+				"b":   setToLower(bApprovers),
+			},
 		},
 		{
 			testName:  "Leaf and Parent 2 File PR",
@@ -230,6 +226,7 @@ func TestGetLeafApprovers(t *testing.T) {
 		}
 	}
 }
+
 func TestGetOwnersSet(t *testing.T) {
 	rootApprovers := sets.NewString("Alice", "Bob")
 	aApprovers := sets.NewString("Art", "Anne")
@@ -294,13 +291,13 @@ func TestGetOwnersSet(t *testing.T) {
 }
 
 func TestGetSuggestedApprovers(t *testing.T) {
-	var rootApprovers = sets.NewString("Alice", "Bob")
-	var aApprovers = sets.NewString("Art", "Anne")
-	var bApprovers = sets.NewString("Bill", "Ben", "Barbara")
-	var dApprovers = sets.NewString("David", "Dan", "Debbie")
-	var eApprovers = sets.NewString("Eve", "Erin")
-	var edcApprovers = eApprovers.Union(dApprovers)
-	var FakeRepoMap = map[string]sets.String{
+	rootApprovers := sets.NewString("Alice", "Bob")
+	aApprovers := sets.NewString("Art", "Anne")
+	bApprovers := sets.NewString("Bill", "Ben", "Barbara")
+	dApprovers := sets.NewString("David", "Dan", "Debbie")
+	eApprovers := sets.NewString("Eve", "Erin")
+	edcApprovers := eApprovers.Union(dApprovers)
+	FakeRepoMap := map[string]sets.String{
 		"":        rootApprovers,
 		"a":       aApprovers,
 		"b":       bApprovers,
@@ -730,7 +727,6 @@ func TestRemoveSubdirs(t *testing.T) {
 		o.removeSubdirs(test.directories)
 		if !reflect.DeepEqual(test.expected, test.directories) {
 			t.Errorf("Failed to remove subdirectories for test %v.  Expected files: %q. Found %q", test.testName, test.expected.List(), test.directories.List())
-
 		}
 	}
 }

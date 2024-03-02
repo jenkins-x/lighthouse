@@ -243,7 +243,3 @@ func (r *UsesResolver) findTaskStep(sourceURI string, task tektonv1beta1.Pipelin
 func (r *UsesResolver) lookupDataCache(path string) []byte {
 	return nil
 }
-
-func (r *UsesResolver) updateDataCache(path string, data []byte) {
-
-}

@@ -111,11 +111,6 @@ func (g *scmFileGetter) GetFile(filename string) ([]byte, error) {
 	return g.client.GetFile(g.org, g.repo, filename, g.commit)
 }
 
-type configValidateResults struct {
-	cmName string
-	err    error
-}
-
 // Update updates the configmap with the data from the identified files
 func Update(fg FileGetter, kc corev1.ConfigMapInterface, name, namespace string, updates []ConfigMapUpdate, logger *logrus.Entry) error {
 	cm, getErr := kc.Get(context.TODO(), name, metav1.GetOptions{})
@@ -233,7 +228,7 @@ func FilterChanges(cfg plugins.ConfigUpdater, changes []*scm.Change, log *logrus
 		}
 
 		// Yes, update the configmap with the contents of this file
-		for _, ns := range append(cm.Namespaces) {
+		for _, ns := range cm.Namespaces {
 			id := ConfigMapID{Name: cm.Name, Namespace: ns}
 			key := cm.Key
 			if key == "" {

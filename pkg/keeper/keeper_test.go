@@ -819,8 +819,8 @@ func TestPickBatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error making local git: %v", err)
 	}
-	defer gc.Clean()
-	defer lg.Clean()
+	defer gc.Clean() //nolint: errcheck
+	defer lg.Clean() //nolint: errcheck
 	if err := lg.MakeFakeRepo("o", "r"); err != nil {
 		t.Fatalf("Error making fake repo: %v", err)
 	}
@@ -993,9 +993,11 @@ func TestCheckMergeLabels(t *testing.T) {
 			pr: PullRequest{
 				Labels: struct {
 					Nodes []struct{ Name githubql.String }
-				}{Nodes: []struct{ Name githubql.String }{
-					{Name: githubql.String(squashLabel)},
-					{Name: githubql.String(rebaseLabel)}},
+				}{
+					Nodes: []struct{ Name githubql.String }{
+						{Name: githubql.String(squashLabel)},
+						{Name: githubql.String(rebaseLabel)},
+					},
 				},
 			},
 			method:    keeper.MergeMerge,
@@ -2216,7 +2218,8 @@ func TestIsPassing(t *testing.T) {
 	for _, tc := range testCases {
 		ghc := &fgc{
 			combinedStatus: map[string]map[string]commitStatus{headSHA: tc.combinedContexts},
-			expectedSHA:    headSHA}
+			expectedSHA:    headSHA,
+		}
 		log := logrus.WithField("component", "keeper")
 		_, err := log.String()
 		if err != nil {
@@ -2400,16 +2403,18 @@ func TestPresubmitsByPull(t *testing.T) {
 				},
 			},
 			initialChangeCache: map[changeCacheKey][]string{{number: 100, sha: "sha"}: {"FILE"}},
-			expectedPresubmits: map[int][]job.Presubmit{100: {{
-				Reporter: job.Reporter{Context: "presubmit"},
-				RegexpChangeMatcher: job.RegexpChangeMatcher{
-					RunIfChanged: "^FIL.$",
+			expectedPresubmits: map[int][]job.Presubmit{100: {
+				{
+					Reporter: job.Reporter{Context: "presubmit"},
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
+						RunIfChanged: "^FIL.$",
+					},
 				},
-			},
 				{
 					Reporter:  job.Reporter{Context: "always"},
 					AlwaysRun: true,
-				}}},
+				},
+			}},
 			expectedChangeCache: map[changeCacheKey][]string{{number: 100, sha: "sha"}: {"FILE"}},
 		},
 		{
@@ -2449,10 +2454,13 @@ func TestPresubmitsByPull(t *testing.T) {
 		}
 
 		cfg := &config.Config{}
-		cfg.SetPresubmits(map[string][]job.Presubmit{
+		err := cfg.SetPresubmits(map[string][]job.Presubmit{
 			"/":       tc.presubmits,
 			"foo/bar": {{Reporter: job.Reporter{Context: "wrong-repo"}, AlwaysRun: true}},
 		})
+		if err != nil {
+			t.Fatalf("unexpected error when setting presubmit")
+		}
 		cfgAgent := &config.Agent{}
 		cfgAgent.Set(cfg)
 		sp := &subpool{
@@ -2653,7 +2661,8 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 				Status: v1alpha1.LighthouseJobStatus{State: v1alpha1.PendingState},
 			}},
 			presubmits: map[int][]job.Presubmit{
-				1: {{Reporter: job.Reporter{Context: "my-presubmit"}}}},
+				1: {{Reporter: job.Reporter{Context: "my-presubmit"}}},
+			},
 		},
 		{
 			name: "One successful, one pending, one missing, one failing, only missing and failing remain",
@@ -2708,12 +2717,14 @@ func TestAccumulateReturnsCorrectMissingTests(t *testing.T) {
 					{Reporter: job.Reporter{Context: "my-pending-presubmit"}},
 					{Reporter: job.Reporter{Context: "my-failing-presubmit"}},
 					{Reporter: job.Reporter{Context: "my-missing-presubmit"}},
-				}},
+				},
+			},
 			expectedPresubmits: map[int][]job.Presubmit{
 				1: {
 					{Reporter: job.Reporter{Context: "my-failing-presubmit"}},
 					{Reporter: job.Reporter{Context: "my-missing-presubmit"}},
-				}},
+				},
+			},
 		},
 		{
 			name: "Two prs, each with one successful, one pending, one missing, one failing, only missing and failing remain",

@@ -95,7 +95,7 @@ var reviewers = map[string]sets.String{
 }
 
 func TestLGTMComment(t *testing.T) {
-	var testcases = []struct {
+	testcases := []struct {
 		name          string
 		body          string
 		commenter     string
@@ -408,7 +408,7 @@ func TestLGTMComment(t *testing.T) {
 }
 
 func TestLGTMCommentWithLGTMNoti(t *testing.T) {
-	var testcases = []struct {
+	testcases := []struct {
 		name         string
 		body         string
 		commenter    string
@@ -547,7 +547,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 }
 
 func TestLGTMFromApproveReview(t *testing.T) {
-	var testcases = []struct {
+	testcases := []struct {
 		name          string
 		state         string
 		action        scm.Action
@@ -1080,7 +1080,6 @@ func TestAddTreeHashComment(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-
 			SHA := "0bd3ed50c88cd53a09316bf7a298f900e9371652"
 			treeSHA := "6dcb09b5b57875f334f61aebed695e2e4193db5e"
 			pc := &plugins.Configuration{}
@@ -1159,10 +1158,11 @@ func TestRemoveTreeHashComment(t *testing.T) {
 	fakeScmClient, fc := fake.NewDefault()
 	fakeClient := scmprovider.ToClient(fakeScmClient, fakeBotName)
 
-	fc.PullRequestComments[101] = []*scm.Comment{&scm.Comment{
-		Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
-		Author: scm.User{Login: fakeBotName},
-	},
+	fc.PullRequestComments[101] = []*scm.Comment{
+		{
+			Body:   fmt.Sprintf(addLGTMLabelNotification, treeSHA),
+			Author: scm.User{Login: fakeBotName},
+		},
 	}
 	fc.Collaborators = []string{"collab1", "collab2"}
 

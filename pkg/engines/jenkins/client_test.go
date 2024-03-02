@@ -112,7 +112,7 @@ func testWrapper(t *testing.T, jobs []string, builds map[string][]Build, status 
 			t.Errorf("unexpected error while marshaling builds: %v", err)
 			return
 		}
-		_, _ = fmt.Fprint(w, fmt.Sprintf(`{"builds": %s}`, string(data)))
+		_, _ = fmt.Fprint(w, fmt.Sprintf(`{"builds": %s}`, string(data))) //nolint: gosimple
 	}
 }
 
@@ -125,7 +125,7 @@ func intP(i int) *int {
 }
 
 func TestListBuilds(t *testing.T) {
-	type Task struct {
+	type Task struct { //nolint:unused
 		// Used for tracking unscheduled builds for jobs.
 		Name string `json:"name"`
 	}

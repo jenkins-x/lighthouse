@@ -27,7 +27,7 @@ type gitFileBrowser struct {
 const headBranchPrefix = "HEAD branch:"
 
 var (
-	shaRegex = regexp.MustCompile("\\b[0-9a-f]{7,40}\\b")
+	shaRegex = regexp.MustCompile("\\b[0-9a-f]{7,40}\\b") //nolint:gosimple
 )
 
 // NewFileBrowserFromGitClient creates a new file browser from an Scm client
@@ -241,7 +241,7 @@ func (c *repoClientFacade) UseRef(ref string, fc FetchCache) error {
 		return errors.Wrapf(err, "failed to checkout repository %s ref %s", c.fullName, ref)
 	}
 
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 	logrus.StandardLogger().WithFields(map[string]interface{}{
 		"Name":     c.fullName,
 		"Ref":      ref,

@@ -33,21 +33,11 @@ import (
 )
 
 const (
-	fakeOrg     = "fake-org"
-	fakeRepo    = "fake-repo"
-	fakePR      = 33
-	fakeSHA     = "deadbeef"
-	fakeBaseSHA = "fffffff"
-	adminUser   = "admin-user"
+	fakeOrg   = "fake-org"
+	fakeRepo  = "fake-repo"
+	fakePR    = 33
+	adminUser = "admin-user"
 )
-
-func issueLabels(labels ...string) []string {
-	ls := []string{}
-	for _, label := range labels {
-		ls = append(ls, fmt.Sprintf("org/repo#0:%s", label))
-	}
-	return ls
-}
 
 func TestAuthorized(t *testing.T) {
 	cases := []struct {

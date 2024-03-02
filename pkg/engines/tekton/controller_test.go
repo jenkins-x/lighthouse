@@ -107,7 +107,7 @@ func TestReconcile(t *testing.T) {
 			// assert observed state matches expected state
 			if expectedPR != nil || generateTestOutput {
 				var pipelineRunList tektonv1beta1.PipelineRunList
-				err := c.List(nil, &pipelineRunList, client.InNamespace(ns))
+				err := c.List(context.TODO(), &pipelineRunList, client.InNamespace(ns))
 				assert.NoError(t, err)
 				assert.Len(t, pipelineRunList.Items, 1)
 				updatedPR := pipelineRunList.Items[0].DeepCopy()
@@ -127,7 +127,7 @@ func TestReconcile(t *testing.T) {
 			}
 			if expectedJob != nil {
 				var jobList lighthousev1alpha1.LighthouseJobList
-				err := c.List(nil, &jobList, client.InNamespace(ns))
+				err := c.List(context.TODO(), &jobList, client.InNamespace(ns))
 				assert.NoError(t, err)
 				assert.Len(t, jobList.Items, 1)
 				// Ignore status.starttime since that's always going to be different

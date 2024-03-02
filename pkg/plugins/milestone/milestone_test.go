@@ -17,7 +17,6 @@ limitations under the License.
 package milestone
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -28,17 +27,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 )
 
-func formatLabels(labels ...string) []string {
-	r := []string{}
-	for _, l := range labels {
-		r = append(r, fmt.Sprintf("%s/%s#%d:%s", "org", "repo", 1, l))
-	}
-	if len(r) == 0 {
-		return nil
-	}
-	return r
-}
-
 func TestMilestoneStatus(t *testing.T) {
 	type testCase struct {
 		name              string
@@ -48,7 +36,7 @@ func TestMilestoneStatus(t *testing.T) {
 		expectedMilestone int
 		noRepoMaintainer  bool
 	}
-	var milestonesMap = map[string]int{"v1.0": 1}
+	milestonesMap := map[string]int{"v1.0": 1}
 	testcases := []testCase{
 		{
 			name:              "Update the milestone when a sig-lead uses the command",
