@@ -802,6 +802,13 @@ func TestGenerateName(t *testing.T) {
 				},
 			},
 		},
+		{
+			expected: "periodic-job-name-",
+			spec: v1alpha1.LighthouseJobSpec{
+				Type: job.PeriodicJob,
+				Job:  "periodic-job-name",
+			},
+		},
 	}
 
 	for _, tc := range tests {
