@@ -12,7 +12,7 @@ require (
 	github.com/h2non/gock v1.0.9
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jenkins-x/go-scm v1.14.27
+	github.com/jenkins-x/go-scm v1.14.28
 	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.20.1
@@ -109,7 +109,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/grpc v1.56.3 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -128,7 +128,7 @@ replace (
 	github.com/Azure/azure-sdk-for-go => github.com/Azure/azure-sdk-for-go v38.2.0+incompatible
 
 	// lets override the go-scm version from tektoncd
-	github.com/jenkins-x/go-scm => github.com/jenkins-x/go-scm v1.14.27
+	github.com/jenkins-x/go-scm => github.com/jenkins-x/go-scm v1.14.28
 
 	// gomodules.xyz breaks in Athens proxying
 	gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.2.0
