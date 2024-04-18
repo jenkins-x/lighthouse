@@ -515,3 +515,128 @@ func TestValidateContextOverlap(t *testing.T) {
 		})
 	}
 }
+
+func TestTrustedUser(t *testing.T) {
+	var testcases = []struct {
+		name string
+
+		onlyOrgMembers bool
+		trustedApps    []string
+		trustedOrg     string
+
+		user string
+		org  string
+		repo string
+
+		expectedTrusted bool
+	}{
+		{
+			name:            "user is member of trusted org",
+			onlyOrgMembers:  false,
+			user:            "test",
+			org:             "kubernetes",
+			repo:            "kubernetes",
+			expectedTrusted: true,
+		},
+		{
+			name:            "user is member of trusted org (only org members enabled)",
+			onlyOrgMembers:  true,
+			user:            "test",
+			org:             "kubernetes",
+			repo:            "kubernetes",
+			expectedTrusted: true,
+		},
+		{
+			name:            "user is collaborator",
+			onlyOrgMembers:  false,
+			user:            "test-collaborator",
+			org:             "kubernetes",
+			repo:            "kubernetes",
+			expectedTrusted: true,
+		},
+		{
+			name:            "user is collaborator (only org members enabled)",
+			onlyOrgMembers:  true,
+			user:            "test-collaborator",
+			org:             "kubernetes",
+			repo:            "kubernetes",
+			expectedTrusted: false,
+		},
+		{
+			name:            "user is trusted org member",
+			onlyOrgMembers:  false,
+			trustedOrg:      "kubernetes",
+			user:            "test",
+			org:             "kubernetes-sigs",
+			repo:            "test",
+			expectedTrusted: true,
+		},
+		{
+			name:            "user is not org member",
+			onlyOrgMembers:  false,
+			user:            "test-2",
+			org:             "kubernetes",
+			repo:            "kubernetes",
+			expectedTrusted: false,
+		},
+		{
+			name:            "user is not org member or trusted org member",
+			onlyOrgMembers:  false,
+			trustedOrg:      "kubernetes-sigs",
+			user:            "test-2",
+			org:             "kubernetes",
+			repo:            "kubernetes",
+			expectedTrusted: false,
+		},
+		{
+			name:            "user is not org member or trusted org member, onlyOrgMembers true",
+			onlyOrgMembers:  true,
+			trustedOrg:      "kubernetes-sigs",
+			user:            "test-2",
+			org:             "kubernetes",
+			repo:            "kubernetes",
+			expectedTrusted: false,
+		},
+		{
+			name:            "Self as bot is trusted",
+			user:            "k8s-ci-robot",
+			expectedTrusted: true,
+		},
+		{
+			name:            "github-app[bot] is in trusted list",
+			user:            "github-app[bot]",
+			trustedApps:     []string{"github-app"},
+			expectedTrusted: true,
+		},
+		{
+			name:            "github-app[bot] is not in trusted list",
+			user:            "github-app[bot]",
+			trustedApps:     []string{"other-app"},
+			expectedTrusted: false,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			fakeSCMClient := fake2.SCMClient{}
+			fakeSCMClient.OrgMembers = map[string][]string{
+				"kubernetes": {"test"},
+			}
+			fakeSCMClient.Collaborators = []string{"test-collaborator"}
+
+			triggerPlugin := plugins.Trigger{
+				TrustedOrg:     tc.trustedOrg,
+				TrustedApps:    tc.trustedApps,
+				OnlyOrgMembers: tc.onlyOrgMembers,
+			}
+
+			trustedResponse, err := TrustedUser(&fakeSCMClient, &triggerPlugin, tc.user, tc.org, tc.repo)
+			if err != nil {
+				t.Errorf("For case %s, didn't expect error from TrustedUser: %v", tc.name, err)
+			}
+			if trustedResponse != tc.expectedTrusted {
+				t.Errorf("For case %s, expect trusted: %v, but got: %v", tc.name, tc.expectedTrusted, trustedResponse)
+			}
+		})
+	}
+}

@@ -270,6 +270,10 @@ type Trigger struct {
 	// TrustedOrg is the org whose members' PRs will be automatically built
 	// for PRs to the above repos. The default is the PR's org.
 	TrustedOrg string `json:"trusted_org,omitempty"`
+	// TrustedApps is the explicit list of GitHub apps whose PRs will be automatically
+	// considered as trusted. The list should contain usernames of each GitHub App without [bot] suffix.
+	// By default, trigger will ignore this list.
+	TrustedApps []string `json:"trusted_apps,omitempty"`
 	// JoinOrgURL is a link that redirects users to a location where they
 	// should be able to read more about joining the organization in order
 	// to become trusted members. Defaults to the Github link of TrustedOrg.
