@@ -211,6 +211,7 @@ Trigger specifies a configuration for a single trigger.<br /><br />The configura
 |---|---|---|---|---|
 | Repos | `repos` | []string | No | Repos is either of the form org/repos or just org. |
 | TrustedOrg | `trusted_org` | string | No | TrustedOrg is the org whose members' PRs will be automatically built<br />for PRs to the above repos. The default is the PR's org. |
+| TrustedApps | `trusted_apps` | []string | No | TrustedApps is the explicit list of GitHub apps whose PRs will be automatically<br />considered as trusted. The list should contain usernames of each GitHub App without [bot] suffix.<br/>By default, trigger will ignore this list. |
 | JoinOrgURL | `join_org_url` | string | No | JoinOrgURL is a link that redirects users to a location where they<br />should be able to read more about joining the organization in order<br />to become trusted members. Defaults to the Github link of TrustedOrg. |
 | OnlyOrgMembers | `only_org_members` | bool | No | OnlyOrgMembers requires PRs and/or /ok-to-test comments to come from org members.<br />By default, trigger also include repo collaborators. |
 | IgnoreOkToTest | `ignore_ok_to_test` | bool | No | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users. |
