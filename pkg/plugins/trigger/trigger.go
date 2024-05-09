@@ -186,7 +186,7 @@ func handlePush(pc plugins.Agent, pe scm.PushHook) error {
 
 // TrustedUser returns true if user is trusted in repo.
 //
-// Trusted users are either repo collaborators, org members or trusted org members.
+// Trusted users are either repo collaborators, org members, trusted org members or trusted Github Apps.
 // Whether repo collaborators and/or a second org is trusted is configured by trigger.
 func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, repo string) (bool, error) {
 	botUser, err := spc.BotName()
@@ -212,6 +212,14 @@ func TrustedUser(spc trustedUserClient, trigger *plugins.Trigger, user, org, rep
 	} else if member {
 		logrus.Infof("User %q is a member of org %q", user, org)
 		return true, nil
+	}
+
+	// Determine if user is on trusted_apps list.
+	// This allows automatic tests execution for GitHub automations that cannot be added as collaborators.
+	for _, trustedApp := range trigger.TrustedApps {
+		if tUser := strings.TrimSuffix(user, "[bot]"); tUser == trustedApp {
+			return true, nil
+		}
 	}
 
 	// Determine if there is a second org to check
