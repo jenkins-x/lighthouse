@@ -38,9 +38,9 @@ func TestReconcile(t *testing.T) {
 	assert.NoError(t, err)
 	defer func() {
 		if oldToken != "" {
-			os.Setenv("GIT_TOKEN", oldToken)
+			_ = os.Setenv("GIT_TOKEN", oldToken)
 		} else {
-			os.Unsetenv("GIT_TOKEN")
+			_ = os.Unsetenv("GIT_TOKEN")
 		}
 	}()
 	configAgent := &config.Agent{}
@@ -108,7 +108,7 @@ func TestReconcile(t *testing.T) {
 			scheme := runtime.NewScheme()
 			err = lighthousev1alpha1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			c := fake.NewFakeClientWithScheme(scheme, observedJob)
+			c := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(observedJob).Build()
 			reconciler, err := NewLighthouseJobReconcilerWithConfig(c, scheme, ns, cfgMapWatcher, configAgent, pluginAgent)
 			assert.NoError(t, err)
 

@@ -39,11 +39,11 @@ import (
 
 const (
 	statusContext string = "keeper"
-	statusInPool         = "In merge pool"
+	statusInPool  string = "In merge pool"
 	// statusNotInPool is a format string used when a PR is not in a keeper pool.
 	// The '%s' field is populated with the reason why the PR is not in a
 	// keeper pool or the empty string if the reason is unknown. See requirementDiff.
-	statusNotInPool = "Not mergeable.%s"
+	statusNotInPool string = "Not mergeable.%s"
 
 	// StatusContextLabelEnvVar is the environment variable we look to for the overriding status context label.
 	StatusContextLabelEnvVar = "LIGHTHOUSE_KEEPER_STATUS_CONTEXT_LABEL"

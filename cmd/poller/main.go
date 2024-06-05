@@ -297,6 +297,9 @@ func (o *options) notifier(hook *scm.WebhookWrapper) error {
 	}
 
 	req, err := http.NewRequest("POST", o.hookEndpoint, bytes.NewBuffer(data))
+	if err != nil {
+		return errors.Wrapf(err, "failed to create hook request %#v for %s", data, o.hookEndpoint)
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	if o.hmacToken != "" {

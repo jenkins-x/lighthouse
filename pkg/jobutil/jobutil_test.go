@@ -499,7 +499,7 @@ func TestNewLighthouseJob(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			os.Setenv("GIT_KIND", testCase.gitKind)
+			_ = os.Setenv("GIT_KIND", testCase.gitKind)
 			pj := NewLighthouseJob(testCase.spec, testCase.labels, testCase.annotations)
 			if actual, expected := pj.Spec, testCase.spec; !equality.Semantic.DeepEqual(actual, expected) {
 				t.Errorf("%s: incorrect PipelineOptionsSpec created: %s", testCase.name, cmp.Diff(actual, expected))

@@ -20,8 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"k8s.io/utils/clock"
 	"sync"
+
+	"k8s.io/utils/clock"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
 

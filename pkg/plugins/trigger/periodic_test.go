@@ -29,10 +29,10 @@ var kubeClient *kubefake.Clientset
 // TODO: test more cases
 func TestUpdatePeriodics(t *testing.T) {
 	namespace, p := setupPeriodicsTest()
-	fileBrowsers, err := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser("test_data", true))
+	fileBrowsers, _ := filebrowser.NewFileBrowsers(filebrowser.GitHubURL, fbfake.NewFakeFileBrowser("test_data", true))
 	resolverCache := inrepo.NewResolverCache()
 	fc := filebrowser.NewFetchCache()
-	cfg, err := inrepo.LoadTriggerConfig(fileBrowsers, fc, resolverCache, "testorg", "myapp", "")
+	cfg, _ := inrepo.LoadTriggerConfig(fileBrowsers, fc, resolverCache, "testorg", "myapp", "")
 
 	agent := plugins.Agent{
 		Config: &config.Config{

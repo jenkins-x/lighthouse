@@ -159,7 +159,7 @@ func TestSigMention(t *testing.T) {
 		}
 		// Add initial labels to issue.
 		for _, label := range tc.issueLabels {
-			fakeClient.AddLabel("org", "repo", 1, label, false)
+			_ = fakeClient.AddLabel("org", "repo", 1, label, false)
 		}
 		e := &scmprovider.GenericCommentEvent{
 			Action: scm.ActionCreate,

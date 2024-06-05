@@ -82,7 +82,7 @@ func TestHttpResponse(t *testing.T) {
 		if s, ok := contentLength[r.URL.Path]; ok {
 			body := "binary image"
 			w.Header().Set("Content-Length", s)
-			io.WriteString(w, body)
+			_, _ = io.WriteString(w, body)
 		} else {
 			t.Errorf("Cannot find content length for %s", r.URL.Path)
 		}
@@ -193,9 +193,9 @@ func TestHttpResponse(t *testing.T) {
 			if tc.expectNoTag && q != "" {
 				t.Errorf("Expected no tag, but got %q", q)
 			}
-			io.WriteString(w, tc.response)
+			_, _ = io.WriteString(w, tc.response)
 		} else {
-			io.WriteString(w, validResponse)
+			_, _ = io.WriteString(w, validResponse)
 		}
 	}))
 	defer ts.Close()

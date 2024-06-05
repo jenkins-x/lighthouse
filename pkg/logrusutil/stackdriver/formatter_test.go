@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"testing"
 
 	"github.com/sirupsen/logrus"
 )
@@ -70,8 +69,8 @@ var formatterTests = []struct {
 				},
 				"reportLocation": map[string]interface{}{
 					"filePath":     "github.com/jenkins-x/lighthouse/pkg/logrusutil/stackdriver/formatter_test.go",
-					"lineNumber":   58.0,
-					"functionName": "glob..func2",
+					"lineNumber":   57.0,
+					"functionName": "init.func2",
 				},
 			},
 		},
@@ -96,8 +95,8 @@ var formatterTests = []struct {
 				},
 				"reportLocation": map[string]interface{}{
 					"filePath":     "github.com/jenkins-x/lighthouse/pkg/logrusutil/stackdriver/formatter_test.go",
-					"lineNumber":   84.0,
-					"functionName": "glob..func3",
+					"lineNumber":   83.0,
+					"functionName": "init.func3",
 				},
 			},
 		},
@@ -129,8 +128,8 @@ var formatterTests = []struct {
 				},
 				"reportLocation": map[string]interface{}{
 					"filePath":     "github.com/jenkins-x/lighthouse/pkg/logrusutil/stackdriver/formatter_test.go",
-					"lineNumber":   114.0,
-					"functionName": "glob..func4",
+					"lineNumber":   113.0,
+					"functionName": "init.func4",
 				},
 			},
 		},

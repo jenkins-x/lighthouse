@@ -196,7 +196,7 @@ func TestLabel(t *testing.T) {
 
 			// Add initial labels
 			for _, label := range tc.issueLabels {
-				fakeSCMProviderClient.AddLabel("org", "repo", 1, label, false)
+				_ = fakeSCMProviderClient.AddLabel("org", "repo", 1, label, false)
 			}
 
 			if len(tc.issueState) == 0 {

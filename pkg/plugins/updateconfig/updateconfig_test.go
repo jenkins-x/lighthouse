@@ -1254,7 +1254,7 @@ func TestUpdateConfig(t *testing.T) {
 				},
 			}
 			if tc.existingComment != "" {
-				fspc.CreateComment("kubernetes", "kubernetes", basicPR.Number, true, tc.existingComment)
+				_ = fspc.CreateComment("kubernetes", "kubernetes", basicPR.Number, true, tc.existingComment)
 			}
 			fkc := fake.NewSimpleClientset(tc.existConfigMaps...)
 

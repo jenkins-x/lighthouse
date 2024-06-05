@@ -230,7 +230,6 @@ func loadCerts(certFile, keyFile, caCertFile string) (*tls.Config, error) {
 		tlsConfig.RootCAs = caCertPool
 	}
 
-	tlsConfig.BuildNameToCertificate()
 	return tlsConfig, nil
 }
 

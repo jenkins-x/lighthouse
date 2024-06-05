@@ -45,10 +45,10 @@ func GetAPIClients() (tektonclient.Interface, kubeclient.Interface, clientset.In
 
 // GetConfig returns a rest.Config to be used for kubernetes client creation.
 // It does so in the following order:
-//   1. Use the passed kubeconfig/masterURL.
-//   2. Fallback to the KUBECONFIG environment variable.
-//   3. Fallback to in-cluster config.
-//   4. Fallback to the ~/.kube/config.
+//  1. Use the passed kubeconfig/masterURL.
+//  2. Fallback to the KUBECONFIG environment variable.
+//  3. Fallback to in-cluster config.
+//  4. Fallback to the ~/.kube/config.
 func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
 	if kubeconfig == "" {
 		kubeconfig = os.Getenv("KUBECONFIG")

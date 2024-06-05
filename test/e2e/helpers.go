@@ -656,9 +656,9 @@ func AttemptToLGTMOwnPullRequest(scmClient *scm.Client, pr *scm.PullRequest) err
 func AddReviewerToPullRequestWithChatOpsCommand(lhClient scmprovider.SCMClient, pr *scm.PullRequest, reviewer string) error {
 	ginkgo.By(fmt.Sprintf("Adding the '/cc %s' comment and waiting for %s to be a reviewer", reviewer, reviewer))
 	repo := pr.Repository()
-	err := lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/cc %s", reviewer))
+	_ = lhClient.CreateComment(repo.Namespace, repo.Name, pr.Number, true, fmt.Sprintf("/cc %s", reviewer))
 
-	err = ExpectThatPullRequestMatches(lhClient, pr.Number, repo.Namespace, repo.Name, func(request *scm.PullRequest) error {
+	err := ExpectThatPullRequestMatches(lhClient, pr.Number, repo.Namespace, repo.Name, func(request *scm.PullRequest) error {
 		if len(request.Assignees) == 0 && len(request.Reviewers) == 0 {
 			return fmt.Errorf("expected %s as reviewer, but no reviewers or assignees set on PR", reviewer)
 		}

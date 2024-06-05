@@ -135,4 +135,4 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.25.9
 )
 
-go 1.19
+go 1.22.3

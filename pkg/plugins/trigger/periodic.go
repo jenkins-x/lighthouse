@@ -124,6 +124,7 @@ func hasChanges(pe *scm.PushHook, agent plugins.Agent) bool {
 	return false
 }
 
+// PeriodicsInitialized returns false if somebody else has updated the configmap, so don't initialize periodics now
 func (pa *PeriodicAgent) PeriodicsInitialized(namespace string, kc kubeclient.Interface) bool {
 	cmInterface := kc.CoreV1().ConfigMaps(namespace)
 	cm, err := cmInterface.Get(context.TODO(), util.ProwConfigMapName, metav1.GetOptions{})
@@ -150,11 +151,7 @@ func (pa *PeriodicAgent) PeriodicsInitialized(namespace string, kc kubeclient.In
 	cmApply.Data[initializedField] = "pending"
 	cm.Data[initStartedField] = strconv.FormatInt(time.Now().Unix(), 10)
 	_, err = cmInterface.Apply(context.TODO(), cmApply, metav1.ApplyOptions{FieldManager: "lighthouse"})
-	if err != nil {
-		// Somebody else has updated the configmap, so don't initialize periodics now
-		return true
-	}
-	return false
+	return err != nil
 }
 
 func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgent *config.Agent, fileBrowsers *filebrowser.FileBrowsers) {
@@ -242,11 +239,15 @@ func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgen
 			deleteConfigMap(cmInterface, cm)
 		}
 	}
-	cmInterface.Apply(context.TODO(),
+	_, err := cmInterface.Apply(context.TODO(),
 		(&applyv1.ConfigMapApplyConfiguration{}).
 			WithName("config").
 			WithData(map[string]string{initializedField: "true"}),
 		metav1.ApplyOptions{Force: true, FieldManager: "lighthouse"})
+	if err != nil {
+		logrus.WithError(err).
+			Errorf("Initialisation of periodics is done, but persisting that failed")
+	}
 }
 
 func deleteConfigMap(cmInterface typedv1.ConfigMapInterface, cm *corev1.ConfigMap) {
@@ -309,6 +310,10 @@ func (pa *PeriodicAgent) UpdatePeriodicsForRepo(
 
 		pj := jobutil.NewLighthouseJob(jobutil.PeriodicSpec(l, p, refs), labels, p.Annotations)
 		lighthouseData, err := json.Marshal(pj)
+		if err != nil {
+			l.WithError(err).Errorf("failed to create template lighthousejob for periodic %s in (%s/%s)", p.Name, org, repo)
+			continue
+		}
 
 		// Only apply if any value have changed
 		existingCm := getExistingConfigMap(p)

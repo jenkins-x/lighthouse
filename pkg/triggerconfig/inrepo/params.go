@@ -37,7 +37,7 @@ func getParamsFromTasksResults(loc *UseLocation) map[string]bool {
 }
 
 // UseParametersAndResults adds the parameters from the used Task to the PipelineSpec if specified and the PipelineTask
-func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta1.TaskSpec) error {
+func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta1.TaskSpec) {
 	parameterSpecs := uses.Params
 	parameters := ToParams(parameterSpecs)
 	results := uses.Results
@@ -83,7 +83,6 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *v1beta
 			}
 		}
 	}
-	return nil
 }
 
 // ToDefaultParams converts the param specs to default params

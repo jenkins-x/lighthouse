@@ -119,11 +119,11 @@ type Action string
 // Constants for various actions the controller might take
 const (
 	Wait         Action = "WAIT"
-	Trigger             = "TRIGGER"
-	TriggerBatch        = "TRIGGER_BATCH"
-	Merge               = "MERGE"
-	MergeBatch          = "MERGE_BATCH"
-	PoolBlocked         = "BLOCKED"
+	Trigger      Action = "TRIGGER"
+	TriggerBatch Action = "TRIGGER_BATCH"
+	Merge        Action = "MERGE"
+	MergeBatch   Action = "MERGE_BATCH"
+	PoolBlocked  Action = "BLOCKED"
 )
 
 // recordableActions is the subset of actions that we keep historical record of.
@@ -929,7 +929,7 @@ func (c *DefaultController) pickBatch(sp subpool, cc contextChecker) ([]PullRequ
 	if err != nil {
 		return nil, err
 	}
-	defer r.Clean()
+	defer r.Clean() //nolint: errcheck
 	if err := r.Config("user.name", "prow"); err != nil {
 		return nil, err
 	}
@@ -1164,8 +1164,9 @@ func tryMerge(mergeFunc func() error) (bool, error) {
 			return false, detailedErr
 		} else if _, ok = err.(scmprovider.UnmergablePRError); ok {
 			return true, detailedErr
+		} else {
+			return true, err
 		}
-		return true, err
 	}
 	// We ran out of retries. Return the last transient error.
 	return true, err

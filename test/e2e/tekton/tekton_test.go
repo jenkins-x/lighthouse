@@ -321,7 +321,7 @@ func applyPipelineAndTask() error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(tmpDir) //nolint: errcheck
 
 	pAndTFile := filepath.Join("test_data", "tekton", "pipelineAndTask.tmpl.yaml")
 	rawPAndT, err := os.ReadFile(pAndTFile)

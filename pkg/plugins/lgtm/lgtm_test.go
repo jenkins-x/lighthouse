@@ -1115,7 +1115,7 @@ func TestAddTreeHashComment(t *testing.T) {
 			commit := &scm.Commit{}
 			commit.Tree.Sha = treeSHA
 			fc.Commits[SHA] = commit
-			handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{})
+			_ = handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{})
 			found := false
 			for _, body := range fc.PullRequestCommentsAdded {
 				if addLGTMLabelNotificationRe.MatchString(body) {
@@ -1171,7 +1171,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		SCMProviderClient:   fc,
 		PullRequestComments: fc.PullRequestComments[101],
 	}
-	handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), fp)
+	_ = handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), fp)
 	found := false
 	for _, body := range fc.PullRequestCommentsDeleted {
 		if addLGTMLabelNotificationRe.MatchString(body) {

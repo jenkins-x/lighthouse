@@ -2,9 +2,10 @@ package keeper
 
 import (
 	"context"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"strings"
 	"testing"
+
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"

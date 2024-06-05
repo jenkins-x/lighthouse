@@ -507,9 +507,9 @@ func (ap Approvers) AreFilesApproved() bool {
 // RequirementsMet returns a bool indicating whether the PR has met all approval requirements:
 // - all OWNERS files associated with the PR have been approved AND
 // EITHER
-// 	- the munger config is such that an issue is not required to be associated with the PR
-// 	- that there is an associated issue with the PR
-// 	- an OWNER has indicated that the PR is trivial enough that an issue need not be associated with the PR
+//   - the munger config is such that an issue is not required to be associated with the PR
+//   - that there is an associated issue with the PR
+//   - an OWNER has indicated that the PR is trivial enough that an issue need not be associated with the PR
 func (ap Approvers) RequirementsMet() bool {
 	return ap.AreFilesApproved() && (!ap.RequireIssue || ap.AssociatedIssue != 0 || len(ap.NoIssueApprovers()) != 0)
 }
@@ -619,11 +619,11 @@ func (ap Approvers) GetQuotedCCs(providerType string) []string {
 
 // GetMessage returns the comment body that we want the approve plugin to display on PRs
 // The comment shows:
-// 	- a list of approvers files (and links) needed to get the PR approved
-// 	- a list of approvers files with strikethroughs that already have an approver's approval
-// 	- a suggested list of people from each OWNERS files that can fully approve the PR
-// 	- how an approver can indicate their approval
-// 	- how an approver can cancel their approval
+//   - a list of approvers files (and links) needed to get the PR approved
+//   - a list of approvers files with strikethroughs that already have an approver's approval
+//   - a suggested list of people from each OWNERS files that can fully approve the PR
+//   - how an approver can indicate their approval
+//   - how an approver can cancel their approval
 func GetMessage(ap Approvers, linkURL *url.URL, org, repo, branch string, usePrefix bool, providerType string) *string {
 	if linkURL == nil {
 		return nil

@@ -258,7 +258,7 @@ func TestHttpResponse(t *testing.T) {
 		if s, ok := contentLength[r.URL.Path]; ok {
 			body := "binary image"
 			w.Header().Set("Content-Length", s)
-			io.WriteString(w, body)
+			_, _ = io.WriteString(w, body)
 		} else {
 			t.Errorf("Cannot find content length for %s", r.URL.Path)
 		}
@@ -331,9 +331,9 @@ Available variants:
 			w.WriteHeader(code)
 		}
 		if r, ok := pathToResponse[r.URL.Path]; ok {
-			io.WriteString(w, r)
+			_, _ = io.WriteString(w, r)
 		} else {
-			io.WriteString(w, validResponse)
+			_, _ = io.WriteString(w, validResponse)
 		}
 	}))
 	defer ts.Close()
