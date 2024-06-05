@@ -1362,8 +1362,8 @@ func TestTakeAction(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error making local git: %v", err)
 			}
-			defer gc.Clean()
-			defer lg.Clean()
+			defer gc.Clean() //nolint: errcheck
+			defer lg.Clean() //nolint: errcheck
 			if err := lg.MakeFakeRepo("o", "r"); err != nil {
 				t.Fatalf("Error making fake repo: %v", err)
 			}
@@ -1522,7 +1522,7 @@ func TestServeHTTP(t *testing.T) {
 	if err != nil {
 		t.Errorf("GET error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint: errcheck
 	var pools []Pool
 	if err := json.NewDecoder(resp.Body).Decode(&pools); err != nil {
 		t.Fatalf("JSON decoding error: %v", err)

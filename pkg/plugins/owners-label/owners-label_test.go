@@ -185,7 +185,7 @@ func TestHandle(t *testing.T) {
 
 		// Add initial labels
 		for _, label := range tc.prLabels {
-			fakeClient.AddLabel(basicPR.Base.Repo.Namespace, basicPR.Base.Repo.Name, basicPR.Number, label, true)
+			_ = fakeClient.AddLabel(basicPR.Base.Repo.Namespace, basicPR.Base.Repo.Name, basicPR.Number, label, true)
 		}
 		pre := &scm.PullRequestHook{
 			Action:      scm.ActionOpen,

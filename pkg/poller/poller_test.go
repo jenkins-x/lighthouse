@@ -1,12 +1,12 @@
 package poller_test
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
-	"context"
 
 	scmfake "github.com/jenkins-x/go-scm/scm/driver/fake"
 

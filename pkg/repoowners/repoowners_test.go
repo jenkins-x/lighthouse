@@ -179,8 +179,8 @@ func getTestClient(
 		},
 		// Clean up function
 		func() {
-			git.Clean()
-			localGit.Clean()
+			_ = git.Clean()
+			_ = localGit.Clean()
 		},
 		nil
 }

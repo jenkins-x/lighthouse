@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	utilpointer "k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 // ClientFactory knows how to create clientFactory for repos
@@ -114,9 +114,9 @@ func defaultClientFactoryOpts(cfo *ClientFactoryOpts) {
 	if cfo.CacheDirBase == nil {
 		switch runtime.GOOS {
 		case "linux":
-			cfo.CacheDirBase = utilpointer.StringPtr("/var/tmp")
+			cfo.CacheDirBase = ptr.To("/var/tmp")
 		default:
-			cfo.CacheDirBase = utilpointer.StringPtr("")
+			cfo.CacheDirBase = ptr.To("")
 		}
 	}
 	if cfo.Censor == nil {

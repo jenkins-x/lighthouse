@@ -145,7 +145,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	gitClient, err := git.NewClient(serverURL, util.GitKind(configAgent.Config))
 	assert.NoError(t, err)
 	user := util.GetBotName(configAgent.Config)
-	token, err := util.GetSCMToken(util.GitKind(configAgent.Config))
+	token, _ := util.GetSCMToken(util.GitKind(configAgent.Config))
 	gitClient.SetCredentials(user, func() []byte {
 		return []byte(token)
 	})

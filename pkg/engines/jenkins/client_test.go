@@ -343,7 +343,7 @@ func TestBuildCreate(t *testing.T) {
 				}
 
 				w.WriteHeader(testCase.statusCode)
-				w.Write([]byte(response))
+				_, _ = w.Write([]byte(response))
 			}
 
 			ts := httptest.NewServer(handler)

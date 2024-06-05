@@ -56,7 +56,7 @@ type Server struct {
 
 const failedCommentCoerceFmt = "Could not coerce %s event to a GenericCommentEvent. Unknown 'action': %q."
 
-var zeroSha = regexp.MustCompile("\\b0{7,40}\\b")
+var zeroSha = regexp.MustCompile(`\b0{7,40}\b`)
 
 func (s *Server) getPlugins(org, repo string) map[string]plugins.Plugin {
 	return s.Plugins.GetPlugins(org, repo, s.ClientAgent.SCMProviderClient.Driver.String())

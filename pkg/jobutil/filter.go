@@ -35,10 +35,10 @@ var RetestRe = regexp.MustCompile(`(?m)^/(?:lh-)?retest\s*$`)
 var OkToTestRe = regexp.MustCompile(`(?m)^/(?:lh-)?ok-to-test\s*$`)
 
 // Filter digests a presubmit config to determine if:
-//  - we the presubmit matched the filter
-//  - we know that the presubmit is forced to run
-//  - what the default behavior should be if the presubmit
-//    runs conditionally and does not match trigger conditions
+//   - we the presubmit matched the filter
+//   - we know that the presubmit is forced to run
+//   - what the default behavior should be if the presubmit
+//     runs conditionally and does not match trigger conditions
 type Filter func(p job.Presubmit) (shouldRun bool, forcedToRun bool, defaultBehavior bool)
 
 // CommandFilter builds a filter for `/test foo`

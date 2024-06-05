@@ -195,7 +195,6 @@ func (c *Client) ListIssueComments(org, repo string, number int) ([]*scm.Comment
 func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(org, repo)
-	var allLabels []*scm.Label
 	var resp *scm.Response
 	var labels []*scm.Label
 	var err error
@@ -213,7 +212,6 @@ func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.L
 				return nil, fmt.Errorf("fail to list labels: %v, response: %v", err, resp)
 			}
 			firstRun = true
-			allLabels = append(allLabels, labels...)
 			opts.Page++
 		}
 	}
@@ -223,7 +221,6 @@ func (c *Client) GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.L
 			return nil, fmt.Errorf("fail to list labels: %v, response: %v", err, resp)
 		}
 		firstRun = true
-		allLabels = append(allLabels, labels...)
 		opts.Page++
 	}
 	return labels, err

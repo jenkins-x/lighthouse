@@ -79,10 +79,7 @@ func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step tektonv
 	*ts = *useTS
 	ts.Steps = originalSteps
 
-	err = UseParametersAndResults(ctx, loc, useTS)
-	if err != nil {
-		return steps, errors.Wrapf(err, "failed to resolve parameters and results")
-	}
+	UseParametersAndResults(ctx, loc, useTS)
 	return steps, nil
 }
 

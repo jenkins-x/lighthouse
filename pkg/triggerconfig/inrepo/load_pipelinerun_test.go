@@ -33,7 +33,7 @@ func TestLoadPipelineRunTest(t *testing.T) {
 	fileBrowser := fbfake.NewFakeFileBrowser("test_data", true)
 
 	// lets use a custom version stream sha
-	os.Setenv("LIGHTHOUSE_VERSIONSTREAM_JENKINS_X_JX3_PIPELINE_CATALOG", "myversionstreamref")
+	_ = os.Setenv("LIGHTHOUSE_VERSIONSTREAM_JENKINS_X_JX3_PIPELINE_CATALOG", "myversionstreamref")
 
 	require.NoError(t, err, "failed to get cwd")
 

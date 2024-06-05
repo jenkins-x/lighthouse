@@ -26,7 +26,6 @@ GOTEST := $(GO) test
 REV := $(shell git rev-parse --short HEAD 2> /dev/null || echo 'unknown')
 VERSION ?= $(shell echo "$$(git for-each-ref refs/tags/ --count=1 --sort=-version:refname --format='%(refname:short)' 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
 GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
-GO_DEPENDENCIES := $(call rwildcard,pkg/,*.go) $(call rwildcard,cmd/,*.go)
 
 .PHONY: all
 all: build test check docs ## Default rule, builds all binaries, runs tests and format checks
@@ -123,12 +122,12 @@ clean: ## Deletes the generated build directories
 check: fmt lint sec ## Runs Go format check as well as security checks
 
 get-fmt-deps:
-	$(GO_NOMOD) get golang.org/x/tools/cmd/goimports
+	$(GO_NOMOD) install golang.org/x/tools/cmd/goimports
 
 .PHONY: importfmt
 importfmt: get-fmt-deps ## Checks the import format of the Go source files
 	@echo "FORMATTING IMPORTS"
-	@goimports -w $(GO_DEPENDENCIES)
+	@goimports -w $(call rwildcard,,*.go)
 
 .PHONY: fmt ## Checks Go source files are formatted properly
 fmt: importfmt

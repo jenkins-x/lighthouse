@@ -201,6 +201,7 @@ func (c *Client) LoadRepoAliases(org, repo, base string) (RepoAliases, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to clone %s: %v", cloneRef, err)
 		}
+		//nolint:errcheck
 		defer gitRepo.Clean()
 		if err := gitRepo.Checkout(base); err != nil {
 			return nil, err
@@ -242,6 +243,7 @@ func (c *Client) LoadRepoOwners(org, repo, base string) (RepoOwner, error) {
 		} else {
 			gitRepo, err = c.git.Clone(cloneRef)
 			if gitRepo != nil {
+				//nolint:errcheck
 				defer gitRepo.Clean()
 			}
 		}
@@ -639,7 +641,7 @@ func (o *RepoOwners) entriesForFile(path string, people map[string]map[*regexp.R
 	if !o.enableMDYAML || !strings.HasSuffix(path, ".md") {
 		// if path is a directory, this will remove the leaf directory, and returns "." for topmost dir
 		d = filepath.Dir(d)
-		d = canonicalize(path)
+		d = canonicalize(d)
 	}
 
 	out := sets.NewString()
