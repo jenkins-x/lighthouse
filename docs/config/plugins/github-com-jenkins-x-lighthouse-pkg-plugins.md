@@ -212,6 +212,7 @@ Trigger specifies a configuration for a single trigger.<br /><br />The configura
 | `ignore_ok_to_test` | bool | No | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users. |
 | `elide_skipped_contexts` | bool | No | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run. |
 | `skip_draft_pr` | bool | No | SkipDraftPR when enabled, skips triggering pipelines for draft PRs<br />unless /ok-to-test is added. |
+| `skip_report_comment` | bool | No | SkipReportComment when enabled, skips report comments in the SCM provider based on the state of<br />the LighthouseJobs. |
 
 ## Welcome
 

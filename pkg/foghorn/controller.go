@@ -264,11 +264,14 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 		return
 	}
 
-	err = reporter.Report(scmClient, r.jobConfig.Config().Plank.ReportTemplate, j, []job.PipelineKind{job.PresubmitJob})
-	if err != nil {
-		// For now, we're just going to ignore failures here.
-		r.logger.WithFields(fields).WithError(err).Warnf("failed to update comments on the PR")
+	if !r.pluginConfig.Config().TriggerFor(owner, repo).SkipReportComment {
+		err = reporter.Report(scmClient, r.jobConfig.Config().Plank.ReportTemplate, j, []job.PipelineKind{job.PresubmitJob})
+		if err != nil {
+			// For now, we're just going to ignore failures here.
+			r.logger.WithFields(fields).WithError(err).Warnf("failed to update comments on the PR")
+		}
 	}
+
 	r.logger.WithFields(fields).Info("reported git status")
 	j.Status.Description = statusInfo.description
 	j.Status.LastReportState = statusInfo.scmStatus.String()
