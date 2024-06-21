@@ -184,7 +184,8 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 	repo := activity.Repo
 	gitURL := activity.GitURL
 	activityStatus := activity.Status
-	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind(r.jobConfig.Config))
+	skipReportRunningStatus := r.pluginConfig.Config().TriggerFor(owner, repo).SkipReportRunningStatus
+	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind(r.jobConfig.Config), skipReportRunningStatus)
 
 	fields := map[string]interface{}{
 		"name":        activity.Name,
@@ -224,6 +225,11 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 	// already completed - avoid reporting again if a promotion happens after a PR has merged and the pipeline updates status
 	case scm.StateFailure, scm.StateError, scm.StateSuccess, scm.StateCanceled:
 		return
+	// already in running/pending state - avoid reporting again if we are still in these status
+	case scm.StatePending, scm.StateRunning:
+		if skipReportRunningStatus && (statusInfo.scmStatus == scm.StatePending || statusInfo.scmStatus == scm.StateRunning) {
+			return
+		}
 	}
 
 	r.logger.WithFields(fields).Warnf("last report: %s, current: %s, last desc: %s, current: %s", j.Status.LastReportState, statusInfo.scmStatus.String(),
@@ -283,7 +289,7 @@ type reportStatusInfo struct {
 	runningStages string
 }
 
-func toScmStatusDescriptionRunningStages(activity *lighthousev1alpha1.ActivityRecord, gitKind string) reportStatusInfo {
+func toScmStatusDescriptionRunningStages(activity *lighthousev1alpha1.ActivityRecord, gitKind string, skipReportRunningStatus bool) reportStatusInfo {
 	info := reportStatusInfo{
 		description:   "",
 		runningStages: "",
@@ -305,6 +311,10 @@ func toScmStatusDescriptionRunningStages(activity *lighthousev1alpha1.ActivityRe
 	default:
 		info.scmStatus = scm.StateUnknown
 		info.description = "Pipeline in unknown state"
+	}
+
+	if skipReportRunningStatus {
+		return info
 	}
 
 	runningStages := activity.RunningStages()
