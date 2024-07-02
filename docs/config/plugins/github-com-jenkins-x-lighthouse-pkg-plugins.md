@@ -213,6 +213,7 @@ Trigger specifies a configuration for a single trigger.<br /><br />The configura
 | `elide_skipped_contexts` | bool | No | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run. |
 | `skip_draft_pr` | bool | No | SkipDraftPR when enabled, skips triggering pipelines for draft PRs<br />unless /ok-to-test is added. |
 | `skip_report_comment` | bool | No | SkipReportComment when enabled, skips report comments in the SCM provider based on the state of<br />the LighthouseJobs. |
+| `skip_report_running_status` | bool | No | SkipReportRunningStatus when enabled, skips report status in the SCM provider based on the current and last state of the LighthouseJobs. |
 
 ## Welcome
 
