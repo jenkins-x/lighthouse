@@ -91,4 +91,7 @@ const (
 
 	// LighthousePayloadTypeActivity is the activity type
 	LighthousePayloadTypeActivity = "activity"
+
+	// DashboardTektonRerun is added by Tekton when clicking on the Action > Rerun button
+	DashboardTektonRerun = "dashboard.tekton.dev/rerunOf"
 )
