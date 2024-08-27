@@ -19,14 +19,18 @@ rules:
   - list
   - get
   - watch
+  {{- if .Values.tektoncontroller.rerunPrReconciler }}
   - update
+  {{- end }}
 - apiGroups:
   - lighthouse.jenkins.io
   resources:
   - lighthousebreakpoints
   - lighthousejobs
   verbs:
+  {{- if .Values.tektoncontroller.rerunPrReconciler }}
   - create
+  {{- end }}
   - get
   - update
   - list
