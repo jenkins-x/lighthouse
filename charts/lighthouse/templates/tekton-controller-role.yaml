@@ -25,6 +25,7 @@ rules:
   - lighthousebreakpoints
   - lighthousejobs
   verbs:
+  - create
   - get
   - update
   - list
