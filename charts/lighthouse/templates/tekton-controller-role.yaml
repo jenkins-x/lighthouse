@@ -19,6 +19,7 @@ rules:
   - list
   - get
   - watch
+  - update
 - apiGroups:
   - lighthouse.jenkins.io
   resources:
