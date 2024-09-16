@@ -156,6 +156,8 @@ webhooks:
     externalPort: 80
     internalPort: 8080
     annotations: {}
+  # Uncomment to set loadBalancerSourceRanges for service
+  #  loadBalancerSourceRanges: []
 
   resources:
     # webhooks.resources.limits -- Resource limits applied to the webhooks pods
