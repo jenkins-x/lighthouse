@@ -16,10 +16,10 @@ import (
 )
 
 type options struct {
-	namespace                  string
-	dashboardURL               string
-	dashboardTemplate          string
-	rerunPipelineRunReconciler bool
+	namespace               string
+	dashboardURL            string
+	dashboardTemplate       string
+	enableRerunStatusUpdate bool
 }
 
 func (o *options) Validate() error {
@@ -31,7 +31,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
 	fs.StringVar(&o.dashboardURL, "dashboard-url", "", "The base URL for the Tekton Dashboard to link to for build reports")
 	fs.StringVar(&o.dashboardTemplate, "dashboard-template", "", "The template expression for generating the URL to the build report based on the PipelineRun parameters. If not specified defaults to $LIGHTHOUSE_DASHBOARD_TEMPLATE")
-	fs.BoolVar(&o.rerunPipelineRunReconciler, "rerun-pr-reconciler", false, "Enables the rerun pipelinerun reconciler to run and update rerun pipelinerun status to github")
+	fs.BoolVar(&o.enableRerunStatusUpdate, "enable-rerun-status-update", false, "Enable updating the status at the git provider when PipelineRuns are rerun")
 	err := fs.Parse(args)
 	if err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
@@ -71,7 +71,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}
 
-	if o.rerunPipelineRunReconciler {
+	if o.enableRerunStatusUpdate {
 		rerunPipelineRunReconciler := tektonengine.NewRerunPipelineRunReconciler(mgr.GetClient(), mgr.GetScheme())
 		if err = rerunPipelineRunReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Fatal("Unable to create RerunPipelineRun controller")

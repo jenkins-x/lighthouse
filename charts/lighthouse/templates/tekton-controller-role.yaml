@@ -19,7 +19,7 @@ rules:
   - list
   - get
   - watch
-  {{- if .Values.tektoncontroller.rerunPrReconciler }}
+  {{- if .Values.tektoncontroller.enableRerunStatusUpdate }}
   - update
   {{- end }}
 - apiGroups:
@@ -28,7 +28,7 @@ rules:
   - lighthousebreakpoints
   - lighthousejobs
   verbs:
-  {{- if .Values.tektoncontroller.rerunPrReconciler }}
+  {{- if .Values.tektoncontroller.enableRerunStatusUpdate }}
   - create
   {{- end }}
   - get

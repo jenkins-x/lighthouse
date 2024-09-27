@@ -27,7 +27,7 @@ spec:
           - --namespace={{ .Release.Namespace }}
           - --dashboard-url={{ .Values.tektoncontroller.dashboardURL }}
           - --dashboard-template={{ .Values.tektoncontroller.dashboardTemplate }}
-          - --rerun-pr-reconciler={{ .Values.tektoncontroller.rerunPrReconciler | default false }}
+          - --enable-rerun-status-update={{ .Values.tektoncontroller.enableRerunStatusUpdate | default false }}
         ports:
           - name: metrics
             containerPort: 8080

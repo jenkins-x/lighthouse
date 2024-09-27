@@ -275,8 +275,8 @@ tektoncontroller:
   # tektoncontroller.terminationGracePeriodSeconds -- Termination grace period for tekton controller pods
   terminationGracePeriodSeconds: 180
 
-  # tektoncontroller.rerunPrReconciler -- Enables the rerun pipelinerun reconciler to run and update rerun pipelinerun status to github
-  rerunPrReconciler: false
+  # tektoncontroller.enableRerunStatusUpdate -- Enable updating the status at the git provider when PipelineRuns are rerun
+  enableRerunStatusUpdate: false
 
   image:
     # tektoncontroller.image.repository -- Template for computing the tekton controller docker image repository
