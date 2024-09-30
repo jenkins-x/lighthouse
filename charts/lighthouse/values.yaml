@@ -275,6 +275,9 @@ tektoncontroller:
   # tektoncontroller.terminationGracePeriodSeconds -- Termination grace period for tekton controller pods
   terminationGracePeriodSeconds: 180
 
+  # tektoncontroller.enableRerunStatusUpdate -- Enable updating the status at the git provider when PipelineRuns are rerun
+  enableRerunStatusUpdate: false
+
   image:
     # tektoncontroller.image.repository -- Template for computing the tekton controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"

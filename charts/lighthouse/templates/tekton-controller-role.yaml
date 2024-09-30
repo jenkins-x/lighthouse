@@ -19,12 +19,18 @@ rules:
   - list
   - get
   - watch
+  {{- if .Values.tektoncontroller.enableRerunStatusUpdate }}
+  - update
+  {{- end }}
 - apiGroups:
   - lighthouse.jenkins.io
   resources:
   - lighthousebreakpoints
   - lighthousejobs
   verbs:
+  {{- if .Values.tektoncontroller.enableRerunStatusUpdate }}
+  - create
+  {{- end }}
   - get
   - update
   - list
