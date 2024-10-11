@@ -40,7 +40,7 @@ func TestConvertPipelineRun(t *testing.T) {
 			testDir := filepath.Join("test_data", "activity", tc.name)
 			pr := loadPipelineRun(t, testDir)
 
-			converted := tekton.ConvertPipelineRun(pr)
+			converted, _ := tekton.ConvertPipelineRun(pr)
 
 			expected := loadRecord(t, testDir)
 
