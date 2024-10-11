@@ -19,12 +19,13 @@ import (
 )
 
 const (
-	controllerName          = "tekton-controller"
-	gitCloneCatalogTaskName = "git-clone"
-	gitCloneURLParam        = "url"
-	gitCloneRevisionParam   = "revision"
-	gitMergeCatalogTaskName = "git-batch-merge"
-	gitMergeBatchRefsParam  = "batchedRefs"
+	controllerName           = "tekton-controller"
+	gitCloneCatalogTaskName  = "git-clone"
+	gitCloneURLParam         = "url"
+	gitCloneRevisionParam    = "revision"
+	gitMergeCatalogTaskName  = "git-batch-merge"
+	gitMergeBatchRefsParam   = "batchedRefs"
+	tektonResultScmStatusUrl = "scm-status-url"
 )
 
 type buildIDGenerator interface {
