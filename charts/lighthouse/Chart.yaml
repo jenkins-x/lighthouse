@@ -3,6 +3,6 @@ description: |
   This chart bootstraps installation of [Lighthouse](https://github.com/jenkins-x/lighthouse).
 icon: https://raw.githubusercontent.com/jenkins-x/jenkins-x-website/master/images/logo/jenkinsx-icon-color.svg
 name: lighthouse
-version: 0.1.0-SNAPSHOT
+version: 1.21.0
 home: https://github.com/jenkins-x/lighthouse
-
+appVersion: 1.21.0
