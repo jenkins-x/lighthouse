@@ -764,7 +764,7 @@ func TestDividePool(t *testing.T) {
 		npr := PullRequest{Number: githubql.Int(p.number)}
 		npr.BaseRef.Name = githubql.String(p.branch)
 		npr.BaseRef.Prefix = "refs/heads/"
-		npr.BaseRefOID = githubql.String(testPJs[idx].baseSHA)
+		npr.BaseRef.Target.OID = githubql.String(testPJs[idx].baseSHA)
 		npr.Repository.Name = githubql.String(p.repo)
 		npr.Repository.Owner.Login = githubql.String(p.org)
 		npr.Repository.URL = githubql.String(fmt.Sprintf("https://github.com/%s/%s.git", p.org, p.repo))
