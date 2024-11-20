@@ -514,6 +514,10 @@ type fgc struct {
 	fakeClient     *scm.Client
 }
 
+func (f *fgc) AddLabel(owner, repo string, number int, label string, pr bool) error {
+	panic("implement me")
+}
+
 type commitStatus struct {
 	status      string
 	description string
