@@ -1539,7 +1539,7 @@ func (c *DefaultController) dividePool(pool map[string]PullRequest, pjs []v1alph
 		repo := string(pr.Repository.Name)
 		branch := string(pr.BaseRef.Name)
 		cloneURL := string(pr.Repository.URL)
-		baseSHA := string(pr.BaseRefOID)
+		baseSHA := string(pr.BaseRef.Target.OID)
 		if cloneURL == "" {
 			return nil, errors.New("no clone URL specified for repository")
 		}
@@ -1587,6 +1587,9 @@ type GraphQLAuthor struct {
 type GraphQLBaseRef struct {
 	Name   githubql.String
 	Prefix githubql.String
+	Target struct {
+		OID githubql.String `graphql:"oid"`
+	}
 }
 
 // PullRequest holds graphql data about a PR, including its commits and their contexts.
@@ -1596,7 +1599,6 @@ type PullRequest struct {
 	BaseRef     GraphQLBaseRef
 	HeadRefName githubql.String `graphql:"headRefName"`
 	HeadRefOID  githubql.String `graphql:"headRefOid"`
-	BaseRefOID  githubql.String
 	Mergeable   githubql.MergeableState
 	Repository  Repository
 	Commits     struct {
@@ -1888,6 +1890,9 @@ func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequ
 	baseRef := GraphQLBaseRef{
 		Name:   githubql.String(scmPR.Target),
 		Prefix: githubql.String(strings.TrimSuffix(scmPR.Base.Ref, scmPR.Target)),
+		Target: struct {
+			OID githubql.String `graphql:"oid"`
+		}{OID: githubql.String(scmPR.Base.Sha)},
 	}
 
 	if baseRef.Prefix == "" {
@@ -1917,7 +1922,6 @@ func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequ
 		BaseRef:     baseRef,
 		HeadRefName: githubql.String(scmPR.Source),
 		HeadRefOID:  githubql.String(scmPR.Head.Sha),
-		BaseRefOID:  githubql.String(scmPR.Base.Sha),
 		Mergeable:   mergeable,
 		Repository:  scmRepoToGraphQLRepo(scmRepo),
 		Labels:      labels,

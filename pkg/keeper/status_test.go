@@ -259,10 +259,7 @@ func TestExpectedStatus(t *testing.T) {
 				secondQuery,
 			}.QueryMap()
 			var pr PullRequest
-			pr.BaseRef = struct {
-				Name   githubql.String
-				Prefix githubql.String
-			}{
+			pr.BaseRef = GraphQLBaseRef{
 				Name: githubql.String(tc.baseref),
 			}
 			for _, label := range tc.labels {
@@ -272,7 +269,7 @@ func TestExpectedStatus(t *testing.T) {
 				)
 			}
 			if len(tc.contexts) > 0 {
-				pr.HeadRefOID = githubql.String("head")
+				pr.HeadRefOID = "head"
 				pr.Commits.Nodes = append(
 					pr.Commits.Nodes,
 					struct{ Commit Commit }{
@@ -280,7 +277,7 @@ func TestExpectedStatus(t *testing.T) {
 							Status: struct{ Contexts []Context }{
 								Contexts: tc.contexts,
 							},
-							OID: githubql.String("head"),
+							OID: "head",
 						},
 					},
 				)
