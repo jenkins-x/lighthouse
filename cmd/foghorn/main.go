@@ -11,6 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type options struct {
@@ -51,7 +53,13 @@ func main() {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}
 
-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Namespace: o.namespace})
+	mgr, err := ctrl.NewManager(cfg, manager.Options{
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				o.namespace: {},
+			},
+		},
+	})
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
