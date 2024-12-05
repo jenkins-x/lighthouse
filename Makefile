@@ -179,7 +179,7 @@ verify-code-unchanged:
 
 CONTROLLER_GEN := $(GOPATH)/bin/controller-gen
 $(CONTROLLER_GEN):
-	$(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0
+	$(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
 
 crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds
