@@ -1,23 +1,29 @@
 package tekton
 
 import (
+	"context"
 	"strings"
 
 	"knative.dev/pkg/apis"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // ConvertPipelineRun translates a PipelineRun into an ActivityRecord
-func ConvertPipelineRun(pr *pipelinev1.PipelineRun) *v1alpha1.ActivityRecord {
+func ConvertPipelineRun(pr *pipelinev1.PipelineRun) (*v1alpha1.ActivityRecord, error) {
 	if pr == nil {
-		return nil
+		return nil, nil
+	}
+
+	tektonclient, _, _, _, err := clients.GetAPIClients()
+	if err != nil {
+		return nil, err
 	}
 
 	record := new(v1alpha1.ActivityRecord)
@@ -41,17 +47,20 @@ func ConvertPipelineRun(pr *pipelinev1.PipelineRun) *v1alpha1.ActivityRecord {
 
 	record.Status = convertTektonStatus(cond, record.StartTime, record.CompletionTime)
 
-	for _, taskName := range sets.StringKeySet(pr.Status.TaskRuns).List() {
-		task := pr.Status.TaskRuns[taskName]
-		cleanedUpTaskName := strings.TrimPrefix(taskName[:len(taskName)-6], pr.Name+"-")
+	for _, childReference := range pr.Status.ChildReferences {
+		taskrun, err := tektonclient.TektonV1().TaskRuns("jx").Get(context.TODO(), childReference.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		cleanedUpTaskName := strings.TrimPrefix(taskrun.Name[:len(taskrun.Name)-6], pr.Name+"-")
 		t := &v1alpha1.ActivityStageOrStep{
 			Name:           cleanedUpTaskName,
-			Status:         convertTektonStatus(task.Status.GetCondition(apis.ConditionSucceeded), task.Status.StartTime, task.Status.CompletionTime),
-			StartTime:      task.Status.StartTime,
-			CompletionTime: task.Status.CompletionTime,
+			Status:         convertTektonStatus(taskrun.Status.GetCondition(apis.ConditionSucceeded), taskrun.Status.StartTime, taskrun.Status.CompletionTime),
+			StartTime:      taskrun.Status.StartTime,
+			CompletionTime: taskrun.Status.CompletionTime,
 		}
 
-		for _, step := range task.Status.Steps {
+		for _, step := range taskrun.Status.Steps {
 			s := &v1alpha1.ActivityStageOrStep{
 				Name: step.Name,
 			}
@@ -80,7 +89,7 @@ func ConvertPipelineRun(pr *pipelinev1.PipelineRun) *v1alpha1.ActivityRecord {
 	}
 	// log URL is definitely gonna wait
 
-	return record
+	return record, nil
 }
 
 func convertTektonStatus(cond *apis.Condition, start, finished *metav1.Time) v1alpha1.PipelineState {

@@ -179,7 +179,11 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if r.dashboardURL != "" {
 				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
 			}
-			job.Status.Activity = ConvertPipelineRun(&pipelineRun)
+			activity, err := ConvertPipelineRun(&pipelineRun)
+			if err != nil {
+				return errors.Wrapf(err, "failed to convert PipelineRun")
+			}
+			job.Status.Activity = activity
 			if err := r.client.Status().Update(ctx, job); err != nil {
 				return errors.Wrapf(err, "failed to update LighthouseJob status")
 			}
