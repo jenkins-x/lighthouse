@@ -544,7 +544,7 @@ func ToParams(params []pipelinev1.ParamSpec) []pipelinev1.Param {
 	for _, p := range params {
 		answer = append(answer, pipelinev1.Param{
 			Name: p.Name,
-			Value: pipelinev1.ArrayOrString{
+			Value: pipelinev1.ParamValue{
 				Type:      pipelinev1.ParamTypeString,
 				StringVal: fmt.Sprintf("$(params.%s)", p.Name),
 			},

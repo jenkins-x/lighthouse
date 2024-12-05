@@ -89,7 +89,7 @@ func UseParametersAndResults(ctx context.Context, loc *UseLocation, uses *pipeli
 func ToDefaultParams(params []pipelinev1.ParamSpec) []pipelinev1.Param {
 	var answer []pipelinev1.Param
 	for _, p := range params {
-		value := pipelinev1.ArrayOrString{
+		value := pipelinev1.ParamValue{
 			Type: pipelinev1.ParamTypeString,
 		}
 		d := p.Default

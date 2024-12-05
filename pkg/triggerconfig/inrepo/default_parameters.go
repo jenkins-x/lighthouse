@@ -50,7 +50,7 @@ var (
 			Description: "git pull request number",
 			Name:        "PULL_NUMBER",
 			Type:        "string",
-			Default: &pipelinev1.ArrayOrString{
+			Default: &pipelinev1.ParamValue{
 				Type:      pipelinev1.ParamTypeString,
 				StringVal: "",
 			},
@@ -59,7 +59,7 @@ var (
 			Description: "git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'",
 			Name:        "PULL_PULL_REF",
 			Type:        "string",
-			Default: &pipelinev1.ArrayOrString{
+			Default: &pipelinev1.ParamValue{
 				Type:      pipelinev1.ParamTypeString,
 				StringVal: "",
 			},
@@ -68,7 +68,7 @@ var (
 			Description: "git revision to checkout (branch, tag, sha, ref…)",
 			Name:        "PULL_PULL_SHA",
 			Type:        "string",
-			Default: &pipelinev1.ArrayOrString{
+			Default: &pipelinev1.ParamValue{
 				Type:      pipelinev1.ParamTypeString,
 				StringVal: "",
 			},
