@@ -22,7 +22,10 @@ func TestBreakpointResolveDebug(t *testing.T) {
 					Task:       "sometask",
 				},
 				Debug: pipelinev1.TaskRunDebug{
-					Breakpoint: []string{"onFailure"},
+					Breakpoints: &pipelinev1.TaskBreakpoints{
+						BeforeSteps: []string{"onFailure"},
+						OnFailure:   "true",
+					},
 				},
 			},
 		},
@@ -32,7 +35,9 @@ func TestBreakpointResolveDebug(t *testing.T) {
 					Task: "special-task",
 				},
 				Debug: pipelinev1.TaskRunDebug{
-					Breakpoint: []string{"something"},
+					Breakpoints: &pipelinev1.TaskBreakpoints{
+						BeforeSteps: []string{"something"},
+					},
 				},
 			},
 		},
@@ -54,7 +59,10 @@ func TestBreakpointResolveDebug(t *testing.T) {
 				Task:       "sometask",
 			},
 			expected: &pipelinev1.TaskRunDebug{
-				Breakpoint: []string{"onFailure"},
+				Breakpoints: &pipelinev1.TaskBreakpoints{
+					BeforeSteps: []string{"onFailure"},
+					OnFailure:   "true",
+				},
 			},
 		},
 		{
@@ -90,7 +98,9 @@ func TestBreakpointResolveDebug(t *testing.T) {
 				Task:       "special-task",
 			},
 			expected: &pipelinev1.TaskRunDebug{
-				Breakpoint: []string{"something"},
+				Breakpoints: &pipelinev1.TaskBreakpoints{
+					BeforeSteps: []string{"something"},
+				},
 			},
 		},
 	}
