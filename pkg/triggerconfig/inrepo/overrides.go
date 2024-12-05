@@ -44,7 +44,7 @@ func OverrideTemplateWithTemplate(c *pipelinev1.StepTemplate, override *pipeline
 	if string(override.ImagePullPolicy) != "" && (modify || string(c.ImagePullPolicy) == "") {
 		c.ImagePullPolicy = override.ImagePullPolicy
 	}
-	c.Resources = OverrideResources(c.Resources, override.Resources, modify)
+	c.ComputeResources = OverrideResources(c.ComputeResources, override.ComputeResources, modify)
 	if c.SecurityContext == nil {
 		c.SecurityContext = override.SecurityContext
 	}
@@ -61,7 +61,7 @@ func OverrideStepWithStep(c *pipelinev1.Step, override *pipelinev1.Step, modify 
 	if string(override.ImagePullPolicy) != "" && (modify || string(c.ImagePullPolicy) == "") {
 		c.ImagePullPolicy = override.ImagePullPolicy
 	}
-	c.Resources = OverrideResources(c.Resources, override.Resources, modify)
+	c.ComputeResources = OverrideResources(c.ComputeResources, override.ComputeResources, modify)
 	if c.SecurityContext == nil {
 		c.SecurityContext = override.SecurityContext
 	}
