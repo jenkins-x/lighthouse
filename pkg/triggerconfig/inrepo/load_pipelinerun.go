@@ -517,9 +517,9 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, message string, defau
 		Finally:    nil,
 	}
 	prs.Spec.PipelineSpec = pipelineSpec
-	prs.Spec.PodTemplate = fs.PodTemplate
+	prs.Spec.TaskRunTemplate.PodTemplate = fs.PodTemplate
 	//prs.Spec.Resources = fs.Resources
-	prs.Spec.ServiceAccountName = fs.ServiceAccountName
+	prs.Spec.TaskRunTemplate.ServiceAccountName = fs.ServiceAccountName
 	prs.Spec.Workspaces = fs.Workspaces
 	defaultValues.Apply(prs)
 	return prs, nil
@@ -527,11 +527,11 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, message string, defau
 
 // Apply adds any default values that are empty in the generated PipelineRun
 func (v *DefaultValues) Apply(prs *pipelinev1.PipelineRun) {
-	if prs.Spec.ServiceAccountName == "" && v.ServiceAccountName != "" {
-		prs.Spec.ServiceAccountName = v.ServiceAccountName
+	if prs.Spec.TaskRunTemplate.ServiceAccountName == "" && v.ServiceAccountName != "" {
+		prs.Spec.TaskRunTemplate.ServiceAccountName = v.ServiceAccountName
 	}
-	if prs.Spec.Timeout == nil && v.Timeout != nil {
-		prs.Spec.Timeout = v.Timeout
+	if prs.Spec.Timeouts.Pipeline == nil && v.Timeout != nil {
+		prs.Spec.Timeouts.Pipeline = v.Timeout
 	}
 }
 

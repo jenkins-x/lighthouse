@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/pod"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 
 	"github.com/google/go-cmp/cmp"
@@ -186,8 +187,12 @@ func makeTestPipelineRun(condition *kpgapis.Condition, baseRunName string, pipel
 				APIVersion: tektonAPIVersion,
 				Name:       pipelineName,
 			},
-			ServiceAccountName: sa,
+			TaskRunTemplate: pipelinev1.PipelineTaskRunTemplate{
+				ServiceAccountName: "tekton-bot",
+				PodTemplate:        &pod.PodTemplate{},
+			},
 		},
+
 		Status: pipelinev1.PipelineRunStatus{},
 	}
 
