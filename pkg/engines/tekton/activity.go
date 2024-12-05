@@ -8,14 +8,14 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // ConvertPipelineRun translates a PipelineRun into an ActivityRecord
-func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
+func ConvertPipelineRun(pr *pipelinev1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 	if pr == nil {
 		return nil
 	}
