@@ -47,10 +47,10 @@ func main() {
 
 	scheme := runtime.NewScheme()
 	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
-		logrus.WithError(err).Fatal("Failed to register scheme")
+		logrus.WithError(err).Fatal("Failed to register lighthousev1alpha1 scheme")
 	}
 	if err := pipelinev1.AddToScheme(scheme); err != nil {
-		logrus.WithError(err).Fatal("Failed to register scheme")
+		logrus.WithError(err).Fatal("Failed to register tektoncd-pipelinev1 scheme")
 	}
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
@@ -69,6 +69,7 @@ func main() {
 				o.namespace: {},
 			},
 		},
+		Scheme: scheme,
 	})
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to start manager")
