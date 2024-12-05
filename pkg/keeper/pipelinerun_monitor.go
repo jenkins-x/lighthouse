@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/pkg/errors"
@@ -23,7 +23,7 @@ import (
 
 const (
 	// tektonAPIVersion the APIVersion for using Tekton
-	tektonAPIVersion = "tekton.dev/v1beta1"
+	tektonAPIVersion = "tekton.dev/v1"
 
 	// labelFailedAndRerun is added to PipelineRuns to replace their existing labels when the run fails for rerunnable reasons
 	labelFailedAndRerun = "lighthouse-failed-and-rerun"
@@ -41,7 +41,7 @@ var (
 func rerunPipelineRunsWithRaceConditionFailure(tektonClient tektonclient.Interface, ns string, logger *logrus.Entry) error {
 	// Get all PipelineRuns without the label indicating we've already rerun it.
 	notRerunLabelSelector := fmt.Sprintf("!%s", labelFailedAndRerun)
-	runs, err := tektonClient.pipelinev1beta1().PipelineRuns(ns).List(context.TODO(), metav1.ListOptions{
+	runs, err := tektonClient.TektonV1().PipelineRuns(ns).List(context.TODO(), metav1.ListOptions{
 		LabelSelector: notRerunLabelSelector,
 	})
 	if err != nil {
@@ -73,7 +73,7 @@ func rerunPipelineRunsWithRaceConditionFailure(tektonClient tektonclient.Interfa
 				// Launch a new otherwise identical PipelineRun to replace the failing one.
 				r := run
 				newRun := createReplacementPipelineRun(&r)
-				_, err := tektonClient.pipelinev1beta1().PipelineRuns(ns).Create(context.TODO(), newRun, metav1.CreateOptions{})
+				_, err := tektonClient.TektonV1().PipelineRuns(ns).Create(context.TODO(), newRun, metav1.CreateOptions{})
 				if err != nil {
 					return errors.Wrapf(err, "creating new PipelineRun %s to replace failed PipelineRun %s", newRun.Name, run.Name)
 				}
@@ -87,7 +87,7 @@ func rerunPipelineRunsWithRaceConditionFailure(tektonClient tektonclient.Interfa
 	return nil
 }
 
-func createReplacementPipelineRun(originalRun *pipelinev1beta1.PipelineRun) *pipelinev1beta1.PipelineRun {
+func createReplacementPipelineRun(originalRun *pipelinev1.PipelineRun) *pipelinev1.PipelineRun {
 	// Fall back on appending a random string to the original name, but preferably use the name of run's Pipeline with an appended random string
 	newRunName := originalRun.Name + "-" + rand.String(5)
 	if originalRun.Spec.PipelineRef.Name != "" {
@@ -99,7 +99,7 @@ func createReplacementPipelineRun(originalRun *pipelinev1beta1.PipelineRun) *pip
 		newRunLabels[k] = v
 	}
 
-	return &pipelinev1beta1.PipelineRun{
+	return &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: tektonAPIVersion,
 			Kind:       "PipelineRun",
@@ -122,8 +122,8 @@ func pipelineRunShouldRetry(msg string) bool {
 	return false
 }
 
-func patchPipelineRun(tektonClient tektonclient.Interface, namespace string, newPr *pipelinev1beta1.PipelineRun, logger *logrus.Entry) error {
-	pr, err := tektonClient.pipelinev1beta1().PipelineRuns(namespace).Get(context.TODO(), newPr.GetName(), metav1.GetOptions{})
+func patchPipelineRun(tektonClient tektonclient.Interface, namespace string, newPr *pipelinev1.PipelineRun, logger *logrus.Entry) error {
+	pr, err := tektonClient.TektonV1().PipelineRuns(namespace).Get(context.TODO(), newPr.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "getting PipelineRun/%s", newPr.GetName())
 	}
@@ -147,14 +147,14 @@ func patchPipelineRun(tektonClient tektonclient.Interface, namespace string, new
 	if logger != nil {
 		logger.Infof("Created merge patch: %v", string(patch))
 	}
-	patched, err := tektonClient.pipelinev1beta1().PipelineRuns(namespace).Patch(context.TODO(), pr.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "")
+	patched, err := tektonClient.TektonV1().PipelineRuns(namespace).Patch(context.TODO(), pr.Name, types.MergePatchType, patch, metav1.PatchOptions{}, "")
 	if err != nil {
 		return errors.Wrapf(err, "applying merge patch for PipelineRun/%s", pr.Name)
 	}
 	if !reflect.DeepEqual(patched.ObjectMeta.Labels, newPr.ObjectMeta.Labels) || !reflect.DeepEqual(patched.ObjectMeta.Annotations, newPr.ObjectMeta.Annotations) {
 		patched.ObjectMeta.Labels = newPr.ObjectMeta.Labels
 		patched.ObjectMeta.Annotations = newPr.ObjectMeta.Annotations
-		_, err := tektonClient.pipelinev1beta1().PipelineRuns(namespace).Update(context.TODO(), patched, metav1.UpdateOptions{})
+		_, err := tektonClient.TektonV1().PipelineRuns(namespace).Update(context.TODO(), patched, metav1.UpdateOptions{})
 		if err != nil {
 			return errors.Wrapf(err, "removing labels and annotations from PipelineRun/%s", pr.Name)
 		}
