@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
@@ -24,7 +24,7 @@ metadata:
   name: jenkins-x-charts-jx-build-templ-wbbx6-7
   namespace: jx
   resourceVersion: "16699294"
-  selfLink: /apis/tekton.dev/v1beta1/namespaces/jx/pipelineruns/jenkins-x-charts-jx-build-templ-wbbx6-7
+  selfLink: /apis/tekton.dev/v1/namespaces/jx/pipelineruns/jenkins-x-charts-jx-build-templ-wbbx6-7
   uid: dd626c56-cab9-11ea-a610-42010a8400cb
 spec:
   params:
@@ -33,14 +33,14 @@ spec:
   - name: build_id
     value: "7"
   pipelineRef:
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     name: jenkins-x-charts-jx-build-templ-wbbx6-7
   podTemplate:
     schedulerName: ""
   resources:
   - name: jenkins-x-charts-jx-build-templ-wbbx6
     resourceRef:
-      apiVersion: tekton.dev/v1beta1
+      apiVersion: tekton.dev/v1
       name: jenkins-x-charts-jx-build-templ-wbbx6
   serviceAccountName: tekton-bot
   timeout: 240h0m0s

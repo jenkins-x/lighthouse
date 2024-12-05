@@ -61,7 +61,7 @@ spec:
   - name: repo-url
     value: https://github.com/jenkins-x/lighthouse.git
   pipelineRef:
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     name: jenkins-x-charts-jx-build-templ-wbbx6-7
   podTemplate: {}
   serviceAccountName: tekton-bot
