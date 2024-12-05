@@ -116,7 +116,7 @@ func TestRerunPipelineRunsWithRaceConditionFailure(t *testing.T) {
 			err := rerunPipelineRunsWithRaceConditionFailure(tektonClient, ns, nil)
 			assert.NoError(t, err)
 
-			prList, err := tektonClient.TektonV1beta1().PipelineRuns(ns).List(context.TODO(), metav1.ListOptions{})
+			prList, err := tektonClient.pipelinev1beta1().PipelineRuns(ns).List(context.TODO(), metav1.ListOptions{})
 			assert.NoError(t, err)
 
 			if tc.shouldRerun {

@@ -17,7 +17,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -106,7 +105,7 @@ func TestReconcile(t *testing.T) {
 
 			// assert observed state matches expected state
 			if expectedPR != nil || generateTestOutput {
-				var pipelineRunList tektonv1beta1.PipelineRunList
+				var pipelineRunList pipelinev1beta1.PipelineRunList
 				err := c.List(context.TODO(), &pipelineRunList, client.InNamespace(ns))
 				assert.NoError(t, err)
 				assert.Len(t, pipelineRunList.Items, 1)
@@ -176,7 +175,7 @@ func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, st
 	return nil, fileName, nil
 }
 
-func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.PipelineRun, string, error) {
+func loadControllerPipelineRun(isObserved bool, dir string) (*pipelinev1beta1.PipelineRun, string, error) {
 	var baseFn string
 	if isObserved {
 		baseFn = "observed-pr.yml"
@@ -189,7 +188,7 @@ func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.Pipe
 		return nil, fileName, err
 	}
 	if exists {
-		pr := &tektonv1beta1.PipelineRun{}
+		pr := &pipelinev1beta1.PipelineRun{}
 		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, fileName, err
@@ -203,14 +202,14 @@ func loadControllerPipelineRun(isObserved bool, dir string) (*tektonv1beta1.Pipe
 	return nil, fileName, nil
 }
 
-func loadObservedPipeline(dir string) (*tektonv1beta1.Pipeline, error) {
+func loadObservedPipeline(dir string) (*pipelinev1beta1.Pipeline, error) {
 	fileName := filepath.Join(dir, "observed-pipeline.yml")
 	exists, err := util.FileExists(fileName)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
-		p := &tektonv1beta1.Pipeline{}
+		p := &pipelinev1beta1.Pipeline{}
 		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, err

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -146,7 +146,7 @@ type LighthouseJobSpec struct {
 	MaxConcurrency int `json:"max_concurrency,omitempty"`
 	// PipelineRunSpec provides the basis for running the test as a Tekton Pipeline
 	// https://github.com/tektoncd/pipeline
-	PipelineRunSpec *tektonv1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
+	PipelineRunSpec *pipelinev1beta1.PipelineRunSpec `json:"pipeline_run_spec,omitempty"`
 	// PipelineRunParams are the params used by the pipeline run
 	PipelineRunParams []job.PipelineRunParam `json:"pipeline_run_params,omitempty"`
 	// PodSpec provides the basis for running the test under a Kubernetes agent
