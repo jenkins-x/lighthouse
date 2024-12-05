@@ -12,7 +12,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -57,7 +57,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 // SetupWithManager sets up the reconcilier with it's manager
 func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	indexFunc := func(rawObj client.Object) []string {
-		obj := rawObj.(*pipelinev1beta1.PipelineRun)
+		obj := rawObj.(*pipelinev1.PipelineRun)
 		owner := metav1.GetControllerOf(obj)
 		// TODO: would be nice to get kind from the type rather than a hard coded string
 		if owner == nil || owner.APIVersion != apiGVStr || owner.Kind != "LighthouseJob" {
@@ -65,14 +65,14 @@ func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}
 		return []string{owner.Name}
 	}
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &pipelinev1beta1.PipelineRun{}, jobOwnerKey, indexFunc); err != nil {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &pipelinev1.PipelineRun{}, jobOwnerKey, indexFunc); err != nil {
 		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lighthousev1alpha1.LighthouseJob{}).
 		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
-		Owns(&pipelinev1beta1.PipelineRun{}).
+		Owns(&pipelinev1.PipelineRun{}).
 		Complete(r)
 }
 
@@ -100,7 +100,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// get job's pipeline runs
-	var pipelineRunList pipelinev1beta1.PipelineRunList
+	var pipelineRunList pipelinev1.PipelineRunList
 	if err := r.client.List(ctx, &pipelineRunList, client.InNamespace(req.Namespace), client.MatchingFields{jobOwnerKey: req.Name}); err != nil {
 		r.logger.Errorf("Failed list pipeline runs: %s", err)
 		return ctrl.Result{}, err
@@ -196,7 +196,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
-func (r *LighthouseJobReconciler) getPipelingetPipelineTargetURLeTargetURL(pipelineRun pipelinev1beta1.PipelineRun) string {
+func (r *LighthouseJobReconciler) getPipelingetPipelineTargetURLeTargetURL(pipelineRun pipelinev1.PipelineRun) string {
 	if r.dashboardTemplate == "" {
 		return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", trimDashboardURL(r.dashboardURL), r.namespace, pipelineRun.Name)
 	}

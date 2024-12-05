@@ -10,7 +10,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/engines/tekton"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -51,10 +51,10 @@ func TestConvertPipelineRun(t *testing.T) {
 	}
 }
 
-func loadPipelineRun(t *testing.T, dir string) *pipelinev1beta1.PipelineRun {
+func loadPipelineRun(t *testing.T, dir string) *pipelinev1.PipelineRun {
 	fileName := filepath.Join(dir, "pr.yaml")
 	if assertFileExists(t, fileName) {
-		pr := &pipelinev1beta1.PipelineRun{}
+		pr := &pipelinev1.PipelineRun{}
 		data, err := os.ReadFile(fileName)
 		if assert.NoError(t, err, "Failed to load file %s", fileName) {
 			err = yaml.Unmarshal(data, pr)

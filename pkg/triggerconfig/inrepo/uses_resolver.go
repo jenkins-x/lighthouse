@@ -13,7 +13,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
 // UsesResolver resolves the `uses:` URI syntax
@@ -40,7 +40,7 @@ var (
 
 // UsesSteps lets resolve the sourceURI to a PipelineRun and find the step or steps
 // for the given task name and/or step name then lets apply any overrides from the step
-func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step pipelinev1beta1.Step, ts *pipelinev1beta1.TaskSpec, loc *UseLocation) ([]pipelinev1beta1.Step, error) {
+func (r *UsesResolver) UsesSteps(sourceURI string, taskName string, step pipelinev1.Step, ts *pipelinev1.TaskSpec, loc *UseLocation) ([]pipelinev1.Step, error) {
 	pr := r.Cache.GetPipelineRun(sourceURI, r.SHA)
 	if pr == nil || ignoreUsesCache {
 		data, err := r.GetData(sourceURI, false)
@@ -183,7 +183,7 @@ func VersionStreamEnvVar(owner string, repo string) string {
 	return envVar
 }
 
-func (r *UsesResolver) findSteps(sourceURI string, pr *pipelinev1beta1.PipelineRun, taskName string, step pipelinev1beta1.Step) (*pipelinev1beta1.TaskSpec, error) {
+func (r *UsesResolver) findSteps(sourceURI string, pr *pipelinev1.PipelineRun, taskName string, step pipelinev1.Step) (*pipelinev1.TaskSpec, error) {
 	if pr.Spec.PipelineSpec == nil {
 		return nil, errors.Errorf("source URI %s has no spec.pipelineSpec", sourceURI)
 	}
@@ -204,7 +204,7 @@ func (r *UsesResolver) findSteps(sourceURI string, pr *pipelinev1beta1.PipelineR
 	}
 }
 
-func (r *UsesResolver) findTaskStep(sourceURI string, task pipelinev1beta1.PipelineTask, step pipelinev1beta1.Step) (*pipelinev1beta1.TaskSpec, error) {
+func (r *UsesResolver) findTaskStep(sourceURI string, task pipelinev1.PipelineTask, step pipelinev1.Step) (*pipelinev1.TaskSpec, error) {
 	ts := task.TaskSpec
 	if ts == nil {
 		return nil, errors.Errorf("source URI %s has no task spec for task %s", sourceURI, task.Name)
@@ -230,7 +230,7 @@ func (r *UsesResolver) findTaskStep(sourceURI string, task pipelinev1beta1.Pipel
 			if suffix != "" {
 				replaceStep.Name = name + "-" + suffix
 			}
-			taskSpec.Steps = []pipelinev1beta1.Step{replaceStep}
+			taskSpec.Steps = []pipelinev1.Step{replaceStep}
 			return &taskSpec, nil
 		}
 	}

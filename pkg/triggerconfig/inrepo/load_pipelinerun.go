@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -62,7 +62,7 @@ func NewDefaultValues() (*DefaultValues, error) {
 
 // LoadTektonResourceAsPipelineRun loads a PipelineRun, Pipeline, Task or TaskRun and convert it to a PipelineRun
 // if necessary
-func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipelinev1beta1.PipelineRun, error) {
+func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipelinev1.PipelineRun, error) {
 	if resolver.DefaultValues == nil {
 		var err error
 		resolver.DefaultValues, err = NewDefaultValues()
@@ -90,7 +90,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	}
 	switch kind {
 	case "Pipeline":
-		pipeline := &pipelinev1beta1.Pipeline{}
+		pipeline := &pipelinev1.Pipeline{}
 		err := yaml.Unmarshal(data, pipeline)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal Pipeline YAML %s", message)
@@ -116,7 +116,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		return DefaultPipelineParameters(prs)
 
 	case "PipelineRun":
-		prs := &pipelinev1beta1.PipelineRun{}
+		prs := &pipelinev1.PipelineRun{}
 		err := yaml.Unmarshal(data, prs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal PipelineRun YAML %s", message)
@@ -139,7 +139,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		return DefaultPipelineParameters(prs)
 
 	case "Task":
-		task := &pipelinev1beta1.Task{}
+		task := &pipelinev1.Task{}
 		err := yaml.Unmarshal(data, task)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal Task YAML %s", message)
@@ -166,7 +166,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		return DefaultPipelineParameters(prs)
 
 	case "TaskRun":
-		tr := &pipelinev1beta1.TaskRun{}
+		tr := &pipelinev1.TaskRun{}
 		err := yaml.Unmarshal(data, tr)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal TaskRun YAML %s", message)
@@ -197,7 +197,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	}
 }
 
-func defaultTaskName(prs *pipelinev1beta1.PipelineRun) {
+func defaultTaskName(prs *pipelinev1.PipelineRun) {
 	ps := prs.Spec.PipelineSpec
 	if ps != nil && len(ps.Tasks) > 0 {
 		t := ps.Tasks[0]
@@ -208,7 +208,7 @@ func defaultTaskName(prs *pipelinev1beta1.PipelineRun) {
 }
 
 // inheritTaskSteps allows Task steps to be prepended or appended if the annotations are present
-func inheritTaskSteps(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRun) (*pipelinev1beta1.PipelineRun, error) {
+func inheritTaskSteps(resolver *UsesResolver, prs *pipelinev1.PipelineRun) (*pipelinev1.PipelineRun, error) {
 	err := processUsesSteps(resolver, prs)
 	if err != nil {
 		return prs, errors.Wrap(err, "failed to process uses steps")
@@ -223,8 +223,8 @@ func inheritTaskSteps(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRun) 
 	appendURL := prs.Annotations[AppendStepURL]
 	prependURL := prs.Annotations[PrependStepURL]
 
-	var appendTask *pipelinev1beta1.Task
-	var prependTask *pipelinev1beta1.Task
+	var appendTask *pipelinev1.Task
+	var prependTask *pipelinev1.Task
 
 	if appendURL != "" {
 		appendTask, err = loadTaskByURL(appendURL)
@@ -252,12 +252,12 @@ func inheritTaskSteps(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRun) 
 }
 
 // processUsesSteps handles any step which has an image prefixed with "uses:"
-func processUsesSteps(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRun) error {
+func processUsesSteps(resolver *UsesResolver, prs *pipelinev1.PipelineRun) error {
 	ps := prs.Spec.PipelineSpec
 	if ps == nil {
 		return nil
 	}
-	tasksAndFinally := [][]pipelinev1beta1.PipelineTask{
+	tasksAndFinally := [][]pipelinev1.PipelineTask{
 		ps.Tasks,
 		ps.Finally,
 	}
@@ -270,13 +270,13 @@ func processUsesSteps(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRun) 
 	return nil
 }
 
-func processUsesStepsHelper(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRun, pipelineTasks []pipelinev1beta1.PipelineTask) error {
+func processUsesStepsHelper(resolver *UsesResolver, prs *pipelinev1.PipelineRun, pipelineTasks []pipelinev1.PipelineTask) error {
 	for i := range pipelineTasks {
 		pt := &pipelineTasks[i]
 		if pt.TaskSpec != nil {
 			ts := &pt.TaskSpec.TaskSpec
 			clearStepTemplateImage := false
-			var steps []pipelinev1beta1.Step
+			var steps []pipelinev1.Step
 			for j := range ts.Steps {
 				step := ts.Steps[j]
 				image := step.Image
@@ -315,7 +315,7 @@ func processUsesStepsHelper(resolver *UsesResolver, prs *pipelinev1beta1.Pipelin
 	return nil
 }
 
-func loadTaskByURL(uri string) (*pipelinev1beta1.Task, error) {
+func loadTaskByURL(uri string) (*pipelinev1.Task, error) {
 	resp, err := http.Get(uri) // #nosec
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read URL %s", uri)
@@ -327,7 +327,7 @@ func loadTaskByURL(uri string) (*pipelinev1beta1.Task, error) {
 		return nil, errors.Wrapf(err, "failed to read body from URL %s", uri)
 	}
 
-	task := &pipelinev1beta1.Task{}
+	task := &pipelinev1.Task{}
 	err = yaml.Unmarshal(data, &task)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshall YAML from URL %s", uri)
@@ -337,7 +337,7 @@ func loadTaskByURL(uri string) (*pipelinev1beta1.Task, error) {
 
 // loadTektonRefsFromFilesPattern returns a regular expression matching the Pipeline/Task references we should load
 // via the file system as separate local files
-func loadTektonRefsFromFilesPattern(prs *pipelinev1beta1.PipelineRun) (*regexp.Regexp, error) {
+func loadTektonRefsFromFilesPattern(prs *pipelinev1.PipelineRun) (*regexp.Regexp, error) {
 	if prs.Annotations == nil {
 		return nil, nil
 	}
@@ -352,7 +352,7 @@ func loadTektonRefsFromFilesPattern(prs *pipelinev1beta1.PipelineRun) (*regexp.R
 	return re, nil
 }
 
-func loadPipelineRunRefs(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRun, dir, message string, re *regexp.Regexp) (*pipelinev1beta1.PipelineRun, error) {
+func loadPipelineRunRefs(resolver *UsesResolver, prs *pipelinev1.PipelineRun, dir, message string, re *regexp.Regexp) (*pipelinev1.PipelineRun, error) {
 	// if we reference a local
 	if prs.Spec.PipelineSpec == nil && prs.Spec.PipelineRef != nil && prs.Spec.PipelineRef.Name != "" && re.MatchString(prs.Spec.PipelineRef.Name) {
 		pipelinePath := filepath.Join(dir, prs.Spec.PipelineRef.Name)
@@ -366,7 +366,7 @@ func loadPipelineRunRefs(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRu
 		if len(data) == 0 {
 			return prs, errors.Errorf("no YAML for path %s in PipelineRun", pipelinePath)
 		}
-		p := &pipelinev1beta1.Pipeline{}
+		p := &pipelinev1.Pipeline{}
 		err = yaml.Unmarshal(data, p)
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to unmarshal Pipeline YAML file %s %s", pipelinePath, message)
@@ -384,7 +384,7 @@ func loadPipelineRunRefs(resolver *UsesResolver, prs *pipelinev1beta1.PipelineRu
 	return prs, nil
 }
 
-func loadTaskRefs(resolver *UsesResolver, pipelineSpec *pipelinev1beta1.PipelineSpec, dir, message string, re *regexp.Regexp) error {
+func loadTaskRefs(resolver *UsesResolver, pipelineSpec *pipelinev1.PipelineSpec, dir, message string, re *regexp.Regexp) error {
 	for i := range pipelineSpec.Tasks {
 		t := &pipelineSpec.Tasks[i]
 		if t.TaskSpec == nil && t.TaskRef != nil && t.TaskRef.Name != "" && re.MatchString(t.TaskRef.Name) {
@@ -399,12 +399,12 @@ func loadTaskRefs(resolver *UsesResolver, pipelineSpec *pipelinev1beta1.Pipeline
 			if len(data) == 0 {
 				return errors.Errorf("no YAML for path %s in PipelineSpec", path)
 			}
-			t2 := &pipelinev1beta1.Task{}
+			t2 := &pipelinev1.Task{}
 			err = yaml.Unmarshal(data, t2)
 			if err != nil {
 				return errors.Wrapf(err, "failed to unmarshal Task YAML file %s %s", path, message)
 			}
-			t.TaskSpec = &pipelinev1beta1.EmbeddedTask{
+			t.TaskSpec = &pipelinev1.EmbeddedTask{
 				TaskSpec: t2.Spec,
 			}
 			t.TaskRef = nil
@@ -414,8 +414,8 @@ func loadTaskRefs(resolver *UsesResolver, pipelineSpec *pipelinev1beta1.Pipeline
 }
 
 // ConvertPipelineToPipelineRun converts the Pipeline to a PipelineRun
-func ConvertPipelineToPipelineRun(from *pipelinev1beta1.Pipeline, message string, defaultValues *DefaultValues) (*pipelinev1beta1.PipelineRun, error) {
-	prs := &pipelinev1beta1.PipelineRun{
+func ConvertPipelineToPipelineRun(from *pipelinev1.Pipeline, message string, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
+	prs := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PipelineRun",
 			APIVersion: TektonAPIVersion,
@@ -431,8 +431,8 @@ func ConvertPipelineToPipelineRun(from *pipelinev1beta1.Pipeline, message string
 }
 
 // ConvertTaskToPipelineRun converts the Task to a PipelineRun
-func ConvertTaskToPipelineRun(from *pipelinev1beta1.Task, message string, defaultValues *DefaultValues) (*pipelinev1beta1.PipelineRun, error) {
-	prs := &pipelinev1beta1.PipelineRun{
+func ConvertTaskToPipelineRun(from *pipelinev1.Task, message string, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
+	prs := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PipelineRun",
 			APIVersion: TektonAPIVersion,
@@ -443,13 +443,13 @@ func ConvertTaskToPipelineRun(from *pipelinev1beta1.Task, message string, defaul
 	prs.Labels = from.Labels
 
 	fs := &from.Spec
-	pipelineSpec := &pipelinev1beta1.PipelineSpec{
+	pipelineSpec := &pipelinev1.PipelineSpec{
 		Description: "",
 		Resources:   nil,
-		Tasks: []pipelinev1beta1.PipelineTask{
+		Tasks: []pipelinev1.PipelineTask{
 			{
 				Name:       from.Name,
-				TaskSpec:   &pipelinev1beta1.EmbeddedTask{TaskSpec: *fs},
+				TaskSpec:   &pipelinev1.EmbeddedTask{TaskSpec: *fs},
 				Resources:  ToPipelineResources(fs.Resources),
 				Params:     ToParams(fs.Params),
 				Workspaces: ToWorkspacePipelineTaskBindingsFromDeclarations(fs.Workspaces),
@@ -478,8 +478,8 @@ func ConvertTaskToPipelineRun(from *pipelinev1beta1.Task, message string, defaul
 }
 
 // ConvertTaskRunToPipelineRun converts the TaskRun to a PipelineRun
-func ConvertTaskRunToPipelineRun(from *pipelinev1beta1.TaskRun, message string, defaultValues *DefaultValues) (*pipelinev1beta1.PipelineRun, error) {
-	prs := &pipelinev1beta1.PipelineRun{
+func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, message string, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
+	prs := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PipelineRun",
 			APIVersion: TektonAPIVersion,
@@ -491,7 +491,7 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1beta1.TaskRun, message string, 
 
 	fs := &from.Spec
 	params := fs.Params
-	var paramSpecs []pipelinev1beta1.ParamSpec
+	var paramSpecs []pipelinev1.ParamSpec
 	if len(params) == 0 && fs.TaskSpec != nil {
 		paramSpecs = fs.TaskSpec.Params
 		if len(params) == 0 {
@@ -501,14 +501,14 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1beta1.TaskRun, message string, 
 	if len(paramSpecs) == 0 {
 		paramSpecs = ToParamSpecs(params)
 	}
-	pipelineSpec := &pipelinev1beta1.PipelineSpec{
+	pipelineSpec := &pipelinev1.PipelineSpec{
 		Description: "",
 		Resources:   nil,
-		Tasks: []pipelinev1beta1.PipelineTask{
+		Tasks: []pipelinev1.PipelineTask{
 			{
 				Name:     from.Name,
 				TaskRef:  fs.TaskRef,
-				TaskSpec: &pipelinev1beta1.EmbeddedTask{TaskSpec: *fs.TaskSpec},
+				TaskSpec: &pipelinev1.EmbeddedTask{TaskSpec: *fs.TaskSpec},
 				//Resources: fs.Resources,
 				Params:     params,
 				Workspaces: ToWorkspacePipelineTaskBindings(fs.Workspaces),
@@ -529,7 +529,7 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1beta1.TaskRun, message string, 
 }
 
 // Apply adds any default values that are empty in the generated PipelineRun
-func (v *DefaultValues) Apply(prs *pipelinev1beta1.PipelineRun) {
+func (v *DefaultValues) Apply(prs *pipelinev1.PipelineRun) {
 	if prs.Spec.ServiceAccountName == "" && v.ServiceAccountName != "" {
 		prs.Spec.ServiceAccountName = v.ServiceAccountName
 	}
@@ -539,13 +539,13 @@ func (v *DefaultValues) Apply(prs *pipelinev1beta1.PipelineRun) {
 }
 
 // ToParams converts the param specs to params
-func ToParams(params []pipelinev1beta1.ParamSpec) []pipelinev1beta1.Param {
-	var answer []pipelinev1beta1.Param
+func ToParams(params []pipelinev1.ParamSpec) []pipelinev1.Param {
+	var answer []pipelinev1.Param
 	for _, p := range params {
-		answer = append(answer, pipelinev1beta1.Param{
+		answer = append(answer, pipelinev1.Param{
 			Name: p.Name,
-			Value: pipelinev1beta1.ArrayOrString{
-				Type:      pipelinev1beta1.ParamTypeString,
+			Value: pipelinev1.ArrayOrString{
+				Type:      pipelinev1.ParamTypeString,
 				StringVal: fmt.Sprintf("$(params.%s)", p.Name),
 			},
 		})
@@ -554,13 +554,13 @@ func ToParams(params []pipelinev1beta1.ParamSpec) []pipelinev1beta1.Param {
 }
 
 // ToParamSpecs generates param specs from the params
-func ToParamSpecs(params []pipelinev1beta1.Param) []pipelinev1beta1.ParamSpec {
-	var answer []pipelinev1beta1.ParamSpec
+func ToParamSpecs(params []pipelinev1.Param) []pipelinev1.ParamSpec {
+	var answer []pipelinev1.ParamSpec
 	for _, p := range params {
-		answer = append(answer, pipelinev1beta1.ParamSpec{
+		answer = append(answer, pipelinev1.ParamSpec{
 			Name: p.Name,
 			// lets assume strings for now
-			Type:        pipelinev1beta1.ParamTypeString,
+			Type:        pipelinev1.ParamTypeString,
 			Description: "",
 			Default:     nil,
 		})
@@ -569,19 +569,19 @@ func ToParamSpecs(params []pipelinev1beta1.Param) []pipelinev1beta1.ParamSpec {
 }
 
 // ToPipelineResources converts the task resources to piepline resources
-func ToPipelineResources(resources *pipelinev1beta1.TaskResources) *pipelinev1beta1.PipelineTaskResources {
+func ToPipelineResources(resources *pipelinev1.TaskResources) *pipelinev1.PipelineTaskResources {
 	if resources == nil {
 		return nil
 	}
-	return &pipelinev1beta1.PipelineTaskResources{
+	return &pipelinev1.PipelineTaskResources{
 		Inputs:  ToPipelineInputs(resources.Inputs),
 		Outputs: ToPipelineOutputs(resources.Inputs),
 	}
 }
 
 // ToPipelineInputs converts the task resources into pipeline inputs
-func ToPipelineInputs(inputs []pipelinev1beta1.TaskResource) []pipelinev1beta1.PipelineTaskInputResource {
-	var answer []pipelinev1beta1.PipelineTaskInputResource
+func ToPipelineInputs(inputs []pipelinev1.TaskResource) []pipelinev1.PipelineTaskInputResource {
+	var answer []pipelinev1.PipelineTaskInputResource
 	for _, from := range inputs {
 		answer = append(answer, ToPipelineInput(from))
 	}
@@ -589,8 +589,8 @@ func ToPipelineInputs(inputs []pipelinev1beta1.TaskResource) []pipelinev1beta1.P
 }
 
 // ToPipelineOutputs converts the task resources into pipeline outputs
-func ToPipelineOutputs(inputs []pipelinev1beta1.TaskResource) []pipelinev1beta1.PipelineTaskOutputResource {
-	var answer []pipelinev1beta1.PipelineTaskOutputResource
+func ToPipelineOutputs(inputs []pipelinev1.TaskResource) []pipelinev1.PipelineTaskOutputResource {
+	var answer []pipelinev1.PipelineTaskOutputResource
 	for _, from := range inputs {
 		answer = append(answer, ToPipelineOutput(from))
 	}
@@ -598,8 +598,8 @@ func ToPipelineOutputs(inputs []pipelinev1beta1.TaskResource) []pipelinev1beta1.
 }
 
 // ToPipelineInput converts the task resource into pipeline inputs
-func ToPipelineInput(from pipelinev1beta1.TaskResource) pipelinev1beta1.PipelineTaskInputResource {
-	return pipelinev1beta1.PipelineTaskInputResource{
+func ToPipelineInput(from pipelinev1.TaskResource) pipelinev1.PipelineTaskInputResource {
+	return pipelinev1.PipelineTaskInputResource{
 		Name:     from.Name,
 		Resource: from.ResourceDeclaration.Name,
 		From:     nil,
@@ -607,16 +607,16 @@ func ToPipelineInput(from pipelinev1beta1.TaskResource) pipelinev1beta1.Pipeline
 }
 
 // ToPipelineOutput converts the task resource into pipeline outputs
-func ToPipelineOutput(from pipelinev1beta1.TaskResource) pipelinev1beta1.PipelineTaskOutputResource {
-	return pipelinev1beta1.PipelineTaskOutputResource{
+func ToPipelineOutput(from pipelinev1.TaskResource) pipelinev1.PipelineTaskOutputResource {
+	return pipelinev1.PipelineTaskOutputResource{
 		Name:     from.Name,
 		Resource: from.ResourceDeclaration.Name,
 	}
 }
 
 // ToWorkspaceBindings converts the workspace declarations to workspaces bindings
-func ToWorkspaceBindings(workspaces []pipelinev1beta1.WorkspaceDeclaration) []pipelinev1beta1.WorkspaceBinding {
-	var answer []pipelinev1beta1.WorkspaceBinding
+func ToWorkspaceBindings(workspaces []pipelinev1.WorkspaceDeclaration) []pipelinev1.WorkspaceBinding {
+	var answer []pipelinev1.WorkspaceBinding
 	for _, from := range workspaces {
 		answer = append(answer, ToWorkspaceBinding(from))
 	}
@@ -624,15 +624,15 @@ func ToWorkspaceBindings(workspaces []pipelinev1beta1.WorkspaceDeclaration) []pi
 }
 
 // ToWorkspaceBinding converts the workspace declaration to a workspaces binding
-func ToWorkspaceBinding(from pipelinev1beta1.WorkspaceDeclaration) pipelinev1beta1.WorkspaceBinding {
-	return pipelinev1beta1.WorkspaceBinding{
+func ToWorkspaceBinding(from pipelinev1.WorkspaceDeclaration) pipelinev1.WorkspaceBinding {
+	return pipelinev1.WorkspaceBinding{
 		Name: from.Name,
 	}
 }
 
 // ToWorkspacePipelineTaskBindings converts the workspace bindings to pipeline task bindings
-func ToWorkspacePipelineTaskBindings(workspaces []pipelinev1beta1.WorkspaceBinding) []pipelinev1beta1.WorkspacePipelineTaskBinding {
-	var answer []pipelinev1beta1.WorkspacePipelineTaskBinding
+func ToWorkspacePipelineTaskBindings(workspaces []pipelinev1.WorkspaceBinding) []pipelinev1.WorkspacePipelineTaskBinding {
+	var answer []pipelinev1.WorkspacePipelineTaskBinding
 	for _, from := range workspaces {
 		answer = append(answer, ToWorkspacePipelineTaskBinding(from))
 	}
@@ -640,8 +640,8 @@ func ToWorkspacePipelineTaskBindings(workspaces []pipelinev1beta1.WorkspaceBindi
 }
 
 // ToWorkspacePipelineTaskBinding converts the workspace binding to a pipeline task binding
-func ToWorkspacePipelineTaskBinding(from pipelinev1beta1.WorkspaceBinding) pipelinev1beta1.WorkspacePipelineTaskBinding {
-	return pipelinev1beta1.WorkspacePipelineTaskBinding{
+func ToWorkspacePipelineTaskBinding(from pipelinev1.WorkspaceBinding) pipelinev1.WorkspacePipelineTaskBinding {
+	return pipelinev1.WorkspacePipelineTaskBinding{
 		Name:      from.Name,
 		Workspace: from.Name,
 		SubPath:   from.SubPath,
@@ -649,8 +649,8 @@ func ToWorkspacePipelineTaskBinding(from pipelinev1beta1.WorkspaceBinding) pipel
 }
 
 // ToWorkspacePipelineTaskBindingsFromDeclarations converts the workspace declarations to pipeline task bindings
-func ToWorkspacePipelineTaskBindingsFromDeclarations(workspaces []pipelinev1beta1.WorkspaceDeclaration) []pipelinev1beta1.WorkspacePipelineTaskBinding {
-	var answer []pipelinev1beta1.WorkspacePipelineTaskBinding
+func ToWorkspacePipelineTaskBindingsFromDeclarations(workspaces []pipelinev1.WorkspaceDeclaration) []pipelinev1.WorkspacePipelineTaskBinding {
+	var answer []pipelinev1.WorkspacePipelineTaskBinding
 	for _, from := range workspaces {
 		answer = append(answer, ToWorkspacePipelineTaskBindingsFromDeclaration(from))
 	}
@@ -658,8 +658,8 @@ func ToWorkspacePipelineTaskBindingsFromDeclarations(workspaces []pipelinev1beta
 }
 
 // ToWorkspacePipelineTaskBindingsFromDeclaration converts the workspace declaration to a pipeline task binding
-func ToWorkspacePipelineTaskBindingsFromDeclaration(from pipelinev1beta1.WorkspaceDeclaration) pipelinev1beta1.WorkspacePipelineTaskBinding {
-	return pipelinev1beta1.WorkspacePipelineTaskBinding{
+func ToWorkspacePipelineTaskBindingsFromDeclaration(from pipelinev1.WorkspaceDeclaration) pipelinev1.WorkspacePipelineTaskBinding {
+	return pipelinev1.WorkspacePipelineTaskBinding{
 		Name:      from.Name,
 		Workspace: from.Name,
 		SubPath:   "",
@@ -667,8 +667,8 @@ func ToWorkspacePipelineTaskBindingsFromDeclaration(from pipelinev1beta1.Workspa
 }
 
 // ToPipelineWorkspaceDeclarations converts the workspace declarations to pipeline workspace declarations
-func ToPipelineWorkspaceDeclarations(workspaces []pipelinev1beta1.WorkspaceDeclaration) []pipelinev1beta1.PipelineWorkspaceDeclaration {
-	var answer []pipelinev1beta1.PipelineWorkspaceDeclaration
+func ToPipelineWorkspaceDeclarations(workspaces []pipelinev1.WorkspaceDeclaration) []pipelinev1.PipelineWorkspaceDeclaration {
+	var answer []pipelinev1.PipelineWorkspaceDeclaration
 	for _, from := range workspaces {
 		answer = append(answer, ToPipelineWorkspaceDeclaration(from))
 	}
@@ -676,8 +676,8 @@ func ToPipelineWorkspaceDeclarations(workspaces []pipelinev1beta1.WorkspaceDecla
 }
 
 // ToPipelineWorkspaceDeclaration converts the workspace declaration to a pipeline workspace declaration
-func ToPipelineWorkspaceDeclaration(from pipelinev1beta1.WorkspaceDeclaration) pipelinev1beta1.PipelineWorkspaceDeclaration {
-	return pipelinev1beta1.PipelineWorkspaceDeclaration{
+func ToPipelineWorkspaceDeclaration(from pipelinev1.WorkspaceDeclaration) pipelinev1.PipelineWorkspaceDeclaration {
+	return pipelinev1.PipelineWorkspaceDeclaration{
 		Name:        from.Name,
 		Description: from.Description,
 	}

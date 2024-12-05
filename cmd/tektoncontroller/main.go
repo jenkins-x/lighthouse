@@ -10,7 +10,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -49,7 +49,7 @@ func main() {
 	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
 		logrus.WithError(err).Fatal("Failed to register scheme")
 	}
-	if err := pipelinev1beta1.AddToScheme(scheme); err != nil {
+	if err := pipelinev1.AddToScheme(scheme); err != nil {
 		logrus.WithError(err).Fatal("Failed to register scheme")
 	}
 

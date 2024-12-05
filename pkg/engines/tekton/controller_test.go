@@ -16,7 +16,7 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -86,7 +86,7 @@ func TestReconcile(t *testing.T) {
 			scheme := runtime.NewScheme()
 			err = lighthousev1alpha1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			err = pipelinev1beta1.AddToScheme(scheme)
+			err = pipelinev1.AddToScheme(scheme)
 			assert.NoError(t, err)
 
 			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
@@ -105,7 +105,7 @@ func TestReconcile(t *testing.T) {
 
 			// assert observed state matches expected state
 			if expectedPR != nil || generateTestOutput {
-				var pipelineRunList pipelinev1beta1.PipelineRunList
+				var pipelineRunList pipelinev1.PipelineRunList
 				err := c.List(context.TODO(), &pipelineRunList, client.InNamespace(ns))
 				assert.NoError(t, err)
 				assert.Len(t, pipelineRunList.Items, 1)
@@ -175,7 +175,7 @@ func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, st
 	return nil, fileName, nil
 }
 
-func loadControllerPipelineRun(isObserved bool, dir string) (*pipelinev1beta1.PipelineRun, string, error) {
+func loadControllerPipelineRun(isObserved bool, dir string) (*pipelinev1.PipelineRun, string, error) {
 	var baseFn string
 	if isObserved {
 		baseFn = "observed-pr.yml"
@@ -188,7 +188,7 @@ func loadControllerPipelineRun(isObserved bool, dir string) (*pipelinev1beta1.Pi
 		return nil, fileName, err
 	}
 	if exists {
-		pr := &pipelinev1beta1.PipelineRun{}
+		pr := &pipelinev1.PipelineRun{}
 		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, fileName, err
@@ -202,14 +202,14 @@ func loadControllerPipelineRun(isObserved bool, dir string) (*pipelinev1beta1.Pi
 	return nil, fileName, nil
 }
 
-func loadObservedPipeline(dir string) (*pipelinev1beta1.Pipeline, error) {
+func loadObservedPipeline(dir string) (*pipelinev1.Pipeline, error) {
 	fileName := filepath.Join(dir, "observed-pipeline.yml")
 	exists, err := util.FileExists(fileName)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
-		p := &pipelinev1beta1.Pipeline{}
+		p := &pipelinev1.Pipeline{}
 		data, err := os.ReadFile(fileName)
 		if err != nil {
 			return nil, err
