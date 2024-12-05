@@ -1,11 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.0
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.16.5
   name: lighthousebreakpoints.lighthouse.jenkins.io
 spec:
   group: lighthouse.jenkins.io
@@ -32,10 +30,16 @@ spec:
             properties:
               debug:
                 properties:
-                  breakpoint:
-                    items:
-                      type: string
-                    type: array
+                  breakpoints:
+                    properties:
+                      beforeSteps:
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: atomic
+                      onFailure:
+                        type: string
+                    type: object
                 type: object
               filter:
                 properties:
@@ -56,9 +60,3 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
