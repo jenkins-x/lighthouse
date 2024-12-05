@@ -445,12 +445,10 @@ func ConvertTaskToPipelineRun(from *pipelinev1.Task, message string, defaultValu
 	fs := &from.Spec
 	pipelineSpec := &pipelinev1.PipelineSpec{
 		Description: "",
-		Resources:   nil,
 		Tasks: []pipelinev1.PipelineTask{
 			{
 				Name:       from.Name,
 				TaskSpec:   &pipelinev1.EmbeddedTask{TaskSpec: *fs},
-				Resources:  ToPipelineResources(fs.Resources),
 				Params:     ToParams(fs.Params),
 				Workspaces: ToWorkspacePipelineTaskBindingsFromDeclarations(fs.Workspaces),
 			},
@@ -503,7 +501,6 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, message string, defau
 	}
 	pipelineSpec := &pipelinev1.PipelineSpec{
 		Description: "",
-		Resources:   nil,
 		Tasks: []pipelinev1.PipelineTask{
 			{
 				Name:     from.Name,
@@ -566,52 +563,6 @@ func ToParamSpecs(params []pipelinev1.Param) []pipelinev1.ParamSpec {
 		})
 	}
 	return answer
-}
-
-// ToPipelineResources converts the task resources to piepline resources
-func ToPipelineResources(resources *pipelinev1.TaskResources) *pipelinev1.PipelineTaskResources {
-	if resources == nil {
-		return nil
-	}
-	return &pipelinev1.PipelineTaskResources{
-		Inputs:  ToPipelineInputs(resources.Inputs),
-		Outputs: ToPipelineOutputs(resources.Inputs),
-	}
-}
-
-// ToPipelineInputs converts the task resources into pipeline inputs
-func ToPipelineInputs(inputs []pipelinev1.TaskResource) []pipelinev1.PipelineTaskInputResource {
-	var answer []pipelinev1.PipelineTaskInputResource
-	for _, from := range inputs {
-		answer = append(answer, ToPipelineInput(from))
-	}
-	return answer
-}
-
-// ToPipelineOutputs converts the task resources into pipeline outputs
-func ToPipelineOutputs(inputs []pipelinev1.TaskResource) []pipelinev1.PipelineTaskOutputResource {
-	var answer []pipelinev1.PipelineTaskOutputResource
-	for _, from := range inputs {
-		answer = append(answer, ToPipelineOutput(from))
-	}
-	return answer
-}
-
-// ToPipelineInput converts the task resource into pipeline inputs
-func ToPipelineInput(from pipelinev1.TaskResource) pipelinev1.PipelineTaskInputResource {
-	return pipelinev1.PipelineTaskInputResource{
-		Name:     from.Name,
-		Resource: from.ResourceDeclaration.Name,
-		From:     nil,
-	}
-}
-
-// ToPipelineOutput converts the task resource into pipeline outputs
-func ToPipelineOutput(from pipelinev1.TaskResource) pipelinev1.PipelineTaskOutputResource {
-	return pipelinev1.PipelineTaskOutputResource{
-		Name:     from.Name,
-		Resource: from.ResourceDeclaration.Name,
-	}
 }
 
 // ToWorkspaceBindings converts the workspace declarations to workspaces bindings
