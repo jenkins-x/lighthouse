@@ -129,7 +129,7 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 		}
 	}
 	for _, key := range sets.StringKeySet(env).List() {
-		val := pipelinev1.ArrayOrString{
+		val := pipelinev1.ParamValue{
 			Type:      pipelinev1.ParamTypeString,
 			StringVal: env[key],
 		}
