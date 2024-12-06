@@ -75,7 +75,12 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.dashboardTemplate, o.namespace)
+	tektonclient, _, _, _, err := clients.GetAPIClients()
+	if err != nil {
+		logrus.WithError(err).Fatal(err, "failed to get api clients")
+	}
+
+	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), tektonclient, o.dashboardURL, o.dashboardTemplate, o.namespace)
 	if err = lhJobReconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}

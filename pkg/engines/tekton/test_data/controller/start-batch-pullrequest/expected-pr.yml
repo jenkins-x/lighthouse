@@ -63,7 +63,9 @@ spec:
   pipelineRef:
     apiVersion: tekton.dev/v1
     name: jenkins-x-charts-jx-build-templ-wbbx6-7
-  podTemplate: {}
-  serviceAccountName: tekton-bot
-  timeout: 24h0m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts: 
+    pipeline: 24h0m0s
 status: {}

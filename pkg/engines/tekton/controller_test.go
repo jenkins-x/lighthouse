@@ -13,10 +13,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -65,6 +65,8 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 			observedPipeline, err := loadObservedPipeline(testData)
 			assert.NoError(t, err)
+			observedTR, _, err := loadControllerTaskRun(true, testData)
+			assert.NoError(t, err)
 			var state []client.Object
 			if observedPR != nil {
 				state = append(state, observedPR)
@@ -74,6 +76,12 @@ func TestReconcile(t *testing.T) {
 			}
 			if observedPipeline != nil {
 				state = append(state, observedPipeline)
+			}
+			tektonfakeClient := tektonfake.NewSimpleClientset()
+			if observedTR != nil {
+				state = append(state, observedTR)
+				_, err = tektonfakeClient.TektonV1().TaskRuns("jx").Create(context.Background(), observedTR, metav1.CreateOptions{})
+				assert.NoError(t, err, "Failed to create TaskRun %s in the fake client", observedTR.Name)
 			}
 
 			// load expected state
@@ -90,7 +98,7 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 
 			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, tektonfakeClient, dashboardBaseURL, dashboardTemplate, ns)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 			reconciler.disableLogging = true
 
@@ -171,6 +179,33 @@ func loadLighthouseJob(isObserved bool, dir string) (*v1alpha1.LighthouseJob, st
 			return nil, fileName, err
 		}
 		return lhjob, fileName, err
+	}
+	return nil, fileName, nil
+}
+
+func loadControllerTaskRun(isObserved bool, dir string) (*pipelinev1.TaskRun, string, error) {
+	var baseFn string
+	if isObserved {
+		baseFn = "observed-tr.yml"
+	} else {
+		baseFn = "expected-tr.yml"
+	}
+	fileName := filepath.Join(dir, baseFn)
+	exists, err := util.FileExists(fileName)
+	if err != nil {
+		return nil, fileName, err
+	}
+	if exists {
+		tr := &pipelinev1.TaskRun{}
+		data, err := os.ReadFile(fileName)
+		if err != nil {
+			return nil, fileName, err
+		}
+		err = yaml.Unmarshal(data, tr)
+		if err != nil {
+			return nil, fileName, err
+		}
+		return tr, fileName, err
 	}
 	return nil, fileName, nil
 }

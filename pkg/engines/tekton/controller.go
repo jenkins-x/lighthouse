@@ -8,12 +8,12 @@ import (
 	"text/template"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/clients"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -28,6 +28,7 @@ var apiGVStr = lighthousev1alpha1.SchemeGroupVersion.String()
 // LighthouseJobReconciler reconciles a LighthouseJob object
 type LighthouseJobReconciler struct {
 	client            client.Client
+	tektonclient      tektonversioned.Interface
 	apiReader         client.Reader
 	logger            *logrus.Entry
 	scheme            *runtime.Scheme
@@ -39,7 +40,7 @@ type LighthouseJobReconciler struct {
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, tektonclient tektonversioned.Interface, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
@@ -51,6 +52,7 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 		dashboardURL:      dashboardURL,
 		dashboardTemplate: dashboardTemplate,
 		namespace:         namespace,
+		tektonclient:      tektonclient,
 		idGenerator:       &epochBuildIDGenerator{},
 	}
 }
@@ -180,11 +182,8 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if r.dashboardURL != "" {
 				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
 			}
-			tektonclient, _, _, _, err := clients.GetAPIClients()
-			if err != nil {
-				return errors.Wrapf(err, "failed to get api clients")
-			}
-			activity, err := ConvertPipelineRun(tektonclient, &pipelineRun)
+
+			activity, err := ConvertPipelineRun(r.tektonclient, &pipelineRun)
 			if err != nil {
 				return errors.Wrapf(err, "failed to convert PipelineRun")
 			}
