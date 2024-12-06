@@ -3,7 +3,14 @@ kind: TaskRun
 metadata:
   name: jenkins-x-lighthouse-pr-854-bbs-d5q9c-4-ci-wbnrf
 status:
+  completionTime: "2020-07-20T18:00:05Z"
   startTime: "2020-07-20T17:29:24Z"
+  conditions:
+  - lastTransitionTime: "2020-07-20T18:00:05Z"
+    message: All Steps have completed executing
+    reason: Succeeded
+    status: "True"
+    type: Succeeded
   steps:
   - container: step-setup-builder-home
     imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e

@@ -3,7 +3,16 @@ kind: TaskRun
 metadata:
   name: jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-zjcjs
 status:
+  completionTime: "2020-07-20T18:50:43Z"
   startTime: "2020-07-20T18:50:22Z"
+  conditions:
+  - lastTransitionTime: "2020-07-20T18:50:43Z"
+    message: '"step-build-build" exited with code 2 (image: "docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:e07b1253adee49f22be8011a306892cb5e4f3bb31820a48af602a1d22175d194");
+      for logs run: kubectl -n jx logs jenkins-x-charts-jx-build-templ-wbbx6-7-from-build-pack-z-dncc5
+      -c step-build-build'
+    reason: Failed
+    status: "False"
+    type: Succeeded
   steps:
   - container: step-setup-builder-home
     imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
