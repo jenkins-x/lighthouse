@@ -11,6 +11,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	"sigs.k8s.io/yaml"
 )
 
@@ -40,7 +41,8 @@ func TestConvertPipelineRun(t *testing.T) {
 			testDir := filepath.Join("test_data", "activity", tc.name)
 			pr := loadPipelineRun(t, testDir)
 
-			converted, err := tekton.ConvertPipelineRun(pr)
+			tektonfakeClient := tektonfake.NewSimpleClientset(pr)
+			converted, err := tekton.ConvertPipelineRun(tektonfakeClient, pr)
 			assert.NoError(t, err)
 			expected := loadRecord(t, testDir)
 
