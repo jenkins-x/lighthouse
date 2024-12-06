@@ -1,15 +1,15 @@
 package inrepo
 
 import (
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	v1 "k8s.io/api/core/v1"
 )
 
 // OverrideTaskSpec lets reuse any TaskSpec resources from the used task
-func OverrideTaskSpec(ts *tektonv1beta1.TaskSpec, override *tektonv1beta1.TaskSpec) {
+func OverrideTaskSpec(ts *pipelinev1.TaskSpec, override *pipelinev1.TaskSpec) {
 	if override.StepTemplate != nil {
 		if ts.StepTemplate == nil {
-			ts.StepTemplate = &tektonv1beta1.StepTemplate{}
+			ts.StepTemplate = &pipelinev1.StepTemplate{}
 		}
 		OverrideTemplateWithTemplate(ts.StepTemplate, override.StepTemplate, true)
 		if override.StepTemplate.Image != "" {
@@ -20,7 +20,7 @@ func OverrideTaskSpec(ts *tektonv1beta1.TaskSpec, override *tektonv1beta1.TaskSp
 }
 
 // OverrideStep overrides the step with the given overrides
-func OverrideStep(step *tektonv1beta1.Step, override *tektonv1beta1.Step) {
+func OverrideStep(step *pipelinev1.Step, override *pipelinev1.Step) {
 	if len(override.Command) > 0 {
 		step.Script = override.Script
 		step.Command = override.Command
@@ -38,13 +38,13 @@ func OverrideStep(step *tektonv1beta1.Step, override *tektonv1beta1.Step) {
 }
 
 // OverrideTemplateWithStep overrides the container properties
-func OverrideTemplateWithTemplate(c *tektonv1beta1.StepTemplate, override *tektonv1beta1.StepTemplate, modify bool) {
+func OverrideTemplateWithTemplate(c *pipelinev1.StepTemplate, override *pipelinev1.StepTemplate, modify bool) {
 	c.Env = OverrideEnv(c.Env, override.Env, modify)
 	c.EnvFrom = OverrideEnvFrom(c.EnvFrom, override.EnvFrom, modify)
 	if string(override.ImagePullPolicy) != "" && (modify || string(c.ImagePullPolicy) == "") {
 		c.ImagePullPolicy = override.ImagePullPolicy
 	}
-	c.Resources = OverrideResources(c.Resources, override.Resources, modify)
+	c.ComputeResources = OverrideResources(c.ComputeResources, override.ComputeResources, modify)
 	if c.SecurityContext == nil {
 		c.SecurityContext = override.SecurityContext
 	}
@@ -55,13 +55,13 @@ func OverrideTemplateWithTemplate(c *tektonv1beta1.StepTemplate, override *tekto
 }
 
 // OverrideTemplateWithStep overrides the container properties
-func OverrideStepWithStep(c *tektonv1beta1.Step, override *tektonv1beta1.Step, modify bool) {
+func OverrideStepWithStep(c *pipelinev1.Step, override *pipelinev1.Step, modify bool) {
 	c.Env = OverrideEnv(c.Env, override.Env, modify)
 	c.EnvFrom = OverrideEnvFrom(c.EnvFrom, override.EnvFrom, modify)
 	if string(override.ImagePullPolicy) != "" && (modify || string(c.ImagePullPolicy) == "") {
 		c.ImagePullPolicy = override.ImagePullPolicy
 	}
-	c.Resources = OverrideResources(c.Resources, override.Resources, modify)
+	c.ComputeResources = OverrideResources(c.ComputeResources, override.ComputeResources, modify)
 	if c.SecurityContext == nil {
 		c.SecurityContext = override.SecurityContext
 	}

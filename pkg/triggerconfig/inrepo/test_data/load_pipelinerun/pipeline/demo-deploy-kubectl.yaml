@@ -1,5 +1,5 @@
 # This task deploys with kubectl apply -f <filename>
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: demo-deploy-kubectl

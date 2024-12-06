@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
@@ -24,7 +24,7 @@ metadata:
   name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
   namespace: jx
   resourceVersion: "16726271"
-  selfLink: /apis/tekton.dev/v1beta1/namespaces/jx/pipelineruns/jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
+  selfLink: /apis/tekton.dev/v1/namespaces/jx/pipelineruns/jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
   uid: 3edf18d1-cac2-11ea-a610-42010a8400cb
 spec:
   params:
@@ -33,14 +33,14 @@ spec:
   - name: build_id
     value: "17"
   pipelineRef:
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17
   podTemplate:
     schedulerName: ""
   resources:
   - name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
     resourceRef:
-      apiVersion: tekton.dev/v1beta1
+      apiVersion: tekton.dev/v1
       name: jenkins-x-jx-pr-7463-boot-vault-9mbgb
   serviceAccountName: tekton-bot
   timeout: 240h0m0s

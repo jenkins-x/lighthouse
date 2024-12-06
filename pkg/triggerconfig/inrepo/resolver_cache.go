@@ -3,7 +3,7 @@ package inrepo
 import (
 	"sync"
 
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
 const DELIMIER = "#"
@@ -12,14 +12,14 @@ const DELIMIER = "#"
 // the git cloning with in repo configurations
 type ResolverCache struct {
 	lock          sync.RWMutex
-	pipelineCache map[string]*tektonv1beta1.PipelineRun
+	pipelineCache map[string]*pipelinev1.PipelineRun
 	dataCache     map[string][]byte
 }
 
 // NewResolverCache creates a new resolver cache
 func NewResolverCache() *ResolverCache {
 	return &ResolverCache{
-		pipelineCache: map[string]*tektonv1beta1.PipelineRun{},
+		pipelineCache: map[string]*pipelinev1.PipelineRun{},
 		dataCache:     map[string][]byte{},
 	}
 }
@@ -47,11 +47,11 @@ func (c *ResolverCache) SetData(sourceURI, ref string, value []byte) {
 }
 
 // GetPipelineRun gets the PipelineRun from the cache if available or returns nil
-func (c *ResolverCache) GetPipelineRun(sourceURI, ref string) *tektonv1beta1.PipelineRun {
+func (c *ResolverCache) GetPipelineRun(sourceURI, ref string) *pipelinev1.PipelineRun {
 	if c == nil || sourceURI == "" {
 		return nil
 	}
-	var answer *tektonv1beta1.PipelineRun
+	var answer *pipelinev1.PipelineRun
 	c.lock.Lock()
 	answer = c.pipelineCache[sourceURI+DELIMIER+ref]
 	c.lock.Unlock()
@@ -59,7 +59,7 @@ func (c *ResolverCache) GetPipelineRun(sourceURI, ref string) *tektonv1beta1.Pip
 }
 
 // SetPipelineRun updates the cache
-func (c *ResolverCache) SetPipelineRun(sourceURI string, ref string, value *tektonv1beta1.PipelineRun) {
+func (c *ResolverCache) SetPipelineRun(sourceURI string, ref string, value *pipelinev1.PipelineRun) {
 	if c == nil || value == nil {
 		return
 	}

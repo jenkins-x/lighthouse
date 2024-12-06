@@ -25,13 +25,13 @@ spec:
   namespace: jx
   pipeline_run_spec:
     pipelineRef:
-      apiVersion: tekton.dev/v1beta1
+      apiVersion: tekton.dev/v1
       name: jenkins-x-charts-jx-build-templ-wbbx6-7
     podTemplate: {}
     resources:
     - name: jenkins-x-charts-jx-build-templ-wbbx6
       resourceRef:
-        apiVersion: tekton.dev/v1beta1
+        apiVersion: tekton.dev/v1
         name: jenkins-x-charts-jx-build-templ-wbbx6
     serviceAccountName: tekton-bot
     timeout: 240h0m0s

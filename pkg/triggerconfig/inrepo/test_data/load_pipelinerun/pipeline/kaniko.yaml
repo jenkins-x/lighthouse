@@ -1,7 +1,7 @@
 # Copied from https://github.com/tektoncd/catalog/blob/v1beta1/kaniko/kaniko.yaml
 # with a few fixes that will be port over in https://github.com/tektoncd/catalog/pull/291
 # Post #1839 we can refer to the remote Task in a registry or post #2298 in git directly
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: kaniko
