@@ -7,23 +7,18 @@ import (
 	"knative.dev/pkg/apis"
 
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ConvertPipelineRun translates a PipelineRun into an ActivityRecord
-func ConvertPipelineRun(pr *pipelinev1.PipelineRun) (*v1alpha1.ActivityRecord, error) {
+func ConvertPipelineRun(tektonclient tektonversioned.Interface, pr *pipelinev1.PipelineRun) (*v1alpha1.ActivityRecord, error) {
 	if pr == nil {
 		return nil, nil
-	}
-
-	tektonclient, _, _, _, err := clients.GetAPIClients()
-	if err != nil {
-		return nil, err
 	}
 
 	record := new(v1alpha1.ActivityRecord)
