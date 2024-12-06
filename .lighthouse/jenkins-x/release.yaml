@@ -7,77 +7,76 @@ spec:
   pipelineSpec:
     tasks:
     - name: chart
-      resources: {}
       taskSpec:
         metadata: {}
         stepTemplate:
           image: uses:jenkins-x/jx3-pipeline-catalog/tasks/go-plugin/release.yaml@versionStream
           name: ""
-          resources: {}
+          computeResources: {}
           workingDir: /workspace/source
         steps:
         - image: uses:jenkins-x/jx3-pipeline-catalog/tasks/git-clone/git-clone.yaml@versionStream
           name: ""
-          resources: {}
+          computeResources: {}
         - name: next-version
-          resources: {}
+          computeResources: {}
         - name: jx-variables
         - name: release-binary
-          resources: {}
+          computeResources: {}
         - name: build-and-push-image:webhooks
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-webhooks:latest --build-arg=VERSION=$VERSION
         - name: build-and-push-image:poller
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/poller/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-poller:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-poller:latest --build-arg=VERSION=$VERSION
         - name: build-and-push-image:keeper
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-keeper:latest --build-arg=VERSION=$VERSION
         - name: build-and-push-image:foghorn
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-foghorn:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-foghorn:latest --build-arg=VERSION=$VERSION
         - name: build-and-push-image:tekton
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:latest --build-arg=VERSION=$VERSION
         - name: build-and-push-image:jenkins
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:latest --build-arg=VERSION=$VERSION
         - name: build-and-push-image:gc-jobs
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:latest --build-arg=VERSION=$VERSION
         - name: chart-docs
-          resources: {}
+          computeResources: {}
         - image: ghcr.io/jenkins-x/jx-boot:3.10.131
           name: changelog
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             source .jx/variables.sh
@@ -90,9 +89,9 @@ spec:
             
             jx changelog create --verbose --header-file=hack/changelog-header.md --version=$VERSION --rev=$PULL_BASE_SHA --output-markdown=changelog.md --prerelease
         - name: release-chart
-          resources: {}
+          computeResources: {}
         - name: upload-binaries
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/bash
             source .jx/variables.sh
@@ -103,7 +102,7 @@ spec:
             git tag -fa v$VERSION -m "Release version $VERSION"
             git push --force origin v$VERSION
         - name: promote-release
-          resources: {}
+          computeResources: {}
   podTemplate: {}
   serviceAccountName: tekton-bot
   timeout: 240h0m0s

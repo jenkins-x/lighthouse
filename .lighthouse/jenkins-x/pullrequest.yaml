@@ -7,75 +7,74 @@ spec:
   pipelineSpec:
     tasks:
     - name: from-build-pack
-      resources: {}
       taskSpec:
         metadata: {}
         stepTemplate:
           image: uses:jenkins-x/jx3-pipeline-catalog/tasks/go-plugin/pullrequest.yaml@versionStream
           name: ""
-          resources: {}
+          computeResources: {}
           workingDir: /workspace/source
         steps:
         - image: uses:jenkins-x/jx3-pipeline-catalog/tasks/git-clone/git-clone-pr.yaml@versionStream
           name: ""
-          resources: {}
+          computeResources: {}
         - name: jx-variables
         - name: build-make-linux
-          resources: {}
+          computeResources: {}
         - name: protect-credentials
           securityContext:
             runAsUser: 0
-          resources: {}
+          computeResources: {}
           image: ghcr.io/distroless/busybox
           script: |
             #!/bin/sh
             cp -a /tekton/home/.git-credentials /tekton/home/.git-credentials.bak
         - name: build-make-test
-          resources: {}
+          computeResources: {}
         - name: build-container-build:webhooks
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:poller
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/poller/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-poller:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:keeper
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:foghorn
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-foghorn:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:tekton
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:jenkins
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:$VERSION --build-arg=VERSION=$VERSION
         - name: build-container-build:gc-jobs
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
@@ -83,7 +82,7 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
         - image: ghcr.io/jenkins-x/jx-boot:3.10.131
           name: release-chart
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             source .jx/variables.sh

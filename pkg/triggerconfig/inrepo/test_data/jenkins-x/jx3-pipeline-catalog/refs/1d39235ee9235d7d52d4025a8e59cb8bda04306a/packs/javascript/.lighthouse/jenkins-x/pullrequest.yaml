@@ -8,12 +8,11 @@ spec:
   pipelineSpec:
     tasks:
     - name: from-build-pack
-      resources: {}
       taskSpec:
         metadata: {}
         stepTemplate:
           name: ""
-          resources:
+          computeResources:
             requests:
               cpu: 400m
               memory: 512Mi
@@ -24,25 +23,25 @@ spec:
         steps:
         - image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             jx gitops variables
         - image: node:12-slim
           name: build-npm-install
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/sh
             npm install
         - image: node:12-slim
           name: build-npm-test
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/sh
             CI=true DISPLAY=:99 npm test
         - image: gcr.io/kaniko-project/executor:debug-v1.3.0
           name: build-container-build
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
@@ -50,7 +49,7 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
         - image: gcr.io/jenkinsxio/jx-preview:0.0.143
           name: promote-jx-preview
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             source .jx/variables.sh
@@ -60,7 +59,7 @@ spec:
           - pr
           image: ghcr.io/jenkins-x/jx-updatebot:0.0.82
           name: promote-release
-          resources: {}
+          computeResources: {}
         volumes:
         - name: npmrc
           secret:
