@@ -228,3 +228,8 @@ spec:
 ```
 
 e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-multiple-copies/source.yaml#L8) which generates this [PipelineRun](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun/uses-steps-multiple-copies/expected.yaml#L154)
+
+## Override scm status url from pipeline
+
+If a pipeline has a result named `scm-status-url` the value of that will be used as link target for the pipeline status
+set in scm provider (like GitHub or GitLab) instead of the link to the pipeline dashboard.
