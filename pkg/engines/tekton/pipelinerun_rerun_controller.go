@@ -10,7 +10,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,7 +39,7 @@ func NewRerunPipelineRunReconciler(client client.Client, scheme *runtime.Scheme)
 // SetupWithManager sets up the controller with the Manager.
 func (r *RerunPipelineRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pipelinev1beta1.PipelineRun{}).
+		For(&pipelinev1.PipelineRun{}).
 		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			labels := object.GetLabels()
 			_, exists := labels[util.DashboardTektonRerun]
@@ -53,7 +53,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	r.logger.Infof("Reconciling rerun PipelineRun %s", req.NamespacedName)
 
 	// Fetch the Rerun PipelineRun instance
-	var rerunPipelineRun pipelinev1beta1.PipelineRun
+	var rerunPipelineRun pipelinev1.PipelineRun
 	if err := r.client.Get(ctx, req.NamespacedName, &rerunPipelineRun); err != nil {
 		r.logger.Errorf("Failed to get rerun PipelineRun: %s", err)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -72,7 +72,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Get Rerun PipelineRun parent PipelineRun
-	var rerunPipelineRunParent pipelinev1beta1.PipelineRun
+	var rerunPipelineRunParent pipelinev1.PipelineRun
 	if err := r.client.Get(ctx, types.NamespacedName{Namespace: req.Namespace, Name: rerunPipelineRunParentName}, &rerunPipelineRunParent); err != nil {
 		r.logger.Warningf("Unable to get Rerun Parent PipelineRun %s: %v", rerunPipelineRunParentName, err)
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
@@ -130,7 +130,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	rerunPipelineRun.OwnerReferences = append(rerunPipelineRun.OwnerReferences, ownerReference)
 
 	// update ownerReference of rerun PipelineRun
-	f := func(job *pipelinev1beta1.PipelineRun) error {
+	f := func(job *pipelinev1.PipelineRun) error {
 		// Patch the PipelineRun with the new ownerReference
 		if err := r.client.Update(ctx, &rerunPipelineRun); err != nil {
 			return errors.Wrapf(err, "failed to update PipelineRun with ownerReference")
@@ -148,7 +148,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 // retryModifyPipelineRun tries to modify the PipelineRun, retrying if it fails
-func (r *RerunPipelineRunReconciler) retryModifyPipelineRun(ctx context.Context, ns client.ObjectKey, pipelineRun *pipelinev1beta1.PipelineRun, f func(pipelineRun *pipelinev1beta1.PipelineRun) error) error {
+func (r *RerunPipelineRunReconciler) retryModifyPipelineRun(ctx context.Context, ns client.ObjectKey, pipelineRun *pipelinev1.PipelineRun, f func(pipelineRun *pipelinev1.PipelineRun) error) error {
 	const retryCount = 5
 
 	i := 0

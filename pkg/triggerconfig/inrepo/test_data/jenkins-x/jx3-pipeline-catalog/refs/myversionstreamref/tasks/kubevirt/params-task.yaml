@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   creationTimestamp: null
@@ -8,7 +8,7 @@ spec:
   - name: FOO
     type: string
     default: "BAR-CATALOG"
-  resources:
+  computeResources:
     requests:
       cpu: 400m
       memory: 512Mi

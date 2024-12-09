@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -197,12 +197,12 @@ spec:
             value: $(params.REPO_URL)
           imagePullPolicy: IfNotPresent
           name: ""
-          resources: {}
+          computeResources: {}
           workingDir: /workspace/source
         steps:
         - image: ubuntu:jammy
           name: save-result
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             set -ex
@@ -321,19 +321,21 @@ spec:
             value: $(params.REPO_URL)
           imagePullPolicy: IfNotPresent
           name: ""
-          resources: {}
+          computeResources: {}
           workingDir: /workspace/source
         steps:
         - image: ubuntu:jammy
           name: show-result
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             set -ex
             echo "tasks.save-results.results.result_value is $(tasks.save-results.results.result_value)"
             value_to_show="$(params.value_to_show)"
             echo "value_to_show is ${value_to_show}"
-  podTemplate: {}
-  serviceAccountName: tekton-bot
-  timeout: 30m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts: 
+    pipeline: 30m0s
 status: {}

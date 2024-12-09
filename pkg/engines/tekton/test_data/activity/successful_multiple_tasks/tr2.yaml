@@ -1,0 +1,77 @@
+apiVersion: tekton.dev/v1
+kind: TaskRun
+metadata:
+  name: jenkins-x-jx-pr-7463-boot-vault-9mbgb-17-e2e-tests-ds74m
+status:
+  completionTime: "2020-07-20T20:50:27Z"
+  startTime: "2020-07-20T19:56:53Z"
+  conditions:
+  - lastTransitionTime: "2020-07-20T20:50:27Z"
+    message: All Steps have completed executing
+    reason: Succeeded
+    status: "True"
+    type: Succeeded
+  steps:
+  - container: step-setup-builder-home
+    imageID: docker-pullable://gcr.io/jenkinsxio/builder-jx@sha256:74e5c1ea05f84329f5fb150a46c55ae89288b950c8edb1041af1911516a86b0e
+    name: setup-builder-home
+    terminated:
+      containerID: docker://2a6124bda33744d5710c9ab6d2787db4bfc31aaf1e92725b7c8bbc8dfb0e1f73
+      exitCode: 0
+      finishedAt: "2020-07-20T19:58:45Z"
+      reason: Completed
+      startedAt: "2020-07-20T19:58:44Z"
+  - container: step-boot-vault-e2e-tests
+    imageID: docker-pullable://gcr.io/jenkinsxio/builder-go-nodejs@sha256:e46a06e4bb1ef265389fa10d83ecffee6e3e3391c050ed347d32ccae4fcb26e0
+    name: boot-vault-e2e-tests
+    terminated:
+      containerID: docker://cedafbbe02258458082815cfc995c9a9e8c37648ad186b6f6ca07b85fd5f2600
+      exitCode: 0
+      finishedAt: "2020-07-20T20:50:15Z"
+      reason: Completed
+      startedAt: "2020-07-20T19:58:45Z"
+  - container: step-generate-report
+    imageID: docker-pullable://gcr.io/jenkinsxio/builder-nodejs10x@sha256:e7ff71273ddd8a1a3db7aae0cbbbf294d136ffb22416814dc1ba966061d66a51
+    name: generate-report
+    terminated:
+      containerID: docker://6cc219a3409ee347c035c46fc8b5a14e8b922ca0d9d65006b66abdd0c5a120b9
+      exitCode: 0
+      finishedAt: "2020-07-20T20:50:25Z"
+      reason: Completed
+      startedAt: "2020-07-20T20:50:15Z"
+  - container: step-clear-kubeconfig
+    imageID: docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:6560c7cddfe1712c840ff6f429fedf961c7ad442c3b3e0f48c4f83f1f29156ed
+    name: clear-kubeconfig
+    terminated:
+      containerID: docker://c0da5c57d35010089e8b1d1417b7cb5334aa0355e6b663aba45066219ddabcb6
+      exitCode: 0
+      finishedAt: "2020-07-20T20:50:26Z"
+      reason: Completed
+      startedAt: "2020-07-20T20:50:26Z"
+  - container: step-stashhtmlreport
+    imageID: docker-pullable://gcr.io/jenkinsxio/builder-go@sha256:6560c7cddfe1712c840ff6f429fedf961c7ad442c3b3e0f48c4f83f1f29156ed
+    name: stashhtmlreport
+    terminated:
+      containerID: docker://e0cdd4b5eec880ec2eff3436d6e355910e415abd341fb181eec8fa65b5982136
+      exitCode: 0
+      finishedAt: "2020-07-20T20:50:27Z"
+      reason: Completed
+      startedAt: "2020-07-20T20:50:26Z"
+  - container: step-source-copy-workspace-7hpkx
+    imageID: docker-pullable://busybox@sha256:2131f09e4044327fd101ca1fd4043e6f3ad921ae7ee901e9142e6e36b354a907
+    name: source-copy-workspace-7hpkx
+    terminated:
+      containerID: docker://d7b36a57400a1efe415311e6b1516e3e0c7a1ab87454eade9caea6f1f739be85
+      exitCode: 0
+      finishedAt: "2020-07-20T19:58:44Z"
+      reason: Completed
+      startedAt: "2020-07-20T19:58:38Z"
+  - container: step-create-dir-workspace-tncdr
+    imageID: docker-pullable://busybox@sha256:2131f09e4044327fd101ca1fd4043e6f3ad921ae7ee901e9142e6e36b354a907
+    name: create-dir-workspace-tncdr
+    terminated:
+      containerID: docker://e899d802cdbd5e93925451244128ef98c95da5c6f219fd51ba5a9c09e59eb296
+      exitCode: 0
+      finishedAt: "2020-07-20T19:58:38Z"
+      reason: Completed
+      startedAt: "2020-07-20T19:58:38Z"

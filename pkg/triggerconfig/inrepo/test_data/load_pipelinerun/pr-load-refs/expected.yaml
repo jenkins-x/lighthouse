@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
@@ -175,11 +175,11 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources: {}
+          computeResources: {}
         steps:
         - image: bash:latest
           name: sum
-          resources: {}
+          computeResources: {}
           script: |-
             #!/usr/bin/env bash
             echo -n $(( "$(inputs.params.a)" + "$(inputs.params.b)" ))

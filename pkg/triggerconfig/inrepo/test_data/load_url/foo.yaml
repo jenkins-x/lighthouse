@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   labels:
@@ -12,10 +12,13 @@ spec:
           steps:
             - image: jenkinsxio/chuck:0.0.1
               name: chuck
-              resources:
+              computeResources:
                 requests:
                   cpu: 100m
                   memory: 200Mi
               workingDir: /workspace/source
-  serviceAccountName: tekton-bot
-  timeout: 0h20m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts:
+    pipeline: 0h20m0s

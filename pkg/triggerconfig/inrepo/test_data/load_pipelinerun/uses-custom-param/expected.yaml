@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -111,7 +111,7 @@ spec:
         value: $(params.REPO_OWNER)
       - name: REPO_URL
         value: $(params.REPO_URL)
-      resources: {}
+      computeResources: {}
       taskSpec:
         metadata: {}
         params:
@@ -160,7 +160,7 @@ spec:
         - description: git url to clone
           name: REPO_URL
           type: string
-        resources: {}
+        computeResources: {}
         spec: null
         stepTemplate:
           env:
@@ -193,17 +193,18 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources:
+          computeResources:
             requests:
               cpu: 400m
               memory: 512Mi
         steps:
         - image: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753
           name: test-echo
-          resources: {}
+          computeResources: {}
           script: |-
             #!/usr/bin/env bash
             echo "FOO: $(params.FOO)"
-  podTemplate: {}
-  serviceAccountName: tekton-bot
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
 status: {}

@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -104,7 +104,7 @@ spec:
         value: $(params.REPO_OWNER)
       - name: REPO_URL
         value: $(params.REPO_URL)
-      resources: {}
+      computeResources: {}
       taskSpec:
         metadata: {}
         params:
@@ -153,7 +153,7 @@ spec:
         sidecars:
         - image: xyz/json-server:0.1.15
           name: json-server
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/ash
             while [ ! -f /workspace/source/JsonServer/mocks.json ] ; do
@@ -194,7 +194,7 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources:
+          computeResources:
             requests:
               cpu: 400m
               memory: 512Mi
@@ -205,7 +205,7 @@ spec:
         steps:
         - image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
           name: git-clone
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/sh
             export SUBDIR="source"
@@ -220,16 +220,16 @@ spec:
           workingDir: /workspace
         - image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             jx gitops variables
         - image: node:14-slim
           name: ""
-          resources: {}
+          computeResources: {}
         - image: node:12-slim
           name: build-npm-test
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/sh
             yarn install
@@ -253,9 +253,11 @@ spec:
     - name: source
     - description: The git repo will be cloned onto the volume backing this workspace
       name: output
-  podTemplate: {}
-  serviceAccountName: tekton-bot
-  timeout: 12h0m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts: 
+    pipeline: 12h0m0s
   workspaces:
   - emptyDir: {}
     name: source

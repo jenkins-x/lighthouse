@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   name: cheese
@@ -8,7 +8,7 @@ spec:
     - name: from-build-pack
       taskSpec:
         stepTemplate:
-          resources:
+          computeResources:
             requests:
               cpu: 600m
           volumeMounts:

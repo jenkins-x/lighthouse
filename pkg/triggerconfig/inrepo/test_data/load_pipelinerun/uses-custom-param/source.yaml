@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -10,7 +10,7 @@ spec:
       params:
       - name: FOO
         value: $(params.FOO)
-      resources: { }
+      computeResources: { }
       taskSpec:
         metadata: { }
         params:
@@ -19,12 +19,12 @@ spec:
         stepTemplate:
           image: uses:jenkins-x/jx3-pipeline-catalog/tasks/kubevirt/params-task.yaml@versionStream
           name: ""
-          resources:
+          computeResources:
             requests:
               cpu: 400m
               memory: 512Mi
         steps:
         - name: test-echo
-          resources:  { }
+          computeResources:  { }
   podTemplate: { }
   serviceAccountName: tekton-bot

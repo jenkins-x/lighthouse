@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -51,8 +51,11 @@ spec:
             workspace: pipeline-ws
     workspaces:
       - name: pipeline-ws
-  serviceAccountName: tekton-bot
-  timeout: 12h0m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts:
+    pipeline: 12h0m0s
   workspaces:
     - name: pipeline-ws
       volumeClaimTemplate:
@@ -61,7 +64,7 @@ spec:
         spec:
           accessModes:
             - ReadWriteOnce
-          resources:
+          computeResources:
             requests:
               storage: 1Gi
         status: {}

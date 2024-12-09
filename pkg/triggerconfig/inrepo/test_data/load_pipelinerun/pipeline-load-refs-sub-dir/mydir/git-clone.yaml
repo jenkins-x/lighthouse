@@ -1,7 +1,7 @@
 # Copied from https://github.com/tektoncd/catalog/blob/v1beta1/git/git-clone.yaml
 # With a few fixes being ported over in https://github.com/tektoncd/catalog/pull/290
 # Post #1839 we can refer to the remote Task in a registry or post #2298 in git directly
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: git-clone
