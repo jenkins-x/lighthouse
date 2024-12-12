@@ -120,6 +120,8 @@ spec:
           periodSeconds: {{ .Values.webhooks.readinessProbe.periodSeconds }}
           successThreshold: {{ .Values.webhooks.readinessProbe.successThreshold }}
           timeoutSeconds: {{ .Values.webhooks.readinessProbe.timeoutSeconds }}
+        securityContext:
+{{ toYaml .Values.webhooks.containerSecurityContext | indent 12 }}
         resources:
 {{ toYaml .Values.webhooks.resources | indent 12 }}
         volumeMounts:
@@ -165,3 +167,8 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
 {{- end }}
+{{- with .Values.webhooks.securityContext }}
+      securityContext:
+{{ toYaml . | indent 8 }}
+{{- end }}
+

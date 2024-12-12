@@ -78,6 +78,8 @@ spec:
             value: {{ quote $pval }}
 {{- end }}
 {{- end }}
+        securityContext:
+{{ toYaml .Values.foghorn.containerSecurityContext | indent 12 }}
         resources:
 {{ toYaml .Values.foghorn.resources | indent 12 }}
         volumeMounts:
@@ -121,5 +123,9 @@ spec:
 {{- end }}
 {{- with .Values.foghorn.tolerations }}
       tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.foghorn.securityContext }}
+      securityContext:
 {{ toYaml . | indent 8 }}
 {{- end }}

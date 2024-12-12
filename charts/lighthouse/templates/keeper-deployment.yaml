@@ -102,6 +102,8 @@ spec:
         - secretRef:
             name: jx-boot-job-env-vars
             optional: true
+        securityContext:
+{{ toYaml .Values.keeper.containerSecurityContext | indent 10 }}
         resources:
 {{ toYaml .Values.keeper.resources | indent 10 }}
         volumeMounts:
@@ -134,5 +136,9 @@ spec:
 {{- end }}
 {{- with .Values.keeper.tolerations }}
       tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.keeper.securityContext }}
+      securityContext:
 {{ toYaml . | indent 8 }}
 {{- end }}

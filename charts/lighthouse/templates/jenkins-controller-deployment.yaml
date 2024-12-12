@@ -46,6 +46,8 @@ spec:
           - name: {{ $pkey }}
             value: {{ quote $pval }}
           {{- end }}
+        securityContext:
+          {{- toYaml .Values.jenkinscontroller.containerSecurityContext | nindent 12 }}
         resources:
           {{- toYaml .Values.jenkinscontroller.resources | nindent 12 }}
         volumeMounts:
@@ -63,4 +65,6 @@ spec:
         {{- toYaml .Values.jenkinscontroller.affinity | nindent 8 }}
       tolerations:
         {{- toYaml .Values.jenkinscontroller.tolerations | nindent 8 }}
+      securityContext:
+        {{- toYaml .Values.jenkinscontroller.securityContext | nindent 8 }}
 {{- end }}
