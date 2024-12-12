@@ -88,7 +88,7 @@ But what if we want to override / customise a specific step or add extra steps b
 If we include the `name:`  property we can list each individual step to import (and change the order if required).
 
 ```yaml 
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 spec:
   pipelineSpec:
@@ -117,7 +117,7 @@ Then any step which does not have an image will default to reuse the `stepTempla
 
 
 ```yaml 
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 spec:
   pipelineSpec:
@@ -144,7 +144,7 @@ You can then add extra steps in between these `uses:` steps if you wish to custo
 
 
 ```yaml 
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 spec:
   pipelineSpec:
@@ -175,7 +175,7 @@ e.g. here is [an example](../pkg/triggerconfig/inrepo/test_data/load_pipelinerun
 You may wish to modify a step while still reusing the volumes, environment variables and so forth. e.g. to modify just the command line you can do the following:
 
 ```yaml 
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 spec:
   pipelineSpec:
@@ -206,7 +206,7 @@ For example if you want to build multiple images reusing the same container buil
 You can use this by using a custom `name` syntax. Use the name of the step you wish to inherit and then add `:something` as a suffix.
 
 ```yaml 
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 spec:
   pipelineSpec:

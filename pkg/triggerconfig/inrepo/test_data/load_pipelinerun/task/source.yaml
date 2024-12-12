@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: cheese
@@ -80,7 +80,7 @@ spec:
     - name: REPO_URL
       value: $(params.REPO_URL)
     name: ""
-    resources:
+    computeResources:
       requests:
         cpu: 400m
         memory: 512Mi
@@ -99,7 +99,7 @@ spec:
     - /bin/sh
     image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
     name: git-clone
-    resources: {}
+    computeResources: {}
     workingDir: /workspace
   - args:
     - gitops
@@ -111,7 +111,7 @@ spec:
     - jx
     image: gcr.io/jenkinsxio/jx-cli:latest
     name: git-setup
-    resources: {}
+    computeResources: {}
     workingDir: /workspace
   - args:
     - '[ -d /builder/home ] || mkdir -p /builder && ln -s /tekton/home /builder/home'
@@ -120,7 +120,7 @@ spec:
     - -c
     image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
     name: setup-builder-home
-    resources: {}
+    computeResources: {}
   - args:
     - step
     - git
@@ -136,7 +136,7 @@ spec:
     - jx
     image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
     name: git-merge
-    resources: {}
+    computeResources: {}
   - args:
     - gitops
     - variables
@@ -144,7 +144,7 @@ spec:
     - jx
     image: gcr.io/jenkinsxio/jx-cli:latest
     name: jx-variables
-    resources: {}
+    computeResources: {}
   - args:
     - jx step credential -s npm-token -k file -f /builder/home/.npmrc --optional=true
     command:
@@ -152,7 +152,7 @@ spec:
     - -c
     image: gcr.io/jenkinsxio/builder-nodejs:2.1.150-769
     name: build-npmrc
-    resources: {}
+    computeResources: {}
   - args:
     - npm install
     command:
@@ -160,7 +160,7 @@ spec:
     - -c
     image: gcr.io/jenkinsxio/builder-nodejs:2.1.150-769
     name: build-npm-install
-    resources: {}
+    computeResources: {}
   - args:
     - CI=true DISPLAY=:99 npm test
     command:
@@ -168,7 +168,7 @@ spec:
     - -c
     image: gcr.io/jenkinsxio/builder-nodejs:2.1.150-769
     name: build-npm-test
-    resources: {}
+    computeResources: {}
   - args:
     - source .jx/variables.sh && cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json && /kaniko/executor $KANIKO_FLAGS --cache=true --cache-dir=/workspace --context=/workspace/source --dockerfile=/workspace/source/Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION --cache-repo=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/cache
     command:
@@ -176,7 +176,7 @@ spec:
     - -c
     image: gcr.io/jenkinsxio/kaniko:0.0.5
     name: build-container-build
-    resources: {}
+    computeResources: {}
   - args:
     - source /workspace/source/.jx/variables.sh && jx preview create
     command:
@@ -184,7 +184,7 @@ spec:
     - -c
     image: gcr.io/jenkinsxio/jx-cli:latest
     name: promote-jx-preview
-    resources: {}
+    computeResources: {}
   volumes:
   - emptyDir: {}
     name: workspace-volume

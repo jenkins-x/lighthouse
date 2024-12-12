@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -136,14 +136,14 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources: {}
+          computeResources: {}
         steps:
         - env:
           - name: FOO
             value: finally
           image: common-image
           name: common-build
-          resources: {}
+          computeResources: {}
     params:
     - description: the unique build number
       name: BUILD_ID
@@ -291,12 +291,12 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources: {}
+          computeResources: {}
         steps:
         - env:
           - name: FOO
             value: foo
           image: common-image
           name: common-build
-          resources: {}
+          computeResources: {}
 status: {}

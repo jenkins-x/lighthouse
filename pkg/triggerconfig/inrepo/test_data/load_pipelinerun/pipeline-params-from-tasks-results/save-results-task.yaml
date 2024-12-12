@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: save-results
@@ -14,7 +14,7 @@ spec:
     description: "result_value"
   stepTemplate:
     imagePullPolicy: IfNotPresent
-    resources:
+    computeResources:
       # override limits for all containers here
       limits: {}
     workingDir: /workspace/source

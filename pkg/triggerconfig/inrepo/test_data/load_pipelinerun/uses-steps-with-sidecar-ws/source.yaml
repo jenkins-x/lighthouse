@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -7,13 +7,13 @@ spec:
   pipelineSpec:
     tasks:
     - name: from-build-pack
-      resources: {}
+      computeResources: {}
       taskSpec:
         metadata: {}
         sidecars:
         - image: xyz/json-server:0.1.15
           name: "json-server"
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/ash
             while [ ! -f /workspace/source/JsonServer/mocks.json ] ; do
@@ -26,19 +26,19 @@ spec:
         stepTemplate:
           image: uses:jenkins-x/jx3-pipeline-catalog/packs/javascript/.lighthouse/jenkins-x/pullrequest.yaml@1d39235ee9235d7d52d4025a8e59cb8bda04306a
           name: ""
-          resources:
+          computeResources:
             requests:
               cpu: 400m
               memory: 512Mi
         steps:
         - image: uses:jenkins-x/jx3-pipeline-catalog/tasks/git-clone/git-clone.yaml@versionStream
           name: ""
-          resources: {}
+          computeResources: {}
         - name: jx-variables
-          resources: {}
+          computeResources: {}
         - image: node:14-slim
         - name: build-npm-test
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/sh
             yarn install
@@ -50,9 +50,11 @@ spec:
         workspace: source
     workspaces:
     - name: source
-  podTemplate: {}
   workspaces:
   - {name: source, emptyDir: {}}
-  serviceAccountName: tekton-bot
-  timeout: 12h0m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts:
+    pipeline: 12h0m0s
 status: {}

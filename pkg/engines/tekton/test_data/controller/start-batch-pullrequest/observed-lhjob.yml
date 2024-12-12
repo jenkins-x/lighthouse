@@ -8,6 +8,7 @@ metadata:
     lighthouse.jenkins-x.io/branch: PR-813
     lighthouse.jenkins-x.io/context: github
     lighthouse.jenkins-x.io/job: github
+    lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
     lighthouse.jenkins-x.io/refs.org: jenkins-x
     lighthouse.jenkins-x.io/refs.pull: "813"
     lighthouse.jenkins-x.io/refs.repo: lighthouse
@@ -21,11 +22,12 @@ spec:
   namespace: jx
   pipeline_run_spec:
     pipelineRef:
-      apiVersion: tekton.dev/v1beta1
+      apiVersion: tekton.dev/v1
       name: jenkins-x-charts-jx-build-templ-wbbx6-7
-    podTemplate:
-      schedulerName: ""
-    serviceAccountName: tekton-bot
+    taskRunTemplate:
+      podTemplate:
+        schedulerName: ""
+      serviceAccountName: tekton-bot
   pipeline_run_params:
     - name: batch-refs
       value_template: '{{ range $i, $v := .Refs.Pulls }}{{if $i}} {{end}}{{ $v.Ref }}{{ end }}'

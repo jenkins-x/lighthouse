@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -7,7 +7,7 @@ spec:
   pipelineSpec:
     tasks:
     - name: from-build-pack
-      resources: {}
+      computeResources: {}
       taskSpec:
         metadata: {}
         stepTemplate:
@@ -20,7 +20,7 @@ spec:
             value: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=25 -Dmaven.wagon.http.retryHandler.count=3
           image: uses:jenkins-x/jx3-pipeline-catalog/tasks/maven-java11/release.yaml@versionStream
           name: ""
-          resources:
+          computeResources:
             requests:
               cpu: 400m
               memory: 512Mi
@@ -33,23 +33,23 @@ spec:
         steps:
         - image: uses:jenkins-x/jx3-pipeline-catalog/tasks/git-clone/git-clone.yaml@versionStream
           name: ""
-          resources: {}
+          computeResources: {}
         - name: next-version
-          resources: {}
+          computeResources: {}
         - name: jx-variables
-          resources: {}
+          computeResources: {}
         - name: build-mvn-deploy
-          resources: {}
+          computeResources: {}
         - name: check-registry
-          resources: {}
+          computeResources: {}
         - name: build-container-build
-          resources: {}
+          computeResources: {}
         - name: promote-changelog
-          resources: {}
+          computeResources: {}
         - name: promote-helm-release
-          resources: {}
+          computeResources: {}
         - name: promote-jx-promote
-          resources: {}
+          computeResources: {}
         volumes:
         - name: maven-settings
           secret:
@@ -58,7 +58,9 @@ spec:
           secret:
             optional: true
             secretName: jenkins-release-gpg
-  podTemplate: {}
-  serviceAccountName: tekton-bot
-  timeout: 240h0m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts: 
+    pipeline: 240h0m0s
 status: {}

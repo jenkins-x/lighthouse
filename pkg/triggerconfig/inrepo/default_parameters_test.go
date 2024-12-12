@@ -6,18 +6,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
 func TestDefaultWorkspacesEmptyDir(t *testing.T) {
 
-	prs := &v1beta1.PipelineRun{
+	prs := &pipelinev1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cheese",
 		},
-		Spec: v1beta1.PipelineRunSpec{
-			PipelineSpec: &v1beta1.PipelineSpec{},
-			Workspaces: []v1beta1.WorkspaceBinding{
+		Spec: pipelinev1.PipelineRunSpec{
+			PipelineSpec: &pipelinev1.PipelineSpec{},
+			Workspaces: []pipelinev1.WorkspaceBinding{
 				{Name: "foo"},
 				{Name: "bar"},
 			},
@@ -33,26 +33,26 @@ func TestDefaultWorkspacesEmptyDir(t *testing.T) {
 
 func TestDefaultFinallyParameters(t *testing.T) {
 
-	prs := &v1beta1.PipelineRun{
+	prs := &pipelinev1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cheese",
 		},
-		Spec: v1beta1.PipelineRunSpec{
-			PipelineSpec: &v1beta1.PipelineSpec{
-				Tasks: []v1beta1.PipelineTask{{
+		Spec: pipelinev1.PipelineRunSpec{
+			PipelineSpec: &pipelinev1.PipelineSpec{
+				Tasks: []pipelinev1.PipelineTask{{
 					Name: "maintask",
-					TaskSpec: &v1beta1.EmbeddedTask{TaskSpec: v1beta1.TaskSpec{
-						Steps: []v1beta1.Step{{
+					TaskSpec: &pipelinev1.EmbeddedTask{TaskSpec: pipelinev1.TaskSpec{
+						Steps: []pipelinev1.Step{{
 							Name:  "mystep",
 							Image: "myimage",
 						}},
 					}},
 				}},
 
-				Finally: []v1beta1.PipelineTask{{
+				Finally: []pipelinev1.PipelineTask{{
 					Name: "i-should-have-parameters",
-					TaskSpec: &v1beta1.EmbeddedTask{TaskSpec: v1beta1.TaskSpec{
-						Steps: []v1beta1.Step{{
+					TaskSpec: &pipelinev1.EmbeddedTask{TaskSpec: pipelinev1.TaskSpec{
+						Steps: []pipelinev1.Step{{
 							Name:  "finallystep",
 							Image: "finallyimage",
 						}},

@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
@@ -154,15 +154,15 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources: {}
+          computeResources: {}
         steps:
         - image: some/linter:1.2.3
           name: lint
-          resources: {}
+          computeResources: {}
           workingDir: /workspace/source
         - image: gcr.io/jenkinsxio/builder-jx:2.1.142-761
           name: git-clone
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env bash
             export SUBDIR="source"

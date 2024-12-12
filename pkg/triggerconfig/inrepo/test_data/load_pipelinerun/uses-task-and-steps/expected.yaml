@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -104,7 +104,7 @@ spec:
         value: $(params.REPO_OWNER)
       - name: REPO_URL
         value: $(params.REPO_URL)
-      resources: {}
+      computeResources: {}
       taskSpec:
         metadata: {}
         params:
@@ -187,7 +187,7 @@ spec:
           - name: REPO_URL
             value: $(params.REPO_URL)
           name: ""
-          resources:
+          computeResources:
             requests:
               cpu: 400m
               memory: 512Mi
@@ -200,7 +200,7 @@ spec:
         steps:
         - image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
           name: git-clone
-          resources: {}
+          computeResources: {}
           script: |
             #!/bin/sh
             export SUBDIR="source"
@@ -215,19 +215,19 @@ spec:
           workingDir: /workspace
         - image: gcr.io/jenkinsxio/jx-release-version:2.2.5
           name: next-version
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             jx-release-version > VERSION
         - image: ghcr.io/jenkins-x/jx-boot:3.1.335
           name: jx-variables
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             jx gitops variables
         - image: maven:3.6-openjdk-11
           name: build-mvn-deploy
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env bash
             source .jx/variables.sh
@@ -239,10 +239,10 @@ spec:
             mvn --no-transfer-progress clean deploy
         - image: gcr.io/jenkinsxio/jx-registry:0.0.11
           name: check-registry
-          resources: {}
+          computeResources: {}
         - image: gcr.io/kaniko-project/executor:debug-v1.3.0
           name: build-container-build
-          resources: {}
+          computeResources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
@@ -250,7 +250,7 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$PUSH_CONTAINER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
         - image: gcr.io/jenkinsxio/jx-changelog:0.0.34
           name: promote-changelog
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             source .jx/variables.sh
@@ -269,13 +269,13 @@ spec:
             git push --force origin v$VERSION
         - image: ghcr.io/jenkins-x/jx-boot:3.1.335
           name: promote-helm-release
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             jx gitops helm release
         - image: ghcr.io/jenkins-x/jx-promote:0.0.243
           name: promote-jx-promote
-          resources: {}
+          computeResources: {}
           script: |
             #!/usr/bin/env sh
             source .jx/variables.sh
@@ -298,9 +298,11 @@ spec:
     workspaces:
     - description: The git repo will be cloned onto the volume backing this workspace
       name: output
-  podTemplate: {}
-  serviceAccountName: tekton-bot
-  timeout: 240h0m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts: 
+    pipeline: 240h0m0s
   workspaces:
   - emptyDir: {}
     name: output

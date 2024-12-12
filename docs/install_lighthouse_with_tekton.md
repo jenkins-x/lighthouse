@@ -357,7 +357,7 @@ Now that we have Lighthouse installed, we can create a sample project and config
       - name: github
       - name: dockerhub
     ---
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     kind: PipelineResource
     metadata:
       name: buildpacks-app-image
@@ -389,7 +389,7 @@ Now that we have Lighthouse installed, we can create a sample project and config
         requests:
           storage: 500Mi
     ---
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     kind: Pipeline
     metadata:
       name: ${repo_name}-pipeline
@@ -439,7 +439,7 @@ Now that we have Lighthouse installed, we can create a sample project and config
     repo_name=hello
 
     cat <<EOF | kubectl apply -f -
-    apiVersion: tekton.dev/v1beta1
+    apiVersion: tekton.dev/v1
     kind: PipelineRun
     metadata:
       name: ${repo_name}-pipeline-run
