@@ -176,10 +176,10 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 
 		f := func(job *lighthousev1alpha1.LighthouseJob) error {
-			if r.dashboardURL != "" {
+			job.Status.Activity, job.Status.ReportURL = ConvertPipelineRun(&pipelineRun)
+			if job.Status.ReportURL == "" && r.dashboardURL != "" {
 				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
 			}
-			job.Status.Activity = ConvertPipelineRun(&pipelineRun)
 			if err := r.client.Status().Update(ctx, job); err != nil {
 				return errors.Wrapf(err, "failed to update LighthouseJob status")
 			}
