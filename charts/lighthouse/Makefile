@@ -6,7 +6,7 @@ OS := $(shell uname)
 
 HELMDOCS := $(GOPATH)/bin/helm-docs
 $(HELMDOCS):
-	pushd /tmp; $(GO_MOD) get -u github.com/norwoodj/helm-docs/cmd/helm-docs@v0.15.0; popd
+	pushd /tmp; $(GO_MOD) install github.com/norwoodj/helm-docs/cmd/helm-docs@v0.15.0; popd
 
 build: clean $(HELMDOCS)
 	rm -rf requirements.lock

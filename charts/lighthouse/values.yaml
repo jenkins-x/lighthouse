@@ -88,7 +88,7 @@ externalPlugins:
     name: lighthouse-webui-plugin
 
 gcJobs:
-  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  # gcJobs.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
   # gcJobs.maxAge -- Max age from which `LighthouseJob`s will be deleted
@@ -120,7 +120,7 @@ gcJobs:
     pullPolicy: "{{ .Values.image.pullPolicy }}"
 
 webhooks:
-  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  # webhooks.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
   # webhooks.replicaCount -- Number of replicas
@@ -197,6 +197,12 @@ webhooks:
   # webhooks.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the webhooks pods
   tolerations: []
 
+  # webhooks.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the webhooks pods
+  securityContext: {}
+
+  # webhooks.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the webhooks containers
+  containerSecurityContext: {}
+
   ingress:
     # webhooks.ingress.enabled -- Enable webhooks ingress
     enabled: false
@@ -222,7 +228,7 @@ webhooks:
   customDeploymentTriggerCommand: ""
 
 foghorn:
-  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  # foghorn.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
   # foghorn.replicaCount -- Number of replicas
@@ -261,9 +267,15 @@ foghorn:
   # foghorn.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods
   tolerations: []
 
+  # foghorn.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the foghorn pods
+  securityContext: {}
+
+  # foghorn.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the foghorn containers
+  containerSecurityContext: {}
+
 
 tektoncontroller:
-  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  # tektoncontroller.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
   # tektoncontroller.dashboardURL -- the dashboard URL (e.g. Tekton dashboard)
@@ -302,6 +314,12 @@ tektoncontroller:
   # tektoncontroller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods
   tolerations: []
 
+  # tektoncontroller.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the tekton controller pods
+  securityContext: {}
+
+  # tektoncontroller.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the tekton controller containers
+  containerSecurityContext: {}
+
   resources:
     # tektoncontroller.resources.limits -- Resource limits applied to the tekton controller pods
     limits:
@@ -318,7 +336,7 @@ tektoncontroller:
     annotations: {}
 
 jenkinscontroller:
-  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  # jenkinscontroller.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
   # jenkinscontroller.jenkinsURL -- The URL of the Jenkins instance
@@ -330,48 +348,54 @@ jenkinscontroller:
   # jenkinscontroller.jenkinsToken -- The token for authenticating the Jenkins user
   jenkinsToken:
 
-  # jenkinscontroller.terminationGracePeriodSeconds -- Termination grace period for tekton controller pods
+  # jenkinscontroller.terminationGracePeriodSeconds -- Termination grace period for jenkins controller pods
   terminationGracePeriodSeconds: 180
 
   image:
     # jenkinscontroller.image.repository -- Template for computing the Jenkins controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"
 
-    # jenkinscontroller.image.tag -- Template for computing the tekton controller docker image tag
+    # jenkinscontroller.image.tag -- Template for computing the jenkins controller docker image tag
     tag: "{{ .Values.image.tag }}"
 
-    # jenkinscontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
+    # jenkinscontroller.image.pullPolicy -- Template for computing the jenkins controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
 
-  # jenkinscontroller.podAnnotations -- Annotations applied to the tekton controller pods
+  # jenkinscontroller.podAnnotations -- Annotations applied to the jenkins controller pods
   podAnnotations: {}
 
-  # jenkinscontroller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the tekton controller pods
+  # jenkinscontroller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the jenkins controller pods
   nodeSelector: {}
 
-  # jenkinscontroller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods
+  # jenkinscontroller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the jenkins controller pods
   affinity: {}
 
-  # jenkinscontroller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods
+  # jenkinscontroller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the jenkins controller pods
   tolerations: []
 
+  # jenkinscontroller.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the jenkins controller pods
+  securityContext: {}
+
+  # jenkinscontroller.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the jenkins controller containers
+  containerSecurityContext: {}
+
   resources:
-    # jenkinscontroller.resources.limits -- Resource limits applied to the tekton controller pods
+    # jenkinscontroller.resources.limits -- Resource limits applied to the jenkins controller pods
     limits:
       cpu: 100m
       memory: 256Mi
 
-    # jenkinscontroller.resources.requests -- Resource requests applied to the tekton controller pods
+    # jenkinscontroller.resources.requests -- Resource requests applied to the jenkins controller pods
     requests:
       cpu: 80m
       memory: 128Mi
 
-  # jenkinscontroller.service -- Service settings for the tekton controller
+  # jenkinscontroller.service -- Service settings for the jenkins controller
   service:
     annotations: {}
 
 keeper:
-  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  # keeper.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
   # keeper.statusContextLabel -- Label used to report status to git provider
@@ -446,8 +470,14 @@ keeper:
   # keeper.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the keeper pods
   tolerations: []
 
+  # keeper.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the keeper pods
+  securityContext: {}
+
+  # keeper.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the keeper containers
+  containerSecurityContext: {}
+
 poller:
-  # logLevel -- The logging level: trace, debug, info, warn, error, fatal
+  # poller.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
   # poller.enabled -- Whether to enable or disable the poller component

@@ -50,6 +50,8 @@ spec:
         - secretRef:
             name: jx-boot-job-env-vars
             optional: true
+        securityContext:
+          {{- toYaml .Values.tektoncontroller.containerSecurityContext | nindent 12 }}
         resources:
           {{- toYaml .Values.tektoncontroller.resources | nindent 12 }}
       terminationGracePeriodSeconds: {{ .Values.tektoncontroller.terminationGracePeriodSeconds }}
@@ -59,4 +61,6 @@ spec:
         {{- toYaml .Values.tektoncontroller.affinity | nindent 8 }}
       tolerations:
         {{- toYaml .Values.tektoncontroller.tolerations | nindent 8 }}
+      securityContext:
+        {{- toYaml .Values.tektoncontroller.securityContext | nindent 8 }}
 {{- end }}
