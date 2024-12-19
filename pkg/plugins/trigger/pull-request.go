@@ -57,9 +57,6 @@ func handlePR(c Client, trigger *plugins.Trigger, pr scm.PullRequestHook) error 
 			return nil
 		}
 
-		if err = infoMsg(c, pr.PullRequest); err != nil {
-			return err
-		}
 		return buildAllIfTrustedOrDraft(c, trigger, pr)
 	case scm.ActionEdited, scm.ActionUpdate:
 		// if someone changes the base of their PR, we will get this
@@ -144,23 +141,6 @@ func buildAllIfTrustedOrDraft(c Client, trigger *plugins.Trigger, pr scm.PullReq
 		}
 	}
 
-	return nil
-}
-
-func infoMsg(c Client, pr scm.PullRequest) error {
-	if isSyntaxDeprecated := isPipelinesSyntaxDeprecated(c.Config, pr.Repository()); !isSyntaxDeprecated {
-		return nil
-	}
-
-	org, repo, _ := orgRepoAuthor(pr)
-
-	comment := `[jx-info] Hi, we've detected that the pipelines in this repository are using a syntax that will soon be deprecated.
-We'll continue to update you through PRs as we progress. Please check [#8589](https://www.github.com/jenkins-x/jx/issues/8589) for further information.
-`
-
-	if err := c.SCMProviderClient.CreateComment(org, repo, pr.Number, true, comment); err != nil {
-		return errors.Wrap(err, "failed to comment info message")
-	}
 	return nil
 }
 
