@@ -1306,6 +1306,10 @@ func (fro fakeRepoOwners) RequiredReviewers(path string) sets.String {
 	return sets.NewString()
 }
 
+func (fro fakeRepoOwners) MinimumAmountOfRequiredReviewers(path string) int {
+	return 1
+}
+
 func TestHandleGenericComment(t *testing.T) {
 	tests := []struct {
 		name              string
