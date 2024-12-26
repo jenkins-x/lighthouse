@@ -68,15 +68,16 @@ func (fp *fakePruner) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool
 
 var _ repoowners.RepoOwner = &fakeRepoOwners{}
 
-func (f *fakeRepoOwners) FindApproverOwnersForFile(path string) string  { return "" }
-func (f *fakeRepoOwners) FindReviewersOwnersForFile(path string) string { return "" }
-func (f *fakeRepoOwners) FindLabelsForFile(path string) sets.String     { return nil }
-func (f *fakeRepoOwners) IsNoParentOwners(path string) bool             { return false }
-func (f *fakeRepoOwners) LeafApprovers(path string) sets.String         { return nil }
-func (f *fakeRepoOwners) Approvers(path string) sets.String             { return f.approvers[path] }
-func (f *fakeRepoOwners) LeafReviewers(path string) sets.String         { return nil }
-func (f *fakeRepoOwners) Reviewers(path string) sets.String             { return f.reviewers[path] }
-func (f *fakeRepoOwners) RequiredReviewers(path string) sets.String     { return nil }
+func (f *fakeRepoOwners) FindApproverOwnersForFile(path string) string     { return "" }
+func (f *fakeRepoOwners) FindReviewersOwnersForFile(path string) string    { return "" }
+func (f *fakeRepoOwners) FindLabelsForFile(path string) sets.String        { return nil }
+func (f *fakeRepoOwners) IsNoParentOwners(path string) bool                { return false }
+func (f *fakeRepoOwners) LeafApprovers(path string) sets.String            { return nil }
+func (f *fakeRepoOwners) Approvers(path string) sets.String                { return f.approvers[path] }
+func (f *fakeRepoOwners) LeafReviewers(path string) sets.String            { return nil }
+func (f *fakeRepoOwners) Reviewers(path string) sets.String                { return f.reviewers[path] }
+func (f *fakeRepoOwners) RequiredReviewers(path string) sets.String        { return nil }
+func (f *fakeRepoOwners) MinimumAmountOfRequiredReviewers(path string) int { return 1 }
 
 var approvers = map[string]sets.String{
 	"doc/README.md": {
