@@ -58,6 +58,7 @@ reviewers:
 - jakub
 required_reviewers:
 - ben
+minimum_reviewers: 2
 labels:
 - src-code`),
 		"src/dir/conformance/OWNERS": []byte(`options:
@@ -331,6 +332,7 @@ func TestLoadRepoOwners(t *testing.T) {
 		extraBranchesAndFiles map[string]map[string][]byte
 
 		expectedApprovers, expectedReviewers, expectedRequiredReviewers, expectedLabels map[string]map[string]sets.String
+		expectedMinRequiredReviewers                                                    map[string]map[string]int
 
 		expectedOptions map[string]dirOptions
 	}{
@@ -353,6 +355,12 @@ func TestLoadRepoOwners(t *testing.T) {
 			expectedLabels: map[string]map[string]sets.String{
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"":                    {"": 1},
+				"src":                 {"": 1},
+				"src/dir":             {"": 2},
+				"src/dir/conformance": {"": 1},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -380,6 +388,12 @@ func TestLoadRepoOwners(t *testing.T) {
 			expectedLabels: map[string]map[string]sets.String{
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"":                    {"": 1},
+				"src":                 {"": 1},
+				"src/dir":             {"": 2},
+				"src/dir/conformance": {"": 1},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -410,6 +424,13 @@ func TestLoadRepoOwners(t *testing.T) {
 				"":             patternAll("EVERYTHING"),
 				"src/dir":      patternAll("src-code"),
 				"docs/file.md": patternAll("docs"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"":                    {"": 1},
+				"src":                 {"": 1},
+				"src/dir":             {"": 2},
+				"src/dir/conformance": {"": 1},
+				"docs/file.md":        {"": 1},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -444,6 +465,13 @@ func TestLoadRepoOwners(t *testing.T) {
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
 			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"":                    {"": 1},
+				"src":                 {"": 1},
+				"src/dir":             {"": 2},
+				"src/dir/conformance": {"": 1},
+				"src/doc":             {"": 1},
+			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
 					NoParentOwners: true,
@@ -476,6 +504,12 @@ func TestLoadRepoOwners(t *testing.T) {
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
 			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"":                    {"": 1},
+				"src":                 {"": 1},
+				"src/dir":             {"": 2},
+				"src/dir/conformance": {"": 1},
+			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
 					NoParentOwners: true,
@@ -502,6 +536,12 @@ func TestLoadRepoOwners(t *testing.T) {
 			expectedLabels: map[string]map[string]sets.String{
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"":                    {"": 1},
+				"src":                 {"": 1},
+				"src/dir":             {"": 2},
+				"src/dir/conformance": {"": 1},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -544,7 +584,7 @@ func TestLoadRepoOwners(t *testing.T) {
 			continue
 		}
 
-		check := func(field string, expected map[string]map[string]sets.String, got map[string]map[*regexp.Regexp]sets.String) {
+		checkStringSet := func(field string, expected map[string]map[string]sets.String, got map[string]map[*regexp.Regexp]sets.String) {
 			converted := map[string]map[string]sets.String{}
 			for path, m := range got {
 				converted[path] = map[string]sets.String{}
@@ -560,10 +600,29 @@ func TestLoadRepoOwners(t *testing.T) {
 				t.Errorf("Expected %s to be:\n%+v\ngot:\n%+v.", field, expected, converted)
 			}
 		}
-		check("approvers", test.expectedApprovers, ro.approvers)
-		check("reviewers", test.expectedReviewers, ro.reviewers)
-		check("required_reviewers", test.expectedRequiredReviewers, ro.requiredReviewers)
-		check("labels", test.expectedLabels, ro.labels)
+
+		checkInt := func(field string, expected map[string]map[string]int, got map[string]map[*regexp.Regexp]int) {
+			converted := map[string]map[string]int{}
+			for path, m := range got {
+				converted[path] = map[string]int{}
+				for re, s := range m {
+					var pattern string
+					if re != nil {
+						pattern = re.String()
+					}
+					converted[path][pattern] = s
+				}
+			}
+			if !reflect.DeepEqual(expected, converted) {
+				t.Errorf("Expected %s to be:\n%+v\ngot:\n%+v.", field, expected, converted)
+			}
+		}
+
+		checkStringSet("approvers", test.expectedApprovers, ro.approvers)
+		checkStringSet("reviewers", test.expectedReviewers, ro.reviewers)
+		checkStringSet("required_reviewers", test.expectedRequiredReviewers, ro.requiredReviewers)
+		checkStringSet("labels", test.expectedLabels, ro.labels)
+		checkInt("min_required_reviewers", test.expectedMinRequiredReviewers, ro.minReviewers)
 		if !reflect.DeepEqual(test.expectedOptions, ro.options) {
 			t.Errorf("Expected options to be:\n%#v\ngot:\n%#v.", test.expectedOptions, ro.options)
 		}
