@@ -17,6 +17,7 @@ limitations under the License.
 package approvers
 
 import (
+	"github.com/stretchr/testify/assert"
 	"net/url"
 	"reflect"
 	"testing"
@@ -386,13 +387,21 @@ func TestIsApproved(t *testing.T) {
 	dApprovers := sets.NewString("David", "Dan", "Debbie")
 	eApprovers := sets.NewString("Eve", "Erin")
 	edcApprovers := eApprovers.Union(dApprovers).Union(cApprovers)
+	minApproversRoot := sets.NewString("Alice")
+	minApprovers2Required := sets.NewString("Alice", "Bob")
 	FakeRepoMap := map[string]sets.String{
-		"":        rootApprovers,
-		"a":       aApprovers,
-		"b":       bApprovers,
-		"c":       cApprovers,
-		"a/d":     dApprovers,
-		"a/combo": edcApprovers,
+		"":                       rootApprovers,
+		"a":                      aApprovers,
+		"b":                      bApprovers,
+		"c":                      cApprovers,
+		"a/d":                    dApprovers,
+		"a/combo":                edcApprovers,
+		"minReviewers":           minApproversRoot,
+		"minReviewers/2Required": minApprovers2Required,
+	}
+	fakeMinReviewersMap := map[string]int{
+		"minReviewers":           1,
+		"minReviewers/2Required": 2,
 	}
 	tests := []struct {
 		testName          string
@@ -406,7 +415,7 @@ func TestIsApproved(t *testing.T) {
 			filenames:         []string{},
 			currentlyApproved: sets.NewString(),
 			testSeed:          0,
-			isApproved:        true,
+			isApproved:        false,
 		},
 		{
 			testName:          "Single Root File PR Approved",
@@ -464,17 +473,66 @@ func TestIsApproved(t *testing.T) {
 			currentlyApproved: sets.NewString("Anne", "Ben", "Carol"),
 			isApproved:        true,
 		},
+		{
+			testName:          "C; 1 Approver",
+			filenames:         []string{"c/test"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Anne"),
+			isApproved:        false,
+		},
+		{
+			testName:          "Min Reviewers Root; 1 approval",
+			filenames:         []string{"minReviewers/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice"),
+			isApproved:        true,
+		},
+		{
+			testName:          "Min Reviewers/2required; 1 approval",
+			filenames:         []string{"minReviewers/2Required/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice"),
+			isApproved:        false,
+		},
+		{
+			testName:          "Min Reviewers/2required; 2 approvals",
+			filenames:         []string{"minReviewers/2Required/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Bob"),
+			isApproved:        true,
+		},
+		{
+			testName:          "Min Reviewers/2required; 2 approvals but not from required approvers",
+			filenames:         []string{"minReviewers/2Required/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Tim", "Sally"),
+			isApproved:        false,
+		},
+		{
+			testName:          "Min Reviewers/2required & root; 1 approval",
+			filenames:         []string{"minReviewers/test.go", "minReviewers/2Required/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice"),
+			isApproved:        false,
+		},
+		{
+			testName:          "Min Reviewers/2required & root; 2 approval",
+			filenames:         []string{"minReviewers/test.go", "minReviewers/2Required/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Bob"),
+			isApproved:        true,
+		},
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
-		for approver := range test.currentlyApproved {
-			testApprovers.AddApprover(approver, "REFERENCE", false)
-		}
-		calculated := testApprovers.IsApproved()
-		if test.isApproved != calculated {
-			t.Errorf("Failed for test %v.  Expected Approval Status: %v. Found %v", test.testName, test.isApproved, calculated)
-		}
+		t.Run(test.testName, func(t *testing.T) {
+			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepoWithMinReviewers(FakeRepoMap, fakeMinReviewersMap), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
+			for approver := range test.currentlyApproved {
+				testApprovers.AddApprover(approver, "REFERENCE", false)
+			}
+			calculated := testApprovers.IsApproved()
+			assert.Equal(t, test.isApproved, calculated, "Failed for test %v", test.testName)
+		})
 	}
 }
 
