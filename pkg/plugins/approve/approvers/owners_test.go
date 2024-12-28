@@ -35,6 +35,14 @@ type FakeRepo struct {
 	approversMap      map[string]sets.String
 	leafApproversMap  map[string]sets.String
 	noParentOwnersMap map[string]bool
+	minReviewersMap   map[string]int
+}
+
+func (f FakeRepo) MinimumAmountOfRequiredReviewers(path string) int {
+	if out, ok := f.minReviewersMap[path]; ok {
+		return out
+	}
+	return 1
 }
 
 func (f FakeRepo) Approvers(path string) sets.String {
@@ -84,6 +92,12 @@ func createFakeRepo(la map[string]sets.String) FakeRepo {
 	}
 
 	return FakeRepo{approversMap: a, leafApproversMap: la}
+}
+
+func createFakeRepoWithMinReviewers(la map[string]sets.String, ma map[string]int) FakeRepo {
+	fr := createFakeRepo(la)
+	fr.minReviewersMap = ma
+	return fr
 }
 
 func setToLower(s sets.String) sets.String {
