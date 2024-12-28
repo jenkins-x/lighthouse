@@ -45,6 +45,7 @@ type Repo interface {
 	LeafApprovers(path string) sets.String
 	FindApproverOwnersForFile(file string) string
 	IsNoParentOwners(path string) bool
+	MinimumAmountOfRequiredReviewers(path string) int
 }
 
 // Owners provides functionality related to owners of a specific code change.
@@ -71,6 +72,19 @@ func (o Owners) GetApprovers() map[string]sets.String {
 	}
 
 	return ownersToApprovers
+}
+
+// GetRequiredApproversCount returns the amount of approvers required to get a PR approved.
+// It returns the highest value for minimum required approvers across all relevant OWNERS files.
+func (o Owners) GetRequiredApproversCount() int {
+	requiredApprovers := 1
+	os := o.GetAllOwnersForFilesChanged()
+	for fn := range os {
+		if count := o.repo.MinimumAmountOfRequiredReviewers(fn); count > requiredApprovers {
+			requiredApprovers = count
+		}
+	}
+	return requiredApprovers
 }
 
 // GetLeafApprovers returns a map from ownersFiles -> people that are approvers in them (only the leaf)
@@ -174,11 +188,17 @@ func (o Owners) GetSuggestedApprovers(reverseMap map[string]sets.String, potenti
 
 // GetOwnersSet returns a set containing all the Owners files necessary to get the PR approved
 func (o Owners) GetOwnersSet() sets.String {
+	owners := o.GetAllOwnersForFilesChanged()
+	o.removeSubdirs(owners)
+	return owners
+}
+
+// GetAllOwnersForFilesChanged returns the set of all owners for the files changed in the PR
+func (o Owners) GetAllOwnersForFilesChanged() sets.String {
 	owners := sets.NewString()
 	for _, fn := range o.filenames {
 		owners.Insert(o.repo.FindApproverOwnersForFile(fn))
 	}
-	o.removeSubdirs(owners)
 	return owners
 }
 
@@ -501,7 +521,9 @@ func (ap Approvers) GetCCs() []string {
 // the PR are approved.  If this returns true, the PR may still not be fully approved depending
 // on the associated issue requirement
 func (ap Approvers) AreFilesApproved() bool {
-	return ap.UnapprovedFiles().Len() == 0
+	currentApproversCount := ap.GetCurrentApproversSet().Len()
+	requiredApproversCount := ap.owners.GetRequiredApproversCount()
+	return ap.UnapprovedFiles().Len() == 0 && currentApproversCount >= requiredApproversCount
 }
 
 // RequirementsMet returns a bool indicating whether the PR has met all approval requirements:
