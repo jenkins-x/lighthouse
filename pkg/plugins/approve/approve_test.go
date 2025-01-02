@@ -244,8 +244,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by:
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
+This pull-request has been approved by:  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**  
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
@@ -410,8 +410,8 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
@@ -451,8 +451,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
@@ -674,8 +674,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			comments: []*scm.Comment{
 				newTestComment("k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by:
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by:  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing `+"`/assign @alice`"+` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
@@ -752,8 +752,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by:
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
+This pull-request has been approved by:  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**  
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
@@ -822,8 +822,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by:
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
+This pull-request has been approved by:  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**  
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
@@ -860,8 +860,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by:
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
+This pull-request has been approved by:  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**  
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
@@ -936,8 +936,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by:
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
+This pull-request has been approved by:  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**  
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
@@ -971,8 +971,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by:
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
+This pull-request has been approved by:  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**  
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
@@ -1109,8 +1109,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
