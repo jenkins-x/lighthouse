@@ -18,6 +18,7 @@ package repoowners
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -915,5 +916,63 @@ func TestExpandAliases(t *testing.T) {
 				got.List(),
 			)
 		}
+	}
+}
+
+func TestGetRequiredApproversCount(t *testing.T) {
+	const (
+		baseDir   = ""
+		secondDir = "a"
+		thirdDir  = "a/b"
+	)
+
+	ro := &RepoOwners{
+		minReviewers: map[string]map[*regexp.Regexp]int{
+			baseDir:   {nil: 1},
+			secondDir: {nil: 2},
+			thirdDir:  {nil: 3},
+		},
+		options: map[string]dirOptions{
+			noParentsDir: {
+				NoParentOwners: true,
+			},
+		},
+	}
+	testCases := []struct {
+		name                      string
+		filePath                  string
+		expectedRequiredApprovers int
+	}{
+		{
+			name:                      "Modified Base Dir",
+			filePath:                  filepath.Join(baseDir, "main.go"),
+			expectedRequiredApprovers: ro.minReviewers[baseDir][nil],
+		},
+		{
+			name:                      "Modified Second Dir",
+			filePath:                  filepath.Join(secondDir, "main.go"),
+			expectedRequiredApprovers: ro.minReviewers[secondDir][nil],
+		},
+		{
+			name:                      "Modified Third Dir",
+			filePath:                  filepath.Join(thirdDir, "main.go"),
+			expectedRequiredApprovers: ro.minReviewers[thirdDir][nil],
+		},
+		{
+			name:                      "Modified Nested Dir Without OWNERS (default to Third Dir)",
+			filePath:                  filepath.Join(thirdDir, "c", "main.go"),
+			expectedRequiredApprovers: ro.minReviewers[thirdDir][nil],
+		},
+		{
+			name:                      "Modified Nonexistent Dir (default to Base Dir)",
+			filePath:                  filepath.Join("nonexistent", "main.go"),
+			expectedRequiredApprovers: ro.minReviewers[baseDir][nil],
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := ro.MinimumAmountOfRequiredReviewers(tc.filePath)
+			assert.Equal(t, tc.expectedRequiredApprovers, actual)
+		})
 	}
 }
