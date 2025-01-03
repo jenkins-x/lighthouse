@@ -707,7 +707,7 @@ func (o *RepoOwners) minimumReviewersForFile(path string, minRequiredReviewers m
 				break
 			}
 		}
-		if d == baseDirConvention {
+		if foundMinReviewer != nil {
 			break
 		}
 		d = filepath.Dir(d)
