@@ -248,6 +248,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -613,6 +614,7 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 Approval requirements bypassed by manually added approval.
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
@@ -678,6 +680,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
 You can assign the PR to them by writing `+"`/assign @alice`"+` in a comment when ready.
 
@@ -756,6 +759,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -826,6 +830,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -864,6 +869,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -940,6 +946,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -975,6 +982,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
+The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
