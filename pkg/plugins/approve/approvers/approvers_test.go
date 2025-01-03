@@ -400,8 +400,8 @@ func TestIsApproved(t *testing.T) {
 		"minReviewers/2Required": minApprovers2Required,
 	}
 	fakeMinReviewersMap := map[string]int{
-		"minReviewers":           1,
-		"minReviewers/2Required": 2,
+		"minReviewers/test.go":           1,
+		"minReviewers/2Required/test.go": 2,
 	}
 	tests := []struct {
 		testName          string
