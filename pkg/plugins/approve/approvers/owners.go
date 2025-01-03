@@ -78,8 +78,7 @@ func (o Owners) GetApprovers() map[string]sets.String {
 // It returns the highest value for minimum required approvers across all relevant OWNERS files.
 func (o Owners) GetRequiredApproversCount() int {
 	requiredApprovers := 1
-	os := o.GetAllOwnersForFilesChanged()
-	for fn := range os {
+	for _, fn := range o.filenames {
 		if count := o.repo.MinimumAmountOfRequiredReviewers(fn); count > requiredApprovers {
 			requiredApprovers = count
 		}
@@ -525,7 +524,8 @@ func (ap Approvers) GetCCs() []string {
 // the PR are approved.  If this returns true, the PR may still not be fully approved depending
 // on the associated issue requirement
 func (ap Approvers) AreFilesApproved() bool {
-	return ap.UnapprovedFiles().Len() == 0 && ap.GetRemainingRequiredApprovers() <= 0
+	rr := ap.GetRemainingRequiredApprovers()
+	return ap.UnapprovedFiles().Len() == 0 && rr <= 0
 }
 
 // RequirementsMet returns a bool indicating whether the PR has met all approval requirements:
