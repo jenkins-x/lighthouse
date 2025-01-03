@@ -456,6 +456,10 @@ func (ap Approvers) UnapprovedFiles() sets.String {
 	return unapproved
 }
 
+func (ap Approvers) GetRemainingRequiredApprovers() int {
+	return ap.owners.GetRequiredApproversCount() - ap.GetCurrentApproversSet().Len()
+}
+
 // GetFiles returns owners files that still need approval.
 func (ap Approvers) GetFiles(baseURL *url.URL, owner, repo, branch, providerType string) []File {
 	allOwnersFiles := []File{}
@@ -659,6 +663,9 @@ Approval requirements bypassed by manually added approval.
 
 {{end -}}
 This pull-request has been approved by:{{range $index, $approval := .ap.ListApprovals}}{{if $index}}, {{else}} {{end}}{{$approval}}{{end}}
+{{- if (gt .ap.GetRemainingRequiredApprovers 0) }}
+The changes made require {{ .ap.GetRemainingRequiredApprovers }} more approval(s).
+{{- end }}
 
 {{- if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign {{range $index, $cc := .ap.GetCCs}}{{if $index}}, {{end}}**{{$cc}}**{{end}}  
