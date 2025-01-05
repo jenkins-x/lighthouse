@@ -159,7 +159,7 @@ type RepoOwner interface {
 	LeafReviewers(path string) sets.String
 	Reviewers(path string) sets.String
 	RequiredReviewers(path string) sets.String
-	MinimumAmountOfRequiredReviewers(path string) int
+	MinimumReviewersForFile(path string) int
 }
 
 var _ RepoOwner = &RepoOwners{}
@@ -682,7 +682,11 @@ func (o *RepoOwners) entriesForFile(path string, people map[string]map[*regexp.R
 	return out
 }
 
-func (o *RepoOwners) minimumReviewersForFile(path string, minRequiredReviewers map[string]map[*regexp.Regexp]int) int {
+// MinimumReviewersForFile returns the minimum number of reviewers required to approve the requested file.
+// This is determined by the OWNERS file closest to the requested file.
+// If pkg/OWNERS has 2 minimum reviewers and pkg/util/OWNERS has 3 minimum reviewers this will return 3 for the path pkg/util/sets/file.go
+// If no minimum reviewers can be found then 0 is returned.
+func (o *RepoOwners) MinimumReviewersForFile(path string) int {
 	d := path
 	if !o.enableMDYAML || !strings.HasSuffix(path, ".md") {
 		// if path is a directory, this will remove the leaf directory, and returns "." for topmost dir
@@ -698,21 +702,22 @@ func (o *RepoOwners) minimumReviewersForFile(path string, minRequiredReviewers m
 			foundMinReviewer = nil
 			break
 		}
-		for re, s := range minRequiredReviewers[d] {
+		for re, s := range o.minimumReviewers[d] {
 			if re == nil || re.MatchString(relative) {
 				foundMinReviewer = &s
 				break
 			}
 		}
-		if foundMinReviewer != nil {
+		if foundMinReviewer != nil || d == baseDirConvention {
+			// If we found a minimum reviewer count, or we've reached the base directory, break
 			break
 		}
 		d = filepath.Dir(d)
 		d = canonicalize(d)
 	}
 	if foundMinReviewer == nil {
-		// If we didn't find a minimum reviewer count, default to 1
-		return 1
+		// If we didn't find a minimum reviewer count, default to 0
+		return 0
 	}
 	return *foundMinReviewer
 }
@@ -753,11 +758,4 @@ func (o *RepoOwners) Reviewers(path string) sets.String {
 // will return both user1 and user2 for the path pkg/util/sets/file.go
 func (o *RepoOwners) RequiredReviewers(path string) sets.String {
 	return o.entriesForFile(path, o.requiredReviewers, false)
-}
-
-// MinimumAmountOfRequiredReviewers returns the minimum number of reviewers required to approve the requested file.
-// If pkg/OWNERS has 2 minimum reviewers and pkg/util/OWNERS has 3 minimum reviewers this will return 3 for the path pkg/util/sets/file.go
-// If no minimum reviewers can be found then 1 is returned as a default.
-func (o *RepoOwners) MinimumAmountOfRequiredReviewers(path string) int {
-	return o.minimumReviewersForFile(path, o.minimumReviewers)
 }
