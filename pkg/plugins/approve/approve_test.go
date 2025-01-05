@@ -149,7 +149,7 @@ type fakeRepo struct {
 	approverOwners           map[string]string
 }
 
-func (fr fakeRepo) MinimumAmountOfRequiredReviewers(path string) int {
+func (fr fakeRepo) MinimumReviewersForFile(path string) int {
 	return 1
 }
 func (fr fakeRepo) Approvers(path string) sets.String {
@@ -1317,7 +1317,7 @@ func (fro fakeRepoOwners) RequiredReviewers(path string) sets.String {
 	return sets.NewString()
 }
 
-func (fro fakeRepoOwners) MinimumAmountOfRequiredReviewers(path string) int {
+func (fro fakeRepoOwners) MinimumReviewersForFile(path string) int {
 	return 1
 }
 

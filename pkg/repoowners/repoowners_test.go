@@ -901,16 +901,21 @@ func TestExpandAliases(t *testing.T) {
 
 func TestGetRequiredApproversCount(t *testing.T) {
 	const (
-		baseDir   = ""
+		// No min reviewers
+		baseDir = ""
+		// Min reviewers set to 1
 		secondDir = "a"
-		thirdDir  = "a/b"
+		// Min reviewers set to 2
+		thirdDir = "a/b"
+		// Min reviewers set to 3
+		fourthDir = "a/b/c"
 	)
 
 	ro := &RepoOwners{
 		minimumReviewers: map[string]map[*regexp.Regexp]int{
-			baseDir:   {nil: 1},
-			secondDir: {nil: 2},
-			thirdDir:  {nil: 3},
+			secondDir: {nil: 1},
+			thirdDir:  {nil: 2},
+			fourthDir: {nil: 3},
 		},
 		options: map[string]dirOptions{
 			noParentsDir: {
@@ -926,7 +931,7 @@ func TestGetRequiredApproversCount(t *testing.T) {
 		{
 			name:                      "Modified Base Dir",
 			filePath:                  filepath.Join(baseDir, "main.go"),
-			expectedRequiredApprovers: ro.minimumReviewers[baseDir][nil],
+			expectedRequiredApprovers: 0,
 		},
 		{
 			name:                      "Modified Second Dir",
@@ -939,19 +944,19 @@ func TestGetRequiredApproversCount(t *testing.T) {
 			expectedRequiredApprovers: ro.minimumReviewers[thirdDir][nil],
 		},
 		{
-			name:                      "Modified Nested Dir Without OWNERS (default to Third Dir)",
-			filePath:                  filepath.Join(thirdDir, "c", "main.go"),
-			expectedRequiredApprovers: ro.minimumReviewers[thirdDir][nil],
+			name:                      "Modified Nested Dir Without OWNERS (default to fourth dir)",
+			filePath:                  filepath.Join(fourthDir, "d", "main.go"),
+			expectedRequiredApprovers: ro.minimumReviewers[fourthDir][nil],
 		},
 		{
 			name:                      "Modified Nonexistent Dir (default to Base Dir)",
 			filePath:                  filepath.Join("nonexistent", "main.go"),
-			expectedRequiredApprovers: ro.minimumReviewers[baseDir][nil],
+			expectedRequiredApprovers: 0,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := ro.MinimumAmountOfRequiredReviewers(tc.filePath)
+			actual := ro.MinimumReviewersForFile(tc.filePath)
 			assert.Equal(t, tc.expectedRequiredApprovers, actual)
 		})
 	}

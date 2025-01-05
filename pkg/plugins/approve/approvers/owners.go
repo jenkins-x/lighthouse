@@ -45,7 +45,7 @@ type Repo interface {
 	LeafApprovers(path string) sets.String
 	FindApproverOwnersForFile(file string) string
 	IsNoParentOwners(path string) bool
-	MinimumAmountOfRequiredReviewers(path string) int
+	MinimumReviewersForFile(path string) int
 }
 
 // Owners provides functionality related to owners of a specific code change.
@@ -79,7 +79,7 @@ func (o Owners) GetApprovers() map[string]sets.String {
 func (o Owners) GetRequiredApproversCount() int {
 	requiredApprovers := 1
 	for _, fn := range o.filenames {
-		if count := o.repo.MinimumAmountOfRequiredReviewers(fn); count > requiredApprovers {
+		if count := o.repo.MinimumReviewersForFile(fn); count > requiredApprovers {
 			requiredApprovers = count
 		}
 	}
