@@ -38,7 +38,7 @@ type FakeRepo struct {
 	minReviewersMap   map[string]int
 }
 
-func (f FakeRepo) MinimumAmountOfRequiredReviewers(path string) int {
+func (f FakeRepo) MinimumReviewersForFile(path string) int {
 	if out, ok := f.minReviewersMap[path]; ok {
 		return out
 	}
