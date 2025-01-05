@@ -147,10 +147,14 @@ func newFakeSCMProviderClient(hasLabel, humanApproved, labelComments bool, files
 type fakeRepo struct {
 	approvers, leafApprovers map[string]sets.String
 	approverOwners           map[string]string
+	minimumReviewers         map[string]int
 }
 
 func (fr fakeRepo) MinimumReviewersForFile(path string) int {
-	return 1
+	if n, ok := fr.minimumReviewers[path]; ok {
+		return n
+	}
+	return 0
 }
 func (fr fakeRepo) Approvers(path string) sets.String {
 	return fr.approvers[path]
@@ -248,7 +252,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -614,7 +617,6 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 Approval requirements bypassed by manually added approval.
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
@@ -680,7 +682,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 				newTestComment("k8s-ci-robot", `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
 You can assign the PR to them by writing `+"`/assign @alice`"+` in a comment when ready.
 
@@ -759,7 +760,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -830,7 +830,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -869,7 +868,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -946,7 +944,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -982,7 +979,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by:
-The changes made require 1 more approval(s).
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **cjwagner**
 You can assign the PR to them by writing ` + "`/assign @cjwagner`" + ` in a comment when ready.
 
@@ -1138,6 +1134,111 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 </details>
 <!-- META={"approvers":["alice"]} -->`,
 		},
+		{
+			name:                "2 minimum reviewers - no approvals",
+			hasLabel:            false,
+			files:               []string{"d/d.go"},
+			comments:            []*scm.Comment{},
+			reviews:             []*scm.Review{},
+			selfApprove:         false,
+			needsIssue:          false,
+			lgtmActsAsApprove:   false,
+			reviewActsAsApprove: false,
+			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+
+			expectDelete:  false,
+			expectToggle:  false,
+			expectComment: true,
+			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
+
+This pull-request has been approved by:
+The changes made require 2 more approval(s).
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **derek**
+You can assign the PR to them by writing ` + "`/assign @derek`" + ` in a comment when ready.
+
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
+
+<details open>
+Needs approval from an approver in each of these files:
+
+- **[d/OWNERS](https://github.com/org/repo/blob/master/d/OWNERS)**
+
+Approvers can indicate their approval by writing ` + "`/approve`" + ` in a comment
+Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a comment
+</details>
+<!-- META={"approvers":["derek"]} -->`,
+		},
+		{
+			name:     "2 minimum reviewers - 1 approval",
+			hasLabel: false,
+			files:    []string{"d/d.go"},
+			comments: []*scm.Comment{
+				newTestComment("derek", "/approve"),
+			},
+			reviews:             []*scm.Review{},
+			selfApprove:         false,
+			needsIssue:          false,
+			lgtmActsAsApprove:   false,
+			reviewActsAsApprove: false,
+			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+
+			expectDelete:  false,
+			expectToggle:  false,
+			expectComment: true,
+			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
+
+This pull-request has been approved by: *[derek](<> "Approved")*
+The changes made require 1 more approval(s).
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign 
+You can assign the PR to them by writing ` + "`/assign `" + ` in a comment when ready.
+
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
+
+<details open>
+Needs approval from an approver in each of these files:
+
+- ~~[d/OWNERS](https://github.com/org/repo/blob/master/d/OWNERS)~~ [derek]
+
+Approvers can indicate their approval by writing ` + "`/approve`" + ` in a comment
+Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a comment
+</details>
+<!-- META={"approvers":[]} -->`,
+		}, {
+			name:     "2 minimum reviewers - 2 approval",
+			hasLabel: false,
+			files:    []string{"d/d.go"},
+			comments: []*scm.Comment{
+				newTestComment("derek", "/approve"),
+				newTestComment("alice", "/approve"),
+			},
+			reviews:             []*scm.Review{},
+			selfApprove:         false,
+			needsIssue:          false,
+			lgtmActsAsApprove:   false,
+			reviewActsAsApprove: false,
+			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+
+			expectDelete:  false,
+			expectToggle:  true,
+			expectComment: true,
+			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
+
+This pull-request has been approved by: *[alice](<> "Approved")*, *[derek](<> "Approved")*
+
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
+
+The pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)
+
+<details >
+Needs approval from an approver in each of these files:
+
+- ~~[d/OWNERS](https://github.com/org/repo/blob/master/d/OWNERS)~~ [derek]
+
+Approvers can indicate their approval by writing ` + "`/approve` " + `in a comment
+Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a comment
+</details>
+<!-- META={"approvers":[]} -->`,
+		},
 	}
 
 	fr := fakeRepo{
@@ -1145,17 +1246,23 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			"a":   sets.NewString("alice"),
 			"a/b": sets.NewString("alice", "bob"),
 			"c":   sets.NewString("cblecker", "cjwagner"),
+			"d":   sets.NewString("derek"),
 		},
 		leafApprovers: map[string]sets.String{
 			"a":   sets.NewString("alice"),
 			"a/b": sets.NewString("bob"),
 			"c":   sets.NewString("cblecker", "cjwagner"),
+			"d":   sets.NewString("derek"),
 		},
 		approverOwners: map[string]string{
 			"a/a.go":   "a",
 			"a/aa.go":  "a",
 			"a/b/b.go": "a/b",
 			"c/c.go":   "c",
+			"d/d.go":   "d",
+		},
+		minimumReviewers: map[string]int{
+			"d/d.go": 2,
 		},
 	}
 
