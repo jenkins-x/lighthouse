@@ -188,17 +188,11 @@ func (o Owners) GetSuggestedApprovers(reverseMap map[string]sets.String, potenti
 
 // GetOwnersSet returns a set containing all the Owners files necessary to get the PR approved
 func (o Owners) GetOwnersSet() sets.String {
-	owners := o.GetAllOwnersForFilesChanged()
-	o.removeSubdirs(owners)
-	return owners
-}
-
-// GetAllOwnersForFilesChanged returns the set of all owners for the files changed in the PR
-func (o Owners) GetAllOwnersForFilesChanged() sets.String {
 	owners := sets.NewString()
 	for _, fn := range o.filenames {
 		owners.Insert(o.repo.FindApproverOwnersForFile(fn))
 	}
+	o.removeSubdirs(owners)
 	return owners
 }
 
