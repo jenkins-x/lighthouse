@@ -358,10 +358,7 @@ func TestLoadRepoOwners(t *testing.T) {
 				"src/dir": patternAll("src-code"),
 			},
 			expectedMinRequiredReviewers: map[string]map[string]int{
-				"":                    {"": 1},
-				"src":                 {"": 1},
-				"src/dir":             {"": 2},
-				"src/dir/conformance": {"": 1},
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -391,10 +388,7 @@ func TestLoadRepoOwners(t *testing.T) {
 				"src/dir": patternAll("src-code"),
 			},
 			expectedMinRequiredReviewers: map[string]map[string]int{
-				"":                    {"": 1},
-				"src":                 {"": 1},
-				"src/dir":             {"": 2},
-				"src/dir/conformance": {"": 1},
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -427,11 +421,7 @@ func TestLoadRepoOwners(t *testing.T) {
 				"docs/file.md": patternAll("docs"),
 			},
 			expectedMinRequiredReviewers: map[string]map[string]int{
-				"":                    {"": 1},
-				"src":                 {"": 1},
-				"src/dir":             {"": 2},
-				"src/dir/conformance": {"": 1},
-				"docs/file.md":        {"": 1},
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -467,11 +457,7 @@ func TestLoadRepoOwners(t *testing.T) {
 				"src/dir": patternAll("src-code"),
 			},
 			expectedMinRequiredReviewers: map[string]map[string]int{
-				"":                    {"": 1},
-				"src":                 {"": 1},
-				"src/dir":             {"": 2},
-				"src/dir/conformance": {"": 1},
-				"src/doc":             {"": 1},
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -506,10 +492,7 @@ func TestLoadRepoOwners(t *testing.T) {
 				"src/dir": patternAll("src-code"),
 			},
 			expectedMinRequiredReviewers: map[string]map[string]int{
-				"":                    {"": 1},
-				"src":                 {"": 1},
-				"src/dir":             {"": 2},
-				"src/dir/conformance": {"": 1},
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -539,10 +522,7 @@ func TestLoadRepoOwners(t *testing.T) {
 				"src/dir": patternAll("src-code"),
 			},
 			expectedMinRequiredReviewers: map[string]map[string]int{
-				"":                    {"": 1},
-				"src":                 {"": 1},
-				"src/dir":             {"": 2},
-				"src/dir/conformance": {"": 1},
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -623,7 +603,7 @@ func TestLoadRepoOwners(t *testing.T) {
 		checkStringSet("reviewers", test.expectedReviewers, ro.reviewers)
 		checkStringSet("required_reviewers", test.expectedRequiredReviewers, ro.requiredReviewers)
 		checkStringSet("labels", test.expectedLabels, ro.labels)
-		checkInt("min_required_reviewers", test.expectedMinRequiredReviewers, ro.minReviewers)
+		checkInt("min_required_reviewers", test.expectedMinRequiredReviewers, ro.minimumReviewers)
 		if !reflect.DeepEqual(test.expectedOptions, ro.options) {
 			t.Errorf("Expected options to be:\n%#v\ngot:\n%#v.", test.expectedOptions, ro.options)
 		}
@@ -927,7 +907,7 @@ func TestGetRequiredApproversCount(t *testing.T) {
 	)
 
 	ro := &RepoOwners{
-		minReviewers: map[string]map[*regexp.Regexp]int{
+		minimumReviewers: map[string]map[*regexp.Regexp]int{
 			baseDir:   {nil: 1},
 			secondDir: {nil: 2},
 			thirdDir:  {nil: 3},
@@ -946,27 +926,27 @@ func TestGetRequiredApproversCount(t *testing.T) {
 		{
 			name:                      "Modified Base Dir",
 			filePath:                  filepath.Join(baseDir, "main.go"),
-			expectedRequiredApprovers: ro.minReviewers[baseDir][nil],
+			expectedRequiredApprovers: ro.minimumReviewers[baseDir][nil],
 		},
 		{
 			name:                      "Modified Second Dir",
 			filePath:                  filepath.Join(secondDir, "main.go"),
-			expectedRequiredApprovers: ro.minReviewers[secondDir][nil],
+			expectedRequiredApprovers: ro.minimumReviewers[secondDir][nil],
 		},
 		{
 			name:                      "Modified Third Dir",
 			filePath:                  filepath.Join(thirdDir, "main.go"),
-			expectedRequiredApprovers: ro.minReviewers[thirdDir][nil],
+			expectedRequiredApprovers: ro.minimumReviewers[thirdDir][nil],
 		},
 		{
 			name:                      "Modified Nested Dir Without OWNERS (default to Third Dir)",
 			filePath:                  filepath.Join(thirdDir, "c", "main.go"),
-			expectedRequiredApprovers: ro.minReviewers[thirdDir][nil],
+			expectedRequiredApprovers: ro.minimumReviewers[thirdDir][nil],
 		},
 		{
 			name:                      "Modified Nonexistent Dir (default to Base Dir)",
 			filePath:                  filepath.Join("nonexistent", "main.go"),
-			expectedRequiredApprovers: ro.minReviewers[baseDir][nil],
+			expectedRequiredApprovers: ro.minimumReviewers[baseDir][nil],
 		},
 	}
 	for _, tc := range testCases {
