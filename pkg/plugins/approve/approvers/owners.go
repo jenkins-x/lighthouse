@@ -525,8 +525,7 @@ func (ap Approvers) GetCCs() []string {
 // the PR are approved.  If this returns true, the PR may still not be fully approved depending
 // on the associated issue requirement
 func (ap Approvers) AreFilesApproved() bool {
-	rr := ap.GetRemainingRequiredApprovers()
-	return ap.UnapprovedFiles().Len() == 0 && rr <= 0
+	return ap.UnapprovedFiles().Len() == 0 && ap.GetRemainingRequiredApprovers() <= 0
 }
 
 // RequirementsMet returns a bool indicating whether the PR has met all approval requirements:
