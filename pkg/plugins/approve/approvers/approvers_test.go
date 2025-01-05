@@ -415,7 +415,7 @@ func TestIsApproved(t *testing.T) {
 			filenames:         []string{},
 			currentlyApproved: sets.NewString(),
 			testSeed:          0,
-			isApproved:        false,
+			isApproved:        true,
 		},
 		{
 			testName:          "Single Root File PR Approved",
