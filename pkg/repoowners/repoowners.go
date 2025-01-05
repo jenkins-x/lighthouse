@@ -172,7 +172,7 @@ type RepoOwners struct {
 	reviewers         map[string]map[*regexp.Regexp]sets.String
 	requiredReviewers map[string]map[*regexp.Regexp]sets.String
 	labels            map[string]map[*regexp.Regexp]sets.String
-	minReviewers      map[string]map[*regexp.Regexp]int
+	minimumReviewers  map[string]map[*regexp.Regexp]int
 	options           map[string]dirOptions
 
 	baseDir      string
@@ -390,7 +390,7 @@ func loadOwnersFrom(baseDir string, mdYaml bool, aliases RepoAliases, dirExclude
 		reviewers:         make(map[string]map[*regexp.Regexp]sets.String),
 		requiredReviewers: make(map[string]map[*regexp.Regexp]sets.String),
 		labels:            make(map[string]map[*regexp.Regexp]sets.String),
-		minReviewers:      make(map[string]map[*regexp.Regexp]int),
+		minimumReviewers:  make(map[string]map[*regexp.Regexp]int),
 		options:           make(map[string]dirOptions),
 
 		dirExcludes: dirExcludes,
@@ -559,14 +559,11 @@ func (o *RepoOwners) applyConfigToPath(path string, re *regexp.Regexp, config *C
 		o.labels[path][re] = sets.NewString(config.Labels...)
 	}
 
-	if o.minReviewers[path] == nil {
-		o.minReviewers[path] = make(map[*regexp.Regexp]int)
-	}
 	if config.MinimumReviewers != nil {
-		o.minReviewers[path][re] = *config.MinimumReviewers
-	} else {
-		// Default to 1 min reviewer if not specified
-		o.minReviewers[path][re] = 1
+		if o.minimumReviewers[path] == nil {
+			o.minimumReviewers[path] = make(map[*regexp.Regexp]int)
+		}
+		o.minimumReviewers[path][re] = *config.MinimumReviewers
 	}
 }
 
@@ -762,5 +759,5 @@ func (o *RepoOwners) RequiredReviewers(path string) sets.String {
 // If pkg/OWNERS has 2 minimum reviewers and pkg/util/OWNERS has 3 minimum reviewers this will return 3 for the path pkg/util/sets/file.go
 // If no minimum reviewers can be found then 1 is returned as a default.
 func (o *RepoOwners) MinimumAmountOfRequiredReviewers(path string) int {
-	return o.minimumReviewersForFile(path, o.minReviewers)
+	return o.minimumReviewersForFile(path, o.minimumReviewers)
 }
