@@ -42,7 +42,7 @@ func (f FakeRepo) MinimumReviewersForFile(path string) int {
 	if out, ok := f.minReviewersMap[path]; ok {
 		return out
 	}
-	return 1
+	return 0
 }
 
 func (f FakeRepo) Approvers(path string) sets.String {
@@ -73,7 +73,7 @@ func canonicalize(path string) string {
 	return strings.TrimSuffix(path, "/")
 }
 
-func createFakeRepo(la map[string]sets.String) FakeRepo {
+func createFakeRepo(la map[string]sets.String, minReviewers map[string]int) FakeRepo {
 	// github doesn't use / at the root
 	a := map[string]sets.String{}
 	for dir, approvers := range la {
@@ -90,14 +90,7 @@ func createFakeRepo(la map[string]sets.String) FakeRepo {
 			}
 		}
 	}
-
-	return FakeRepo{approversMap: a, leafApproversMap: la}
-}
-
-func createFakeRepoWithMinReviewers(la map[string]sets.String, ma map[string]int) FakeRepo {
-	fr := createFakeRepo(la)
-	fr.minReviewersMap = ma
-	return fr
+	return FakeRepo{approversMap: a, leafApproversMap: la, minReviewersMap: minReviewers}
 }
 
 func setToLower(s sets.String) sets.String {
@@ -122,7 +115,7 @@ func TestCreateFakeRepo(t *testing.T) {
 		"c":       cApprovers,
 		"a/combo": edcApprovers,
 	}
-	fakeRepo := createFakeRepo(FakeRepoMap)
+	fakeRepo := createFakeRepo(FakeRepoMap, nil)
 
 	tests := []struct {
 		testName              string
@@ -230,7 +223,7 @@ func TestGetLeafApprovers(t *testing.T) {
 	for _, test := range tests {
 		testOwners := Owners{
 			filenames: test.filenames,
-			repo:      createFakeRepo(FakeRepoMap),
+			repo:      createFakeRepo(FakeRepoMap, nil),
 			seed:      TestSeed,
 			log:       logrus.WithField("plugin", "some_plugin"),
 		}
@@ -293,7 +286,7 @@ func TestGetOwnersSet(t *testing.T) {
 	for _, test := range tests {
 		testOwners := Owners{
 			filenames: test.filenames,
-			repo:      createFakeRepo(FakeRepoMap),
+			repo:      createFakeRepo(FakeRepoMap, nil),
 			seed:      TestSeed,
 			log:       logrus.WithField("plugin", "some_plugin"),
 		}
@@ -369,7 +362,7 @@ func TestGetSuggestedApprovers(t *testing.T) {
 	for _, test := range tests {
 		testOwners := Owners{
 			filenames: test.filenames,
-			repo:      createFakeRepo(FakeRepoMap),
+			repo:      createFakeRepo(FakeRepoMap, nil),
 			seed:      TestSeed,
 			log:       logrus.WithField("plugin", "some_plugin"),
 		}
@@ -455,7 +448,7 @@ func TestGetAllPotentialApprovers(t *testing.T) {
 	for _, test := range tests {
 		testOwners := Owners{
 			filenames: test.filenames,
-			repo:      createFakeRepo(FakeRepoMap),
+			repo:      createFakeRepo(FakeRepoMap, nil),
 			seed:      TestSeed,
 			log:       logrus.WithField("plugin", "some_plugin"),
 		}
@@ -536,7 +529,7 @@ func TestFindMostCoveringApprover(t *testing.T) {
 	for _, test := range tests {
 		testOwners := Owners{
 			filenames: test.filenames,
-			repo:      createFakeRepo(FakeRepoMap),
+			repo:      createFakeRepo(FakeRepoMap, nil),
 			seed:      TestSeed,
 			log:       logrus.WithField("plugin", "some_plugin"),
 		}
@@ -597,7 +590,7 @@ func TestGetReverseMap(t *testing.T) {
 	for _, test := range tests {
 		testOwners := Owners{
 			filenames: test.filenames,
-			repo:      createFakeRepo(FakeRepoMap),
+			repo:      createFakeRepo(FakeRepoMap, nil),
 			seed:      TestSeed,
 			log:       logrus.WithField("plugin", "some_plugin"),
 		}
@@ -674,7 +667,7 @@ func TestGetShuffledApprovers(t *testing.T) {
 	for _, test := range tests {
 		testOwners := Owners{
 			filenames: test.filenames,
-			repo:      createFakeRepo(FakeRepoMap),
+			repo:      createFakeRepo(FakeRepoMap, nil),
 			seed:      test.seed,
 			log:       logrus.WithField("plugin", "some_plugin"),
 		}

@@ -106,7 +106,7 @@ func TestUnapprovedFiles(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
 		testApprovers.RequireIssue = false
 		for approver := range test.currentlyApproved {
 			testApprovers.AddApprover(approver, "REFERENCE", false)
@@ -220,7 +220,7 @@ func TestGetFiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
+			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
 			testApprovers.RequireIssue = false
 			for approver := range test.currentlyApproved {
 				testApprovers.AddApprover(approver, "REFERENCE", false)
@@ -366,7 +366,7 @@ func TestGetCCs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
 		testApprovers.RequireIssue = false
 		for approver := range test.currentlyApproved {
 			testApprovers.AddApprover(approver, "REFERENCE", false)
@@ -526,7 +526,7 @@ func TestIsApproved(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepoWithMinReviewers(FakeRepoMap, fakeMinReviewersMap), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
+			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, fakeMinReviewersMap), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
 			for approver := range test.currentlyApproved {
 				testApprovers.AddApprover(approver, "REFERENCE", false)
 			}
@@ -662,7 +662,7 @@ func TestIsApprovedWithIssue(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: 0, log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: 0, log: logrus.WithField("plugin", "some_plugin")})
 		testApprovers.RequireIssue = true
 		testApprovers.AssociatedIssue = test.associatedIssue
 		for approver, noissue := range test.currentlyApproved {
@@ -741,7 +741,7 @@ func TestGetFilesApprovers(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(test.owners), log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(test.owners, nil), log: logrus.WithField("plugin", "some_plugin")})
 		for _, approver := range test.approvers {
 			testApprovers.AddApprover(approver, "REFERENCE", false)
 		}
@@ -759,7 +759,7 @@ func TestGetMessage(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -800,7 +800,7 @@ func TestGetMessageBitBucketServer(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -841,7 +841,7 @@ func TestGetMessageGitLab(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -882,7 +882,7 @@ func TestGetMessageWithPrefix(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -923,7 +923,7 @@ func TestGetMessageAllApproved(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -965,7 +965,7 @@ func TestGetMessageNoneApproved(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1005,7 +1005,7 @@ func TestGetMessageApprovedIssueAssociated(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1049,7 +1049,7 @@ func TestGetMessageApprovedNoIssueByPassed(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1093,7 +1093,7 @@ func TestGetMessageMDOwners(t *testing.T) {
 				"a":           sets.NewString("Alice"),
 				"b":           sets.NewString("Bill"),
 				"b/README.md": sets.NewString("Doctor"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1134,7 +1134,7 @@ func TestGetMessageDifferentGitHubLink(t *testing.T) {
 				"a":           sets.NewString("Alice"),
 				"b":           sets.NewString("Bill"),
 				"b/README.md": sets.NewString("Doctor"),
-			}),
+			}, nil),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
