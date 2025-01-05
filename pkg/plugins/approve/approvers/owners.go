@@ -75,9 +75,10 @@ func (o Owners) GetApprovers() map[string]sets.String {
 }
 
 // GetRequiredApproversCount returns the amount of approvers required to get a PR approved.
-// It returns the highest value for minimum required approvers across all relevant OWNERS files.
+// It finds the highest value for minimum required reviewers across all the changed files.
+// If no minimum reviewers are found then 0 is returned.
 func (o Owners) GetRequiredApproversCount() int {
-	requiredApprovers := 1
+	var requiredApprovers int
 	for _, fn := range o.filenames {
 		if count := o.repo.MinimumReviewersForFile(fn); count > requiredApprovers {
 			requiredApprovers = count
