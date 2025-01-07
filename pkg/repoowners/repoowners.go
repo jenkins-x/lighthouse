@@ -717,7 +717,7 @@ func (o *RepoOwners) MinimumReviewersForFile(path string) int {
 	}
 	if foundMinReviewer == nil {
 		// If we didn't find a minimum reviewer count, default to 0
-		return 0
+		return 1
 	}
 	return *foundMinReviewer
 }
