@@ -1209,7 +1209,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			files:    []string{"d/d.go"},
 			comments: []*scm.Comment{
 				newTestComment("derek", "/approve"),
-				newTestComment("alice", "/approve"),
+				newTestComment("anybody", "/approve"),
 			},
 			reviews:             []*scm.Review{},
 			selfApprove:         false,
@@ -1223,7 +1223,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
 
-This pull-request has been approved by: *[alice](<> "Approved")*, *[derek](<> "Approved")*
+This pull-request has been approved by: *[anybody](<> "Approved")*, *[derek](<> "Approved")*
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
