@@ -26,6 +26,6 @@ func (c *Client) GetFile(owner, repo, filepath, commit string) ([]byte, error) {
 func (c *Client) ListFiles(owner, repo, filepath, commit string) ([]*scm.FileEntry, error) {
 	ctx := context.Background()
 	fullName := c.repositoryName(owner, repo)
-	answer, _, err := c.client.Contents.List(ctx, fullName, filepath, commit)
+	answer, _, err := c.client.Contents.List(ctx, fullName, filepath, commit, &scm.ListOptions{})
 	return answer, err
 }

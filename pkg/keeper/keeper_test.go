@@ -658,7 +658,7 @@ func (f *fgc) GetFile(owner, repo, filepath, commit string) ([]byte, error) {
 func (f *fgc) ListFiles(owner, repo, filepath, commit string) ([]*scm.FileEntry, error) {
 	ctx := context.Background()
 	fullName := scm.Join(owner, repo)
-	answer, _, err := f.fakeClient.Contents.List(ctx, fullName, filepath, commit)
+	answer, _, err := f.fakeClient.Contents.List(ctx, fullName, filepath, commit, &scm.ListOptions{})
 	return answer, err
 }
 

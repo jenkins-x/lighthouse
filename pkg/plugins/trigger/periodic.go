@@ -433,7 +433,7 @@ func (pa *PeriodicAgent) filterPeriodics(enabled map[string]*bool) map[string]*b
 	enable := true
 	hasPeriodics := make(map[string]*bool)
 	for fullName := range enabled {
-		list, _, err := pa.SCMClient.Contents.List(context.TODO(), fullName, ".lighthouse", "HEAD")
+		list, _, err := pa.SCMClient.Contents.List(context.TODO(), fullName, ".lighthouse", "HEAD", &scm.ListOptions{})
 		if err != nil {
 			continue
 		}
