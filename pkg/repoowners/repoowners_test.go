@@ -931,7 +931,7 @@ func TestGetRequiredApproversCount(t *testing.T) {
 		{
 			name:                      "Modified Base Dir",
 			filePath:                  filepath.Join(baseDir, "main.go"),
-			expectedRequiredApprovers: 0,
+			expectedRequiredApprovers: 1,
 		},
 		{
 			name:                      "Modified Second Dir",
@@ -951,7 +951,7 @@ func TestGetRequiredApproversCount(t *testing.T) {
 		{
 			name:                      "Modified Nonexistent Dir (default to Base Dir)",
 			filePath:                  filepath.Join("nonexistent", "main.go"),
-			expectedRequiredApprovers: 0,
+			expectedRequiredApprovers: 1,
 		},
 	}
 	for _, tc := range testCases {
