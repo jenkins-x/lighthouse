@@ -108,8 +108,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// if pipeline run does not exist, create it
 	if len(pipelineRunList.Items) == 0 {
-		if job.Status.State == lighthousev1alpha1.TriggeredState ||
-			job.Status.State == lighthousev1alpha1.PendingState {
+		if job.Status.State == lighthousev1alpha1.TriggeredState {
 			// construct a pipeline run
 			pipelineRun, err := makePipelineRun(ctx, job, r.namespace, r.logger, r.idGenerator, r.apiReader)
 			if err != nil {
@@ -130,6 +129,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				}
 			}
 
+			// TODO: changing the status should be a consequence of a pipeline run being created
 			// update status
 			status := lighthousev1alpha1.LighthouseJobStatus{
 				State:     lighthousev1alpha1.PendingState,
