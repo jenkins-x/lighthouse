@@ -710,8 +710,8 @@ func TestGetMessage(t *testing.T) {
 
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[Bill](REFERENCE "Approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by: *[Bill](REFERENCE "Approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
@@ -751,8 +751,8 @@ func TestGetMessageBitBucketServer(t *testing.T) {
 
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[Bill](REFERENCE "Approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by: *[Bill](REFERENCE "Approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @\"alice\"`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
@@ -792,8 +792,8 @@ func TestGetMessageGitLab(t *testing.T) {
 
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[Bill](REFERENCE "Approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by: *[Bill](REFERENCE "Approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
@@ -833,8 +833,8 @@ func TestGetMessageWithPrefix(t *testing.T) {
 
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[Bill](REFERENCE "Approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**
+This pull-request has been approved by: *[Bill](REFERENCE "Approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/lh-assign @alice`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/lh-approve no-issue`" + `
@@ -915,8 +915,8 @@ func TestGetMessageNoneApproved(t *testing.T) {
 	ap.RequireIssue = true
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **bill**
+This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **bill**  
 You can assign the PR to them by writing ` + "`/assign @alice @bill`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
@@ -1043,8 +1043,8 @@ func TestGetMessageMDOwners(t *testing.T) {
 	ap.RequireIssue = true
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **doctor**
+This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **doctor**  
 You can assign the PR to them by writing ` + "`/assign @alice @doctor`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
@@ -1084,8 +1084,8 @@ func TestGetMessageDifferentGitHubLink(t *testing.T) {
 	ap.RequireIssue = true
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **doctor**
+This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*  
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **doctor**  
 You can assign the PR to them by writing ` + "`/assign @alice @doctor`" + ` in a comment when ready.
 
 *No associated issue*. Update pull-request body to add a reference to an issue, or get approval with ` + "`/approve no-issue`" + `
