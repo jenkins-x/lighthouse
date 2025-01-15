@@ -400,9 +400,14 @@ func TestIsApproved(t *testing.T) {
 		"minReviewers/2Required": minApprovers2Required,
 	}
 	fakeMinReviewersMap := map[string]int{
-		"minReviewers/test.go":           1,
-		"minReviewers/2Required/test.go": 2,
+		"minReviewers":           1,
+		"minReviewers/2Required": 2,
 	}
+	fakeNoParentsOwnersMap := map[string]bool{
+		"minReviewers":           true,
+		"minReviewers/2Required": true,
+	}
+
 	tests := []struct {
 		testName          string
 		filenames         []string
@@ -522,11 +527,20 @@ func TestIsApproved(t *testing.T) {
 			currentlyApproved: sets.NewString("Alice", "Bob"),
 			isApproved:        true,
 		},
+		{
+			testName:          "Min Reviewers/2required & root; 1 approval, 1 not registered approver",
+			filenames:         []string{"minReviewers/test.go", "minReviewers/2Required/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Derek"),
+			isApproved:        false,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, fakeMinReviewersMap), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
+			fakeRepo := createFakeRepo(FakeRepoMap, fakeMinReviewersMap)
+			fakeRepo.noParentOwnersMap = fakeNoParentsOwnersMap
+			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: fakeRepo, seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
 			for approver := range test.currentlyApproved {
 				testApprovers.AddApprover(approver, "REFERENCE", false)
 			}

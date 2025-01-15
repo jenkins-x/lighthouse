@@ -42,7 +42,7 @@ func (f FakeRepo) MinimumReviewersForFile(path string) int {
 	if out, ok := f.minReviewersMap[path]; ok {
 		return out
 	}
-	return 0
+	return 1
 }
 
 func (f FakeRepo) Approvers(path string) sets.String {
