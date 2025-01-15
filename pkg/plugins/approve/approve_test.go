@@ -18,6 +18,8 @@ package approve
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/url"
 	"os"
 	"reflect"
@@ -1197,8 +1199,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 
 This pull-request has been approved by: *[derek](<> "Approved")*
 The changes made require 1 more approval(s).
-To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign 
-You can assign the PR to them by writing ` + "`/assign `" + ` in a comment when ready.
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **derek**
+You can assign the PR to them by writing ` + "`/assign @derek`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
@@ -1210,10 +1212,46 @@ Needs approval from an approver in each of these files:
 Approvers can indicate their approval by writing ` + "`/approve`" + ` in a comment
 Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a comment
 </details>
-<!-- META={"approvers":[]} -->`,
+<!-- META={"approvers":["derek"]} -->`,
 		},
 		{
 			name:     "2 minimum reviewers - 2 approval",
+			hasLabel: false,
+			files:    []string{"d/d.go"},
+			comments: []*scm.Comment{
+				newTestComment("derek", "/approve"),
+				newTestComment("jerry", "/approve"),
+			},
+			reviews:             []*scm.Review{},
+			selfApprove:         false,
+			needsIssue:          false,
+			lgtmActsAsApprove:   false,
+			reviewActsAsApprove: false,
+			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
+
+			expectDelete:  false,
+			expectToggle:  true,
+			expectComment: true,
+			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
+
+This pull-request has been approved by: *[derek](<> "Approved")*, *[jerry](<> "Approved")*
+
+The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
+
+The pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)
+
+<details >
+Needs approval from an approver in each of these files:
+
+- ~~[d/OWNERS](https://github.com/org/repo/blob/master/d/OWNERS)~~ [derek,jerry]
+
+Approvers can indicate their approval by writing ` + "`/approve` " + `in a comment
+Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a comment
+</details>
+<!-- META={"approvers":[]} -->`,
+		},
+		{
+			name:     "2 minimum reviewers - 1 approval, 1 not registered approval",
 			hasLabel: false,
 			files:    []string{"d/d.go"},
 			comments: []*scm.Comment{
@@ -1228,25 +1266,25 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			githubLinkURL:       &url.URL{Scheme: "https", Host: "github.com"},
 
 			expectDelete:  false,
-			expectToggle:  true,
+			expectToggle:  false,
 			expectComment: true,
-			expectedComment: `[APPROVALNOTIFIER] This PR is **APPROVED**
+			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
 This pull-request has been approved by: *[alice](<> "Approved")*, *[derek](<> "Approved")*
+To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **derek**
+You can assign the PR to them by writing ` + "`/assign @derek`" + ` in a comment when ready.
 
 The full list of commands accepted by this bot can be found [here](https://jenkins-x.io/v3/develop/reference/chatops/?repo=org%2Frepo).
 
-The pull request process is described [here](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process)
-
-<details >
+<details open>
 Needs approval from an approver in each of these files:
 
 - ~~[d/OWNERS](https://github.com/org/repo/blob/master/d/OWNERS)~~ [derek]
 
-Approvers can indicate their approval by writing ` + "`/approve` " + `in a comment
-Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a comment
+Approvers can indicate their approval by writing ` + "`/approve`" + ` in a comment
+Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a comment
 </details>
-<!-- META={"approvers":[]} -->`,
+<!-- META={"approvers":["derek"]} -->`,
 		},
 	}
 
@@ -1255,13 +1293,13 @@ Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a commen
 			"a":   sets.NewString("alice"),
 			"a/b": sets.NewString("alice", "bob"),
 			"c":   sets.NewString("cblecker", "cjwagner"),
-			"d":   sets.NewString("derek"),
+			"d":   sets.NewString("derek", "jerry"),
 		},
 		leafApprovers: map[string]sets.String{
 			"a":   sets.NewString("alice"),
 			"a/b": sets.NewString("bob"),
 			"c":   sets.NewString("cblecker", "cjwagner"),
-			"d":   sets.NewString("derek"),
+			"d":   sets.NewString("derek", "jerry"),
 		},
 		approverOwners: map[string]string{
 			"a/a.go":   "a",
@@ -1271,7 +1309,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a commen
 			"d/d.go":   "d",
 		},
 		minimumReviewers: map[string]int{
-			"d/d.go": 2,
+			"d": 2,
 		},
 	}
 
@@ -1285,7 +1323,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a commen
 
 			rsa := !test.selfApprove
 			irs := !test.reviewActsAsApprove
-			if err := handle(
+			err := handle(
 				logrus.WithField("plugin", "approve"),
 				fakeClient,
 				fr,
@@ -1306,9 +1344,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a commen
 					author:    "cjwagner",
 					assignees: []scm.User{{Login: "spxtr"}},
 				},
-			); err != nil {
-				t.Errorf("[%s] Unexpected error handling event: %v.", test.name, err)
-			}
+			)
+			require.NoError(t, err)
 
 			fakeLabel := fmt.Sprintf("org/repo#%v:approved", prNumber)
 
@@ -1350,12 +1387,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a commen
 						len(fspc.PullRequestCommentsAdded),
 					)
 				} else if expect, got := fmt.Sprintf("org/repo#%v:", prNumber)+test.expectedComment, fspc.PullRequestCommentsAdded[0]; test.expectedComment != "" && got != expect {
-					t.Errorf(
-						"[%s] Expected the created notification to be:\n%s\n\nbut got:\n%s\n\n",
-						test.name,
-						expect,
-						got,
-					)
+					assert.Equal(t, expect, got, "actual notification does not equal expected")
 				}
 			} else {
 				if len(fspc.PullRequestCommentsAdded) != 0 {
@@ -1389,12 +1421,7 @@ Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a commen
 				}
 			}
 			if test.expectToggle != toggled {
-				t.Errorf(
-					"[%s] Expected 'approved' label toggled: %t, but got %t.",
-					test.name,
-					test.expectToggle,
-					toggled,
-				)
+				assert.Equal(t, test.expectToggle, toggled, "actual toggle state does not equal expected")
 			}
 		})
 	}

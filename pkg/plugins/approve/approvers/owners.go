@@ -79,7 +79,7 @@ func (o Owners) GetApprovers() map[string]sets.String {
 // If no minimum reviewers are found then 0 is returned.
 func (o Owners) GetRequiredApproversCount() int {
 	var requiredApprovers int
-	for _, fn := range o.filenames {
+	for fn := range o.GetOwnersSet() {
 		if count := o.repo.MinimumReviewersForFile(fn); count > requiredApprovers {
 			requiredApprovers = count
 		}
@@ -176,7 +176,7 @@ func (o Owners) GetSuggestedApprovers(reverseMap map[string]sets.String, potenti
 	ap := NewApprovers(o)
 	for !ap.RequirementsMet() {
 		newApprover := findMostCoveringApprover(potentialApprovers, reverseMap, ap.UnapprovedFiles())
-		if newApprover == "" {
+		if newApprover == "" || ap.GetCurrentApproversSet().Has(newApprover) {
 			o.log.Warnf("Couldn't find/suggest approvers for each files. Unapproved: %q", ap.UnapprovedFiles().List())
 			return ap.GetCurrentApproversSet()
 		}
@@ -443,7 +443,7 @@ func (ap Approvers) NoIssueApprovers() map[string]Approval {
 func (ap Approvers) UnapprovedFiles() sets.String {
 	unapproved := sets.NewString()
 	for fn, approvers := range ap.GetFilesApprovers() {
-		if len(approvers) == 0 {
+		if len(approvers) < ap.owners.repo.MinimumReviewersForFile(fn) {
 			unapproved.Insert(fn)
 		}
 	}
@@ -519,7 +519,7 @@ func (ap Approvers) GetCCs() []string {
 // the PR are approved.  If this returns true, the PR may still not be fully approved depending
 // on the associated issue requirement
 func (ap Approvers) AreFilesApproved() bool {
-	return ap.UnapprovedFiles().Len() == 0 && ap.GetRemainingRequiredApprovers() <= 0
+	return ap.UnapprovedFiles().Len() == 0
 }
 
 // RequirementsMet returns a bool indicating whether the PR has met all approval requirements:
