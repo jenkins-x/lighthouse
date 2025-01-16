@@ -400,11 +400,9 @@ func TestIsApproved(t *testing.T) {
 		"minReviewers/2Required": minApprovers2Required,
 	}
 	fakeMinReviewersMap := map[string]int{
-		"minReviewers":           1,
-		"minReviewers/2Required": 2,
+		"minReviewers/2RequiredNoParents": 2,
 	}
 	fakeNoParentsOwnersMap := map[string]bool{
-		"minReviewers":           true,
 		"minReviewers/2Required": true,
 	}
 
@@ -533,6 +531,13 @@ func TestIsApproved(t *testing.T) {
 			testSeed:          0,
 			currentlyApproved: sets.NewString("Alice", "Derek"),
 			isApproved:        false,
+		},
+		{
+			testName:          "Min Reviewers/2required & other OWNERS; One from each OWNERS",
+			filenames:         []string{"a/test.go", "minReviewers/2Required/test.go"},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Anne"),
+			isApproved:        true,
 		},
 	}
 
