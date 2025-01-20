@@ -106,7 +106,7 @@ func TestUnapprovedFiles(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
 		testApprovers.RequireIssue = false
 		for approver := range test.currentlyApproved {
 			testApprovers.AddApprover(approver, "REFERENCE", false)
@@ -220,7 +220,7 @@ func TestGetFiles(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
+			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: TestSeed, log: logrus.WithField("plugin", "some_plugin")})
 			testApprovers.RequireIssue = false
 			for approver := range test.currentlyApproved {
 				testApprovers.AddApprover(approver, "REFERENCE", false)
@@ -366,7 +366,7 @@ func TestGetCCs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
 		testApprovers.RequireIssue = false
 		for approver := range test.currentlyApproved {
 			testApprovers.AddApprover(approver, "REFERENCE", false)
@@ -387,23 +387,13 @@ func TestIsApproved(t *testing.T) {
 	dApprovers := sets.NewString("David", "Dan", "Debbie")
 	eApprovers := sets.NewString("Eve", "Erin")
 	edcApprovers := eApprovers.Union(dApprovers).Union(cApprovers)
-	minApproversRoot := sets.NewString("Alice")
-	minApprovers2Required := sets.NewString("Alice", "Bob")
 	FakeRepoMap := map[string]sets.String{
-		"":                       rootApprovers,
-		"a":                      aApprovers,
-		"b":                      bApprovers,
-		"c":                      cApprovers,
-		"a/d":                    dApprovers,
-		"a/combo":                edcApprovers,
-		"minReviewers":           minApproversRoot,
-		"minReviewers/2Required": minApprovers2Required,
-	}
-	fakeMinReviewersMap := map[string]int{
-		"minReviewers/2RequiredNoParents": 2,
-	}
-	fakeNoParentsOwnersMap := map[string]bool{
-		"minReviewers/2Required": true,
+		"":        rootApprovers,
+		"a":       aApprovers,
+		"b":       bApprovers,
+		"c":       cApprovers,
+		"a/d":     dApprovers,
+		"a/combo": edcApprovers,
 	}
 
 	tests := []struct {
@@ -483,74 +473,322 @@ func TestIsApproved(t *testing.T) {
 			currentlyApproved: sets.NewString("Anne"),
 			isApproved:        false,
 		},
-		{
-			testName:          "Min Reviewers Root; 1 approval",
-			filenames:         []string{"minReviewers/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Alice"),
-			isApproved:        true,
-		},
-		{
-			testName:          "Min Reviewers/2required; 1 approval",
-			filenames:         []string{"minReviewers/2Required/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Alice"),
-			isApproved:        false,
-		},
-		{
-			testName:          "Min Reviewers/2required; 2 approvals",
-			filenames:         []string{"minReviewers/2Required/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Alice", "Bob"),
-			isApproved:        true,
-		},
-		{
-			testName:          "Min Reviewers/2required; 2 approvals but not from required approvers",
-			filenames:         []string{"minReviewers/2Required/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Tim", "Sally"),
-			isApproved:        false,
-		},
-		{
-			testName:          "Min Reviewers/2required & root; 1 approval",
-			filenames:         []string{"minReviewers/test.go", "minReviewers/2Required/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Alice"),
-			isApproved:        false,
-		},
-		{
-			testName:          "Min Reviewers/2required & root; 2 approval",
-			filenames:         []string{"minReviewers/test.go", "minReviewers/2Required/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Alice", "Bob"),
-			isApproved:        true,
-		},
-		{
-			testName:          "Min Reviewers/2required & root; 1 approval, 1 not registered approver",
-			filenames:         []string{"minReviewers/test.go", "minReviewers/2Required/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Alice", "Derek"),
-			isApproved:        false,
-		},
-		{
-			testName:          "Min Reviewers/2required & other OWNERS; One from each OWNERS",
-			filenames:         []string{"a/test.go", "minReviewers/2Required/test.go"},
-			testSeed:          0,
-			currentlyApproved: sets.NewString("Alice", "Anne"),
-			isApproved:        true,
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			fakeRepo := createFakeRepo(FakeRepoMap, fakeMinReviewersMap)
-			fakeRepo.noParentOwnersMap = fakeNoParentsOwnersMap
+			fakeRepo := createFakeRepo(FakeRepoMap)
 			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: fakeRepo, seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
 			for approver := range test.currentlyApproved {
 				testApprovers.AddApprover(approver, "REFERENCE", false)
 			}
 			calculated := testApprovers.IsApproved()
 			assert.Equal(t, test.isApproved, calculated, "Failed for test %v", test.testName)
+		})
+	}
+}
+
+func TestIsApprovedWithMinReviewers(t *testing.T) {
+	tests := []struct {
+		testName          string
+		filenames         []string
+		leafApprovers     map[string]sets.String
+		minReviewersMap   map[string]int
+		noParentOwnersMap map[string]bool
+		currentlyApproved sets.String
+		testSeed          int64
+		isApproved        bool
+	}{
+		{
+			testName:  "1 min reviewer: 1 approval",
+			filenames: []string{"f/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f": sets.NewString("Alice"),
+			},
+			minReviewersMap: map[string]int{
+				"f": 1,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice"),
+			isApproved:        true,
+		},
+		{
+			testName:  "2 min reviewers: 1 approval",
+			filenames: []string{"f/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f": sets.NewString("Alice", "Bob"),
+			},
+			minReviewersMap: map[string]int{
+				"f": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice"),
+			isApproved:        false,
+		},
+		{
+			testName:  "2 min reviewers: 2 approvals from OWNERS",
+			filenames: []string{"f/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f": sets.NewString("Alice", "Bob"),
+			},
+			minReviewersMap: map[string]int{
+				"f": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Bob"),
+			isApproved:        true,
+		},
+		{
+			testName:  "2 min reviewers: 1 approve from OWNERS, 1 not",
+			filenames: []string{"f/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f": sets.NewString("Alice", "Bob"),
+			},
+			minReviewersMap: map[string]int{
+				"f": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Bob", "Tim"),
+			isApproved:        false,
+		},
+		{
+			testName:  "Multi-file: 2 min reviewers: everyone approves",
+			filenames: []string{"f/test.go", "g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f": sets.NewString("Alice", "Bob"),
+				"g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f": 2,
+				"g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Bob", "Tom", "Harry"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Multi-file: 2 min reviewers: 1 approval from each file",
+			filenames: []string{"f/test.go", "g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f": sets.NewString("Alice", "Bob"),
+				"g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f": 2,
+				"g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Tom"),
+			isApproved:        false,
+		},
+		{
+			testName:  "Multi-file: 2 min reviewers: f fully approved, g not",
+			filenames: []string{"f/test.go", "g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f": sets.NewString("Alice", "Bob"),
+				"g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f": 2,
+				"g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Bob", "Tom"),
+			isApproved:        false,
+		},
+		{
+			testName:  "Nested-files: equal min reviewers: everyone approves",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Bob"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Bob", "Tom", "Harry"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Nested-files: equal min reviewers: 1 approval from each file",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Bob"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Tom"),
+			isApproved:        false,
+		},
+		{
+			testName:  "Nested-files: equal min reviewers: f fully approved, f/g not",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Bob"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Bob", "Tom"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Nested-files: equal min reviewers: f/g fully approved, f not",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Bob"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Tom", "Harry", "Alice"),
+			isApproved:        false,
+		},
+		{
+			testName:  "Nested-files: top-level less min reviewers: everyone approves",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   1,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Tom", "Harry"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Nested-files: top-level less min reviewers: 1 approval from each file",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   1,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Tom"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Nested-files: top-level less min reviewers: f fully approved, f/g not",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   1,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Tom"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Nested-files: top-level less min reviewers: f/g fully approved, f not",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice"),
+				"f/g": sets.NewString("Tom", "Harry"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   1,
+				"f/g": 2,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Tom", "Harry"),
+			isApproved:        false,
+		},
+		{
+			testName:  "Nested-files: top-level more min reviewers: everyone approves",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Harry"),
+				"f/g": sets.NewString("Tom"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 1,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Tom", "Harry"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Nested-files: top-level more min reviewers: 1 approval from each file",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Harry"),
+				"f/g": sets.NewString("Tom"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 1,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Tom"),
+			isApproved:        false,
+		},
+		{
+			testName:  "Nested-files: top-level more min reviewers: f fully approved, f/g not",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Harry"),
+				"f/g": sets.NewString("Tom"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 1,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Alice", "Harry"),
+			isApproved:        true,
+		},
+		{
+			testName:  "Nested-files: top-level more min reviewers: f/g fully approved, f not",
+			filenames: []string{"f/test.go", "f/g/test.go"},
+			leafApprovers: map[string]sets.String{
+				"f":   sets.NewString("Alice", "Harry"),
+				"f/g": sets.NewString("Tom"),
+			},
+			minReviewersMap: map[string]int{
+				"f":   2,
+				"f/g": 1,
+			},
+			testSeed:          0,
+			currentlyApproved: sets.NewString("Tom", "Harry"),
+			isApproved:        false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			fakeRepo := createFakeRepo(test.leafApprovers)
+			fakeRepo.minReviewersMap = test.minReviewersMap
+			fakeRepo.noParentOwnersMap = test.noParentOwnersMap
+			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: fakeRepo, seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
+			for approver := range test.currentlyApproved {
+				testApprovers.AddApprover(approver, "REFERENCE", false)
+			}
+			calculated := testApprovers.IsApproved()
+			assert.Equal(t, test.isApproved, calculated)
 		})
 	}
 }
@@ -681,7 +919,7 @@ func TestIsApprovedWithIssue(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap, nil), seed: 0, log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(FakeRepoMap), seed: 0, log: logrus.WithField("plugin", "some_plugin")})
 		testApprovers.RequireIssue = true
 		testApprovers.AssociatedIssue = test.associatedIssue
 		for approver, noissue := range test.currentlyApproved {
@@ -760,7 +998,7 @@ func TestGetFilesApprovers(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(test.owners, nil), log: logrus.WithField("plugin", "some_plugin")})
+		testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: createFakeRepo(test.owners), log: logrus.WithField("plugin", "some_plugin")})
 		for _, approver := range test.approvers {
 			testApprovers.AddApprover(approver, "REFERENCE", false)
 		}
@@ -778,7 +1016,7 @@ func TestGetMessage(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -819,7 +1057,7 @@ func TestGetMessageBitBucketServer(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -860,7 +1098,7 @@ func TestGetMessageGitLab(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -901,7 +1139,7 @@ func TestGetMessageWithPrefix(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -942,7 +1180,7 @@ func TestGetMessageAllApproved(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -984,7 +1222,7 @@ func TestGetMessageNoneApproved(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1024,7 +1262,7 @@ func TestGetMessageApprovedIssueAssociated(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1068,7 +1306,7 @@ func TestGetMessageApprovedNoIssueByPassed(t *testing.T) {
 			repo: createFakeRepo(map[string]sets.String{
 				"a": sets.NewString("Alice"),
 				"b": sets.NewString("Bill"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1112,7 +1350,7 @@ func TestGetMessageMDOwners(t *testing.T) {
 				"a":           sets.NewString("Alice"),
 				"b":           sets.NewString("Bill"),
 				"b/README.md": sets.NewString("Doctor"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
@@ -1153,7 +1391,7 @@ func TestGetMessageDifferentGitHubLink(t *testing.T) {
 				"a":           sets.NewString("Alice"),
 				"b":           sets.NewString("Bill"),
 				"b/README.md": sets.NewString("Doctor"),
-			}, nil),
+			}),
 			log: logrus.WithField("plugin", "some_plugin"),
 		},
 	)
