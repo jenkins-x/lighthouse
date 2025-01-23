@@ -185,7 +185,8 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 	gitURL := activity.GitURL
 	activityStatus := activity.Status
 	skipReportRunningStatus := r.pluginConfig.Config().TriggerFor(owner, repo).SkipReportRunningStatus
-	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind(r.jobConfig.Config), skipReportRunningStatus)
+	enableDisplayReportCompletionDuration := r.pluginConfig.Config().TriggerFor(owner, repo).EnableDisplayReportCompletionDuration
+	statusInfo := toScmStatusDescriptionRunningStages(activity, util.GitKind(r.jobConfig.Config), skipReportRunningStatus, enableDisplayReportCompletionDuration)
 
 	fields := map[string]interface{}{
 		"name":        activity.Name,
@@ -197,12 +198,11 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 		"gitBranch":   activity.Branch,
 		"gitStatus":   statusInfo.scmStatus.String(),
 		"buildNumber": activity.BuildIdentifier,
-		"duration":    durationString(activity.StartTime, activity.CompletionTime),
+		"duration":    statusInfo.completionDuration,
 	}
 	if gitURL == "" {
 		r.logger.WithFields(fields).Debugf("Cannot report pipeline %s as we have no git SHA", activity.Name)
 		return
-
 	}
 	if sha == "" {
 		r.logger.WithFields(fields).Debugf("Cannot report pipeline %s as we have no git SHA", activity.Name)
@@ -284,16 +284,18 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 }
 
 type reportStatusInfo struct {
-	scmStatus     scm.State
-	description   string
-	runningStages string
+	scmStatus          scm.State
+	description        string
+	runningStages      string
+	completionDuration string
 }
 
-func toScmStatusDescriptionRunningStages(activity *lighthousev1alpha1.ActivityRecord, gitKind string, skipReportRunningStatus bool) reportStatusInfo {
+func toScmStatusDescriptionRunningStages(activity *lighthousev1alpha1.ActivityRecord, gitKind string, skipReportRunningStatus bool, enableDisplayReportCompletionDuration bool) reportStatusInfo {
 	info := reportStatusInfo{
-		description:   "",
-		runningStages: "",
-		scmStatus:     scm.StateUnknown,
+		description:        "",
+		runningStages:      "",
+		scmStatus:          scm.StateUnknown,
+		completionDuration: durationString(activity.StartTime, activity.CompletionTime),
 	}
 	switch activity.Status {
 	case lighthousev1alpha1.SuccessState:
@@ -311,6 +313,10 @@ func toScmStatusDescriptionRunningStages(activity *lighthousev1alpha1.ActivityRe
 	default:
 		info.scmStatus = scm.StateUnknown
 		info.description = "Pipeline in unknown state"
+	}
+
+	if enableDisplayReportCompletionDuration && info.completionDuration != "" {
+		info.description = fmt.Sprintf("%s - %s", info.description, info.completionDuration)
 	}
 
 	if skipReportRunningStatus {
