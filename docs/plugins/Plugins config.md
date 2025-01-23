@@ -207,18 +207,20 @@ Size specifies configuration for the size plugin, defining lower bounds (in # li
 
 Trigger specifies a configuration for a single trigger.<br /><br />The configuration for the trigger plugin is defined as a list of these structures.
 
-| Variable Name | Stanza | Type | Required | Description |
-|---|---|---|---|---|
-| Repos | `repos` | []string | No | Repos is either of the form org/repos or just org. |
-| TrustedOrg | `trusted_org` | string | No | TrustedOrg is the org whose members' PRs will be automatically built<br />for PRs to the above repos. The default is the PR's org. |
-| TrustedApps | `trusted_apps` | []string | No | TrustedApps is the explicit list of GitHub apps whose PRs will be automatically<br />considered as trusted. The list should contain usernames of each GitHub App without [bot] suffix.<br/>By default, trigger will ignore this list. |
-| JoinOrgURL | `join_org_url` | string | No | JoinOrgURL is a link that redirects users to a location where they<br />should be able to read more about joining the organization in order<br />to become trusted members. Defaults to the Github link of TrustedOrg. |
-| OnlyOrgMembers | `only_org_members` | bool | No | OnlyOrgMembers requires PRs and/or /ok-to-test comments to come from org members.<br />By default, trigger also include repo collaborators. |
-| IgnoreOkToTest | `ignore_ok_to_test` | bool | No | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users. |
-| ElideSkippedContexts | `elide_skipped_contexts` | bool | No | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run. |
-| SkipDraftPR | `skip_draft_pr` | bool | No | SkipDraftPR when enabled, skips triggering pipelines for draft PRs<br />unless /ok-to-test is added. |
-| SkipReportComment | `skip_report_comment` | bool | No | SkipReportComment when enabled, skips report comments in the SCM provider based on the state of<br />the LighthouseJobs. |
-| SkipReportRunningStatus | `skip_report_running_status` | bool | No | SkipReportRunningStatus when enabled, skips report status in the SCM provider based on the current and last state of<br />the LighthouseJobs. |
+| Variable Name                | Stanza                            | Type     | Required | Description                                                                                                                                                                                                                           |
+|------------------------------|-----------------------------------|----------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Repos                        | `repos`                           | []string | No       | Repos is either of the form org/repos or just org.                                                                                                                                                                                    |
+| TrustedOrg                   | `trusted_org`                     | string   | No       | TrustedOrg is the org whose members' PRs will be automatically built<br />for PRs to the above repos. The default is the PR's org.                                                                                                    |
+| TrustedApps                  | `trusted_apps`                    | []string | No       | TrustedApps is the explicit list of GitHub apps whose PRs will be automatically<br />considered as trusted. The list should contain usernames of each GitHub App without [bot] suffix.<br/>By default, trigger will ignore this list. |
+| JoinOrgURL                   | `join_org_url`                    | string   | No       | JoinOrgURL is a link that redirects users to a location where they<br />should be able to read more about joining the organization in order<br />to become trusted members. Defaults to the Github link of TrustedOrg.                |
+| OnlyOrgMembers               | `only_org_members`                | bool     | No       | OnlyOrgMembers requires PRs and/or /ok-to-test comments to come from org members.<br />By default, trigger also include repo collaborators.                                                                                           |
+| IgnoreOkToTest               | `ignore_ok_to_test`               | bool     | No       | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users.                                                                                                |
+| ElideSkippedContexts         | `elide_skipped_contexts`          | bool     | No       | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run.                                                                                                                           |
+| SkipDraftPR                  | `skip_draft_pr`                   | bool     | No       | SkipDraftPR when enabled, skips triggering pipelines for draft PRs<br />unless /ok-to-test is added.                                                                                                                                  |
+| SkipReportComment            | `skip_report_comment`             | bool     | No       | SkipReportComment when enabled, skips report comments in the SCM provider based on the state of<br />the LighthouseJobs.                                                                                                              |
+| SkipReportRunningStatus      | `skip_report_running_status`      | bool     | No       | SkipReportRunningStatus when enabled, skips report status in the SCM provider based on the current and last state of<br />the LighthouseJobs.                                                                                         |
+| ShowReportCompletionDuration | `show_report_completion_duration` | bool     | No       | when enabled, show completion duration in report status in the SCM provider based on StartTime and CompletionTime of the PipelineActivity.                                                                                            |
+
 
 ## Welcome
 
