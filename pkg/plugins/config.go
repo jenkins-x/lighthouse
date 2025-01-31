@@ -295,6 +295,9 @@ type Trigger struct {
 	// SkipReportRunningStatus when enabled, skips report status in the SCM provider
 	// based on the current and last state of the LighthouseJobs.
 	SkipReportRunningStatus bool `json:"skip_report_running_status,omitempty"`
+	// ShowReportCompletionDuration when enabled, show completion duration in report status in the SCM provider
+	// based on StartTime and CompletionTime of the PipelineActivity.
+	ShowReportCompletionDuration bool `json:"show_report_completion_duration,omitempty"`
 }
 
 // Milestone contains the configuration options for the milestone and
