@@ -12,10 +12,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -74,6 +74,7 @@ func TestReconcile(t *testing.T) {
 			if observedPipeline != nil {
 				state = append(state, observedPipeline)
 			}
+			tektonfakeClient := tektonfake.NewSimpleClientset()
 
 			// load expected state
 			expectedPR, expectedPRFile, err := loadControllerPipelineRun(false, testData)
@@ -88,8 +89,9 @@ func TestReconcile(t *testing.T) {
 			err = pipelinev1.AddToScheme(scheme)
 			assert.NoError(t, err)
 
-			c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(state...).Build()
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, dashboardBaseURL, dashboardTemplate, ns)
+			c := fake.NewClientBuilder().WithStatusSubresource(observedJob).WithScheme(scheme).WithObjects(state...).Build()
+			fake.AddIndex(c, &pipelinev1.PipelineRun{}, jobOwnerKey, tektonControllerIndexFunc)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, tektonfakeClient, dashboardBaseURL, dashboardTemplate, ns)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 			reconciler.disableLogging = true
 

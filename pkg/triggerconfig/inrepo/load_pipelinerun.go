@@ -13,13 +13,15 @@ import (
 
 	"github.com/pkg/errors"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
 
 const (
 	// TektonAPIVersion the default tekton API version
-	TektonAPIVersion = "tekton.dev/v1"
+	TektonAPIVersion     = "tekton.dev/v1"
+	TektonAPIVersionV1B1 = "tekton.dev/v1beta1"
 
 	// DefaultParameters the annotation used to disable default parameters
 	DefaultParameters = "lighthouse.jenkins-x.io/defaultParameters"
@@ -75,126 +77,150 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	}
 	message := resolver.Message
 	dir := resolver.Dir
-	kindPrefix := "kind:"
-	kind := "PipelineRun"
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if !strings.HasPrefix(line, kindPrefix) {
-			continue
-		}
-		k := strings.TrimSpace(line[len(kindPrefix):])
-		if k != "" {
-			kind = k
-			break
-		}
+
+	var meta struct {
+		Kind       string `yaml:"kind"`
+		APIVersion string `yaml:"apiVersion"`
 	}
-	switch kind {
+	if err := yaml.Unmarshal(data, &meta); err != nil {
+		return nil, errors.Wrapf(err, "failed to extract metadata (kind, apiVersion) from YAML %s", message)
+	}
+
+	isBeta := meta.APIVersion == TektonAPIVersionV1B1
+
+	switch meta.Kind {
 	case "Pipeline":
 		pipeline := &pipelinev1.Pipeline{}
-		err := yaml.Unmarshal(data, pipeline)
+		var err error
+		if isBeta {
+			pipeline, err = unmarshalAndConvertPipeline(data, message)
+		} else {
+			err = yaml.Unmarshal(data, pipeline)
+		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal Pipeline YAML %s", message)
+			return nil, err
 		}
 		prs, err := ConvertPipelineToPipelineRun(pipeline, resolver.Message, resolver.DefaultValues)
 		if err != nil {
 			return prs, err
 		}
-		re, err := loadTektonRefsFromFilesPattern(prs)
-		if err != nil {
-			return prs, err
-		}
-		if re != nil {
-			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
-			if err != nil {
-				return prs, err
-			}
-		}
-		prs, err = inheritTaskSteps(resolver, prs)
-		if err != nil {
-			return prs, errors.Wrapf(err, "failed to inherit steps")
-		}
-		return DefaultPipelineParameters(prs)
+		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	case "PipelineRun":
 		prs := &pipelinev1.PipelineRun{}
-		err := yaml.Unmarshal(data, prs)
+		var err error
+		if isBeta {
+			prs, err = unmarshalAndConvertPipelineRun(data, message)
+		} else {
+			err = yaml.Unmarshal(data, prs)
+		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal PipelineRun YAML %s", message)
+			return nil, err
 		}
-
-		re, err := loadTektonRefsFromFilesPattern(prs)
-		if err != nil {
-			return prs, err
-		}
-		if re != nil {
-			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
-			if err != nil {
-				return prs, err
-			}
-		}
-		prs, err = inheritTaskSteps(resolver, prs)
-		if err != nil {
-			return prs, errors.Wrap(err, "failed to inherit steps")
-		}
-		return DefaultPipelineParameters(prs)
+		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	case "Task":
 		task := &pipelinev1.Task{}
-		err := yaml.Unmarshal(data, task)
+		var err error
+		if isBeta {
+			task, err = unmarshalAndConvertTask(data, message)
+		} else {
+			err = yaml.Unmarshal(data, task)
+		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal Task YAML %s", message)
+			return nil, err
 		}
 		prs, err := ConvertTaskToPipelineRun(task, message, resolver.DefaultValues)
 		if err != nil {
 			return prs, err
 		}
-		re, err := loadTektonRefsFromFilesPattern(prs)
-		if err != nil {
-			return prs, err
-		}
-		if re != nil {
-			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
-			if err != nil {
-				return prs, err
-			}
-		}
-		prs, err = inheritTaskSteps(resolver, prs)
-		if err != nil {
-			return prs, errors.Wrapf(err, "failed to inherit steps")
-		}
-		defaultTaskName(prs)
-		return DefaultPipelineParameters(prs)
+		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	case "TaskRun":
 		tr := &pipelinev1.TaskRun{}
-		err := yaml.Unmarshal(data, tr)
+		var err error
+		if isBeta {
+			tr, err = unmarshalAndConvertTaskRun(data, message)
+		} else {
+			err = yaml.Unmarshal(data, tr)
+		}
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal TaskRun YAML %s", message)
+			return nil, err
 		}
 		prs, err := ConvertTaskRunToPipelineRun(tr, message, resolver.DefaultValues)
 		if err != nil {
 			return prs, err
 		}
-		re, err := loadTektonRefsFromFilesPattern(prs)
-		if err != nil {
-			return prs, err
-		}
-		if re != nil {
-			prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re)
-			if err != nil {
-				return prs, err
-			}
-		}
-		prs, err = inheritTaskSteps(resolver, prs)
-		if err != nil {
-			return prs, errors.Wrapf(err, "failed to inherit steps")
-		}
-		defaultTaskName(prs)
-		return DefaultPipelineParameters(prs)
+		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	default:
-		return nil, errors.Errorf("kind %s is not supported for %s", kind, message)
+		return nil, errors.Errorf("kind %s is not supported for %s", meta.Kind, message)
 	}
+}
+
+func unmarshalAndConvertPipeline(data []byte, message string) (*pipelinev1.Pipeline, error) {
+	pV1Beta1 := &pipelinev1beta1.Pipeline{}
+	if err := yaml.Unmarshal(data, pV1Beta1); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal Pipeline v1beta1 YAML %s", message)
+	}
+	pV1 := &pipelinev1.Pipeline{}
+	if err := pV1Beta1.ConvertTo(context.TODO(), pV1); err != nil {
+		return nil, errors.Wrap(err, "failed to convert Pipeline from v1beta1 to v1")
+	}
+	return pV1, nil
+}
+
+func unmarshalAndConvertPipelineRun(data []byte, message string) (*pipelinev1.PipelineRun, error) {
+	prsV1Beta1 := &pipelinev1beta1.PipelineRun{}
+	if err := yaml.Unmarshal(data, prsV1Beta1); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal PipelineRun v1beta1 YAML %s", message)
+	}
+	prsV1 := &pipelinev1.PipelineRun{}
+	if err := prsV1Beta1.ConvertTo(context.TODO(), prsV1); err != nil {
+		return nil, errors.Wrap(err, "failed to convert PipelineRun from v1beta1 to v1")
+	}
+	return prsV1, nil
+}
+
+func unmarshalAndConvertTask(data []byte, message string) (*pipelinev1.Task, error) {
+	tV1Beta1 := &pipelinev1beta1.Task{}
+	if err := yaml.Unmarshal(data, tV1Beta1); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal Task v1beta1 YAML %s", message)
+	}
+	tV1 := &pipelinev1.Task{}
+	if err := tV1Beta1.ConvertTo(context.TODO(), tV1); err != nil {
+		return nil, errors.Wrap(err, "failed to convert Task from v1beta1 to v1")
+	}
+	return tV1, nil
+}
+
+func unmarshalAndConvertTaskRun(data []byte, message string) (*pipelinev1.TaskRun, error) {
+	trsV1Beta1 := &pipelinev1beta1.TaskRun{}
+	if err := yaml.Unmarshal(data, trsV1Beta1); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal TaskRun v1beta1 YAML %s", message)
+	}
+	trsV1 := &pipelinev1.TaskRun{}
+	if err := trsV1Beta1.ConvertTo(context.TODO(), trsV1); err != nil {
+		return nil, errors.Wrap(err, "failed to convert TaskRun from v1beta1 to v1")
+	}
+	return trsV1, nil
+}
+
+func resolvePipelineRunReferences(resolver *UsesResolver, prs *pipelinev1.PipelineRun, dir, message string) (*pipelinev1.PipelineRun, error) {
+	if re, err := loadTektonRefsFromFilesPattern(prs); err != nil {
+		return prs, err
+	} else if re != nil {
+		if prs, err = loadPipelineRunRefs(resolver, prs, dir, message, re); err != nil {
+			return prs, err
+		}
+	}
+
+	if prs, err := inheritTaskSteps(resolver, prs); err != nil {
+		return prs, errors.Wrapf(err, "failed to inherit steps")
+	}
+
+	defaultTaskName(prs) // Renamed function for clarity
+	return DefaultPipelineParameters(prs)
 }
 
 func defaultTaskName(prs *pipelinev1.PipelineRun) {

@@ -40,9 +40,10 @@ func TestConvertPipelineRun(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testDir := filepath.Join("test_data", "activity", tc.name)
 			pr := loadPipelineRun(t, testDir)
+			ns := "jx"
 
-			tektonfakeClient := tektonfake.NewSimpleClientset(pr)
-			converted, err := tekton.ConvertPipelineRun(tektonfakeClient, pr)
+			tektonfakeClient := tektonfake.NewSimpleClientset()
+			converted, err := tekton.ConvertPipelineRun(tektonfakeClient, pr, ns)
 			assert.NoError(t, err)
 			expected := loadRecord(t, testDir)
 

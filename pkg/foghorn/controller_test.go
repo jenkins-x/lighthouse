@@ -111,7 +111,7 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 			err = pipelinev1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			c := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(observedJob).Build()
+			c := fake.NewClientBuilder().WithStatusSubresource(observedJob).WithScheme(scheme).WithRuntimeObjects(observedJob).Build()
 			reconciler, err := NewLighthouseJobReconcilerWithConfig(c, scheme, ns, cfgMapWatcher, configAgent, pluginAgent)
 			assert.NoError(t, err)
 

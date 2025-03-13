@@ -16,7 +16,7 @@ import (
 )
 
 // ConvertPipelineRun translates a PipelineRun into an ActivityRecord
-func ConvertPipelineRun(tektonclient tektonversioned.Interface, pr *pipelinev1.PipelineRun) (*v1alpha1.ActivityRecord, error) {
+func ConvertPipelineRun(tektonclient tektonversioned.Interface, pr *pipelinev1.PipelineRun, namespace string) (*v1alpha1.ActivityRecord, error) {
 	if pr == nil {
 		return nil, nil
 	}
@@ -43,7 +43,7 @@ func ConvertPipelineRun(tektonclient tektonversioned.Interface, pr *pipelinev1.P
 	record.Status = convertTektonStatus(cond, record.StartTime, record.CompletionTime)
 
 	for _, childReference := range pr.Status.ChildReferences {
-		taskrun, err := tektonclient.TektonV1().TaskRuns("jx").Get(context.TODO(), childReference.Name, metav1.GetOptions{})
+		taskrun, err := tektonclient.TektonV1().TaskRuns(namespace).Get(context.TODO(), childReference.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
