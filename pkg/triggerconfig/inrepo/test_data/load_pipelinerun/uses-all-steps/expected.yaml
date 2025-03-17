@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
@@ -151,6 +151,10 @@ spec:
           type: string
         spec: null
         stepTemplate:
+          computeResources:
+            requests:
+              cpu: 400m
+              memory: 512Mi
           env:
           - name: BUILD_ID
             value: $(params.BUILD_ID)
@@ -178,16 +182,11 @@ spec:
             value: $(params.REPO_OWNER)
           - name: REPO_URL
             value: $(params.REPO_URL)
-          name: ""
-          resources:
-            requests:
-              cpu: 400m
-              memory: 512Mi
           workingDir: /workspace/source
         steps:
-        - image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+        - computeResources: {}
+          image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
           name: git-clone
-          resources: {}
           script: |
             #!/bin/sh
             export SUBDIR="source"
@@ -200,44 +199,45 @@ spec:
             git checkout $PULL_PULL_SHA
             echo "checked out revision: $PULL_PULL_SHA to dir: $SUBDIR"
           workingDir: /workspace
-        - image: gcr.io/jenkinsxio/jx-boot:3.1.62
+        - computeResources: {}
+          image: gcr.io/jenkinsxio/jx-boot:3.1.62
           name: git-merge
-          resources: {}
           script: |
             #!/usr/bin/env sh
             jx gitops git merge variables
           workingDir: /workspace/source
-        - image: gcr.io/jenkinsxio/jx-boot:3.1.155
+        - computeResources: {}
+          image: gcr.io/jenkinsxio/jx-boot:3.1.155
           name: jx-variables
-          resources: {}
           script: |
             #!/usr/bin/env sh
             jx gitops variables
-        - image: node:12-slim
+        - computeResources: {}
+          image: node:12-slim
           name: build-npm-install
-          resources: {}
           script: |
             #!/bin/sh
             npm install
-        - image: node:12-slim
+        - computeResources: {}
+          image: node:12-slim
           name: build-npm-test
-          resources: {}
           script: |
             #!/bin/sh
             CI=true DISPLAY=:99 npm test
-        - image: gcr.io/kaniko-project/executor:debug-v1.3.0
+        - computeResources: {}
+          image: gcr.io/kaniko-project/executor:debug-v1.3.0
           name: build-container-build
-          resources: {}
           script: |
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=Dockerfile --destination=$DOCKER_REGISTRY/$DOCKER_REGISTRY_ORG/$APP_NAME:$VERSION
-        - image: gcr.io/jenkinsxio/jx-preview:0.0.143
+        - computeResources: {}
+          image: gcr.io/jenkinsxio/jx-preview:0.0.143
           name: promote-jx-preview
-          resources: {}
           script: |
             #!/usr/bin/env sh
             source .jx/variables.sh
             jx preview create
+  taskRunTemplate: {}
 status: {}

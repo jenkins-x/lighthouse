@@ -187,7 +187,11 @@ func unmarshalAndConvertPipelineRun(data []byte, message string) (*pipelinev1.Pi
 	if err := yaml.Unmarshal(data, prsV1Beta1); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal PipelineRun v1beta1 YAML %s", message)
 	}
-	prsV1 := &pipelinev1.PipelineRun{}
+	prsV1 := &pipelinev1.PipelineRun{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       prsV1Beta1.Kind,
+			APIVersion: TektonAPIVersion,
+		}}
 	if err := prsV1Beta1.ConvertTo(context.TODO(), prsV1); err != nil {
 		return nil, errors.Wrap(err, "failed to convert PipelineRun from v1beta1 to v1")
 	}
