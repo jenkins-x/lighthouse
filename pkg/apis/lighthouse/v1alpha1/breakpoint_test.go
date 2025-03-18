@@ -90,7 +90,9 @@ func TestBreakpointResolveDebug(t *testing.T) {
 				Task:       "special-task",
 			},
 			expected: &pipelinev1.TaskRunDebug{
-				Breakpoint: []string{"something"},
+				Breakpoints: &pipelinev1.TaskBreakpoints{
+					BeforeSteps: []string{"something"},
+				},
 			},
 		},
 	}
