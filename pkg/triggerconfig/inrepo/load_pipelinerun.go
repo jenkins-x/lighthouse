@@ -86,13 +86,11 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		return nil, errors.Wrapf(err, "failed to extract metadata (kind, apiVersion) from YAML %s", message)
 	}
 
-	isBeta := meta.APIVersion == TektonAPIVersionV1B1
-
 	switch meta.Kind {
 	case "Pipeline":
 		pipeline := &pipelinev1.Pipeline{}
 		var err error
-		if isBeta {
+		if isBeta(data) {
 			pipeline, err = unmarshalAndConvertPipeline(data, message)
 		} else {
 			err = yaml.Unmarshal(data, pipeline)
@@ -109,7 +107,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	case "PipelineRun":
 		prs := &pipelinev1.PipelineRun{}
 		var err error
-		if isBeta {
+		if isBeta(data) {
 			prs, err = unmarshalAndConvertPipelineRun(data, message)
 		} else {
 			err = yaml.Unmarshal(data, prs)
@@ -122,8 +120,8 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	case "Task":
 		task := &pipelinev1.Task{}
 		var err error
-		if isBeta {
-			task, err = unmarshalAndConvertTask(data, message)
+		if isBeta(data) {
+			task, err = unmarshalAndConvertTask(data)
 		} else {
 			err = yaml.Unmarshal(data, task)
 		}
@@ -139,7 +137,7 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	case "TaskRun":
 		tr := &pipelinev1.TaskRun{}
 		var err error
-		if isBeta {
+		if isBeta(data) {
 			tr, err = unmarshalAndConvertTaskRun(data, message)
 		} else {
 			err = yaml.Unmarshal(data, tr)
@@ -156,6 +154,20 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	default:
 		return nil, errors.Errorf("kind %s is not supported for %s", meta.Kind, message)
 	}
+}
+
+func isBeta(data []byte) bool {
+	var meta struct {
+		Kind       string `yaml:"kind"`
+		APIVersion string `yaml:"apiVersion"`
+	}
+
+	// If unmarshalling fails, assume it's not beta
+	if err := yaml.Unmarshal(data, &meta); err != nil {
+		return false
+	}
+
+	return meta.APIVersion == TektonAPIVersionV1B1
 }
 
 func unmarshalAndConvertPipeline(data []byte, message string) (*pipelinev1.Pipeline, error) {
@@ -182,10 +194,10 @@ func unmarshalAndConvertPipelineRun(data []byte, message string) (*pipelinev1.Pi
 	return prsV1, nil
 }
 
-func unmarshalAndConvertTask(data []byte, message string) (*pipelinev1.Task, error) {
+func unmarshalAndConvertTask(data []byte) (*pipelinev1.Task, error) {
 	tV1Beta1 := &pipelinev1beta1.Task{}
 	if err := yaml.Unmarshal(data, tV1Beta1); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal Task v1beta1 YAML %s", message)
+		return nil, errors.Wrap(err, "failed to unmarshal Task v1beta1 YAML")
 	}
 	tV1 := &pipelinev1.Task{}
 	if err := tV1Beta1.ConvertTo(context.TODO(), tV1); err != nil {
@@ -354,7 +366,11 @@ func loadTaskByURL(uri string) (*pipelinev1.Task, error) {
 	}
 
 	task := &pipelinev1.Task{}
-	err = yaml.Unmarshal(data, &task)
+	if isBeta(data) {
+		task, err = unmarshalAndConvertTask(data)
+	} else {
+		err = yaml.Unmarshal(data, task)
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshall YAML from URL %s", uri)
 	}
@@ -392,12 +408,17 @@ func loadPipelineRunRefs(resolver *UsesResolver, prs *pipelinev1.PipelineRun, di
 		if len(data) == 0 {
 			return prs, errors.Errorf("no YAML for path %s in PipelineRun", pipelinePath)
 		}
-		p := &pipelinev1.Pipeline{}
-		err = yaml.Unmarshal(data, p)
+
+		pipeline := &pipelinev1.Pipeline{}
+		if isBeta(data) {
+			pipeline, err = unmarshalAndConvertPipeline(data, message)
+		} else {
+			err = yaml.Unmarshal(data, pipeline)
+		}
 		if err != nil {
 			return prs, errors.Wrapf(err, "failed to unmarshal Pipeline YAML file %s %s", pipelinePath, message)
 		}
-		prs.Spec.PipelineSpec = &p.Spec
+		prs.Spec.PipelineSpec = &pipeline.Spec
 		prs.Spec.PipelineRef = nil
 	}
 
@@ -425,13 +446,17 @@ func loadTaskRefs(resolver *UsesResolver, pipelineSpec *pipelinev1.PipelineSpec,
 			if len(data) == 0 {
 				return errors.Errorf("no YAML for path %s in PipelineSpec", path)
 			}
-			t2 := &pipelinev1.Task{}
-			err = yaml.Unmarshal(data, t2)
+			task := &pipelinev1.Task{}
+			if isBeta(data) {
+				task, err = unmarshalAndConvertTask(data)
+			} else {
+				err = yaml.Unmarshal(data, task)
+			}
 			if err != nil {
 				return errors.Wrapf(err, "failed to unmarshal Task YAML file %s %s", path, message)
 			}
 			t.TaskSpec = &pipelinev1.EmbeddedTask{
-				TaskSpec: t2.Spec,
+				TaskSpec: task.Spec,
 			}
 			t.TaskRef = nil
 		}
