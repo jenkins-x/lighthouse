@@ -21,6 +21,5 @@ spec:
       script: |
         #!/usr/bin/env sh
         set -ex
-        echo "tasks.save-results.results.result_value is $(tasks.save-results.results.result_value)"
         value_to_show="$(params.value_to_show)"
         echo "value_to_show is ${value_to_show}"
