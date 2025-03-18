@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
-	"github.com/jenkins-x/lighthouse/pkg/clients"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
@@ -185,11 +184,8 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if r.dashboardURL != "" {
 				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
 			}
-			tektonclient, _, _, _, err := clients.GetAPIClients()
-			if err != nil {
-				return errors.Wrapf(err, "failed to get api clients")
-			}
-			activity, err := ConvertPipelineRun(tektonclient, &pipelineRun, req.Namespace)
+
+			activity, err := ConvertPipelineRun(r.tektonclient, &pipelineRun, req.Namespace)
 			if err != nil {
 				return errors.Wrapf(err, "failed to convert PipelineRun")
 			}

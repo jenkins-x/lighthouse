@@ -9,7 +9,6 @@ metadata:
     lighthouse.jenkins-x.io/branch: PR-813
     lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
     lighthouse.jenkins-x.io/context: github
-    lighthouse.jenkins-x.io/id: f46327af-b47e-11ea-b797-9256b7b8d9b0
     lighthouse.jenkins-x.io/job: github
     lighthouse.jenkins-x.io/refs.org: jenkins-x
     lighthouse.jenkins-x.io/refs.pull: "813"
@@ -33,10 +32,11 @@ spec:
     value_template: '{{ .Refs.CloneURI }}'
   pipeline_run_spec:
     pipelineRef:
-      apiVersion: tekton.dev/v1beta1
+      apiVersion: tekton.dev/v1
       name: jenkins-x-charts-jx-build-templ-wbbx6-7
-    podTemplate: {}
-    serviceAccountName: tekton-bot
+    taskRunTemplate:
+      podTemplate: {}
+      serviceAccountName: tekton-bot
   refs:
     base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
     base_ref: master

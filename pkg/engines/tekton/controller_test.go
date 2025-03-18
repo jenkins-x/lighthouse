@@ -64,6 +64,8 @@ func TestReconcile(t *testing.T) {
 			assert.NoError(t, err)
 			observedPipeline, err := loadObservedPipeline(testData)
 			assert.NoError(t, err)
+			observedTR, _, err := loadControllerTaskRun(true, testData)
+			assert.NoError(t, err)
 			var state []client.Object
 			if observedPR != nil {
 				state = append(state, observedPR)
@@ -75,6 +77,11 @@ func TestReconcile(t *testing.T) {
 				state = append(state, observedPipeline)
 			}
 			tektonfakeClient := tektonfake.NewSimpleClientset()
+			if observedTR != nil {
+				state = append(state, observedTR)
+				_, err = tektonfakeClient.TektonV1().TaskRuns(ns).Create(context.Background(), observedTR, metav1.CreateOptions{})
+				assert.NoError(t, err, "Failed to create TaskRun %s in the fake client", observedTR.Name)
+			}
 
 			// load expected state
 			expectedPR, expectedPRFile, err := loadControllerPipelineRun(false, testData)
@@ -172,6 +179,33 @@ func loadLighthouseJob(isObserved bool, dir string) (*lighthousev1alpha1.Lightho
 			return nil, fileName, err
 		}
 		return lhjob, fileName, err
+	}
+	return nil, fileName, nil
+}
+
+func loadControllerTaskRun(isObserved bool, dir string) (*pipelinev1.TaskRun, string, error) {
+	var baseFn string
+	if isObserved {
+		baseFn = "observed-tr.yml"
+	} else {
+		baseFn = "expected-tr.yml"
+	}
+	fileName := filepath.Join(dir, baseFn)
+	exists, err := util.FileExists(fileName)
+	if err != nil {
+		return nil, fileName, err
+	}
+	if exists {
+		tr := &pipelinev1.TaskRun{}
+		data, err := os.ReadFile(fileName)
+		if err != nil {
+			return nil, fileName, err
+		}
+		err = yaml.Unmarshal(data, tr)
+		if err != nil {
+			return nil, fileName, err
+		}
+		return tr, fileName, err
 	}
 	return nil, fileName, nil
 }

@@ -18,6 +18,12 @@ metadata:
     lighthouse.jenkins-x.io/type: presubmit
   name: f46327af-b47e-11ea-b797-9256b7b8d9b0
   namespace: jx
+  ownerReferences:
+  - apiVersion: lighthouse.jenkins.io/v1alpha1
+    controller: true
+    kind: LighthouseJob
+    name: f46327af-b47e-11ea-b797-9256b7b8d9b0
+    uid: ""
   resourceVersion: "999"
 spec:
   params:
@@ -46,15 +52,21 @@ spec:
   pipelineRef:
     apiVersion: tekton.dev/v1beta1
     name: jenkins-x-charts-jx-build-templ-wbbx6-7
-  podTemplate: {}
   resources:
   - name: jenkins-x-charts-jx-build-templ-wbbx6
     resourceRef:
       apiVersion: tekton.dev/v1beta1
       name: jenkins-x-charts-jx-build-templ-wbbx6
-  serviceAccountName: tekton-bot
-  timeout: 240h0m0s
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
+  timeouts: 
+    pipeline: 24h0m0s
 status:
+  childReferences:
+  - apiVersion: tekton.dev/v1beta1
+    kind: TaskRun
+    name: jenkins-x-jx-pr-7463-unit-wbf7v-18-ci-8r5qw
   conditions:
   - lastTransitionTime: "2020-07-20T20:15:20Z"
     message: 'Tasks Completed: 0, Incomplete: 1, Skipped: 0'
