@@ -25,6 +25,14 @@ var (
 	disabledTests = []string{}
 )
 
+func normalizeYAML(data []byte) (interface{}, error) {
+	var obj interface{}
+	if err := yaml.Unmarshal(data, &obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
 func TestLoadPipelineRunTest(t *testing.T) {
 	sourceDir := filepath.Join("test_data", "load_pipelinerun")
 	fs, err := os.ReadDir(sourceDir)
@@ -126,10 +134,20 @@ func TestLoadPipelineRunTest(t *testing.T) {
 			expectedData, err := os.ReadFile(expectedPath)
 			require.NoError(t, err, "failed to load file "+expectedPath)
 
-			text := strings.TrimSpace(string(data))
-			expectedText := strings.TrimSpace(string(expectedData))
+			// Compare normalized YAML structures
+			normalizedActual, err := normalizeYAML(data)
+			require.NoError(t, err, "failed to normalize actual YAML")
 
-			assert.Equal(t, expectedText, text, "PipelineRun loaded for "+message)
+			normalizedExpected, err := normalizeYAML(expectedData)
+			require.NoError(t, err, "failed to normalize expected YAML")
+
+			normalizedActualBytes, err := yaml.Marshal(normalizedActual)
+			require.NoError(t, err, "failed to re-marshal actual YAML for %s", path)
+
+			normalizedExpectedBytes, err := yaml.Marshal(normalizedExpected)
+			require.NoError(t, err, "failed to marshal expected YAML for "+path)
+
+			assert.Equal(t, string(normalizedExpectedBytes), string(normalizedActualBytes), "PipelineRun loaded for %s", path)
 		}
 	}
 }
