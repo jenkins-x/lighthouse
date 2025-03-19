@@ -186,7 +186,9 @@ func makeTestPipelineRun(condition *kpgapis.Condition, baseRunName string, pipel
 				APIVersion: tektonAPIVersion,
 				Name:       pipelineName,
 			},
-			ServiceAccountName: sa,
+			TaskRunTemplate: pipelinev1.PipelineTaskRunTemplate{
+				ServiceAccountName: sa,
+			},
 		},
 		Status: pipelinev1.PipelineRunStatus{},
 	}

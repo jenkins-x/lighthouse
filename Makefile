@@ -133,7 +133,7 @@ importfmt: get-fmt-deps ## Checks the import format of the Go source files
 fmt: importfmt
 	@echo "FORMATTING SOURCE"
 	FORMATTED=`$(GO) fmt ./...`
-	@([[ ! -z "$(FORMATTED)" ]] && printf "Fixed un-formatted files:\n$(FORMATTED)") || true
+	@([ ! -z "$(FORMATTED)" ] && printf "Fixed un-formatted files:\n$(FORMATTED)") || true
 
 GOLINT := $(GOPATH)/bin/golint
 $(GOLINT):

@@ -25,9 +25,10 @@ require (
 	github.com/tektoncd/pipeline v0.65.3
 	golang.org/x/oauth2 v0.23.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
-	k8s.io/api v0.32.1
+	k8s.io/api v0.32.3
+	k8s.io/apiextensions-apiserver v0.32.3 // indirect
 	k8s.io/apimachinery v0.32.3
-	k8s.io/client-go v0.32.1
+	k8s.io/client-go v0.32.3
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
 	knative.dev/pkg v0.0.0-20240416145024-0f34a8815650
 	sigs.k8s.io/controller-runtime v0.20.3
@@ -111,7 +112,6 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.32.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
@@ -128,8 +128,6 @@ replace (
 
 	// gomodules.xyz breaks in Athens proxying
 	gomodules.xyz/jsonpatch/v2 => github.com/gomodules/jsonpatch/v2 v2.2.0
-	k8s.io/api => k8s.io/api v0.32.3
-	k8s.io/apimachinery => k8s.io/apimachinery v0.32.3
 )
 
 go 1.23.0

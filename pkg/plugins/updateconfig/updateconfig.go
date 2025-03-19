@@ -119,7 +119,7 @@ func Update(fg FileGetter, kc corev1.ConfigMapInterface, name, namespace string,
 		return fmt.Errorf("failed to fetch current state of configmap: %v", getErr)
 	}
 
-	if cm == nil {
+	if cm == nil || isNotFound {
 		cm = &coreapi.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -149,7 +149,7 @@ func Update(fg FileGetter, kc corev1.ConfigMapInterface, name, namespace string,
 		logger.WithFields(logrus.Fields{"key": upd.Key, "cmName": upd.Filename}).Debug("Populating key.")
 		value := content
 		if upd.GZIP {
-			buff := bytes.NewBuffer([]byte{})
+			buff := new(bytes.Buffer)
 			// TODO: this error is wildly unlikely for anything that
 			// would actually fit in a configmap, we could just as well return
 			// the error instead of falling back to the raw content
