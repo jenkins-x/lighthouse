@@ -419,13 +419,6 @@ func (c *DefaultController) Sync() error {
 	default:
 	}
 	c.sc.Unlock()
-	// While we're locked, rerun failed-but-rerunnable PipelineRuns.
-	c.logger.WithField("duration", time.Since(start).String()).Debug("Rerunning PipelineRuns failed due to race condition.")
-	err = rerunPipelineRunsWithRaceConditionFailure(c.tektonClient, c.ns, c.logger)
-	if err != nil {
-		c.logger.WithError(err).Error("Error rerunning PipelineRuns failed by Tekton race condition")
-	}
-	c.logger.WithField("duration", time.Since(start).String()).Debug("Finished rerunning PipelineRuns failed due to race condition.")
 	c.m.Unlock()
 
 	c.History.Flush()
