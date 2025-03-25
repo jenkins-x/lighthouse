@@ -15,12 +15,12 @@ import (
 )
 
 // ConvertPipelineRun translates a PipelineRun into an ActivityRecord
-func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
+func ConvertPipelineRun(pr *v1beta1.PipelineRun) (record *v1alpha1.ActivityRecord, resultUrl string) {
 	if pr == nil {
-		return nil
+		return
 	}
 
-	record := new(v1alpha1.ActivityRecord)
+	record = new(v1alpha1.ActivityRecord)
 
 	record.Name = pr.Name
 
@@ -40,6 +40,13 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 	cond := pr.Status.GetCondition(apis.ConditionSucceeded)
 
 	record.Status = convertTektonStatus(cond, record.StartTime, record.CompletionTime)
+
+	for i := range pr.Status.PipelineResults {
+		res := pr.Status.PipelineResults[i]
+		if res.Name == tektonResultScmStatusUrl {
+			resultUrl = res.Value.StringVal
+		}
+	}
 
 	for _, taskName := range sets.StringKeySet(pr.Status.TaskRuns).List() {
 		task := pr.Status.TaskRuns[taskName]
@@ -80,7 +87,7 @@ func ConvertPipelineRun(pr *v1beta1.PipelineRun) *v1alpha1.ActivityRecord {
 	}
 	// log URL is definitely gonna wait
 
-	return record
+	return
 }
 
 func convertTektonStatus(cond *apis.Condition, start, finished *metav1.Time) v1alpha1.PipelineState {
