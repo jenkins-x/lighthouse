@@ -55,6 +55,7 @@ type Config struct {
 	Reviewers         []string `json:"reviewers,omitempty"`
 	RequiredReviewers []string `json:"required_reviewers,omitempty"`
 	Labels            []string `json:"labels,omitempty"`
+	MinimumReviewers  *int     `json:"minimum_reviewers,omitempty"`
 }
 
 // SimpleConfig holds options and Config applied to everything under the containing directory
@@ -158,6 +159,7 @@ type RepoOwner interface {
 	LeafReviewers(path string) sets.String
 	Reviewers(path string) sets.String
 	RequiredReviewers(path string) sets.String
+	MinimumReviewersForFile(path string) int
 }
 
 var _ RepoOwner = &RepoOwners{}
@@ -170,6 +172,7 @@ type RepoOwners struct {
 	reviewers         map[string]map[*regexp.Regexp]sets.String
 	requiredReviewers map[string]map[*regexp.Regexp]sets.String
 	labels            map[string]map[*regexp.Regexp]sets.String
+	minimumReviewers  map[string]map[*regexp.Regexp]int
 	options           map[string]dirOptions
 
 	baseDir      string
@@ -387,6 +390,7 @@ func loadOwnersFrom(baseDir string, mdYaml bool, aliases RepoAliases, dirExclude
 		reviewers:         make(map[string]map[*regexp.Regexp]sets.String),
 		requiredReviewers: make(map[string]map[*regexp.Regexp]sets.String),
 		labels:            make(map[string]map[*regexp.Regexp]sets.String),
+		minimumReviewers:  make(map[string]map[*regexp.Regexp]int),
 		options:           make(map[string]dirOptions),
 
 		dirExcludes: dirExcludes,
@@ -554,6 +558,13 @@ func (o *RepoOwners) applyConfigToPath(path string, re *regexp.Regexp, config *C
 		}
 		o.labels[path][re] = sets.NewString(config.Labels...)
 	}
+
+	if config.MinimumReviewers != nil {
+		if o.minimumReviewers[path] == nil {
+			o.minimumReviewers[path] = make(map[*regexp.Regexp]int)
+		}
+		o.minimumReviewers[path][re] = *config.MinimumReviewers
+	}
 }
 
 func (o *RepoOwners) applyOptionsToPath(path string, opts dirOptions) {
@@ -669,6 +680,46 @@ func (o *RepoOwners) entriesForFile(path string, people map[string]map[*regexp.R
 		d = canonicalize(d)
 	}
 	return out
+}
+
+// MinimumReviewersForFile returns the minimum number of reviewers required to approve the requested file.
+// This is determined by the OWNERS file closest to the requested file.
+// If pkg/OWNERS has 2 minimum reviewers and pkg/util/OWNERS has 3 minimum reviewers this will return 3 for the path pkg/util/sets/file.go
+// If no minimum reviewers can be found then 0 is returned.
+func (o *RepoOwners) MinimumReviewersForFile(path string) int {
+	d := path
+	if !o.enableMDYAML || !strings.HasSuffix(path, ".md") {
+		// if path is a directory, this will remove the leaf directory, and returns "." for topmost dir
+		d = filepath.Dir(d)
+		d = canonicalize(d)
+	}
+
+	var foundMinReviewer *int
+	for {
+		relative, err := filepath.Rel(d, path)
+		if err != nil {
+			o.log.WithError(err).WithField("path", path).Errorf("Unable to find relative path between %q and path.", d)
+			foundMinReviewer = nil
+			break
+		}
+		for re, s := range o.minimumReviewers[d] {
+			if re == nil || re.MatchString(relative) {
+				foundMinReviewer = &s
+				break
+			}
+		}
+		if foundMinReviewer != nil || d == baseDirConvention {
+			// If we found a minimum reviewer count, or we've reached the base directory, break
+			break
+		}
+		d = filepath.Dir(d)
+		d = canonicalize(d)
+	}
+	if foundMinReviewer == nil {
+		// If we didn't find a minimum reviewer count, default to 0
+		return 1
+	}
+	return *foundMinReviewer
 }
 
 // LeafApprovers returns a set of users who are the closest approvers to the
