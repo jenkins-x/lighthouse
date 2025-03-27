@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -283,13 +283,13 @@ func ChatOpsTests() bool {
 	})
 }
 
-func generatePipelineRunSpec() *tektonv1beta1.PipelineRunSpec {
-	return &tektonv1beta1.PipelineRunSpec{
-		PipelineRef: &tektonv1beta1.PipelineRef{
+func generatePipelineRunSpec() *pipelinev1.PipelineRunSpec {
+	return &pipelinev1.PipelineRunSpec{
+		PipelineRef: &pipelinev1.PipelineRef{
 			Name: "lh-test-pipeline",
 		},
 		ServiceAccountName: "tekton-bot",
-		Workspaces: []tektonv1beta1.WorkspaceBinding{{
+		Workspaces: []pipelinev1.WorkspaceBinding{{
 			Name: "shared-data",
 			VolumeClaimTemplate: &corev1.PersistentVolumeClaim{
 				Spec: corev1.PersistentVolumeClaimSpec{

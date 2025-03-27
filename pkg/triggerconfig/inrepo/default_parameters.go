@@ -5,17 +5,17 @@ import (
 	"strings"
 
 	"github.com/tektoncd/pipeline/pkg/apis/config"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 
 	"github.com/pkg/errors"
 
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 var (
 	// defaultParameterSpecs the default Lighthouse Pipeline Parameters which can be injected by the
 	// lighthouse tekton engine
-	defaultParameterSpecs = []v1beta1.ParamSpec{
+	defaultParameterSpecs = []pipelinev1.ParamSpec{
 		{
 			Description: "the unique build number",
 			Name:        "BUILD_ID",
@@ -50,8 +50,8 @@ var (
 			Description: "git pull request number",
 			Name:        "PULL_NUMBER",
 			Type:        "string",
-			Default: &v1beta1.ArrayOrString{
-				Type:      v1beta1.ParamTypeString,
+			Default: &pipelinev1.ParamValue{
+				Type:      pipelinev1.ParamTypeString,
 				StringVal: "",
 			},
 		},
@@ -59,8 +59,8 @@ var (
 			Description: "git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'",
 			Name:        "PULL_PULL_REF",
 			Type:        "string",
-			Default: &v1beta1.ArrayOrString{
-				Type:      v1beta1.ParamTypeString,
+			Default: &pipelinev1.ParamValue{
+				Type:      pipelinev1.ParamTypeString,
 				StringVal: "",
 			},
 		},
@@ -68,8 +68,8 @@ var (
 			Description: "git revision to checkout (branch, tag, sha, ref…)",
 			Name:        "PULL_PULL_SHA",
 			Type:        "string",
-			Default: &v1beta1.ArrayOrString{
-				Type:      v1beta1.ParamTypeString,
+			Default: &pipelinev1.ParamValue{
+				Type:      pipelinev1.ParamTypeString,
 				StringVal: "",
 			},
 		},
@@ -100,7 +100,7 @@ var (
 
 // DefaultPipelineParameters defaults the parameter specs and parameter values from lighthouse onto
 // the PipelineRun and its nested PipelineSpec and Tasks
-func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, error) {
+func DefaultPipelineParameters(prs *pipelinev1.PipelineRun) (*pipelinev1.PipelineRun, error) {
 	if prs.Annotations != nil && prs.Annotations[DefaultParameters] == "false" {
 		return prs, nil
 	}
@@ -119,7 +119,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 			// lets create a step template if its not already defined
 			if task.TaskSpec.StepTemplate == nil {
-				task.TaskSpec.StepTemplate = &v1beta1.StepTemplate{}
+				task.TaskSpec.StepTemplate = &pipelinev1.StepTemplate{}
 			}
 			stepTemplate := task.TaskSpec.StepTemplate
 			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
@@ -134,7 +134,7 @@ func DefaultPipelineParameters(prs *v1beta1.PipelineRun) (*v1beta1.PipelineRun, 
 
 			// lets create a step template if its not already defined
 			if task.TaskSpec.StepTemplate == nil {
-				task.TaskSpec.StepTemplate = &v1beta1.StepTemplate{}
+				task.TaskSpec.StepTemplate = &pipelinev1.StepTemplate{}
 			}
 			stepTemplate := task.TaskSpec.StepTemplate
 			stepTemplate.Env = addDefaultParameterEnvVars(stepTemplate.Env, defaultParameters)
@@ -182,7 +182,7 @@ func enableAlphaAPIFields(ctx context.Context) context.Context {
 	return config.ToContext(ctx, cfg)
 }
 
-func addDefaultParameterSpecs(params []v1beta1.ParamSpec, defaults []v1beta1.ParamSpec) []v1beta1.ParamSpec {
+func addDefaultParameterSpecs(params []pipelinev1.ParamSpec, defaults []pipelinev1.ParamSpec) []pipelinev1.ParamSpec {
 	for _, dp := range defaults {
 		found := false
 		for i := range params {
@@ -205,7 +205,7 @@ func addDefaultParameterSpecs(params []v1beta1.ParamSpec, defaults []v1beta1.Par
 	return params
 }
 
-func addDefaultParameters(params []v1beta1.Param, defaults []v1beta1.Param) []v1beta1.Param {
+func addDefaultParameters(params []pipelinev1.Param, defaults []pipelinev1.Param) []pipelinev1.Param {
 	for _, dp := range defaults {
 		found := false
 		for i := range params {
@@ -214,11 +214,11 @@ func addDefaultParameters(params []v1beta1.Param, defaults []v1beta1.Param) []v1
 				found = true
 				if p.Value.Type == dp.Value.Type {
 					switch p.Value.Type {
-					case v1beta1.ParamTypeString:
+					case pipelinev1.ParamTypeString:
 						if p.Value.StringVal == "" {
 							p.Value.StringVal = dp.Value.StringVal
 						}
-					case v1beta1.ParamTypeArray:
+					case pipelinev1.ParamTypeArray:
 						if len(p.Value.ArrayVal) == 0 {
 							p.Value.ArrayVal = dp.Value.ArrayVal
 						}
@@ -234,7 +234,7 @@ func addDefaultParameters(params []v1beta1.Param, defaults []v1beta1.Param) []v1
 	return params
 }
 
-func addDefaultParameterEnvVars(env []corev1.EnvVar, defaults []v1beta1.Param) []corev1.EnvVar {
+func addDefaultParameterEnvVars(env []corev1.EnvVar, defaults []pipelinev1.Param) []corev1.EnvVar {
 	for _, dp := range defaults {
 		name := dp.Name
 		upperName := strings.ToUpper(name)

@@ -1,5 +1,5 @@
 # Note that this doesn't need to match the run we're actually expecting, just has to have the git-clone task.
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: jenkins-x-charts-jx-build-templ-wbbx6-7

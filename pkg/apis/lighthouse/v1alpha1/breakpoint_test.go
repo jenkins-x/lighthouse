@@ -3,7 +3,7 @@ package v1alpha1_test
 import (
 	"testing"
 
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
@@ -21,8 +21,10 @@ func TestBreakpointResolveDebug(t *testing.T) {
 					Context:    "myctx",
 					Task:       "sometask",
 				},
-				Debug: tektonv1beta1.TaskRunDebug{
-					Breakpoint: []string{"onFailure"},
+				Debug: pipelinev1.TaskRunDebug{
+					Breakpoints: &pipelinev1.TaskBreakpoints{
+						OnFailure: "onFailure",
+					},
 				},
 			},
 		},
@@ -31,8 +33,10 @@ func TestBreakpointResolveDebug(t *testing.T) {
 				Filter: v1alpha1.LighthousePipelineFilter{
 					Task: "special-task",
 				},
-				Debug: tektonv1beta1.TaskRunDebug{
-					Breakpoint: []string{"something"},
+				Debug: pipelinev1.TaskRunDebug{
+					Breakpoints: &pipelinev1.TaskBreakpoints{
+						OnFailure: "something",
+					},
 				},
 			},
 		},
@@ -41,7 +45,7 @@ func TestBreakpointResolveDebug(t *testing.T) {
 	tests := []struct {
 		name         string
 		filterValues v1alpha1.LighthousePipelineFilter
-		expected     *tektonv1beta1.TaskRunDebug
+		expected     *pipelinev1.TaskRunDebug
 	}{
 		{
 			name: "matches-all-values",
@@ -53,8 +57,10 @@ func TestBreakpointResolveDebug(t *testing.T) {
 				Context:    "myctx",
 				Task:       "sometask",
 			},
-			expected: &tektonv1beta1.TaskRunDebug{
-				Breakpoint: []string{"onFailure"},
+			expected: &pipelinev1.TaskRunDebug{
+				Breakpoints: &pipelinev1.TaskBreakpoints{
+					OnFailure: "onFailure",
+				},
 			},
 		},
 		{
@@ -89,8 +95,10 @@ func TestBreakpointResolveDebug(t *testing.T) {
 				Context:    "whatever",
 				Task:       "special-task",
 			},
-			expected: &tektonv1beta1.TaskRunDebug{
-				Breakpoint: []string{"something"},
+			expected: &pipelinev1.TaskRunDebug{
+				Breakpoints: &pipelinev1.TaskBreakpoints{
+					OnFailure: "something",
+				},
 			},
 		},
 	}

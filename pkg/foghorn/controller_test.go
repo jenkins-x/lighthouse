@@ -18,6 +18,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/stretchr/testify/assert"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -108,7 +109,9 @@ func TestReconcile(t *testing.T) {
 			scheme := runtime.NewScheme()
 			err = lighthousev1alpha1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			c := fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(observedJob).Build()
+			err = pipelinev1.AddToScheme(scheme)
+			assert.NoError(t, err)
+			c := fake.NewClientBuilder().WithStatusSubresource(observedJob).WithScheme(scheme).WithRuntimeObjects(observedJob).Build()
 			reconciler, err := NewLighthouseJobReconcilerWithConfig(c, scheme, ns, cfgMapWatcher, configAgent, pluginAgent)
 			assert.NoError(t, err)
 

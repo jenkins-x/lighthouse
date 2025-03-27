@@ -12,7 +12,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +44,7 @@ func trimDashboardURL(base string) string {
 
 // makePipeline creates a PipelineRun and substitutes LighthouseJob managed pipeline resources with ResourceSpec instead of ResourceRef
 // so that we don't have to take care of potentially dangling created pipeline resources.
-func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, idGen buildIDGenerator, c client.Reader) (*tektonv1beta1.PipelineRun, error) {
+func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace string, logger *logrus.Entry, idGen buildIDGenerator, c client.Reader) (*pipelinev1.PipelineRun, error) {
 	// First validate.
 	if lj.Spec.PipelineRunSpec == nil {
 		return nil, errors.New("no PipelineSpec defined")
@@ -58,7 +58,7 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 	prLabels, annotations := jobutil.LabelsAndAnnotationsForJob(lj, buildID)
 	specCopy := lj.Spec.PipelineRunSpec.DeepCopy()
 	generateName := jobutil.GenerateName(&lj.Spec)
-	p := tektonv1beta1.PipelineRun{
+	p := pipelinev1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations:  annotations,
 			GenerateName: generateName,
@@ -68,8 +68,11 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 		Spec: *specCopy,
 	}
 	// Set a default timeout of 1 day if no timeout is specified
-	if p.Spec.Timeout == nil {
-		p.Spec.Timeout = &metav1.Duration{Duration: 24 * time.Hour}
+	if p.Spec.Timeouts == nil {
+		p.Spec.Timeouts = &pipelinev1.TimeoutFields{}
+	}
+	if p.Spec.Timeouts.Pipeline == nil {
+		p.Spec.Timeouts.Pipeline = &metav1.Duration{Duration: 24 * time.Hour}
 	}
 
 	// Add parameters instead of env vars.
@@ -126,8 +129,8 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 		}
 	}
 	for _, key := range sets.StringKeySet(env).List() {
-		val := tektonv1beta1.ArrayOrString{
-			Type:      tektonv1beta1.ParamTypeString,
+		val := pipelinev1.ParamValue{
+			Type:      pipelinev1.ParamTypeString,
 			StringVal: env[key],
 		}
 		new_param := true
@@ -141,7 +144,7 @@ func makePipelineRun(ctx context.Context, lj v1alpha1.LighthouseJob, namespace s
 		}
 		// append if new param
 		if new_param {
-			p.Spec.Params = append(p.Spec.Params, tektonv1beta1.Param{
+			p.Spec.Params = append(p.Spec.Params, pipelinev1.Param{
 				Name:  key,
 				Value: val,
 			})
@@ -157,7 +160,7 @@ type gitTaskParamNames struct {
 	baseRevisionParam string
 }
 
-func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.PipelineRun, c client.Reader) (*gitTaskParamNames, error) {
+func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *pipelinev1.PipelineRun, c client.Reader) (*gitTaskParamNames, error) {
 	if pr == nil {
 		return nil, errors.New("provided PipelineRun is nil")
 	}
@@ -165,14 +168,14 @@ func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.P
 	if pr.Spec.PipelineSpec == nil && pr.Spec.PipelineRef == nil {
 		return nil, errors.New("neither PipelineSpec nor PipelineRef specified for PipelineRun")
 	}
-	var pipelineSpec *tektonv1beta1.PipelineSpec
+	var pipelineSpec *pipelinev1.PipelineSpec
 
 	if pr.Spec.PipelineSpec != nil {
 		pipelineSpec = pr.Spec.PipelineSpec
 	} else if pr.Spec.PipelineRef.Name == "" {
 		return nil, nil
 	} else {
-		pipeline := tektonv1beta1.Pipeline{ObjectMeta: metav1.ObjectMeta{Name: pr.Spec.PipelineRef.Name, Namespace: pr.Namespace}}
+		pipeline := pipelinev1.Pipeline{ObjectMeta: metav1.ObjectMeta{Name: pr.Spec.PipelineRef.Name, Namespace: pr.Namespace}}
 		key := client.ObjectKeyFromObject(&pipeline)
 		err := c.Get(ctx, key, &pipeline)
 		if err != nil {
@@ -187,10 +190,10 @@ func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.P
 		if task.TaskRef != nil {
 			if task.TaskRef.Name == gitCloneCatalogTaskName {
 				for _, p := range task.Params {
-					if p.Name == gitCloneURLParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+					if p.Name == gitCloneURLParam && p.Value.Type == pipelinev1.ParamTypeString {
 						paramNames.urlParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
 					}
-					if p.Name == gitCloneRevisionParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+					if p.Name == gitCloneRevisionParam && p.Value.Type == pipelinev1.ParamTypeString {
 						paramNames.revParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
 					}
 				}
@@ -201,13 +204,13 @@ func determineGitCloneOrMergeTaskParams(ctx context.Context, pr *tektonv1beta1.P
 			}
 			if task.TaskRef.Name == gitMergeCatalogTaskName {
 				for _, p := range task.Params {
-					if p.Name == gitCloneURLParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+					if p.Name == gitCloneURLParam && p.Value.Type == pipelinev1.ParamTypeString {
 						paramNames.urlParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
 					}
-					if p.Name == gitCloneRevisionParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+					if p.Name == gitCloneRevisionParam && p.Value.Type == pipelinev1.ParamTypeString {
 						paramNames.baseRevisionParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
 					}
-					if p.Name == gitMergeBatchRefsParam && p.Value.Type == tektonv1beta1.ParamTypeString {
+					if p.Name == gitMergeBatchRefsParam && p.Value.Type == pipelinev1.ParamTypeString {
 						paramNames.batchedRefsParam = extractPipelineParamFromTaskParamValue(p.Value.StringVal)
 					}
 				}

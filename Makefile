@@ -133,7 +133,7 @@ importfmt: get-fmt-deps ## Checks the import format of the Go source files
 fmt: importfmt
 	@echo "FORMATTING SOURCE"
 	FORMATTED=`$(GO) fmt ./...`
-	@([[ ! -z "$(FORMATTED)" ]] && printf "Fixed un-formatted files:\n$(FORMATTED)") || true
+	@([ ! -z "$(FORMATTED)" ] && printf "Fixed un-formatted files:\n$(FORMATTED)") || true
 
 GOLINT := $(GOPATH)/bin/golint
 $(GOLINT):
@@ -179,7 +179,7 @@ verify-code-unchanged:
 
 CONTROLLER_GEN := $(GOPATH)/bin/controller-gen
 $(CONTROLLER_GEN):
-	$(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0
+	$(GO) install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.5
 
 crd-manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) crd:maxDescLen=0 paths="./pkg/apis/lighthouse/v1alpha1/..." output:crd:artifacts:config=crds

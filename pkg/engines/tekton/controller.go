@@ -12,7 +12,8 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -27,6 +28,7 @@ var apiGVStr = lighthousev1alpha1.SchemeGroupVersion.String()
 // LighthouseJobReconciler reconciles a LighthouseJob object
 type LighthouseJobReconciler struct {
 	client            client.Client
+	tektonclient      tektonversioned.Interface
 	apiReader         client.Reader
 	logger            *logrus.Entry
 	scheme            *runtime.Scheme
@@ -38,7 +40,7 @@ type LighthouseJobReconciler struct {
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, tektonclient tektonversioned.Interface, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
@@ -50,29 +52,32 @@ func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, s
 		dashboardURL:      dashboardURL,
 		dashboardTemplate: dashboardTemplate,
 		namespace:         namespace,
+		tektonclient:      tektonclient,
 		idGenerator:       &epochBuildIDGenerator{},
 	}
 }
 
+var tektonControllerIndexFunc = func(rawObj client.Object) []string {
+	obj := rawObj.(*pipelinev1.PipelineRun)
+	owner := metav1.GetControllerOf(obj)
+	// TODO: would be nice to get kind from the type rather than a hard coded string
+	if owner == nil || owner.APIVersion != apiGVStr || owner.Kind != "LighthouseJob" {
+		return nil
+	}
+	return []string{owner.Name}
+}
+
 // SetupWithManager sets up the reconcilier with it's manager
 func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	indexFunc := func(rawObj client.Object) []string {
-		obj := rawObj.(*pipelinev1beta1.PipelineRun)
-		owner := metav1.GetControllerOf(obj)
-		// TODO: would be nice to get kind from the type rather than a hard coded string
-		if owner == nil || owner.APIVersion != apiGVStr || owner.Kind != "LighthouseJob" {
-			return nil
-		}
-		return []string{owner.Name}
-	}
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &pipelinev1beta1.PipelineRun{}, jobOwnerKey, indexFunc); err != nil {
+
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &pipelinev1.PipelineRun{}, jobOwnerKey, tektonControllerIndexFunc); err != nil {
 		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lighthousev1alpha1.LighthouseJob{}).
 		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
-		Owns(&pipelinev1beta1.PipelineRun{}).
+		Owns(&pipelinev1.PipelineRun{}).
 		Complete(r)
 }
 
@@ -100,7 +105,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// get job's pipeline runs
-	var pipelineRunList pipelinev1beta1.PipelineRunList
+	var pipelineRunList pipelinev1.PipelineRunList
 	if err := r.client.List(ctx, &pipelineRunList, client.InNamespace(req.Namespace), client.MatchingFields{jobOwnerKey: req.Name}); err != nil {
 		r.logger.Errorf("Failed list pipeline runs: %s", err)
 		return ctrl.Result{}, err
@@ -179,7 +184,12 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			if r.dashboardURL != "" {
 				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
 			}
-			job.Status.Activity = ConvertPipelineRun(&pipelineRun)
+
+			activity, err := ConvertPipelineRun(r.tektonclient, &pipelineRun, req.Namespace)
+			if err != nil {
+				return errors.Wrapf(err, "failed to convert PipelineRun")
+			}
+			job.Status.Activity = activity
 			if err := r.client.Status().Update(ctx, job); err != nil {
 				return errors.Wrapf(err, "failed to update LighthouseJob status")
 			}
@@ -196,7 +206,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
-func (r *LighthouseJobReconciler) getPipelingetPipelineTargetURLeTargetURL(pipelineRun pipelinev1beta1.PipelineRun) string {
+func (r *LighthouseJobReconciler) getPipelingetPipelineTargetURLeTargetURL(pipelineRun pipelinev1.PipelineRun) string {
 	if r.dashboardTemplate == "" {
 		return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", trimDashboardURL(r.dashboardURL), r.namespace, pipelineRun.Name)
 	}

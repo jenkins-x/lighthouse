@@ -8,6 +8,7 @@ metadata:
     lighthouse.jenkins-x.io/branch: main
     lighthouse.jenkins-x.io/context: github
     lighthouse.jenkins-x.io/job: github
+    lighthouse.jenkins-x.io/buildNum: "7828158075477027098"
     lighthouse.jenkins-x.io/refs.org: jenkins-x
     lighthouse.jenkins-x.io/refs.repo: lighthouse
     lighthouse.jenkins-x.io/type: postsubmit
@@ -20,11 +21,12 @@ spec:
   namespace: jx
   pipeline_run_spec:
     pipelineRef:
-      apiVersion: tekton.dev/v1beta1
+      apiVersion: tekton.dev/v1
       name: jenkins-x-charts-jx-build-templ-wbbx6-7
-    podTemplate:
-      schedulerName: ""
-    serviceAccountName: tekton-bot
+    taskRunTemplate:
+      podTemplate:
+        schedulerName: ""
+      serviceAccountName: tekton-bot
   refs:
     base_link: https://github.com/jenkins-x/lighthouse/commit/e8d56b5ee9671599c75644af574a251dd3b94a5c
     base_ref: main

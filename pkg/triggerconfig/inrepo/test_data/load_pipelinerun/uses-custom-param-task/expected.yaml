@@ -1,169 +1,90 @@
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   creationTimestamp: null
   name: params
 spec:
   params:
-  - name: FOO
-    value: BAR-CATALOG
-  - name: BUILD_ID
-    value: ""
-  - name: JOB_NAME
-    value: ""
-  - name: JOB_SPEC
-    value: ""
-  - name: JOB_TYPE
-    value: ""
-  - name: PULL_BASE_REF
-    value: ""
-  - name: PULL_BASE_SHA
-    value: ""
-  - name: PULL_NUMBER
-    value: ""
-  - name: PULL_PULL_REF
-    value: ""
-  - name: PULL_PULL_SHA
-    value: ""
-  - name: PULL_REFS
-    value: ""
-  - name: REPO_NAME
-    value: ""
-  - name: REPO_OWNER
-    value: ""
-  - name: REPO_URL
-    value: ""
+    - name: FOO
+      value: BAR-CATALOG
+    - name: BUILD_ID
+      value: ""
+    - name: JOB_NAME
+      value: ""
+    - name: JOB_SPEC
+      value: ""
+    - name: JOB_TYPE
+      value: ""
+    - name: PULL_BASE_REF
+      value: ""
+    - name: PULL_BASE_SHA
+      value: ""
+    - name: PULL_NUMBER
+      value: ""
+    - name: PULL_PULL_REF
+      value: ""
+    - name: PULL_PULL_SHA
+      value: ""
+    - name: PULL_REFS
+      value: ""
+    - name: REPO_NAME
+      value: ""
+    - name: REPO_OWNER
+      value: ""
+    - name: REPO_URL
+      value: ""
   pipelineSpec:
     params:
-    - default: BAR-CATALOG
-      name: FOO
-      type: string
-    - description: the unique build number
-      name: BUILD_ID
-      type: string
-    - description: the name of the job which is the trigger context name
-      name: JOB_NAME
-      type: string
-    - description: the specification of the job
-      name: JOB_SPEC
-      type: string
-    - description: '''the kind of job: postsubmit or presubmit'''
-      name: JOB_TYPE
-      type: string
-    - description: the base git reference of the pull request
-      name: PULL_BASE_REF
-      type: string
-    - description: the git sha of the base of the pull request
-      name: PULL_BASE_SHA
-      type: string
-    - default: ""
-      description: git pull request number
-      name: PULL_NUMBER
-      type: string
-    - default: ""
-      description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
-      name: PULL_PULL_REF
-      type: string
-    - default: ""
-      description: git revision to checkout (branch, tag, sha, ref…)
-      name: PULL_PULL_SHA
-      type: string
-    - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
-      name: PULL_REFS
-      type: string
-    - description: git repository name
-      name: REPO_NAME
-      type: string
-    - description: git repository owner (user or organisation)
-      name: REPO_OWNER
-      type: string
-    - description: git url to clone
-      name: REPO_URL
-      type: string
+      - default: BAR-CATALOG
+        name: FOO
+        type: string
+      - description: the unique build number
+        name: BUILD_ID
+        type: string
+      - description: the name of the job which is the trigger context name
+        name: JOB_NAME
+        type: string
+      - description: the specification of the job
+        name: JOB_SPEC
+        type: string
+      - description: '''the kind of job: postsubmit or presubmit'''
+        name: JOB_TYPE
+        type: string
+      - description: the base git reference of the pull request
+        name: PULL_BASE_REF
+        type: string
+      - description: the git sha of the base of the pull request
+        name: PULL_BASE_SHA
+        type: string
+      - default: ""
+        description: git pull request number
+        name: PULL_NUMBER
+        type: string
+      - default: ""
+        description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+        name: PULL_PULL_REF
+        type: string
+      - default: ""
+        description: git revision to checkout (branch, tag, sha, ref…)
+        name: PULL_PULL_SHA
+        type: string
+      - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+        name: PULL_REFS
+        type: string
+      - description: git repository name
+        name: REPO_NAME
+        type: string
+      - description: git repository owner (user or organisation)
+        name: REPO_OWNER
+        type: string
+      - description: git url to clone
+        name: REPO_URL
+        type: string
     tasks:
-    - name: test-params
-      params:
-      - name: FOO
-        value: $(params.FOO)
-      - name: BUILD_ID
-        value: $(params.BUILD_ID)
-      - name: JOB_NAME
-        value: $(params.JOB_NAME)
-      - name: JOB_SPEC
-        value: $(params.JOB_SPEC)
-      - name: JOB_TYPE
-        value: $(params.JOB_TYPE)
-      - name: PULL_BASE_REF
-        value: $(params.PULL_BASE_REF)
-      - name: PULL_BASE_SHA
-        value: $(params.PULL_BASE_SHA)
-      - name: PULL_NUMBER
-        value: $(params.PULL_NUMBER)
-      - name: PULL_PULL_REF
-        value: $(params.PULL_PULL_REF)
-      - name: PULL_PULL_SHA
-        value: $(params.PULL_PULL_SHA)
-      - name: PULL_REFS
-        value: $(params.PULL_REFS)
-      - name: REPO_NAME
-        value: $(params.REPO_NAME)
-      - name: REPO_OWNER
-        value: $(params.REPO_OWNER)
-      - name: REPO_URL
-        value: $(params.REPO_URL)
-      resources: {}
-      taskSpec:
-        metadata: {}
+      - name: test-params
         params:
-        - default: BAR-CATALOG
-          name: FOO
-          type: string
-        - description: the unique build number
-          name: BUILD_ID
-          type: string
-        - description: the name of the job which is the trigger context name
-          name: JOB_NAME
-          type: string
-        - description: the specification of the job
-          name: JOB_SPEC
-          type: string
-        - description: '''the kind of job: postsubmit or presubmit'''
-          name: JOB_TYPE
-          type: string
-        - description: the base git reference of the pull request
-          name: PULL_BASE_REF
-          type: string
-        - description: the git sha of the base of the pull request
-          name: PULL_BASE_SHA
-          type: string
-        - default: ""
-          description: git pull request number
-          name: PULL_NUMBER
-          type: string
-        - default: ""
-          description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
-          name: PULL_PULL_REF
-          type: string
-        - default: ""
-          description: git revision to checkout (branch, tag, sha, ref…)
-          name: PULL_PULL_SHA
-          type: string
-        - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
-          name: PULL_REFS
-          type: string
-        - description: git repository name
-          name: REPO_NAME
-          type: string
-        - description: git repository owner (user or organisation)
-          name: REPO_OWNER
-          type: string
-        - description: git url to clone
-          name: REPO_URL
-          type: string
-        resources: {}
-        spec: null
-        stepTemplate:
-          env:
+          - name: FOO
+            value: $(params.FOO)
           - name: BUILD_ID
             value: $(params.BUILD_ID)
           - name: JOB_NAME
@@ -190,20 +111,97 @@ spec:
             value: $(params.REPO_OWNER)
           - name: REPO_URL
             value: $(params.REPO_URL)
-          - name: FOO
-            value: $(params.FOO)
-          name: ""
-          resources:
-            requests:
-              cpu: 400m
-              memory: 512Mi
-        steps:
-        - image: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753
-          name: test-echo
-          resources: {}
-          script: |-
-            #!/usr/bin/env bash
-            echo "FOO: $(params.FOO)"
-  podTemplate: {}
-  serviceAccountName: tekton-bot
+        taskSpec:
+          metadata: {}
+          params:
+            - default: BAR-CATALOG
+              name: FOO
+              type: string
+            - description: the unique build number
+              name: BUILD_ID
+              type: string
+            - description: the name of the job which is the trigger context name
+              name: JOB_NAME
+              type: string
+            - description: the specification of the job
+              name: JOB_SPEC
+              type: string
+            - description: '''the kind of job: postsubmit or presubmit'''
+              name: JOB_TYPE
+              type: string
+            - description: the base git reference of the pull request
+              name: PULL_BASE_REF
+              type: string
+            - description: the git sha of the base of the pull request
+              name: PULL_BASE_SHA
+              type: string
+            - default: ""
+              description: git pull request number
+              name: PULL_NUMBER
+              type: string
+            - default: ""
+              description: git pull request ref in the form 'refs/pull/$PULL_NUMBER/head'
+              name: PULL_PULL_REF
+              type: string
+            - default: ""
+              description: git revision to checkout (branch, tag, sha, ref…)
+              name: PULL_PULL_SHA
+              type: string
+            - description: git pull reference strings of base and latest in the form 'master:$PULL_BASE_SHA,$PULL_NUMBER:$PULL_PULL_SHA:refs/pull/$PULL_NUMBER/head'
+              name: PULL_REFS
+              type: string
+            - description: git repository name
+              name: REPO_NAME
+              type: string
+            - description: git repository owner (user or organisation)
+              name: REPO_OWNER
+              type: string
+            - description: git url to clone
+              name: REPO_URL
+              type: string
+          spec: null
+          stepTemplate:
+            computeResources:
+              requests:
+                cpu: 400m
+                memory: 512Mi
+            env:
+              - name: BUILD_ID
+                value: $(params.BUILD_ID)
+              - name: JOB_NAME
+                value: $(params.JOB_NAME)
+              - name: JOB_SPEC
+                value: $(params.JOB_SPEC)
+              - name: JOB_TYPE
+                value: $(params.JOB_TYPE)
+              - name: PULL_BASE_REF
+                value: $(params.PULL_BASE_REF)
+              - name: PULL_BASE_SHA
+                value: $(params.PULL_BASE_SHA)
+              - name: PULL_NUMBER
+                value: $(params.PULL_NUMBER)
+              - name: PULL_PULL_REF
+                value: $(params.PULL_PULL_REF)
+              - name: PULL_PULL_SHA
+                value: $(params.PULL_PULL_SHA)
+              - name: PULL_REFS
+                value: $(params.PULL_REFS)
+              - name: REPO_NAME
+                value: $(params.REPO_NAME)
+              - name: REPO_OWNER
+                value: $(params.REPO_OWNER)
+              - name: REPO_URL
+                value: $(params.REPO_URL)
+              - name: FOO
+                value: $(params.FOO)
+          steps:
+            - computeResources: {}
+              image: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753
+              name: test-echo
+              script: |-
+                #!/usr/bin/env bash
+                echo "FOO: $(params.FOO)"
+  taskRunTemplate:
+    podTemplate: {}
+    serviceAccountName: tekton-bot
 status: {}

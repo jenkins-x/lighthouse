@@ -2,7 +2,7 @@ package v1alpha1
 
 import (
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,7 +36,7 @@ type LighthouseBreakpointSpec struct {
 	Filter LighthousePipelineFilter `json:"filter,omitempty"`
 
 	// Debug the debug configuration to apply
-	Debug tektonv1beta1.TaskRunDebug `json:"debug,omitempty"`
+	Debug pipelinev1.TaskRunDebug `json:"debug,omitempty"`
 }
 
 // LighthousePipelineFilter defines the filter to use to apply breakpoints to new breakpoints
@@ -82,7 +82,7 @@ func (f *LighthousePipelineFilter) Matches(o *LighthousePipelineFilter) bool {
 }
 
 // ResolveDebug resolves the debug breakpoint
-func (f *LighthousePipelineFilter) ResolveDebug(breakpoints []*LighthouseBreakpoint) *tektonv1beta1.TaskRunDebug {
+func (f *LighthousePipelineFilter) ResolveDebug(breakpoints []*LighthouseBreakpoint) *pipelinev1.TaskRunDebug {
 	// lets match the first breakpoint
 	for _, bp := range breakpoints {
 		if bp.Spec.Filter.Matches(f) {

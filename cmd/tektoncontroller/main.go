@@ -10,9 +10,11 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type options struct {
@@ -45,10 +47,10 @@ func main() {
 
 	scheme := runtime.NewScheme()
 	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
-		logrus.WithError(err).Fatal("Failed to register scheme")
+		logrus.WithError(err).Fatal("Failed to register lighthousev1alpha1 scheme")
 	}
-	if err := pipelinev1beta1.AddToScheme(scheme); err != nil {
-		logrus.WithError(err).Fatal("Failed to register scheme")
+	if err := pipelinev1.AddToScheme(scheme); err != nil {
+		logrus.WithError(err).Fatal("Failed to register tektoncd-pipelinev1 scheme")
 	}
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
@@ -61,12 +63,24 @@ func main() {
 		logrus.WithError(err).Fatal("Could not create kubeconfig")
 	}
 
-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{Scheme: scheme, Namespace: o.namespace})
+	mgr, err := ctrl.NewManager(cfg, manager.Options{
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				o.namespace: {},
+			},
+		},
+		Scheme: scheme,
+	})
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.dashboardURL, o.dashboardTemplate, o.namespace)
+	tektonclient, _, _, _, err := clients.GetAPIClients()
+	if err != nil {
+		logrus.WithError(err).Fatal(err, "failed to get api clients")
+	}
+
+	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), tektonclient, o.dashboardURL, o.dashboardTemplate, o.namespace)
 	if err = lhJobReconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}
