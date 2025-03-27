@@ -1,0 +1,62 @@
+defaultBaseImage: cgr.dev/chainguard/git:2.38.0@sha256:79aa1b7df6773d4722dca35908903cd86dacd5d4a10656017ce8c227d9c91db3
+builds:
+- id: foghorn
+  dir: .  # default is .
+  main: cmd/foghorn
+  env:
+  - VERSION = 99.99.99
+  ldflags:
+  - -s
+  - -w
+  - -X
+  - github.com/jenkins-x/lighthouse/pkg/version.Version={{.Env.VERSION}}
+- id: gc
+  dir: .  # default is .
+  main: cmd/gc
+  env:
+  - VERSION = 99.99.99
+  ldflags:
+  - -s
+  - -w
+  - -X
+  - github.com/jenkins-x/lighthouse/pkg/version.Version={{.Env.VERSION}}
+- id: keeper
+  dir: .  # default is .
+  main: cmd/keeper
+  env:
+  - VERSION = 99.99.99
+  ldflags:
+  - -s
+  - -w
+  - -X
+  - github.com/jenkins-x/lighthouse/pkg/version.Version={{.Env.VERSION}}
+- id: poller
+  dir: .  # default is .
+  main: cmd/poller
+  env:
+  - VERSION = 99.99.99
+  ldflags:
+  - -s
+  - -w
+  - -X
+  - github.com/jenkins-x/lighthouse/pkg/version.Version={{.Env.VERSION}}
+- id: tekton-controller
+  dir: .  # default is .
+  main: cmd/tektoncontroller
+  env:
+  - VERSION = 99.99.99
+  ldflags:
+  - -s
+  - -w
+  - -X
+  - github.com/jenkins-x/lighthouse/pkg/version.Version={{.Env.VERSION}}
+- id: webhooks
+  dir: .  # default is .
+  main: cmd/webhooks
+  env:
+  - VERSION = 99.99.99
+  ldflags:
+  - -s
+  - -w
+  - -X
+  - github.com/jenkins-x/lighthouse/pkg/version.Version={{.Env.VERSION}}
