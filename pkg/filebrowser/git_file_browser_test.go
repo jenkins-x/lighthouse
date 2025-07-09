@@ -138,14 +138,21 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	err = os.WriteFile(filepath.Join(repoDir, "README.md"), []byte("README"), 0600)
 	require.NoError(t, err, "failed to write README.md file")
 
-	_, err = executor.Run("init", ".")
-	require.NoError(t, err, "failed to init git repo")
+	out, err = executor.Run("init", ".")
+	require.NoError(t, err, "failed to init git repo: %s", out)
 
-	_, err = executor.Run("add", "README.md")
-	require.NoError(t, err, "failed to add README.md status")
+	out, err = executor.Run("add", "README.md")
+	require.NoError(t, err, "failed to add README.md: %s", out)
 
-	_, err = executor.Run("commit", "-m", "add README.md")
-	require.NoError(t, err, "failed to add README.md status")
+	name, email, _ := userGetter()
+	out, err = executor.Run("config", "--add", "user.name", name)
+	require.NoError(t, err, "failed to set user.name: %s", out)
+
+	out, err = executor.Run("config", "--add", "user.email", email)
+	require.NoError(t, err, "failed to set user.email: %s", out)
+
+	out, err = executor.Run("commit", "-m", "add README.md")
+	require.NoError(t, err, "failed to commit README.md: %s", out)
 
 	cf, err := git.NewLocalClientFactory(baseDir, userGetter, censor)
 	require.NoError(t, err, "failed to create git client factory")
@@ -157,17 +164,17 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	require.True(t, len(files) == 1, "exepecting 1 file")
 	require.Equal(t, files[0].Name, "README.md")
 
-	_, err = executor.Run("checkout", "-b", "update-1")
-	require.NoError(t, err, "failed to create new branch")
+	out, err = executor.Run("checkout", "-b", "update-1")
+	require.NoError(t, err, "failed to create new branch: %s", out)
 
 	err = os.WriteFile(filepath.Join(repoDir, "README.md"), []byte("README-update-1"), 0600)
 	require.NoError(t, err, "failed write updated README.md")
 
-	_, err = executor.Run("commit", "-a", "-m", "update README.md")
-	require.NoError(t, err, "failed to update README.md status")
+	out, err = executor.Run("commit", "-a", "-m", "update README.md")
+	require.NoError(t, err, "failed to commit README.md: %s", out)
 
-	_, err = executor.Run("tag", "v0.0.1")
-	require.NoError(t, err, "failed to create v0.0.1 tag")
+	out, err = executor.Run("tag", "v0.0.1")
+	require.NoError(t, err, "failed to create v0.0.1 tag: %s", out)
 
 	files, err = fb.ListFiles("org", "repo", "", "v0.0.1", fc)
 	require.NoError(t, err, "failed to lst files in v0.0.1 tag")
