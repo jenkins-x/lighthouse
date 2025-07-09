@@ -144,6 +144,13 @@ func TestGitFileBrowser_Clone_CreateTag_FetchRef(t *testing.T) {
 	out, err = executor.Run("add", "README.md")
 	require.NoError(t, err, "failed to add README.md: %s", out)
 
+	name, email, _ := userGetter()
+	out, err = executor.Run("config", "--add", "user.name", name)
+	require.NoError(t, err, "failed to set user.name: %s", out)
+
+	out, err = executor.Run("config", "--add", "user.email", email)
+	require.NoError(t, err, "failed to set user.email: %s", out)
+
 	out, err = executor.Run("commit", "-m", "add README.md")
 	require.NoError(t, err, "failed to commit README.md: %s", out)
 
