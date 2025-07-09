@@ -63,21 +63,24 @@ func NewDefaultValues() (*DefaultValues, error) {
 }
 
 // LoadTektonResourceAsPipelineRun loads a PipelineRun, Pipeline, Task or TaskRun and convert it to a PipelineRun
-// if necessary
+// if necessary. Also resolves "uses:"
 func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipelinev1.PipelineRun, error) {
-	if resolver.DefaultValues == nil {
-		var err error
-		resolver.DefaultValues, err = NewDefaultValues()
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse default values")
-		}
-	}
-	if resolver.Message == "" {
-		resolver.Message = fmt.Sprintf("in repo %s/%s with sha %s", resolver.OwnerName, resolver.RepoName, resolver.SHA)
-	}
 	message := resolver.Message
+	if message == "" {
+		message = fmt.Sprintf("in repo %s/%s with sha %s", resolver.OwnerName, resolver.RepoName, resolver.SHA)
+	}
 	dir := resolver.Dir
+	values := resolver.DefaultValues
 
+	prs, err := ConvertTektonResourceAsPipelineRun(data, message, values)
+	if err != nil {
+		return prs, err
+	}
+	return resolvePipelineRunReferences(resolver, prs, dir, message)
+}
+
+// ConvertTektonResourceAsPipelineRun loads a PipelineRun, Pipeline, Task or TaskRun and convert it to a v1 PipelineRun
+func ConvertTektonResourceAsPipelineRun(data []byte, message string, values *DefaultValues) (*pipelinev1.PipelineRun, error) {
 	var meta struct {
 		Kind       string `yaml:"kind"`
 		APIVersion string `yaml:"apiVersion"`
@@ -85,7 +88,14 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 	if err := yaml.Unmarshal(data, &meta); err != nil {
 		return nil, errors.Wrapf(err, "failed to extract metadata (kind, apiVersion) from YAML %s", message)
 	}
-
+	prs := &pipelinev1.PipelineRun{}
+	if values == nil {
+		var err error
+		values, err = NewDefaultValues()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse default values")
+		}
+	}
 	switch meta.Kind {
 	case "Pipeline":
 		pipeline := &pipelinev1.Pipeline{}
@@ -98,14 +108,12 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		if err != nil {
 			return nil, err
 		}
-		prs, err := ConvertPipelineToPipelineRun(pipeline, resolver.Message, resolver.DefaultValues)
+		prs, err = ConvertPipelineToPipelineRun(pipeline, values)
 		if err != nil {
 			return prs, err
 		}
-		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	case "PipelineRun":
-		prs := &pipelinev1.PipelineRun{}
 		var err error
 		if isBeta(data) {
 			prs, err = unmarshalAndConvertPipelineRun(data, message)
@@ -115,7 +123,6 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		if err != nil {
 			return nil, err
 		}
-		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	case "Task":
 		task := &pipelinev1.Task{}
@@ -128,11 +135,10 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		if err != nil {
 			return nil, err
 		}
-		prs, err := ConvertTaskToPipelineRun(task, message, resolver.DefaultValues)
+		prs, err = ConvertTaskToPipelineRun(task, values)
 		if err != nil {
 			return prs, err
 		}
-		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	case "TaskRun":
 		tr := &pipelinev1.TaskRun{}
@@ -145,15 +151,15 @@ func LoadTektonResourceAsPipelineRun(resolver *UsesResolver, data []byte) (*pipe
 		if err != nil {
 			return nil, err
 		}
-		prs, err := ConvertTaskRunToPipelineRun(tr, message, resolver.DefaultValues)
+		prs, err = ConvertTaskRunToPipelineRun(tr, values)
 		if err != nil {
 			return prs, err
 		}
-		return resolvePipelineRunReferences(resolver, prs, dir, message)
 
 	default:
 		return nil, errors.Errorf("kind %s is not supported for %s", meta.Kind, message)
 	}
+	return prs, nil
 }
 
 func isBeta(data []byte) bool {
@@ -469,7 +475,7 @@ func loadTaskRefs(resolver *UsesResolver, pipelineSpec *pipelinev1.PipelineSpec,
 }
 
 // ConvertPipelineToPipelineRun converts the Pipeline to a PipelineRun
-func ConvertPipelineToPipelineRun(from *pipelinev1.Pipeline, message string, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
+func ConvertPipelineToPipelineRun(from *pipelinev1.Pipeline, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
 	prs := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PipelineRun",
@@ -486,7 +492,7 @@ func ConvertPipelineToPipelineRun(from *pipelinev1.Pipeline, message string, def
 }
 
 // ConvertTaskToPipelineRun converts the Task to a PipelineRun
-func ConvertTaskToPipelineRun(from *pipelinev1.Task, message string, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
+func ConvertTaskToPipelineRun(from *pipelinev1.Task, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
 	prs := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PipelineRun",
@@ -510,11 +516,9 @@ func ConvertTaskToPipelineRun(from *pipelinev1.Task, message string, defaultValu
 		},
 		Params:     fs.Params,
 		Workspaces: ToPipelineWorkspaceDeclarations(fs.Workspaces),
-		//Results:    fs.Results,
-		Finally: nil,
+		Finally:    nil,
 	}
 	prs.Spec.PipelineSpec = pipelineSpec
-	//prs.Spec.Resources = fs.Resources
 	prs.Spec.Workspaces = ToWorkspaceBindings(fs.Workspaces)
 	defaultValues.Apply(prs)
 
@@ -531,7 +535,7 @@ func ConvertTaskToPipelineRun(from *pipelinev1.Task, message string, defaultValu
 }
 
 // ConvertTaskRunToPipelineRun converts the TaskRun to a PipelineRun
-func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, message string, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
+func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, defaultValues *DefaultValues) (*pipelinev1.PipelineRun, error) {
 	prs := &pipelinev1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PipelineRun",
@@ -558,10 +562,9 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, message string, defau
 		Description: "",
 		Tasks: []pipelinev1.PipelineTask{
 			{
-				Name:     from.Name,
-				TaskRef:  fs.TaskRef,
-				TaskSpec: &pipelinev1.EmbeddedTask{TaskSpec: *fs.TaskSpec},
-				//Resources: fs.Resources,
+				Name:       from.Name,
+				TaskRef:    fs.TaskRef,
+				TaskSpec:   &pipelinev1.EmbeddedTask{TaskSpec: *fs.TaskSpec},
 				Params:     params,
 				Workspaces: ToWorkspacePipelineTaskBindings(fs.Workspaces),
 			},
@@ -573,7 +576,6 @@ func ConvertTaskRunToPipelineRun(from *pipelinev1.TaskRun, message string, defau
 	}
 	prs.Spec.PipelineSpec = pipelineSpec
 	prs.Spec.TaskRunTemplate.PodTemplate = fs.PodTemplate
-	//prs.Spec.Resources = fs.Resources
 	prs.Spec.TaskRunTemplate.ServiceAccountName = fs.ServiceAccountName
 	prs.Spec.Workspaces = fs.Workspaces
 	defaultValues.Apply(prs)
