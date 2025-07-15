@@ -75,7 +75,7 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:latest --build-arg=VERSION=$VERSION
         - name: chart-docs
           resources: {}
-        - image: ghcr.io/jenkins-x/jx-boot:3.10.131
+        - image: ghcr.io/jenkins-x/jx-boot:3.11.111
           name: changelog
           resources: {}
           script: |
