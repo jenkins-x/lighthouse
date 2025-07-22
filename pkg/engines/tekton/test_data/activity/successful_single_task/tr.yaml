@@ -94,7 +94,7 @@ status:
       reason: Completed
       startedAt: "2020-07-20T17:36:18Z"
   - container: step-git-source-jenkins-x-lighthouse-pr-854-bbs-d5q9c-7btdc
-    imageID: docker-pullable://gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
+    imageID: docker-pullable://ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
     name: git-source-jenkins-x-lighthouse-pr-854-bbs-d5q9c-7btdc
     terminated:
       containerID: docker://e6d77435b8309a85d493399a9570ebf6b1260bbbdc576ce8c4daeb3a62330020

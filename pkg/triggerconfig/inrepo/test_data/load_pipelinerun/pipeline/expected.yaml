@@ -5153,7 +5153,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -6522,7 +6522,7 @@ spec:
     - name: verbose
       value: "true"
     - name: gitInitImage
-      value: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+      value: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
     - name: BUILD_ID
       value: ""
     - name: JOB_NAME
@@ -6598,7 +6598,7 @@ spec:
         description: log the commands used during execution
         name: verbose
         type: string
-      - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+      - default: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
         description: the image used where the git-init binary is
         name: gitInitImage
         type: string
@@ -6772,7 +6772,7 @@ spec:
               description: log the commands used during execution
               name: verbose
               type: string
-            - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+            - default: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
               description: the image used where the git-init binary is
               name: gitInitImage
               type: string
@@ -8326,7 +8326,7 @@ spec:
             workingDir: /workspace/my-source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -9295,7 +9295,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -9552,7 +9552,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -14519,7 +14519,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -15888,7 +15888,7 @@ spec:
     - name: verbose
       value: "true"
     - name: gitInitImage
-      value: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+      value: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
     - name: BUILD_ID
       value: ""
     - name: JOB_NAME
@@ -15964,7 +15964,7 @@ spec:
         description: log the commands used during execution
         name: verbose
         type: string
-      - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+      - default: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
         description: the image used where the git-init binary is
         name: gitInitImage
         type: string
@@ -16138,7 +16138,7 @@ spec:
               description: log the commands used during execution
               name: verbose
               type: string
-            - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+            - default: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
               description: the image used where the git-init binary is
               name: gitInitImage
               type: string
@@ -17692,7 +17692,7 @@ spec:
             workingDir: /workspace/my-source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -18661,7 +18661,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -18918,7 +18918,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -23885,7 +23885,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -25254,7 +25254,7 @@ spec:
     - name: verbose
       value: "true"
     - name: gitInitImage
-      value: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+      value: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
     - name: BUILD_ID
       value: ""
     - name: JOB_NAME
@@ -25330,7 +25330,7 @@ spec:
         description: log the commands used during execution
         name: verbose
         type: string
-      - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+      - default: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
         description: the image used where the git-init binary is
         name: gitInitImage
         type: string
@@ -25504,7 +25504,7 @@ spec:
               description: log the commands used during execution
               name: verbose
               type: string
-            - default: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
+            - default: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.18.1
               description: the image used where the git-init binary is
               name: gitInitImage
               type: string
@@ -27058,7 +27058,7 @@ spec:
             workingDir: /workspace/my-source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -28027,7 +28027,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh
@@ -28284,7 +28284,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh

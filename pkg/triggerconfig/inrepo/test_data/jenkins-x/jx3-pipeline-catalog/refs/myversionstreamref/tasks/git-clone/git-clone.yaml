@@ -19,7 +19,7 @@ spec:
       cd $SUBDIR
       git checkout $PULL_BASE_SHA
       echo "checked out revision: $PULL_BASE_SHA to dir: $SUBDIR"
-    image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+    image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
     name: git-clone
     resources: { }
     workingDir: /workspace
