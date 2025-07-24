@@ -81,7 +81,7 @@ spec:
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION --build-arg=VERSION=$VERSION
-        - image: ghcr.io/jenkins-x/jx-boot:3.10.131
+        - image: ghcr.io/jenkins-x/jx-boot:3.11.111
           name: release-chart
           resources: {}
           script: |

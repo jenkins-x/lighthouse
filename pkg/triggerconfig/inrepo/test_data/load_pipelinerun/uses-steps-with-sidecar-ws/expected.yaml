@@ -202,7 +202,7 @@ spec:
             workingDir: /workspace/source
           steps:
             - computeResources: {}
-              image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
+              image: ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init:v0.19.0
               name: git-clone
               script: |
                 #!/bin/sh

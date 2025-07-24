@@ -42,7 +42,7 @@ status:
       reason: Error
       startedAt: "2020-07-20T18:50:34Z"
   - container: step-git-source-jenkins-x-charts-jx-build-templ-wbbx6-67k4m
-    imageID: docker-pullable://gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
+    imageID: docker-pullable://ghcr.io/tektoncd/github.com/tektoncd/pipeline/cmd/git-init@sha256:add85f33c5ac0aa02712ec6e6caad3d4bb7faa33043c5ca252a824b050b4b8e2
     name: git-source-jenkins-x-charts-jx-build-templ-wbbx6-67k4m
     terminated:
       containerID: docker://db96a8cc1edac1f8790fe553596da3e34b3ea69b8e5f8a1647d4b06d8f1a26cf
