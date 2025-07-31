@@ -1,80 +1,57 @@
 git:
   # git.kind -- Git SCM provider (`github`, `gitlab`, `stash`)
   kind: github
-
   # git.server -- Git server URL
   server: ""
-
 # lighthouseJobNamespace -- Namespace where `LighthouseJob`s and `Pod`s are created
 # @default -- Deployment namespace
 lighthouseJobNamespace: ""
-
 githubApp:
   # githubApp.enabled -- Enables GitHub app authentication
   enabled: false
-
   # githubApp.username -- GitHub app user name
-  username:  "jenkins-x[bot]"
-
+  username: "jenkins-x[bot]"
 # user -- Git user name (used when GitHub app authentication is not enabled)
 user: ""
-
 # oauthToken -- Git token (used when GitHub app authentication is not enabled)
 oauthToken: ""
-
 # oauthSecretName -- Existing Git token secret
 oauthSecretName: ""
-
 # oauthTokenVolumeMount -- Mount Git token as a volume instead of using an environment variable Secret reference (used when GitHub app authentication is not enabled)
 oauthTokenVolumeMount:
   enabled: false
-
 # hmacToken -- Secret used for webhooks
 hmacToken: ""
-
 # hmacSecretName -- Existing hmac secret to use for webhooks
 hmacSecretName: ""
-
 # hmacTokenEnabled -- Enables the use of a hmac token. This should always be enabled if possible - though some git providers don't support it such as bitbucket cloud
 hmacTokenEnabled: true
-
 # hmacTokenVolumeMount -- Mount hmac token as a volume instead of using an environment variable Secret reference
 hmacTokenVolumeMount:
   enabled: false
-
 # logFormat -- Log format either json or stackdriver
 logFormat: "json"
-
 # logService -- The name of the service registered with logging
 logService: ""
-
 # logStackSkip -- Comma separated stack frames to skip from the log
 logStackSkip: ""
-
 # scope -- limit permissions to namespace privileges
 scope: "cluster"
-
 cluster:
   crds:
     # cluster.crds.create -- Create custom resource definitions
     create: true
-
 image:
   # image.parentRepository -- Docker registry to pull images from
   parentRepository: ghcr.io/jenkins-x
-
   # image.tag -- Docker images tag
   # the following tag is latest on the main branch, it's a specific version on a git tag
-  tag: latest
-
+  tag: 1.25.8
   # image.pullPolicy -- Image pull policy
   pullPolicy: IfNotPresent
-
 # env -- Environment variables
 env:
   JX_DEFAULT_IMAGE: ""
-
-
 externalPlugins:
 - name: cd-indicators
   requiredResources:
@@ -86,70 +63,49 @@ externalPlugins:
   - kind: Service
     namespace: jx
     name: lighthouse-webui-plugin
-
 gcJobs:
   # gcJobs.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
-
   # gcJobs.maxAge -- Max age from which `LighthouseJob`s will be deleted
   maxAge: 168h
-
   # gcJobs.schedule -- Cron expression to periodically delete `LighthouseJob`s
   schedule: "0/30 * * * *"
-
   # gcJobs.failedJobsHistoryLimit -- Drives the failed jobs history limit
   failedJobsHistoryLimit: 1
-
   # gcJobs.successfulJobsHistoryLimit -- Drives the successful jobs history limit
   successfulJobsHistoryLimit: 3
-
   # gcJobs.concurrencyPolicy -- Drives the job's concurrency policy
   concurrencyPolicy: Forbid
-
   # gcJobs.backoffLimit -- Drives the job's backoff limit
   backoffLimit: 6
-
   image:
     # gcJobs.image.repository -- Template for computing the gc job docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-gc-jobs"
-
     # gcJobs.image.tag -- Template for computing the gc job docker image tag
     tag: "{{ .Values.image.tag }}"
-
     # gcJobs.image.pullPolicy -- Template for computing the gc job docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-
 webhooks:
   # webhooks.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
-
   # webhooks.replicaCount -- Number of replicas
   replicaCount: 1
-
   # webhooks.terminationGracePeriodSeconds -- Termination grace period for webhooks pods
   terminationGracePeriodSeconds: 180
-
   image:
     # webhooks.image.repository -- Template for computing the webhooks controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-webhooks"
-
     # webhooks.image.tag -- Template for computing the webhooks controller docker image tag
     tag: "{{ .Values.image.tag }}"
-
     # webhooks.image.pullPolicy -- Template for computing the webhooks controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-
-
   # webhooks.labels -- allow optional labels to be added to the webhook deployment
   labels: {}
   podLabels: {}
-
   # webhooks.podAnnotations -- Annotations applied to the webhooks pods
   podAnnotations: {}
-
   # webhooks.serviceName -- Allows overriding the service name, this is here for compatibility reasons, regular users should clear this out
   serviceName: hook
-
   # webhooks.service -- Service settings for the webhooks controller
   service:
     type: ClusterIP
@@ -165,348 +121,254 @@ webhooks:
       cpu: 100m
       # may require more memory to perform the initial 'git clone' cmd for big repositories
       memory: 512Mi
-
     # webhooks.resources.requests -- Resource requests applied to the webhooks pods
     requests:
       cpu: 80m
       memory: 128Mi
-
   # webhooks.probe -- Liveness and readiness probes settings
   probe:
     path: /
-
   # webhooks.livenessProbe -- Liveness probe configuration
   livenessProbe:
     initialDelaySeconds: 60
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 1
-
   # webhooks.readinessProbe -- Readiness probe configuration
   readinessProbe:
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 1
-
   # webhooks.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the webhooks pods
   nodeSelector: {}
-
   # webhooks.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the webhooks pods
   affinity: {}
-
   # webhooks.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the webhooks pods
   tolerations: []
-
   # webhooks.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the webhooks pods
   securityContext: {}
-
   # webhooks.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the webhooks containers
   containerSecurityContext: {}
-
   ingress:
     # webhooks.ingress.enabled -- Enable webhooks ingress
     enabled: false
-
     # webhooks.ingress.annotations -- Webhooks ingress annotations
     annotations: {}
-    
     # webhooks.ingress.ingressClassName -- Webhooks ingress ingressClassName
     ingressClassName: null
-
     # webhooks.ingress.hosts -- Webhooks ingress host names
     hosts: []
-
     tls:
       # webhooks.ingress.tls.enabled -- Enable webhooks ingress tls
       enabled: false
       # webhooks.ingress.tls.secretName -- Specify webhooks ingress tls secretName
       secretName: ""
-
   # webhooks.customDeploymentTriggerCommand -- deployments can configure the ability to allow custom lighthouse triggers
   # using their own unique chat prefix, for example extending the default `/test` trigger prefix let them specify
   # `customDeploymentTriggerPrefix: foo` which means they can also use their own custom trigger /foo mycoolthing
   customDeploymentTriggerCommand: ""
-
 foghorn:
   # foghorn.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
-
   # foghorn.replicaCount -- Number of replicas
   replicaCount: 1
-  
   # foghorn.terminationGracePeriodSeconds -- Termination grace period for foghorn pods
   terminationGracePeriodSeconds: 180
-
   image:
     # foghorn.image.repository -- Template for computing the foghorn controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-foghorn"
-
     # foghorn.image.tag -- Template for computing the foghorn controller docker image tag
     tag: "{{ .Values.image.tag }}"
-
     # foghorn.image.pullPolicy -- Template for computing the foghorn controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-
   resources:
     # foghorn.resources.limits -- Resource limits applied to the foghorn pods
     limits:
       cpu: 100m
       memory: 256Mi
-
     # foghorn.resources.requests -- Resource requests applied to the foghorn pods
     requests:
       cpu: 80m
       memory: 128Mi
-
   # foghorn.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the foghorn pods
   nodeSelector: {}
-
   # foghorn.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the foghorn pods
   affinity: {}
-
   # foghorn.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the foghorn pods
   tolerations: []
-
   # foghorn.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the foghorn pods
   securityContext: {}
-
   # foghorn.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the foghorn containers
   containerSecurityContext: {}
-
-
 tektoncontroller:
   # tektoncontroller.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
-
   # tektoncontroller.dashboardURL -- the dashboard URL (e.g. Tekton dashboard)
   dashboardURL: ''
   # tektoncontroller.dashboardTemplate -- Go template expression for URLs in the dashboard if not using Tekton dashboard
   dashboardTemplate: ''
-
   # tektoncontroller.replicaCount -- Number of replicas
   replicaCount: 1
-
   # tektoncontroller.terminationGracePeriodSeconds -- Termination grace period for tekton controller pods
   terminationGracePeriodSeconds: 180
-
   # tektoncontroller.enableRerunStatusUpdate -- Enable updating the status at the git provider when PipelineRuns are rerun
   enableRerunStatusUpdate: false
-
   image:
     # tektoncontroller.image.repository -- Template for computing the tekton controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-tekton-controller"
-
     # tektoncontroller.image.tag -- Template for computing the tekton controller docker image tag
     tag: "{{ .Values.image.tag }}"
-
     # tektoncontroller.image.pullPolicy -- Template for computing the tekton controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-
   # tektoncontroller.podAnnotations -- Annotations applied to the tekton controller pods
   podAnnotations: {}
-
   # tektoncontroller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the tekton controller pods
   nodeSelector: {}
-
   # tektoncontroller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the tekton controller pods
   affinity: {}
-
   # tektoncontroller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the tekton controller pods
   tolerations: []
-
   # tektoncontroller.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the tekton controller pods
   securityContext: {}
-
   # tektoncontroller.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the tekton controller containers
   containerSecurityContext: {}
-
   resources:
     # tektoncontroller.resources.limits -- Resource limits applied to the tekton controller pods
     limits:
       cpu: 100m
       memory: 256Mi
-
     # tektoncontroller.resources.requests -- Resource requests applied to the tekton controller pods
     requests:
       cpu: 80m
       memory: 128Mi
-
   # tektoncontroller.service -- Service settings for the tekton controller
   service:
     annotations: {}
-
 jenkinscontroller:
   # jenkinscontroller.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
-
   # jenkinscontroller.jenkinsURL -- The URL of the Jenkins instance
   jenkinsURL:
-
   # jenkinscontroller.jenkinsUser -- The username for the Jenkins user
   jenkinsUser:
-
   # jenkinscontroller.jenkinsToken -- The token for authenticating the Jenkins user
   jenkinsToken:
-
   # jenkinscontroller.terminationGracePeriodSeconds -- Termination grace period for jenkins controller pods
   terminationGracePeriodSeconds: 180
-
   image:
     # jenkinscontroller.image.repository -- Template for computing the Jenkins controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-jenkins-controller"
-
     # jenkinscontroller.image.tag -- Template for computing the jenkins controller docker image tag
     tag: "{{ .Values.image.tag }}"
-
     # jenkinscontroller.image.pullPolicy -- Template for computing the jenkins controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-
   # jenkinscontroller.podAnnotations -- Annotations applied to the jenkins controller pods
   podAnnotations: {}
-
   # jenkinscontroller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the jenkins controller pods
   nodeSelector: {}
-
   # jenkinscontroller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the jenkins controller pods
   affinity: {}
-
   # jenkinscontroller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the jenkins controller pods
   tolerations: []
-
   # jenkinscontroller.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the jenkins controller pods
   securityContext: {}
-
   # jenkinscontroller.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the jenkins controller containers
   containerSecurityContext: {}
-
   resources:
     # jenkinscontroller.resources.limits -- Resource limits applied to the jenkins controller pods
     limits:
       cpu: 100m
       memory: 256Mi
-
     # jenkinscontroller.resources.requests -- Resource requests applied to the jenkins controller pods
     requests:
       cpu: 80m
       memory: 128Mi
-
   # jenkinscontroller.service -- Service settings for the jenkins controller
   service:
     annotations: {}
-
 keeper:
   # keeper.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
-
   # keeper.statusContextLabel -- Label used to report status to git provider
   statusContextLabel: "Lighthouse Merge Status"
-
   # keeper.replicaCount -- Number of replicas
   replicaCount: 1
-
   # keeper.terminationGracePeriodSeconds -- Termination grace period for keeper pods
   terminationGracePeriodSeconds: 30
-
   image:
     # keeper.image.repository -- Template for computing the keeper controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-keeper"
-
     # keeper.image.tag -- Template for computing the keeper controller docker image tag
     tag: "{{ .Values.image.tag }}"
-
     # keeper.image.pullPolicy -- Template for computing the keeper controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-
   # keeper.podAnnotations -- Annotations applied to the keeper pods
   podAnnotations: {}
-
   # keeper.env -- Lets you define keeper specific environment variables
   env: {}
-
   # keeper.service -- Service settings for the keeper controller
   service:
     type: ClusterIP
     externalPort: 80
     internalPort: 8888
-
   resources:
     # keeper.resources.limits -- Resource limits applied to the keeper pods
     limits:
       cpu: 400m
       memory: 512Mi
-
     # keeper.resources.requests -- Resource requests applied to the keeper pods
     requests:
       cpu: 100m
       memory: 128Mi
-
   # keeper.probe -- Liveness and readiness probes settings
   probe:
     path: /
-
   # keeper.livenessProbe -- Liveness probe configuration
   livenessProbe:
     initialDelaySeconds: 120
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 1
-
   # keeper.readinessProbe -- Readiness probe configuration
   readinessProbe:
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 1
-
   datadog:
     # keeper.datadog.enabled -- Enables datadog
     enabled: "true"
-
   # keeper.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the keeper pods
   nodeSelector: {}
-
   # keeper.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the keeper pods
   affinity: {}
-
   # keeper.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the keeper pods
   tolerations: []
-
   # keeper.securityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the keeper pods
   securityContext: {}
-
   # keeper.containerSecurityContext -- [Security Context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) applied to the keeper containers
   containerSecurityContext: {}
-
 poller:
   # poller.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
-
   # poller.enabled -- Whether to enable or disable the poller component
   enabled: false
-
   # poller.replicaCount -- Number of replicas
   replicaCount: 1
-
   # poller.terminationGracePeriodSeconds -- Termination grace period for poller pods
   terminationGracePeriodSeconds: 30
-
   image:
     # poller.image.repository -- Template for computing the poller controller docker image repository
     repository: "{{ .Values.image.parentRepository }}/lighthouse-poller"
-
     # poller.image.tag -- Template for computing the poller controller docker image tag
     tag: "{{ .Values.image.tag }}"
-
     # poller.image.pullPolicy -- Template for computing the poller controller docker image pull policy
     pullPolicy: "{{ .Values.image.pullPolicy }}"
-
   # poller.podAnnotations -- Annotations applied to the poller pods
   podAnnotations: {}
-
   # poller.env -- Lets you define poller specific environment variables
   env:
     # poller.env.POLL_PERIOD the default time period between polling releases and pull requests
     POLL_PERIOD: 20s
-
     # poller.env.POLL_RELEASE_PERIOD the time period between polling releases
     # POLL_RELEASE_PERIOD: 20s
 
@@ -515,77 +377,58 @@ poller:
 
     # poller.env.POLL_HOOK_ENDPOINT the hook service endpoint to post webhooks to
     POLL_HOOK_ENDPOINT: http://hook/hook/poll
-
   # poller.contextMatchPattern -- Regex pattern to use to match commit status context
   contextMatchPattern: ""
-
   # poller.requireReleaseSuccess -- Keep polling releases until the most recent commit status is successful
   requireReleaseSuccess: false
-
   resources:
     # poller.resources.limits -- Resource limits applied to the poller pods
     limits:
       cpu: 400m
       memory: 512Mi
-
     # poller.resources.requests -- Resource requests applied to the poller pods
     requests:
       cpu: 100m
       memory: 128Mi
-
   # poller.probe -- Liveness and readiness probes settings
   probe:
     path: /
-
   # keeper.internalPort -- The internal port used to view metrics etc
   internalPort: 8888
-
   # poller.livenessProbe -- Liveness probe configuration
   livenessProbe:
     initialDelaySeconds: 120
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 1
-
   # poller.readinessProbe -- Readiness probe configuration
   readinessProbe:
     periodSeconds: 10
     successThreshold: 1
     timeoutSeconds: 1
-
   datadog:
     # poller.datadog.enabled -- Enables datadog
     enabled: "true"
-
   # poller.nodeSelector -- [Node selector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector) applied to the poller pods
   nodeSelector: {}
-
   # poller.affinity -- [Affinity rules](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity) applied to the poller pods
   affinity: {}
-
   # poller.tolerations -- [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) applied to the poller pods
   tolerations: []
-
 engines:
   # engines.jx -- Enables the jx engine
   jx: true
-
   # engines.tekton -- Enables the tekton engine
   tekton: false
-
   # engines.jenkins -- Enables the Jenkins engine
   jenkins: false
-
 configMaps:
   # configMaps.create -- Enables creation of `config.yaml` and `plugins.yaml` config maps
   create: false
-
   # configMaps.config -- Raw `config.yaml` content
   config: null
-
   # configMaps.plugins -- Raw `plugins.yaml` content
   plugins: null
-
   # configMaps.configUpdater -- Settings used to configure the `config-updater` plugin
   configUpdater:
     orgAndRepo: ""
