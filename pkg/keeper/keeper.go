@@ -31,6 +31,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/labels"
+
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
@@ -79,6 +81,7 @@ type scmProviderClient interface {
 	GetFile(string, string, string, string) ([]byte, error)
 	ListFiles(string, string, string, string) ([]*scm.FileEntry, error)
 	GetIssueLabels(string, string, int, bool) ([]*scm.Label, error)
+	AddLabel(string, string, int, string, bool) error
 }
 
 type contextChecker interface {
@@ -596,16 +599,20 @@ func (c *DefaultController) initSubpoolData(sp *subpool) error {
 // should be deleted.
 func filterSubpool(spc scmProviderClient, sp *subpool) *subpool {
 	var toKeep []PullRequest
+	var conflicting []int
 	for _, pr := range sp.prs {
 		p := pr
 		if !filterPR(spc, sp, &p) {
 			toKeep = append(toKeep, pr)
+		} else if pr.Mergeable == githubql.MergeableStateConflicting && !hasLabel(&pr, labels.HasConflicts) {
+			conflicting = append(conflicting, int(pr.Number))
 		}
 	}
 	if len(toKeep) == 0 {
 		return nil
 	}
 	sp.prs = toKeep
+	sp.conflictingPRs = conflicting
 	return sp
 }
 
@@ -834,7 +841,7 @@ func accumulate(presubmits map[int][]job.Presubmit, prs []PullRequest, pjs []v1a
 	missingTests = map[int][]job.Presubmit{}
 	for _, pr := range prs {
 		// Accumulate the best result for each job (Passing > Pending > Failing/Unknown)
-		// We can ignore the baseSHA here because the subPool only contains PipelineActivitys with the correct baseSHA
+		// We can ignore the baseSHA here because the subPool only contains LighthouseJobs with the correct baseSHA
 		psStates := make(map[string]simpleState)
 		for _, pj := range pjs {
 			if pj.Spec.Type != job.PresubmitJob {
@@ -948,6 +955,11 @@ func (c *DefaultController) pickBatch(sp subpool, cc contextChecker) ([]PullRequ
 			if batchLimit > 0 && len(res) >= batchLimit {
 				break
 			}
+		}
+	}
+	for _, prNumber := range sp.conflictingPRs {
+		if err := c.spc.AddLabel(sp.org, sp.repo, prNumber, labels.HasConflicts, true); err != nil {
+			sp.log.Warnf("error while adding Label %q: %v", labels.HasConflicts, err)
 		}
 	}
 	return res, nil
@@ -1479,13 +1491,13 @@ func prMeta(prs ...PullRequest) []v1alpha1.Pull {
 
 func sortPools(pools []Pool) {
 	sort.Slice(pools, func(i, j int) bool {
-		if string(pools[i].Org) != string(pools[j].Org) {
-			return string(pools[i].Org) < string(pools[j].Org)
+		if pools[i].Org != pools[j].Org {
+			return pools[i].Org < pools[j].Org
 		}
-		if string(pools[i].Repo) != string(pools[j].Repo) {
-			return string(pools[i].Repo) < string(pools[j].Repo)
+		if pools[i].Repo != pools[j].Repo {
+			return pools[i].Repo < pools[j].Repo
 		}
-		return string(pools[i].Branch) < string(pools[j].Branch)
+		return pools[i].Branch < pools[j].Branch
 	})
 
 	sortPRs := func(prs []PullRequest) {
@@ -1510,8 +1522,9 @@ type subpool struct {
 
 	// ljs contains all LighthouseJobs of type Presubmit or Batch
 	// that have the same baseSHA as the subpool
-	ljs []v1alpha1.LighthouseJob
-	prs []PullRequest
+	ljs            []v1alpha1.LighthouseJob
+	prs            []PullRequest
+	conflictingPRs []int
 
 	cc contextChecker
 	// presubmit contains all required presubmits for each PR
@@ -1900,13 +1913,13 @@ func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequ
 		mergeable = githubql.MergeableStateConflicting
 	}
 
-	labels := struct {
+	qlLabels := struct {
 		Nodes []struct {
 			Name githubql.String
 		}
 	}{}
 	for _, l := range scmPR.Labels {
-		labels.Nodes = append(labels.Nodes, struct{ Name githubql.String }{Name: githubql.String(l.Name)})
+		qlLabels.Nodes = append(qlLabels.Nodes, struct{ Name githubql.String }{Name: githubql.String(l.Name)})
 	}
 
 	return &PullRequest{
@@ -1917,7 +1930,7 @@ func scmPRToGraphQLPR(scmPR *scm.PullRequest, scmRepo *scm.Repository) *PullRequ
 		HeadRefOID:  githubql.String(scmPR.Head.Sha),
 		Mergeable:   mergeable,
 		Repository:  scmRepoToGraphQLRepo(scmRepo),
-		Labels:      labels,
+		Labels:      qlLabels,
 		Body:        githubql.String(scmPR.Body),
 		Title:       githubql.String(scmPR.Title),
 		UpdatedAt:   githubql.DateTime{Time: scmPR.Updated},
