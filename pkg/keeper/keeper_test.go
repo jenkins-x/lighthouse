@@ -1466,7 +1466,6 @@ func TestTakeAction(t *testing.T) {
 				for prNum, rawErr := range tc.mergeErrs {
 					detailedErr := mergeErrorDetail(rawErr)
 					expectedErr := rollupMergeErrors(prsToMerge, failed, merged, []error{detailedErr})
-					//fmt.Print(fgc.mergeErrComments[prNum])
 					assert.Truef(t, strings.Contains(fgc.mergeErrComments[prNum], "Failed to merge this PR"), "Expected error comment not found")
 					assert.Truef(t, strings.Contains(fgc.mergeErrComments[prNum], fmt.Sprintf("due to:\n>%s\n", expectedErr.Error())), "Expected error comment not found")
 				}
