@@ -514,6 +514,14 @@ type fgc struct {
 	fakeClient     *scm.Client
 }
 
+func (f *fgc) ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error) {
+	return nil, nil
+}
+
+func (f *fgc) EditComment(owner, repo string, number int, id int, comment string, pr bool) error {
+	return nil
+}
+
 type commitStatus struct {
 	status      string
 	description string
@@ -1458,7 +1466,9 @@ func TestTakeAction(t *testing.T) {
 				for prNum, rawErr := range tc.mergeErrs {
 					detailedErr := mergeErrorDetail(rawErr)
 					expectedErr := rollupMergeErrors(prsToMerge, failed, merged, []error{detailedErr})
-					assert.Equal(t, fmt.Sprintf("Failed to merge this PR due to:\n>%s\n", expectedErr.Error()), fgc.mergeErrComments[prNum])
+					//fmt.Print(fgc.mergeErrComments[prNum])
+					assert.Truef(t, strings.Contains(fgc.mergeErrComments[prNum], "Failed to merge this PR"), "Expected error comment not found")
+					assert.Truef(t, strings.Contains(fgc.mergeErrComments[prNum], fmt.Sprintf("due to:\n>%s\n", expectedErr.Error())), "Expected error comment not found")
 				}
 			} else if act != tc.action {
 				t.Errorf("Wrong action. Got %v, wanted %v.", act, tc.action)

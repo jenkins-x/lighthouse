@@ -67,6 +67,7 @@ type scmProviderClient interface {
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
+	ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error)
 	GetRef(string, string, string) (string, error)
 	Merge(string, string, int, scmprovider.MergeDetails) error
 	Query(context.Context, interface{}, map[string]interface{}) error
@@ -76,6 +77,7 @@ type scmProviderClient interface {
 	GetRepositoryByFullName(string) (*scm.Repository, error)
 	ListAllPullRequestsForFullNameRepo(string, scm.PullRequestListOptions) ([]*scm.PullRequest, error)
 	CreateComment(owner, repo string, number int, isPR bool, comment string) error
+	EditComment(owner, repo string, number int, id int, comment string, pr bool) error
 	GetFile(string, string, string, string) ([]byte, error)
 	ListFiles(string, string, string, string) ([]*scm.FileEntry, error)
 	GetIssueLabels(string, string, int, bool) ([]*scm.Label, error)
@@ -1389,11 +1391,40 @@ func (c *DefaultController) presubmitsByPull(sp *subpool) (map[int][]job.Presubm
 }
 
 func (c *DefaultController) commentOnPRsWithFailedMerge(prs []PullRequest, errorString string) error {
-	commentBody := fmt.Sprintf("Failed to merge this PR due to:\n>%s\n", errorString)
+	timestamp := time.Now().Format(time.RFC1123) // Format the time to a readable string
+	commentBody := fmt.Sprintf("Failed to merge this PR at %s due to:\n>%s\n", timestamp, errorString)
 
 	var errs []error
 	for _, pr := range prs {
-		err := c.spc.CreateComment(string(pr.Repository.Owner.Login), string(pr.Repository.Name), int(pr.Number), true, commentBody)
+		// Fetch existing comments
+		comments, err := c.spc.ListPullRequestComments(string(pr.Repository.Owner.Login), string(pr.Repository.Name), int(pr.Number))
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		// order comments by creation date
+		sort.Slice(comments, func(i, j int) bool {
+			return comments[i].Created.Before(comments[j].Created)
+		})
+
+		// Find the last keeper comment
+		var lastKeeperCommentID *int
+		// check the last comment
+		for i := len(comments) - 1; i >= 0; i-- {
+			if strings.Contains(comments[i].Body, "Failed to merge this PR at") {
+				lastKeeperCommentID = &comments[i].ID
+				break
+			}
+		}
+
+		// Update the existing comment if found, otherwise create a new one
+		if lastKeeperCommentID != nil {
+			err = c.spc.EditComment(string(pr.Repository.Owner.Login), string(pr.Repository.Name), *lastKeeperCommentID, int(pr.Number), commentBody, true)
+		} else {
+			err = c.spc.CreateComment(string(pr.Repository.Owner.Login), string(pr.Repository.Name), int(pr.Number), true, commentBody)
+		}
+
 		if err != nil {
 			errs = append(errs, err)
 		}
