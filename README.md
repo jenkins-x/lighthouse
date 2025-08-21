@@ -180,9 +180,13 @@ localizer expose jx/hook --stop
 #### Telepresence 
 You can replace the running version in your cluster with the one running locally using [telepresence](https://www.telepresence.io/).  
 First install the [telepresence cli](https://www.telepresence.io/docs/latest/install/) on your device then [the traffic-manager](https://www.telepresence.io/docs/latest/install/helm/) into your cluster 
+and connect to the cluster:
+```bash
+telepresence connect
+```
 For webhooks, just run:
 ```bash
-telepresence intercept hook --namespace=jx --port 80 --env-file=/tmp/webhooks-env
+telepresence intercept lighthouse-webhooks --namespace=jx --port 80 --env-file=/tmp/webhooks-env
 ```
 in another terminal:
 ```bash
