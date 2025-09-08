@@ -146,7 +146,7 @@ func (c *realClowder) readCat(category string, movieCat bool) (string, error) {
 	cats := make([]catResult, 0)
 	uri := c.URL(category, movieCat)
 	if grumpyKeywords.MatchString(category) {
-		cats = append(cats, catResult{grumpyURL})
+		return catResult{grumpyURL}.Format()
 	} else {
 		resp, err := http.Get(uri) // #nosec
 		if err != nil {
