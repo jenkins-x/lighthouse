@@ -318,9 +318,12 @@ func (c *DefaultController) Sync() error {
 	prs := make(map[string]PullRequest)
 	if c.spc.SupportsGraphQL() {
 		for _, query := range c.config().Keeper.Queries {
-			results := bucketedGraphQLSearch(c.spc.Query, query, c.logger)
-			if len(results) == 0 {
-				continue
+			results, err := bucketedGraphQLSearch(c.spc.Query, query, c.logger)
+			if err != nil && len(results) == 0 {
+				return errors.Wrap(err, "failed to perform GraphQL queries for PRs, no results returned")
+			}
+			if err != nil {
+				c.logger.WithError(err).Warnf("Error performing GraphQL queries for PRs but partial results were returned")
 			}
 
 			for _, pr := range results {
@@ -1885,22 +1888,20 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 	return relevantPRs, nil
 }
 
-func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entry) []PullRequest {
+func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entry) ([]PullRequest, error) {
 	bucketedQueries := query.BucketedQueries(100)
 	var wg sync.WaitGroup
 	resultsChan := make(chan []PullRequest, len(bucketedQueries))
+	errsChan := make(chan error, len(bucketedQueries))
 
 	for idx, q := range bucketedQueries {
 		wg.Add(1)
 		go func(idx int, q string) {
 			defer wg.Done()
 			bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
-			if err != nil && len(bucketResults) == 0 {
-				log.WithError(err).WithField("query", q).Warnf("bucketed query (index %d) errored and returned no results", idx)
-				return
-			}
 			if err != nil {
-				log.WithError(err).WithField("query", q).Warnf("bucketed query (index %d) errored but returned partial results", idx)
+				errsChan <- errors.Wrapf(err, "graphQLSearch failed for bucket %d with query %s", idx, q)
+				return
 			}
 			resultsChan <- bucketResults
 		}(idx, q)
@@ -1908,12 +1909,20 @@ func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entr
 
 	wg.Wait()
 	close(resultsChan)
+	close(errsChan)
 
 	var results []PullRequest
 	for r := range resultsChan {
 		results = append(results, r...)
 	}
-	return results
+	var errs []error
+	for err := range errsChan {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return results, errors.Wrap(errorutil.NewAggregate(errs...), "one or more bucketed GraphQL searches failed")
+	}
+	return results, nil
 }
 
 func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {
