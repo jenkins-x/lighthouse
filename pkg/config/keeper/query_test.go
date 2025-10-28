@@ -61,3 +61,111 @@ func TestValidate(t *testing.T) {
 		}
 	}
 }
+
+func TestQuery_BucketedQueries(t *testing.T) {
+	testCases := []struct {
+		name            string
+		query           keeper.Query
+		bucketSize      int
+		expectedQueries []string
+	}{
+		{
+			name: "Single Query - Full Bucket",
+			query: keeper.Query{
+				Orgs:                   []string{"org"},
+				Repos:                  []string{"org/repo1", "org/repo2"},
+				ExcludedRepos:          []string{"org/repo0"},
+				ExcludedBranches:       []string{"develop"},
+				IncludedBranches:       []string{"release"},
+				Labels:                 []string{"enhancement"},
+				MissingLabels:          []string{"wip"},
+				Milestone:              "v1.0",
+				ReviewApprovedRequired: true,
+			},
+			bucketSize: 2,
+			expectedQueries: []string{
+				"is:pr state:open org:\"org\" repo:\"org/repo1\" repo:\"org/repo2\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+			},
+		},
+		{
+			name: "Two Queries - Full Bucket",
+			query: keeper.Query{
+				Orgs:                   []string{"org"},
+				Repos:                  []string{"org/repo1", "org/repo2", "org/repo3", "org/repo4"},
+				ExcludedRepos:          []string{"org/repo0"},
+				ExcludedBranches:       []string{"develop"},
+				IncludedBranches:       []string{"release"},
+				Labels:                 []string{"enhancement"},
+				MissingLabels:          []string{"wip"},
+				Milestone:              "v1.0",
+				ReviewApprovedRequired: true,
+			},
+			bucketSize: 2,
+			expectedQueries: []string{
+				"is:pr state:open org:\"org\" repo:\"org/repo1\" repo:\"org/repo2\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+				"is:pr state:open org:\"org\" repo:\"org/repo3\" repo:\"org/repo4\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+			},
+		},
+		{
+			name: "Three Queries - Partial Bucket",
+			query: keeper.Query{
+				Orgs:                   []string{"org"},
+				Repos:                  []string{"org/repo1", "org/repo2", "org/repo3", "org/repo4", "org/repo5"},
+				ExcludedRepos:          []string{"org/repo0"},
+				ExcludedBranches:       []string{"develop"},
+				IncludedBranches:       []string{"release"},
+				Labels:                 []string{"enhancement"},
+				MissingLabels:          []string{"wip"},
+				Milestone:              "v1.0",
+				ReviewApprovedRequired: true,
+			},
+			bucketSize: 2,
+			expectedQueries: []string{
+				"is:pr state:open org:\"org\" repo:\"org/repo1\" repo:\"org/repo2\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+				"is:pr state:open org:\"org\" repo:\"org/repo3\" repo:\"org/repo4\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+				"is:pr state:open org:\"org\" repo:\"org/repo5\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+			},
+		},
+		{
+			name: "No Repos",
+			query: keeper.Query{
+				Orgs:                   []string{"org"},
+				ExcludedRepos:          []string{"org/repo0"},
+				ExcludedBranches:       []string{"develop"},
+				IncludedBranches:       []string{"release"},
+				Labels:                 []string{"enhancement"},
+				MissingLabels:          []string{"wip"},
+				Milestone:              "v1.0",
+				ReviewApprovedRequired: true,
+			},
+			bucketSize: 2,
+			expectedQueries: []string{
+				"is:pr state:open org:\"org\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+			},
+		},
+		{
+			name: "Bucket Size == 0",
+			query: keeper.Query{
+				Orgs:                   []string{"org"},
+				Repos:                  []string{"org/repo1", "org/repo2"},
+				ExcludedRepos:          []string{"org/repo0"},
+				ExcludedBranches:       []string{"develop"},
+				IncludedBranches:       []string{"release"},
+				Labels:                 []string{"enhancement"},
+				MissingLabels:          []string{"wip"},
+				Milestone:              "v1.0",
+				ReviewApprovedRequired: true,
+			},
+			bucketSize: 0,
+			expectedQueries: []string{
+				"is:pr state:open org:\"org\" repo:\"org/repo1\" repo:\"org/repo2\" -repo:\"org/repo0\" -base:\"develop\" base:\"release\" label:\"enhancement\" -label:\"wip\" milestone:\"v1.0\" review:approved",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualQueries := tc.query.BucketedQueries(tc.bucketSize)
+			assert.Equal(t, tc.expectedQueries, actualQueries)
+		})
+	}
+}

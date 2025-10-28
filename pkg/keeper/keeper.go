@@ -318,13 +318,9 @@ func (c *DefaultController) Sync() error {
 	prs := make(map[string]PullRequest)
 	if c.spc.SupportsGraphQL() {
 		for _, query := range c.config().Keeper.Queries {
-			q := query.Query()
-			results, err := graphQLSearch(c.spc.Query, c.logger, q, time.Time{}, time.Now())
-			if err != nil && len(results) == 0 {
-				return fmt.Errorf("query %q, err: %v", q, err)
-			}
+			results, err := bucketedGraphQLSearch(c.spc.Query, query, c.logger)
 			if err != nil {
-				c.logger.WithError(err).WithField("query", q).Warning("found partial results")
+				return err
 			}
 
 			for _, pr := range results {
@@ -1887,6 +1883,22 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 	}
 
 	return relevantPRs, nil
+}
+
+func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entry) ([]PullRequest, error) {
+	bucketedQueries := query.BucketedQueries(100)
+	var results []PullRequest
+	for idx, q := range bucketedQueries {
+		bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
+		if err != nil && len(results) == 0 {
+			return nil, fmt.Errorf("bucketed query (index %d) failed. %q, err: %v", idx, q, err)
+		}
+		if err != nil {
+			log.WithError(err).WithField("query", q).Warnf("bucketed query (index %d) errored but returned partial results", idx)
+		}
+		results = append(results, bucketResults...)
+	}
+	return results, nil
 }
 
 func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {
