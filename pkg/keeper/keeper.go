@@ -1890,7 +1890,7 @@ func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entr
 	var results []PullRequest
 	for idx, q := range bucketedQueries {
 		bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
-		if err != nil && len(results) == 0 {
+		if err != nil && len(bucketResults) == 0 {
 			return nil, fmt.Errorf("bucketed query (index %d) failed. %q, err: %v", idx, q, err)
 		}
 		if err != nil {
