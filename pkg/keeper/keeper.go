@@ -318,9 +318,9 @@ func (c *DefaultController) Sync() error {
 	prs := make(map[string]PullRequest)
 	if c.spc.SupportsGraphQL() {
 		for _, query := range c.config().Keeper.Queries {
-			results, err := bucketedGraphQLSearch(c.spc.Query, query, c.logger)
-			if err != nil {
-				return err
+			results := bucketedGraphQLSearch(c.spc.Query, query, c.logger)
+			if len(results) == 0 {
+				continue
 			}
 
 			for _, pr := range results {
@@ -1885,20 +1885,35 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 	return relevantPRs, nil
 }
 
-func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entry) ([]PullRequest, error) {
+func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entry) []PullRequest {
 	bucketedQueries := query.BucketedQueries(100)
-	var results []PullRequest
+	var wg sync.WaitGroup
+	resultsChan := make(chan []PullRequest, len(bucketedQueries))
+
 	for idx, q := range bucketedQueries {
-		bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
-		if err != nil && len(bucketResults) == 0 {
-			return nil, fmt.Errorf("bucketed query (index %d) failed. %q, err: %v", idx, q, err)
-		}
-		if err != nil {
-			log.WithError(err).WithField("query", q).Warnf("bucketed query (index %d) errored but returned partial results", idx)
-		}
-		results = append(results, bucketResults...)
+		wg.Add(1)
+		go func(idx int, q string) {
+			defer wg.Done()
+			bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
+			if err != nil && len(bucketResults) == 0 {
+				log.WithError(err).WithField("query", q).Warnf("bucketed query (index %d) errored and returned no results", idx)
+				return
+			}
+			if err != nil {
+				log.WithError(err).WithField("query", q).Warnf("bucketed query (index %d) errored but returned partial results", idx)
+			}
+			resultsChan <- bucketResults
+		}(idx, q)
 	}
-	return results, nil
+
+	wg.Wait()
+	close(resultsChan)
+
+	var results []PullRequest
+	for r := range resultsChan {
+		results = append(results, r...)
+	}
+	return results
 }
 
 func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {
