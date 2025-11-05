@@ -320,7 +320,7 @@ func (c *DefaultController) Sync() error {
 		for _, query := range c.config().Keeper.Queries {
 			results, err := bucketedGraphQLSearch(c.spc.Query, query, c.logger)
 			if err != nil && len(results) == 0 {
-				return errors.Wrap(err, "failed to perform GraphQL queries for PRs, no results returned")
+				return fmt.Errorf("failed to perform GraphQL queries for PRs, no results returned: %w", err)
 			}
 			if err != nil {
 				c.logger.WithError(err).Warnf("Error performing GraphQL queries for PRs but partial results were returned")
@@ -1900,7 +1900,7 @@ func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entr
 			defer wg.Done()
 			bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
 			if err != nil {
-				errsChan <- errors.Wrapf(err, "graphQLSearch failed for bucket %d with query %s", idx, q)
+				errsChan <- fmt.Errorf("graphQLSearch failed for bucket %d with query %s: %w", idx, q, err)
 				return
 			}
 			resultsChan <- bucketResults
@@ -1920,7 +1920,7 @@ func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entr
 		errs = append(errs, err)
 	}
 	if len(errs) > 0 {
-		return results, errors.Wrap(errorutil.NewAggregate(errs...), "one or more bucketed GraphQL searches failed")
+		return results, fmt.Errorf("one or more bucketed GraphQL searches failed: %w", errorutil.NewAggregate(errs...))
 	}
 	return results, nil
 }
