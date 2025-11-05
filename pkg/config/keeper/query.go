@@ -38,6 +38,26 @@ type Query struct {
 	ReviewApprovedRequired bool     `json:"reviewApprovedRequired,omitempty"`
 }
 
+// BucketedQueries splits the query's Repos slice into buckets of the given size
+// to reduce the load on GitHub's graphql when querying for large numbers of repos.
+func (tq *Query) BucketedQueries(repoBucketSize int) []string {
+	var queries []string
+	if len(tq.Repos) == 0 || repoBucketSize <= 0 {
+		// No repos to bucket, just return the original query
+		return []string{tq.Query()}
+	}
+	for i := 0; i < len(tq.Repos); i += repoBucketSize {
+		end := i + repoBucketSize
+		if end > len(tq.Repos) {
+			end = len(tq.Repos)
+		}
+		sub := *tq
+		sub.Repos = tq.Repos[i:end]
+		queries = append(queries, sub.Query())
+	}
+	return queries
+}
+
 // Query returns the corresponding github search string for the keeper query.
 func (tq *Query) Query() string {
 	toks := []string{"is:pr", "state:open"}

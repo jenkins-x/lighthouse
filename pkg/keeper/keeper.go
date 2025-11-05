@@ -318,13 +318,12 @@ func (c *DefaultController) Sync() error {
 	prs := make(map[string]PullRequest)
 	if c.spc.SupportsGraphQL() {
 		for _, query := range c.config().Keeper.Queries {
-			q := query.Query()
-			results, err := graphQLSearch(c.spc.Query, c.logger, q, time.Time{}, time.Now())
+			results, err := bucketedGraphQLSearch(c.spc.Query, query, c.logger)
 			if err != nil && len(results) == 0 {
-				return fmt.Errorf("query %q, err: %v", q, err)
+				return fmt.Errorf("failed to perform GraphQL queries for PRs, no results returned: %w", err)
 			}
 			if err != nil {
-				c.logger.WithError(err).WithField("query", q).Warning("found partial results")
+				c.logger.WithError(err).Warnf("Error performing GraphQL queries for PRs but partial results were returned")
 			}
 
 			for _, pr := range results {
@@ -1887,6 +1886,43 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 	}
 
 	return relevantPRs, nil
+}
+
+func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entry) ([]PullRequest, error) {
+	bucketedQueries := query.BucketedQueries(100)
+	var wg sync.WaitGroup
+	resultsChan := make(chan []PullRequest, len(bucketedQueries))
+	errsChan := make(chan error, len(bucketedQueries))
+
+	for idx, q := range bucketedQueries {
+		wg.Add(1)
+		go func(idx int, q string) {
+			defer wg.Done()
+			bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
+			if err != nil {
+				errsChan <- fmt.Errorf("graphQLSearch failed for bucket %d with query %s: %w", idx, q, err)
+				return
+			}
+			resultsChan <- bucketResults
+		}(idx, q)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+	close(errsChan)
+
+	var results []PullRequest
+	for r := range resultsChan {
+		results = append(results, r...)
+	}
+	var errs []error
+	for err := range errsChan {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return results, fmt.Errorf("one or more bucketed GraphQL searches failed: %w", errorutil.NewAggregate(errs...))
+	}
+	return results, nil
 }
 
 func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {
