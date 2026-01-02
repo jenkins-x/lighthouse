@@ -44,6 +44,7 @@ spec:
           image: mplatform/manifest-tool:alpine
           script: |
             #!/bin/sh
+            source .jx/variables.sh
             manifest-tool push from-args \
               --platforms linux/amd64,linux/arm64 \
               --template ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-ARCH \
