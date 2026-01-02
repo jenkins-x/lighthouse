@@ -38,7 +38,16 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION --build-arg=VERSION=$VERSION
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-amd64 --build-arg=VERSION=$VERSION --platform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-arm64 --build-arg=VERSION=$VERSION --platform=linux/arm64
+        - name: create-multiarch-manifest
+          image: mplatform/manifest-tool:alpine
+          script: |
+            #!/bin/sh
+            manifest-tool push from-args \
+              --platforms linux/amd64,linux/arm64 \
+              --template ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-ARCH \
+              --target ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION
         - name: build-container-build:poller
           resources: {}
           script: |
