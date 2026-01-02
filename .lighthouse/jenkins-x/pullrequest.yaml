@@ -41,7 +41,7 @@ spec:
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
             /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
         - name: create-multiarch-manifest-webhooks
-          image: mplatform/manifest-tool:alpine
+          image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
             #!/bin/sh
             source .jx/variables.sh
