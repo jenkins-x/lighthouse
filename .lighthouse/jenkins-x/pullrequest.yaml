@@ -38,8 +38,8 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64 --customPlatform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/webhooks/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-webhooks:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64 --customPlatform=linux/arm64
         - name: create-multiarch-manifest-webhooks
           image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
@@ -52,8 +52,8 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/poller/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-poller:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/poller/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-poller:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/poller/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-poller:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64 --customPlatform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/poller/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-poller:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64 --customPlatform=linux/arm64
         - name: create-multiarch-manifest-poller
           image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
@@ -66,8 +66,8 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64 --customPlatform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/keeper/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-keeper:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64 --customPlatform=linux/arm64
         - name: create-multiarch-manifest-keeper
           image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
@@ -80,8 +80,8 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-foghorn:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-foghorn:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-foghorn:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64 --customPlatform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/foghorn/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-foghorn:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64 --customPlatform=linux/arm64
         - name: create-multiarch-manifest-foghorn
           image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
@@ -94,8 +94,8 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64 --customPlatform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/tekton/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-tekton-controller:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64 --customPlatform=linux/arm64
         - name: create-multiarch-manifest-tekton
           image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
@@ -108,8 +108,8 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64 --customPlatform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/jenkins/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-jenkins-controller:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64 --customPlatform=linux/arm64
         - name: create-multiarch-manifest-jenkins
           image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
@@ -122,8 +122,8 @@ spec:
             #!/busybox/sh
             source .jx/variables.sh
             cp /tekton/creds-secrets/tekton-container-registry-auth/.dockerconfigjson /kaniko/.docker/config.json
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64
-            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION-amd64 --build-arg=VERSION=$VERSION --build-arg=ARCH=amd64 --customPlatform=linux/amd64
+            /kaniko/executor $KANIKO_FLAGS --context=/workspace/source --dockerfile=docker/gc/Dockerfile --destination=ghcr.io/jenkins-x/lighthouse-gc-jobs:$VERSION-arm64 --build-arg=VERSION=$VERSION --build-arg=ARCH=arm64 --customPlatform=linux/arm64
         - name: create-multiarch-manifest-gc-jobs
           image: mplatform/manifest-tool:alpine-v2.2.1
           script: |
