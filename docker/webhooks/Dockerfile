@@ -7,5 +7,5 @@ RUN apk add --update --no-cache ca-certificates git \
 ENV JX_HOME /home/jx
 USER 1000
 
-COPY ./bin/webhooks-$ARCH /home/jx/
+COPY ./bin/webhooks-$ARCH /home/jx/webhooks
 ENTRYPOINT ["/home/jx/webhooks"]
