@@ -45,6 +45,7 @@ type Repo interface {
 	LeafApprovers(path string) sets.String
 	FindApproverOwnersForFile(file string) string
 	IsNoParentOwners(path string) bool
+	MinimumReviewersForFile(path string) int
 }
 
 // Owners provides functionality related to owners of a specific code change.
@@ -71,6 +72,19 @@ func (o Owners) GetApprovers() map[string]sets.String {
 	}
 
 	return ownersToApprovers
+}
+
+// GetRequiredApproversCount returns the amount of approvers required to get a PR approved.
+// It finds the highest value for minimum required reviewers across all the changed files.
+// If no minimum reviewers are found then 0 is returned.
+func (o Owners) GetRequiredApproversCount() int {
+	var requiredApprovers int
+	for fn := range o.GetOwnersSet() {
+		if count := o.repo.MinimumReviewersForFile(fn); count > requiredApprovers {
+			requiredApprovers = count
+		}
+	}
+	return requiredApprovers
 }
 
 // GetLeafApprovers returns a map from ownersFiles -> people that are approvers in them (only the leaf)
@@ -162,7 +176,7 @@ func (o Owners) GetSuggestedApprovers(reverseMap map[string]sets.String, potenti
 	ap := NewApprovers(o)
 	for !ap.RequirementsMet() {
 		newApprover := findMostCoveringApprover(potentialApprovers, reverseMap, ap.UnapprovedFiles())
-		if newApprover == "" {
+		if newApprover == "" || ap.GetCurrentApproversSet().Has(newApprover) {
 			o.log.Warnf("Couldn't find/suggest approvers for each files. Unapproved: %q", ap.UnapprovedFiles().List())
 			return ap.GetCurrentApproversSet()
 		}
@@ -429,11 +443,15 @@ func (ap Approvers) NoIssueApprovers() map[string]Approval {
 func (ap Approvers) UnapprovedFiles() sets.String {
 	unapproved := sets.NewString()
 	for fn, approvers := range ap.GetFilesApprovers() {
-		if len(approvers) == 0 {
+		if len(approvers) < ap.owners.repo.MinimumReviewersForFile(fn) {
 			unapproved.Insert(fn)
 		}
 	}
 	return unapproved
+}
+
+func (ap Approvers) GetRemainingRequiredApprovers() int {
+	return ap.owners.GetRequiredApproversCount() - ap.GetCurrentApproversSet().Len()
 }
 
 // GetFiles returns owners files that still need approval.
@@ -637,6 +655,9 @@ Approval requirements bypassed by manually added approval.
 
 {{end -}}
 This pull-request has been approved by:{{range $index, $approval := .ap.ListApprovals}}{{if $index}}, {{else}} {{end}}{{$approval}}{{end}}
+{{- if (gt .ap.GetRemainingRequiredApprovers 0) }}
+The changes made require {{ .ap.GetRemainingRequiredApprovers }} more approval(s).
+{{- end }}
 
 {{- if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign {{range $index, $cc := .ap.GetCCs}}{{if $index}}, {{end}}**{{$cc}}**{{end}}  
