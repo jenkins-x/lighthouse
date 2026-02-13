@@ -298,6 +298,14 @@ func handlePullRequest(log *logrus.Entry, spc scmProviderClient, oc ownersClient
 		pre.Action != scm.ActionLabel {
 		return nil
 	}
+
+	if scmprovider.HasLabel(labels.UpdateBot, pre.PullRequest.Labels) {
+		// If the updatebot label is present then this is likely an automated update and so there's no need to process it.
+		// It will automatically merge if all other pipelines pass.
+		log.Info("updatebot label found, skipping pull request event handling")
+		return nil
+	}
+
 	botName, err := spc.BotName()
 	if err != nil {
 		return err
