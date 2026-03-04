@@ -1,0 +1,36 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/myorg/myrepo.git
+  labels:
+    lighthouse.jenkins-x.io/baseSHA: abc123
+    lighthouse.jenkins-x.io/branch: main
+    lighthouse.jenkins-x.io/buildNum: "5"
+    lighthouse.jenkins-x.io/context: ci
+    lighthouse.jenkins-x.io/id: job-id-unknown-001
+    lighthouse.jenkins-x.io/lastCommitSHA: def456
+    lighthouse.jenkins-x.io/refs.org: myorg
+    lighthouse.jenkins-x.io/refs.repo: myrepo
+    owner: myorg
+    repository: myrepo
+  name: myorg-myrepo-main-abc12-5
+  namespace: jx
+status:
+  startTime: "2024-01-15T10:00:00Z"
+  completionTime: "2024-01-15T10:05:00Z"
+  conditions:
+  - lastTransitionTime: "2024-01-15T10:05:00Z"
+    message: 'Tasks Completed: 1, Skipped: 0'
+    reason: Succeeded
+    status: "True"
+    type: Succeeded
+  childReferences:
+  - apiVersion: tekton.dev/v1
+    kind: TaskRun
+    name: myorg-myrepo-main-abc12-5-build-xkwrt
+    pipelineTaskName: build
+  - apiVersion: future.tekton.dev/v1
+    kind: FutureRunType
+    name: myorg-myrepo-main-abc12-5-future-zzzzz
+    pipelineTaskName: future-task

@@ -1,0 +1,15 @@
+baseSHA: abc123
+branch: main
+buildId: "4"
+context: ci
+gitURL: https://github.com/myorg/myrepo.git
+jobId: job-id-nostatus-001
+lastCommitSHA: def456
+name: myorg-myrepo-main-abc12-4
+owner: myorg
+repo: myrepo
+stages:
+  - name: trigger-cleanup
+    status: pending
+startTime: null
+status: pending

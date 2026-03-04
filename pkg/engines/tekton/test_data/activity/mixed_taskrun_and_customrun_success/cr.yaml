@@ -1,0 +1,13 @@
+apiVersion: tekton.dev/v1beta1
+kind: CustomRun
+metadata:
+  name: myorg-myrepo-main-abc12-1-trigger-cleanup-fghij
+status:
+  startTime: "2024-01-15T10:05:00Z"
+  completionTime: "2024-01-15T10:10:00Z"
+  conditions:
+  - lastTransitionTime: "2024-01-15T10:10:00Z"
+    message: Custom task completed
+    reason: ChildPipelineRunCreated
+    status: "True"
+    type: Succeeded
