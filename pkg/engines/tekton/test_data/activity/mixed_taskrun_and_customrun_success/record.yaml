@@ -1,0 +1,31 @@
+baseSHA: abc123
+branch: main
+buildId: "1"
+completionTime: "2024-01-15T10:15:00Z"
+context: ci
+gitURL: https://github.com/myorg/myrepo.git
+jobId: job-id-mixed-001
+lastCommitSHA: def456
+name: myorg-myrepo-main-abc12-1
+owner: myorg
+repo: myrepo
+stages:
+  - completionTime: "2024-01-15T10:05:00Z"
+    name: build
+    startTime: "2024-01-15T10:00:00Z"
+    status: success
+    steps:
+      - completionTime: "2024-01-15T10:03:00Z"
+        name: compile
+        startTime: "2024-01-15T10:00:05Z"
+        status: success
+      - completionTime: "2024-01-15T10:05:00Z"
+        name: test
+        startTime: "2024-01-15T10:03:00Z"
+        status: success
+  - completionTime: "2024-01-15T10:10:00Z"
+    name: trigger-cleanup
+    startTime: "2024-01-15T10:05:00Z"
+    status: success
+startTime: "2024-01-15T10:00:00Z"
+status: success

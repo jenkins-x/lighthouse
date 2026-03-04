@@ -1,0 +1,16 @@
+baseSHA: abc123
+branch: main
+buildId: "3"
+context: ci
+gitURL: https://github.com/myorg/myrepo.git
+jobId: job-id-running-001
+lastCommitSHA: def456
+name: myorg-myrepo-main-abc12-3
+owner: myorg
+repo: myrepo
+stages:
+  - name: trigger-cleanup
+    startTime: "2024-01-15T10:00:00Z"
+    status: running
+startTime: "2024-01-15T10:00:00Z"
+status: running

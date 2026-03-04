@@ -1,0 +1,32 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    lighthouse.jenkins-x.io/cloneURI: https://github.com/myorg/myrepo.git
+  labels:
+    lighthouse.jenkins-x.io/baseSHA: abc123
+    lighthouse.jenkins-x.io/branch: main
+    lighthouse.jenkins-x.io/buildNum: "2"
+    lighthouse.jenkins-x.io/context: ci
+    lighthouse.jenkins-x.io/id: job-id-failed-001
+    lighthouse.jenkins-x.io/lastCommitSHA: def456
+    lighthouse.jenkins-x.io/refs.org: myorg
+    lighthouse.jenkins-x.io/refs.repo: myrepo
+    owner: myorg
+    repository: myrepo
+  name: myorg-myrepo-main-abc12-2
+  namespace: jx
+status:
+  startTime: "2024-01-15T10:00:00Z"
+  completionTime: "2024-01-15T10:05:00Z"
+  conditions:
+  - lastTransitionTime: "2024-01-15T10:05:00Z"
+    message: 'Tasks Completed: 1 (Failed: 1, Cancelled 0), Skipped: 0'
+    reason: Failed
+    status: "False"
+    type: Succeeded
+  childReferences:
+  - apiVersion: tekton.dev/v1beta1
+    kind: CustomRun
+    name: myorg-myrepo-main-abc12-2-trigger-cleanup-fghij
+    pipelineTaskName: trigger-cleanup

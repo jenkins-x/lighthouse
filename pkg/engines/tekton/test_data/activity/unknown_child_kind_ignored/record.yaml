@@ -1,0 +1,23 @@
+baseSHA: abc123
+branch: main
+buildId: "5"
+completionTime: "2024-01-15T10:05:00Z"
+context: ci
+gitURL: https://github.com/myorg/myrepo.git
+jobId: job-id-unknown-001
+lastCommitSHA: def456
+name: myorg-myrepo-main-abc12-5
+owner: myorg
+repo: myrepo
+stages:
+  - completionTime: "2024-01-15T10:05:00Z"
+    name: build
+    startTime: "2024-01-15T10:00:00Z"
+    status: success
+    steps:
+      - completionTime: "2024-01-15T10:05:00Z"
+        name: compile
+        startTime: "2024-01-15T10:00:05Z"
+        status: success
+startTime: "2024-01-15T10:00:00Z"
+status: success

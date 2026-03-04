@@ -185,7 +185,7 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
 			}
 
-			activity, err := ConvertPipelineRun(r.tektonclient, &pipelineRun, req.Namespace)
+			activity, err := ConvertPipelineRun(ctx, r.logger, r.tektonclient, &pipelineRun, req.Namespace)
 			if err != nil {
 				return errors.Wrapf(err, "failed to convert PipelineRun")
 			}

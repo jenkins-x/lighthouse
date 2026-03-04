@@ -1,0 +1,5 @@
+apiVersion: tekton.dev/v1beta1
+kind: CustomRun
+metadata:
+  name: myorg-myrepo-main-abc12-4-trigger-cleanup-fghij
+status: {}

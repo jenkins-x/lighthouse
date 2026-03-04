@@ -1,0 +1,20 @@
+apiVersion: tekton.dev/v1
+kind: TaskRun
+metadata:
+  name: myorg-myrepo-main-abc12-5-build-xkwrt
+status:
+  startTime: "2024-01-15T10:00:00Z"
+  completionTime: "2024-01-15T10:05:00Z"
+  conditions:
+  - lastTransitionTime: "2024-01-15T10:05:00Z"
+    message: All Steps have completed executing
+    reason: Succeeded
+    status: "True"
+    type: Succeeded
+  steps:
+  - name: compile
+    terminated:
+      exitCode: 0
+      startedAt: "2024-01-15T10:00:05Z"
+      finishedAt: "2024-01-15T10:05:00Z"
+      reason: Completed

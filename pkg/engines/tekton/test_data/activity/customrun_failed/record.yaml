@@ -1,0 +1,18 @@
+baseSHA: abc123
+branch: main
+buildId: "2"
+completionTime: "2024-01-15T10:05:00Z"
+context: ci
+gitURL: https://github.com/myorg/myrepo.git
+jobId: job-id-failed-001
+lastCommitSHA: def456
+name: myorg-myrepo-main-abc12-2
+owner: myorg
+repo: myrepo
+stages:
+  - completionTime: "2024-01-15T10:05:00Z"
+    name: trigger-cleanup
+    startTime: "2024-01-15T10:00:00Z"
+    status: failure
+startTime: "2024-01-15T10:00:00Z"
+status: failure
