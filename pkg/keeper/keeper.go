@@ -1889,40 +1889,8 @@ func restAPISearch(spc scmProviderClient, log *logrus.Entry, queries keeper.Quer
 }
 
 func bucketedGraphQLSearch(querier querier, query keeper.Query, log *logrus.Entry) ([]PullRequest, error) {
-	bucketedQueries := query.BucketedQueries(100)
-	var wg sync.WaitGroup
-	resultsChan := make(chan []PullRequest, len(bucketedQueries))
-	errsChan := make(chan error, len(bucketedQueries))
-
-	for idx, q := range bucketedQueries {
-		wg.Add(1)
-		go func(idx int, q string) {
-			defer wg.Done()
-			bucketResults, err := graphQLSearch(querier, log, q, time.Time{}, time.Now())
-			if err != nil {
-				errsChan <- fmt.Errorf("graphQLSearch failed for bucket %d with query %s: %w", idx, q, err)
-				return
-			}
-			resultsChan <- bucketResults
-		}(idx, q)
-	}
-
-	wg.Wait()
-	close(resultsChan)
-	close(errsChan)
-
-	var results []PullRequest
-	for r := range resultsChan {
-		results = append(results, r...)
-	}
-	var errs []error
-	for err := range errsChan {
-		errs = append(errs, err)
-	}
-	if len(errs) > 0 {
-		return results, fmt.Errorf("one or more bucketed GraphQL searches failed: %w", errorutil.NewAggregate(errs...))
-	}
-	return results, nil
+	bucketedQueries := query.BucketedQueries(repoBucketSize)
+	return executeBucketedQueries(querier, log, bucketedQueries, time.Time{}, time.Now())
 }
 
 func loadMissingLabels(spc scmProviderClient, pr *scm.PullRequest) error {

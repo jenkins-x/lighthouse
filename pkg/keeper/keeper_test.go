@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"text/template"
 	"time"
@@ -512,6 +513,9 @@ type fgc struct {
 	ignoreExpected bool
 	combinedStatus map[string]map[string]commitStatus
 	fakeClient     *scm.Client
+
+	mu       sync.Mutex
+	queryLog []string
 }
 
 func (f *fgc) ListPullRequestComments(owner, repo string, number int) ([]*scm.Comment, error) {
@@ -562,6 +566,11 @@ func (f *fgc) Query(ctx context.Context, q interface{}, vars map[string]interfac
 	sq, ok := q.(*searchQuery)
 	if !ok {
 		return errors.New("unexpected query type")
+	}
+	if qs, ok := vars["query"]; ok {
+		f.mu.Lock()
+		f.queryLog = append(f.queryLog, string(qs.(githubql.String)))
+		f.mu.Unlock()
 	}
 	for _, pr := range f.prs {
 		sq.Search.Nodes = append(

@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -167,6 +169,142 @@ func TestSearch(t *testing.T) {
 			// Always check prs because we might return some results on error
 			if !reflect.DeepEqual(tc.expected, prs) {
 				t.Errorf("prs do not match:\n%s", cmp.Diff(tc.expected, prs))
+			}
+		})
+	}
+}
+
+func TestExecuteBucketedQueries(t *testing.T) {
+	now := time.Now()
+	earlier := now.Add(-5 * time.Hour)
+	log := logrus.WithField("test", "TestExecuteBucketedQueries")
+
+	makePRs := func(numbers ...int) []PullRequest {
+		var prs []PullRequest
+		for _, n := range numbers {
+			prs = append(prs, PullRequest{Number: githubql.Int(n)})
+		}
+		return prs
+	}
+
+	sortPRs := func(prs []PullRequest) {
+		sort.Slice(prs, func(i, j int) bool {
+			return prs[i].Number < prs[j].Number
+		})
+	}
+
+	cases := []struct {
+		name        string
+		bucketQ     []string
+		resultsByQ  map[string][]PullRequest
+		errsByQ     map[string]error
+		expectedPRs []PullRequest
+		expectErr   bool
+	}{
+		{
+			name:        "empty bucket list",
+			bucketQ:     nil,
+			resultsByQ:  map[string][]PullRequest{},
+			errsByQ:     map[string]error{},
+			expectedPRs: nil,
+			expectErr:   false,
+		},
+		{
+			name:    "single bucket succeeds",
+			bucketQ: []string{"bucket-q-1"},
+			resultsByQ: map[string][]PullRequest{
+				"bucket-q-1": makePRs(1, 2),
+			},
+			errsByQ:     map[string]error{},
+			expectedPRs: makePRs(1, 2),
+			expectErr:   false,
+		},
+		{
+			name:    "multiple buckets succeed",
+			bucketQ: []string{"bucket-q-1", "bucket-q-2"},
+			resultsByQ: map[string][]PullRequest{
+				"bucket-q-1": makePRs(1, 2),
+				"bucket-q-2": makePRs(3, 4),
+			},
+			errsByQ:     map[string]error{},
+			expectedPRs: makePRs(1, 2, 3, 4),
+			expectErr:   false,
+		},
+		{
+			name:    "one bucket fails, partial results",
+			bucketQ: []string{"bucket-q-1", "bucket-q-2"},
+			resultsByQ: map[string][]PullRequest{
+				"bucket-q-1": makePRs(1, 2),
+			},
+			errsByQ: map[string]error{
+				"bucket-q-2": errors.New("bucket-q-2 failed"),
+			},
+			expectedPRs: makePRs(1, 2),
+			expectErr:   true,
+		},
+		{
+			name:       "all buckets fail",
+			bucketQ:    []string{"bucket-q-1", "bucket-q-2"},
+			resultsByQ: map[string][]PullRequest{},
+			errsByQ: map[string]error{
+				"bucket-q-1": errors.New("bucket-q-1 failed"),
+				"bucket-q-2": errors.New("bucket-q-2 failed"),
+			},
+			expectedPRs: nil,
+			expectErr:   true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// graphQLSearch wraps queries with datedQuery; build the dated form so
+			// our mock can match on it.
+			datedResults := make(map[string][]PullRequest, len(tc.resultsByQ))
+			datedErrs := make(map[string]error, len(tc.errsByQ))
+			datedBuckets := make([]string, len(tc.bucketQ))
+			for i, q := range tc.bucketQ {
+				dq := datedQuery(q, floor(earlier), floor(now))
+				datedBuckets[i] = q // pass bare query to executeBucketedQueries
+				if v, ok := tc.resultsByQ[q]; ok {
+					datedResults[dq] = v
+				}
+				if v, ok := tc.errsByQ[q]; ok {
+					datedErrs[dq] = v
+				}
+			}
+
+			var mu sync.Mutex
+			mockQuery := func(_ context.Context, result interface{}, vars map[string]interface{}) error {
+				q := string(vars["query"].(githubql.String))
+				mu.Lock()
+				prs, hasPRs := datedResults[q]
+				err, hasErr := datedErrs[q]
+				mu.Unlock()
+				if hasErr {
+					return err
+				}
+				if hasPRs {
+					sq := result.(*searchQuery)
+					for _, pr := range prs {
+						sq.Search.Nodes = append(sq.Search.Nodes, PRNode{pr})
+					}
+				}
+				return nil
+			}
+
+			prs, err := executeBucketedQueries(mockQuery, log, datedBuckets, earlier, now)
+
+			if tc.expectErr && err == nil {
+				t.Error("expected error but got nil")
+			}
+			if !tc.expectErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			sortPRs(prs)
+			sortPRs(tc.expectedPRs)
+			if !reflect.DeepEqual(tc.expectedPRs, prs) {
+				t.Errorf("prs do not match:\n%s", cmp.Diff(tc.expectedPRs, prs))
 			}
 		})
 	}
