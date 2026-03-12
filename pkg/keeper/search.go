@@ -19,12 +19,17 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/errorutil"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	githubql "github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 )
+
+// repoBucketSize is the maximum number of repos to include in a single GraphQL search query.
+const repoBucketSize = 100
 
 type querier func(ctx context.Context, result interface{}, vars map[string]interface{}) error
 
@@ -80,6 +85,43 @@ func graphQLSearch(query querier, log *logrus.Entry, q string, start, end time.T
 	}
 	log.WithField("duration", time.Since(requestStart).String()).Debugf("Query returned %d PRs and cost %d point(s). %d remaining.", len(ret), totalCost, remaining)
 	return ret, nil
+}
+
+// executeBucketedQueries runs bucketed queries through graphQLSearch in parallel
+func executeBucketedQueries(q querier, log *logrus.Entry, bucketQueries []string, start, end time.Time) ([]PullRequest, error) {
+	var wg sync.WaitGroup
+	resultsChan := make(chan []PullRequest, len(bucketQueries))
+	errsChan := make(chan error, len(bucketQueries))
+
+	for idx, bq := range bucketQueries {
+		wg.Add(1)
+		go func(idx int, bq string) {
+			defer wg.Done()
+			bucketResults, err := graphQLSearch(q, log, bq, start, end)
+			if err != nil {
+				errsChan <- fmt.Errorf("graphQLSearch failed for bucket %d with query %s: %w", idx, bq, err)
+				return
+			}
+			resultsChan <- bucketResults
+		}(idx, bq)
+	}
+
+	wg.Wait()
+	close(resultsChan)
+	close(errsChan)
+
+	var results []PullRequest
+	for r := range resultsChan {
+		results = append(results, r...)
+	}
+	var errs []error
+	for err := range errsChan {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return results, fmt.Errorf("one or more bucketed GraphQL searches failed: %w", errorutil.NewAggregate(errs...))
+	}
+	return results, nil
 }
 
 // dateToken generates a GitHub graphQLSearch query token for the specified date range.

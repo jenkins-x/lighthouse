@@ -316,7 +316,7 @@ func (sc *statusController) setStatuses(all []PullRequest, pool map[string]prWit
 	// queryMap caches which queries match a repo.
 	// Make a new one each sync loop as queries will change.
 	queryMap := sc.config().Keeper.Queries.QueryMap()
-	processed := sets.NewString()
+	processed := sets.New[string]()
 
 	process := func(pr *PullRequest) {
 		processed.Insert(pr.prKey())
@@ -461,8 +461,9 @@ func (sc *statusController) search() []PullRequest {
 	}
 
 	orgExceptions, repos := queries.OrgExceptionsAndRepos()
-	orgs := sets.StringKeySet(orgExceptions)
-	query := openPRsQuery(orgs.List(), repos.List(), orgExceptions)
+	orgs := sets.KeySet(orgExceptions)
+	reposSet := sets.Set[string](repos)
+	query := openPRsQuery(sets.List(orgs), sets.List(reposSet), orgExceptions)
 	now := time.Now()
 	log := sc.logger.WithField("query", query)
 	if query != sc.PreviousQuery {
@@ -476,7 +477,7 @@ func (sc *statusController) search() []PullRequest {
 	var err error
 
 	if sc.spc.SupportsGraphQL() {
-		prs, err = graphQLSearch(sc.spc.Query, sc.logger, query, sc.LatestPR.Time, now)
+		prs, err = sc.bucketedGraphQLStatusSearch(orgs, reposSet, orgExceptions, query, now)
 	} else {
 		kq := keeper.Query{}
 		kq.Repos = append(kq.Repos, repos.List()...)
@@ -497,7 +498,13 @@ func (sc *statusController) search() []PullRequest {
 		return nil
 	}
 
-	latest := prs[len(prs)-1].UpdatedAt
+	// Find the latest UpdatedAt across all results (bucketed queries may not be globally sorted)
+	var latest metav1.Time
+	for _, pr := range prs {
+		if pr.UpdatedAt.After(latest.Time) {
+			latest = metav1.Time{Time: pr.UpdatedAt.Time}
+		}
+	}
 	if latest.IsZero() {
 		log.WithField("latestPR", sc.LatestPR).Debug("latest PR has zero time")
 		return prs
@@ -505,6 +512,34 @@ func (sc *statusController) search() []PullRequest {
 	sc.LatestPR.Time = latest.Add(-30 * time.Second)
 	log.WithField("latestPR", sc.LatestPR).Debug("Advanced start time")
 	return prs
+}
+
+func (sc *statusController) bucketedGraphQLStatusSearch(orgs sets.Set[string], repos sets.Set[string], orgExceptions map[string]sets.String, canonicalQuery string, now time.Time) ([]PullRequest, error) {
+	var bucketQueries []string
+
+	if orgs.Len() > 0 {
+		// One query covering all orgs with their exclusions
+		bucketQueries = append(bucketQueries, "is:pr state:open sort:updated-asc "+orgRepoQueryString(sets.List(orgs), nil, orgExceptions))
+	}
+
+	repoList := sets.List(repos)
+	for i := 0; i < len(repoList); i += repoBucketSize {
+		end := i + repoBucketSize
+		if end > len(repoList) {
+			end = len(repoList)
+		}
+		// Each repo bucket query has no orgs and no exceptions.
+		bucketQueries = append(bucketQueries, "is:pr state:open sort:updated-asc "+orgRepoQueryString(nil, repoList[i:end], nil))
+	}
+
+	// no orgs and no repos — fall back to the canonical query.
+	if len(bucketQueries) == 0 {
+		prs, err := graphQLSearch(sc.spc.Query, sc.logger, canonicalQuery, sc.LatestPR.Time, now)
+		return prs, err
+	}
+
+	prs, err := executeBucketedQueries(sc.spc.Query, sc.logger, bucketQueries, sc.LatestPR.Time, now)
+	return prs, err
 }
 
 func openPRsQuery(orgs, repos []string, orgExceptions map[string]sets.String) string {
