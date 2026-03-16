@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/keeper/blockers"
@@ -502,6 +503,96 @@ func TestTargetUrl(t *testing.T) {
 			log := logrus.WithField("controller", "status-update")
 			if actual, expected := targetURL(ca.Config, tc.pr, log), tc.expectedURL; actual != expected {
 				t.Errorf("%s: expected target URL %s but got %s", tc.name, expected, actual)
+			}
+		})
+	}
+}
+
+func TestBucketedGraphQLStatusSearch(t *testing.T) {
+	now := time.Now()
+	log := logrus.WithField("test", "TestBucketedGraphQLStatusSearch")
+
+	makeRepos := func(n int) sets.Set[string] {
+		s := sets.New[string]()
+		for i := 0; i < n; i++ {
+			s.Insert(fmt.Sprintf("org/repo%d", i))
+		}
+		return s
+	}
+
+	cases := []struct {
+		name          string
+		orgs          sets.Set[string]
+		repos         sets.Set[string]
+		orgExceptions map[string]sets.String
+		wantCalls     int
+		wantInQuery   []string
+	}{
+		{
+			name:          "orgs only produces single org query",
+			orgs:          sets.New[string]("my-org"),
+			repos:         sets.New[string](),
+			orgExceptions: map[string]sets.String{},
+			wantCalls:     1,
+			wantInQuery:   []string{`org:"my-org"`},
+		},
+		{
+			name:      "repos within bucket size produces single repo query",
+			orgs:      sets.New[string](),
+			repos:     sets.New[string]("org/repo0", "org/repo1"),
+			wantCalls: 1,
+			wantInQuery: []string{`repo:"org/repo0"`, `repo:"org/repo1"`},
+		},
+		{
+			name:      "repos exceeding bucket size produces multiple queries",
+			orgs:      sets.New[string](),
+			repos:     makeRepos(repoBucketSize + 1),
+			wantCalls: 2,
+		},
+		{
+			name:          "orgs and repos produce separate queries",
+			orgs:          sets.New[string]("my-org"),
+			repos:         sets.New[string]("other-org/repo"),
+			orgExceptions: map[string]sets.String{},
+			wantCalls:     2,
+			wantInQuery:   []string{`org:"my-org"`, `repo:"other-org/repo"`},
+		},
+		{
+			name: "org exceptions are included in org query",
+			orgs: sets.New[string]("my-org"),
+			repos: sets.New[string](),
+			orgExceptions: map[string]sets.String{
+				"my-org": sets.NewString("my-org/excluded-repo"),
+			},
+			wantCalls:   1,
+			wantInQuery: []string{`org:"my-org"`, `-repo:"my-org/excluded-repo"`},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fc := &fgc{}
+			sc := &statusController{
+				spc:    fc,
+				logger: log,
+			}
+			if tc.orgExceptions == nil {
+				tc.orgExceptions = map[string]sets.String{}
+			}
+			_, err := sc.bucketedGraphQLStatusSearch(tc.orgs, tc.repos, tc.orgExceptions, now)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if got := len(fc.queryLog); got != tc.wantCalls {
+				t.Errorf("expected %d Query call(s), got %d; queries: %v", tc.wantCalls, got, fc.queryLog)
+			}
+
+			allQueries := strings.Join(fc.queryLog, " ")
+			for _, tok := range tc.wantInQuery {
+				if !strings.Contains(allQueries, tok) {
+					t.Errorf("expected token %q in queries, got: %v", tok, fc.queryLog)
+				}
 			}
 		})
 	}
