@@ -526,6 +526,10 @@ func (f *fgc) EditComment(owner, repo string, number int, id int, comment string
 	return nil
 }
 
+func (f *fgc) AddLabel(owner, repo string, number int, label string, pr bool) error {
+	panic("implement me")
+}
+
 type commitStatus struct {
 	status      string
 	description string
