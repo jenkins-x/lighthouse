@@ -477,7 +477,7 @@ func (sc *statusController) search() []PullRequest {
 	var err error
 
 	if sc.spc.SupportsGraphQL() {
-		prs, err = sc.bucketedGraphQLStatusSearch(orgs, reposSet, orgExceptions, query, now)
+		prs, err = sc.bucketedGraphQLStatusSearch(orgs, reposSet, orgExceptions, now)
 	} else {
 		kq := keeper.Query{}
 		kq.Repos = append(kq.Repos, repos.List()...)
@@ -514,12 +514,12 @@ func (sc *statusController) search() []PullRequest {
 	return prs
 }
 
-func (sc *statusController) bucketedGraphQLStatusSearch(orgs sets.Set[string], repos sets.Set[string], orgExceptions map[string]sets.String, canonicalQuery string, now time.Time) ([]PullRequest, error) {
+func (sc *statusController) bucketedGraphQLStatusSearch(orgs sets.Set[string], repos sets.Set[string], orgExceptions map[string]sets.String, now time.Time) ([]PullRequest, error) {
 	var bucketQueries []string
 
 	if orgs.Len() > 0 {
 		// One query covering all orgs with their exclusions
-		bucketQueries = append(bucketQueries, "is:pr state:open sort:updated-asc "+orgRepoQueryString(sets.List(orgs), nil, orgExceptions))
+		bucketQueries = append(bucketQueries, openPRsQuery(sets.List(orgs), nil, orgExceptions))
 	}
 
 	repoList := sets.List(repos)
@@ -529,17 +529,10 @@ func (sc *statusController) bucketedGraphQLStatusSearch(orgs sets.Set[string], r
 			end = len(repoList)
 		}
 		// Each repo bucket query has no orgs and no exceptions.
-		bucketQueries = append(bucketQueries, "is:pr state:open sort:updated-asc "+orgRepoQueryString(nil, repoList[i:end], nil))
+		bucketQueries = append(bucketQueries, openPRsQuery(nil, repoList[i:end], nil))
 	}
 
-	// no orgs and no repos — fall back to the canonical query.
-	if len(bucketQueries) == 0 {
-		prs, err := graphQLSearch(sc.spc.Query, sc.logger, canonicalQuery, sc.LatestPR.Time, now)
-		return prs, err
-	}
-
-	prs, err := executeBucketedQueries(sc.spc.Query, sc.logger, bucketQueries, sc.LatestPR.Time, now)
-	return prs, err
+	return executeBucketedQueries(sc.spc.Query, sc.logger, bucketQueries, sc.LatestPR.Time, now)
 }
 
 func openPRsQuery(orgs, repos []string, orgExceptions map[string]sets.String) string {
