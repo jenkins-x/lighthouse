@@ -525,48 +525,35 @@ func TestBucketedGraphQLStatusSearch(t *testing.T) {
 		orgs          sets.Set[string]
 		repos         sets.Set[string]
 		orgExceptions map[string]sets.String
-		canonicalQ    string
 		wantCalls     int
 		wantInQuery   []string
 	}{
-		{
-			name:        "no orgs no repos falls back to canonical query",
-			orgs:        sets.New[string](),
-			repos:       sets.New[string](),
-			canonicalQ:  "is:pr state:open canonical-fallback",
-			wantCalls:   1,
-			wantInQuery: []string{"canonical-fallback"},
-		},
 		{
 			name:          "orgs only produces single org query",
 			orgs:          sets.New[string]("my-org"),
 			repos:         sets.New[string](),
 			orgExceptions: map[string]sets.String{},
-			canonicalQ:    "canonical",
 			wantCalls:     1,
 			wantInQuery:   []string{`org:"my-org"`},
 		},
 		{
-			name:        "repos within bucket size produces single repo query",
-			orgs:        sets.New[string](),
-			repos:       sets.New[string]("org/repo0", "org/repo1"),
-			canonicalQ:  "canonical",
-			wantCalls:   1,
+			name:      "repos within bucket size produces single repo query",
+			orgs:      sets.New[string](),
+			repos:     sets.New[string]("org/repo0", "org/repo1"),
+			wantCalls: 1,
 			wantInQuery: []string{`repo:"org/repo0"`, `repo:"org/repo1"`},
 		},
 		{
-			name:       "repos exceeding bucket size produces multiple queries",
-			orgs:       sets.New[string](),
-			repos:      makeRepos(repoBucketSize + 1),
-			canonicalQ: "canonical",
-			wantCalls:  2,
+			name:      "repos exceeding bucket size produces multiple queries",
+			orgs:      sets.New[string](),
+			repos:     makeRepos(repoBucketSize + 1),
+			wantCalls: 2,
 		},
 		{
 			name:          "orgs and repos produce separate queries",
 			orgs:          sets.New[string]("my-org"),
 			repos:         sets.New[string]("other-org/repo"),
 			orgExceptions: map[string]sets.String{},
-			canonicalQ:    "canonical",
 			wantCalls:     2,
 			wantInQuery:   []string{`org:"my-org"`, `repo:"other-org/repo"`},
 		},
@@ -577,7 +564,6 @@ func TestBucketedGraphQLStatusSearch(t *testing.T) {
 			orgExceptions: map[string]sets.String{
 				"my-org": sets.NewString("my-org/excluded-repo"),
 			},
-			canonicalQ:  "canonical",
 			wantCalls:   1,
 			wantInQuery: []string{`org:"my-org"`, `-repo:"my-org/excluded-repo"`},
 		},
@@ -593,7 +579,7 @@ func TestBucketedGraphQLStatusSearch(t *testing.T) {
 			if tc.orgExceptions == nil {
 				tc.orgExceptions = map[string]sets.String{}
 			}
-			_, err := sc.bucketedGraphQLStatusSearch(tc.orgs, tc.repos, tc.orgExceptions, tc.canonicalQ, now)
+			_, err := sc.bucketedGraphQLStatusSearch(tc.orgs, tc.repos, tc.orgExceptions, now)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
