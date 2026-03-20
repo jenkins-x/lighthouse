@@ -1230,7 +1230,8 @@ func TestGetMessageNoneApproved(t *testing.T) {
 	ap.RequireIssue = true
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*  
+This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*
+The changes made require 1 more approval(s).  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **bill**  
 You can assign the PR to them by writing ` + "`/assign @alice @bill`" + ` in a comment when ready.
 
@@ -1358,7 +1359,8 @@ func TestGetMessageMDOwners(t *testing.T) {
 	ap.RequireIssue = true
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*  
+This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*
+The changes made require 1 more approval(s).  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **doctor**  
 You can assign the PR to them by writing ` + "`/assign @alice @doctor`" + ` in a comment when ready.
 
@@ -1399,7 +1401,8 @@ func TestGetMessageDifferentGitHubLink(t *testing.T) {
 	ap.RequireIssue = true
 	want := `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*  
+This pull-request has been approved by: *[John](REFERENCE "Author self-approved")*
+The changes made require 1 more approval(s).  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**, **doctor**  
 You can assign the PR to them by writing ` + "`/assign @alice @doctor`" + ` in a comment when ready.
 

@@ -685,7 +685,7 @@ func (o *RepoOwners) entriesForFile(path string, people map[string]map[*regexp.R
 // MinimumReviewersForFile returns the minimum number of reviewers required to approve the requested file.
 // This is determined by the OWNERS file closest to the requested file.
 // If pkg/OWNERS has 2 minimum reviewers and pkg/util/OWNERS has 3 minimum reviewers this will return 3 for the path pkg/util/sets/file.go
-// If no minimum reviewers can be found then 0 is returned.
+// If no minimum reviewers can be found then 1 is returned (the default behavior).
 func (o *RepoOwners) MinimumReviewersForFile(path string) int {
 	d := path
 	if !o.enableMDYAML || !strings.HasSuffix(path, ".md") {
@@ -716,7 +716,7 @@ func (o *RepoOwners) MinimumReviewersForFile(path string) int {
 		d = canonicalize(d)
 	}
 	if foundMinReviewer == nil {
-		// If we didn't find a minimum reviewer count, default to 0
+		// If we didn't find a minimum reviewer count, default to 1
 		return 1
 	}
 	return *foundMinReviewer

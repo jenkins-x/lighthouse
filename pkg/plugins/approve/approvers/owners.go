@@ -450,8 +450,26 @@ func (ap Approvers) UnapprovedFiles() sets.String {
 	return unapproved
 }
 
+// GetRemainingRequiredApprovers returns the number of additional OWNERS approvers needed.
+// It only counts approvers who are listed in at least one relevant OWNERS file.
 func (ap Approvers) GetRemainingRequiredApprovers() int {
-	return ap.owners.GetRequiredApproversCount() - ap.GetCurrentApproversSet().Len()
+	required := ap.owners.GetRequiredApproversCount()
+	ownersApproverCount := ap.getOwnersApproverCount()
+	remaining := required - ownersApproverCount
+	if remaining < 0 {
+		return 0
+	}
+	return remaining
+}
+
+// getOwnersApproverCount returns the count of current approvers who are listed
+// in at least one relevant OWNERS file.
+func (ap Approvers) getOwnersApproverCount() int {
+	ownersApprovers := sets.NewString()
+	for _, approvers := range ap.GetFilesApprovers() {
+		ownersApprovers = ownersApprovers.Union(approvers)
+	}
+	return ownersApprovers.Len()
 }
 
 // GetFiles returns owners files that still need approval.

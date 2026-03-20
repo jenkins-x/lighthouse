@@ -18,14 +18,15 @@ package approve
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/url"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
@@ -420,7 +421,8 @@ Approvers can cancel approval by writing `+"`/approve cancel`"+` in a comment
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[cjwagner](# "Author self-approved")*  
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
+The changes made require 1 more approval(s).  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
@@ -461,7 +463,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[cjwagner](# "Author self-approved")*  
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
+The changes made require 1 more approval(s).  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
@@ -1126,7 +1129,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[cjwagner](# "Author self-approved")*  
+This pull-request has been approved by: *[cjwagner](# "Author self-approved")*
+The changes made require 1 more approval(s).  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **alice**  
 You can assign the PR to them by writing ` + "`/assign @alice`" + ` in a comment when ready.
 
@@ -1270,7 +1274,8 @@ Approvers can cancel approval by writing ` + "`/approve cancel` " + `in a commen
 			expectComment: true,
 			expectedComment: `[APPROVALNOTIFIER] This PR is **NOT APPROVED**
 
-This pull-request has been approved by: *[alice](<> "Approved")*, *[derek](<> "Approved")*  
+This pull-request has been approved by: *[alice](<> "Approved")*, *[derek](<> "Approved")*
+The changes made require 1 more approval(s).  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign **derek**  
 You can assign the PR to them by writing ` + "`/assign @derek`" + ` in a comment when ready.
 
