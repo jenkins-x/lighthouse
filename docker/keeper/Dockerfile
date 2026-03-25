@@ -1,9 +1,9 @@
 FROM alpine:3.23
 
-RUN apk add --update --no-cache ca-certificates git \
+RUN apk add --update --no-cache ca-certificates git tini \
     && adduser -D -u 1000 jx
 
 USER 1000
 
 COPY ./bin/keeper /home/jx/
-ENTRYPOINT ["/home/jx/keeper"]
+ENTRYPOINT ["/sbin/tini", "--", "/home/jx/keeper"]
