@@ -98,7 +98,7 @@ func TestReconcile(t *testing.T) {
 
 			c := fake.NewClientBuilder().WithStatusSubresource(observedJob).WithScheme(scheme).WithObjects(state...).Build()
 			fake.AddIndex(c, &pipelinev1.PipelineRun{}, jobOwnerKey, tektonControllerIndexFunc)
-			reconciler := NewLighthouseJobReconciler(c, c, scheme, tektonfakeClient, dashboardBaseURL, dashboardTemplate, ns, 1)
+			reconciler := NewLighthouseJobReconciler(c, c, scheme, tektonfakeClient, dashboardBaseURL, dashboardTemplate, ns, false, 1)
 			reconciler.idGenerator = &seededRandIDGenerator{}
 			reconciler.disableLogging = true
 

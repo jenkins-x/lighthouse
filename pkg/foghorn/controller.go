@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -37,10 +38,11 @@ type LighthouseJobReconciler struct {
 	// ConfigMapWatcher watches for changes in our relevant config maps and updates the reconciler's versions when required.
 	ConfigMapWatcher *watcher.ConfigMapWatcher
 
-	client                  client.Client
-	logger                  *logrus.Entry
-	scheme                  *runtime.Scheme
-	maxConcurrentReconciles int
+	client                   client.Client
+	logger                   *logrus.Entry
+	scheme                   *runtime.Scheme
+	skipTerminatedReconciles bool
+	maxConcurrentReconciles  int
 
 	jobConfig    *config.Agent
 	pluginConfig *plugins.ConfigAgent
@@ -50,12 +52,12 @@ type LighthouseJobReconciler struct {
 }
 
 // NewLighthouseJobReconciler returns a new controller for syncing LighthouseJobs and commit statuses
-func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, ns string, maxConcurrentReconciles int) (*LighthouseJobReconciler, error) {
-	return NewLighthouseJobReconcilerWithConfig(client, scheme, ns, nil, nil, nil, maxConcurrentReconciles)
+func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, ns string, skipTerminatedReconciles bool, maxConcurrentReconciles int) (*LighthouseJobReconciler, error) {
+	return NewLighthouseJobReconcilerWithConfig(client, scheme, ns, nil, nil, nil, skipTerminatedReconciles, maxConcurrentReconciles)
 }
 
 // NewLighthouseJobReconcilerWithConfig takes returns a new controller for syncing LighthouseJobs and commit statuses using the provided config map watcher and configs
-func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.Scheme, ns string, configMapWatcher *watcher.ConfigMapWatcher, jobConfig *config.Agent, pluginConfig *plugins.ConfigAgent, maxConcurrentReconciles int) (*LighthouseJobReconciler, error) {
+func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.Scheme, ns string, configMapWatcher *watcher.ConfigMapWatcher, jobConfig *config.Agent, pluginConfig *plugins.ConfigAgent, skipTerminatedReconciles bool, maxConcurrentReconciles int) (*LighthouseJobReconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName)
 
 	if jobConfig == nil {
@@ -74,23 +76,25 @@ func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.
 	}
 
 	return &LighthouseJobReconciler{
-		client:                  client,
-		scheme:                  scheme,
-		logger:                  logger,
-		maxConcurrentReconciles: maxConcurrentReconciles,
-		ns:                      ns,
-		jobConfig:               jobConfig,
-		pluginConfig:            pluginConfig,
-		ConfigMapWatcher:        configMapWatcher,
-		wg:                      &sync.WaitGroup{},
+		client:                   client,
+		scheme:                   scheme,
+		logger:                   logger,
+		skipTerminatedReconciles: skipTerminatedReconciles,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
+		ns:                       ns,
+		jobConfig:                jobConfig,
+		pluginConfig:             pluginConfig,
+		ConfigMapWatcher:         configMapWatcher,
+		wg:                       &sync.WaitGroup{},
 	}, nil
 }
 
 // SetupWithManager sets up the reconciler with its manager
 func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	ctrlr := ctrl.NewControllerManagedBy(mgr).
-		For(&lighthousev1alpha1.LighthouseJob{}).
-		WithEventFilter(predicate.ResourceVersionChangedPredicate{})
+		For(&lighthousev1alpha1.LighthouseJob{}, builder.WithPredicates(
+			lighthouseJobPredicateFactory(r.skipTerminatedReconciles),
+		))
 
 	if r.maxConcurrentReconciles > 1 {
 		ctrlr = ctrlr.WithOptions(
@@ -354,4 +358,41 @@ func durationString(start *metav1.Time, end *metav1.Time) string {
 		return ""
 	}
 	return end.Sub(start.Time).Round(time.Second).String()
+}
+
+// shouldEnqueueFoghornJob implements the For() predicate: reconcile when there is work to do.
+// Non-terminal pipeline activity always qualifies; terminal activity is filtered out only once
+// LastReportState reflects a terminal SCM status (so failed SCM reports can still be retried).
+func shouldEnqueueFoghornJob(job *lighthousev1alpha1.LighthouseJob) bool {
+	if job.Status.Activity == nil {
+		return false
+	}
+	if !lighthousev1alpha1.IsTerminalPipelineState(job.Status.Activity.Status) {
+		return true
+	}
+	switch scm.ToState(job.Status.LastReportState) {
+	case scm.StateFailure, scm.StateError, scm.StateSuccess, scm.StateCanceled:
+		return false
+	default:
+		return true
+	}
+}
+
+// lighthouseJobPredicateFactory returns the For(LighthouseJob) predicate set. When skipTerminatedReconciles
+// is false, only ResourceVersionChangedPredicate is used (legacy behavior). When true, it also applies
+// shouldEnqueueFoghornJob so terminal jobs with successful SCM reporting are not enqueued.
+func lighthouseJobPredicateFactory(skipTerminatedReconciles bool) predicate.Predicate {
+	if skipTerminatedReconciles {
+		return predicate.And(
+			predicate.ResourceVersionChangedPredicate{},
+			predicate.NewPredicateFuncs(func(object client.Object) bool {
+				job, ok := object.(*lighthousev1alpha1.LighthouseJob)
+				if !ok {
+					return true
+				}
+				return shouldEnqueueFoghornJob(job)
+			}),
+		)
+	}
+	return predicate.ResourceVersionChangedPredicate{}
 }

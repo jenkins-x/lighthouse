@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -28,35 +29,37 @@ var apiGVStr = lighthousev1alpha1.SchemeGroupVersion.String()
 
 // LighthouseJobReconciler reconciles a LighthouseJob object
 type LighthouseJobReconciler struct {
-	client                  client.Client
-	tektonclient            tektonversioned.Interface
-	apiReader               client.Reader
-	logger                  *logrus.Entry
-	scheme                  *runtime.Scheme
-	idGenerator             buildIDGenerator
-	dashboardURL            string
-	dashboardTemplate       string
-	namespace               string
-	disableLogging          bool
-	maxConcurrentReconciles int
+	client                   client.Client
+	tektonclient             tektonversioned.Interface
+	apiReader                client.Reader
+	logger                   *logrus.Entry
+	scheme                   *runtime.Scheme
+	idGenerator              buildIDGenerator
+	dashboardURL             string
+	dashboardTemplate        string
+	namespace                string
+	disableLogging           bool
+	skipTerminatedReconciles bool
+	maxConcurrentReconciles  int
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, tektonclient tektonversioned.Interface, dashboardURL string, dashboardTemplate string, namespace string, maxConcurrentReconciles int) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, tektonclient tektonversioned.Interface, dashboardURL string, dashboardTemplate string, namespace string, skipTerminatedReconciles bool, maxConcurrentReconciles int) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
 	return &LighthouseJobReconciler{
-		client:                  client,
-		apiReader:               apiReader,
-		logger:                  logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
-		scheme:                  scheme,
-		dashboardURL:            dashboardURL,
-		dashboardTemplate:       dashboardTemplate,
-		namespace:               namespace,
-		tektonclient:            tektonclient,
-		idGenerator:             &epochBuildIDGenerator{},
-		maxConcurrentReconciles: maxConcurrentReconciles,
+		client:                   client,
+		apiReader:                apiReader,
+		logger:                   logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
+		scheme:                   scheme,
+		dashboardURL:             dashboardURL,
+		dashboardTemplate:        dashboardTemplate,
+		namespace:                namespace,
+		tektonclient:             tektonclient,
+		idGenerator:              &epochBuildIDGenerator{},
+		skipTerminatedReconciles: skipTerminatedReconciles,
+		maxConcurrentReconciles:  maxConcurrentReconciles,
 	}
 }
 
@@ -78,9 +81,12 @@ func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	ctrlr := ctrl.NewControllerManagedBy(mgr).
-		For(&lighthousev1alpha1.LighthouseJob{}).
-		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
-		Owns(&pipelinev1.PipelineRun{})
+		For(&lighthousev1alpha1.LighthouseJob{}, builder.WithPredicates(
+			lighthouseJobPredicateFactory(r.skipTerminatedReconciles),
+		)).
+		Owns(&pipelinev1.PipelineRun{}, builder.WithPredicates(
+			predicate.ResourceVersionChangedPredicate{},
+		))
 
 	if r.maxConcurrentReconciles > 1 {
 		ctrlr = ctrlr.WithOptions(
@@ -192,6 +198,19 @@ func (r *LighthouseJobReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			}
 		}
 
+		// When terminal shortcut is enabled, skip ConvertPipelineRun + status update if the PipelineRun is
+		// done and Activity already matches (covers Owns(PipelineRun) events; same flag as For() predicate).
+		if r.skipTerminatedReconciles {
+			expectedReportURL := ""
+			if r.dashboardURL != "" {
+				expectedReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
+			}
+			if TerminalActivitySyncedWithPipelineRun(&job, &pipelineRun, expectedReportURL, r.dashboardURL != "") {
+				r.logger.Debugf("Skipping terminal in-sync LighthouseJob %s", req.Name)
+				return ctrl.Result{}, nil
+			}
+		}
+
 		f := func(job *lighthousev1alpha1.LighthouseJob) error {
 			if r.dashboardURL != "" {
 				job.Status.ReportURL = r.getPipelingetPipelineTargetURLeTargetURL(pipelineRun)
@@ -282,4 +301,26 @@ func (r *LighthouseJobReconciler) retryModifyJob(ctx context.Context, ns client.
 			return client.IgnoreNotFound(err)
 		}
 	}
+}
+
+// lighthouseJobPredicateFactory returns the For(LighthouseJob) predicate set. When skipTerminatedReconciles
+// is false, only ResourceVersionChangedPredicate is used (legacy behavior). When true, it also skips
+// enqueue for LighthouseJobs whose activity is already in a terminal pipeline state (see Reconcile fast path).
+func lighthouseJobPredicateFactory(skipTerminatedReconciles bool) predicate.Predicate {
+	if skipTerminatedReconciles {
+		return predicate.And(
+			predicate.ResourceVersionChangedPredicate{},
+			predicate.NewPredicateFuncs(func(object client.Object) bool {
+				job, ok := object.(*lighthousev1alpha1.LighthouseJob)
+				if !ok {
+					return true
+				}
+				if job.Status.Activity != nil {
+					return !lighthousev1alpha1.IsTerminalPipelineState(job.Status.Activity.Status)
+				}
+				return true
+			}),
+		)
+	}
+	return predicate.ResourceVersionChangedPredicate{}
 }

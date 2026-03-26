@@ -139,3 +139,25 @@ func TestPipelineOptionsSpec_GetEnvVars(t *testing.T) {
 		})
 	}
 }
+
+func TestIsTerminalPipelineState(t *testing.T) {
+	tests := []struct {
+		state v1alpha1.PipelineState
+		want  bool
+	}{
+		{v1alpha1.RunningState, false},
+		{v1alpha1.PendingState, false},
+		{v1alpha1.SuccessState, true},
+		{v1alpha1.FailureState, true},
+		{v1alpha1.AbortedState, true},
+		{v1alpha1.ErrorState, true},
+		{v1alpha1.PipelineState("unknown"), false},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.state), func(t *testing.T) {
+			if got := v1alpha1.IsTerminalPipelineState(tt.state); got != tt.want {
+				t.Errorf("IsTerminalPipelineState(%q) = %v, want %v", tt.state, got, tt.want)
+			}
+		})
+	}
+}

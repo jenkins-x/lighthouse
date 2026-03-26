@@ -19,11 +19,12 @@ import (
 )
 
 type options struct {
-	namespace               string
-	dashboardURL            string
-	dashboardTemplate       string
-	enableRerunStatusUpdate bool
-	maxConcurrentReconciles int
+	namespace                string
+	dashboardURL             string
+	dashboardTemplate        string
+	enableRerunStatusUpdate  bool
+	skipTerminatedReconciles bool
+	maxConcurrentReconciles  int
 }
 
 func (o *options) Validate() error {
@@ -36,6 +37,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.dashboardURL, "dashboard-url", "", "The base URL for the Tekton Dashboard to link to for build reports")
 	fs.StringVar(&o.dashboardTemplate, "dashboard-template", "", "The template expression for generating the URL to the build report based on the PipelineRun parameters. If not specified defaults to $LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	fs.BoolVar(&o.enableRerunStatusUpdate, "enable-rerun-status-update", false, "Enable updating the status at the git provider when PipelineRuns are rerun")
+	fs.BoolVar(&o.skipTerminatedReconciles, "skip-terminated-reconciles", false, "When true, add LighthouseJob watch predicates and a Reconcile fast path to skip work when the PipelineRun is terminal and activity is already in sync. Default false uses resource-version filtering only on LighthouseJob")
 	fs.IntVar(&o.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "Parallel reconciles for the tekton controllers (LighthouseJob and RerunPipelineRun)")
 	err := fs.Parse(args)
 	if err != nil {
@@ -87,7 +89,7 @@ func main() {
 		logrus.WithError(err).Fatal(err, "failed to get api clients")
 	}
 
-	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), tektonclient, o.dashboardURL, o.dashboardTemplate, o.namespace, o.maxConcurrentReconciles)
+	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), tektonclient, o.dashboardURL, o.dashboardTemplate, o.namespace, o.skipTerminatedReconciles, o.maxConcurrentReconciles)
 	if err = lhJobReconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}

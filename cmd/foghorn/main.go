@@ -17,8 +17,9 @@ import (
 )
 
 type options struct {
-	namespace               string
-	maxConcurrentReconciles int
+	namespace                string
+	skipTerminatedReconciles bool
+	maxConcurrentReconciles  int
 }
 
 func (o *options) Validate() error {
@@ -28,6 +29,7 @@ func (o *options) Validate() error {
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.BoolVar(&o.skipTerminatedReconciles, "skip-terminated-reconciles", false, "When true, add LighthouseJob watch predicates beyond resource-version changes (skip enqueue when activity is terminal and SCM status is already final). Default false matches historical behavior (resource-version filter only)")
 	fs.IntVar(&o.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "Parallel reconciles for the foghorn controller")
 
 	err := fs.Parse(args)
@@ -72,7 +74,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace, o.maxConcurrentReconciles)
+	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace, o.skipTerminatedReconciles, o.maxConcurrentReconciles)
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to instantiate reconciler")
 	}

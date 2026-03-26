@@ -40,6 +40,16 @@ const (
 	ErrorState PipelineState = "error"
 )
 
+// IsTerminalPipelineState reports whether state is a finished pipeline outcome: success, failure,
+// aborted, or error. Triggered, pending, running, and other values are non-terminal.
+func IsTerminalPipelineState(state PipelineState) bool {
+	switch state {
+	case SuccessState, FailureState, AbortedState, ErrorState:
+		return true
+	}
+	return false
+}
+
 // Environment variables to be added to the pipeline we kick off
 const (
 	// BuildIDEnv is an optional unique build ID environment variable that can be used by an engine.
