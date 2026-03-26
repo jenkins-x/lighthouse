@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -36,9 +37,10 @@ type LighthouseJobReconciler struct {
 	// ConfigMapWatcher watches for changes in our relevant config maps and updates the reconciler's versions when required.
 	ConfigMapWatcher *watcher.ConfigMapWatcher
 
-	client client.Client
-	logger *logrus.Entry
-	scheme *runtime.Scheme
+	client                  client.Client
+	logger                  *logrus.Entry
+	scheme                  *runtime.Scheme
+	maxConcurrentReconciles int
 
 	jobConfig    *config.Agent
 	pluginConfig *plugins.ConfigAgent
@@ -48,12 +50,12 @@ type LighthouseJobReconciler struct {
 }
 
 // NewLighthouseJobReconciler returns a new controller for syncing LighthouseJobs and commit statuses
-func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, ns string) (*LighthouseJobReconciler, error) {
-	return NewLighthouseJobReconcilerWithConfig(client, scheme, ns, nil, nil, nil)
+func NewLighthouseJobReconciler(client client.Client, scheme *runtime.Scheme, ns string, maxConcurrentReconciles int) (*LighthouseJobReconciler, error) {
+	return NewLighthouseJobReconcilerWithConfig(client, scheme, ns, nil, nil, nil, maxConcurrentReconciles)
 }
 
 // NewLighthouseJobReconcilerWithConfig takes returns a new controller for syncing LighthouseJobs and commit statuses using the provided config map watcher and configs
-func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.Scheme, ns string, configMapWatcher *watcher.ConfigMapWatcher, jobConfig *config.Agent, pluginConfig *plugins.ConfigAgent) (*LighthouseJobReconciler, error) {
+func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.Scheme, ns string, configMapWatcher *watcher.ConfigMapWatcher, jobConfig *config.Agent, pluginConfig *plugins.ConfigAgent, maxConcurrentReconciles int) (*LighthouseJobReconciler, error) {
 	logger := logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName)
 
 	if jobConfig == nil {
@@ -72,23 +74,33 @@ func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.
 	}
 
 	return &LighthouseJobReconciler{
-		client:           client,
-		scheme:           scheme,
-		logger:           logger,
-		ns:               ns,
-		jobConfig:        jobConfig,
-		pluginConfig:     pluginConfig,
-		ConfigMapWatcher: configMapWatcher,
-		wg:               &sync.WaitGroup{},
+		client:                  client,
+		scheme:                  scheme,
+		logger:                  logger,
+		maxConcurrentReconciles: maxConcurrentReconciles,
+		ns:                      ns,
+		jobConfig:               jobConfig,
+		pluginConfig:            pluginConfig,
+		ConfigMapWatcher:        configMapWatcher,
+		wg:                      &sync.WaitGroup{},
 	}, nil
 }
 
 // SetupWithManager sets up the reconciler with its manager
 func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	ctrlr := ctrl.NewControllerManagedBy(mgr).
 		For(&lighthousev1alpha1.LighthouseJob{}).
-		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
-		Complete(r)
+		WithEventFilter(predicate.ResourceVersionChangedPredicate{})
+
+	if r.maxConcurrentReconciles > 1 {
+		ctrlr = ctrlr.WithOptions(
+			controller.Options{
+				MaxConcurrentReconciles: r.maxConcurrentReconciles,
+			},
+		)
+	}
+
+	return ctrlr.Complete(r)
 }
 
 // Reconcile represents an iteration of the reconciliation loop

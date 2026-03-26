@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -27,33 +28,35 @@ var apiGVStr = lighthousev1alpha1.SchemeGroupVersion.String()
 
 // LighthouseJobReconciler reconciles a LighthouseJob object
 type LighthouseJobReconciler struct {
-	client            client.Client
-	tektonclient      tektonversioned.Interface
-	apiReader         client.Reader
-	logger            *logrus.Entry
-	scheme            *runtime.Scheme
-	idGenerator       buildIDGenerator
-	dashboardURL      string
-	dashboardTemplate string
-	namespace         string
-	disableLogging    bool
+	client                  client.Client
+	tektonclient            tektonversioned.Interface
+	apiReader               client.Reader
+	logger                  *logrus.Entry
+	scheme                  *runtime.Scheme
+	idGenerator             buildIDGenerator
+	dashboardURL            string
+	dashboardTemplate       string
+	namespace               string
+	disableLogging          bool
+	maxConcurrentReconciles int
 }
 
 // NewLighthouseJobReconciler creates a LighthouseJob reconciler
-func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, tektonclient tektonversioned.Interface, dashboardURL string, dashboardTemplate string, namespace string) *LighthouseJobReconciler {
+func NewLighthouseJobReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, tektonclient tektonversioned.Interface, dashboardURL string, dashboardTemplate string, namespace string, maxConcurrentReconciles int) *LighthouseJobReconciler {
 	if dashboardTemplate == "" {
 		dashboardTemplate = os.Getenv("LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	}
 	return &LighthouseJobReconciler{
-		client:            client,
-		apiReader:         apiReader,
-		logger:            logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
-		scheme:            scheme,
-		dashboardURL:      dashboardURL,
-		dashboardTemplate: dashboardTemplate,
-		namespace:         namespace,
-		tektonclient:      tektonclient,
-		idGenerator:       &epochBuildIDGenerator{},
+		client:                  client,
+		apiReader:               apiReader,
+		logger:                  logrus.NewEntry(logrus.StandardLogger()).WithField("controller", controllerName),
+		scheme:                  scheme,
+		dashboardURL:            dashboardURL,
+		dashboardTemplate:       dashboardTemplate,
+		namespace:               namespace,
+		tektonclient:            tektonclient,
+		idGenerator:             &epochBuildIDGenerator{},
+		maxConcurrentReconciles: maxConcurrentReconciles,
 	}
 }
 
@@ -74,11 +77,20 @@ func (r *LighthouseJobReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	ctrlr := ctrl.NewControllerManagedBy(mgr).
 		For(&lighthousev1alpha1.LighthouseJob{}).
 		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
-		Owns(&pipelinev1.PipelineRun{}).
-		Complete(r)
+		Owns(&pipelinev1.PipelineRun{})
+
+	if r.maxConcurrentReconciles > 1 {
+		ctrlr = ctrlr.WithOptions(
+			controller.Options{
+				MaxConcurrentReconciles: r.maxConcurrentReconciles,
+			},
+		)
+	}
+
+	return ctrlr.Complete(r)
 }
 
 // Reconcile represents an iteration of the reconciliation loop

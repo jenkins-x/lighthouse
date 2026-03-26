@@ -17,7 +17,8 @@ import (
 )
 
 type options struct {
-	namespace string
+	namespace               string
+	maxConcurrentReconciles int
 }
 
 func (o *options) Validate() error {
@@ -27,6 +28,7 @@ func (o *options) Validate() error {
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.IntVar(&o.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "Parallel reconciles for the foghorn controller")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -70,7 +72,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace)
+	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace, o.maxConcurrentReconciles)
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to instantiate reconciler")
 	}
