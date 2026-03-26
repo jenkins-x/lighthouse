@@ -9,7 +9,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/foghorn"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -42,9 +41,6 @@ func main() {
 	scheme := runtime.NewScheme()
 	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
 		logrus.WithError(err).Fatal("Failed to register lighthousev1alpha1 scheme")
-	}
-	if err := pipelinev1.AddToScheme(scheme); err != nil {
-		logrus.WithError(err).Fatal("Failed to register tektoncd-pipelinev1 scheme")
 	}
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
