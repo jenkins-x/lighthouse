@@ -15,7 +15,9 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonfake "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 	"sigs.k8s.io/yaml"
 )
 
@@ -192,6 +194,68 @@ func loadRecord(t *testing.T, dir string) *v1alpha1.ActivityRecord {
 		}
 	}
 	return nil
+}
+
+func TestTerminalActivitySyncedWithPipelineRun(t *testing.T) {
+	now := metav1.Now()
+	job := &v1alpha1.LighthouseJob{
+		Status: v1alpha1.LighthouseJobStatus{
+			ReportURL: "https://dash/pipeline",
+			Activity: &v1alpha1.ActivityRecord{
+				Name:             "foo-pr",
+				Status:           v1alpha1.SuccessState,
+				StartTime:        &now,
+				CompletionTime:   &now,
+				Stages:           []*v1alpha1.ActivityStageOrStep{{Name: "build"}},
+			},
+		},
+	}
+
+	t.Run("synced when pipeline run is terminal and activity matches", func(t *testing.T) {
+		pr := &pipelinev1.PipelineRun{
+			ObjectMeta: metav1.ObjectMeta{Name: "foo-pr"},
+		}
+		pr.Status.StartTime = &now
+		pr.Status.CompletionTime = &now
+		pr.Status.ChildReferences = []pipelinev1.ChildStatusReference{{Name: "tr-1", PipelineTaskName: "build"}}
+		pr.Status.SetCondition(&apis.Condition{
+			Type:   apis.ConditionSucceeded,
+			Status: corev1.ConditionTrue,
+		})
+		assert.True(t, tekton.TerminalActivitySyncedWithPipelineRun(job, pr, "https://dash/pipeline", true))
+		assert.False(t, tekton.TerminalActivitySyncedWithPipelineRun(job, pr, "https://other", true))
+		assert.True(t, tekton.TerminalActivitySyncedWithPipelineRun(job, pr, "", false))
+	})
+
+	t.Run("false when pipeline run has no succeeded condition", func(t *testing.T) {
+		pr := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "foo-pr"}}
+		assert.False(t, tekton.TerminalActivitySyncedWithPipelineRun(job, pr, "", false))
+	})
+
+	t.Run("false when pipeline run is not terminal", func(t *testing.T) {
+		pr := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "foo-pr"}}
+		pr.Status.SetCondition(&apis.Condition{
+			Type:   apis.ConditionSucceeded,
+			Status: corev1.ConditionUnknown,
+		})
+		assert.False(t, tekton.TerminalActivitySyncedWithPipelineRun(job, pr, "", false))
+	})
+
+	t.Run("false when status cleared", func(t *testing.T) {
+		pr := &pipelinev1.PipelineRun{
+			ObjectMeta: metav1.ObjectMeta{Name: "foo-pr"},
+		}
+		pr.Status.StartTime = &now
+		pr.Status.CompletionTime = &now
+		pr.Status.ChildReferences = []pipelinev1.ChildStatusReference{{Name: "tr-1", PipelineTaskName: "build"}}
+		pr.Status.SetCondition(&apis.Condition{
+			Type:   apis.ConditionSucceeded,
+			Status: corev1.ConditionTrue,
+		})
+		prIncomplete := pr.DeepCopy()
+		prIncomplete.Status = pipelinev1.PipelineRunStatus{}
+		assert.False(t, tekton.TerminalActivitySyncedWithPipelineRun(job, prIncomplete, "", false))
+	})
 }
 
 // assertFileExists asserts that the given file exists

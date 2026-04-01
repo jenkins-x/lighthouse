@@ -26,6 +26,8 @@ spec:
         imagePullPolicy: {{ tpl .Values.foghorn.image.pullPolicy . }}
         args:
           - "--namespace={{ .Release.Namespace }}"
+          - "--skip-terminated-reconciles={{ .Values.foghorn.skipTerminatedReconciles | default false }}"
+          - "--max-concurrent-reconciles={{ .Values.foghorn.maxConcurrentReconciles | default 1 }}"
         env:
           - name: "GIT_KIND"
             value: "{{ .Values.git.kind }}"

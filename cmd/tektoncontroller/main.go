@@ -14,14 +14,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type options struct {
-	namespace               string
-	dashboardURL            string
-	dashboardTemplate       string
-	enableRerunStatusUpdate bool
+	namespace                string
+	dashboardURL             string
+	dashboardTemplate        string
+	enableRerunStatusUpdate  bool
+	skipTerminatedReconciles bool
+	maxConcurrentReconciles  int
 }
 
 func (o *options) Validate() error {
@@ -34,6 +37,8 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	fs.StringVar(&o.dashboardURL, "dashboard-url", "", "The base URL for the Tekton Dashboard to link to for build reports")
 	fs.StringVar(&o.dashboardTemplate, "dashboard-template", "", "The template expression for generating the URL to the build report based on the PipelineRun parameters. If not specified defaults to $LIGHTHOUSE_DASHBOARD_TEMPLATE")
 	fs.BoolVar(&o.enableRerunStatusUpdate, "enable-rerun-status-update", false, "Enable updating the status at the git provider when PipelineRuns are rerun")
+	fs.BoolVar(&o.skipTerminatedReconciles, "skip-terminated-reconciles", false, "When true, add LighthouseJob watch predicates and a Reconcile fast path to skip work when the PipelineRun is terminal and activity is already in sync. Default false uses resource-version filtering only on LighthouseJob")
+	fs.IntVar(&o.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "Parallel reconciles for the tekton controllers (LighthouseJob and RerunPipelineRun)")
 	err := fs.Parse(args)
 	if err != nil {
 		logrus.WithError(err).Fatal("Invalid options")
@@ -44,6 +49,10 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 
 func main() {
 	logrusutil.ComponentInit("lighthouse-tekton-controller")
+
+	// Wire zap from controller-runtime so client-go and controller-runtime
+	// do not emit log.SetLogger was never called.
+	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
 
 	scheme := runtime.NewScheme()
 	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
@@ -80,13 +89,13 @@ func main() {
 		logrus.WithError(err).Fatal(err, "failed to get api clients")
 	}
 
-	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), tektonclient, o.dashboardURL, o.dashboardTemplate, o.namespace)
+	lhJobReconciler := tektonengine.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), tektonclient, o.dashboardURL, o.dashboardTemplate, o.namespace, o.skipTerminatedReconciles, o.maxConcurrentReconciles)
 	if err = lhJobReconciler.SetupWithManager(mgr); err != nil {
 		logrus.WithError(err).Fatal("Unable to create controller")
 	}
 
 	if o.enableRerunStatusUpdate {
-		rerunPipelineRunReconciler := tektonengine.NewRerunPipelineRunReconciler(mgr.GetClient(), mgr.GetScheme())
+		rerunPipelineRunReconciler := tektonengine.NewRerunPipelineRunReconciler(mgr.GetClient(), mgr.GetScheme(), o.maxConcurrentReconciles)
 		if err = rerunPipelineRunReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Fatal("Unable to create RerunPipelineRun controller")
 		}

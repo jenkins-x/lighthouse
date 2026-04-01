@@ -159,3 +159,50 @@ func convertTektonStatus(cond *apis.Condition, start, finished *metav1.Time) v1a
 		return v1alpha1.PendingState
 	}
 }
+
+func timePtrEqual(a, b *metav1.Time) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return a.Equal(b)
+}
+
+// TerminalActivitySyncedWithPipelineRun returns true when the LighthouseJob's Activity already matches
+// the terminal PipelineRun at the level ConvertPipelineRun would set without fetching TaskRuns (top-level
+// record fields, stage count, optional report URL).
+func TerminalActivitySyncedWithPipelineRun(job *v1alpha1.LighthouseJob, pr *pipelinev1.PipelineRun, expectedReportURL string, dashboardConfigured bool) bool {
+	if job == nil || pr == nil {
+		return false
+	}
+	cond := pr.Status.GetCondition(apis.ConditionSucceeded)
+	if cond == nil || (!cond.IsTrue() && !cond.IsFalse()) {
+		return false
+	}
+	act := job.Status.Activity
+	if act == nil {
+		return false
+	}
+	expectedStatus := convertTektonStatus(cond, pr.Status.StartTime, pr.Status.CompletionTime)
+	if act.Status != expectedStatus {
+		return false
+	}
+	if act.Name != pr.Name {
+		return false
+	}
+	if !timePtrEqual(act.StartTime, pr.Status.StartTime) {
+		return false
+	}
+	if !timePtrEqual(act.CompletionTime, pr.Status.CompletionTime) {
+		return false
+	}
+	if len(act.Stages) != len(pr.Status.ChildReferences) {
+		return false
+	}
+	if dashboardConfigured && job.Status.ReportURL != expectedReportURL {
+		return false
+	}
+	return true
+}

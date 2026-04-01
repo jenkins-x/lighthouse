@@ -28,6 +28,8 @@ spec:
           - --dashboard-url={{ .Values.tektoncontroller.dashboardURL }}
           - --dashboard-template={{ .Values.tektoncontroller.dashboardTemplate }}
           - --enable-rerun-status-update={{ .Values.tektoncontroller.enableRerunStatusUpdate | default false }}
+          - --skip-terminated-reconciles={{ .Values.tektoncontroller.skipTerminatedReconciles | default false }}
+          - --max-concurrent-reconciles={{ .Values.tektoncontroller.maxConcurrentReconciles | default 1 }}
         ports:
           - name: metrics
             containerPort: 8080

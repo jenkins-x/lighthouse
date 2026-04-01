@@ -231,6 +231,12 @@ foghorn:
   # foghorn.logLevel -- The logging level: trace, debug, info, warn, error, panic, fatal
   logLevel: "info"
 
+  # foghorn.skipTerminatedReconciles -- When true, passes `--skip-terminated-reconciles` to lighthouse-foghorn (extra LighthouseJob watch predicates; default off matches legacy behavior)
+  skipTerminatedReconciles: false
+
+  # foghorn.maxConcurrentReconciles -- Value for `--max-concurrent-reconciles` on lighthouse-foghorn
+  maxConcurrentReconciles: 1
+
   # foghorn.replicaCount -- Number of replicas
   replicaCount: 1
   
@@ -291,6 +297,12 @@ tektoncontroller:
 
   # tektoncontroller.enableRerunStatusUpdate -- Enable updating the status at the git provider when PipelineRuns are rerun
   enableRerunStatusUpdate: false
+
+  # tektoncontroller.skipTerminatedReconciles -- When true, passes `--skip-terminated-reconciles` to lighthouse-tekton-controller (terminal activity / PipelineRun fast paths and extra LighthouseJob watch predicates)
+  skipTerminatedReconciles: false
+
+  # tektoncontroller.maxConcurrentReconciles -- Value for `--max-concurrent-reconciles` on lighthouse-tekton-controller (LighthouseJob and RerunPipelineRun controllers)
+  maxConcurrentReconciles: 1
 
   image:
     # tektoncontroller.image.repository -- Template for computing the tekton controller docker image repository

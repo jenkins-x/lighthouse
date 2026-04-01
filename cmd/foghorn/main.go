@@ -9,15 +9,17 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/foghorn"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/sirupsen/logrus"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 type options struct {
-	namespace string
+	namespace                string
+	skipTerminatedReconciles bool
+	maxConcurrentReconciles  int
 }
 
 func (o *options) Validate() error {
@@ -27,6 +29,8 @@ func (o *options) Validate() error {
 func gatherOptions(fs *flag.FlagSet, args ...string) options {
 	var o options
 	fs.StringVar(&o.namespace, "namespace", "", "The namespace to listen in")
+	fs.BoolVar(&o.skipTerminatedReconciles, "skip-terminated-reconciles", false, "When true, add LighthouseJob watch predicates beyond resource-version changes (skip enqueue when activity is terminal and SCM status is already final). Default false matches historical behavior (resource-version filter only)")
+	fs.IntVar(&o.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "Parallel reconciles for the foghorn controller")
 
 	err := fs.Parse(args)
 	if err != nil {
@@ -39,12 +43,13 @@ func gatherOptions(fs *flag.FlagSet, args ...string) options {
 func main() {
 	logrusutil.ComponentInit("lighthouse-foghorn")
 
+	// Wire zap from controller-runtime so client-go and controller-runtime
+	// do not emit log.SetLogger was never called.
+	ctrl.SetLogger(zap.New(zap.UseDevMode(false)))
+
 	scheme := runtime.NewScheme()
 	if err := lighthousev1alpha1.AddToScheme(scheme); err != nil {
 		logrus.WithError(err).Fatal("Failed to register lighthousev1alpha1 scheme")
-	}
-	if err := pipelinev1.AddToScheme(scheme); err != nil {
-		logrus.WithError(err).Fatal("Failed to register tektoncd-pipelinev1 scheme")
 	}
 
 	o := gatherOptions(flag.NewFlagSet(os.Args[0], flag.ExitOnError), os.Args[1:]...)
@@ -69,7 +74,7 @@ func main() {
 		logrus.WithError(err).Fatal("Unable to start manager")
 	}
 
-	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace)
+	reconciler, err := foghorn.NewLighthouseJobReconciler(mgr.GetClient(), mgr.GetScheme(), o.namespace, o.skipTerminatedReconciles, o.maxConcurrentReconciles)
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to instantiate reconciler")
 	}

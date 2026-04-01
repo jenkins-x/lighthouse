@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jenkins-x/go-scm/scm"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/branchprotection"
@@ -18,7 +19,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/stretchr/testify/assert"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -109,10 +109,8 @@ func TestReconcile(t *testing.T) {
 			scheme := runtime.NewScheme()
 			err = lighthousev1alpha1.AddToScheme(scheme)
 			assert.NoError(t, err)
-			err = pipelinev1.AddToScheme(scheme)
-			assert.NoError(t, err)
 			c := fake.NewClientBuilder().WithStatusSubresource(observedJob).WithScheme(scheme).WithRuntimeObjects(observedJob).Build()
-			reconciler, err := NewLighthouseJobReconcilerWithConfig(c, scheme, ns, cfgMapWatcher, configAgent, pluginAgent)
+			reconciler, err := NewLighthouseJobReconcilerWithConfig(c, scheme, ns, cfgMapWatcher, configAgent, pluginAgent, false, 1)
 			assert.NoError(t, err)
 
 			// invoke reconcile
@@ -137,6 +135,27 @@ func TestReconcile(t *testing.T) {
 
 		})
 	}
+}
+
+func TestShouldEnqueueFoghornJob(t *testing.T) {
+	job := &lighthousev1alpha1.LighthouseJob{}
+	assert.False(t, shouldEnqueueFoghornJob(job))
+
+	job.Status.Activity = &lighthousev1alpha1.ActivityRecord{Status: lighthousev1alpha1.RunningState}
+	assert.True(t, shouldEnqueueFoghornJob(job))
+
+	job.Status.Activity.Status = lighthousev1alpha1.SuccessState
+	job.Status.LastReportState = ""
+	assert.True(t, shouldEnqueueFoghornJob(job))
+
+	job.Status.LastReportState = scm.StateSuccess.String()
+	assert.False(t, shouldEnqueueFoghornJob(job))
+
+	job.Status.LastReportState = scm.StateFailure.String()
+	assert.False(t, shouldEnqueueFoghornJob(job))
+
+	job.Status.LastReportState = "pending"
+	assert.True(t, shouldEnqueueFoghornJob(job))
 }
 
 func loadLighthouseJob(dir string, baseFn string) (*lighthousev1alpha1.LighthouseJob, error) {

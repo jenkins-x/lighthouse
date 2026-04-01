@@ -16,36 +16,52 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // RerunPipelineRunReconciler reconciles PipelineRun objects with the rerun label
 type RerunPipelineRunReconciler struct {
-	client client.Client
-	logger *logrus.Entry
-	scheme *runtime.Scheme
+	client                  client.Client
+	logger                  *logrus.Entry
+	scheme                  *runtime.Scheme
+	maxConcurrentReconciles int
 }
 
 // NewRerunPipelineRunReconciler creates a new RerunPipelineRunReconciler
-func NewRerunPipelineRunReconciler(client client.Client, scheme *runtime.Scheme) *RerunPipelineRunReconciler {
+func NewRerunPipelineRunReconciler(client client.Client, scheme *runtime.Scheme, maxConcurrentReconciles int) *RerunPipelineRunReconciler {
 	return &RerunPipelineRunReconciler{
-		client: client,
-		logger: logrus.NewEntry(logrus.StandardLogger()).WithField("controller", "RerunPipelineRunController"),
-		scheme: scheme,
+		client:                  client,
+		logger:                  logrus.NewEntry(logrus.StandardLogger()).WithField("controller", "RerunPipelineRunController"),
+		scheme:                  scheme,
+		maxConcurrentReconciles: maxConcurrentReconciles,
 	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RerunPipelineRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&pipelinev1.PipelineRun{}).
-		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
-			labels := object.GetLabels()
-			_, exists := labels[util.DashboardTektonRerun]
-			return exists
-		})).
-		Complete(r)
+	ctrlr := ctrl.NewControllerManagedBy(mgr).
+		For(&pipelinev1.PipelineRun{}, builder.WithPredicates(
+			predicate.NewPredicateFuncs(func(object client.Object) bool {
+				labels := object.GetLabels()
+				_, hasRerunLabel := labels[util.DashboardTektonRerun]
+				// Only reconcile rerun PipelineRuns that have not yet been
+				// linked to a LighthouseJob via an OwnerReference.
+				return hasRerunLabel && len(object.GetOwnerReferences()) == 0
+			}),
+		))
+
+	if r.maxConcurrentReconciles > 1 {
+		ctrlr = ctrlr.WithOptions(
+			controller.Options{
+				MaxConcurrentReconciles: r.maxConcurrentReconciles,
+			},
+		)
+	}
+
+	return ctrlr.Complete(r)
 }
 
 // Reconcile handles the reconciliation logic for rerun PipelineRuns
@@ -60,6 +76,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Check if the Rerun PipelineRun already has an ownerReference set
+	// (safety net — the predicate should already filter these out)
 	if len(rerunPipelineRun.OwnerReferences) > 0 {
 		r.logger.Infof("PipelineRun %s already has an ownerReference set, skipping.", req.NamespacedName)
 		return ctrl.Result{}, nil
