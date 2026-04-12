@@ -161,14 +161,7 @@ func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (strin
 	// Weight incorrect labels and statues with low (normal) diff values.
 	var missingLabels []string
 	for _, l1 := range q.Labels {
-		var found bool
-		for _, l2 := range pr.Labels.Nodes {
-			if strings.EqualFold(string(l2.Name), string(l1)) {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !hasLabel(pr, l1) {
 			missingLabels = append(missingLabels, l1)
 		}
 	}
@@ -185,11 +178,8 @@ func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (strin
 
 	var presentLabels []string
 	for _, l1 := range q.MissingLabels {
-		for _, l2 := range pr.Labels.Nodes {
-			if string(l2.Name) == l1 {
-				presentLabels = append(presentLabels, l1)
-				break
-			}
+		if hasLabel(pr, l1) {
+			presentLabels = append(presentLabels, l1)
 		}
 	}
 	diff += len(presentLabels)
@@ -227,6 +217,15 @@ func requirementDiff(pr *PullRequest, q *keeper.Query, cc contextChecker) (strin
 	// PR query.
 
 	return desc, diff
+}
+
+func hasLabel(pr *PullRequest, l1 string) bool {
+	for _, l2 := range pr.Labels.Nodes {
+		if strings.EqualFold(string(l2.Name), l1) {
+			return true
+		}
+	}
+	return false
 }
 
 // Returns expected status state and description.
