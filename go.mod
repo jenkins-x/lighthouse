@@ -12,7 +12,7 @@ require (
 	github.com/h2non/gock v1.0.9
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/golang-lru v1.0.2
-	github.com/jenkins-x/go-scm v1.15.17
+	github.com/jenkins-x/go-scm v1.15.19
 	github.com/mattn/go-zglob v0.0.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.36.1
@@ -22,7 +22,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
 	github.com/tektoncd/pipeline v1.2.0
-	golang.org/x/oauth2 v0.31.0
+	golang.org/x/oauth2 v0.33.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	k8s.io/api v0.32.6
 	k8s.io/apiextensions-apiserver v0.32.6 // indirect
