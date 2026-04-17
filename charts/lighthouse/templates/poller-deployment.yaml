@@ -32,6 +32,7 @@ spec:
     spec:
       serviceAccountName: {{ template "poller.name" . }}
       terminationGracePeriodSeconds: {{ .Values.poller.terminationGracePeriodSeconds }}
+      shareProcessNamespace: true
       containers:
       - name: {{ template "poller.name" . }}
         image: {{ tpl .Values.poller.image.repository . }}:{{ tpl .Values.poller.image.tag . }}

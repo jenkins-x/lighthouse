@@ -31,6 +31,7 @@ spec:
     spec:
       serviceAccountName: {{ template "keeper.name" . }}
       terminationGracePeriodSeconds: {{ .Values.keeper.terminationGracePeriodSeconds }}
+      shareProcessNamespace: true
       containers:
       - name: {{ template "keeper.name" . }}
         image: {{ tpl .Values.keeper.image.repository . }}:{{ tpl .Values.keeper.image.tag . }}

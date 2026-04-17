@@ -35,6 +35,7 @@ spec:
 {{- end }}
     spec:
       serviceAccountName: {{ template "webhooks.name" . }}
+      shareProcessNamespace: true
       containers:
       - name: {{ template "webhooks.name" . }}
         image: {{ tpl .Values.webhooks.image.repository . }}:{{ tpl .Values.webhooks.image.tag . }}
