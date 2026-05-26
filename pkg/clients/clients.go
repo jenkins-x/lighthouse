@@ -3,8 +3,6 @@ package clients
 import (
 	"fmt"
 	"os"
-	"os/user"
-	"path/filepath"
 
 	clientset "github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
@@ -50,23 +48,18 @@ func GetAPIClients() (tektonclient.Interface, kubeclient.Interface, clientset.In
 //  3. Fallback to in-cluster config.
 //  4. Fallback to the ~/.kube/config.
 func GetConfig(masterURL, kubeconfig string) (*rest.Config, error) {
-	if kubeconfig == "" {
-		kubeconfig = os.Getenv("KUBECONFIG")
+	po := clientcmd.NewDefaultPathOptions()
+	if po == nil {
+		return nil, fmt.Errorf("could not find any default path options for the kubeconfig file usually found at ~/.kube/config")
 	}
-	// If we have an explicit indication of where the kubernetes config lives, read that.
-	if kubeconfig != "" {
-		return clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
+	if len(kubeconfig) > 0 || len(os.Getenv("KUBECONFIG")) > 0 {
+		po.LoadingRules.ExplicitPath = kubeconfig
+		return clientcmd.BuildConfigFromKubeconfigGetter(masterURL, po.GetStartingConfig)
 	}
 	// If not, try the in-cluster config.
 	if c, err := rest.InClusterConfig(); err == nil {
 		return c, nil
 	}
 	// If no in-cluster config, try the default location in the user's home directory.
-	if usr, err := user.Current(); err == nil {
-		if c, err := clientcmd.BuildConfigFromFlags("", filepath.Join(usr.HomeDir, ".kube", "config")); err == nil {
-			return c, nil
-		}
-	}
-
-	return nil, fmt.Errorf("could not create a valid kubeconfig")
+	return clientcmd.BuildConfigFromKubeconfigGetter(masterURL, po.GetStartingConfig)
 }
