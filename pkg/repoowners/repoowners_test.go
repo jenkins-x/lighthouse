@@ -18,6 +18,7 @@ package repoowners
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -58,6 +59,7 @@ reviewers:
 - jakub
 required_reviewers:
 - ben
+minimum_reviewers: 2
 labels:
 - src-code`),
 		"src/dir/conformance/OWNERS": []byte(`options:
@@ -331,6 +333,7 @@ func TestLoadRepoOwners(t *testing.T) {
 		extraBranchesAndFiles map[string]map[string][]byte
 
 		expectedApprovers, expectedReviewers, expectedRequiredReviewers, expectedLabels map[string]map[string]sets.String
+		expectedMinRequiredReviewers                                                    map[string]map[string]int
 
 		expectedOptions map[string]dirOptions
 	}{
@@ -353,6 +356,9 @@ func TestLoadRepoOwners(t *testing.T) {
 			expectedLabels: map[string]map[string]sets.String{
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -380,6 +386,9 @@ func TestLoadRepoOwners(t *testing.T) {
 			expectedLabels: map[string]map[string]sets.String{
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -410,6 +419,9 @@ func TestLoadRepoOwners(t *testing.T) {
 				"":             patternAll("EVERYTHING"),
 				"src/dir":      patternAll("src-code"),
 				"docs/file.md": patternAll("docs"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -444,6 +456,9 @@ func TestLoadRepoOwners(t *testing.T) {
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
 			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"src/dir": {"": 2},
+			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
 					NoParentOwners: true,
@@ -476,6 +491,9 @@ func TestLoadRepoOwners(t *testing.T) {
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
 			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"src/dir": {"": 2},
+			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
 					NoParentOwners: true,
@@ -502,6 +520,9 @@ func TestLoadRepoOwners(t *testing.T) {
 			expectedLabels: map[string]map[string]sets.String{
 				"":        patternAll("EVERYTHING"),
 				"src/dir": patternAll("src-code"),
+			},
+			expectedMinRequiredReviewers: map[string]map[string]int{
+				"src/dir": {"": 2},
 			},
 			expectedOptions: map[string]dirOptions{
 				"src/dir/conformance": {
@@ -544,7 +565,7 @@ func TestLoadRepoOwners(t *testing.T) {
 			continue
 		}
 
-		check := func(field string, expected map[string]map[string]sets.String, got map[string]map[*regexp.Regexp]sets.String) {
+		checkStringSet := func(field string, expected map[string]map[string]sets.String, got map[string]map[*regexp.Regexp]sets.String) {
 			converted := map[string]map[string]sets.String{}
 			for path, m := range got {
 				converted[path] = map[string]sets.String{}
@@ -560,10 +581,29 @@ func TestLoadRepoOwners(t *testing.T) {
 				t.Errorf("Expected %s to be:\n%+v\ngot:\n%+v.", field, expected, converted)
 			}
 		}
-		check("approvers", test.expectedApprovers, ro.approvers)
-		check("reviewers", test.expectedReviewers, ro.reviewers)
-		check("required_reviewers", test.expectedRequiredReviewers, ro.requiredReviewers)
-		check("labels", test.expectedLabels, ro.labels)
+
+		checkInt := func(field string, expected map[string]map[string]int, got map[string]map[*regexp.Regexp]int) {
+			converted := map[string]map[string]int{}
+			for path, m := range got {
+				converted[path] = map[string]int{}
+				for re, s := range m {
+					var pattern string
+					if re != nil {
+						pattern = re.String()
+					}
+					converted[path][pattern] = s
+				}
+			}
+			if !reflect.DeepEqual(expected, converted) {
+				t.Errorf("Expected %s to be:\n%+v\ngot:\n%+v.", field, expected, converted)
+			}
+		}
+
+		checkStringSet("approvers", test.expectedApprovers, ro.approvers)
+		checkStringSet("reviewers", test.expectedReviewers, ro.reviewers)
+		checkStringSet("required_reviewers", test.expectedRequiredReviewers, ro.requiredReviewers)
+		checkStringSet("labels", test.expectedLabels, ro.labels)
+		checkInt("min_required_reviewers", test.expectedMinRequiredReviewers, ro.minimumReviewers)
 		if !reflect.DeepEqual(test.expectedOptions, ro.options) {
 			t.Errorf("Expected options to be:\n%#v\ngot:\n%#v.", test.expectedOptions, ro.options)
 		}
@@ -856,5 +896,119 @@ func TestExpandAliases(t *testing.T) {
 				got.List(),
 			)
 		}
+	}
+}
+
+func TestMinimumReviewersForFile(t *testing.T) {
+	const (
+		// No min reviewers
+		baseDir = ""
+		// Min reviewers set to 1
+		secondDir = "a"
+		// Min reviewers set to 2
+		thirdDir = "a/b"
+		// Min reviewers set to 3
+		fourthDir = "a/b/c"
+		// Dir with NoParentOwners - no min reviewers set, should not inherit from parent
+		noParentDir = "a/b/noparent"
+		// Dir with regex filters
+		filterDir = "filtered"
+	)
+
+	goFileRegex := regexp.MustCompile(`\.go$`)
+	mdFileRegex := regexp.MustCompile(`\.md$`)
+	// Overlapping regexes - both match main.go
+	mainFileRegex := regexp.MustCompile(`^main`)
+	allFilesRegex := regexp.MustCompile(`.*`)
+
+	ro := &RepoOwners{
+		minimumReviewers: map[string]map[*regexp.Regexp]int{
+			secondDir: {nil: 1},
+			thirdDir:  {nil: 2},
+			fourthDir: {nil: 3},
+			filterDir: {
+				goFileRegex: 3,
+				mdFileRegex: 1,
+				nil:         2, // default
+			},
+			// Dir with overlapping regex patterns - should take max
+			"overlap": {
+				mainFileRegex: 2, // matches main.go
+				allFilesRegex: 4, // also matches main.go - should take this (max)
+				nil:           1, // default
+			},
+		},
+		options: map[string]dirOptions{
+			noParentDir: {
+				NoParentOwners: true,
+			},
+		},
+	}
+	testCases := []struct {
+		name                      string
+		filePath                  string
+		expectedRequiredApprovers int
+	}{
+		{
+			name:                      "Modified Base Dir",
+			filePath:                  filepath.Join(baseDir, "main.go"),
+			expectedRequiredApprovers: 1,
+		},
+		{
+			name:                      "Modified Second Dir",
+			filePath:                  filepath.Join(secondDir, "main.go"),
+			expectedRequiredApprovers: ro.minimumReviewers[secondDir][nil],
+		},
+		{
+			name:                      "Modified Third Dir",
+			filePath:                  filepath.Join(thirdDir, "main.go"),
+			expectedRequiredApprovers: ro.minimumReviewers[thirdDir][nil],
+		},
+		{
+			name:                      "Modified Nested Dir Without OWNERS (default to fourth dir)",
+			filePath:                  filepath.Join(fourthDir, "d", "main.go"),
+			expectedRequiredApprovers: ro.minimumReviewers[fourthDir][nil],
+		},
+		{
+			name:                      "Modified Nonexistent Dir (default to Base Dir)",
+			filePath:                  filepath.Join("nonexistent", "main.go"),
+			expectedRequiredApprovers: 1,
+		},
+		{
+			name:                      "NoParentOwners stops inheritance - should return default 1",
+			filePath:                  filepath.Join(noParentDir, "main.go"),
+			expectedRequiredApprovers: 1,
+		},
+		{
+			name:                      "Regex filter matches .go file",
+			filePath:                  filepath.Join(filterDir, "main.go"),
+			expectedRequiredApprovers: 3,
+		},
+		{
+			name:                      "Regex filter matches .md file",
+			filePath:                  filepath.Join(filterDir, "README.md"),
+			expectedRequiredApprovers: 1,
+		},
+		{
+			name:                      "Regex filter no match uses default",
+			filePath:                  filepath.Join(filterDir, "data.txt"),
+			expectedRequiredApprovers: 2,
+		},
+		{
+			name:                      "Overlapping regex patterns takes max value",
+			filePath:                  filepath.Join("overlap", "main.go"),
+			expectedRequiredApprovers: 4, // both mainFileRegex(2) and allFilesRegex(4) match, should take max
+		},
+		{
+			name:                      "Overlapping regex - only one matches",
+			filePath:                  filepath.Join("overlap", "other.go"),
+			expectedRequiredApprovers: 4, // only allFilesRegex matches
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := ro.MinimumReviewersForFile(tc.filePath)
+			assert.Equal(t, tc.expectedRequiredApprovers, actual)
+		})
 	}
 }

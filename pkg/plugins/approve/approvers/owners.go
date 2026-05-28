@@ -45,6 +45,7 @@ type Repo interface {
 	LeafApprovers(path string) sets.String
 	FindApproverOwnersForFile(file string) string
 	IsNoParentOwners(path string) bool
+	MinimumReviewersForFile(path string) int
 }
 
 // Owners provides functionality related to owners of a specific code change.
@@ -147,7 +148,15 @@ func (o Owners) KeepCoveringApprovers(reverseMap map[string]sets.String, knownAp
 
 	unapproved := o.temporaryUnapprovedFiles(knownApprovers)
 
-	for _, suggestedApprover := range o.GetSuggestedApprovers(reverseMap, potentialApprovers).List() {
+	// Filter out known approvers from candidates - we shouldn't suggest people who have already approved
+	candidates := make([]string, 0, len(potentialApprovers))
+	for _, approver := range potentialApprovers {
+		if !knownApprovers.Has(approver) {
+			candidates = append(candidates, approver)
+		}
+	}
+
+	for _, suggestedApprover := range o.GetSuggestedApprovers(reverseMap, candidates).List() {
 		if reverseMap[suggestedApprover].Intersection(unapproved).Len() != 0 {
 			keptApprovers.Insert(suggestedApprover)
 		}
@@ -161,7 +170,18 @@ func (o Owners) KeepCoveringApprovers(reverseMap map[string]sets.String, knownAp
 func (o Owners) GetSuggestedApprovers(reverseMap map[string]sets.String, potentialApprovers []string) sets.String {
 	ap := NewApprovers(o)
 	for !ap.RequirementsMet() {
-		newApprover := findMostCoveringApprover(potentialApprovers, reverseMap, ap.UnapprovedFiles())
+		// Filter out already-selected approvers to ensure we find new unique approvers.
+		// This is important when minimum_reviewers > 1, as we need multiple distinct
+		// approvers for the same OWNERS directory.
+		currentApprovers := ap.GetCurrentApproversSet()
+		candidates := make([]string, 0, len(potentialApprovers))
+		for _, approver := range potentialApprovers {
+			if !currentApprovers.Has(approver) {
+				candidates = append(candidates, approver)
+			}
+		}
+
+		newApprover := findMostCoveringApprover(candidates, reverseMap, ap.UnapprovedFiles())
 		if newApprover == "" {
 			o.log.Warnf("Couldn't find/suggest approvers for each files. Unapproved: %q", ap.UnapprovedFiles().List())
 			return ap.GetCurrentApproversSet()
@@ -428,12 +448,57 @@ func (ap Approvers) NoIssueApprovers() map[string]Approval {
 // UnapprovedFiles returns owners files that still need approval
 func (ap Approvers) UnapprovedFiles() sets.String {
 	unapproved := sets.NewString()
+
+	// Build a map of OWNERS directory -> max minimum_reviewers for files in that directory
+	dirMinReviewers := map[string]int{}
+	for _, fn := range ap.owners.filenames {
+		dir := ap.owners.repo.FindApproverOwnersForFile(fn)
+		minReviewers := ap.owners.repo.MinimumReviewersForFile(fn)
+		if minReviewers > dirMinReviewers[dir] {
+			dirMinReviewers[dir] = minReviewers
+		}
+	}
+
 	for fn, approvers := range ap.GetFilesApprovers() {
-		if len(approvers) == 0 {
+		minRequired := dirMinReviewers[fn]
+		if minRequired == 0 {
+			minRequired = 1 // default
+		}
+		if len(approvers) < minRequired {
 			unapproved.Insert(fn)
 		}
 	}
 	return unapproved
+}
+
+// GetRemainingRequiredApprovers returns the number of additional OWNERS approvers needed.
+// It computes the deficit for each OWNERS directory and returns the sum of all deficits.
+// This ensures that when multiple directories each require multiple approvals, the total
+// remaining count reflects all outstanding approval requirements.
+func (ap Approvers) GetRemainingRequiredApprovers() int {
+	// Build a map of OWNERS directory -> max minimum_reviewers for files in that directory
+	dirMinReviewers := map[string]int{}
+	for _, fn := range ap.owners.filenames {
+		dir := ap.owners.repo.FindApproverOwnersForFile(fn)
+		minReviewers := ap.owners.repo.MinimumReviewersForFile(fn)
+		if minReviewers > dirMinReviewers[dir] {
+			dirMinReviewers[dir] = minReviewers
+		}
+	}
+
+	// Sum the deficits across all directories
+	totalRemaining := 0
+	for dir, approvers := range ap.GetFilesApprovers() {
+		minRequired := dirMinReviewers[dir]
+		if minRequired == 0 {
+			minRequired = 1 // default
+		}
+		deficit := minRequired - len(approvers)
+		if deficit > 0 {
+			totalRemaining += deficit
+		}
+	}
+	return totalRemaining
 }
 
 // GetFiles returns owners files that still need approval.
@@ -637,6 +702,9 @@ Approval requirements bypassed by manually added approval.
 
 {{end -}}
 This pull-request has been approved by:{{range $index, $approval := .ap.ListApprovals}}{{if $index}}, {{else}} {{end}}{{$approval}}{{end}}
+{{- if (and (gt .ap.GetRemainingRequiredApprovers 0) (not (call .ap.ManuallyApproved))) }}
+The changes made require {{ .ap.GetRemainingRequiredApprovers }} more approval(s).
+{{- end }}
 
 {{- if (and (not .ap.AreFilesApproved) (not (call .ap.ManuallyApproved))) }}  
 To complete the [pull request process](https://git.k8s.io/community/contributors/guide/owners.md#the-code-review-process), please assign {{range $index, $cc := .ap.GetCCs}}{{if $index}}, {{end}}**{{$cc}}**{{end}}  
