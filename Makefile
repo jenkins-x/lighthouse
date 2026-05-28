@@ -25,6 +25,7 @@ GOTEST := $(GO) test
 
 REV := $(shell git rev-parse --short HEAD 2> /dev/null || echo 'unknown')
 VERSION ?= $(shell echo "$$(git for-each-ref refs/tags/ --count=1 --sort=-version:refname --format='%(refname:short)' 2>/dev/null)-dev+$(REV)" | sed 's/^v//')
+ARCH ?= amd64
 GO_LDFLAGS :=  -X $(PROJECT)/pkg/version.Version='$(VERSION)'
 
 .PHONY: all
@@ -68,35 +69,43 @@ release: linux
 linux: build-linux
 
 .PHONY: build-linux
-build-linux: build-webhooks-linux build-poller-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux ## Build all binaries for Linux
+build-linux: build-linux-amd64 build-linux-arm64 ## Build all binaries for Linux (both amd64 and arm64)
+
+.PHONY: build-linux-amd64
+build-linux-amd64: ## Build all binaries for Linux amd64
+	$(MAKE) ARCH=amd64 build-webhooks-linux build-poller-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux
+
+.PHONY: build-linux-arm64
+build-linux-arm64: ## Build all binaries for Linux arm64
+	$(MAKE) ARCH=arm64 build-webhooks-linux build-poller-linux build-foghorn-linux build-gc-jobs-linux build-keeper-linux build-tekton-controller-linux build-jenkins-controller-linux
 
 .PHONY: build-webhooks-linux ## Build the webhook controller binary for Linux
 build-webhooks-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE) $(WEBHOOKS_MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(WEBHOOKS_EXECUTABLE)-$(ARCH) $(WEBHOOKS_MAIN_SRC_FILE)
 
 .PHONY: build-poller-linux ## Build the webhook controller binary for Linux
 build-poller-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(POLLER_EXECUTABLE) $(POLLER_MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(POLLER_EXECUTABLE)-$(ARCH) $(POLLER_MAIN_SRC_FILE)
 
 .PHONY: build-keeper-linux
 build-keeper-linux: ## Build the keeper controller binary for Linux
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE) $(KEEPER_MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(KEEPER_EXECUTABLE)-$(ARCH) $(KEEPER_MAIN_SRC_FILE)
 
 .PHONY: build-foghorn-linux
 build-foghorn-linux: ## Build the foghorn controller binary for Linux
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE) $(FOGHORN_MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(FOGHORN_EXECUTABLE)-$(ARCH) $(FOGHORN_MAIN_SRC_FILE)
 
 .PHONY: build-gc-jobs-linux
 build-gc-jobs-linux: ## Build the GC jobs binary for Linux
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE) $(GC_JOBS_MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(GC_JOBS_EXECUTABLE)-$(ARCH) $(GC_JOBS_MAIN_SRC_FILE)
 
 .PHONY: build-tekton-controller-linux
 build-tekton-controller-linux: ## Build the Tekton controller binary for Linux
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTON_CONTROLLER_EXECUTABLE) $(TEKTON_CONTROLLER_MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(TEKTON_CONTROLLER_EXECUTABLE)-$(ARCH) $(TEKTON_CONTROLLER_MAIN_SRC_FILE)
 
 .PHONY: build-jenkins-controller-linux
 build-jenkins-controller-linux: ## Build the Jenkins controller binary for Linux
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -ldflags "$(GO_LDFLAGS)" -o bin/$(JENKINS_CONTROLLER_EXECUTABLE)-$(ARCH) $(JENKINS_CONTROLLER_MAIN_SRC_FILE)
 
 .PHONY: test
 test: ## Runs the unit tests
