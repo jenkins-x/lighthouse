@@ -222,6 +222,23 @@ webhooks:
       # webhooks.ingress.tls.secretName -- Specify webhooks ingress tls secretName
       secretName: ""
 
+  httproute:
+    # webhooks.httproute.enabled -- Enable webhooks httproute
+    enabled: false
+
+    # webhooks.httproute.annotations -- Webhooks httproute annotations
+    annotations: {}
+
+    # webhooks.httproute.parentRefs -- List of parent Gateways the HTTPRoute binds to
+    # TLS is configured on the parent Gateway listener, not the HTTPRoute
+    parentRefs: []
+    # - name: envoy-gateway
+    #   namespace: envoy-gateway-system
+    #   sectionName: https
+
+    # webhooks.httproute.hosts -- Webhooks httproute host names
+    hosts: []
+
   # webhooks.customDeploymentTriggerCommand -- deployments can configure the ability to allow custom lighthouse triggers
   # using their own unique chat prefix, for example extending the default `/test` trigger prefix let them specify
   # `customDeploymentTriggerPrefix: foo` which means they can also use their own custom trigger /foo mycoolthing
