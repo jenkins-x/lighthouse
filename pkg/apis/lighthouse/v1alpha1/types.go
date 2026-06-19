@@ -86,7 +86,7 @@ const (
 // +kubebuilder:resource:shortName=lhjob
 // +kubebuilder:subresource:status
 
-// LighthouseJob contains the arguments to create a Jenkins X Pipeline and to report on it
+// LighthouseJob contains the arguments to create a JayeX Pipeline and to report on it
 type LighthouseJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

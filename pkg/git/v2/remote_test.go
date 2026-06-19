@@ -81,7 +81,7 @@ func TestHTTPResolver(t *testing.T) {
 				t.Errorf("%s: expected no error but got one: %v", testCase.name, actualErr)
 			}
 			if actual != testCase.expected {
-				t.Errorf("%s: got incorrect remote URL: %v", testCase.name, diff.StringDiff(actual, testCase.expected))
+				t.Errorf("%s: got incorrect remote URL: %v", testCase.name, diff.Diff(actual, testCase.expected))
 			}
 		})
 	}

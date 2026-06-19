@@ -26,10 +26,10 @@ package job
 
 // Various agents.
 const (
-	// JenkinsXAgent is the agent type for running Jenkins X pipelines
+	// JenkinsXAgent is the agent type for running JayeX pipelines
 	JenkinsXAgent = "jenkins-x"
 
-	// LegacyDefaultAgent is a backwards compatible way of dealing with legacy cases of "tekton" as the default agent, but meaning Jenkins X
+	// LegacyDefaultAgent is a backwards compatible way of dealing with legacy cases of "tekton" as the default agent, but meaning JayeX
 	LegacyDefaultAgent = "tekton"
 
 	// TektonPipelineAgent is the agent type for running Tekton Pipeline pipelines

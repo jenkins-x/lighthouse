@@ -93,7 +93,7 @@ func (b *Base) SetPipelineLoader(fn func(b *Base) error) {
 
 // SetDefaults initializes default values
 func (b *Base) SetDefaults(namespace string) {
-	// Use the Jenkins X type by default
+	// Use the JayeX type by default
 	if b.Agent == "" {
 		b.Agent = JenkinsXAgent
 	}

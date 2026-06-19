@@ -9,8 +9,8 @@ fi
 
 linterVersion="$(golangci-lint --version | awk '{print $4}')"
 
-if [[ ! "${linterVersion}" =~ ^1\.5[89] ]]; then
-	echo "Install GolangCI-Lint version 1.58 or 1.59"
+if [[ ! "${linterVersion}" =~ ^2\.12\.2 ]]; then
+	echo "Install GolangCI-Lint version 2.12.2"
   exit 1
 fi
 
