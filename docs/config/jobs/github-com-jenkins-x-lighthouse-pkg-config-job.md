@@ -42,7 +42,7 @@ Config is config for all prow jobs
 | `namespace` | *string | No | Namespace is the namespace in which pods schedule.<br />  nil: results in config.PodNamespace (aka pod default)<br />  empty: results in config.LighthouseJobNamespace (aka same as LighthouseJob) |
 | `error_on_eviction` | bool | No | ErrorOnEviction indicates that the LighthouseJob should be completed and given<br />the ErrorState status if the pod that is executing the job is evicted.<br />If this field is unspecified or false, a new pod will be created to replace<br />the evicted one. |
 | `source` | string | No | SourcePath contains the path where the tekton pipeline run is defined |
-| `spec` | *[PodSpec](./k8s-io-api-core-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
+| `spec` | *[PodSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
 | `pipeline_run_spec` | *[PipelineRunSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PipelineRunSpec) | No | PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline |
 | `pipeline_run_params` | [][PipelineRunParam](./github-com-jenkins-x-lighthouse-pkg-config-job.md#PipelineRunParam) | No | PipelineRunParams are the params used by the pipeline run |
 | `context` | string | No | Context is the name of the GitHub status context for the job.<br />Defaults: the same as the name of the job. |
@@ -78,7 +78,7 @@ Periodic runs on a timer.
 | `namespace` | *string | No | Namespace is the namespace in which pods schedule.<br />  nil: results in config.PodNamespace (aka pod default)<br />  empty: results in config.LighthouseJobNamespace (aka same as LighthouseJob) |
 | `error_on_eviction` | bool | No | ErrorOnEviction indicates that the LighthouseJob should be completed and given<br />the ErrorState status if the pod that is executing the job is evicted.<br />If this field is unspecified or false, a new pod will be created to replace<br />the evicted one. |
 | `source` | string | No | SourcePath contains the path where the tekton pipeline run is defined |
-| `spec` | *[PodSpec](./k8s-io-api-core-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
+| `spec` | *[PodSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
 | `pipeline_run_spec` | *[PipelineRunSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PipelineRunSpec) | No | PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline |
 | `pipeline_run_params` | [][PipelineRunParam](./github-com-jenkins-x-lighthouse-pkg-config-job.md#PipelineRunParam) | No | PipelineRunParams are the params used by the pipeline run |
 | `context` | string | No | Context is the name of the GitHub status context for the job.<br />Defaults: the same as the name of the job. |
@@ -115,7 +115,7 @@ Postsubmit runs on push events.
 | `namespace` | *string | No | Namespace is the namespace in which pods schedule.<br />  nil: results in config.PodNamespace (aka pod default)<br />  empty: results in config.LighthouseJobNamespace (aka same as LighthouseJob) |
 | `error_on_eviction` | bool | No | ErrorOnEviction indicates that the LighthouseJob should be completed and given<br />the ErrorState status if the pod that is executing the job is evicted.<br />If this field is unspecified or false, a new pod will be created to replace<br />the evicted one. |
 | `source` | string | No | SourcePath contains the path where the tekton pipeline run is defined |
-| `spec` | *[PodSpec](./k8s-io-api-core-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
+| `spec` | *[PodSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
 | `pipeline_run_spec` | *[PipelineRunSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PipelineRunSpec) | No | PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline |
 | `pipeline_run_params` | [][PipelineRunParam](./github-com-jenkins-x-lighthouse-pkg-config-job.md#PipelineRunParam) | No | PipelineRunParams are the params used by the pipeline run |
 | `run_if_changed` | string | No | RunIfChanged defines a regex used to select which subset of file changes should trigger this job.<br />If any file in the changeset matches this regex, the job will be triggered |
@@ -133,8 +133,8 @@ Preset is intended to match the k8s' PodPreset feature, and may be removed<br />
 | Stanza | Type | Required | Description |
 |---|---|---|---|
 | `labels` | map[string]string | No |  |
-| `env` | [][EnvVar](./k8s-io-api-core-v1.md#EnvVar) | No |  |
-| `volumes` | [][Volume](./k8s-io-api-core-v1.md#Volume) | No |  |
+| `env` | [][EnvVar](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#EnvVar) | No |  |
+| `volumes` | [][Volume](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#Volume) | No |  |
 | `volumeMounts` | [][VolumeMount](./k8s-io-api-core-v1.md#VolumeMount) | No |  |
 
 ## Presubmit
@@ -157,7 +157,7 @@ Presubmit runs on PRs.
 | `namespace` | *string | No | Namespace is the namespace in which pods schedule.<br />  nil: results in config.PodNamespace (aka pod default)<br />  empty: results in config.LighthouseJobNamespace (aka same as LighthouseJob) |
 | `error_on_eviction` | bool | No | ErrorOnEviction indicates that the LighthouseJob should be completed and given<br />the ErrorState status if the pod that is executing the job is evicted.<br />If this field is unspecified or false, a new pod will be created to replace<br />the evicted one. |
 | `source` | string | No | SourcePath contains the path where the tekton pipeline run is defined |
-| `spec` | *[PodSpec](./k8s-io-api-core-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
+| `spec` | *[PodSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PodSpec) | No | Spec is the Kubernetes pod spec used if Agent is kubernetes. |
 | `pipeline_run_spec` | *[PipelineRunSpec](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#PipelineRunSpec) | No | PipelineRunSpec is the Tekton PipelineRun spec used if agent is tekton-pipeline |
 | `pipeline_run_params` | [][PipelineRunParam](./github-com-jenkins-x-lighthouse-pkg-config-job.md#PipelineRunParam) | No | PipelineRunParams are the params used by the pipeline run |
 | `skip_branches` | []string | No | Do not run against these branches. Default is no branches. |
