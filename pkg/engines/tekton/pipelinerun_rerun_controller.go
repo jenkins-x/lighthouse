@@ -18,6 +18,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -117,8 +118,6 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Clone the LighthouseJob
 	rerunLhJob := parentPipelineRunParentLighthouseJob.DeepCopy()
-	rerunLhJob.APIVersion = parentPipelineRunParentLighthouseJob.APIVersion
-	rerunLhJob.Kind = parentPipelineRunParentLighthouseJob.Kind
 
 	// Trim existing r-xxxxx suffix and append a new one
 	re := regexp.MustCompile(`-r-[a-f0-9]{5}$`)
@@ -134,18 +133,17 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	// Prepare the ownerReference. Derive the GVK from the scheme rather than the
-	// LighthouseJob's TypeMeta: objects returned by client.Get have an empty TypeMeta,
-	// so reading .APIVersion/.Kind off the fetched object would produce an invalid
-	// OwnerReference (empty apiVersion/kind).
-	//gvk, err := apiutil.GVKForObject(rerunLhJob, r.scheme)
-	//if err != nil {
-	//	r.logger.Errorf("Failed to determine GVK for LighthouseJob: %s", err)
-	//	return ctrl.Result{}, err
-	//}
+	// Prepare the ownerReference.
+	// client.Get does not return TypeMeta from  LighthouseJob, so
+	// derive the GVK from the scheme instead.
+	gvk, err := apiutil.GVKForObject(rerunLhJob, r.scheme)
+	if err != nil {
+		r.logger.Errorf("Failed to determine GVK for LighthouseJob: %s", err)
+		return ctrl.Result{}, err
+	}
 	ownerReference := metav1.OwnerReference{
-		APIVersion: parentPipelineRunParentLighthouseJob.APIVersion,
-		Kind:       parentPipelineRunParentLighthouseJob.Kind,
+		APIVersion: gvk.GroupVersion().String(),
+		Kind:       gvk.Kind,
 		Name:       rerunLhJob.Name,
 		UID:        rerunLhJob.UID,
 		Controller: ptr.To(true),
@@ -162,7 +160,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 		return nil
 	}
-	err := r.retryModifyPipelineRun(ctx, req.NamespacedName, &rerunPipelineRun, f)
+	err = r.retryModifyPipelineRun(ctx, req.NamespacedName, &rerunPipelineRun, f)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

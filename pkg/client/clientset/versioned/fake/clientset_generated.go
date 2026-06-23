@@ -58,7 +58,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // LighthouseV1alpha1 retrieves the LighthouseV1alpha1Client
 func (c *Clientset) LighthouseV1alpha1() lighthousev1alpha1.LighthouseV1alpha1Interface {

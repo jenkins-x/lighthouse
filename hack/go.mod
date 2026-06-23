@@ -5,7 +5,7 @@ go 1.26.3
 require (
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/tools v0.46.0
-	k8s.io/code-generator v0.36.2
+	k8s.io/code-generator v0.20.2
 	k8s.io/kube-openapi v0.0.0-20260618221249-bc653b64f974
 )
 
@@ -35,6 +35,7 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	k8s.io/gengo v0.0.0-20201113003025-83324d819ded // indirect
 	k8s.io/gengo/v2 v2.0.0-20260408192533-25e2208e0dc3 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect

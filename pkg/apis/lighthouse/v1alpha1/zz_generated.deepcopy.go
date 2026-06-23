@@ -7,8 +7,8 @@ package v1alpha1
 
 import (
 	job "github.com/jenkins-x/lighthouse/pkg/config/job"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	v1 "k8s.io/api/core/v1"
+	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	corev1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -353,7 +353,7 @@ func (in *LighthouseJobSpec) DeepCopyInto(out *LighthouseJobSpec) {
 	}
 	if in.PipelineRunSpec != nil {
 		in, out := &in.PipelineRunSpec, &out.PipelineRunSpec
-		*out = new(pipelinev1.PipelineRunSpec)
+		*out = new(v1.PipelineRunSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.PipelineRunParams != nil {
@@ -363,7 +363,7 @@ func (in *LighthouseJobSpec) DeepCopyInto(out *LighthouseJobSpec) {
 	}
 	if in.PodSpec != nil {
 		in, out := &in.PodSpec, &out.PodSpec
-		*out = new(v1.PodSpec)
+		*out = new(corev1.PodSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.JenkinsSpec != nil {

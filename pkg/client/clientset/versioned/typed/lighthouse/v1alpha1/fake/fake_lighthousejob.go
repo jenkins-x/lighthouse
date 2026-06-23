@@ -8,7 +8,6 @@ import (
 	v1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -20,9 +19,9 @@ type FakeLighthouseJobs struct {
 	ns   string
 }
 
-var lighthousejobsResource = schema.GroupVersionResource{Group: "lighthouse.jenkins.io", Version: "v1alpha1", Resource: "lighthousejobs"}
+var lighthousejobsResource = v1alpha1.SchemeGroupVersion.WithResource("lighthousejobs")
 
-var lighthousejobsKind = schema.GroupVersionKind{Group: "lighthouse.jenkins.io", Version: "v1alpha1", Kind: "LighthouseJob"}
+var lighthousejobsKind = v1alpha1.SchemeGroupVersion.WithKind("LighthouseJob")
 
 // Get takes name of the lighthouseJob, and returns the corresponding lighthouseJob object, and an error if there is any.
 func (c *FakeLighthouseJobs) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.LighthouseJob, err error) {
@@ -101,7 +100,7 @@ func (c *FakeLighthouseJobs) UpdateStatus(ctx context.Context, lighthouseJob *v1
 // Delete takes name of the lighthouseJob and deletes it. Returns an error if one occurs.
 func (c *FakeLighthouseJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(lighthousejobsResource, c.ns, name), &v1alpha1.LighthouseJob{})
+		Invokes(testing.NewDeleteActionWithOptions(lighthousejobsResource, c.ns, name, opts), &v1alpha1.LighthouseJob{})
 
 	return err
 }
