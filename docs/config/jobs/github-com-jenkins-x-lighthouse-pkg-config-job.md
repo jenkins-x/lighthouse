@@ -135,7 +135,7 @@ Preset is intended to match the k8s' PodPreset feature, and may be removed<br />
 | `labels` | map[string]string | No |  |
 | `env` | [][EnvVar](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#EnvVar) | No |  |
 | `volumes` | [][Volume](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#Volume) | No |  |
-| `volumeMounts` | [][VolumeMount](./k8s-io-api-core-v1.md#VolumeMount) | No |  |
+| `volumeMounts` | [][VolumeMount](./github-com-tektoncd-pipeline-pkg-apis-pipeline-v1.md#VolumeMount) | No |  |
 
 ## Presubmit
 

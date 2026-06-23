@@ -30,6 +30,8 @@ func (c *LighthouseV1alpha1Client) LighthouseJobs(namespace string) LighthouseJo
 }
 
 // NewForConfig creates a new LighthouseV1alpha1Client for the given config.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*LighthouseV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
@@ -43,6 +45,7 @@ func NewForConfig(c *rest.Config) (*LighthouseV1alpha1Client, error) {
 }
 
 // NewForConfigAndClient creates a new LighthouseV1alpha1Client for the given config and http client.
+// Note the http client provided takes precedence over the configured transport values.
 func NewForConfigAndClient(c *rest.Config, h *http.Client) (*LighthouseV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {

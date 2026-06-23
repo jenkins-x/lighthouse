@@ -39,6 +39,8 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 // NewForConfig creates a new Clientset for the given config.
 // If config's RateLimiter is not set and QPS and Burst are acceptable,
 // NewForConfig will generate a rate-limiter in configShallowCopy.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*Clientset, error) {
 	configShallowCopy := *c
 
@@ -57,6 +59,8 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 
 // NewForConfigAndClient creates a new Clientset for the given config and http client.
 // Note the http client provided takes precedence over the configured transport values.
+// If config's RateLimiter is not set and QPS and Burst are acceptable,
+// NewForConfigAndClient will generate a rate-limiter in configShallowCopy.
 func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
