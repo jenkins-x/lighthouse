@@ -104,7 +104,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	// get rerun pipelinerun parent pipelinerun parent lighthousejob
+	// get rerun pipelinerun parent lighthousejob
 	var parentPipelineRunParentLighthouseJob lighthousev1alpha1.LighthouseJob
 	parentPipelineRunRef := rerunPipelineRunParent.OwnerReferences[0]
 	if err := r.client.Get(ctx, types.NamespacedName{Namespace: req.Namespace, Name: parentPipelineRunRef.Name}, &parentPipelineRunParentLighthouseJob); err != nil {
@@ -134,7 +134,15 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	// Prepare the ownerReference
+	// Prepare the ownerReference. Derive the GVK from the scheme rather than the
+	// LighthouseJob's TypeMeta: objects returned by client.Get have an empty TypeMeta,
+	// so reading .APIVersion/.Kind off the fetched object would produce an invalid
+	// OwnerReference (empty apiVersion/kind).
+	//gvk, err := apiutil.GVKForObject(rerunLhJob, r.scheme)
+	//if err != nil {
+	//	r.logger.Errorf("Failed to determine GVK for LighthouseJob: %s", err)
+	//	return ctrl.Result{}, err
+	//}
 	ownerReference := metav1.OwnerReference{
 		APIVersion: parentPipelineRunParentLighthouseJob.APIVersion,
 		Kind:       parentPipelineRunParentLighthouseJob.Kind,

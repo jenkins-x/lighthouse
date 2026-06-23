@@ -2,7 +2,6 @@ metadata:
   annotations:
     lighthouse.jenkins-x.io/cloneURI: https://github.com/jenkins-x/lighthouse.git
     lighthouse.jenkins-x.io/job: github
-  creationTimestamp: null
   generateName: jenkins-x-lighthouse-main-github-
   labels:
     created-by-lighthouse: "true"
@@ -57,6 +56,6 @@ spec:
   taskRunTemplate:
     podTemplate: {}
     serviceAccountName: tekton-bot
-  timeouts: 
+  timeouts:
     pipeline: 24h0m0s
 status: {}

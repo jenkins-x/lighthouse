@@ -3,7 +3,6 @@ kind: LighthouseJob
 metadata:
   annotations:
     lighthouse.jenkins-x.io/job: github
-  creationTimestamp: null
   labels:
     created-by-lighthouse: "true"
     lighthouse.jenkins-x.io/branch: main
