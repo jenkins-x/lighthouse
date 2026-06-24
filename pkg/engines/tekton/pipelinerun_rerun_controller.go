@@ -134,11 +134,11 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Prepare the ownerReference.
-	// client.Get does not return TypeMeta from  LighthouseJob, so
+	// client.Get does not return TypeMeta from LighthouseJob, so
 	// derive the GVK from the scheme instead.
 	gvk, err := apiutil.GVKForObject(rerunLhJob, r.scheme)
 	if err != nil {
-		r.logger.Errorf("Failed to determine GVK for LighthouseJob: %s", err)
+		r.logger.Errorf("Failed to determine GVK for LighthouseJob: %v", err)
 		return ctrl.Result{}, err
 	}
 	ownerReference := metav1.OwnerReference{

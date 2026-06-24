@@ -10,7 +10,8 @@ fi
 linterVersion="$(golangci-lint --version | awk '{print $4}')"
 
 if [[ ! "${linterVersion}" =~ ^2\.12\.2 ]]; then
-	echo "Installing golangci-lint"
+  echo "golangci-lint v2.12.2 is required (found: ${linterVersion:-none})."
+  echo "Please install golangci-lint v2.12.2 (e.g. update your CI image or local install) and re-run."
   exit 1
 fi
 
