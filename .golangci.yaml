@@ -1,0 +1,110 @@
+version: "2"
+linters:
+  default: none
+  enable:
+  - asciicheck
+  - bodyclose
+  - depguard
+  - errcheck
+  - gocritic
+  - goprintffuncname
+  - gosec
+  - govet
+  - ineffassign
+  - misspell
+  - nakedret
+  - revive
+  - rowserrcheck
+  - staticcheck
+  - unconvert
+  - unparam
+  - unused
+  settings:
+    depguard:
+      rules:
+        Main:
+          list-mode: lax
+          deny:
+          - pkg: github.com/jenkins-x/jx/v2/pkg/log/
+            desc: use jenkins-x/jx-logging instead
+          - pkg: github.com/satori/go.uuid
+            desc: use github.com/google/uuid instead
+          - pkg: github.com/pborman/uuid
+            desc: use github.com/google/uuid instead
+    dupl:
+      threshold: 100
+    exhaustive:
+      default-signifies-exhaustive: false
+    funlen:
+      lines: 200
+      statements: 150
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+      - importShadow
+      - unnamedResult
+      enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    gocyclo:
+      min-complexity: 15
+    govet:
+      settings:
+        printf:
+          funcs:
+          - (github.com/jenkins-x/jx-logging/v3/pkg/log/Logger()).Debugf
+          - (github.com/jenkins-x/jx-logging/v3/pkg/log/Logger()).Infof
+          - (github.com/jenkins-x/jx-logging/v3/pkg/log/Logger()).Warnf
+          - (github.com/jenkins-x/jx-logging/v3/pkg/log/Logger()).Errorf
+          - (github.com/jenkins-x/jx-logging/v3/pkg/log/Logger()).Fatalf
+    lll:
+      line-length: 140
+    mnd:
+      checks:
+      - argument
+      - case
+      - condition
+      - return
+    nolintlint:
+      require-explanation: false
+      require-specific: false
+      allow-unused: false
+    revive:
+      confidence: 0
+  exclusions:
+    generated: lax
+    presets:
+    - comments
+    - common-false-positives
+    - legacy
+    - std-error-handling
+    paths:
+    - cmd/docs
+    - third_party$
+    - builtin$
+    - examples$
+formatters:
+  enable:
+  - gofmt
+  - goimports
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    generated: lax
+    paths:
+    - cmd/docs
+    - third_party$
+    - builtin$
+    - examples$
+    - hack

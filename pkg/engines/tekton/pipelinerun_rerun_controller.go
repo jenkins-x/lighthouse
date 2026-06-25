@@ -18,6 +18,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -104,7 +105,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	// get rerun pipelinerun parent pipelinerun parent lighthousejob
+	// get rerun pipelinerun parent lighthousejob
 	var parentPipelineRunParentLighthouseJob lighthousev1alpha1.LighthouseJob
 	parentPipelineRunRef := rerunPipelineRunParent.OwnerReferences[0]
 	if err := r.client.Get(ctx, types.NamespacedName{Namespace: req.Namespace, Name: parentPipelineRunRef.Name}, &parentPipelineRunParentLighthouseJob); err != nil {
@@ -117,8 +118,6 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Clone the LighthouseJob
 	rerunLhJob := parentPipelineRunParentLighthouseJob.DeepCopy()
-	rerunLhJob.APIVersion = parentPipelineRunParentLighthouseJob.APIVersion
-	rerunLhJob.Kind = parentPipelineRunParentLighthouseJob.Kind
 
 	// Trim existing r-xxxxx suffix and append a new one
 	re := regexp.MustCompile(`-r-[a-f0-9]{5}$`)
@@ -134,27 +133,33 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	// Prepare the ownerReference
+	// Prepare the ownerReference.
+	// client.Get does not return TypeMeta from LighthouseJob, so
+	// derive the GVK from the scheme instead.
+	gvk, err := apiutil.GVKForObject(rerunLhJob, r.scheme)
+	if err != nil {
+		r.logger.Errorf("Failed to determine GVK for LighthouseJob: %v", err)
+		return ctrl.Result{}, err
+	}
 	ownerReference := metav1.OwnerReference{
-		APIVersion: parentPipelineRunParentLighthouseJob.APIVersion,
-		Kind:       parentPipelineRunParentLighthouseJob.Kind,
+		APIVersion: gvk.GroupVersion().String(),
+		Kind:       gvk.Kind,
 		Name:       rerunLhJob.Name,
 		UID:        rerunLhJob.UID,
 		Controller: ptr.To(true),
 	}
 
-	// Set the ownerReference on the PipelineRun
-	rerunPipelineRun.OwnerReferences = append(rerunPipelineRun.OwnerReferences, ownerReference)
-
-	// update ownerReference of rerun PipelineRun
+	// updates ownerReference of the PipelineRun re-run.
 	f := func(job *pipelinev1.PipelineRun) error {
+		// Set the ownerReference for passed-in job, so it's re-applied to the refreshed object
+		job.OwnerReferences = append(job.OwnerReferences, ownerReference)
 		// Patch the PipelineRun with the new ownerReference
-		if err := r.client.Update(ctx, &rerunPipelineRun); err != nil {
+		if err := r.client.Update(ctx, job); err != nil {
 			return errors.Wrapf(err, "failed to update PipelineRun with ownerReference")
 		}
 		return nil
 	}
-	err := r.retryModifyPipelineRun(ctx, req.NamespacedName, &rerunPipelineRun, f)
+	err = r.retryModifyPipelineRun(ctx, req.NamespacedName, &rerunPipelineRun, f)
 	if err != nil {
 		return ctrl.Result{}, err
 	}

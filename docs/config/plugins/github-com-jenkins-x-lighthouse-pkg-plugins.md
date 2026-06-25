@@ -31,6 +31,7 @@ Approve specifies a configuration for a single approve.<br /><br />The configura
 | `require_self_approval` | *bool | No | RequireSelfApproval requires PR authors to explicitly approve their PRs.<br />Otherwise the plugin assumes the author of the PR approves the changes in the PR. |
 | `lgtm_acts_as_approve` | bool | No | LgtmActsAsApprove indicates that the lgtm command should be used to<br />indicate approval |
 | `ignore_review_state` | *bool | No | IgnoreReviewState causes the approve plugin to ignore the GitHub review state. Otherwise:<br />* an APPROVE github review is equivalent to leaving an "/approve" message.<br />* A REQUEST_CHANGES github review is equivalent to leaving an /approve cancel" message. |
+| `ignore_updatebot` | *bool | No | IgnoreUpdateBot makes the approve plugin ignore PRs with the label updatebot |
 
 ## Blockade
 
@@ -202,19 +203,19 @@ Size specifies configuration for the size plugin, defining lower bounds (in # li
 
 Trigger specifies a configuration for a single trigger.<br /><br />The configuration for the trigger plugin is defined as a list of these structures.
 
-| Stanza                            | Type     | Required | Description                                                                                                                                                                                                                           |
-|-----------------------------------|----------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `repos`                           | []string | No       | Repos is either of the form org/repos or just org.                                                                                                                                                                                    |
-| `trusted_org`                     | string   | No       | TrustedOrg is the org whose members' PRs will be automatically built<br />for PRs to the above repos. The default is the PR's org.                                                                                                    |
-| `trusted_apps`                    | []string | No       | TrustedApps is the explicit list of GitHub apps whose PRs will be automatically<br />considered as trusted. The list should contain usernames of each GitHub App without [bot] suffix.<br/>By default, trigger will ignore this list. |
-| `join_org_url`                    | string   | No       | JoinOrgURL is a link that redirects users to a location where they<br />should be able to read more about joining the organization in order<br />to become trusted members. Defaults to the Github link of TrustedOrg.                |
-| `only_org_members`                | bool     | No       | OnlyOrgMembers requires PRs and/or /ok-to-test comments to come from org members.<br />By default, trigger also include repo collaborators.                                                                                           |
-| `ignore_ok_to_test`               | bool     | No       | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users.                                                                                                |
-| `elide_skipped_contexts`          | bool     | No       | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run.                                                                                                                           |
-| `skip_draft_pr`                   | bool     | No       | SkipDraftPR when enabled, skips triggering pipelines for draft PRs<br />unless /ok-to-test is added.                                                                                                                                  |
-| `skip_report_comment`             | bool     | No       | SkipReportComment when enabled, skips report comments in the SCM provider based on the state of<br />the LighthouseJobs.                                                                                                              |
-| `skip_report_running_status`      | bool     | No       | SkipReportRunningStatus when enabled, skips report status in the SCM provider based on the current and last state of the LighthouseJobs.                                                                                              |
-| `show_report_completion_duration` | bool     | No       | ShowReportCompletionDuration when enabled, show completion duration in report status in the SCM provider based on StartTime and CompletionTime of the PipelineActivity.                                                               |
+| Stanza | Type | Required | Description |
+|---|---|---|---|
+| `repos` | []string | No | Repos is either of the form org/repos or just org. |
+| `trusted_org` | string | No | TrustedOrg is the org whose members' PRs will be automatically built<br />for PRs to the above repos. The default is the PR's org. |
+| `trusted_apps` | []string | No | TrustedApps is the explicit list of GitHub apps whose PRs will be automatically<br />considered as trusted. The list should contain usernames of each GitHub App without [bot] suffix.<br />By default, trigger will ignore this list. |
+| `join_org_url` | string | No | JoinOrgURL is a link that redirects users to a location where they<br />should be able to read more about joining the organization in order<br />to become trusted members. Defaults to the Github link of TrustedOrg. |
+| `only_org_members` | bool | No | OnlyOrgMembers requires PRs and/or /ok-to-test comments to come from org members.<br />By default, trigger also include repo collaborators. |
+| `ignore_ok_to_test` | bool | No | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users. |
+| `elide_skipped_contexts` | bool | No | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run. |
+| `skip_draft_pr` | bool | No | SkipDraftPR when enabled, skips triggering pipelines for draft PRs, unless /ok-to-test is added. |
+| `skip_report_comment` | bool | No | SkipReportComment when enabled, skips report comments in the SCM provider based on the state of<br />the LighthouseJobs. |
+| `skip_report_running_status` | bool | No | SkipReportRunningStatus when enabled, skips report status in the SCM provider<br />based on the current and last state of the LighthouseJobs. |
+| `show_report_completion_duration` | bool | No | ShowReportCompletionDuration when enabled, show completion duration in report status in the SCM provider<br />based on StartTime and CompletionTime of the PipelineActivity. |
 
 ## Welcome
 

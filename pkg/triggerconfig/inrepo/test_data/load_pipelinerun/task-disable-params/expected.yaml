@@ -3,7 +3,6 @@ kind: PipelineRun
 metadata:
   annotations:
     lighthouse.jenkins-x.io/defaultParameters: "false"
-  creationTimestamp: null
   name: cheese
 spec:
   pipelineSpec:

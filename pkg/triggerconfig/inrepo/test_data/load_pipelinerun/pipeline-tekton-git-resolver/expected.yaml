@@ -1,7 +1,6 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  creationTimestamp: null
   name: pullrequest
 spec:
   pipelineSpec:
@@ -182,8 +181,7 @@ spec:
   workspaces:
     - name: pipeline-ws
       volumeClaimTemplate:
-        metadata:
-          creationTimestamp: null
+        metadata: {}
         spec:
           accessModes:
             - ReadWriteOnce

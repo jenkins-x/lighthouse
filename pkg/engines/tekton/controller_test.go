@@ -22,6 +22,7 @@ import (
 	utilrand "k8s.io/apimachinery/pkg/util/rand"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/yaml"
 )
@@ -140,6 +141,13 @@ func TestReconcile(t *testing.T) {
 				// Ignore status.starttime since that's always going to be different
 				updatedJob := jobList.Items[0].DeepCopy()
 				updatedJob.Status.StartTime = metav1.Time{}
+				// The fake client's List leaves TypeMeta empty (the GVK is carried
+				// by the Go type, not the object). Restore it from the scheme so the
+				// fixture reflects the apiVersion/kind a real API server returns for
+				// a LighthouseJob.
+				gvk, err := apiutil.GVKForObject(updatedJob, scheme)
+				require.NoError(t, err)
+				updatedJob.GetObjectKind().SetGroupVersionKind(gvk)
 				if generateTestOutput {
 					data, err := yaml.Marshal(updatedJob)
 					require.NoError(t, err, "failed to marshal expected job %#v", updatedJob)

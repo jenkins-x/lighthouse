@@ -3,7 +3,6 @@ kind: PipelineRun
 metadata:
   annotations:
     lighthouse.jenkins-x.io/loadFileRefs: .*
-  creationTimestamp: null
   name: pipelinerun-with-extra-params
 spec:
   params:
