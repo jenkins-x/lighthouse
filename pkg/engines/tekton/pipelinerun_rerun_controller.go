@@ -149,13 +149,12 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		Controller: ptr.To(true),
 	}
 
-	// Set the ownerReference on the PipelineRun
-	rerunPipelineRun.OwnerReferences = append(rerunPipelineRun.OwnerReferences, ownerReference)
-
-	// update ownerReference of rerun PipelineRun
+	// updates ownerReference of the PipelineRun re-run.
 	f := func(job *pipelinev1.PipelineRun) error {
+		// Set the ownerReference for passed-in job, so it's re-applied to the refreshed object
+		job.OwnerReferences = append(job.OwnerReferences, ownerReference)
 		// Patch the PipelineRun with the new ownerReference
-		if err := r.client.Update(ctx, &rerunPipelineRun); err != nil {
+		if err := r.client.Update(ctx, job); err != nil {
 			return errors.Wrapf(err, "failed to update PipelineRun with ownerReference")
 		}
 		return nil
