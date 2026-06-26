@@ -12,7 +12,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 )
 
-// recordingCallback captures the latest value passed to a ConfigMapEntryCallback.
+// recordingCallback captures values passed to a ConfigMapEntryCallback.
 type recordingCallback struct {
 	values chan string
 }

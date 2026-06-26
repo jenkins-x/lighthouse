@@ -201,10 +201,10 @@ func (w *ConfigMapWatcher) createWatcher() error {
 	}
 	// Reflector detects clients that _don't_ support WatchList semantics
 	// If so, WatchList is disabled, falling back to classic LIST+WATCH
-	ListerWatcher := cache.ToListWatcherWithWatchListSemantics(listWatch, w.kubeClient)
+	listerWatcher := cache.ToListWatcherWithWatchListSemantics(listWatch, w.kubeClient)
 
 	var informer cache.Controller
-	_, informer, w.watch, _ = watchtools.NewIndexerInformerWatcher(ListerWatcher, &v1.ConfigMap{})
+	_, informer, w.watch, _ = watchtools.NewIndexerInformerWatcher(listerWatcher, &v1.ConfigMap{})
 	if ok := cache.WaitForCacheSync(w.stopCh, informer.HasSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
