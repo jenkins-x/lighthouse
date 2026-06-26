@@ -189,16 +189,22 @@ func (w *ConfigMapWatcher) createWatcher() error {
 	if w.watch != nil {
 		w.watch.Stop()
 	}
-	lw := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).List(context.TODO(), metav1.ListOptions{})
+	listWatch := &cache.ListWatch{
+		// Forward the options supplied by the reflector.
+		// If WatchListClient feature is enabled (default on k8s 1.35), reflector sets the bookmark here.
+		ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).List(ctx, options)
 		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).Watch(context.TODO(), metav1.ListOptions{})
+		WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+			return w.kubeClient.CoreV1().ConfigMaps(w.namespace).Watch(ctx, options)
 		},
 	}
+	// Reflector detects clients that _don't_ support WatchList semantics
+	// If so, WatchList is disabled, falling back to classic LIST+WATCH
+	listerWatcher := cache.ToListWatcherWithWatchListSemantics(listWatch, w.kubeClient)
+
 	var informer cache.Controller
-	_, informer, w.watch, _ = watchtools.NewIndexerInformerWatcher(lw, &v1.ConfigMap{})
+	_, informer, w.watch, _ = watchtools.NewIndexerInformerWatcher(listerWatcher, &v1.ConfigMap{})
 	if ok := cache.WaitForCacheSync(w.stopCh, informer.HasSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
 	}
