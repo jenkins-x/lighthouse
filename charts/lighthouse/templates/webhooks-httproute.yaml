@@ -1,0 +1,40 @@
+{{- if and .Values.webhooks.ingress.enabled .Values.webhooks.httproute.enabled }}
+{{- fail "webhooks.ingress.enabled and webhooks.httproute.enabled are mutually exclusive - enable only one" }}
+{{- end }}
+{{- if .Values.webhooks.httproute.enabled }}
+{{- if .Capabilities.APIVersions.Has "gateway.networking.k8s.io/v1" }}
+apiVersion: gateway.networking.k8s.io/v1
+{{- else }}
+apiVersion: gateway.networking.k8s.io/v1beta1
+{{- end }}
+kind: HTTPRoute
+metadata:
+  name: {{ template "webhooks.name" . }}
+  labels:
+    app: {{ template "webhooks.name" . }}
+  annotations:
+    {{- toYaml .Values.webhooks.httproute.annotations | nindent 4 }}
+spec:
+  parentRefs:
+    {{- range .Values.webhooks.httproute.parentRefs }}
+    - name: {{ .name }}
+      {{- with .namespace }}
+      namespace: {{ . }}
+      {{- end }}
+      {{- with .sectionName }}
+      sectionName: {{ . }}
+      {{- end }}
+    {{- end }}
+  {{- with .Values.webhooks.httproute.hosts }}
+  hostnames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ default (include "webhooks.name" .) .Values.webhooks.serviceName }}
+          port: {{ .Values.webhooks.service.externalPort }}
+{{- end }}
