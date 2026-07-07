@@ -290,7 +290,8 @@ type Trigger struct {
 	ElideSkippedContexts bool `json:"elide_skipped_contexts,omitempty"`
 	// SkipDraftPR when enabled, skips triggering pipelines for draft PRs, unless /ok-to-test is added.
 	SkipDraftPR bool `json:"skip_draft_pr,omitempty"`
-	// PushChangedFiles selects how postsubmit run_if_changed resolves changed files on push events.
+	// PushChangedFiles selects how postsubmit change matching resolves changed files on push events.
+	// This applies to run_if_changed and ignore_changes on postsubmits.
 	// all_commits (default): union every commit file list from the push webhook.
 	// compare: net diff between push before/after SHAs via the SCM compare API.
 	// Not all SCM drivers support compare; compare falls back to all_commits with a warning.
@@ -306,7 +307,7 @@ type Trigger struct {
 	ShowReportCompletionDuration bool `json:"show_report_completion_duration,omitempty"`
 }
 
-// ResolvedPushChangedFiles returns the effective push changed-files mode for this trigger configuration.
+// ResolvedPushChangedFiles returns the effective push changed-files mode for postsubmit change matching.
 func (t *Trigger) ResolvedPushChangedFiles() (job.PushChangedFilesMode, error) {
 	if t == nil {
 		return job.PushChangedFilesAllCommits, nil

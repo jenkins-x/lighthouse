@@ -213,7 +213,7 @@ func TestHandlePECompareScenarios(t *testing.T) {
 		wantJobs       []string
 	}{
 		{
-			name: "merge commit with net empty compare does not run run_if_changed jobs",
+			name: "merge commit with net empty compare does not run change-matched postsubmits",
 			ref:  "refs/heads/main",
 			commits: []scm.PushCommit{
 				{Modified: []string{"pkg/a/lock.json"}},
@@ -251,7 +251,7 @@ func TestHandlePECompareScenarios(t *testing.T) {
 			wantJobs: []string{"pkg-b-release"},
 		},
 		{
-			name:           "run_if_changed with ignore on multi-path compare",
+			name:           "change matching with ignore_changes on multi-path compare",
 			ref:            "refs/heads/main",
 			compareChanges: []*scm.Change{{Path: "pkg/b/foo.go"}, {Path: "pkg/b/lock.json"}, {Path: "pkg/c/bar.go"}},
 			postsubmits: []job.Postsubmit{

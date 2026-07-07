@@ -249,7 +249,7 @@ func TestNewPushCompareChangedFilesProviderCachesResult(t *testing.T) {
 	}
 }
 
-func TestPostsubmitShouldRunWithPushCompareProvider(t *testing.T) {
+func TestPostsubmitChangeMatchingWithPushCompareProvider(t *testing.T) {
 	staleCommits := []scm.PushCommit{
 		{Modified: []string{"pkg/a/lock.json", "pkg/a/config.yaml"}},
 		{Modified: []string{"pkg/b/foo.go"}},
@@ -271,27 +271,27 @@ func TestPostsubmitShouldRunWithPushCompareProvider(t *testing.T) {
 			wantRun:        true,
 		},
 		{
-			name:           "run_if_changed does not run on empty compare",
+			name:           "run_if_changed matcher does not run on empty compare",
 			runIfChanged:   `^pkg/b/`,
 			compareChanges: nil,
 			wantRun:        false,
 		},
 		{
-			name:           "run_if_changed matches net compare diff",
+			name:           "change matching uses net compare diff",
 			runIfChanged:   `^pkg/b/`,
 			compareChanges: []string{"pkg/b/foo.go"},
 			commits:        staleCommits,
 			wantRun:        true,
 		},
 		{
-			name:           "run_if_changed ignores stale commits list",
+			name:           "change matching ignores stale commits list",
 			runIfChanged:   `^pkg/a/`,
 			compareChanges: []string{"pkg/b/foo.go"},
 			commits:        staleCommits,
 			wantRun:        false,
 		},
 		{
-			name:           "run_if_changed with ignore skips when only ignored files changed",
+			name:           "ignore_changes skips when only ignored files changed",
 			runIfChanged:   `^pkg/b/`,
 			ignoreChanges:  `lock\.json$`,
 			compareChanges: []string{"pkg/b/lock.json"},
@@ -359,7 +359,7 @@ func TestPostsubmitShouldRunWithPushCompareProvider(t *testing.T) {
 	}
 }
 
-func TestPostsubmitShouldRunWithPushCompareProviderError(t *testing.T) {
+func TestPostsubmitChangeMatchingWithPushCompareProviderError(t *testing.T) {
 	client := &pushCompareClient{err: errors.New("api down")}
 	pushHook := scm.PushHook{
 		Before: testBeforeSHA,

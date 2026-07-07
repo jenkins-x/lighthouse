@@ -25,7 +25,8 @@ import (
 
 const emptyGitSHA = "0000000000000000000000000000000000000000"
 
-// PushChangedFilesMode selects how postsubmit run_if_changed resolves changed files on push events.
+// PushChangedFilesMode selects how postsubmit change matching resolves changed files on push events.
+// This applies to run_if_changed and ignore_changes on postsubmits.
 type PushChangedFilesMode string
 
 const (
@@ -63,7 +64,7 @@ func ParsePushChangedFilesMode(value string) (PushChangedFilesMode, error) {
 	}
 }
 
-// NewPushChangedFilesProvider returns a lazy provider for postsubmit run_if_changed on push events.
+// NewPushChangedFilesProvider returns a lazy provider for postsubmit change matching on push events.
 func NewPushChangedFilesProvider(mode PushChangedFilesMode, client pushCompareClient, pe scm.PushHook, warn PushChangedFilesWarnFunc) (ChangedFilesProvider, error) {
 	switch mode {
 	case PushChangedFilesAllCommits:
