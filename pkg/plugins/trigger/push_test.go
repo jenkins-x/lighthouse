@@ -17,6 +17,7 @@ limitations under the License.
 package trigger
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,10 +26,20 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/launcher/fake"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	fake2 "github.com/jenkins-x/lighthouse/pkg/scmprovider/fake"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
+
+const (
+	testBeforeSHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	testAfterSHA  = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+)
+
+func pushCompareTrigger() *plugins.Trigger {
+	return &plugins.Trigger{PushChangedFiles: string(job.PushChangedFilesCompare)}
+}
 
 func TestCreateRefs(t *testing.T) {
 	pe := &scm.PushHook{
@@ -53,136 +64,280 @@ func TestCreateRefs(t *testing.T) {
 	}
 }
 
+func runHandlePE(t *testing.T, pe scm.PushHook, trigger *plugins.Trigger, postsubmits map[string][]job.Postsubmit, compareChanges []*scm.Change) *fake.Launcher {
+	t.Helper()
+	g := &fake2.SCMClient{}
+	if pe.Before != "" && pe.After != "" {
+		g.PushCompareChanges = map[string][]*scm.Change{
+			pe.Before + ":" + pe.After: compareChanges,
+		}
+	}
+	launcher := fake.NewLauncher()
+	c := Client{
+		SCMProviderClient: g,
+		LauncherClient:    launcher,
+		Config:            &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}},
+		Logger:            logrus.WithField("plugin", pluginName),
+	}
+	for repo, jobs := range postsubmits {
+		for i := range jobs {
+			if err := jobs[i].SetRegexes(); err != nil {
+				t.Fatalf("SetRegexes(%s): %v", repo, err)
+			}
+		}
+	}
+	if err := c.Config.SetPostsubmits(postsubmits); err != nil {
+		t.Fatalf("SetPostsubmits: %v", err)
+	}
+	if err := handlePE(c, pe, trigger); err != nil {
+		t.Fatalf("handlePE: %v", err)
+	}
+	return launcher
+}
+
 func TestHandlePE(t *testing.T) {
 	testCases := []struct {
-		name      string
-		pe        *scm.PushHook
-		jobsToRun int
+		name           string
+		pe             scm.PushHook
+		compareChanges []*scm.Change
+		jobsToRun      int
 	}{
 		{
 			name: "branch deleted",
-			pe: &scm.PushHook{
+			pe: scm.PushHook{
 				Ref: "refs/heads/master",
-				Repo: scm.Repository{
-					FullName: "org/repo",
-				},
+				Repo: scm.Repository{FullName: "org/repo"},
 				Deleted: true,
 			},
-			jobsToRun: 0,
 		},
 		{
 			name: "no matching files",
-			pe: &scm.PushHook{
-				Ref: "refs/heads/master",
-				Commits: []scm.PushCommit{
-					{
-						Added: []string{"example.txt"},
-					},
-				},
-				Repo: scm.Repository{
-					FullName: "org/repo",
-				},
+			pe: scm.PushHook{
+				Ref:     "refs/heads/master",
+				Before:  testBeforeSHA,
+				After:   testAfterSHA,
+				Commits: []scm.PushCommit{{Added: []string{"example.txt"}}},
+				Repo:    scm.Repository{Namespace: "org", Name: "repo", FullName: "org/repo"},
 			},
+			compareChanges: []*scm.Change{{Path: "example.txt"}},
 		},
 		{
 			name: "one matching file",
-			pe: &scm.PushHook{
-				Ref: "refs/heads/master",
-				Commits: []scm.PushCommit{
-					{
-						Added:    []string{"example.txt"},
-						Modified: []string{"hack.sh"},
-					},
-				},
-				Repo: scm.Repository{
-					FullName: "org/repo",
-				},
+			pe: scm.PushHook{
+				Ref:    "refs/heads/master",
+				Before: testBeforeSHA,
+				After:  testAfterSHA,
+				Commits: []scm.PushCommit{{
+					Added:    []string{"example.txt"},
+					Modified: []string{"hack.sh"},
+				}},
+				Repo: scm.Repository{Namespace: "org", Name: "repo", FullName: "org/repo"},
 			},
-			jobsToRun: 1,
+			compareChanges: []*scm.Change{{Path: "hack.sh"}},
+			jobsToRun:      1,
+		},
+		{
+			name: "reverted files only in commits list",
+			pe: scm.PushHook{
+				Ref:    "refs/heads/main",
+				Before: testBeforeSHA,
+				After:  testAfterSHA,
+				Commits: []scm.PushCommit{
+					{Modified: []string{"pkg/a/lock.json", "pkg/a/config.yaml"}},
+					{Modified: []string{"pkg/b/foo.go"}},
+				},
+				Repo: scm.Repository{Namespace: "org", Name: "repo", FullName: "org/repo"},
+			},
+			compareChanges: []*scm.Change{{Path: "pkg/b/foo.go"}},
 		},
 		{
 			name: "no change matcher",
-			pe: &scm.PushHook{
-				Ref: "refs/heads/master",
-				Commits: []scm.PushCommit{
-					{
-						Added: []string{"example.txt"},
-					},
-				},
-				Repo: scm.Repository{
-					FullName: "org2/repo2",
-				},
+			pe: scm.PushHook{
+				Ref:     "refs/heads/master",
+				Before:  testBeforeSHA,
+				After:   testAfterSHA,
+				Commits: []scm.PushCommit{{Added: []string{"example.txt"}}},
+				Repo:    scm.Repository{Namespace: "org2", Name: "repo2", FullName: "org2/repo2"},
 			},
-			jobsToRun: 1,
+			compareChanges: []*scm.Change{{Path: "example.txt"}},
+			jobsToRun:      1,
 		},
 		{
 			name: "branch name with a slash",
-			pe: &scm.PushHook{
-				Ref: "refs/heads/release/v1.14",
-				Commits: []scm.PushCommit{
-					{
-						Added: []string{"hack.sh"},
-					},
-				},
-				Repo: scm.Repository{
-					FullName: "org3/repo3",
-				},
+			pe: scm.PushHook{
+				Ref:     "refs/heads/release/v1.14",
+				Before:  testBeforeSHA,
+				After:   testAfterSHA,
+				Commits: []scm.PushCommit{{Added: []string{"hack.sh"}}},
+				Repo:    scm.Repository{Namespace: "org3", Name: "repo3", FullName: "org3/repo3"},
 			},
-			jobsToRun: 1,
+			compareChanges: []*scm.Change{{Path: "hack.sh"}},
+			jobsToRun:      1,
 		},
 	}
-	for _, tc := range testCases {
-		g := &fake2.SCMClient{}
-		fakeLauncher := fake.NewLauncher()
-		c := Client{
-			SCMProviderClient: g,
-			LauncherClient:    fakeLauncher,
-			Config:            &config.Config{ProwConfig: config.ProwConfig{LighthouseJobNamespace: "lighthouseJobs"}},
-			Logger:            logrus.WithField("plugin", pluginName),
-		}
-		postsubmits := map[string][]job.Postsubmit{
-			"org/repo": {
-				{
-					Base: job.Base{
-						Name: "pass-butter",
-					},
-					RegexpChangeMatcher: job.RegexpChangeMatcher{
-						RunIfChanged: "\\.sh$",
-					},
-				},
+	postsubmits := map[string][]job.Postsubmit{
+		"org/repo": {
+			{
+				Base:                job.Base{Name: "pass-butter"},
+				RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: "\\.sh$"},
 			},
-			"org2/repo2": {
-				{
-					Base: job.Base{
-						Name: "pass-salt",
-					},
-				},
+			{
+				Base:                job.Base{Name: "pkg-a-release"},
+				RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: "^pkg/a/"},
 			},
-			"org3/repo3": {
-				{
-					Base: job.Base{
-						Name: "pass-pepper",
-					},
-					Brancher: job.Brancher{
-						Branches: []string{"release/v1.14"},
-					},
-				},
-			},
-		}
-		if err := c.Config.SetPostsubmits(postsubmits); err != nil {
-			t.Fatalf("failed to set postsubmits: %v", err)
-		}
-		err := handlePE(c, *tc.pe)
-		if err != nil {
-			t.Errorf("test %q: handlePE returned unexpected error %v", tc.name, err)
-		}
-		var numStarted int
-		for _, job := range fakeLauncher.Pipelines {
-			t.Logf("created job with context %s", job.Spec.Context)
-			numStarted++
-		}
-		if numStarted != tc.jobsToRun {
-			t.Errorf("test %q: expected %d jobs to run, got %d", tc.name, tc.jobsToRun, numStarted)
-		}
+		},
+		"org2/repo2": {{Base: job.Base{Name: "pass-salt"}}},
+		"org3/repo3": {{
+			Base:     job.Base{Name: "pass-pepper"},
+			Brancher: job.Brancher{Branches: []string{"release/v1.14"}},
+		}},
 	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			launcher := runHandlePE(t, tc.pe, pushCompareTrigger(), postsubmits, tc.compareChanges)
+			if got := len(launcher.Pipelines); got != tc.jobsToRun {
+				t.Fatalf("expected %d jobs to run, got %d", tc.jobsToRun, got)
+			}
+		})
+	}
+}
+
+func TestHandlePECompareScenarios(t *testing.T) {
+	testCases := []struct {
+		name           string
+		ref            string
+		commits        []scm.PushCommit
+		compareChanges []*scm.Change
+		postsubmits    []job.Postsubmit
+		wantJobs       []string
+	}{
+		{
+			name: "merge commit with net empty compare does not run run_if_changed jobs",
+			ref:  "refs/heads/main",
+			commits: []scm.PushCommit{
+				{Modified: []string{"pkg/a/lock.json"}},
+				{Removed: []string{"pkg/a/lock.json"}},
+			},
+			postsubmits: []job.Postsubmit{{
+				Base:                job.Base{Name: "pkg-a-release"},
+				RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: `^pkg/a/`},
+			}},
+		},
+		{
+			name:        "postsubmit without matcher still runs when compare is empty",
+			ref:         "refs/heads/main",
+			postsubmits: []job.Postsubmit{{Base: job.Base{Name: "always-run"}}},
+			wantJobs:    []string{"always-run"},
+		},
+		{
+			name: "stale commits from merge-from-main do not trigger unrelated pipelines",
+			ref:  "refs/heads/main",
+			commits: []scm.PushCommit{
+				{Modified: []string{"vendor/main-only/deps.go"}},
+				{Modified: []string{"pkg/b/foo.go"}},
+			},
+			compareChanges: []*scm.Change{{Path: "pkg/b/foo.go"}},
+			postsubmits: []job.Postsubmit{
+				{
+					Base:                job.Base{Name: "vendor-release"},
+					RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: `^vendor/`},
+				},
+				{
+					Base:                job.Base{Name: "pkg-b-release"},
+					RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: `^pkg/b/`},
+				},
+			},
+			wantJobs: []string{"pkg-b-release"},
+		},
+		{
+			name:           "run_if_changed with ignore on multi-path compare",
+			ref:            "refs/heads/main",
+			compareChanges: []*scm.Change{{Path: "pkg/b/foo.go"}, {Path: "pkg/b/lock.json"}, {Path: "pkg/c/bar.go"}},
+			postsubmits: []job.Postsubmit{
+				{
+					Base: job.Base{Name: "pkg-b-release"},
+					RegexpChangeMatcher: job.RegexpChangeMatcher{
+						RunIfChanged:  `^pkg/b/`,
+						IgnoreChanges: `lock\.json$`,
+					},
+				},
+				{
+					Base:                job.Base{Name: "pkg-c-release"},
+					RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: `^pkg/c/`},
+				},
+			},
+			wantJobs: []string{"pkg-b-release", "pkg-c-release"},
+		},
+		{
+			name:           "branch filter prevents postsubmit on wrong branch",
+			ref:            "refs/heads/main",
+			compareChanges: []*scm.Change{{Path: "pkg/b/foo.go"}},
+			postsubmits: []job.Postsubmit{{
+				Base:                job.Base{Name: "release-only"},
+				RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: `^pkg/b/`},
+				Brancher:            job.Brancher{Branches: []string{"release-.*"}},
+			}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pe := scm.PushHook{
+				Ref:     tc.ref,
+				Before:  testBeforeSHA,
+				After:   testAfterSHA,
+				Commits: tc.commits,
+				Repo:    scm.Repository{Namespace: "org", Name: "repo", FullName: "org/repo"},
+			}
+			launcher := runHandlePE(t, pe, pushCompareTrigger(), map[string][]job.Postsubmit{
+				"org/repo": tc.postsubmits,
+			}, tc.compareChanges)
+			if diff := cmp.Diff(tc.wantJobs, launchedJobNames(launcher)); diff != "" {
+				t.Fatalf("unexpected launched jobs (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHandlePEDefaultsToAllCommits(t *testing.T) {
+	pe := scm.PushHook{
+		Ref:    "refs/heads/main",
+		Before: testBeforeSHA,
+		After:  testAfterSHA,
+		Commits: []scm.PushCommit{
+			{Modified: []string{"pkg/a/lock.json", "pkg/a/config.yaml"}},
+			{Modified: []string{"pkg/b/foo.go"}},
+		},
+		Repo: scm.Repository{Namespace: "org", Name: "repo", FullName: "org/repo"},
+	}
+	launcher := runHandlePE(t, pe, &plugins.Trigger{}, map[string][]job.Postsubmit{
+		"org/repo": {
+			{
+				Base:                job.Base{Name: "pkg-b-release"},
+				RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: `^pkg/b/`},
+			},
+			{
+				Base:                job.Base{Name: "pkg-a-release"},
+				RegexpChangeMatcher: job.RegexpChangeMatcher{RunIfChanged: `^pkg/a/`},
+			},
+		},
+	}, []*scm.Change{{Path: "pkg/b/foo.go"}})
+
+	want := []string{"pkg-a-release", "pkg-b-release"}
+	if diff := cmp.Diff(want, launchedJobNames(launcher)); diff != "" {
+		t.Fatalf("legacy commits union should match both jobs (-want +got):\n%s", diff)
+	}
+}
+
+func launchedJobNames(launcher *fake.Launcher) []string {
+	if len(launcher.Pipelines) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(launcher.Pipelines))
+	for _, pj := range launcher.Pipelines {
+		names = append(names, pj.Spec.Job)
+	}
+	slices.Sort(names)
+	return names
 }
