@@ -213,6 +213,7 @@ Trigger specifies a configuration for a single trigger.<br /><br />The configura
 | `ignore_ok_to_test` | bool | No | IgnoreOkToTest makes trigger ignore /ok-to-test comments.<br />This is a security mitigation to only allow testing from trusted users. |
 | `elide_skipped_contexts` | bool | No | ElideSkippedContexts makes trigger not post "Skipped" contexts for jobs<br />that could run but do not run. |
 | `skip_draft_pr` | bool | No | SkipDraftPR when enabled, skips triggering pipelines for draft PRs, unless /ok-to-test is added. |
+| `push_changed_files` | string | No | PushChangedFiles selects how postsubmit run_if_changed resolves changed files on push events.<br />all_commits (default): union every commit file list from the push webhook.<br />compare: net diff between push before/after SHAs via the SCM compare API.<br />Not all SCM drivers support compare; compare falls back to all_commits with a warning. |
 | `skip_report_comment` | bool | No | SkipReportComment when enabled, skips report comments in the SCM provider based on the state of<br />the LighthouseJobs. |
 | `skip_report_running_status` | bool | No | SkipReportRunningStatus when enabled, skips report status in the SCM provider<br />based on the current and last state of the LighthouseJobs. |
 | `show_report_completion_duration` | bool | No | ShowReportCompletionDuration when enabled, show completion duration in report status in the SCM provider<br />based on StartTime and CompletionTime of the PipelineActivity. |
