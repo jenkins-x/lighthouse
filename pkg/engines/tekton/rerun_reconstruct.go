@@ -7,8 +7,10 @@ import (
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
+	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ErrMissingRequiredLabels is returned when a PipelineRun is missing labels
@@ -96,4 +98,28 @@ func rerunSpecFromPipelineRun(pr *pipelinev1.PipelineRun) (lighthousev1alpha1.Li
 	}
 
 	return spec, nil
+}
+
+// newReconstructedLighthouseJob creates a new LighthouseJob from a rerun PipelineRun and a reconstructed spec.
+func newReconstructedLighthouseJob(pr *pipelinev1.PipelineRun, spec lighthousev1alpha1.LighthouseJobSpec) *lighthousev1alpha1.LighthouseJob {
+	ljLabels := make(map[string]string)
+	for k, v := range pr.GetLabels() {
+		if strings.HasPrefix(k, "lighthouse.jenkins-x.io/") || k == configjob.CreatedByLighthouseLabel {
+			ljLabels[k] = v
+		}
+	}
+
+	return &lighthousev1alpha1.LighthouseJob{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "lighthouse.jenkins.io/v1alpha1",
+			Kind:       "LighthouseJob",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: jobutil.GenerateName(&spec),
+			Namespace:    pr.Namespace,
+			Labels:       ljLabels,
+		},
+		Spec:   spec,
+		Status: lighthousev1alpha1.LighthouseJobStatus{},
+	}
 }
