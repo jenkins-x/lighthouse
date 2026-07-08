@@ -258,3 +258,78 @@ func TestReconcileMissingRequiredLabelsDrops(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, jobs.Items, 0, "No LighthouseJob should be created when required labels are missing")
 }
+
+func TestReconcileLiveRerunClearsStaleStatus(t *testing.T) {
+	ns := "jx"
+	jobName := "myorg-myrepo-main-abc12"
+	parentPRName := "myorg-myrepo-main-abc12-1"
+	rerunPRName := "myorg-myrepo-main-abc12-2-rerun"
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
+	require.NoError(t, pipelinev1.AddToScheme(scheme))
+
+	// The original LighthouseJob with a terminal status
+	now := metav1.Now()
+	originalJob := &lighthousev1alpha1.LighthouseJob{
+		ObjectMeta: metav1.ObjectMeta{Name: jobName, Namespace: ns},
+		Status: lighthousev1alpha1.LighthouseJobStatus{
+			State:          lighthousev1alpha1.SuccessState,
+			CompletionTime: &now,
+		},
+	}
+
+	// The parent PR, owned by the original job
+	parentPR := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      parentPRName,
+			Namespace: ns,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "lighthouse.jenkins.io/v1alpha1",
+				Kind:       "LighthouseJob",
+				Name:       jobName,
+				Controller: ptr.To(true),
+			}},
+		},
+	}
+
+	// The rerun PR
+	rerunPR := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      rerunPRName,
+			Namespace: ns,
+			Labels:    map[string]string{util.DashboardTektonRerun: parentPRName},
+		},
+	}
+
+	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(originalJob, parentPR, rerunPR).Build()
+	reconciler := NewRerunPipelineRunReconciler(c, scheme, 1)
+
+	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
+		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},
+	})
+	require.NoError(t, err, "Reconcile should succeed for a live rerun")
+
+	// Find the newly cloned job
+	var updatedPR pipelinev1.PipelineRun
+	err = c.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: rerunPRName}, &updatedPR)
+	require.NoError(t, err)
+	require.Len(t, updatedPR.OwnerReferences, 1)
+
+	clonedJobName := updatedPR.OwnerReferences[0].Name
+	assert.Equal(t, rerunPRName, clonedJobName, "The new job should have the same name as the rerun PipelineRun")
+
+	var clonedJob lighthousev1alpha1.LighthouseJob
+	err = c.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: clonedJobName}, &clonedJob)
+	require.NoError(t, err)
+
+	// Assert the cloned job's status was cleared
+	assert.Empty(t, clonedJob.Status.State, "Cloned job should have an empty state")
+	assert.Nil(t, clonedJob.Status.CompletionTime, "Cloned job should have a nil completion time")
+
+	// Verify the original job was NOT modified (deep copy protected it)
+	var fetchedOriginalJob lighthousev1alpha1.LighthouseJob
+	err = c.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: jobName}, &fetchedOriginalJob)
+	require.NoError(t, err)
+	assert.Equal(t, lighthousev1alpha1.SuccessState, fetchedOriginalJob.Status.State, "Original job's status should not be mutated")
+}

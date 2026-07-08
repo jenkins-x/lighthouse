@@ -112,6 +112,9 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// Clone the LighthouseJob
 		rerunLhJob = parentPipelineRunParentLighthouseJob.DeepCopy()
 
+		// Clear the status so a completed parent doesn't immediately mark the rerun job as terminal
+		rerunLhJob.Status = lighthousev1alpha1.LighthouseJobStatus{}
+
 		// Trim existing r-xxxxx suffix and append a new one
 		re := regexp.MustCompile(`-r-[a-f0-9]{5}$`)
 		baseName := re.ReplaceAllString(parentPipelineRunParentLighthouseJob.Name, "")
