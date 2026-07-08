@@ -140,6 +140,13 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	}
 
+	if rerunLhJob.Status.StartTime.IsZero() {
+		rerunLhJob.Status.StartTime = metav1.Now()
+		if err := r.client.Status().Update(ctx, rerunLhJob); err != nil {
+			return ctrl.Result{}, errors.Wrapf(err, "failed to set LighthouseJob StartTime")
+		}
+	}
+
 	// Prepare the ownerReference.
 	// client.Get does not return TypeMeta from LighthouseJob, so
 	// derive the GVK from the scheme instead.

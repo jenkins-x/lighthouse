@@ -297,6 +297,7 @@ func TestReconcileRerunIsIdempotent(t *testing.T) {
 	var jobs lighthousev1alpha1.LighthouseJobList
 	require.NoError(t, c.List(context.TODO(), &jobs, client.InNamespace(ns)))
 	require.Len(t, jobs.Items, 1)
+	assert.False(t, jobs.Items[0].Status.StartTime.IsZero(), "StartTime should be set on creation")
 
 	// A second reconcile (e.g. a re-queued event) must not create a duplicate.
 	_, err = reconciler.Reconcile(context.TODO(), req)
