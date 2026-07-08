@@ -62,8 +62,8 @@ func TestRerunReconcileSetsOwnerReferenceGVK(t *testing.T) {
 		},
 	}
 
-	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(job, parentPR, rerunPR).Build()
-	reconciler := NewRerunPipelineRunReconciler(c, scheme, 1)
+	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).WithObjects(job, parentPR, rerunPR).Build()
+	reconciler := NewRerunPipelineRunReconciler(c, c, scheme, 1)
 
 	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
 		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},
@@ -112,8 +112,8 @@ func TestReconcileArchivedRerunReconstructsLighthouseJob(t *testing.T) {
 		},
 	}
 
-	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(rerunPR).Build()
-	reconciler := NewRerunPipelineRunReconciler(c, scheme, 1)
+	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).WithObjects(rerunPR).Build()
+	reconciler := NewRerunPipelineRunReconciler(c, c, scheme, 1)
 
 	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
 		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},
@@ -153,8 +153,8 @@ func TestResolveParentLighthouseJob(t *testing.T) {
 		scheme := runtime.NewScheme()
 		require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
 		require.NoError(t, pipelinev1.AddToScheme(scheme))
-		c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
-		return NewRerunPipelineRunReconciler(c, scheme, 1)
+		c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).WithObjects(objs...).Build()
+		return NewRerunPipelineRunReconciler(c, c, scheme, 1)
 	}
 	rerunPR := func() *pipelinev1.PipelineRun {
 		return &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{
@@ -242,7 +242,7 @@ func TestReconcileMissingRequiredLabelsDrops(t *testing.T) {
 	}
 
 	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).WithObjects(rerunPR).Build()
-	reconciler := NewRerunPipelineRunReconciler(c, scheme, 1)
+	reconciler := NewRerunPipelineRunReconciler(c, c, scheme, 1)
 
 	res, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
 		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},
@@ -257,6 +257,103 @@ func TestReconcileMissingRequiredLabelsDrops(t *testing.T) {
 	err = c.List(context.TODO(), &jobs, client.InNamespace(ns))
 	require.NoError(t, err)
 	assert.Len(t, jobs.Items, 0, "No LighthouseJob should be created when required labels are missing")
+}
+
+// TestReconcileRerunIsIdempotent guards against the duplicate-LighthouseJob regression:
+// reconciling the same rerun PipelineRun twice must create exactly one job, and StartTime
+// must be set so lighthouse-gc-jobs does not GC the still-running job.
+func TestReconcileRerunIsIdempotent(t *testing.T) {
+	ns := "jx"
+	rerunPRName := "myorg-myrepo-main-abc12-2-rerun"
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
+	require.NoError(t, pipelinev1.AddToScheme(scheme))
+
+	rerunPR := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{
+		Name: rerunPRName, Namespace: ns,
+		Labels: map[string]string{
+			util.DashboardTektonRerun:        "myorg-myrepo-main-abc12-1",
+			configjob.LighthouseJobTypeLabel: string(configjob.PresubmitJob),
+			util.ContextLabel:                "pr-build",
+			util.OrgLabel:                    "myorg",
+			util.RepoLabel:                   "myrepo",
+			util.LastCommitSHALabel:          "sha123",
+		},
+		Annotations: map[string]string{util.LighthouseJobAnnotation: "myorg-myrepo-pr-build"},
+	}}
+
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).
+		WithObjects(rerunPR).
+		Build()
+	reconciler := NewRerunPipelineRunReconciler(c, c, scheme, 1)
+	req := ctrl.Request{NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName}}
+
+	_, err := reconciler.Reconcile(context.TODO(), req)
+	require.NoError(t, err)
+
+	var jobs lighthousev1alpha1.LighthouseJobList
+	require.NoError(t, c.List(context.TODO(), &jobs, client.InNamespace(ns)))
+	require.Len(t, jobs.Items, 1)
+
+	// A second reconcile (e.g. a re-queued event) must not create a duplicate.
+	_, err = reconciler.Reconcile(context.TODO(), req)
+	require.NoError(t, err)
+	require.NoError(t, c.List(context.TODO(), &jobs, client.InNamespace(ns)))
+	assert.Len(t, jobs.Items, 1, "reconciling twice must not create a duplicate LighthouseJob")
+
+	var updated pipelinev1.PipelineRun
+	require.NoError(t, c.Get(context.TODO(), req.NamespacedName, &updated))
+	assert.Len(t, updated.OwnerReferences, 1)
+}
+
+// TestReconcileAdoptsExistingLighthouseJob exercises the AlreadyExists/apiReader adoption
+// path: a job with the deterministic name already exists (prior reconcile whose owner
+// reference write is not yet visible) and must be adopted, not duplicated.
+func TestReconcileAdoptsExistingLighthouseJob(t *testing.T) {
+	ns := "jx"
+	rerunPRName := "myorg-myrepo-main-abc12-2-rerun"
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
+	require.NoError(t, pipelinev1.AddToScheme(scheme))
+
+	existing := &lighthousev1alpha1.LighthouseJob{ObjectMeta: metav1.ObjectMeta{Name: rerunPRName, Namespace: ns}}
+	rerunPR := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{
+		Name: rerunPRName, Namespace: ns,
+		Labels: map[string]string{
+			util.DashboardTektonRerun:        "myorg-myrepo-main-abc12-1",
+			configjob.LighthouseJobTypeLabel: string(configjob.PresubmitJob),
+			util.ContextLabel:                "pr-build",
+			util.OrgLabel:                    "myorg",
+			util.RepoLabel:                   "myrepo",
+			util.LastCommitSHALabel:          "sha123",
+		},
+		Annotations: map[string]string{util.LighthouseJobAnnotation: "myorg-myrepo-pr-build"},
+	}}
+
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).
+		WithObjects(existing, rerunPR).
+		Build()
+	reconciler := NewRerunPipelineRunReconciler(c, c, scheme, 1)
+
+	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
+		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},
+	})
+	require.NoError(t, err)
+
+	var jobs lighthousev1alpha1.LighthouseJobList
+	require.NoError(t, c.List(context.TODO(), &jobs, client.InNamespace(ns)))
+	assert.Len(t, jobs.Items, 1, "the existing job must be adopted, not duplicated")
+
+	var updated pipelinev1.PipelineRun
+	require.NoError(t, c.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: rerunPRName}, &updated))
+	require.Len(t, updated.OwnerReferences, 1)
+	assert.Equal(t, rerunPRName, updated.OwnerReferences[0].Name)
 }
 
 func TestReconcileLiveRerunClearsStaleStatus(t *testing.T) {
@@ -302,8 +399,8 @@ func TestReconcileLiveRerunClearsStaleStatus(t *testing.T) {
 		},
 	}
 
-	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(originalJob, parentPR, rerunPR).Build()
-	reconciler := NewRerunPipelineRunReconciler(c, scheme, 1)
+	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).WithObjects(originalJob, parentPR, rerunPR).Build()
+	reconciler := NewRerunPipelineRunReconciler(c, c, scheme, 1)
 
 	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
 		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},

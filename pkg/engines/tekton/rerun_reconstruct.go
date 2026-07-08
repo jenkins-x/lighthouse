@@ -7,7 +7,6 @@ import (
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
-	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,9 +114,9 @@ func newReconstructedLighthouseJob(pr *pipelinev1.PipelineRun, spec lighthousev1
 			Kind:       "LighthouseJob",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: jobutil.GenerateName(&spec),
-			Namespace:    pr.Namespace,
-			Labels:       ljLabels,
+			Name:      pr.Name,
+			Namespace: pr.Namespace,
+			Labels:    ljLabels,
 		},
 		Spec:   spec,
 		Status: lighthousev1alpha1.LighthouseJobStatus{},

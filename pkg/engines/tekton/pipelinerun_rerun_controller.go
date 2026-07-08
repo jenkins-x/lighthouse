@@ -3,14 +3,13 @@ package tekton
 import (
 	"context"
 	"fmt"
-	"regexp"
 
-	"github.com/google/uuid"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,15 +25,17 @@ import (
 // RerunPipelineRunReconciler reconciles PipelineRun objects with the rerun label
 type RerunPipelineRunReconciler struct {
 	client                  client.Client
+	apiReader               client.Reader
 	logger                  *logrus.Entry
 	scheme                  *runtime.Scheme
 	maxConcurrentReconciles int
 }
 
 // NewRerunPipelineRunReconciler creates a new RerunPipelineRunReconciler
-func NewRerunPipelineRunReconciler(client client.Client, scheme *runtime.Scheme, maxConcurrentReconciles int) *RerunPipelineRunReconciler {
+func NewRerunPipelineRunReconciler(client client.Client, apiReader client.Reader, scheme *runtime.Scheme, maxConcurrentReconciles int) *RerunPipelineRunReconciler {
 	return &RerunPipelineRunReconciler{
 		client:                  client,
+		apiReader:               apiReader,
 		logger:                  logrus.NewEntry(logrus.StandardLogger()).WithField("controller", "RerunPipelineRunController"),
 		scheme:                  scheme,
 		maxConcurrentReconciles: maxConcurrentReconciles,
@@ -115,10 +116,7 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// Clear the status so a completed parent doesn't immediately mark the rerun job as terminal
 		rerunLhJob.Status = lighthousev1alpha1.LighthouseJobStatus{}
 
-		// Trim existing r-xxxxx suffix and append a new one
-		re := regexp.MustCompile(`-r-[a-f0-9]{5}$`)
-		baseName := re.ReplaceAllString(parentPipelineRunParentLighthouseJob.Name, "")
-		rerunLhJob.Name = fmt.Sprintf("%s-%s", baseName, fmt.Sprintf("r-%s", uuid.NewString()[:5]))
+		rerunLhJob.Name = rerunPipelineRun.Name
 
 		rerunLhJob.ResourceVersion = ""
 		rerunLhJob.UID = ""
@@ -126,8 +124,20 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Create the new LighthouseJob
 	if err := r.client.Create(ctx, rerunLhJob); err != nil {
-		r.logger.Errorf("Failed to create new LighthouseJob: %s", err)
-		return ctrl.Result{}, err
+		if apierrors.IsAlreadyExists(err) {
+			// A previous reconciliation of this same rerun PipelineRun already created
+			// the job (the name is deterministic). Adopt it. We read it through the
+			// uncached apiReader on purpose: the object was just created and may not be
+			// visible in the cache yet, which is exactly the race this branch handles.
+			r.logger.Warnf("LighthouseJob %s already exists, adopting it to set ownerReference", rerunLhJob.Name)
+			if err := r.apiReader.Get(ctx, types.NamespacedName{Namespace: rerunLhJob.Namespace, Name: rerunLhJob.Name}, rerunLhJob); err != nil {
+				r.logger.Errorf("Failed to get existing LighthouseJob %s: %s", rerunLhJob.Name, err)
+				return ctrl.Result{}, err
+			}
+		} else {
+			r.logger.Errorf("Failed to create new LighthouseJob: %s", err)
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Prepare the ownerReference.
@@ -148,11 +158,20 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// updates ownerReference of the PipelineRun re-run.
 	f := func(job *pipelinev1.PipelineRun) error {
-		// Set the ownerReference for passed-in job, so it's re-applied to the refreshed object
-		job.OwnerReferences = append(job.OwnerReferences, ownerReference)
-		// Patch the PipelineRun with the new ownerReference
-		if err := r.client.Update(ctx, job); err != nil {
-			return errors.Wrapf(err, "failed to update PipelineRun with ownerReference")
+		// Check if ownerReference already exists to be idempotent
+		exists := false
+		for _, ref := range job.OwnerReferences {
+			if ref.UID == ownerReference.UID {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			job.OwnerReferences = append(job.OwnerReferences, ownerReference)
+			// Patch the PipelineRun with the new ownerReference
+			if err := r.client.Update(ctx, job); err != nil {
+				return errors.Wrapf(err, "failed to update PipelineRun with ownerReference")
+			}
 		}
 		return nil
 	}

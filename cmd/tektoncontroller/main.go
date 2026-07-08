@@ -95,7 +95,7 @@ func main() {
 	}
 
 	if o.enableRerunStatusUpdate {
-		rerunPipelineRunReconciler := tektonengine.NewRerunPipelineRunReconciler(mgr.GetClient(), mgr.GetScheme(), o.maxConcurrentReconciles)
+		rerunPipelineRunReconciler := tektonengine.NewRerunPipelineRunReconciler(mgr.GetClient(), mgr.GetAPIReader(), mgr.GetScheme(), o.maxConcurrentReconciles)
 		if err = rerunPipelineRunReconciler.SetupWithManager(mgr); err != nil {
 			logrus.WithError(err).Fatal("Unable to create RerunPipelineRun controller")
 		}
