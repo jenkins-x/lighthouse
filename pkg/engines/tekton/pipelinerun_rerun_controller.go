@@ -22,7 +22,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-// RerunPipelineRunReconciler reconciles PipelineRun objects with the rerun label
+// RerunPipelineRunReconciler reconciles PipelineRun objects with the rerun label.
+//
+// It operates along two paths:
+//  1. Fast path: if the parent PipelineRun and LighthouseJob exist, it clones the parent LighthouseJob
+//     (clearing its Status to prevent carrying over a stale terminal state) and assigns it.
+//  2. Reconstruction path: if either parent resource has been archived/deleted, it reconstructs
+//     a new LighthouseJob solely from the metadata (labels, annotations) on the rerun PipelineRun itself.
 type RerunPipelineRunReconciler struct {
 	client                  client.Client
 	apiReader               client.Reader

@@ -29,6 +29,16 @@ func isPullRequestType(jobType configjob.PipelineKind) bool {
 
 // rerunSpecFromPipelineRun reconstructs a LighthouseJobSpec entirely from the metadata
 // (labels, annotations, and Spec) of a rerun PipelineRun.
+//
+// A successful reconstruction requires the following strict set of labels to be present
+// on the rerun PipelineRun:
+// - lighthouse.jenkins-x.io/type (type of job: presubmit, postsubmit, etc.)
+// - lighthouse.jenkins-x.io/context (reporting context)
+// - lighthouse.jenkins-x.io/refs.org (repository organization)
+// - lighthouse.jenkins-x.io/refs.repo (repository name)
+// - lighthouse.jenkins-x.io/lastCommitSHA (the commit SHA to report status against)
+//
+// If any of these are missing, it returns an ErrMissingRequiredLabels.
 func rerunSpecFromPipelineRun(pr *pipelinev1.PipelineRun) (lighthousev1alpha1.LighthouseJobSpec, error) {
 	labels := pr.GetLabels()
 	if labels == nil {
@@ -100,6 +110,12 @@ func rerunSpecFromPipelineRun(pr *pipelinev1.PipelineRun) (lighthousev1alpha1.Li
 }
 
 // newReconstructedLighthouseJob creates a new LighthouseJob from a rerun PipelineRun and a reconstructed spec.
+//
+// Empty Status Rationale:
+// The returned LighthouseJob is deliberately created with a zero-value Status (empty State).
+//   - For the fast path, clearing the status prevents inheriting a terminal state (like Success) from the parent.
+//   - More importantly, leaving State empty guarantees that the LighthouseJobReconciler (which looks for TriggeredState)
+//     will NOT spawn a duplicate PipelineRun during the brief window before the OwnerReference is fully indexed.
 func newReconstructedLighthouseJob(pr *pipelinev1.PipelineRun, spec lighthousev1alpha1.LighthouseJobSpec) *lighthousev1alpha1.LighthouseJob {
 	ljLabels := make(map[string]string)
 	for k, v := range pr.GetLabels() {
