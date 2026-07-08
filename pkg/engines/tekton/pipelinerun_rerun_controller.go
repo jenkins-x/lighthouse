@@ -83,24 +83,43 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
+	// Resolve the parent LighthouseJob
 	parentPipelineRunParentLighthouseJob, err := r.resolveParentLighthouseJob(ctx, &rerunPipelineRun)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	var rerunLhJob *lighthousev1alpha1.LighthouseJob
+
 	if parentPipelineRunParentLighthouseJob == nil {
-		return ctrl.Result{}, nil
+		r.logger.Infof("Parent PipelineRun or LighthouseJob not found. Attempting reconstruction from rerun PipelineRun %s", req.NamespacedName)
+		spec, err := rerunSpecFromPipelineRun(&rerunPipelineRun)
+		if err != nil {
+			// Missing required labels is a permanent condition.
+			// Drop it instead of returning an error.
+			var missingLabelsErr *ErrMissingRequiredLabels
+			if errors.As(err, &missingLabelsErr) {
+				r.logger.Warnf("Cannot reconstruct LighthouseJob for rerun PipelineRun %s, dropping: %v", req.NamespacedName, err)
+				return ctrl.Result{}, nil
+			}
+			// Defensive catch-all for any other unexpected reconstruction errors.
+			r.logger.Errorf("Failed to reconstruct LighthouseJobSpec: %v", err)
+			return ctrl.Result{}, err
+		}
+		rerunLhJob = newReconstructedLighthouseJob(&rerunPipelineRun, spec)
+	} else {
+		r.logger.Infof("Parent LighthouseJob found. Cloning LighthouseJob %s", parentPipelineRunParentLighthouseJob.Name)
+		// Clone the LighthouseJob
+		rerunLhJob = parentPipelineRunParentLighthouseJob.DeepCopy()
+
+		// Trim existing r-xxxxx suffix and append a new one
+		re := regexp.MustCompile(`-r-[a-f0-9]{5}$`)
+		baseName := re.ReplaceAllString(parentPipelineRunParentLighthouseJob.Name, "")
+		rerunLhJob.Name = fmt.Sprintf("%s-%s", baseName, fmt.Sprintf("r-%s", uuid.NewString()[:5]))
+
+		rerunLhJob.ResourceVersion = ""
+		rerunLhJob.UID = ""
 	}
-
-	// Clone the LighthouseJob
-	rerunLhJob := parentPipelineRunParentLighthouseJob.DeepCopy()
-
-	// Trim existing r-xxxxx suffix and append a new one
-	re := regexp.MustCompile(`-r-[a-f0-9]{5}$`)
-	baseName := re.ReplaceAllString(parentPipelineRunParentLighthouseJob.Name, "")
-	rerunLhJob.Name = fmt.Sprintf("%s-%s", baseName, fmt.Sprintf("r-%s", uuid.NewString()[:5]))
-
-	rerunLhJob.ResourceVersion = ""
-	rerunLhJob.UID = ""
 
 	// Create the new LighthouseJob
 	if err := r.client.Create(ctx, rerunLhJob); err != nil {

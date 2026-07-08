@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,6 +81,67 @@ func TestRerunReconcileSetsOwnerReferenceGVK(t *testing.T) {
 	assert.NotEmpty(t, ref.Name, "owner reference should point at the newly created rerun LighthouseJob")
 }
 
+func TestReconcileArchivedRerunReconstructsLighthouseJob(t *testing.T) {
+	ns := "jx"
+	rerunPRName := "myorg-myrepo-main-abc12-2-rerun"
+	parentPRName := "myorg-myrepo-main-abc12-1"
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
+	require.NoError(t, pipelinev1.AddToScheme(scheme))
+
+	// The rerun PipelineRun. The parent PR does NOT exist in the fake client.
+	rerunPR := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      rerunPRName,
+			Namespace: ns,
+			Labels: map[string]string{
+				util.DashboardTektonRerun:        parentPRName,
+				configjob.LighthouseJobTypeLabel: string(configjob.PresubmitJob),
+				util.ContextLabel:                "pr-build",
+				util.OrgLabel:                    "myorg",
+				util.RepoLabel:                   "myrepo",
+				util.LastCommitSHALabel:          "sha123",
+				util.BaseSHALabel:                "basesha456",
+				util.BranchLabel:                 "PR-42",
+				util.PullLabel:                   "42",
+			},
+			Annotations: map[string]string{
+				util.LighthouseJobAnnotation: "myorg-myrepo-pr-build",
+			},
+		},
+	}
+
+	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(rerunPR).Build()
+	reconciler := NewRerunPipelineRunReconciler(c, scheme, 1)
+
+	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
+		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},
+	})
+	require.NoError(t, err, "Reconcile should succeed for an archived rerun")
+
+	// Verify the LighthouseJob was created
+	var jobs lighthousev1alpha1.LighthouseJobList
+	err = c.List(context.TODO(), &jobs, client.InNamespace(ns))
+	require.NoError(t, err)
+	require.Len(t, jobs.Items, 1, "Exactly one LighthouseJob should be reconstructed and created")
+
+	job := jobs.Items[0]
+	// Verify it has empty status
+	assert.Empty(t, job.Status.State, "Reconstructed job should have an empty state")
+	assert.Nil(t, job.Status.CompletionTime, "Reconstructed job should have no completion time")
+
+	// Verify the rerun PipelineRun now has an OwnerReference pointing to this new job
+	var updatedPR pipelinev1.PipelineRun
+	err = c.Get(context.TODO(), types.NamespacedName{Namespace: ns, Name: rerunPRName}, &updatedPR)
+	require.NoError(t, err)
+	require.Len(t, updatedPR.OwnerReferences, 1)
+
+	ownerRef := updatedPR.OwnerReferences[0]
+	assert.Equal(t, job.Name, ownerRef.Name)
+	assert.Equal(t, "LighthouseJob", ownerRef.Kind)
+}
+
 // TestResolveParentLighthouseJob exercises resolveParentLighthouseJob in isolation,
 // covering the three "not resolvable" branches and the nominal resolution.
 func TestResolveParentLighthouseJob(t *testing.T) {
@@ -92,7 +154,7 @@ func TestResolveParentLighthouseJob(t *testing.T) {
 		require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
 		require.NoError(t, pipelinev1.AddToScheme(scheme))
 		c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
-		return NewRerunPipelineRunReconciler(c, c, scheme, 1)
+		return NewRerunPipelineRunReconciler(c, scheme, 1)
 	}
 	rerunPR := func() *pipelinev1.PipelineRun {
 		return &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{
@@ -157,4 +219,42 @@ func TestResolveParentLighthouseJob(t *testing.T) {
 		require.NotNil(t, lj)
 		assert.Equal(t, jobName, lj.Name)
 	})
+}
+
+func TestReconcileMissingRequiredLabelsDrops(t *testing.T) {
+	ns := "jx"
+	rerunPRName := "myorg-myrepo-main-abc12-2-rerun"
+	parentPRName := "myorg-myrepo-main-abc12-1"
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
+	require.NoError(t, pipelinev1.AddToScheme(scheme))
+
+	// The rerun PipelineRun is missing util.ContextLabel and others
+	rerunPR := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      rerunPRName,
+			Namespace: ns,
+			Labels: map[string]string{
+				util.DashboardTektonRerun: parentPRName,
+			},
+		},
+	}
+
+	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).WithObjects(rerunPR).Build()
+	reconciler := NewRerunPipelineRunReconciler(c, scheme, 1)
+
+	res, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
+		NamespacedName: types.NamespacedName{Namespace: ns, Name: rerunPRName},
+	})
+
+	// Must NOT return an error (which would cause a requeue), must just drop it.
+	require.NoError(t, err, "Missing required labels is an unrecoverable error and should be dropped without returning an error to the controller")
+	assert.Equal(t, ctrl.Result{}, res)
+
+	// Verify NO LighthouseJob was created
+	var jobs lighthousev1alpha1.LighthouseJobList
+	err = c.List(context.TODO(), &jobs, client.InNamespace(ns))
+	require.NoError(t, err)
+	assert.Len(t, jobs.Items, 0, "No LighthouseJob should be created when required labels are missing")
 }
