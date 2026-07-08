@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -77,4 +78,83 @@ func TestRerunReconcileSetsOwnerReferenceGVK(t *testing.T) {
 	assert.Equal(t, "lighthouse.jenkins.io/v1alpha1", ref.APIVersion, "owner reference apiVersion must be derived from the scheme, not the fetched object's empty TypeMeta")
 	assert.Equal(t, "LighthouseJob", ref.Kind, "owner reference kind must be derived from the scheme, not the fetched object's empty TypeMeta")
 	assert.NotEmpty(t, ref.Name, "owner reference should point at the newly created rerun LighthouseJob")
+}
+
+// TestResolveParentLighthouseJob exercises resolveParentLighthouseJob in isolation,
+// covering the three "not resolvable" branches and the nominal resolution.
+func TestResolveParentLighthouseJob(t *testing.T) {
+	ns := "jx"
+	parentPRName := "myorg-myrepo-main-abc12-1"
+	jobName := "myorg-myrepo-main-abc12"
+
+	newReconciler := func(objs ...client.Object) *RerunPipelineRunReconciler {
+		scheme := runtime.NewScheme()
+		require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
+		require.NoError(t, pipelinev1.AddToScheme(scheme))
+		c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(objs...).Build()
+		return NewRerunPipelineRunReconciler(c, c, scheme, 1)
+	}
+	rerunPR := func() *pipelinev1.PipelineRun {
+		return &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{
+			Name: "rerun", Namespace: ns,
+			Labels: map[string]string{util.DashboardTektonRerun: parentPRName},
+		}}
+	}
+
+	t.Run("no rerun label returns nil", func(t *testing.T) {
+		r := newReconciler()
+		pr := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "x", Namespace: ns}}
+		lj, err := r.resolveParentLighthouseJob(context.TODO(), pr)
+		require.NoError(t, err)
+		assert.Nil(t, lj)
+	})
+
+	t.Run("parent PipelineRun missing returns nil", func(t *testing.T) {
+		r := newReconciler()
+		lj, err := r.resolveParentLighthouseJob(context.TODO(), rerunPR())
+		require.NoError(t, err)
+		assert.Nil(t, lj)
+	})
+
+	t.Run("parent without ownerReference returns nil", func(t *testing.T) {
+		parentPR := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: parentPRName, Namespace: ns}}
+		r := newReconciler(parentPR)
+		lj, err := r.resolveParentLighthouseJob(context.TODO(), rerunPR())
+		require.NoError(t, err)
+		assert.Nil(t, lj)
+	})
+
+	t.Run("parent with non-LighthouseJob controller owner returns nil", func(t *testing.T) {
+		parentPR := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{
+			Name: parentPRName, Namespace: ns,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "tekton.dev/v1",
+				Kind:       "Pipeline",
+				Name:       "some-pipeline",
+				Controller: ptr.To(true),
+			}},
+		}}
+		r := newReconciler(parentPR)
+		lj, err := r.resolveParentLighthouseJob(context.TODO(), rerunPR())
+		require.NoError(t, err)
+		assert.Nil(t, lj, "a non-LighthouseJob controller owner must trigger reconstruction, not a wrong-kind lookup")
+	})
+
+	t.Run("resolves the parent LighthouseJob", func(t *testing.T) {
+		job := &lighthousev1alpha1.LighthouseJob{ObjectMeta: metav1.ObjectMeta{Name: jobName, Namespace: ns}}
+		parentPR := &pipelinev1.PipelineRun{ObjectMeta: metav1.ObjectMeta{
+			Name: parentPRName, Namespace: ns,
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion: "lighthouse.jenkins.io/v1alpha1",
+				Kind:       "LighthouseJob",
+				Name:       jobName,
+				Controller: ptr.To(true),
+			}},
+		}}
+		r := newReconciler(job, parentPR)
+		lj, err := r.resolveParentLighthouseJob(context.TODO(), rerunPR())
+		require.NoError(t, err)
+		require.NotNil(t, lj)
+		assert.Equal(t, jobName, lj.Name)
+	})
 }

@@ -83,37 +83,12 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, nil
 	}
 
-	// Extract Rerun PipelineRun Parent Name
-	rerunPipelineRunParentName, ok := rerunPipelineRun.Labels[util.DashboardTektonRerun]
-	if !ok {
+	parentPipelineRunParentLighthouseJob, err := r.resolveParentLighthouseJob(ctx, &rerunPipelineRun)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if parentPipelineRunParentLighthouseJob == nil {
 		return ctrl.Result{}, nil
-	}
-
-	// Get Rerun PipelineRun parent PipelineRun
-	var rerunPipelineRunParent pipelinev1.PipelineRun
-	if err := r.client.Get(ctx, types.NamespacedName{Namespace: req.Namespace, Name: rerunPipelineRunParentName}, &rerunPipelineRunParent); err != nil {
-		r.logger.Warningf("Unable to get Rerun Parent PipelineRun %s: %v", rerunPipelineRunParentName, err)
-		// we'll ignore not-found errors, since they can't be fixed by an immediate
-		// requeue (we'll need to wait for a new notification), and we can get them
-		// on deleted requests.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	// Check if the Rerun Parent PipelineRun doesn't already have an ownerReference set
-	if len(rerunPipelineRunParent.OwnerReferences) == 0 {
-		r.logger.Infof("Parent PipelineRun %s doesn't already have an ownerReference set, skipping.", rerunPipelineRunParentName)
-		return ctrl.Result{}, nil
-	}
-
-	// get rerun pipelinerun parent lighthousejob
-	var parentPipelineRunParentLighthouseJob lighthousev1alpha1.LighthouseJob
-	parentPipelineRunRef := rerunPipelineRunParent.OwnerReferences[0]
-	if err := r.client.Get(ctx, types.NamespacedName{Namespace: req.Namespace, Name: parentPipelineRunRef.Name}, &parentPipelineRunParentLighthouseJob); err != nil {
-		r.logger.Warningf("Unable to get Rerun Parent PipelineRun Parent LighthouseJob %s: %v", parentPipelineRunRef.Name, err)
-		// we'll ignore not-found errors, since they can't be fixed by an immediate
-		// requeue (we'll need to wait for a new notification), and we can get them
-		// on deleted requests.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// Clone the LighthouseJob
@@ -195,4 +170,41 @@ func (r *RerunPipelineRunReconciler) retryModifyPipelineRun(ctx context.Context,
 			return client.IgnoreNotFound(err)
 		}
 	}
+}
+
+func (r *RerunPipelineRunReconciler) resolveParentLighthouseJob(ctx context.Context, rerunPipelineRun *pipelinev1.PipelineRun) (*lighthousev1alpha1.LighthouseJob, error) {
+	// Extract Rerun PipelineRun Parent Name
+	rerunPipelineRunParentName, ok := rerunPipelineRun.Labels[util.DashboardTektonRerun]
+	if !ok {
+		return nil, nil
+	}
+
+	// Get Rerun PipelineRun parent PipelineRun
+	var rerunPipelineRunParent pipelinev1.PipelineRun
+	if err := r.client.Get(ctx, types.NamespacedName{Namespace: rerunPipelineRun.Namespace, Name: rerunPipelineRunParentName}, &rerunPipelineRunParent); err != nil {
+		r.logger.Warningf("Unable to get Rerun Parent PipelineRun %s: %v", rerunPipelineRunParentName, err)
+		// we'll ignore not-found errors, since they can't be fixed by an immediate
+		// requeue (we'll need to wait for a new notification), and we can get them
+		// on deleted requests.
+		return nil, client.IgnoreNotFound(err)
+	}
+
+	// Check if the Rerun Parent PipelineRun doesn't already have an ownerReference set
+	if len(rerunPipelineRunParent.OwnerReferences) == 0 {
+		r.logger.Infof("Parent PipelineRun %s doesn't already have an ownerReference set, skipping.", rerunPipelineRunParentName)
+		return nil, nil
+	}
+
+	// get rerun pipelinerun parent lighthousejob
+	var parentPipelineRunParentLighthouseJob lighthousev1alpha1.LighthouseJob
+	parentPipelineRunRef := rerunPipelineRunParent.OwnerReferences[0]
+	if err := r.client.Get(ctx, types.NamespacedName{Namespace: rerunPipelineRun.Namespace, Name: parentPipelineRunRef.Name}, &parentPipelineRunParentLighthouseJob); err != nil {
+		r.logger.Warningf("Unable to get Rerun Parent PipelineRun Parent LighthouseJob %s: %v", parentPipelineRunRef.Name, err)
+		// we'll ignore not-found errors, since they can't be fixed by an immediate
+		// requeue (we'll need to wait for a new notification), and we can get them
+		// on deleted requests.
+		return nil, client.IgnoreNotFound(err)
+	}
+
+	return &parentPipelineRunParentLighthouseJob, nil
 }
