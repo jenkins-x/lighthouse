@@ -99,7 +99,7 @@ func (f *FakeRepoOwners) entriesForFile(path string, extract func(DirOwners) set
 			return out
 		}
 	}
-	d := dirOf(path)
+	d := path
 	for {
 		if cfg, ok := f.Dirs[d]; ok {
 			out.Insert(extract(cfg).UnsortedList()...)
@@ -125,7 +125,7 @@ func (f *FakeRepoOwners) findOwnersForFile(path string, extract func(DirOwners) 
 	if cfg, ok := f.Files[path]; ok && extract(cfg).Len() > 0 {
 		return path
 	}
-	d := dirOf(path)
+	d := path
 	for d != "" {
 		if cfg, ok := f.Dirs[d]; ok && extract(cfg).Len() > 0 {
 			return d
@@ -186,9 +186,11 @@ func (f *FakeRepoOwners) RequiredReviewers(path string) sets.String {
 
 // MinimumReviewersForFile walks up from path returning the closest
 // MinimumReviewers value; returns 1 (the real implementation's default)
-// if no ancestor sets one.
+// if no ancestor sets one. The walk starts at path itself so callers
+// that pass a dir path (rather than a file path) get the entry at that
+// directory rather than at its parent.
 func (f *FakeRepoOwners) MinimumReviewersForFile(path string) int {
-	d := dirOf(path)
+	d := path
 	for {
 		if cfg, ok := f.Dirs[d]; ok {
 			if cfg.MinimumReviewers > 0 {
