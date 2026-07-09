@@ -8,6 +8,7 @@ import (
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/sirupsen/logrus"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -103,6 +104,8 @@ func rerunSpecFromPipelineRun(pr *pipelinev1.PipelineRun) (lighthousev1alpha1.Li
 					SHA:    labels[util.LastCommitSHALabel],
 				},
 			}
+		} else {
+			logrus.Warnf("Failed to parse pull number %q from label %s: %v", pullStr, util.PullLabel, err)
 		}
 	}
 
@@ -126,8 +129,8 @@ func newReconstructedLighthouseJob(pr *pipelinev1.PipelineRun, spec lighthousev1
 
 	return &lighthousev1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "lighthouse.jenkins.io/v1alpha1",
-			Kind:       "LighthouseJob",
+			APIVersion: lighthousev1alpha1.SchemeGroupVersion.String(),
+			Kind:       lighthouseJobKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pr.Name,

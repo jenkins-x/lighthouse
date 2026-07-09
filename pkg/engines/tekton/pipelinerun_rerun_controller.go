@@ -22,6 +22,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
+// lighthouseJobKind is the Kind of the LighthouseJob CRD, used to match owner references.
+const lighthouseJobKind = "LighthouseJob"
+
+// lighthouseJobOwnerName returns the name of the controller LighthouseJob owning pr,
+// or "" if pr has no such owner (caller should then reconstruct).
+func lighthouseJobOwnerName(pr *pipelinev1.PipelineRun) string {
+	owner := metav1.GetControllerOf(pr)
+	if owner == nil || owner.APIVersion != apiGVStr || owner.Kind != lighthouseJobKind {
+		return ""
+	}
+	return owner.Name
+}
+
 // RerunPipelineRunReconciler reconciles PipelineRun objects with the rerun label.
 //
 // It operates along two paths:
@@ -250,10 +263,14 @@ func (r *RerunPipelineRunReconciler) resolveParentLighthouseJob(ctx context.Cont
 	}
 
 	// get rerun pipelinerun parent lighthousejob
+	parentName := lighthouseJobOwnerName(&rerunPipelineRunParent)
+	if parentName == "" {
+		r.logger.Infof("Parent PipelineRun %s has no LighthouseJob controller owner, will reconstruct.", rerunPipelineRunParentName)
+		return nil, nil
+	}
 	var parentPipelineRunParentLighthouseJob lighthousev1alpha1.LighthouseJob
-	parentPipelineRunRef := rerunPipelineRunParent.OwnerReferences[0]
-	if err := r.client.Get(ctx, types.NamespacedName{Namespace: rerunPipelineRun.Namespace, Name: parentPipelineRunRef.Name}, &parentPipelineRunParentLighthouseJob); err != nil {
-		r.logger.Warningf("Unable to get Rerun Parent PipelineRun Parent LighthouseJob %s: %v", parentPipelineRunRef.Name, err)
+	if err := r.client.Get(ctx, types.NamespacedName{Namespace: rerunPipelineRun.Namespace, Name: parentName}, &parentPipelineRunParentLighthouseJob); err != nil {
+		r.logger.Warningf("Unable to get Rerun Parent PipelineRun Parent LighthouseJob %s: %v", parentName, err)
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
