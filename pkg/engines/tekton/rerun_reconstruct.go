@@ -112,6 +112,46 @@ func rerunSpecFromPipelineRun(pr *pipelinev1.PipelineRun) (lighthousev1alpha1.Li
 	return spec, nil
 }
 
+// canonicalRerunLabels returns the exact set of labels that should be present on a LighthouseJob
+// created from a rerun PipelineRun. It preserves only the lighthouse and 'created-by' labels.
+func canonicalRerunLabels(pr *pipelinev1.PipelineRun) map[string]string {
+	labels := make(map[string]string)
+	for k, v := range pr.GetLabels() {
+		if strings.HasPrefix(k, util.LighthouseLabelPrefix) || k == configjob.CreatedByLighthouseLabel {
+			labels[k] = v
+		}
+	}
+	return labels
+}
+
+// canonicalRerunAnnotations returns the exact set of annotations that should be present on a LighthouseJob
+// created from a rerun PipelineRun.
+func canonicalRerunAnnotations(pr *pipelinev1.PipelineRun) map[string]string {
+	annotations := make(map[string]string)
+	prAnnotations := pr.GetAnnotations()
+	if v, ok := prAnnotations[util.LighthouseJobAnnotation]; ok {
+		annotations[util.LighthouseJobAnnotation] = v
+	}
+	if v, ok := prAnnotations[util.CloneURIAnnotation]; ok {
+		annotations[util.CloneURIAnnotation] = v
+	}
+	return annotations
+}
+
+// ensureEntries returns dst augmented with the entries from src whose keys are not
+// already present. Existing entries in dst are never overwritten nor removed.
+func ensureEntries(dst, src map[string]string) map[string]string {
+	if dst == nil {
+		dst = make(map[string]string, len(src))
+	}
+	for k, v := range src {
+		if _, ok := dst[k]; !ok {
+			dst[k] = v
+		}
+	}
+	return dst
+}
+
 // newReconstructedLighthouseJob creates a new LighthouseJob from a rerun PipelineRun and a reconstructed spec.
 //
 // Empty Status Rationale:
@@ -120,22 +160,16 @@ func rerunSpecFromPipelineRun(pr *pipelinev1.PipelineRun) (lighthousev1alpha1.Li
 //   - More importantly, leaving State empty guarantees that the LighthouseJobReconciler (which looks for TriggeredState)
 //     will NOT spawn a duplicate PipelineRun during the brief window before the OwnerReference is fully indexed.
 func newReconstructedLighthouseJob(pr *pipelinev1.PipelineRun, spec lighthousev1alpha1.LighthouseJobSpec) *lighthousev1alpha1.LighthouseJob {
-	ljLabels := make(map[string]string)
-	for k, v := range pr.GetLabels() {
-		if strings.HasPrefix(k, "lighthouse.jenkins-x.io/") || k == configjob.CreatedByLighthouseLabel {
-			ljLabels[k] = v
-		}
-	}
-
 	return &lighthousev1alpha1.LighthouseJob{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: lighthousev1alpha1.SchemeGroupVersion.String(),
 			Kind:       lighthouseJobKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pr.Name,
-			Namespace: pr.Namespace,
-			Labels:    ljLabels,
+			Name:        pr.Name,
+			Namespace:   pr.Namespace,
+			Labels:      canonicalRerunLabels(pr),
+			Annotations: canonicalRerunAnnotations(pr),
 		},
 		Spec:   spec,
 		Status: lighthousev1alpha1.LighthouseJobStatus{},

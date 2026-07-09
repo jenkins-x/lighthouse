@@ -105,9 +105,11 @@ func TestReconcileArchivedRerunReconstructsLighthouseJob(t *testing.T) {
 				util.BaseSHALabel:                "basesha456",
 				util.BranchLabel:                 "PR-42",
 				util.PullLabel:                   "42",
+				"team":                           "platform", // non-lighthouse: must be dropped by best-effort reconstruction
 			},
 			Annotations: map[string]string{
 				util.LighthouseJobAnnotation: "myorg-myrepo-pr-build",
+				"custom.company.io/note":     "keep-me", // non-canonical: must be dropped
 			},
 		},
 	}
@@ -127,6 +129,15 @@ func TestReconcileArchivedRerunReconstructsLighthouseJob(t *testing.T) {
 	require.Len(t, jobs.Items, 1, "Exactly one LighthouseJob should be reconstructed and created")
 
 	job := jobs.Items[0]
+
+	// Reconstruction is best-effort: it recovers the canonical lighthouse labels/annotations…
+	assert.Contains(t, job.Annotations, util.LighthouseJobAnnotation)
+	assert.Contains(t, job.Labels, configjob.LighthouseJobTypeLabel)
+	// …but discards any non-canonical metadata carried on the rerun PipelineRun
+	// (accepted, documented divergence with the fast/clone path).
+	assert.NotContains(t, job.Labels, "team")
+	assert.NotContains(t, job.Annotations, "custom.company.io/note")
+
 	// Verify it has empty status
 	assert.Empty(t, job.Status.State, "Reconstructed job should have an empty state")
 	assert.Nil(t, job.Status.CompletionTime, "Reconstructed job should have no completion time")
@@ -370,7 +381,18 @@ func TestReconcileLiveRerunClearsStaleStatus(t *testing.T) {
 	// The original LighthouseJob with a terminal status
 	now := metav1.Now()
 	originalJob := &lighthousev1alpha1.LighthouseJob{
-		ObjectMeta: metav1.ObjectMeta{Name: jobName, Namespace: ns},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: ns,
+			Labels: map[string]string{
+				"team":                             "platform", // custom, non-lighthouse
+				"lighthouse.jenkins-x.io/type":     string(configjob.PresubmitJob),
+				configjob.CreatedByLighthouseLabel: "true",
+			},
+			Annotations: map[string]string{
+				"custom.company.io/note": "keep-me", // custom annotation
+			},
+		},
 		Status: lighthousev1alpha1.LighthouseJobStatus{
 			State:          lighthousev1alpha1.SuccessState,
 			CompletionTime: &now,
@@ -396,7 +418,16 @@ func TestReconcileLiveRerunClearsStaleStatus(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      rerunPRName,
 			Namespace: ns,
-			Labels:    map[string]string{util.DashboardTektonRerun: parentPRName},
+			Labels: map[string]string{
+				util.DashboardTektonRerun:          parentPRName,
+				"dashboard.tekton.dev/random":      "discard",
+				"lighthouse.jenkins-x.io/type":     string(configjob.PresubmitJob),
+				configjob.CreatedByLighthouseLabel: "true",
+			},
+			Annotations: map[string]string{
+				util.LighthouseJobAnnotation: "myorg-myrepo-pr-build",
+				"some-other-annotation":      "discard",
+			},
 		},
 	}
 
@@ -424,6 +455,19 @@ func TestReconcileLiveRerunClearsStaleStatus(t *testing.T) {
 	// Assert the cloned job's status was cleared
 	assert.Empty(t, clonedJob.Status.State, "Cloned job should have an empty state")
 	assert.Nil(t, clonedJob.Status.CompletionTime, "Cloned job should have a nil completion time")
+
+	// Fast path = full-fidelity clone + guaranteed canonical entries (merge, no removal).
+	// 1) Parent-owned custom metadata is PRESERVED:
+	assert.Equal(t, "platform", clonedJob.Labels["team"], "custom parent label must be preserved on the clone")
+	assert.Equal(t, "keep-me", clonedJob.Annotations["custom.company.io/note"], "custom parent annotation must be preserved")
+	// 2) Canonical lighthouse metadata is present (either inherited or filled from the PR):
+	assert.Contains(t, clonedJob.Labels, "lighthouse.jenkins-x.io/type")
+	assert.Contains(t, clonedJob.Labels, configjob.CreatedByLighthouseLabel)
+	assert.Contains(t, clonedJob.Annotations, util.LighthouseJobAnnotation)
+	// 3) Non-canonical labels/annotations that live only on the rerun PR are NOT injected:
+	assert.NotContains(t, clonedJob.Labels, util.DashboardTektonRerun)
+	assert.NotContains(t, clonedJob.Labels, "dashboard.tekton.dev/random")
+	assert.NotContains(t, clonedJob.Annotations, "some-other-annotation")
 
 	// Verify the original job was NOT modified (deep copy protected it)
 	var fetchedOriginalJob lighthousev1alpha1.LighthouseJob

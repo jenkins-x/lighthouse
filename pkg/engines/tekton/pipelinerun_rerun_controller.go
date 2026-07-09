@@ -137,6 +137,14 @@ func (r *RerunPipelineRunReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 		rerunLhJob.Name = rerunPipelineRun.Name
 
+		// Fast path keeps the full-fidelity clone of the parent LighthouseJob and only
+		// *ensures* the canonical lighthouse labels/annotations are present (filling any
+		// gap) WITHOUT removing metadata the parent legitimately carried. The
+		// reconstruction path is best-effort and may legitimately diverge (fewer
+		// labels/annotations) — that divergence is accepted and documented.
+		rerunLhJob.Labels = ensureEntries(rerunLhJob.Labels, canonicalRerunLabels(&rerunPipelineRun))
+		rerunLhJob.Annotations = ensureEntries(rerunLhJob.Annotations, canonicalRerunAnnotations(&rerunPipelineRun))
+
 		rerunLhJob.ResourceVersion = ""
 		rerunLhJob.UID = ""
 	}
