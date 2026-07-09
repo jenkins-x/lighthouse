@@ -782,8 +782,8 @@ func TestIsApprovedWithMinReviewers(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			fakeRepo := createFakeRepo(test.leafApprovers)
-			fakeRepo.minReviewersMap = test.minReviewersMap
-			fakeRepo.noParentOwnersMap = test.noParentOwnersMap
+			setMinReviewers(fakeRepo, test.minReviewersMap)
+			setNoParent(fakeRepo, test.noParentOwnersMap)
 			testApprovers := NewApprovers(Owners{filenames: test.filenames, repo: fakeRepo, seed: test.testSeed, log: logrus.WithField("plugin", "some_plugin")})
 			for approver := range test.currentlyApproved {
 				testApprovers.AddApprover(approver, "REFERENCE", false)

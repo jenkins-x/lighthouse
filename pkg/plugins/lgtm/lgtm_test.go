@@ -30,28 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
-	"github.com/jenkins-x/lighthouse/pkg/repoowners"
+	fakeowners "github.com/jenkins-x/lighthouse/pkg/repoowners/fake"
 )
-
-type fakeOwnersClient struct {
-	approvers map[string]sets.String
-	reviewers map[string]sets.String
-}
-
-var _ repoowners.Interface = &fakeOwnersClient{}
-
-func (f *fakeOwnersClient) LoadRepoAliases(org, repo, base string) (repoowners.RepoAliases, error) {
-	return nil, nil
-}
-
-func (f *fakeOwnersClient) LoadRepoOwners(org, repo, base string) (repoowners.RepoOwner, error) {
-	return &fakeRepoOwners{approvers: f.approvers, reviewers: f.reviewers}, nil
-}
-
-type fakeRepoOwners struct {
-	approvers map[string]sets.String
-	reviewers map[string]sets.String
-}
 
 type fakePruner struct {
 	SCMProviderClient   *fake.Data
@@ -66,33 +46,19 @@ func (fp *fakePruner) PruneComments(pr bool, shouldPrune func(*scm.Comment) bool
 	}
 }
 
-var _ repoowners.RepoOwner = &fakeRepoOwners{}
-
-func (f *fakeRepoOwners) FindApproverOwnersForFile(path string) string  { return "" }
-func (f *fakeRepoOwners) FindReviewersOwnersForFile(path string) string { return "" }
-func (f *fakeRepoOwners) FindLabelsForFile(path string) sets.String     { return nil }
-func (f *fakeRepoOwners) IsNoParentOwners(path string) bool             { return false }
-func (f *fakeRepoOwners) LeafApprovers(path string) sets.String         { return nil }
-func (f *fakeRepoOwners) Approvers(path string) sets.String             { return f.approvers[path] }
-func (f *fakeRepoOwners) LeafReviewers(path string) sets.String         { return nil }
-func (f *fakeRepoOwners) Reviewers(path string) sets.String             { return f.reviewers[path] }
-func (f *fakeRepoOwners) RequiredReviewers(path string) sets.String     { return nil }
-func (f *fakeRepoOwners) MinimumReviewersForFile(path string) int       { return 1 }
-
-var approvers = map[string]sets.String{
-	"doc/README.md": {
-		"cjwagner": {},
-		"jessica":  {},
-	},
-}
-
-var reviewers = map[string]sets.String{
-	"doc/README.md": {
-		"alice": {},
-		"bob":   {},
-		"mark":  {},
-		"sam":   {},
-	},
+// docOwnersClient returns a fake repoowners client seeded with an OWNERS
+// file at doc/ that lists approvers and reviewers for doc/README.md.
+func docOwnersClient() *fakeowners.Client {
+	return &fakeowners.Client{
+		Owners: &fakeowners.FakeRepoOwners{
+			Dirs: map[string]fakeowners.DirOwners{
+				"doc": {
+					Approvers: sets.NewString("cjwagner", "jessica"),
+					Reviewers: sets.NewString("alice", "bob", "mark", "sam"),
+				},
+			},
+		},
+	}
 }
 
 func TestLGTMComment(t *testing.T) {
@@ -336,7 +302,7 @@ func TestLGTMComment(t *testing.T) {
 			if tc.hasLGTM {
 				fc.PullRequestLabelsAdded = []string{fakeLabel}
 			}
-			oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
+			oc := docOwnersClient()
 			pc := &plugins.Configuration{}
 			if tc.skipCollab {
 				pc.Owners.SkipCollaborators = []string{"org/repo"}
@@ -511,7 +477,7 @@ func TestLGTMCommentWithLGTMNoti(t *testing.T) {
 			Body: removeLGTMLabelNoti,
 		}
 		fc.PullRequestComments[5] = append(fc.PullRequestComments[5], ic)
-		oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
+		oc := docOwnersClient()
 		pc := &plugins.Configuration{}
 		fp := &fakePruner{
 			SCMProviderClient:   fc,
@@ -711,7 +677,7 @@ func TestLGTMFromApproveReview(t *testing.T) {
 		if tc.hasLGTM {
 			fc.PullRequestLabelsAdded = append(fc.PullRequestLabelsAdded, "org/repo#5:"+LGTMLabel)
 		}
-		oc := &fakeOwnersClient{approvers: approvers, reviewers: reviewers}
+		oc := docOwnersClient()
 		pc := &plugins.Configuration{}
 		pc.Lgtm = append(pc.Lgtm, plugins.Lgtm{
 			Repos:         []string{"org/repo"},
@@ -1116,7 +1082,7 @@ func TestAddTreeHashComment(t *testing.T) {
 			commit := &scm.Commit{}
 			commit.Tree.Sha = treeSHA
 			fc.Commits[SHA] = commit
-			_ = handle(true, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{})
+			_ = handle(true, pc, &fakeowners.Client{}, rc, fakeClient, logrus.WithField("plugin", pluginName), &fakePruner{})
 			found := false
 			for _, body := range fc.PullRequestCommentsAdded {
 				if addLGTMLabelNotificationRe.MatchString(body) {
@@ -1172,7 +1138,7 @@ func TestRemoveTreeHashComment(t *testing.T) {
 		SCMProviderClient:   fc,
 		PullRequestComments: fc.PullRequestComments[101],
 	}
-	_ = handle(false, pc, &fakeOwnersClient{}, rc, fakeClient, logrus.WithField("plugin", pluginName), fp)
+	_ = handle(false, pc, &fakeowners.Client{}, rc, fakeClient, logrus.WithField("plugin", pluginName), fp)
 	found := false
 	for _, body := range fc.PullRequestCommentsDeleted {
 		if addLGTMLabelNotificationRe.MatchString(body) {
