@@ -18,12 +18,13 @@ package repoowners
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/jenkins-x/lighthouse/pkg/gittest"
 

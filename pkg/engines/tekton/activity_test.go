@@ -202,11 +202,11 @@ func TestTerminalActivitySyncedWithPipelineRun(t *testing.T) {
 		Status: v1alpha1.LighthouseJobStatus{
 			ReportURL: "https://dash/pipeline",
 			Activity: &v1alpha1.ActivityRecord{
-				Name:             "foo-pr",
-				Status:           v1alpha1.SuccessState,
-				StartTime:        &now,
-				CompletionTime:   &now,
-				Stages:           []*v1alpha1.ActivityStageOrStep{{Name: "build"}},
+				Name:           "foo-pr",
+				Status:         v1alpha1.SuccessState,
+				StartTime:      &now,
+				CompletionTime: &now,
+				Stages:         []*v1alpha1.ActivityStageOrStep{{Name: "build"}},
 			},
 		},
 	}
