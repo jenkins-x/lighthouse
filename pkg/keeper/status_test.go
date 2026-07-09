@@ -537,10 +537,10 @@ func TestBucketedGraphQLStatusSearch(t *testing.T) {
 			wantInQuery:   []string{`org:"my-org"`},
 		},
 		{
-			name:      "repos within bucket size produces single repo query",
-			orgs:      sets.New[string](),
-			repos:     sets.New[string]("org/repo0", "org/repo1"),
-			wantCalls: 1,
+			name:        "repos within bucket size produces single repo query",
+			orgs:        sets.New[string](),
+			repos:       sets.New[string]("org/repo0", "org/repo1"),
+			wantCalls:   1,
 			wantInQuery: []string{`repo:"org/repo0"`, `repo:"org/repo1"`},
 		},
 		{
@@ -558,8 +558,8 @@ func TestBucketedGraphQLStatusSearch(t *testing.T) {
 			wantInQuery:   []string{`org:"my-org"`, `repo:"other-org/repo"`},
 		},
 		{
-			name: "org exceptions are included in org query",
-			orgs: sets.New[string]("my-org"),
+			name:  "org exceptions are included in org query",
+			orgs:  sets.New[string]("my-org"),
 			repos: sets.New[string](),
 			orgExceptions: map[string]sets.String{
 				"my-org": sets.NewString("my-org/excluded-repo"),

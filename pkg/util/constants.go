@@ -19,6 +19,9 @@ const (
 	// use for GitHub API calls when present.
 	GitHubAppAPIUserFilename = "username"
 
+	// LighthouseLabelPrefix is the prefix used for all Lighthouse labels and annotations.
+	LighthouseLabelPrefix = "lighthouse.jenkins-x.io/"
+
 	// LighthousePipelineActivityNameLabel is added to the LighthouseJob with
 	// the name of the PipelineActivity corresponding to it.
 	LighthousePipelineActivityNameLabel = "lighthouse.jenkins-x.io/activityName"
