@@ -58,7 +58,7 @@ var _ repoowners.Interface = (*Client)(nil)
 // aliases separately from expanded owner sets; tests should supply
 // already-expanded logins in DirOwners.
 func (c *Client) LoadRepoAliases(org, repo, base string) (repoowners.RepoAliases, error) {
-	return nil, nil
+	return repoowners.RepoAliases{}, nil
 }
 
 // LoadRepoOwners returns the shared FakeRepoOwners instance, allocating
