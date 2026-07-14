@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -39,7 +38,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/approve/approvers"
-	"github.com/jenkins-x/lighthouse/pkg/repoowners"
+	fakeowners "github.com/jenkins-x/lighthouse/pkg/repoowners/fake"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -148,34 +147,6 @@ func newFakeSCMProviderClient(hasLabel, humanApproved, labelComments bool, files
 	return fakeClient, fc
 }
 
-type fakeRepo struct {
-	approvers, leafApprovers map[string]sets.String
-	approverOwners           map[string]string
-	minimumReviewers         map[string]int
-}
-
-func (fr fakeRepo) MinimumReviewersForFile(path string) int {
-	dir := filepath.Dir(path)
-	if dir == "." {
-		dir = ""
-	}
-	if n, ok := fr.minimumReviewers[dir]; ok {
-		return n
-	}
-	return 1
-}
-func (fr fakeRepo) Approvers(path string) sets.String {
-	return fr.approvers[path]
-}
-func (fr fakeRepo) LeafApprovers(path string) sets.String {
-	return fr.leafApprovers[path]
-}
-func (fr fakeRepo) FindApproverOwnersForFile(path string) string {
-	return fr.approverOwners[path]
-}
-func (fr fakeRepo) IsNoParentOwners(path string) bool {
-	return false
-}
 
 func TestHandle(t *testing.T) {
 	// This function does not need to test IsApproved, that is tested in approvers/approvers_test.go.
@@ -1297,28 +1268,12 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 		},
 	}
 
-	fr := fakeRepo{
-		approvers: map[string]sets.String{
-			"a":   sets.NewString("alice"),
-			"a/b": sets.NewString("alice", "bob"),
-			"c":   sets.NewString("cblecker", "cjwagner"),
-			"d":   sets.NewString("derek", "jerry"),
-		},
-		leafApprovers: map[string]sets.String{
-			"a":   sets.NewString("alice"),
-			"a/b": sets.NewString("bob"),
-			"c":   sets.NewString("cblecker", "cjwagner"),
-			"d":   sets.NewString("derek", "jerry"),
-		},
-		approverOwners: map[string]string{
-			"a/a.go":   "a",
-			"a/aa.go":  "a",
-			"a/b/b.go": "a/b",
-			"c/c.go":   "c",
-			"d/d.go":   "d",
-		},
-		minimumReviewers: map[string]int{
-			"d": 2,
+	fr := &fakeowners.FakeRepoOwners{
+		Dirs: map[string]fakeowners.DirOwners{
+			"a":   {Approvers: sets.NewString("alice")},
+			"a/b": {Approvers: sets.NewString("bob")},
+			"c":   {Approvers: sets.NewString("cblecker", "cjwagner")},
+			"d":   {Approvers: sets.NewString("derek", "jerry"), MinimumReviewers: 2},
 		},
 	}
 
@@ -1438,40 +1393,6 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 
 // TODO: cache approvers 'GetFilesApprovers' and 'GetCCs' since these are called repeatedly and are
 // expensive.
-
-type fakeOwnersClient struct{}
-
-func (foc fakeOwnersClient) LoadRepoOwners(org, repo, base string) (repoowners.RepoOwner, error) {
-	return fakeRepoOwners{}, nil
-}
-
-type fakeRepoOwners struct {
-	fakeRepo
-}
-
-func (fro fakeRepoOwners) FindLabelsForFile(path string) sets.String {
-	return sets.NewString()
-}
-
-func (fro fakeRepoOwners) FindReviewersOwnersForFile(path string) string {
-	return ""
-}
-
-func (fro fakeRepoOwners) LeafReviewers(path string) sets.String {
-	return sets.NewString()
-}
-
-func (fro fakeRepoOwners) Reviewers(path string) sets.String {
-	return sets.NewString()
-}
-
-func (fro fakeRepoOwners) RequiredReviewers(path string) sets.String {
-	return sets.NewString()
-}
-
-func (fro fakeRepoOwners) MinimumReviewersForFile(path string) int {
-	return 1
-}
 
 func TestHandleGenericComment(t *testing.T) {
 	tests := []struct {
@@ -1664,7 +1585,7 @@ func TestHandleGenericComment(t *testing.T) {
 				return handleGenericComment(
 					logrus.WithField("plugin", "approve"),
 					fakeClient,
-					fakeOwnersClient{},
+					&fakeowners.Client{},
 					&url.URL{
 						Scheme: "https",
 						Host:   "github.com",
@@ -1883,7 +1804,7 @@ func TestHandleReview(t *testing.T) {
 		err := handleReview(
 			logrus.WithField("plugin", "approve"),
 			fakeClient,
-			fakeOwnersClient{},
+			&fakeowners.Client{},
 			&url.URL{
 				Scheme: "https",
 				Host:   "github.com",
@@ -2024,7 +1945,7 @@ func TestHandlePullRequest(t *testing.T) {
 		err := handlePullRequest(
 			logrus.WithField("plugin", "approve"),
 			fakeClient,
-			fakeOwnersClient{},
+			&fakeowners.Client{},
 			&url.URL{
 				Scheme: "https",
 				Host:   "github.com",

@@ -24,6 +24,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	fakeowners "github.com/jenkins-x/lighthouse/pkg/repoowners/fake"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -31,68 +32,50 @@ const (
 	TestSeed = int64(0)
 )
 
-type FakeRepo struct {
-	approversMap      map[string]sets.String
-	leafApproversMap  map[string]sets.String
-	noParentOwnersMap map[string]bool
-	minReviewersMap   map[string]int
-}
-
-func (f FakeRepo) MinimumReviewersForFile(path string) int {
-	dir := filepath.Dir(path)
-	dir = canonicalize(dir)
-	if out, ok := f.minReviewersMap[dir]; ok {
-		return out
-	}
-	return 1
-}
-
-func (f FakeRepo) Approvers(path string) sets.String {
-	return f.approversMap[path]
-}
-
-func (f FakeRepo) LeafApprovers(path string) sets.String {
-	return f.leafApproversMap[path]
-}
-
-func (f FakeRepo) FindApproverOwnersForFile(path string) string {
-	for dir := path; dir != "."; dir = filepath.Dir(dir) {
-		if _, ok := f.leafApproversMap[dir]; ok {
-			return dir
+// createFakeRepo builds a *fakeowners.FakeRepoOwners from a map of
+// leaf approvers keyed by either an OWNERS directory (e.g. "a/b") or
+// an individual file with a YAML owners header (e.g. "b/README.md").
+// Keys with a file extension are routed to the per-file overlay; the
+// rest populate Dirs. Approver names are lowercased to match the real
+// implementation, which normalizes logins.
+func createFakeRepo(leafApproversByKey map[string]sets.String) *fakeowners.FakeRepoOwners {
+	dirs := map[string]fakeowners.DirOwners{}
+	files := map[string]fakeowners.DirOwners{}
+	for k, a := range leafApproversByKey {
+		entry := fakeowners.DirOwners{Approvers: setToLower(a)}
+		if filepath.Ext(k) != "" {
+			files[k] = entry
+		} else {
+			dirs[k] = entry
 		}
 	}
-	return ""
+	return &fakeowners.FakeRepoOwners{Dirs: dirs, Files: files}
 }
 
-func (f FakeRepo) IsNoParentOwners(path string) bool {
-	return f.noParentOwnersMap[path]
-}
-
-func canonicalize(path string) string {
-	if path == "." {
-		return ""
+// setMinReviewers folds a directory-keyed minimum-reviewers map into the
+// fake's Dirs, preserving any approvers already set at those directories.
+func setMinReviewers(f *fakeowners.FakeRepoOwners, m map[string]int) {
+	if f.Dirs == nil {
+		f.Dirs = map[string]fakeowners.DirOwners{}
 	}
-	return strings.TrimSuffix(path, "/")
+	for d, n := range m {
+		cfg := f.Dirs[d]
+		cfg.MinimumReviewers = n
+		f.Dirs[d] = cfg
+	}
 }
 
-func createFakeRepo(la map[string]sets.String) FakeRepo {
-	// github doesn't use / at the root
-	a := map[string]sets.String{}
-	for dir, approvers := range la {
-		la[dir] = setToLower(approvers)
-		a[dir] = setToLower(approvers)
-		startingPath := dir
-		for {
-			dir = canonicalize(filepath.Dir(dir))
-			if parentApprovers, ok := la[dir]; ok {
-				a[startingPath] = a[startingPath].Union(setToLower(parentApprovers))
-			}
-			if dir == "" {
-				break
-			}
-		}
+// setNoParent folds a directory-keyed NoParentOwners map into the fake's
+// Dirs, preserving any approvers already set at those directories.
+func setNoParent(f *fakeowners.FakeRepoOwners, m map[string]bool) {
+	if f.Dirs == nil {
+		f.Dirs = map[string]fakeowners.DirOwners{}
 	}
-	return FakeRepo{approversMap: a, leafApproversMap: la}
+	for d, v := range m {
+		cfg := f.Dirs[d]
+		cfg.NoParentOwners = v
+		f.Dirs[d] = cfg
+	}
 }
 
 func setToLower(s sets.String) sets.String {
@@ -101,76 +84,6 @@ func setToLower(s sets.String) sets.String {
 		lowered.Insert(strings.ToLower(elem))
 	}
 	return lowered
-}
-
-func TestCreateFakeRepo(t *testing.T) {
-	rootApprovers := sets.NewString("Alice", "Bob")
-	aApprovers := sets.NewString("Art", "Anne")
-	bApprovers := sets.NewString("Bill", "Ben", "Barbara")
-	cApprovers := sets.NewString("Chris", "Carol")
-	eApprovers := sets.NewString("Eve", "Erin")
-	edcApprovers := eApprovers.Union(cApprovers)
-	FakeRepoMap := map[string]sets.String{
-		"":        rootApprovers,
-		"a":       aApprovers,
-		"b":       bApprovers,
-		"c":       cApprovers,
-		"a/combo": edcApprovers,
-	}
-	fakeRepo := createFakeRepo(FakeRepoMap)
-
-	tests := []struct {
-		testName              string
-		ownersFile            string
-		expectedLeafApprovers sets.String
-		expectedApprovers     sets.String
-	}{
-		{
-			testName:              "Root Owners",
-			ownersFile:            "",
-			expectedApprovers:     rootApprovers,
-			expectedLeafApprovers: rootApprovers,
-		},
-		{
-			testName:              "A Owners",
-			ownersFile:            "a",
-			expectedLeafApprovers: aApprovers,
-			expectedApprovers:     aApprovers.Union(rootApprovers),
-		},
-		{
-			testName:              "B Owners",
-			ownersFile:            "b",
-			expectedLeafApprovers: bApprovers,
-			expectedApprovers:     bApprovers.Union(rootApprovers),
-		},
-		{
-			testName:              "C Owners",
-			ownersFile:            "c",
-			expectedLeafApprovers: cApprovers,
-			expectedApprovers:     cApprovers.Union(rootApprovers),
-		},
-		{
-			testName:              "Combo Owners",
-			ownersFile:            "a/combo",
-			expectedLeafApprovers: edcApprovers,
-			expectedApprovers:     edcApprovers.Union(aApprovers).Union(rootApprovers),
-		},
-	}
-
-	for _, test := range tests {
-		calculatedLeafApprovers := fakeRepo.LeafApprovers(test.ownersFile)
-		calculatedApprovers := fakeRepo.Approvers(test.ownersFile)
-
-		test.expectedLeafApprovers = setToLower(test.expectedLeafApprovers)
-		if !calculatedLeafApprovers.Equal(test.expectedLeafApprovers) {
-			t.Errorf("Failed for test %v.  Expected Leaf Approvers: %v. Actual Leaf Approvers %v", test.testName, test.expectedLeafApprovers, calculatedLeafApprovers)
-		}
-
-		test.expectedApprovers = setToLower(test.expectedApprovers)
-		if !calculatedApprovers.Equal(test.expectedApprovers) {
-			t.Errorf("Failed for test %v.  Expected Approvers: %v. Actual Approvers %v", test.testName, test.expectedApprovers, calculatedApprovers)
-		}
-	}
 }
 
 func TestGetLeafApprovers(t *testing.T) {
@@ -732,7 +645,9 @@ func TestRemoveSubdirs(t *testing.T) {
 		if test.noParentOwners == nil {
 			test.noParentOwners = map[string]bool{}
 		}
-		o := &Owners{repo: FakeRepo{noParentOwnersMap: test.noParentOwners}}
+		fakeRepo := &fakeowners.FakeRepoOwners{}
+		setNoParent(fakeRepo, test.noParentOwners)
+		o := &Owners{repo: fakeRepo}
 		o.removeSubdirs(test.directories)
 		if !reflect.DeepEqual(test.expected, test.directories) {
 			t.Errorf("Failed to remove subdirectories for test %v.  Expected files: %q. Found %q", test.testName, test.expected.List(), test.directories.List())
