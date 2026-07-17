@@ -28,6 +28,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/lighthouse/pkg/labels"
+	fakeowners "github.com/jenkins-x/lighthouse/pkg/repoowners/fake"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -42,23 +43,15 @@ func formatLabels(labels ...string) []string {
 	return r
 }
 
-type fakeOwnersClient struct {
-	labels map[string]sets.String
-}
-
-func (foc *fakeOwnersClient) FindLabelsForFile(path string) sets.String {
-	return foc.labels[path]
-}
-
 // TestHandle tests that the handle function requests reviews from the correct number of unique users.
 func TestHandle(t *testing.T) {
-	foc := &fakeOwnersClient{
-		labels: map[string]sets.String{
-			"a.go": sets.NewString(labels.LGTM, labels.Approved, "kind/docs"),
-			"b.go": sets.NewString(labels.LGTM),
-			"c.go": sets.NewString(labels.LGTM, "dnm/frozen-docs"),
-			"d.sh": sets.NewString("dnm/bash"),
-			"e.sh": sets.NewString("dnm/bash"),
+	foc := &fakeowners.FakeRepoOwners{
+		Files: map[string]fakeowners.DirOwners{
+			"a.go": {Labels: sets.NewString(labels.LGTM, labels.Approved, "kind/docs")},
+			"b.go": {Labels: sets.NewString(labels.LGTM)},
+			"c.go": {Labels: sets.NewString(labels.LGTM, "dnm/frozen-docs")},
+			"d.sh": {Labels: sets.NewString("dnm/bash")},
+			"e.sh": {Labels: sets.NewString("dnm/bash")},
 		},
 	}
 

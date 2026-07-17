@@ -648,18 +648,14 @@ func (o *RepoOwners) IsNoParentOwners(path string) bool {
 }
 
 // entriesForFile returns a set of users who are assignees to the
-// requested file. The path variable should be a full path to a filename
-// and not directory as the final directory will be discounted if enableMDYAML is true
-// leafOnly indicates whether only the OWNERS deepest in the tree (closest to the file)
-// should be returned or if all OWNERS in filepath should be returned
+// requested path. path may be a file (typical caller) or a directory
+// (e.g. the OWNERS-file location returned by FindApproverOwnersForFile).
+// The walk starts at path itself so that .md files with a YAML header
+// (keyed by their exact file path) contribute as the leaf entry, and so
+// that dir inputs return entries at that directory rather than at its
+// parent. leafOnly returns as soon as any level of the walk contributes.
 func (o *RepoOwners) entriesForFile(path string, people map[string]map[*regexp.Regexp]sets.String, leafOnly bool) sets.String {
 	d := path
-	if !o.enableMDYAML || !strings.HasSuffix(path, ".md") {
-		// if path is a directory, this will remove the leaf directory, and returns "." for topmost dir
-		d = filepath.Dir(d)
-		d = canonicalize(d)
-	}
-
 	out := sets.NewString()
 	for {
 		relative, err := filepath.Rel(d, path)
@@ -693,11 +689,6 @@ func (o *RepoOwners) entriesForFile(path string, people map[string]map[*regexp.R
 // If no minimum reviewers can be found then 1 is returned (the default behavior).
 func (o *RepoOwners) MinimumReviewersForFile(path string) int {
 	d := path
-	if !o.enableMDYAML || !strings.HasSuffix(path, ".md") {
-		d = filepath.Dir(d)
-		d = canonicalize(d)
-	}
-
 	var foundMinReviewer *int
 	for {
 		relative, err := filepath.Rel(d, path)

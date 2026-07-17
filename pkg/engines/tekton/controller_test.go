@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	lighthousev1alpha1 "github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
+	configjob "github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/stretchr/testify/assert"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -264,4 +265,49 @@ func loadObservedPipeline(dir string) (*pipelinev1.Pipeline, error) {
 		return p, err
 	}
 	return nil, nil
+}
+
+func TestReconcileEmptyStateNoPipelineRun(t *testing.T) {
+	ns := "jx"
+	jobName := "myorg-myrepo-main-abc12"
+
+	scheme := runtime.NewScheme()
+	require.NoError(t, lighthousev1alpha1.AddToScheme(scheme))
+	require.NoError(t, pipelinev1.AddToScheme(scheme))
+
+	job := &lighthousev1alpha1.LighthouseJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      jobName,
+			Namespace: ns,
+		},
+		Spec: lighthousev1alpha1.LighthouseJobSpec{
+			Type:    configjob.PresubmitJob,
+			Context: "pr-build",
+			Refs: &lighthousev1alpha1.Refs{
+				Org:  "myorg",
+				Repo: "myrepo",
+			},
+		},
+		Status: lighthousev1alpha1.LighthouseJobStatus{
+			State: "", // Explicitly empty state!
+		},
+	}
+
+	c := fake.NewClientBuilder().WithScheme(scheme).WithStatusSubresource(&lighthousev1alpha1.LighthouseJob{}).WithObjects(job).Build()
+	fake.AddIndex(c, &pipelinev1.PipelineRun{}, jobOwnerKey, tektonControllerIndexFunc)
+
+	tektonfakeClient := tektonfake.NewSimpleClientset()
+
+	reconciler := NewLighthouseJobReconciler(c, c, scheme, tektonfakeClient, dashboardBaseURL, dashboardTemplate, ns, false, 1)
+
+	_, err := reconciler.Reconcile(context.TODO(), ctrl.Request{
+		NamespacedName: types.NamespacedName{Namespace: ns, Name: jobName},
+	})
+	require.NoError(t, err)
+
+	// Verify no PipelineRun was created by the Reconciler
+	var pipelineRunList pipelinev1.PipelineRunList
+	err = c.List(context.TODO(), &pipelineRunList, client.InNamespace(ns))
+	require.NoError(t, err)
+	assert.Len(t, pipelineRunList.Items, 0, "No PipelineRun should be created when LighthouseJob state is empty")
 }
