@@ -26,6 +26,7 @@ const (
 	CpApproved      = "cherry-pick-approved"
 	CpUnapproved    = "do-not-merge/cherry-pick-not-approved"
 	GoodFirstIssue  = "good first issue"
+	HasConflicts    = "has conflicts"
 	Help            = "help wanted"
 	Hold            = "do-not-merge/hold"
 	InvalidOwners   = "do-not-merge/invalid-owners-file"
