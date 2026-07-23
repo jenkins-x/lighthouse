@@ -117,7 +117,8 @@ func configHelp(config *plugins.Configuration, enabledRepos []string) (map[strin
 		if trigger.TrustedOrg != "" {
 			org = trigger.TrustedOrg
 		}
-		configInfo[orgRepo] = fmt.Sprintf("The trusted GitHub organization for this repository is %q.", org)
+		info := fmt.Sprintf("The trusted GitHub organization for this repository is %q.", org)
+		configInfo[orgRepo] = info
 	}
 	return configInfo, nil
 }
@@ -135,6 +136,7 @@ type scmProviderClient interface {
 	CreateStatus(org, repo, ref string, s *scm.StatusInput) (*scm.Status, error)
 	GetCombinedStatus(org, repo, ref string) (*scm.CombinedStatus, error)
 	GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error)
+	CompareCommits(org, repo, baseSHA, headSHA string) ([]*scm.Change, error)
 	RemoveLabel(org, repo string, number int, label string, pr bool) error
 	DeleteStaleComments(org, repo string, number int, comments []*scm.Comment, pr bool, isStale func(*scm.Comment) bool) error
 	GetIssueLabels(org, repo string, number int, pr bool) ([]*scm.Label, error)
@@ -181,7 +183,8 @@ func handleGenericCommentEvent(_ plugins.CommandMatch, pc plugins.Agent, gc scmp
 }
 
 func handlePush(pc plugins.Agent, pe scm.PushHook) error {
-	return handlePE(getClient(pc), pe)
+	trigger := pc.PluginConfig.TriggerFor(pe.Repo.Namespace, pe.Repo.Name)
+	return handlePE(getClient(pc), pe, trigger)
 }
 
 // TrustedUser returns true if user is trusted in repo.
