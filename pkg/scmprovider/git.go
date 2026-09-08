@@ -32,3 +32,11 @@ func (c *Client) GetSingleCommit(owner, repo, SHA string) (*scm.Commit, error) {
 	commit, _, err := c.client.Git.FindCommit(ctx, fullName, SHA)
 	return commit, err
 }
+
+// CompareCommits returns the net file changes between two commits on a branch push.
+func (c *Client) CompareCommits(owner, repo, baseSHA, headSHA string) ([]*scm.Change, error) {
+	ctx := context.Background()
+	fullName := c.repositoryName(owner, repo)
+	changes, _, err := c.client.Git.CompareCommits(ctx, fullName, baseSHA, headSHA, &scm.ListOptions{})
+	return changes, err
+}
