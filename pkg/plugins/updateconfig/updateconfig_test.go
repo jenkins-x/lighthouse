@@ -614,7 +614,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": gzippedNewConfig(),
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 			},
@@ -654,7 +654,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": gzippedNewConfig(),
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 				{
@@ -703,7 +703,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": gzippedNewConfig(),
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 				{
@@ -930,7 +930,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": gzippedNewConfig(),
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 			},
@@ -961,7 +961,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": gzippedNewConfig(),
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 			},
@@ -1386,14 +1386,14 @@ func TestUpdateConfig(t *testing.T) {
 }
 
 // gzippedNewConfig compresses at runtime because gzip output differs between Go releases.
-func gzippedNewConfig() []byte {
+func gzippedNewConfig(t *testing.T) []byte {
 	buf := new(bytes.Buffer)
 	z := gzip.NewWriter(buf)
 	if _, err := z.Write([]byte("new-config")); err != nil {
-		panic(err)
+		t.Fatalf("Failed to write gzip data: %v", err)
 	}
 	if err := z.Close(); err != nil {
-		panic(err)
+		t.Fatalf("Failed to close gzip writer: %v", err)
 	}
 	return buf.Bytes()
 }
