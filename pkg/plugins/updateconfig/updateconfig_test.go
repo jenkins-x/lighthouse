@@ -17,6 +17,8 @@ limitations under the License.
 package updateconfig
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -612,7 +614,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 			},
@@ -652,7 +654,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 				{
@@ -673,7 +675,7 @@ func TestUpdateConfig(t *testing.T) {
 					},
 					"prow/plugins.yaml": {
 						Name: "plugins",
-						GZIP: boolPtr(false),
+						GZIP: new(false),
 					},
 				},
 			},
@@ -701,7 +703,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 				{
@@ -719,7 +721,7 @@ func TestUpdateConfig(t *testing.T) {
 				Maps: map[string]plugins.ConfigMapSpec{
 					"prow/config.yaml": {
 						Name: "config",
-						GZIP: boolPtr(true),
+						GZIP: new(true),
 					},
 					"prow/plugins.yaml": {
 						Name: "plugins",
@@ -928,7 +930,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 			},
@@ -959,7 +961,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(t),
 					},
 				},
 			},
@@ -1383,6 +1385,15 @@ func TestUpdateConfig(t *testing.T) {
 	}
 }
 
-func boolPtr(b bool) *bool {
-	return &b
+// gzippedNewConfig compresses at runtime because gzip output differs between Go releases.
+func gzippedNewConfig(t *testing.T) []byte {
+	buf := new(bytes.Buffer)
+	z := gzip.NewWriter(buf)
+	if _, err := z.Write([]byte("new-config")); err != nil {
+		t.Fatalf("Failed to write gzip data: %v", err)
+	}
+	if err := z.Close(); err != nil {
+		t.Fatalf("Failed to close gzip writer: %v", err)
+	}
+	return buf.Bytes()
 }
