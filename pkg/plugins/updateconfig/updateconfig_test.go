@@ -675,7 +675,7 @@ func TestUpdateConfig(t *testing.T) {
 					},
 					"prow/plugins.yaml": {
 						Name: "plugins",
-						GZIP: boolPtr(false),
+						GZIP: new(false),
 					},
 				},
 			},
@@ -721,7 +721,7 @@ func TestUpdateConfig(t *testing.T) {
 				Maps: map[string]plugins.ConfigMapSpec{
 					"prow/config.yaml": {
 						Name: "config",
-						GZIP: boolPtr(true),
+						GZIP: new(true),
 					},
 					"prow/plugins.yaml": {
 						Name: "plugins",
@@ -1383,10 +1383,6 @@ func TestUpdateConfig(t *testing.T) {
 			}
 		})
 	}
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }
 
 // gzippedNewConfig compresses at runtime because gzip output differs between Go releases.
