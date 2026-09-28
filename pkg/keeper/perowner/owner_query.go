@@ -1,4 +1,4 @@
-package githubapp
+package perowner
 
 import (
 	"strings"
@@ -13,11 +13,11 @@ type OwnerQueries struct {
 	Queries keeper.Queries
 }
 
-// SplitKeeperQueries splits the keeper queries into a sequence of owner queries
-func SplitKeeperQueries(queries keeper.Queries) map[string]keeper.Queries {
+// splitKeeperQueries splits the keeper queries into a sequence of owner queries
+func splitKeeperQueries(queries keeper.Queries) map[string]keeper.Queries {
 	answer := map[string]keeper.Queries{}
 	for _, q1 := range queries {
-		for org, repos := range SplitRepositories(q1.Repos) {
+		for org, repos := range splitRepositories(q1.Repos) {
 			q := q1
 			q.Repos = repos
 			answer[org] = append(answer[org], q)
@@ -26,8 +26,8 @@ func SplitKeeperQueries(queries keeper.Queries) map[string]keeper.Queries {
 	return answer
 }
 
-// SplitRepositories splits the list of repositories into a map indexed by owner
-func SplitRepositories(repos []string) map[string][]string {
+// splitRepositories splits the list of repositories into a map indexed by owner
+func splitRepositories(repos []string) map[string][]string {
 	answer := map[string][]string{}
 
 	for _, r := range repos {

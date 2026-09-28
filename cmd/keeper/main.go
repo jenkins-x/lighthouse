@@ -28,10 +28,10 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
-	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
+	"github.com/jenkins-x/lighthouse/pkg/keeper/perowner"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
-	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/jenkins-x/lighthouse/pkg/scmclients"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/sirupsen/logrus"
 )
@@ -110,34 +110,17 @@ func main() {
 	}
 	defer cfgMapWatcher.Stop()
 
-	botName := o.botName
-	if botName == "" {
-		botName = util.GetBotName(configAgent.Config)
-	}
-	if util.GetGitHubAppSecretDir() != "" {
-		botName, err = util.GetGitHubAppAPIUser()
-		if err != nil {
-			logrus.WithError(err).Fatal("unable to read API user for GitHub App integration")
-		}
-	}
-	if botName == "" {
-		logrus.Fatal("no $GIT_USER defined")
-	}
-	serverURL := o.gitServerURL
-	if serverURL == "" {
-		serverURL = util.GetGitServer(configAgent.Config)
-	}
-	gitKind := o.gitKind
-	if gitKind == "" {
-		gitKind = util.GitKind(configAgent.Config)
-	}
-	gitToken, err := util.GetSCMToken(gitKind)
+	scmClients, err := scmclients.New(configAgent.Config,
+		scmclients.WithServerURL(o.gitServerURL),
+		scmclients.WithGitKind(o.gitKind),
+		scmclients.WithBotName(o.botName),
+		scmclients.WithMirroredClones())
 	if err != nil {
-		logrus.WithError(err).Fatal("Error creating Keeper controller.")
+		logrus.WithError(err).Fatal("failed to resolve git credentials")
 	}
 
 	cfg := configAgent.Config
-	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)
+	c, err := perowner.NewKeeperController(scmClients, configAgent, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}

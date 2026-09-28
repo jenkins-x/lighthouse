@@ -53,7 +53,9 @@ spec:
             value: "{{ .Values.webhooks.customDeploymentTriggerCommand }}"
           - name: "GIT_SERVER"
             value: "{{ .Values.git.server }}"
-{{- if .Values.githubApp.enabled }}
+          - name: "LH_AUTH_MODE"
+            value: {{ include "lighthouse.authMode" . | quote }}
+{{- if include "lighthouse.usesCredentialsDir" . }}
           - name: "GITHUB_APP_SECRET_DIR"
             value: "/secrets/githubapp/tokens"
 {{- else }}
@@ -126,7 +128,7 @@ spec:
         resources:
 {{ toYaml .Values.webhooks.resources | indent 12 }}
         volumeMounts:
-{{- if .Values.githubApp.enabled }}
+{{- if include "lighthouse.usesCredentialsDir" . }}
           - name: githubapp-tokens
             mountPath: /secrets/githubapp/tokens
             readOnly: true
@@ -141,10 +143,10 @@ spec:
             readOnly: true
 {{- end }}
       volumes:
-{{- if .Values.githubApp.enabled }}
+{{- if include "lighthouse.usesCredentialsDir" . }}
         - name: githubapp-tokens
           secret:
-            secretName: tide-githubapp-tokens
+            secretName: {{ include "lighthouse.credentialsSecretName" . }}
 {{- else if .Values.oauthTokenVolumeMount.enabled }}
         - name: lighthouse-oauth-token
           secret:

@@ -1,69 +1,56 @@
 package util
 
 import (
-	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
-	"golang.org/x/oauth2"
-
 	"github.com/hashicorp/go-multierror"
-	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/go-scm/scm/transport"
 	"github.com/jenkins-x/lighthouse/pkg/config"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
+	"github.com/jenkins-x/lighthouse/pkg/scmauth"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// AddAuthToSCMClient configures an existing go-scm client with transport and authorization using the given token,
-// depending on whether the token is a GitHub App token
-func AddAuthToSCMClient(client *scm.Client, token string, isGitHubApp bool) {
-	if isGitHubApp {
-		defaultScmTransport(client)
-		tr := &transport.Custom{
-			Base: http.DefaultTransport,
-			Before: func(r *http.Request) {
-				r.Header.Set("Authorization", "token "+token)
-				r.Header.Set("Accept", "application/vnd.github.machine-man-preview+json")
-			},
-		}
-		client.Client.Transport = tr
-		return
-	}
-	driver := client.Driver.String()
-	if driver == "gitea" {
-		client.Client = &http.Client{
-			Transport: &transport.Authorization{
-				Scheme:      "token",
-				Credentials: token,
-			},
-		}
-	} else if driver == "gitlab" {
-		client.Client = &http.Client{
-			Transport: &transport.PrivateToken{
-				Token: token,
-			},
-		}
-	} else if driver != "bitbucket" && driver != "bitbucketcloud" {
-		ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
-		)
-		client.Client = oauth2.NewClient(context.Background(), ts)
-	}
+func credentialsDir() string {
+	return os.Getenv(credentialsDirEnvVar)
 }
 
-func defaultScmTransport(scmClient *scm.Client) {
-	if scmClient.Client == nil {
-		scmClient.Client = http.DefaultClient
+// AuthMode returns the configured credential mode, or empty when unset.
+func AuthMode() scmauth.Mode {
+	return scmauth.Mode(os.Getenv(AuthModeEnvVar))
+}
+
+// NewTokenSource resolves the credential source for the configured mode.
+func NewTokenSource(cfg config.Getter) (scmauth.TokenSource, error) {
+	mode := AuthMode()
+	if mode == "" {
+		return nil, errors.Errorf("$%s is not set; want one of %s, %s or %s",
+			AuthModeEnvVar, scmauth.ModeStaticToken, scmauth.ModeOwnerTokens, scmauth.ModeGitHubApp)
 	}
-	if scmClient.Client.Transport == nil {
-		scmClient.Client.Transport = http.DefaultTransport
+
+	opts := scmauth.Options{
+		Mode:      mode,
+		ServerURL: GetGitServer(cfg),
+		BotName:   configuredBotName(cfg),
+		SecretDir: credentialsDir(),
 	}
+
+	if mode == scmauth.ModeStaticToken {
+		token, err := GetSCMToken(GitKind(cfg))
+		if err != nil {
+			return nil, err
+		}
+		opts.StaticToken = token
+	}
+
+	src, err := scmauth.New(opts)
+	if err != nil {
+		return nil, err
+	}
+	logrus.WithField("mode", mode).Info("resolved git credential mode")
+	return src, nil
 }
 
 // GetGitServer returns the git server base URL from the environment
@@ -80,34 +67,6 @@ func GetGitServer(cfg config.Getter) string {
 	return serverURL
 }
 
-// GetSCMClient gets the Lighthouse SCM client, go-scm client, server URL, and token for the current user and server
-func GetSCMClient(owner string, cfg config.Getter) (scmprovider.SCMClient, *scm.Client, string, string, error) {
-	kind := GitKind(cfg)
-	serverURL := GetGitServer(cfg)
-	ghaSecretDir := GetGitHubAppSecretDir()
-
-	var token string
-	var err error
-	if ghaSecretDir != "" && owner != "" {
-		tokenFinder := NewOwnerTokensDir(serverURL, ghaSecretDir)
-		token, err = tokenFinder.FindToken(owner)
-		if err != nil {
-			logrus.Errorf("failed to read owner token: %s", err.Error())
-			return nil, nil, "", "", errors.Wrapf(err, "failed to read owner token for owner %s", owner)
-		}
-	} else {
-		token, err = GetSCMToken(kind)
-		if err != nil {
-			return nil, nil, serverURL, token, err
-		}
-	}
-
-	botName := GetBotName(cfg)
-	client, err := factory.NewClient(kind, serverURL, token, factory.SetUsername(botName))
-	scmClient := scmprovider.ToClient(client, botName)
-	return scmClient, client, serverURL, token, err
-}
-
 // GitKind gets the git kind from the environment
 func GitKind(cfg config.Getter) string {
 	kind := os.Getenv("GIT_KIND")
@@ -121,21 +80,13 @@ func GitKind(cfg config.Getter) string {
 	return kind
 }
 
-// GetBotName returns the bot name from the environment
-func GetBotName(cfg config.Getter) string {
-	if GetGitHubAppSecretDir() != "" {
-		ghaBotName, err := GetGitHubAppAPIUser()
-		// TODO: Probably should handle error cases here better, but for now, just fall through.
-		if err == nil && ghaBotName != "" {
-			return ghaBotName
-		}
-	}
+func configuredBotName(cfg config.Getter) string {
 	botName := os.Getenv("GIT_USER")
 	actualConfig := cfg()
 	if botName == "" && actualConfig != nil && actualConfig.ProviderConfig != nil {
 		botName = actualConfig.ProviderConfig.BotUser
 	}
-	if botName == "" {
+	if botName == "" && AuthMode() != scmauth.ModeGitHubApp {
 		botName = "jenkins-x-bot"
 	}
 	return botName

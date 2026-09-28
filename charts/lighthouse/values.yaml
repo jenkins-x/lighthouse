@@ -9,12 +9,32 @@ git:
 # @default -- Deployment namespace
 lighthouseJobNamespace: ""
 
-githubApp:
-  # githubApp.enabled -- Enables GitHub app authentication
-  enabled: false
+# auth -- How Lighthouse authenticates to the git provider
+# @default -- see the keys below
+auth:
+  # auth.mode -- Credential source: `staticToken`, `ownerTokens` or `githubApp`
+  mode: "staticToken"
 
-  # githubApp.username -- GitHub app user name
-  username:  "jenkins-x[bot]"
+  ownerTokens:
+    # auth.ownerTokens.secretName -- Secret holding one `<gitServer>/<owner>=<token>` entry per owner
+    secretName: "tide-githubapp-tokens"
+
+    # auth.ownerTokens.username -- Login to act as
+    # @default -- `jenkins-x[bot]`
+    username: ""
+
+  githubApp:
+    # auth.githubApp.appId -- GitHub App ID from the app's settings page
+    appId: ""
+
+    # auth.githubApp.privateKey -- PEM-encoded RSA private key issued for the app
+    privateKey: ""
+
+    # auth.githubApp.existingSecretName -- Existing secret holding `appId` and `privateKey`
+    existingSecretName: ""
+
+    # auth.githubApp.username -- Login to act as; must match `<slug>[bot]` when set
+    username: ""
 
 # user -- Git user name (used when GitHub app authentication is not enabled)
 user: ""

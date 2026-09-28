@@ -6,17 +6,16 @@ import (
 	"flag"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
-	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/poller"
+	"github.com/jenkins-x/lighthouse/pkg/scmclients"
 	"github.com/pkg/errors"
 
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -36,7 +35,6 @@ type options struct {
 	botName                string
 	gitServerURL           string
 	gitKind                string
-	gitToken               string
 	hmacToken              string
 	namespace              string
 	repoNames              string
@@ -128,48 +126,40 @@ func main() {
 	}
 	defer cfgMapWatcher.Stop()
 
-	botName := o.botName
-	if botName == "" {
-		botName = util.GetBotName(configAgent.Config)
+	scmClients, err := scmclients.New(configAgent.Config,
+		scmclients.WithServerURL(o.gitServerURL),
+		scmclients.WithGitKind(o.gitKind),
+		scmclients.WithBotName(pollerBotName(o.botName)),
+		scmclients.WithUserInURL())
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to resolve git credentials")
 	}
-	if util.GetGitHubAppSecretDir() != "" {
-		botName, err = util.GetGitHubAppAPIUser()
-		if err != nil {
-			logrus.WithError(err).Fatal("unable to read API user for GitHub App integration")
-		}
-	}
-	if botName == "" {
-		logrus.Fatal("no $GIT_USER defined")
-	}
+
 	if o.hookEndpoint == "" {
 		logrus.Fatal("no hook endpoint defined")
 	}
-	serverURL := o.gitServerURL
-	if serverURL == "" {
-		serverURL = util.GetGitServer(configAgent.Config)
+	serverURL := scmClients.ServerURL()
+	var repoNames []string
+	if o.repoNames != "" {
+		repoNames = strings.Split(o.repoNames, ",")
 	}
-	gitKind := o.gitKind
-	if gitKind == "" {
-		gitKind = util.GitKind(configAgent.Config)
+	if len(repoNames) == 0 {
+		repoNames = findAllRepoNames(configAgent.Config())
 	}
-	o.gitToken, err = util.GetSCMToken(gitKind)
-	if err != nil {
-		logrus.WithError(err).Fatal("Error creating Poller controller.")
-	}
-	if o.gitToken == "" {
-		logrus.WithError(err).Fatal("no git token.")
+	if len(repoNames) == 0 {
+		logrus.Fatal("no repositories found")
 	}
 
-	gitCloneUser := os.Getenv("GIT_USER")
-	if gitCloneUser == "" {
-		gitCloneUser = os.Getenv("GIT_USERNAME")
-	}
-	if gitCloneUser == "" {
-		gitCloneUser = o.botName
-	}
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		logrus.WithError(err).Fatalf("failed to parse git server %s", serverURL)
+	// The git client factory's token callback has no repository context, so per-owner
+	// credentials limit the poller to one owner.
+	owners := distinctOwners(repoNames)
+	pollOwner := ""
+	if len(owners) == 1 {
+		pollOwner = owners[0]
+	} else if scmClients.RequiresOwner() {
+		logrus.WithField("owners", owners).Fatal(
+			"the configured credentials are per-owner, so the poller must be configured " +
+				"with repositories from a single owner; use --repo-names or run one poller per owner")
 	}
 
 	var contextMatchPatternCompiled *regexp.Regexp
@@ -180,47 +170,16 @@ func main() {
 		}
 	}
 
-	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
-		opts.Token = func() []byte {
-			return []byte(o.gitToken)
-		}
-		opts.GitUser = func() (name, email string, err error) {
-			name = gitCloneUser
-			return
-		}
-		opts.Username = func() (login string, err error) {
-			login = gitCloneUser
-			return
-		}
-		opts.Host = u.Host
-		opts.Scheme = u.Scheme
-		opts.UseUserInURL = true
-	}
-	gitFactory, err := gitv2.NewNoMirrorClientFactory(configureOpts)
-	if err != nil {
-		logrus.WithError(err).Fatalf("failed to create git client factory for server %s", o.gitServerURL)
-	}
-	fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
-
-	var repoNames []string
-	if o.repoNames != "" {
-		repoNames = strings.Split(o.repoNames, ",")
-	}
-	if len(repoNames) == 0 {
-		cfg := configAgent.Config
-		repoNames = findAllRepoNames(cfg())
-	}
-	if len(repoNames) == 0 {
-		logrus.Fatal("no repositories found")
-	}
-
-	gitHubAppOwner := ""
-	_, scmClient, _, _, err := util.GetSCMClient(gitHubAppOwner, configAgent.Config)
+	ownerClients, err := scmClients.ForOwner(pollOwner)
 	if err != nil {
 		logrus.WithError(err).Fatal("failed to create scm client")
 	}
+	fb, err := ownerClients.Browser()
+	if err != nil {
+		logrus.WithError(err).Fatal("failed to create file browser")
+	}
 
-	c, err := poller.NewPollingController(repoNames, serverURL, scmClient, contextMatchPatternCompiled, o.requireReleaseSuccess, fb, o.notifier)
+	c, err := poller.NewPollingController(repoNames, serverURL, ownerClients.SCM, contextMatchPatternCompiled, o.requireReleaseSuccess, fb, o.notifier)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Poller controller.")
 	}
@@ -262,6 +221,22 @@ func main() {
 	interrupts.ListenAndServe(server, 10*time.Second)
 
 	interrupts.WaitForGracefulShutdown()
+}
+
+func distinctOwners(repoNames []string) []string {
+	seen := map[string]bool{}
+	for _, fullName := range repoNames {
+		owner, _, found := strings.Cut(strings.TrimSpace(fullName), "/")
+		if found && owner != "" {
+			seen[owner] = true
+		}
+	}
+	owners := make([]string, 0, len(seen))
+	for owner := range seen {
+		owners = append(owners, owner)
+	}
+	sort.Strings(owners)
+	return owners
 }
 
 func findAllRepoNames(c *config.Config) []string {
@@ -328,4 +303,13 @@ func (o *options) notifier(hook *scm.WebhookWrapper) error {
 	}
 	l.Infof("notified")
 	return nil
+}
+
+func pollerBotName(flagValue string) string {
+	for _, name := range []string{flagValue, os.Getenv("GIT_USER"), os.Getenv("GIT_USERNAME")} {
+		if name != "" {
+			return name
+		}
+	}
+	return ""
 }

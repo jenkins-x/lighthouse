@@ -13,6 +13,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmclients"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider/reporter"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
@@ -46,6 +47,7 @@ type LighthouseJobReconciler struct {
 
 	jobConfig    *config.Agent
 	pluginConfig *plugins.ConfigAgent
+	scmClients   *scmclients.Clients
 
 	wg *sync.WaitGroup
 	ns string
@@ -75,6 +77,11 @@ func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.
 		}
 	}
 
+	scmClients, err := scmclients.New(jobConfig.Config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to resolve git credentials")
+	}
+
 	return &LighthouseJobReconciler{
 		client:                   client,
 		scheme:                   scheme,
@@ -84,6 +91,7 @@ func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.
 		ns:                       ns,
 		jobConfig:                jobConfig,
 		pluginConfig:             pluginConfig,
+		scmClients:               scmClients,
 		ConfigMapWatcher:         configMapWatcher,
 		wg:                       &sync.WaitGroup{},
 	}, nil
@@ -273,11 +281,12 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 		Desc:   statusInfo.description,
 		Target: j.Status.ReportURL,
 	}
-	scmClient, _, _, _, err := util.GetSCMClient(owner, r.jobConfig.Config)
+	ownerClients, err := r.scmClients.ForOwner(owner)
 	if err != nil {
 		r.logger.WithFields(fields).WithError(err).Warnf("failed to create SCM client")
 		return
 	}
+	scmClient := ownerClients.Provider
 
 	_, err = scmClient.CreateStatus(owner, repo, sha, gitRepoStatus)
 	if err != nil {

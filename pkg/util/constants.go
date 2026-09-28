@@ -11,13 +11,11 @@ const (
 	// see https://developer.github.com/apps/building-github-apps/authenticating-with-github-apps/#http-based-git-access-by-an-installation
 	GitHubAppGitRemoteUsername = "x-access-token"
 
-	// GitHubAppSecretDirEnvVar is the name of the environment variable which would contain secrets when this is configured
-	// with the GitHub App.
-	GitHubAppSecretDirEnvVar = "GITHUB_APP_SECRET_DIR" // #nosec
+	// credentialsDirEnvVar holds per-owner token files or GitHub App credentials, depending on the auth mode.
+	credentialsDirEnvVar = "GITHUB_APP_SECRET_DIR" // #nosec
 
-	// GitHubAppAPIUserFilename is the filename inside the GitHub App secrets dir which will contain the user we will
-	// use for GitHub API calls when present.
-	GitHubAppAPIUserFilename = "username"
+	// AuthModeEnvVar selects how git credentials are obtained.
+	AuthModeEnvVar = "LH_AUTH_MODE"
 
 	// LighthouseLabelPrefix is the prefix used for all Lighthouse labels and annotations.
 	LighthouseLabelPrefix = "lighthouse.jenkins-x.io/"

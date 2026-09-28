@@ -13,6 +13,8 @@ import (
 	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmauth"
+	"github.com/jenkins-x/lighthouse/pkg/scmclients"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/sirupsen/logrus"
@@ -29,6 +31,7 @@ func TestCreateAgentIntegration(t *testing.T) {
 		t.Skipf("skipping integration test as missing $GIT_OWNER/$GIT_REPO/$GIT_REF/$GIT_USERNAME/$GIT_TOKEN")
 		return
 	}
+	t.Setenv(util.AuthModeEnvVar, string(scmauth.ModeStaticToken))
 
 	s := Server{}
 	s.ConfigAgent = &config.Agent{}
@@ -39,8 +42,11 @@ func TestCreateAgentIntegration(t *testing.T) {
 	_, err := watcher.SetupConfigMapWatchers("jx", s.ConfigAgent, s.Plugins)
 	assert.NoError(t, err)
 
-	_, scmClient, serverURL, _, err := util.GetSCMClient("", cfg)
+	scmClients, err := scmclients.New(cfg)
 	assert.NoError(t, err)
+	ownerClients, err := scmClients.ForOwner("")
+	assert.NoError(t, err)
+	serverURL := scmClients.ServerURL()
 
 	_, kubeClient, lhClient, _, err := clients.GetAPIClients()
 	assert.NoError(t, err)
@@ -77,7 +83,7 @@ func TestCreateAgentIntegration(t *testing.T) {
 
 	s.ClientAgent = &plugins.ClientAgent{
 		BotName:           "test-bot",
-		SCMProviderClient: scmClient,
+		SCMProviderClient: ownerClients.SCM,
 		KubernetesClient:  kubeClient,
 		GitClient:         gitClient,
 		LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs("jx"),
