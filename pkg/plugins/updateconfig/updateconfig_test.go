@@ -17,6 +17,8 @@ limitations under the License.
 package updateconfig
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -612,7 +614,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(),
 					},
 				},
 			},
@@ -652,7 +654,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(),
 					},
 				},
 				{
@@ -701,7 +703,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(),
 					},
 				},
 				{
@@ -928,7 +930,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(),
 					},
 				},
 			},
@@ -959,7 +961,7 @@ func TestUpdateConfig(t *testing.T) {
 						Namespace: defaultNamespace,
 					},
 					BinaryData: map[string][]byte{
-						"config.yaml": {31, 139, 8, 0, 0, 0, 0, 0, 0, 255, 202, 75, 45, 215, 77, 206, 207, 75, 203, 76, 7, 4, 0, 0, 255, 255, 84, 214, 231, 87, 10, 0, 0, 0},
+						"config.yaml": gzippedNewConfig(),
 					},
 				},
 			},
@@ -1385,4 +1387,17 @@ func TestUpdateConfig(t *testing.T) {
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+// gzippedNewConfig compresses at runtime because gzip output differs between Go releases.
+func gzippedNewConfig() []byte {
+	buf := new(bytes.Buffer)
+	z := gzip.NewWriter(buf)
+	if _, err := z.Write([]byte("new-config")); err != nil {
+		panic(err)
+	}
+	if err := z.Close(); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
