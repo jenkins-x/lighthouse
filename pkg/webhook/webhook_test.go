@@ -11,6 +11,8 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmauth"
+	"github.com/jenkins-x/lighthouse/pkg/scmclients"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -94,12 +96,6 @@ func (suite *WebhookTestSuite) TestProcessWebhookUnknownRepo() {
 
 	l := logrus.WithField("test", t.Name())
 
-	// First, try not in GitHub App mode and expect normal processing.
-	origEnvVar := os.Getenv(util.GitHubAppSecretDirEnvVar)
-	defer os.Setenv(util.GitHubAppSecretDirEnvVar, origEnvVar)
-
-	os.Unsetenv(util.GitHubAppSecretDirEnvVar)
-
 	webhook := &scm.PullRequestHook{
 		Action: scm.ActionCreate,
 		Repo:   unknownRepo,
@@ -111,8 +107,12 @@ func (suite *WebhookTestSuite) TestProcessWebhookUnknownRepo() {
 	assert.Equal(t, "processed PR hook", message)
 	assert.NotNil(t, logrusEntry)
 
-	// Now try again in GitHub App mode and expect an error.
-	os.Setenv(util.GitHubAppSecretDirEnvVar, "/some/dir")
+	shared := suite.WebhookOptions.scmClients
+	defer func() { suite.WebhookOptions.scmClients = shared }()
+	suite.WebhookOptions.scmClients = scmclients.NewWithSource(
+		scmauth.NewOwnerTokensSource("https://github.com", "/some/dir", "bot"),
+		suite.WebhookOptions.server.ConfigAgent.Config)
+
 	_, _, err = suite.WebhookOptions.ProcessWebHook(l, webhook)
 
 	assert.EqualError(t, err, fmt.Sprintf("repository not configured: %s", unknownRepo.Link))
@@ -140,23 +140,20 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	var objs []runtime.Object
 	kubeClient := kubefake.NewSimpleClientset(objs...)
 	lhClient := fake.NewSimpleClientset()
-	_, scmClient, serverURL, _, err := util.GetSCMClient("", configAgent.Config)
+	scmClients, err := scmclients.New(configAgent.Config)
 	assert.NoError(t, err)
-	gitClient, err := git.NewClient(serverURL, util.GitKind(configAgent.Config))
+	ownerClients, err := scmClients.ForOwner("")
 	assert.NoError(t, err)
-	user := util.GetBotName(configAgent.Config)
-	token, _ := util.GetSCMToken(util.GitKind(configAgent.Config))
-	gitClient.SetCredentials(user, func() []byte {
-		return []byte(token)
-	})
-	util.AddAuthToSCMClient(scmClient, token, false)
+	gitClient, err := ownerClients.Git()
+	assert.NoError(t, err)
 	suite.WebhookOptions = &WebhooksController{
+		scmClients: scmClients,
 		server: &Server{
 			ConfigAgent: configAgent,
 			Plugins:     pluginAgent,
 			ClientAgent: &plugins.ClientAgent{
-				BotName:           user,
-				SCMProviderClient: scmClient,
+				BotName:           ownerClients.BotName,
+				SCMProviderClient: ownerClients.SCM,
 				KubernetesClient:  kubeClient,
 				GitClient:         gitClient,
 				LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(""),
@@ -278,5 +275,6 @@ func TestNeedDemux(t *testing.T) {
 
 func TestWebhookTestSuite(t *testing.T) {
 	os.Setenv("GIT_TOKEN", "abc123")
+	t.Setenv(util.AuthModeEnvVar, string(scmauth.ModeStaticToken))
 	suite.Run(t, new(WebhookTestSuite))
 }

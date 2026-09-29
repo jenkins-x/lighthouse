@@ -16,6 +16,7 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
 	"github.com/jenkins-x/lighthouse/pkg/config/lighthouse"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmauth"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
 	"github.com/stretchr/testify/assert"
@@ -34,6 +35,7 @@ func TestReconcile(t *testing.T) {
 		"no-status-change",
 	}
 
+	t.Setenv(util.AuthModeEnvVar, string(scmauth.ModeStaticToken))
 	oldToken := os.Getenv("GIT_TOKEN")
 	err := os.Setenv("GIT_TOKEN", "abcd")
 	assert.NoError(t, err)

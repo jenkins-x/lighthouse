@@ -29,12 +29,10 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
-	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/plugins/trigger"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -432,36 +430,4 @@ func actionRelatesToPullRequestComment(action scm.Action, l *logrus.Entry) bool 
 		l.Errorf(failedCommentCoerceFmt, "pull_request", action.String())
 		return false
 	}
-}
-
-func (s *Server) initializeFileBrowser(token string, gitCloneUser, gitServerURL string) error {
-	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
-		opts.Token = func() []byte {
-			return []byte(token)
-		}
-		opts.GitUser = func() (name, email string, err error) {
-			name = gitCloneUser
-			return
-		}
-		opts.Username = func() (login string, err error) {
-			login = gitCloneUser
-			return
-		}
-		if s.ServerURL.Host != "" {
-			opts.Host = s.ServerURL.Host
-		}
-		if s.ServerURL.Scheme != "" {
-			opts.Scheme = s.ServerURL.Scheme
-		}
-	}
-	gitFactory, err := gitv2.NewNoMirrorClientFactory(configureOpts)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create git client factory for server %s", gitServerURL)
-	}
-	fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
-	s.FileBrowsers, err = filebrowser.NewFileBrowsers(gitServerURL, fb)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create git filebrowser %s", gitServerURL)
-	}
-	return nil
 }

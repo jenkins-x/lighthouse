@@ -1,4 +1,4 @@
-package githubapp_test
+package perowner
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/config/keeper"
-	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +18,7 @@ func TestSplitKeeperQueries(t *testing.T) {
 	cfg, err := config.Load(prowConfig, "")
 	require.NoError(t, err, "could not load file %s", prowConfig)
 
-	results := githubapp.SplitKeeperQueries(cfg.Keeper.Queries)
+	results := splitKeeperQueries(cfg.Keeper.Queries)
 	require.Equal(t, 2, len(results), "wrong number of OwnerQueries for file %s", prowConfig)
 	assertOwnerQueries(t, results["jstrachan"], "jstrachan", 2, 3, "for file %s", prowConfig)
 	assertOwnerQueries(t, results["rawlingsj"], "rawlingj", 2, 1, " for file %s", prowConfig)
@@ -41,7 +40,7 @@ func assertOwnerQueries(t *testing.T, ownerQueries keeper.Queries, owner string,
 func TestSplitRepositories(t *testing.T) {
 	repos := []string{"jstrachan/a", "rawlingsj/a", "jstrachan/b", "jstrachan/c"}
 
-	m := githubapp.SplitRepositories(repos)
+	m := splitRepositories(repos)
 	require.Equal(t, len(m), 2, "should have 2 organisations")
 
 	assert.Equal(t, m["jstrachan"], []string{"jstrachan/a", "jstrachan/b", "jstrachan/c"}, "invalid repos for jstrachan")
