@@ -1431,3 +1431,22 @@ Approvers can cancel approval by writing ` + "`/approve cancel`" + ` in a commen
 		t.Errorf("GetMessage() = %+v, want = %+v", *got, want)
 	}
 }
+
+func TestNoChangedFilesRequiresRootApproval(t *testing.T) {
+	repo := createFakeRepo(map[string]sets.String{
+		"":  sets.NewString("Alice"),
+		"a": sets.NewString("Anne"),
+	})
+	log := logrus.WithField("plugin", "some_plugin")
+
+	ap := NewApprovers(NewOwners(log, nil, repo, TestSeed))
+	assert.False(t, ap.IsApproved())
+	assert.Equal(t, sets.NewString(""), ap.UnapprovedFiles())
+	assert.Equal(t, []string{"alice"}, ap.GetCCs())
+
+	ap.AddApprover("Anne", "REFERENCE", false)
+	assert.False(t, ap.IsApproved())
+
+	ap.AddApprover("Alice", "REFERENCE", false)
+	assert.True(t, ap.IsApproved())
+}
