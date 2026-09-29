@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/jenkins-x/lighthouse/pkg/util"
+	"github.com/sirupsen/logrus"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/config"
@@ -335,7 +336,10 @@ func getPipelineFromURL(path string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get URL %s", path)
 	}
-	req.Header.Add("Authorization", "Basic "+basicAuthGit())
+	gitToken := basicAuthGit(req.URL.Hostname())
+	if gitToken != "" {
+		req.Header.Add("Authorization", "Basic "+gitToken)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -361,17 +365,25 @@ func IsScmNotFound(err error) bool {
 	return false
 }
 
-func basicAuthGit() string {
-	user := os.Getenv("GIT_USER")
-	token := os.Getenv("GIT_TOKEN")
-	if user != "" && token != "" {
-		auth := user + ":" + token
-		return base64.StdEncoding.EncodeToString([]byte(auth))
+func basicAuthGit(host string) string {
+	if host == os.Getenv("GIT_SERVER") {
+		user := os.Getenv("GIT_USER")
+		token := os.Getenv("GIT_TOKEN")
+		if user != "" && token != "" {
+			auth := user + ":" + token
+			return base64.StdEncoding.EncodeToString([]byte(auth))
+		}
+	} else {
+		logrus.Infof("for security reasons not sending git token to '%s'"+
+			" since it does not match the configured GIT_SERVER", host)
 	}
 	return ""
 }
 
 func redirectPolicyFunc(req *http.Request, via []*http.Request) error {
-	req.Header.Add("Authorization", "Basic "+basicAuthGit())
+	gitToken := basicAuthGit(req.URL.Hostname())
+	if gitToken != "" {
+		req.Header.Add("Authorization", "Basic "+gitToken)
+	}
 	return nil
 }
