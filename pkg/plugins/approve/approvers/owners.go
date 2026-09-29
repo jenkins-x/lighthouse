@@ -35,6 +35,8 @@ import (
 
 const (
 	ownersFileName = "OWNERS"
+	// repoRoot is how OWNERS lookups represent the repository's top-level directory.
+	repoRoot = ""
 	// ApprovalNotificationName defines the name used in the title for the approval notifications.
 	ApprovalNotificationName = "ApprovalNotifier"
 )
@@ -58,7 +60,11 @@ type Owners struct {
 }
 
 // NewOwners consturcts a new Owners instance. filenames is the slice of files changed.
+// A PR with no changed files requires approval from the root OWNERS file.
 func NewOwners(log *logrus.Entry, filenames []string, r Repo, s int64) Owners {
+	if len(filenames) == 0 {
+		filenames = []string{repoRoot}
+	}
 	log.Debugf("OWNERS FILENAMES : %s", filenames)
 	return Owners{filenames: filenames, repo: r, seed: s, log: log}
 }
