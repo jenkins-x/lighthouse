@@ -273,7 +273,7 @@ func (r *LighthouseJobReconciler) reportStatus(activity *lighthousev1alpha1.Acti
 		Desc:   statusInfo.description,
 		Target: j.Status.ReportURL,
 	}
-	scmClient, _, _, _, err := util.GetSCMClient(owner, r.jobConfig.Config)
+	scmClient, _, _, _, err := util.GetSCMClient(r.jobConfig.Config)
 	if err != nil {
 		r.logger.WithFields(fields).WithError(err).Warnf("failed to create SCM client")
 		return

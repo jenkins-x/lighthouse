@@ -105,7 +105,7 @@ func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (
 	botName := GetBotName()
 	client, err := factory.NewClient(kind, serverURL, token, factory.SetUsername(botName))
 
-	util.AddAuthToSCMClient(client, token, false)
+	util.AddAuthToSCMClient(client, token)
 
 	spc := scmprovider.ToClient(client, userFunc())
 	return client, spc, serverURL, err

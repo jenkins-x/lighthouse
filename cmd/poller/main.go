@@ -132,12 +132,6 @@ func main() {
 	if botName == "" {
 		botName = util.GetBotName(configAgent.Config)
 	}
-	if util.GetGitHubAppSecretDir() != "" {
-		botName, err = util.GetGitHubAppAPIUser()
-		if err != nil {
-			logrus.WithError(err).Fatal("unable to read API user for GitHub App integration")
-		}
-	}
 	if botName == "" {
 		logrus.Fatal("no $GIT_USER defined")
 	}
@@ -214,8 +208,7 @@ func main() {
 		logrus.Fatal("no repositories found")
 	}
 
-	gitHubAppOwner := ""
-	_, scmClient, _, _, err := util.GetSCMClient(gitHubAppOwner, configAgent.Config)
+	_, scmClient, _, _, err := util.GetSCMClient(configAgent.Config)
 	if err != nil {
 		logrus.WithError(err).Fatal("failed to create scm client")
 	}

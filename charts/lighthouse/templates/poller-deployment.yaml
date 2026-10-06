@@ -69,10 +69,6 @@ spec:
           value: "{{ .Values.git.kind }}"
         - name: "GIT_SERVER"
           value: "{{ .Values.git.server }}"
-{{- if .Values.githubApp.enabled }}
-        - name: "GITHUB_APP_SECRET_DIR"
-          value: "/secrets/githubapp/tokens"
-{{- else }}
         - name: "GIT_USER"
           value: {{ .Values.user }}
 {{- if .Values.oauthTokenVolumeMount.enabled }}
@@ -84,7 +80,6 @@ spec:
             secretKeyRef:
               name: {{ .Values.oauthSecretName | default "lighthouse-oauth-token" }}
               key: oauth
-{{- end }}
 {{- end }}
 {{- if .Values.hmacTokenEnabled }}
 {{- if .Values.hmacTokenVolumeMount.enabled }}
@@ -123,11 +118,7 @@ spec:
         resources:
 {{ toYaml .Values.poller.resources | indent 10 }}
         volumeMounts:
-{{- if .Values.githubApp.enabled }}
-        - name: githubapp-tokens
-          mountPath: /secrets/githubapp/tokens
-          readOnly: true
-{{- else if .Values.oauthTokenVolumeMount.enabled }}
+{{- if .Values.oauthTokenVolumeMount.enabled }}
         - name: lighthouse-oauth-token
           mountPath: /secrets/lighthouse-oauth-token
           readOnly: true
@@ -138,11 +129,7 @@ spec:
           readOnly: true
 {{- end }}
       volumes:
-{{- if .Values.githubApp.enabled }}
-      - name: githubapp-tokens
-        secret:
-          secretName: tide-githubapp-tokens
-{{- else if .Values.oauthTokenVolumeMount.enabled }}
+{{- if .Values.oauthTokenVolumeMount.enabled }}
       - name: lighthouse-oauth-token
         secret:
           secretName: lighthouse-oauth-token
