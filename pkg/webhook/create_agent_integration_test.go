@@ -39,7 +39,7 @@ func TestCreateAgentIntegration(t *testing.T) {
 	_, err := watcher.SetupConfigMapWatchers("jx", s.ConfigAgent, s.Plugins)
 	assert.NoError(t, err)
 
-	_, scmClient, serverURL, _, err := util.GetSCMClient("", cfg)
+	_, scmClient, serverURL, _, err := util.GetSCMClient(cfg)
 	assert.NoError(t, err)
 
 	_, kubeClient, lhClient, _, err := clients.GetAPIClients()

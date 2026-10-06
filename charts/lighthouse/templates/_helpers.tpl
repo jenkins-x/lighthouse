@@ -45,3 +45,12 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- $name := default "jenkins-controller" .Values.jenkinscontroller.nameOverride -}}
 {{- printf "%s-%s" .Chart.Name $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/*
+Fail on the removed githubApp values rather than silently falling back to a static token.
+*/}}
+{{- define "lighthouse.checkRemovedValues" -}}
+{{- if (.Values.githubApp).enabled -}}
+{{- fail "githubApp.enabled has been removed; configure a token with oauthToken or oauthSecretName" -}}
+{{- end -}}
+{{- end -}}

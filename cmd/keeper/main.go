@@ -19,20 +19,29 @@ package main
 import (
 	"flag"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/factory"
+	"github.com/jenkins-x/lighthouse/pkg/clients"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	configutil "github.com/jenkins-x/lighthouse/pkg/config/util"
+	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
+	"github.com/jenkins-x/lighthouse/pkg/git"
+	gitv2 "github.com/jenkins-x/lighthouse/pkg/git/v2"
 	"github.com/jenkins-x/lighthouse/pkg/interrupts"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
 	"github.com/jenkins-x/lighthouse/pkg/keeper"
-	"github.com/jenkins-x/lighthouse/pkg/keeper/githubapp"
+	"github.com/jenkins-x/lighthouse/pkg/launcher"
 	"github.com/jenkins-x/lighthouse/pkg/logrusutil"
 	"github.com/jenkins-x/lighthouse/pkg/metrics"
+	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/jenkins-x/lighthouse/pkg/watcher"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -114,12 +123,6 @@ func main() {
 	if botName == "" {
 		botName = util.GetBotName(configAgent.Config)
 	}
-	if util.GetGitHubAppSecretDir() != "" {
-		botName, err = util.GetGitHubAppAPIUser()
-		if err != nil {
-			logrus.WithError(err).Fatal("unable to read API user for GitHub App integration")
-		}
-	}
 	if botName == "" {
 		logrus.Fatal("no $GIT_USER defined")
 	}
@@ -137,7 +140,7 @@ func main() {
 	}
 
 	cfg := configAgent.Config
-	c, err := githubapp.NewKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)
+	c, err := newKeeperController(configAgent, botName, gitKind, gitToken, serverURL, o.maxRecordsPerPool, o.historyURI, o.statusURI, o.namespace)
 	if err != nil {
 		logrus.WithError(err).Fatal("Error creating Keeper controller.")
 	}
@@ -174,4 +177,71 @@ func sync(c keeper.Controller) {
 	if err := c.Sync(); err != nil {
 		logrus.WithError(err).Error("Error syncing.")
 	}
+}
+
+func newKeeperController(configAgent *config.Agent, botName string, gitKind string, gitToken string, serverURL string, maxRecordsPerPool int, historyURI string, statusURI string, ns string) (keeper.Controller, error) {
+	var scmClient *scm.Client
+	var err error
+	if gitKind == "gitea" || gitKind == "bitbucketcloud" {
+		// gitea returns 403 if the gitToken isn't passed here
+		scmClient, err = factory.NewClient(gitKind, serverURL, gitToken, factory.SetUsername(botName))
+	} else {
+		scmClient, err = factory.NewClient(gitKind, serverURL, "", factory.SetUsername(botName))
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot create SCM client")
+	}
+	util.AddAuthToSCMClient(scmClient, gitToken)
+	gitproviderClient := scmprovider.ToClient(scmClient, botName)
+	gitClient, err := git.NewClient(serverURL, gitKind)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating git client")
+	}
+	gitClient.SetCredentials(botName, func() []byte {
+		return []byte(gitToken)
+	})
+
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse %s", serverURL)
+	}
+
+	gitCloneUser := botName
+
+	configureOpts := func(opts *gitv2.ClientFactoryOpts) {
+		opts.Token = func() []byte {
+			return []byte(gitToken)
+		}
+		opts.GitUser = func() (name, email string, err error) {
+			name = gitCloneUser
+			return
+		}
+		opts.Username = func() (login string, err error) {
+			login = gitCloneUser
+			return
+		}
+		if u.Host != "" {
+			opts.Host = u.Host
+		}
+		if u.Scheme != "" {
+			opts.Scheme = u.Scheme
+		}
+	}
+	gitFactory, err := gitv2.NewClientFactory(configureOpts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create git client factory for server %s", serverURL)
+	}
+	fb := filebrowser.NewFileBrowserFromGitClient(gitFactory)
+	fileBrowsers, err := filebrowser.NewFileBrowsers(serverURL, fb)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create git file browser")
+	}
+
+	tektonClient, _, lhClient, _, err := clients.GetAPIClients()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating kubernetes resource clients.")
+	}
+	launcherClient := launcher.NewLauncher(lhClient, ns)
+	c, err := keeper.NewController(gitproviderClient, gitproviderClient, fileBrowsers, launcherClient, tektonClient, lhClient, ns, configAgent.Config, gitClient, maxRecordsPerPool, historyURI, statusURI, nil)
+	return c, err
 }

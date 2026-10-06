@@ -79,45 +79,6 @@ func (suite *WebhookTestSuite) TestProcessWebhookPRReview() {
 	assert.NotNil(t, logrusEntry)
 }
 
-func (suite *WebhookTestSuite) TestProcessWebhookUnknownRepo() {
-	t := suite.T()
-
-	unknownRepo := scm.Repository{
-		ID:        "1",
-		Namespace: "default",
-		Name:      "test-repo",
-		FullName:  "test-org/unknown-repo",
-		Branch:    "master",
-		Link:      "https://github.com/test-org/unknown-repo.git",
-		Private:   false,
-	}
-
-	l := logrus.WithField("test", t.Name())
-
-	// First, try not in GitHub App mode and expect normal processing.
-	origEnvVar := os.Getenv(util.GitHubAppSecretDirEnvVar)
-	defer os.Setenv(util.GitHubAppSecretDirEnvVar, origEnvVar)
-
-	os.Unsetenv(util.GitHubAppSecretDirEnvVar)
-
-	webhook := &scm.PullRequestHook{
-		Action: scm.ActionCreate,
-		Repo:   unknownRepo,
-	}
-
-	logrusEntry, message, err := suite.WebhookOptions.ProcessWebHook(l, webhook)
-
-	assert.NoError(t, err)
-	assert.Equal(t, "processed PR hook", message)
-	assert.NotNil(t, logrusEntry)
-
-	// Now try again in GitHub App mode and expect an error.
-	os.Setenv(util.GitHubAppSecretDirEnvVar, "/some/dir")
-	_, _, err = suite.WebhookOptions.ProcessWebHook(l, webhook)
-
-	assert.EqualError(t, err, fmt.Sprintf("repository not configured: %s", unknownRepo.Link))
-}
-
 func (suite *WebhookTestSuite) SetupSuite() {
 	t := suite.T()
 	configAgent := &config.Agent{}
@@ -140,7 +101,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	var objs []runtime.Object
 	kubeClient := kubefake.NewSimpleClientset(objs...)
 	lhClient := fake.NewSimpleClientset()
-	_, scmClient, serverURL, _, err := util.GetSCMClient("", configAgent.Config)
+	_, scmClient, serverURL, _, err := util.GetSCMClient(configAgent.Config)
 	assert.NoError(t, err)
 	gitClient, err := git.NewClient(serverURL, util.GitKind(configAgent.Config))
 	assert.NoError(t, err)
@@ -149,7 +110,7 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	gitClient.SetCredentials(user, func() []byte {
 		return []byte(token)
 	})
-	util.AddAuthToSCMClient(scmClient, token, false)
+	util.AddAuthToSCMClient(scmClient, token)
 	suite.WebhookOptions = &WebhooksController{
 		server: &Server{
 			ConfigAgent: configAgent,

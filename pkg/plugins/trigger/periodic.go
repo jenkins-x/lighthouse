@@ -156,7 +156,7 @@ func (pa *PeriodicAgent) PeriodicsInitialized(namespace string, kc kubeclient.In
 
 func (pa *PeriodicAgent) InitializePeriodics(kc kubeclient.Interface, configAgent *config.Agent, fileBrowsers *filebrowser.FileBrowsers) {
 	if pa.SCMClient == nil {
-		_, scmClient, _, _, err := util.GetSCMClient("", configAgent.Config)
+		_, scmClient, _, _, err := util.GetSCMClient(configAgent.Config)
 		if err != nil {
 			logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 			return

@@ -7,7 +7,6 @@ import (
 )
 
 // Controller the interface for all keeper controllers
-// whether regular or the GitHub App flavour which has to handle tokens differently
 type Controller interface {
 	Sync() error
 	Shutdown()

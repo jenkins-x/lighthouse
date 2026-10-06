@@ -9,23 +9,16 @@ git:
 # @default -- Deployment namespace
 lighthouseJobNamespace: ""
 
-githubApp:
-  # githubApp.enabled -- Enables GitHub app authentication
-  enabled: false
-
-  # githubApp.username -- GitHub app user name
-  username:  "jenkins-x[bot]"
-
-# user -- Git user name (used when GitHub app authentication is not enabled)
+# user -- Git user name
 user: ""
 
-# oauthToken -- Git token (used when GitHub app authentication is not enabled)
+# oauthToken -- Git token
 oauthToken: ""
 
 # oauthSecretName -- Existing Git token secret
 oauthSecretName: ""
 
-# oauthTokenVolumeMount -- Mount Git token as a volume instead of using an environment variable Secret reference (used when GitHub app authentication is not enabled)
+# oauthTokenVolumeMount -- Mount Git token as a volume instead of using an environment variable Secret reference
 oauthTokenVolumeMount:
   enabled: false
 

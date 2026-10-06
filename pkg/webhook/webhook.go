@@ -195,7 +195,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 	}
 
 	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	_, scmClient, serverURL, _, err := util.GetSCMClient("", cfg)
+	_, scmClient, _, _, err := util.GetSCMClient(cfg)
 	if err != nil {
 		logrus.Errorf("failed to create SCM scmClient: %s", err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: Failed to parse webhook: %s", err.Error()))
@@ -216,9 +216,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 		return
 	}
 
-	ghaSecretDir := util.GetGitHubAppSecretDir()
-
-	gitCloneUser, token, err := getCredentials(ghaSecretDir, serverURL, webhook.Repository().Namespace, cfg)
+	gitCloneUser, token, err := getCredentials(cfg)
 	if err != nil {
 		logrus.Error(err.Error())
 		responseHTTPError(w, http.StatusInternalServerError, fmt.Sprintf("500 Internal Server Error: %s", err.Error()))
@@ -233,7 +231,7 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 	o.gitClient.SetCredentials(gitCloneUser, func() []byte {
 		return []byte(token)
 	})
-	util.AddAuthToSCMClient(scmClient, token, ghaSecretDir != "")
+	util.AddAuthToSCMClient(scmClient, token)
 
 	o.server.ClientAgent = &plugins.ClientAgent{
 		BotName:           util.GetBotName(cfg),
@@ -276,20 +274,11 @@ func (o *WebhooksController) handleWebhookOrPollRequest(w http.ResponseWriter, r
 	}
 }
 
-func getCredentials(ghaSecretDir string, serverURL string, owner string, cfg func() *config.Config) (gitCloneUser string, token string, err error) {
-	if ghaSecretDir != "" {
-		gitCloneUser = util.GitHubAppGitRemoteUsername
-		tokenFinder := util.NewOwnerTokensDir(serverURL, ghaSecretDir)
-		token, err = tokenFinder.FindToken(owner)
-		if err != nil {
-			err = errors.Wrap(err, "failed to read owner token")
-		}
-	} else {
-		gitCloneUser = util.GetBotName(cfg)
-		token, err = util.GetSCMToken(util.GitKind(cfg))
-		if err != nil {
-			err = errors.Wrap(err, "no scm token specified")
-		}
+func getCredentials(cfg func() *config.Config) (gitCloneUser string, token string, err error) {
+	gitCloneUser = util.GetBotName(cfg)
+	token, err = util.GetSCMToken(util.GitKind(cfg))
+	if err != nil {
+		err = errors.Wrap(err, "no scm token specified")
 	}
 	return
 }
@@ -324,17 +313,6 @@ func (o *WebhooksController) ProcessWebHook(l *logrus.Entry, webhook scm.Webhook
 	if ok {
 		l.Info("received ping")
 		return l, fmt.Sprintf("pong from lighthouse %s", version.Version), nil
-	}
-	// If we are in GitHub App mode and have a populated config, check if the repository for this webhook is one we actually
-	// know about and error out if not.
-	if util.GetGitHubAppSecretDir() != "" && o.server.ConfigAgent != nil {
-		cfg := o.server.ConfigAgent.Config()
-		if cfg != nil {
-			if len(cfg.GetPostsubmits(repository)) == 0 && len(cfg.GetPresubmits(repository)) == 0 {
-				l.Infof("webhook from unconfigured repository %s, returning error", repository.Link)
-				return l, "", fmt.Errorf("repository not configured: %s", repository.Link)
-			}
-		}
 	}
 	pushHook, ok := webhook.(*scm.PushHook)
 	if ok {
@@ -524,9 +502,7 @@ func (o *WebhooksController) createHookServer(kc kubeclient.Interface) (*Server,
 	initializePeriodics, _ := strconv.ParseBool(os.Getenv("INITIALIZE_PERIODICS"))
 	if initializePeriodics && !server.PeriodicAgent.PeriodicsInitialized(o.namespace, kc) {
 		if server.FileBrowsers == nil {
-			ghaSecretDir := util.GetGitHubAppSecretDir()
-
-			gitCloneUser, token, err := getCredentials(ghaSecretDir, o.gitServerURL, "", configAgent.Config)
+			gitCloneUser, token, err := getCredentials(configAgent.Config)
 			if err != nil {
 				logrus.Error(err.Error())
 			} else {
