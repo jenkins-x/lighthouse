@@ -47,7 +47,7 @@ type Options struct {
 
 	// NoMirror makes the file browsers clone directly rather than through a local mirror.
 	NoMirror bool
-	// UseUserInURL puts the clone user and token in remote URLs rather than supplying them through git's askpass.
+	// UseUserInURL sets the v2 factory option of the same name
 	UseUserInURL bool
 }
 
