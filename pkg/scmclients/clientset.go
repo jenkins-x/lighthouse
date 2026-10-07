@@ -24,7 +24,7 @@ type Provider interface {
 	ForOwner(owner string) (*ClientSet, error)
 }
 
-// ClientSet holds every client for one git server identity. Build it once per process and share it: each client
+// ClientSet holds every client for one git server identity. Build it once per process and share it. Each client
 // resolves its token from the Credentials on use, so nothing needs rebuilding when a token changes.
 type ClientSet struct {
 	GitKind   string
@@ -38,14 +38,12 @@ type ClientSet struct {
 	FileBrowsers      *filebrowser.FileBrowsers
 }
 
-// Options override how a ClientSet is built. Empty fields fall back to the environment and then the Lighthouse config.
+// Options override how a ClientSet is built.
 type Options struct {
+	// GitKind, ServerURL and BotName override the environment and Lighthouse config, typically from CLI flags. Empty means no override.
 	GitKind   string
 	ServerURL string
 	BotName   string
-
-	// Credentials defaults to CredentialsFromEnv.
-	Credentials Credentials
 
 	// NoMirror makes the file browsers clone directly rather than through a local mirror.
 	NoMirror bool
@@ -58,13 +56,9 @@ func New(cfg config.Getter, o Options) (*ClientSet, error) {
 	kind := cmp.Or(o.GitKind, util.GitKind(cfg))
 	server := cmp.Or(o.ServerURL, util.GetGitServer(cfg))
 
-	creds := o.Credentials
-	if creds == nil {
-		var err error
-		creds, err = CredentialsFromEnv(cmp.Or(o.BotName, util.GetBotName(cfg)))
-		if err != nil {
-			return nil, err
-		}
+	creds, err := credentialsFromEnv(cmp.Or(o.BotName, util.GetBotName(cfg)))
+	if err != nil {
+		return nil, err
 	}
 
 	u, err := url.Parse(server)

@@ -19,15 +19,15 @@ type Credentials interface {
 	CloneUser() string
 }
 
-// NewTokenCredentials returns Credentials for a token that never changes, such as a personal access token.
-func NewTokenCredentials(botName, token string) Credentials {
+// newTokenCredentials returns Credentials for a token that never changes, such as a personal access token.
+func newTokenCredentials(botName, token string) Credentials {
 	return &tokenCredentials{botName: botName, token: token}
 }
 
-// CredentialsFromEnv reads the token from $GIT_TOKEN, falling back to the file named by $GIT_TOKEN_PATH.
-func CredentialsFromEnv(botName string) (Credentials, error) {
+// credentialsFromEnv reads the token from $GIT_TOKEN, falling back to the file named by $GIT_TOKEN_PATH.
+func credentialsFromEnv(botName string) (Credentials, error) {
 	if token := os.Getenv("GIT_TOKEN"); token != "" {
-		return NewTokenCredentials(botName, token), nil
+		return newTokenCredentials(botName, token), nil
 	}
 	path := os.Getenv("GIT_TOKEN_PATH")
 	if path == "" {

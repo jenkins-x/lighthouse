@@ -1,11 +1,10 @@
-package scmclients_test
+package scmclients
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/jenkins-x/lighthouse/pkg/scmclients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,7 +46,7 @@ func TestCredentialsFromEnv(t *testing.T) {
 			t.Setenv("GIT_TOKEN", tc.token)
 			t.Setenv("GIT_TOKEN_PATH", tc.tokenPath)
 
-			creds, err := scmclients.CredentialsFromEnv("my-bot")
+			creds, err := credentialsFromEnv("my-bot")
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -69,7 +68,7 @@ func TestCredentialsFromEnvPicksUpRotatedToken(t *testing.T) {
 	t.Setenv("GIT_TOKEN", "")
 	t.Setenv("GIT_TOKEN_PATH", tokenFile)
 
-	creds, err := scmclients.CredentialsFromEnv("my-bot")
+	creds, err := credentialsFromEnv("my-bot")
 	require.NoError(t, err)
 
 	require.NoError(t, os.WriteFile(tokenFile, []byte("second"), 0o600))

@@ -17,14 +17,18 @@ import (
 func configGetter(kind, server, botUser string) config.Getter {
 	cfg := &config.Config{}
 	cfg.ProviderConfig = &lighthouse.ProviderConfig{Kind: kind, Server: server, BotUser: botUser}
-	return func() *config.Config { return cfg }
+	return func() *config.Config {
+		return cfg
+	}
 }
 
 func newClientSet(t *testing.T, cfg config.Getter, o scmclients.Options) *scmclients.ClientSet {
 	t.Helper()
 	cs, err := scmclients.New(cfg, o)
 	require.NoError(t, err)
-	t.Cleanup(func() { assert.NoError(t, cs.Clean()) })
+	t.Cleanup(func() {
+		assert.NoError(t, cs.Clean())
+	})
 	return cs
 }
 
@@ -51,13 +55,12 @@ func TestNewOptionsOverrideConfig(t *testing.T) {
 	t.Setenv("GIT_KIND", "")
 	t.Setenv("GIT_SERVER", "")
 	t.Setenv("GIT_USER", "")
-	t.Setenv("GIT_TOKEN", "")
-	t.Setenv("GIT_TOKEN_PATH", "")
+	t.Setenv("GIT_TOKEN", "abc")
 
 	cs := newClientSet(t, configGetter("github", "https://github.com", "config-bot"), scmclients.Options{
-		GitKind:     "fake",
-		ServerURL:   "https://other.example.com",
-		Credentials: scmclients.NewTokenCredentials("option-bot", "abc"),
+		GitKind:   "fake",
+		ServerURL: "https://other.example.com",
+		BotName:   "option-bot",
 	})
 
 	assert.Equal(t, "fake", cs.GitKind)
@@ -74,9 +77,9 @@ func TestNewFailsWithoutToken(t *testing.T) {
 }
 
 func TestForOwnerReturnsSameClientSet(t *testing.T) {
-	cs := newClientSet(t, configGetter("fake", "https://git.example.com", "bot"), scmclients.Options{
-		Credentials: scmclients.NewTokenCredentials("bot", "abc"),
-	})
+	t.Setenv("GIT_TOKEN", "abc")
+
+	cs := newClientSet(t, configGetter("fake", "https://git.example.com", "bot"), scmclients.Options{})
 
 	for _, owner := range []string{"org-a", "org-b", ""} {
 		got, err := cs.ForOwner(owner)
