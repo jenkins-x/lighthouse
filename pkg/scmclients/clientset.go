@@ -31,9 +31,9 @@ type ClientSet struct {
 	ServerURL *url.URL
 	BotName   string
 
-	SCMClient         *scm.Client
+	SCMClient         *scm.Client // TODO: remove. Use SCMProviderClient, or ToScmClient() where the raw client is needed.
 	SCMProviderClient *scmprovider.Client
-	GitClient         git.Client
+	GitClient         git.Client // TODO: remove. pkg/git is superseded by pkg/git/v2, use GitFactory.
 	GitFactory        gitv2.ClientFactory
 	FileBrowsers      *filebrowser.FileBrowsers
 }

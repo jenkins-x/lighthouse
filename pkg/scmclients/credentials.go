@@ -49,8 +49,13 @@ func (c *tokenCredentials) Token(context.Context) (*scm.Token, error) {
 	return &scm.Token{Token: c.token}, nil
 }
 
-func (c *tokenCredentials) BotName() string   { return c.botName }
-func (c *tokenCredentials) CloneUser() string { return c.botName }
+func (c *tokenCredentials) BotName() string {
+	return c.botName
+}
+
+func (c *tokenCredentials) CloneUser() string {
+	return c.botName
+}
 
 // fileCredentials re-reads the token on every call so a rotated secret is picked up without a restart.
 type fileCredentials struct {
@@ -74,5 +79,10 @@ func (c *fileCredentials) read() (string, error) {
 	return strings.TrimSpace(string(b)), nil
 }
 
-func (c *fileCredentials) BotName() string   { return c.botName }
-func (c *fileCredentials) CloneUser() string { return c.botName }
+func (c *fileCredentials) BotName() string {
+	return c.botName
+}
+
+func (c *fileCredentials) CloneUser() string {
+	return c.botName
+}
