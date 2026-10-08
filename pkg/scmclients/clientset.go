@@ -43,6 +43,9 @@ type Options struct {
 	ServerURL string
 	BotName   string
 
+	// APIOnly builds only the API clients; GitClient, GitFactory and FileBrowsers are left nil.
+	APIOnly bool
+
 	// NoMirror makes the file browsers clone directly rather than through a local mirror.
 	NoMirror bool
 	// UseUserInURL sets the v2 factory option of the same name
@@ -67,6 +70,16 @@ func New(cfg config.Getter, o Options) (*ClientSet, error) {
 	scmClient, err := factory.NewClientWithTokenSource(kind, server, creds, factory.SetUsername(creds.BotName()))
 	if err != nil {
 		return nil, fmt.Errorf("creating %s client for %s: %w", kind, server, err)
+	}
+
+	cs := &ClientSet{
+		GitKind:           kind,
+		ServerURL:         u,
+		BotName:           creds.BotName(),
+		SCMProviderClient: scmprovider.ToClient(scmClient, creds.BotName()),
+	}
+	if o.APIOnly {
+		return cs, nil
 	}
 
 	token := gitToken(creds)
@@ -107,15 +120,10 @@ func New(cfg config.Getter, o Options) (*ClientSet, error) {
 		return nil, errors.Join(fmt.Errorf("creating file browsers for %s: %w", server, err), gitClient.Clean(), gitFactory.Clean())
 	}
 
-	return &ClientSet{
-		GitKind:           kind,
-		ServerURL:         u,
-		BotName:           creds.BotName(),
-		SCMProviderClient: scmprovider.ToClient(scmClient, creds.BotName()),
-		GitClient:         gitClient,
-		GitFactory:        gitFactory,
-		FileBrowsers:      fileBrowsers,
-	}, nil
+	cs.GitClient = gitClient
+	cs.GitFactory = gitFactory
+	cs.FileBrowsers = fileBrowsers
+	return cs, nil
 }
 
 // ForOwner returns c for every owner, as a single identity serves them all.
