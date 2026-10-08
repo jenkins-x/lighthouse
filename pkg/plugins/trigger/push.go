@@ -21,30 +21,9 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/apis/lighthouse/v1alpha1"
 	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/jobutil"
+	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 )
-
-func listPushEventChanges(pe scm.PushHook) job.ChangedFilesProvider {
-	return func() ([]string, error) {
-		changed := make(map[string]bool)
-		for _, commit := range pe.Commits {
-			for _, added := range commit.Added {
-				changed[added] = true
-			}
-			for _, removed := range commit.Removed {
-				changed[removed] = true
-			}
-			for _, modified := range commit.Modified {
-				changed[modified] = true
-			}
-		}
-		var changedFiles []string
-		for file := range changed {
-			changedFiles = append(changedFiles, file)
-		}
-		return changedFiles, nil
-	}
-}
 
 func createRefs(pe *scm.PushHook) v1alpha1.Refs {
 	branch := scmprovider.PushHookBranch(pe)
@@ -58,14 +37,25 @@ func createRefs(pe *scm.PushHook) v1alpha1.Refs {
 	}
 }
 
-func handlePE(c Client, pe scm.PushHook) error {
+func handlePE(c Client, pe scm.PushHook, trigger *plugins.Trigger) error {
 	if pe.Deleted {
 		// we should not trigger jobs for a branch deletion
 		return nil
 	}
+	mode, err := trigger.ResolvedPushChangedFiles()
+	if err != nil {
+		return err
+	}
+	warn := func(format string, args ...interface{}) {
+		c.Logger.Warnf(format, args...)
+	}
+	changes, err := job.NewPushChangedFilesProvider(mode, c.SCMProviderClient, pe, warn)
+	if err != nil {
+		return err
+	}
 	for _, j := range c.Config.GetPostsubmits(pe.Repo) {
 		branch := scmprovider.PushHookBranch(&pe)
-		if shouldRun, err := j.ShouldRun(branch, listPushEventChanges(pe)); err != nil {
+		if shouldRun, err := j.ShouldRun(branch, changes); err != nil {
 			return err
 		} else if !shouldRun {
 			continue
