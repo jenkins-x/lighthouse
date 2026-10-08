@@ -77,7 +77,7 @@ func NewLighthouseJobReconcilerWithConfig(client client.Client, scheme *runtime.
 		}
 	}
 
-	scmClients, err := scmclients.New(jobConfig.Config, scmclients.Options{})
+	scmClients, err := scmclients.New(jobConfig.Config, scmclients.Options{APIOnly: true})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create git clients")
 	}

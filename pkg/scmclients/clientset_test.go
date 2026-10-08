@@ -76,6 +76,17 @@ func TestNewFailsWithoutToken(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestNewAPIOnlySkipsGitClients(t *testing.T) {
+	t.Setenv("GIT_TOKEN", "abc")
+
+	cs := newClientSet(t, configGetter("fake", "https://git.example.com", "bot"), scmclients.Options{APIOnly: true})
+
+	assert.NotNil(t, cs.SCMProviderClient)
+	assert.Nil(t, cs.GitClient)
+	assert.Nil(t, cs.GitFactory)
+	assert.Nil(t, cs.FileBrowsers)
+}
+
 func TestForOwnerReturnsSameClientSet(t *testing.T) {
 	t.Setenv("GIT_TOKEN", "abc")
 
