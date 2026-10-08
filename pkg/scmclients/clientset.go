@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/factory"
 	"github.com/jenkins-x/lighthouse/pkg/config"
 	"github.com/jenkins-x/lighthouse/pkg/filebrowser"
@@ -31,7 +30,6 @@ type ClientSet struct {
 	ServerURL *url.URL
 	BotName   string
 
-	SCMClient         *scm.Client // TODO: remove. Use SCMProviderClient, or ToScmClient() where the raw client is needed.
 	SCMProviderClient *scmprovider.Client
 	GitClient         git.Client // TODO: remove. pkg/git is superseded by pkg/git/v2, use GitFactory.
 	GitFactory        gitv2.ClientFactory
@@ -113,7 +111,6 @@ func New(cfg config.Getter, o Options) (*ClientSet, error) {
 		GitKind:           kind,
 		ServerURL:         u,
 		BotName:           creds.BotName(),
-		SCMClient:         scmClient,
 		SCMProviderClient: scmprovider.ToClient(scmClient, creds.BotName()),
 		GitClient:         gitClient,
 		GitFactory:        gitFactory,

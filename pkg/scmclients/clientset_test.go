@@ -104,10 +104,10 @@ func TestSCMClientResolvesTokenPerRequest(t *testing.T) {
 
 	cs := newClientSet(t, configGetter("github", server.URL, "bot"), scmclients.Options{})
 
-	_, _, err := cs.SCMClient.Users.Find(t.Context())
+	_, _, err := cs.SCMProviderClient.ToScmClient().Users.Find(t.Context())
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(tokenFile, []byte("second"), 0o600))
-	_, _, err = cs.SCMClient.Users.Find(t.Context())
+	_, _, err = cs.SCMProviderClient.ToScmClient().Users.Find(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, []string{"Bearer first", "Bearer second"}, gotAuth)
