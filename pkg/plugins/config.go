@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 	"github.com/jenkins-x/lighthouse/pkg/labels"
 	"github.com/sirupsen/logrus"
 
@@ -289,6 +290,12 @@ type Trigger struct {
 	ElideSkippedContexts bool `json:"elide_skipped_contexts,omitempty"`
 	// SkipDraftPR when enabled, skips triggering pipelines for draft PRs, unless /ok-to-test is added.
 	SkipDraftPR bool `json:"skip_draft_pr,omitempty"`
+	// PushChangedFiles selects how postsubmit change matching resolves changed files on push events.
+	// This applies to run_if_changed and ignore_changes on postsubmits.
+	// all_commits (default): union every commit file list from the push webhook.
+	// compare: net diff between push before/after SHAs via the SCM compare API.
+	// Not all SCM drivers support compare; compare falls back to all_commits with a warning.
+	PushChangedFiles string `json:"push_changed_files,omitempty"`
 	// SkipReportComment when enabled, skips report comments in the SCM provider based on the state of
 	// the LighthouseJobs.
 	SkipReportComment bool `json:"skip_report_comment,omitempty"`
@@ -298,6 +305,14 @@ type Trigger struct {
 	// ShowReportCompletionDuration when enabled, show completion duration in report status in the SCM provider
 	// based on StartTime and CompletionTime of the PipelineActivity.
 	ShowReportCompletionDuration bool `json:"show_report_completion_duration,omitempty"`
+}
+
+// ResolvedPushChangedFiles returns the effective push changed-files mode for postsubmit change matching.
+func (t *Trigger) ResolvedPushChangedFiles() (job.PushChangedFilesMode, error) {
+	if t == nil {
+		return job.PushChangedFilesAllCommits, nil
+	}
+	return job.ParsePushChangedFilesMode(t.PushChangedFiles)
 }
 
 // Milestone contains the configuration options for the milestone and

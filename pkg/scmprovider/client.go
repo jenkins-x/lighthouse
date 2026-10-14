@@ -35,6 +35,7 @@ type SCMClient interface {
 	GetRef(string, string, string) (string, error)
 	DeleteRef(string, string, string) error
 	GetSingleCommit(string, string, string) (*scm.Commit, error)
+	CompareCommits(string, string, string, string) ([]*scm.Change, error)
 
 	// Functions implemented in issues.go
 	Query(context.Context, interface{}, map[string]interface{}) error
