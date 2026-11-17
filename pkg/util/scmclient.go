@@ -1,47 +1,14 @@
 package util
 
 import (
-	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"strings"
 
-	"golang.org/x/oauth2"
-
-	"github.com/hashicorp/go-multierror"
-	"github.com/jenkins-x/go-scm/scm"
-	"github.com/jenkins-x/go-scm/scm/factory"
-	"github.com/jenkins-x/go-scm/scm/transport"
 	"github.com/jenkins-x/lighthouse/pkg/config"
-	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
 	"github.com/sirupsen/logrus"
 )
-
-// AddAuthToSCMClient configures an existing go-scm client with transport and authorization using the given token
-func AddAuthToSCMClient(client *scm.Client, token string) {
-	driver := client.Driver.String()
-	if driver == "gitea" {
-		client.Client = &http.Client{
-			Transport: &transport.Authorization{
-				Scheme:      "token",
-				Credentials: token,
-			},
-		}
-	} else if driver == "gitlab" {
-		client.Client = &http.Client{
-			Transport: &transport.PrivateToken{
-				Token: token,
-			},
-		}
-	} else if driver != "bitbucket" && driver != "bitbucketcloud" {
-		ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
-		)
-		client.Client = oauth2.NewClient(context.Background(), ts)
-	}
-}
 
 // GetGitServer returns the git server base URL from the environment
 func GetGitServer(cfg config.Getter) string {
@@ -55,22 +22,6 @@ func GetGitServer(cfg config.Getter) string {
 		serverURL = "https://github.com"
 	}
 	return serverURL
-}
-
-// GetSCMClient gets the Lighthouse SCM client, go-scm client, server URL, and token for the current user and server
-func GetSCMClient(cfg config.Getter) (scmprovider.SCMClient, *scm.Client, string, string, error) {
-	kind := GitKind(cfg)
-	serverURL := GetGitServer(cfg)
-
-	token, err := GetSCMToken(kind)
-	if err != nil {
-		return nil, nil, serverURL, token, err
-	}
-
-	botName := GetBotName(cfg)
-	client, err := factory.NewClient(kind, serverURL, token, factory.SetUsername(botName))
-	scmClient := scmprovider.ToClient(client, botName)
-	return scmClient, client, serverURL, token, err
 }
 
 // GitKind gets the git kind from the environment
@@ -97,44 +48,6 @@ func GetBotName(cfg config.Getter) string {
 		botName = "jenkins-x-bot"
 	}
 	return botName
-}
-
-// GetSCMToken gets the SCM secret from the environment
-func GetSCMToken(gitKind string) (string, error) {
-	envName := "GIT_TOKEN"
-	value := os.Getenv(envName)
-	var err error
-	if value == "" {
-		err = fmt.Errorf("no token available for git kind %s at environment variable $%s", gitKind, envName)
-	}
-	// If we could not retrieve the Git token from the environment then attempt
-	// to read it from the filesystem
-	if err != nil {
-		value, pathErr := getSCMTokenFromPath(gitKind)
-		if pathErr == nil {
-			return value, nil
-		}
-		// Construct multi error to avoid hiding issues
-		multiErr := multierror.Error{
-			Errors: []error{err, pathErr},
-		}
-		err = multiErr.ErrorOrNil()
-	}
-	return value, err
-}
-
-// getSCMTokenFromPath retrieves the SCM secret from the filesystem
-func getSCMTokenFromPath(gitKind string) (string, error) {
-	envName := "GIT_TOKEN_PATH"
-	value := os.Getenv(envName)
-	if value == "" {
-		return value, fmt.Errorf("no token path available for git kind %s at environment variable $%s", gitKind, envName)
-	}
-	b, err := os.ReadFile(value)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
 }
 
 // HMACToken gets the HMAC token from the environment or filesystem

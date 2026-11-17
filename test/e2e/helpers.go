@@ -25,7 +25,6 @@ import (
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
 	"github.com/jenkins-x/lighthouse/pkg/repoowners"
 	"github.com/jenkins-x/lighthouse/pkg/scmprovider"
-	"github.com/jenkins-x/lighthouse/pkg/util"
 	util2 "github.com/jenkins-x/lighthouse/test/e2e/util"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pkg/errors"
@@ -104,9 +103,6 @@ func CreateSCMClient(userFunc func() string, tokenFunc func() (string, error)) (
 
 	botName := GetBotName()
 	client, err := factory.NewClient(kind, serverURL, token, factory.SetUsername(botName))
-
-	util.AddAuthToSCMClient(client, token)
-
 	spc := scmprovider.ToClient(client, userFunc())
 	return client, spc, serverURL, err
 }
