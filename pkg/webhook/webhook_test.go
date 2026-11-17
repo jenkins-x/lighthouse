@@ -9,8 +9,8 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/lighthouse/pkg/client/clientset/versioned/fake"
 	"github.com/jenkins-x/lighthouse/pkg/config"
-	"github.com/jenkins-x/lighthouse/pkg/git"
 	"github.com/jenkins-x/lighthouse/pkg/plugins"
+	"github.com/jenkins-x/lighthouse/pkg/scmclients"
 	"github.com/jenkins-x/lighthouse/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,6 @@ type WebhookTestSuite struct {
 	suite.Suite
 	KubeClient     kubernetes.Interface
 	SCMCLient      scm.Client
-	GitClient      git.Client
 	WebhookOptions *WebhooksController
 	TestRepo       scm.Repository
 }
@@ -101,25 +100,18 @@ func (suite *WebhookTestSuite) SetupSuite() {
 	var objs []runtime.Object
 	kubeClient := kubefake.NewSimpleClientset(objs...)
 	lhClient := fake.NewSimpleClientset()
-	_, scmClient, serverURL, _, err := util.GetSCMClient(configAgent.Config)
+	scmClients, err := scmclients.New(configAgent.Config, scmclients.Options{NoMirror: true})
 	assert.NoError(t, err)
-	gitClient, err := git.NewClient(serverURL, util.GitKind(configAgent.Config))
-	assert.NoError(t, err)
-	user := util.GetBotName(configAgent.Config)
-	token, _ := util.GetSCMToken(util.GitKind(configAgent.Config))
-	gitClient.SetCredentials(user, func() []byte {
-		return []byte(token)
-	})
-	util.AddAuthToSCMClient(scmClient, token)
 	suite.WebhookOptions = &WebhooksController{
+		scmClients: scmClients,
 		server: &Server{
 			ConfigAgent: configAgent,
 			Plugins:     pluginAgent,
 			ClientAgent: &plugins.ClientAgent{
-				BotName:           user,
-				SCMProviderClient: scmClient,
+				BotName:           scmClients.BotName,
+				SCMProviderClient: scmClients.SCMProviderClient.ToScmClient(),
 				KubernetesClient:  kubeClient,
-				GitClient:         gitClient,
+				GitClient:         scmClients.GitClient,
 				LighthouseClient:  lhClient.LighthouseV1alpha1().LighthouseJobs(""),
 			},
 		},
@@ -133,6 +125,10 @@ func (suite *WebhookTestSuite) SetupSuite() {
 		Branch:    "master",
 		Private:   false,
 	}
+}
+
+func (suite *WebhookTestSuite) TearDownSuite() {
+	suite.WebhookOptions.CleanupGitClientDir()
 }
 
 func TestNeedDemux(t *testing.T) {
@@ -238,6 +234,6 @@ func TestNeedDemux(t *testing.T) {
 }
 
 func TestWebhookTestSuite(t *testing.T) {
-	os.Setenv("GIT_TOKEN", "abc123")
+	t.Setenv("GIT_TOKEN", "abc123")
 	suite.Run(t, new(WebhookTestSuite))
 }
