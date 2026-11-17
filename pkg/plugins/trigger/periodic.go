@@ -44,7 +44,7 @@ const initStartedField = "periodicsInitializationStarted"
 func (pa *PeriodicAgent) UpdatePeriodics(kc kubeclient.Interface, agent plugins.Agent, pe *scm.PushHook) {
 	repo := pe.Repository()
 	l := logrus.WithField(scmprovider.RepoLogField, repo.Name).WithField(scmprovider.OrgLogField, repo.Namespace)
-	if !hasChanges(pe, agent) {
+	if !hasChanges(pa, pe, agent) {
 		return
 	}
 	cmInterface := kc.CoreV1().ConfigMaps(pa.Namespace)
@@ -100,8 +100,25 @@ func (pa *PeriodicAgent) UpdatePeriodics(kc kubeclient.Interface, agent plugins.
 }
 
 // hasChanges return true if any triggers.yaml or file pointed to by SourcePath has changed
-func hasChanges(pe *scm.PushHook, agent plugins.Agent) bool {
-	changedFiles, err := listPushEventChanges(*pe)()
+func hasChanges(pa *PeriodicAgent, pe *scm.PushHook, agent plugins.Agent) bool {
+	repo := pe.Repository()
+	mode := job.PushChangedFilesAllCommits
+	if agent.PluginConfig != nil {
+		resolved, err := agent.PluginConfig.TriggerFor(repo.Namespace, repo.Name).ResolvedPushChangedFiles()
+		if err != nil {
+			return false
+		}
+		mode = resolved
+	}
+	var compareClient *scmprovider.Client
+	if mode == job.PushChangedFilesCompare && pa.SCMClient != nil {
+		compareClient = scmprovider.ToClient(pa.SCMClient, "")
+	}
+	changedFilesProvider, err := job.NewPushChangedFilesProvider(mode, compareClient, *pe, nil)
+	if err != nil {
+		return false
+	}
+	changedFiles, err := changedFilesProvider()
 	if err != nil {
 		return false
 	}

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/jenkins-x/lighthouse/pkg/config/job"
 )
 
 func TestValidateExternalPlugins(t *testing.T) {
@@ -270,5 +271,53 @@ The list of patch release managers for each release can be found [here](https://
 		if c.CherryPickUnapproved.Comment != tc.expectedComment {
 			t.Errorf("unexpected comment: %s, expected: %s", c.CherryPickUnapproved.Comment, tc.expectedComment)
 		}
+	}
+}
+
+func TestTriggerResolvedPushChangedFiles(t *testing.T) {
+	testCases := []struct {
+		name    string
+		trigger *Trigger
+		want    job.PushChangedFilesMode
+		wantErr bool
+	}{
+		{
+			name:    "nil trigger defaults to all_commits",
+			trigger: nil,
+			want:    job.PushChangedFilesAllCommits,
+		},
+		{
+			name:    "empty trigger defaults to all_commits",
+			trigger: &Trigger{},
+			want:    job.PushChangedFilesAllCommits,
+		},
+		{
+			name:    "explicit compare mode",
+			trigger: &Trigger{PushChangedFiles: "compare"},
+			want:    job.PushChangedFilesCompare,
+		},
+		{
+			name:    "invalid mode",
+			trigger: &Trigger{PushChangedFiles: "nope"},
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			got, err := testCase.trigger.ResolvedPushChangedFiles()
+			if testCase.wantErr {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ResolvedPushChangedFiles: %v", err)
+			}
+			if got != testCase.want {
+				t.Fatalf("mode = %q, want %q", got, testCase.want)
+			}
+		})
 	}
 }

@@ -45,6 +45,7 @@ type SCMClient struct {
 	IssueCommentID      int
 	PullRequests        map[int]*scm.PullRequest
 	PullRequestChanges  map[int][]*scm.Change
+	PushCompareChanges  map[string][]*scm.Change
 	PullRequestComments map[int][]*scm.Comment
 	ReviewID            int
 	Reviews             map[int][]*scm.Review
@@ -250,6 +251,14 @@ func (f *SCMClient) GetPullRequest(owner, repo string, number int) (*scm.PullReq
 // GetPullRequestChanges returns the file modifications in a PR.
 func (f *SCMClient) GetPullRequestChanges(org, repo string, number int) ([]*scm.Change, error) {
 	return f.PullRequestChanges[number], nil
+}
+
+// CompareCommits returns the net file changes between two commits.
+func (f *SCMClient) CompareCommits(org, repo, baseSHA, headSHA string) ([]*scm.Change, error) {
+	if f.PushCompareChanges == nil {
+		return nil, nil
+	}
+	return f.PushCompareChanges[baseSHA+":"+headSHA], nil
 }
 
 // GetRef returns the hash of a ref.
