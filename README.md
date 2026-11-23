@@ -179,7 +179,7 @@ localizer expose jx/hook --stop
 
 #### Telepresence 
 You can replace the running version in your cluster with the one running locally using [telepresence](https://www.telepresence.io/).  
-First install the [telepresence cli](https://www.telepresence.io/docs/latest/install/) on your device then [the traffic-manager](https://www.telepresence.io/docs/latest/install/helm/) into your cluster 
+First install the [telepresence cli](https://telepresence.io/docs/install/client) on your device then [the traffic-manager](https://telepresence.io/docs/install/manager) into your cluster 
 and connect to the cluster:
 ```bash
 telepresence connect
